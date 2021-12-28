@@ -143,6 +143,7 @@ def test_fields_builder_pointer():
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_destroy(test_1d_size, field_type):
+
     def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
         for create_field_idx in range(10):

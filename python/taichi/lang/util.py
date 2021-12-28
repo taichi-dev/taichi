@@ -208,6 +208,7 @@ def in_python_scope():
 
 
 def taichi_scope(func):
+
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
@@ -219,6 +220,7 @@ def taichi_scope(func):
 
 
 def python_scope(func):
+
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1

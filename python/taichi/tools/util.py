@@ -95,7 +95,9 @@ def deprecated(old, new, warning_type=DeprecationWarning):
     Returns:
         Decorated fuction with warning message
     """
+
     def decorator(foo):
+
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
@@ -114,6 +116,7 @@ def obsolete(old, new):
 
     sqr = obsolete('ti.sqr(x)', 'x**2')
     """
+
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
         msg = f'{old} is obsolete. Please use {new} instead.'

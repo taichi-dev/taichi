@@ -260,6 +260,7 @@ def test_violate_kernel_simplicity2():
 
 @ti.test(require=ti.extension.data64)
 def test_cast():
+
     @ti.kernel
     def func():
         print(ti.cast(ti.cast(ti.cast(1.0, ti.f64), ti.f32), ti.f64))
@@ -319,6 +320,7 @@ def test_ad_rand():
 
 @ti.test(exclude=[ti.cc, ti.vulkan, ti.opengl])
 def test_ad_frac():
+
     @ti.func
     def frac(x):
         fractional = x - ti.floor(x) if x > 0. else x - ti.ceil(x)

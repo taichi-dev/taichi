@@ -4,6 +4,7 @@ import ast
 
 class ASTResolver:
     """Provides helper methods to resolve AST nodes."""
+
     @staticmethod
     def resolve_to(node, wanted, scope):
         """Check if symbol ``node`` resolves to ``wanted`` object.

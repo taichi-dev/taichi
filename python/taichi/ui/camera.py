@@ -6,6 +6,7 @@ from .utils import euler_to_vec, vec_to_euler
 
 
 class Camera:
+
     def __init__(self, ptr):
         self.ptr = ptr
 

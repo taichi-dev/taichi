@@ -3,7 +3,9 @@ import taichi as ti
 
 @ti.test()
 def test_subscript_user_classes_in_kernel():
+
     class MyList:
+
         def __init__(self, elements):
             self.elements = elements
 

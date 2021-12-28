@@ -9,6 +9,7 @@ class Quant:
 
     For more details, read https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf.
     """
+
     @staticmethod
     def int(bits, signed=False, compute=None):
         """Generates a quantized type for integers.

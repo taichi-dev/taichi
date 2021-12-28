@@ -14,6 +14,7 @@ class SparseSolver:
         solver_type (str): The factorization type.
         ordering (str): The method for matrices re-ordering.
     """
+
     def __init__(self, dtype=f32, solver_type="LLT", ordering="AMD"):
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']

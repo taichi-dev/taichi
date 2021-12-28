@@ -123,6 +123,7 @@ image_res = (1280, 720)
 
 @ti.data_oriented
 class Julia:
+
     def __init__(self):
         self.image = ti.Vector.field(3, float, image_res)
 

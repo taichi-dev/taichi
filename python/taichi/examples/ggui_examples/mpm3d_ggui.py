@@ -137,6 +137,7 @@ def substep(g_x: float, g_y: float, g_z: float):
 
 
 class CubeVolume:
+
     def __init__(self, minimum, size, material):
         self.minimum = minimum
         self.size = size

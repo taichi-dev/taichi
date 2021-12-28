@@ -141,6 +141,7 @@ def test_chain_compare():
 
 @ti.test()
 def test_static_in():
+
     @ti.kernel
     def foo(a: ti.template()) -> ti.i32:
         b = 0

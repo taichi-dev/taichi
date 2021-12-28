@@ -7,6 +7,7 @@ from taichi import approx
 
 @ti.test()
 def test_binop():
+
     @ti.kernel
     def foo(x: ti.i32, y: ti.i32, a: ti.template()):
         a[0] = x + y
@@ -48,6 +49,7 @@ def test_binop():
 
 @ti.test()
 def test_augassign():
+
     @ti.kernel
     def foo(x: ti.i32, y: ti.i32, a: ti.template(), b: ti.template()):
         for i in a:
@@ -95,6 +97,7 @@ def test_augassign():
 
 @ti.test()
 def test_unaryop():
+
     @ti.kernel
     def foo(x: ti.i32, a: ti.template()):
         a[0] = +x
@@ -119,6 +122,7 @@ def test_unaryop():
 
 @ti.test()
 def test_boolop():
+
     @ti.kernel
     def foo(a: ti.template()):
         a[0] = 0 and 0
@@ -170,6 +174,7 @@ def test_compare_fail():
 
 @ti.test()
 def test_single_compare():
+
     @ti.kernel
     def foo(a: ti.template(), b: ti.template(), c: ti.template()):
         for i in ti.static(range(3)):
@@ -200,6 +205,7 @@ def test_single_compare():
 
 @ti.test()
 def test_chain_compare():
+
     @ti.kernel
     def foo(a: ti.i32, b: ti.i32, c: ti.template()):
         c[0] = a == b == a
@@ -238,6 +244,7 @@ def test_chain_compare():
 
 @ti.test()
 def test_return():
+
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
         return x + 1
@@ -260,6 +267,7 @@ def test_format_print():
 
 @ti.test(print_preprocessed_ir=True)
 def test_if():
+
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
         ret = 0
@@ -275,6 +283,7 @@ def test_if():
 
 @ti.test(print_preprocessed_ir=True)
 def test_static_if():
+
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
         ret = 0
@@ -655,6 +664,7 @@ def test_while_continue():
 
 @ti.test(print_preprocessed_ir=True)
 def test_func():
+
     @ti.func
     def bar(x):
         return x * x, -x
@@ -675,6 +685,7 @@ def test_func():
 
 @ti.test(print_preprocessed_ir=True)
 def test_func_in_python_func():
+
     @ti.func
     def bar(x: ti.template()):
         if ti.static(x):
@@ -701,6 +712,7 @@ def test_func_in_python_func():
 
 @ti.test(print_preprocessed_ir=True)
 def test_ifexp():
+
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
         return 1 if x else 0
@@ -711,6 +723,7 @@ def test_ifexp():
 
 @ti.test(print_preprocessed_ir=True)
 def test_static_ifexp():
+
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
         return 1 if ti.static(x) else 0
@@ -793,6 +806,7 @@ def test_taichi_other_than_ti():
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
+
     @ti.kernel
     def func():
         x = 20
@@ -831,6 +845,7 @@ def test_assert_message_formatted():
 
 @ti.test()
 def test_dict():
+
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
         a = {1: 2, 3: 4}
@@ -844,6 +859,7 @@ def test_dict():
 
 @ti.test()
 def test_listcomp():
+
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -864,6 +880,7 @@ def test_listcomp():
 
 @ti.test()
 def test_dictcomp():
+
     @ti.kernel
     def foo(n: ti.template()) -> ti.i32:
         a = {i: i * i for i in range(n) if i % 3 if i % 2}
@@ -879,6 +896,7 @@ def test_dictcomp():
 
 @ti.test()
 def test_dictcomp_fail():
+
     @ti.kernel
     def foo(n: ti.template(), m: ti.template()) -> ti.i32:
         a = {i: i * i for i in range(n) if i % 3 if i % 2}
@@ -934,6 +952,7 @@ def test_sparse_matrix_builder():
 
 @ti.test()
 def test_func_default_value():
+
     @ti.func
     def bar(s, t=1):
         return s + t
@@ -979,6 +998,7 @@ def test_raise():
 
 @ti.test()
 def test_scalar_argument():
+
     @ti.kernel
     def add(a: ti.f32, b: ti.f32) -> ti.f32:
         a = a + b
@@ -989,6 +1009,7 @@ def test_scalar_argument():
 
 @ti.test()
 def test_default_template_args_on_func():
+
     @ti.func
     def bar(a: ti.template() = 123):
         return a
@@ -1002,6 +1023,7 @@ def test_default_template_args_on_func():
 
 @ti.test()
 def test_grouped_static_for_cast():
+
     @ti.kernel
     def foo() -> ti.f32:
         ret = 0.

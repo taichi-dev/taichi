@@ -14,6 +14,7 @@ def _get_logging(name):
     Returns:
         Callabe: The decorated function.
     """
+
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible
         if ti_core.logging_effective(name):

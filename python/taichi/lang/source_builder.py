@@ -13,6 +13,7 @@ from taichi.lang.util import get_clangpp
 
 
 class SourceBuilder:
+
     def __init__(self):
         self.bc = None
         self.so = None
@@ -122,6 +123,7 @@ class SourceBuilder:
         return SourceBuilder.from_file(_temp_source, compile_fn, _temp_dir)
 
     def __getattr__(self, item):
+
         def bitcode_func_call_wrapper(*args):
             _ti_core.insert_external_func_call(0, '', self.bc, item,
                                                make_expr_group(args),

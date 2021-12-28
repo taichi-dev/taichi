@@ -14,6 +14,7 @@ Grid-based MGPCG solver for the possion equation.
     This solver only runs on CPU and CUDA backends since it requires the
     ``pointer`` SNode.
     '''
+
     def __init__(self, dim=2, N=512, n_mg_levels=6, real=float):
         '''
         :parameter dim: Dimensionality of the fields.
@@ -243,6 +244,7 @@ Grid-based MGPCG solver for the possion equation.
 
 
 class MGPCG_Example(MGPCG):
+
     def __init__(self):
         super().__init__(dim=3, N=128, n_mg_levels=4)
 

@@ -2,6 +2,7 @@ from taichi.lang.matrix import _IntermediateMatrix
 
 
 class ndrange:
+
     def __init__(self, *args):
         args = list(args)
         for i, arg in enumerate(args):
@@ -25,6 +26,7 @@ class ndrange:
             self.acc_dimensions = [1]
 
     def __iter__(self):
+
         def gen(d, prefix):
             if d == len(self.bounds):
                 yield prefix
@@ -39,6 +41,7 @@ class ndrange:
 
 
 class GroupedNDRange:
+
     def __init__(self, r):
         self.r = r
 

@@ -27,6 +27,7 @@ element_type_name = _ti_core.element_type_name
 
 
 class MeshAttrType:
+
     def __init__(self, name, dtype, reorder, needs_grad):
         self.name = name
         self.dtype = dtype
@@ -35,6 +36,7 @@ class MeshAttrType:
 
 
 class MeshReorderedScalarFieldProxy(ScalarField):
+
     def __init__(self, field: ScalarField, mesh_ptr: _ti_core.MeshPtr,
                  element_type: MeshElementType, g2r_field: ScalarField):
         self.vars = field.vars
@@ -59,6 +61,7 @@ class MeshReorderedScalarFieldProxy(ScalarField):
 
 
 class MeshReorderedMatrixFieldProxy(MatrixField):
+
     def __init__(self, field: MatrixField, mesh_ptr: _ti_core.MeshPtr,
                  element_type: MeshElementType, g2r_field: ScalarField):
         self.vars = field.vars
@@ -86,6 +89,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
 
 
 class MeshElementField:
+
     def __init__(self, mesh_instance, _type, attr_dict, field_dict, g2r_field):
         self.mesh = mesh_instance
         self._type = _type
@@ -109,6 +113,7 @@ class MeshElementField:
 
     @staticmethod
     def make_getter(key):
+
         def getter(self):
             if key not in self.getter_dict:
                 if self.attr_dict[key].reorder:
@@ -184,6 +189,7 @@ class MeshElementField:
 
 
 class MeshElement:
+
     def __init__(self, _type, builder):
         self.builder = builder
         self._type = _type
@@ -253,6 +259,7 @@ class MeshElement:
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
 class MeshInstance:
+
     def __init__(self, _type):
         self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
@@ -297,6 +304,7 @@ class MeshInstance:
 
 
 class MeshMetadata:
+
     def __init__(self, filename):
         with open(filename, "r") as fi:
             data = json.loads(fi.read())
@@ -370,6 +378,7 @@ class MeshMetadata:
 
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
+
     def __init__(self, topology):
         if not lang.is_extension_supported(impl.current_cfg().arch,
                                            lang.extension.mesh):
@@ -438,6 +447,7 @@ class MeshBuilder:
 
 # Mesh First Class
 class Mesh:
+
     def __init__(self):
         pass
 
@@ -463,6 +473,7 @@ def TetMesh():
 
 
 class MeshElementFieldProxy:
+
     def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
                  entry_expr: impl.Expr):
         self.mesh = mesh
@@ -508,6 +519,7 @@ class MeshElementFieldProxy:
 
 
 class MeshRelationAccessProxy:
+
     def __init__(self, mesh: MeshInstance, from_index: impl.Expr,
                  to_element_type: MeshElementType):
         self.mesh = mesh

@@ -112,6 +112,7 @@ def test_offload_with_cross_block_globals():
 
 @ti.test()
 def test_offload_with_cross_nested_for():
+
     @ti.kernel
     def run(a: ti.i32):
         b = a + 1
@@ -124,6 +125,7 @@ def test_offload_with_cross_nested_for():
 
 @ti.test()
 def test_offload_with_cross_if_inside_for():
+
     @ti.kernel
     def run(a: ti.i32):
         b = a > 2

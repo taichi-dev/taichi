@@ -3,6 +3,7 @@ from taichi.lang import ops
 
 class TaichiOperations:
     """The base class of taichi operations of expressions. Subclasses: :class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`"""
+
     def __neg__(self):
         _taichi_skip_traceback = 1
         return ops.neg(self)

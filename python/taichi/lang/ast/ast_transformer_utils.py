@@ -10,6 +10,7 @@ from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 
 
 class Builder:
+
     def __call__(self, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
@@ -33,6 +34,7 @@ class Builder:
 
 
 class VariableScopeGuard:
+
     def __init__(self, scopes):
         self.scopes = scopes
 
@@ -44,11 +46,13 @@ class VariableScopeGuard:
 
 
 class NonStaticStatus:
+
     def __init__(self):
         self.is_in_non_static_scope = False
 
 
 class NonStaticScopeGuard:
+
     def __init__(self, status):
         self.status = status
 
@@ -67,12 +71,14 @@ class LoopStatus(Enum):
 
 
 class LoopScopeAttribute:
+
     def __init__(self, is_static):
         self.is_static = is_static
         self.status = LoopStatus.Normal
 
 
 class LoopScopeGuard:
+
     def __init__(self, scopes, non_static_guard=None):
         self.scopes = scopes
         self.non_static_guard = non_static_guard
@@ -89,6 +95,7 @@ class LoopScopeGuard:
 
 
 class ASTTransformerContext:
+
     def __init__(self,
                  excluded_parameters=(),
                  is_kernel=True,

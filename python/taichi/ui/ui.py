@@ -22,10 +22,12 @@ else:
         raise Exception("GGUI Not Available")
 
     class Window:
+
         def __init__(self, name, res, vsync=False):
             err_no_ggui()
 
     class Scene:
+
         def __init__(self):
             err_no_ggui()
 

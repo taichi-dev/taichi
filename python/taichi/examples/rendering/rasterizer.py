@@ -21,6 +21,7 @@ pixels = ti.Vector.field(3, dtype=ti.f32, shape=(width, height))
 
 @ti.data_oriented
 class TriangleRasterizer:
+
     def __init__(self, n):
         self.n = n
         self.A = ti.Vector.field(2, dtype=ti.f32)

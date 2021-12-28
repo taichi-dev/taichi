@@ -104,8 +104,10 @@ def test_loop_var_struct():
 
 @ti.test()
 def test_func_def_in_kernel():
+
     @ti.kernel
     def kernel():
+
         @ti.func
         def func():
             return 1
@@ -118,8 +120,10 @@ def test_func_def_in_kernel():
 
 @ti.test()
 def test_func_def_in_func():
+
     @ti.func
     def func():
+
         @ti.func
         def func2():
             return 1
@@ -154,6 +158,7 @@ def test_func_bad_argument_annotation():
 
 @ti.test()
 def test_nested_static():
+
     @ti.kernel
     def func():
         for i in ti.static(ti.static(range(1))):
@@ -165,6 +170,7 @@ def test_nested_static():
 
 @ti.test()
 def test_nested_grouped():
+
     @ti.kernel
     def func():
         for i in ti.grouped(ti.grouped(range(1))):
@@ -176,6 +182,7 @@ def test_nested_grouped():
 
 @ti.test()
 def test_nested_ndrange():
+
     @ti.kernel
     def func():
         for i in ti.ndrange(ti.ndrange(1)):
@@ -254,6 +261,7 @@ def test_not_in():
 
 @ti.test()
 def test_expr_set():
+
     @ti.kernel
     def func():
         x = {2, 4, 6}
@@ -264,8 +272,10 @@ def test_expr_set():
 
 @ti.test()
 def test_func_def_inside_kernel():
+
     @ti.kernel
     def k():
+
         @ti.func
         def illegal():
             return 1
@@ -277,8 +287,10 @@ def test_func_def_inside_kernel():
 
 @ti.test()
 def test_func_def_inside_func():
+
     @ti.func
     def f():
+
         @ti.func
         def illegal():
             return 1

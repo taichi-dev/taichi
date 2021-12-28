@@ -5,7 +5,9 @@ from taichi.lang.shell import oinspect
 
 
 class KernelSimplicityASTChecker(ast.NodeVisitor):
+
     class ScopeGuard:
+
         def __init__(self, checker):
             self.c = checker
             self._allows_for_loop = True

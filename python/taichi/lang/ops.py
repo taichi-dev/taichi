@@ -33,6 +33,7 @@ def wrap_if_not_expr(a):
 
 
 def unary(foo):
+
     @functools.wraps(foo)
     def imp_foo(x):
         _taichi_skip_traceback = 2
@@ -52,6 +53,7 @@ binary_ops = []
 
 
 def binary(foo):
+
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -79,6 +81,7 @@ ternary_ops = []
 
 
 def ternary(foo):
+
     @functools.wraps(foo)
     def abc_foo(a, b, c):
         _taichi_skip_traceback = 2
@@ -113,6 +116,7 @@ writeback_binary_ops = []
 
 
 def writeback_binary(foo):
+
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -262,6 +266,7 @@ def rsqrt(a):
     Returns:
         The reciprocal of `sqrt(a)`.
     """
+
     def _rsqrt(a):
         return 1 / math.sqrt(a)
 
@@ -468,6 +473,7 @@ def mod(a, b):
     Returns:
         The remainder of `a` divided by `b`.
     """
+
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
         quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
@@ -573,6 +579,7 @@ def raw_div(a, b):
     Returns:
         If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
     """
+
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -592,6 +599,7 @@ def raw_mod(a, b):
     Returns:
         The remainder of `a` divided by `b`.
     """
+
     def c_mod(a, b):
         return a - b * int(float(a) / b)
 

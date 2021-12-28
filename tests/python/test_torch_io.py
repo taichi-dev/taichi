@@ -61,6 +61,7 @@ def test_io():
             t_grad[i] = 2 * t[i] * o_grad[i]
 
     class Sqr(torch.autograd.Function):
+
         @staticmethod
         def forward(ctx, inp):
             outp = torch.zeros_like(inp)
@@ -96,6 +97,7 @@ def test_io_2d():
                 o[i, j] = t[i, j] * t[i, j]
 
     class Sqr(torch.autograd.Function):
+
         @staticmethod
         def forward(ctx, inp):
             outp = torch.zeros_like(inp)
@@ -121,6 +123,7 @@ def test_io_3d():
                     o[i, j, k] = t[i, j, k] * t[i, j, k]
 
     class Sqr(torch.autograd.Function):
+
         @staticmethod
         def forward(ctx, inp):
             outp = torch.zeros_like(inp)
@@ -260,6 +263,7 @@ def test_shape_vector():
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_torch_zero():
+
     @ti.kernel
     def test_torch(arr: ti.ext_arr()):
         pass

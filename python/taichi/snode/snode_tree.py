@@ -8,6 +8,7 @@ from taichi.lang.exception import InvalidOperationError
 
 
 class SNodeTree:
+
     def __init__(self, ptr):
         self.ptr = ptr
         self.destroyed = False

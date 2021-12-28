@@ -32,7 +32,9 @@ class GUI:
         :class:`~taichi.misc.gui.GUI` :The created taichi GUI object.
 
     """
+
     class Event:
+
         def __init__(self):
             self.type = None
             self.modifier = None
@@ -115,6 +117,7 @@ class GUI:
     # Widget system
 
     class WidgetValue:
+
         def __init__(self, gui, wid):
             self.gui = gui
             self.wid = wid
@@ -668,6 +671,7 @@ class GUI:
     # Event system
 
     class EventFilter:
+
         def __init__(self, *e_filter):
             self.filter = set()
             for ent in e_filter:
@@ -840,6 +844,7 @@ def rgb_to_hex(c):
         The hex representation of color.
 
     """
+
     def to255(x):
         return np.clip(np.int32(x * 255), 0, 255)
 

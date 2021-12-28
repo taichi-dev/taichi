@@ -10,6 +10,7 @@ import taichi as ti
 @pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
 @ti.test(exclude=[ti.metal, ti.opengl, ti.vulkan])
 def test_print(dt):
+
     @ti.kernel
     def func():
         print(ti.cast(1234.5, dt))
@@ -24,6 +25,7 @@ def test_print(dt):
 #       is that, the content shows on console is *correct*.
 @ti.test(exclude=[ti.vulkan])  # TODO(changyu): enable ti.vulkan
 def test_multi_print():
+
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
         print(x, 1234.5, y)
@@ -34,6 +36,7 @@ def test_multi_print():
 
 @ti.test(exclude=[ti.vulkan])  # TODO(changyu): enable ti.vulkan
 def test_print_string():
+
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
         # make sure `%` doesn't break vprintf:
@@ -62,6 +65,7 @@ def test_print_matrix():
 
 @ti.test(exclude=[ti.vulkan])  # TODO(changyu): enable ti.vulkan
 def test_print_sep_end():
+
     @ti.kernel
     def func():
         # hello 42 world!
@@ -130,6 +134,7 @@ def test_python_scope_print_field():
 
 @ti.test(arch=ti.cpu)
 def test_print_string_format():
+
     @ti.kernel
     def func(k: ti.f32):
         print(123)
@@ -146,6 +151,7 @@ def test_print_string_format():
 
 @ti.test(arch=ti.cpu)
 def test_print_fstring():
+
     def foo1(x):
         return x + 1
 

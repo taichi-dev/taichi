@@ -14,6 +14,7 @@ class SparseMatrix:
         m (int): the second dimension of a sparse matrix.
         sm (SparseMatrix): another sparse matrix that will be built from.
     """
+
     def __init__(self, n=None, m=None, sm=None, dtype=f32):
         if sm is None:
             self.n = n
@@ -131,6 +132,7 @@ class SparseMatrixBuilder:
         num_cols (int): the second dimension of a sparse matrix.
         max_num_triplets (int): the maximum number of triplets.
     """
+
     def __init__(self,
                  num_rows=None,
                  num_cols=None,

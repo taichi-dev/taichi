@@ -5,6 +5,7 @@ import taichi as ti
 
 @ti.test(debug=True)
 def test_assign_basic():
+
     @ti.kernel
     def func_basic():
         a = 1
@@ -15,6 +16,7 @@ def test_assign_basic():
 
 @ti.test(debug=True)
 def test_assign_unpack():
+
     @ti.kernel
     def func_unpack():
         (a, b) = (1, 2)
@@ -26,6 +28,7 @@ def test_assign_unpack():
 
 @ti.test(debug=True)
 def test_assign_chained():
+
     @ti.kernel
     def func_chained():
         a = b = 1
@@ -37,6 +40,7 @@ def test_assign_chained():
 
 @ti.test(debug=True)
 def test_assign_chained_unpack():
+
     @ti.kernel
     def func_chained_unpack():
         (a, b) = (c, d) = (1, 2)
@@ -50,6 +54,7 @@ def test_assign_chained_unpack():
 
 @ti.test(debug=True)
 def test_assign_assign():
+
     @ti.kernel
     def func_assign():
         a = 0
@@ -61,6 +66,7 @@ def test_assign_assign():
 
 @ti.test(debug=True)
 def test_assign_ann():
+
     @ti.kernel
     def func_ann():
         # need to introduce ti as a global var
@@ -77,6 +83,7 @@ def test_assign_ann():
 
 @ti.test()
 def test_assign_ann_over():
+
     @ti.kernel
     def func_ann_over():
         my_int = ti.i32

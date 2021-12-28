@@ -9,6 +9,7 @@ def get_benchmark_dir():
 
 
 def benchmark_async(func):
+
     @functools.wraps(func)
     def body():
         for arch in [ti.cpu, ti.cuda]:

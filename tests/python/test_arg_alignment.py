@@ -3,6 +3,7 @@ import taichi as ti
 
 @ti.test(exclude=[ti.opengl])
 def test_ret_write():
+
     @ti.kernel
     def func(a: ti.i16) -> ti.f32:
         return 3.0

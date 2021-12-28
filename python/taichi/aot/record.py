@@ -26,6 +26,7 @@ def stop_recording():
 
 
 class RecordKernelGroup:
+
     def __init__(self, name):
         if name in RecordKernelGroup.recorded:
             self.name = None

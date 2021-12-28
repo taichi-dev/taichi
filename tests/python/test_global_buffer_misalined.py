@@ -3,6 +3,7 @@ import taichi as ti
 
 @ti.test(require=ti.extension.data64)
 def test_global_buffer_misalignment():
+
     @ti.kernel
     def test(x: ti.f32):
         a = x

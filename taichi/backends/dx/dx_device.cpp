@@ -77,7 +77,8 @@ Stream *Dx11Device::get_graphics_stream() {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<Surface> Dx11Device::create_surface(const SurfaceConfig &config) {
+std::unique_ptr<Surface> Dx11Device::create_surface(
+    const SurfaceConfig &config) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -90,21 +91,21 @@ void Dx11Device::destroy_image(DeviceAllocation handle) {
 }
 
 void Dx11Device::image_transition(DeviceAllocation img,
-                                ImageLayout old_layout,
-                                ImageLayout new_layout) {
+                                  ImageLayout old_layout,
+                                  ImageLayout new_layout) {
   TI_NOT_IMPLEMENTED;
 }
 
 void Dx11Device::buffer_to_image(DeviceAllocation dst_img,
-                               DevicePtr src_buf,
-                               ImageLayout img_layout,
-                               const BufferImageCopyParams &params) {
+                                 DevicePtr src_buf,
+                                 ImageLayout img_layout,
+                                 const BufferImageCopyParams &params) {
   TI_NOT_IMPLEMENTED;
 }
 void Dx11Device::image_to_buffer(DevicePtr dst_buf,
-                               DeviceAllocation src_img,
-                               ImageLayout img_layout,
-                               const BufferImageCopyParams &params) {
+                                 DeviceAllocation src_img,
+                                 ImageLayout img_layout,
+                                 const BufferImageCopyParams &params) {
   TI_NOT_IMPLEMENTED;
 }
 

@@ -4,6 +4,7 @@ from taichi.lang import impl
 
 class TypeFactory:
     """A Python-side TypeFactory wrapper."""
+
     def __init__(self):
         self.core = _ti_core.get_type_factory_instance()
 

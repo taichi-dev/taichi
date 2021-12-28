@@ -663,6 +663,7 @@ class Matrix(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
+
         def assign_renamed(x, y):
             return ops_mod.assign(x, y)
 
@@ -1075,6 +1076,7 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
+
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1093,6 +1095,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
+
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1109,6 +1112,7 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
+
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1262,6 +1266,7 @@ class MatrixField(Field):
 
 
 class MatrixType(CompoundType):
+
     def __init__(self, n, m, dtype):
         self.n = n
         self.m = m
@@ -1325,6 +1330,7 @@ class MatrixNdarray(Ndarray):
         shape (Union[int, tuple[int]]): Shape of the ndarray.
         layout (Layout): Memory layout.
     """
+
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
@@ -1397,6 +1403,7 @@ class VectorNdarray(Ndarray):
         shape (Tuple[int]): Shape of the ndarray.
         layout (Layout): Memory layout.
     """
+
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )

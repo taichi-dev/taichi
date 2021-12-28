@@ -55,12 +55,14 @@ void mixed_statement_checker(Block *block){
                  "differentiable_programming#kernel-simplicity-rule");
       }
     }
-    if (has_for && has_non_for) TI_ERROR("Invalid program input for autodiff: "
+    if (has_for && has_non_for){
+      TI_ERROR("Invalid program input for autodiff: "
                                          "Mixed usage of for-loop and a statement without looping. \n"
                                          "Please check the documentation "
                                          "for the \"Kernel Simplicity Rule\" \"differentiable_task4\":\n"
                                          "https://docs.taichi.graphics/lang/articles/advanced/"
                                          "differentiable_programming#kernel-simplicity-rule");
+    }
   }
 }
 

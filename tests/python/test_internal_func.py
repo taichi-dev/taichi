@@ -3,12 +3,6 @@ import time
 import taichi as ti
 
 
-# TODO: these are not really tests...
-def all_archs_for_this(test):
-    # ti.call_internal() is not supported on CUDA, Metal, OpenGL yet
-    return ti.archs_excluding(ti.metal, ti.opengl, ti.cuda, ti.vulkan)(test)
-
-
 @ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
 def test_basic():
     @ti.kernel

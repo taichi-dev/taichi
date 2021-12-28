@@ -2,9 +2,8 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.matrix import Matrix
 from taichi.lang.util import is_taichi_class
-
-import taichi as ti
 
 
 # Scalar, basic data type
@@ -58,13 +57,13 @@ def make_expr_group(*exprs):
     if len(exprs) == 1:
         if isinstance(exprs[0], (list, tuple)):
             exprs = exprs[0]
-        elif isinstance(exprs[0], ti.Matrix):
+        elif isinstance(exprs[0], Matrix):
             mat = exprs[0]
             assert mat.m == 1
             exprs = mat.entries
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
-        if isinstance(i, ti.Matrix):
+        if isinstance(i, Matrix):
             assert i.local_tensor_proxy is not None
             expr_group.push_back(i.local_tensor_proxy)
         else:

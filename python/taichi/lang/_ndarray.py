@@ -1,5 +1,4 @@
 import numpy as np
-import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
@@ -99,7 +98,8 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         else:
-            taichi.lang.meta.fill_ndarray(self, val)
+            from taichi._kernels import fill_ndarray  # pylint: disable=C0415
+            fill_ndarray(self, val)
 
     def ndarray_matrix_fill(self, val):
         """Fills ndarray with a specific scalar value.
@@ -110,7 +110,9 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         else:
-            taichi.lang.meta.fill_ndarray_matrix(self, val)
+            from taichi._kernels import \
+                fill_ndarray_matrix  # pylint: disable=C0415
+            fill_ndarray_matrix(self, val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -122,7 +124,8 @@ class Ndarray:
             return self.arr.cpu().numpy()
 
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        taichi.lang.meta.ndarray_to_ext_arr(self, arr)
+        from taichi._kernels import ndarray_to_ext_arr  # pylint: disable=C0415
+        ndarray_to_ext_arr(self, arr)
         impl.get_runtime().sync()
         return arr
 
@@ -136,7 +139,9 @@ class Ndarray:
             return self.arr.cpu().numpy()
 
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, as_vector)
+        from taichi._kernels import \
+            ndarray_matrix_to_ext_arr  # pylint: disable=C0415
+        ndarray_matrix_to_ext_arr(self, arr, as_vector)
         impl.get_runtime().sync()
         return arr
 
@@ -160,7 +165,9 @@ class Ndarray:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
 
-            taichi.lang.meta.ext_arr_to_ndarray(arr, self)
+            from taichi._kernels import \
+                ext_arr_to_ndarray  # pylint: disable=C0415
+            ext_arr_to_ndarray(arr, self)
             impl.get_runtime().sync()
 
     def ndarray_matrix_from_numpy(self, arr, as_vector):
@@ -183,7 +190,9 @@ class Ndarray:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
 
-            taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, as_vector)
+            from taichi._kernels import \
+                ext_arr_to_ndarray_matrix  # pylint: disable=C0415
+            ext_arr_to_ndarray_matrix(arr, self, as_vector)
             impl.get_runtime().sync()
 
     @python_scope
@@ -215,7 +224,8 @@ class Ndarray:
         """
         assert isinstance(other, Ndarray)
         assert tuple(self.arr.shape) == tuple(other.arr.shape)
-        taichi.lang.meta.ndarray_to_ndarray(self, other)
+        from taichi._kernels import ndarray_to_ndarray  # pylint: disable=C0415
+        ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
 
     def __deepcopy__(self, memo=None):

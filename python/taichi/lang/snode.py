@@ -4,7 +4,6 @@ import numbers
 # object within it, is that ti_core is stateful. While in practice ti_core is
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
-import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import Field
@@ -305,12 +304,16 @@ class SNode:
             c.deactivate_all()
         SNodeType = _ti_core.SNodeType
         if self.ptr.type == SNodeType.pointer or self.ptr.type == SNodeType.bitmasked:
-            taichi.lang.meta.snode_deactivate(self)
+            from taichi._kernels import \
+                snode_deactivate  # pylint: disable=C0415
+            snode_deactivate(self)
         if self.ptr.type == SNodeType.dynamic:
             # Note that dynamic nodes are different from other sparse nodes:
             # instead of deactivating each element, we only need to deactivate
             # its parent, whose linked list of chunks of elements will be deleted.
-            taichi.lang.meta.snode_deactivate_dynamic(self)
+            from taichi._kernels import \
+                snode_deactivate_dynamic  # pylint: disable=C0415
+            snode_deactivate_dynamic(self)
 
     def __repr__(self):
         type_ = str(self.ptr.type)[len('SNodeType.'):]

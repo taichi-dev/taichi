@@ -261,6 +261,7 @@ def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
 
 
 class PyTaichi:
+
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
@@ -488,6 +489,7 @@ def index_nd(dim):
 
 
 class _UninitializedRootFieldsBuilder:
+
     def __getattr__(self, item):
         if item == '__qualname__':
             # For sphinx docstring extraction.
@@ -512,6 +514,7 @@ _root_fb = _UninitializedRootFieldsBuilder()
 
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
+
     @staticmethod
     def parent(n=1):
         """Same as :func:`taichi.SNode.parent`"""
@@ -665,6 +668,7 @@ def ndarray(dtype, shape):
 
 @taichi_scope
 def ti_print(*_vars, sep=' ', end='\n'):
+
     def entry2content(_var):
         if isinstance(_var, str):
             return _var

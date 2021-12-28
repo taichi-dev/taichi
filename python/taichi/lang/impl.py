@@ -4,6 +4,7 @@ from typing import Iterable
 
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._logging import warn
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError
@@ -16,6 +17,7 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
                               MeshReorderedScalarFieldProxy, element_type_name)
+from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
@@ -25,7 +27,7 @@ from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import get_traceback, warning
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
-import taichi as ti
+# import taichi as ti
 
 
 @taichi_scope
@@ -51,7 +53,7 @@ def expr_init(rhs):
         return rhs
     if isinstance(rhs, _ti_core.Arch):
         return rhs
-    if isinstance(rhs, ti.ndrange):
+    if isinstance(rhs, ndrange):
         return rhs
     if isinstance(rhs, MeshElementFieldProxy):
         return rhs
@@ -64,9 +66,9 @@ def expr_init(rhs):
 
 @taichi_scope
 def expr_init_list(xs, expected):
-    if not isinstance(xs, (list, tuple, ti.Matrix)):
+    if not isinstance(xs, (list, tuple, Matrix)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
-    if isinstance(xs, ti.Matrix):
+    if isinstance(xs, Matrix):
         if not xs.m == 1:
             raise ValueError(
                 'Matrices with more than one columns cannot be unpacked')
@@ -412,7 +414,7 @@ def _clamp_unsigned_to_range(npty, val):
         # the signed or the unsigned type.
         return val
     new_val = val - cap
-    ti.warn(
+    warn(
         f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
     )
     return new_val
@@ -510,6 +512,12 @@ class _UninitializedRootFieldsBuilder:
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
+def deactivate_all_snodes():
+    """Recursively deactivate all SNodes."""
+    for root_fb in FieldsBuilder.finalized_roots():
+        root_fb.deactivate_all()
+
+
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
     @staticmethod
@@ -533,7 +541,7 @@ class _Root:
         warning(
             """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
         )
-        ti.deactivate_all_snodes()
+        deactivate_all_snodes()
 
     @property
     def shape(self):
@@ -731,13 +739,13 @@ def ti_format(*args, **kwargs):
     new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, ti.Expr):
+        if isinstance(x, Expr):
             new_mixed.append('{}')
             args.append(x)
         else:
             new_mixed.append(x)
     for k, v in kwargs.items():
-        if isinstance(v, ti.Expr):
+        if isinstance(v, Expr):
             new_mixed_kwargs[k] = '{}'
             args.append(v)
         else:
@@ -870,9 +878,8 @@ def static(x, *xs):
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
-    if isinstance(x,
-                  (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
-                   ti.GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x, (bool, int, float, range, list, tuple, enumerate, ndrange,
+                      GroupedNDRange, zip, filter, map)) or x is None:
         return x
     if isinstance(x, AnyArray):
         return x
@@ -894,10 +901,10 @@ def grouped(x):
 
     Example::
 
-        >>> for I in ti.grouped(ti.ndrange(8, 16)):
+        >>> for I in ti.grouped(ndrange(8, 16)):
         >>>     print(I[0] + I[1])
     """
-    if isinstance(x, ti.ndrange):
+    if isinstance(x, ndrange):
         return x.grouped()
     return x
 

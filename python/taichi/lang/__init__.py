@@ -23,17 +23,17 @@ from taichi.lang.exception import (InvalidOperationError,
                                    TaichiCompilationError, TaichiSyntaxError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, begin_frontend_if,
+from taichi.lang.impl import (GroupedNDRange, axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
-                              current_cfg, expr_init, expr_init_func,
-                              expr_init_list, field, get_runtime,
-                              global_subscript_with_offset, grouped,
-                              insert_expr_stmt_if_ti_func,
+                              current_cfg, deactivate_all_snodes, expr_init,
+                              expr_init_func, expr_init_list, field,
+                              get_runtime, global_subscript_with_offset,
+                              grouped, insert_expr_stmt_if_ti_func,
                               local_subscript_with_offset,
-                              materialize_callback, ndarray, one, root, static,
-                              static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
+                              materialize_callback, ndarray, ndrange, one,
+                              root, static, static_assert, static_print,
+                              stop_grad, subscript, ti_assert, ti_float,
+                              ti_format, ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -777,12 +777,6 @@ def clear_all_gradients():
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
-
-
-def deactivate_all_snodes():
-    """Recursively deactivate all SNodes."""
-    for root_fb in FieldsBuilder.finalized_roots():
-        root_fb.deactivate_all()
 
 
 def benchmark(_func, repeat=300, args=()):

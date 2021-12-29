@@ -524,7 +524,6 @@ class KernelGen : public IRVisitor {
     const auto linear_index_name = fmt::format("_li_{}", stmt->short_name());
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
-    emit("int {} = 0;", linear_index_name);
     const int num_indices = stmt->indices.size();
     std::vector<std::string> size_var_names;
     for (int i = 0; i < num_indices; i++) {
@@ -541,15 +540,33 @@ class KernelGen : public IRVisitor {
       size_var_names.push_back(std::move(var_name));
     }
 
-    emit("{{ // linear seek");
-    {
-      ScopedIndent _s(line_appender_);
-      for (int i = 0; i < num_indices; i++) {
-        emit("{} *= {};", linear_index_name, size_var_names[i]);
-        emit("{} += {};", linear_index_name, stmt->indices[i]->short_name());
-      }
+    std::string arr_name = fmt::format("_arr{}_", arg_id);
+    if (!loaded_args_.count(arr_name)) {
+      emit("int {} = 0;", arr_name);
+      loaded_args_.insert(arr_name);
     }
-    emit("}}");
+
+    int i = 0;
+
+    while (i < num_indices) {
+      std::string new_arr = arr_name + stmt->indices[i]->short_name() + "_";
+      if (!loaded_args_.count(new_arr))
+        break;
+      arr_name = new_arr;
+      i++;
+    }
+
+    emit("int {} = {};", linear_index_name, arr_name);
+    if (i == 0)
+      loaded_args_.insert(arr_name);
+
+    for (int j = i; j < num_indices; j++) {
+      emit("{} *= {};", linear_index_name, size_var_names[j]);
+      emit("{} += {};", linear_index_name, stmt->indices[j]->short_name());
+      arr_name = arr_name + stmt->indices[j]->short_name() + "_";
+      emit("int {} = {};", arr_name, linear_index_name);
+      loaded_args_.insert(arr_name);
+    }
 
     emit("int {} = {} << {};", stmt->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));

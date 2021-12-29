@@ -57,14 +57,12 @@ class Struct(TaichiOperations):
                     ))
 
     def __getitem__(self, key):
-        _taichi_skip_traceback = 1
         ret = self.entries[key]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         return ret
 
     def __setitem__(self, key, value):
-        _taichi_skip_traceback = 1
         if isinstance(self.entries[key], SNodeHostAccess):
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
@@ -92,7 +90,6 @@ class Struct(TaichiOperations):
     def make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self[key]
 
         return getter
@@ -101,13 +98,11 @@ class Struct(TaichiOperations):
     def make_setter(key):
         @python_scope
         def setter(self, value):
-            _taichi_skip_traceback = 1
             self[key] = value
 
         return setter
 
     def element_wise_unary(self, foo):
-        _taichi_skip_traceback = 1
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
@@ -117,7 +112,6 @@ class Struct(TaichiOperations):
         return Struct(entries)
 
     def element_wise_binary(self, foo, other):
-        _taichi_skip_traceback = 1
         other = self.broadcast_copy(other)
         entries = {}
         for k, v in self.items:
@@ -321,7 +315,6 @@ class StructField(Field):
     def make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self.field_dict[key]
 
         return getter
@@ -330,7 +323,6 @@ class StructField(Field):
     def make_setter(key):
         @python_scope
         def setter(self, value):
-            _taichi_skip_traceback = 1
             self.field_dict[key] = value
 
         return setter

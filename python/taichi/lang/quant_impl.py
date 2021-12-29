@@ -1,7 +1,6 @@
 from taichi.lang import impl
 from taichi.lang import type_factory_impl as tf_impl
-
-import taichi as ti
+from taichi.types.primitive_types import i32
 
 
 class Quant:
@@ -39,7 +38,7 @@ class Quant:
             DataType: The specified type.
         """
         # TODO: handle cases with frac > 32
-        frac_type = Quant.int(bits=frac, signed=signed, compute=ti.i32)
+        frac_type = Quant.int(bits=frac, signed=signed, compute=i32)
         if signed:
             scale = num_range / 2**(frac - 1)
         else:
@@ -63,9 +62,9 @@ class Quant:
             DataType: The specified type.
         """
         # Exponent is always unsigned
-        exp_type = Quant.int(bits=exp, signed=False, compute=ti.i32)
+        exp_type = Quant.int(bits=exp, signed=False, compute=i32)
         # TODO: handle cases with frac > 32
-        frac_type = Quant.int(bits=frac, signed=signed, compute=ti.i32)
+        frac_type = Quant.int(bits=frac, signed=signed, compute=i32)
         if compute is None:
             compute = impl.get_runtime().default_fp
         return tf_impl.type_factory.custom_float(significand_type=frac_type,

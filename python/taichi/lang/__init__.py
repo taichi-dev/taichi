@@ -12,7 +12,6 @@ from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
 
-import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
@@ -396,7 +395,6 @@ class _SpecialConfig:
         self.print_preprocessed = False
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.excepthook = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
 
@@ -581,7 +579,6 @@ def init(arch=None,
     env_spec.add('print_preprocessed')
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
-    env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
 
@@ -707,85 +704,6 @@ bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
 mesh_patch_idx = _ti_core.insert_patch_idx_expr
-
-
-def polar_decompose(A, dt=None):
-    """Perform polar decomposition (A=UP) for arbitrary size matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
-    This is only a wrapper for :func:`taichi.lang.linalg_impl.polar_decompose`.
-
-    Args:
-        A (ti.Matrix(n, n)): input nxn matrix `A`.
-        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
-
-    Returns:
-        Decomposed nxn matrices `U` and `P`.
-    """
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    return taichi.lang.linalg_impl.polar_decompose(A, dt)
-
-
-def svd(A, dt=None):
-    """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    This is only a wrappers for :func:`taichi.lang.linalg_impl.svd`.
-
-    Args:
-        A (ti.Matrix(n, n)): input nxn matrix `A`.
-        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
-
-    Returns:
-        Decomposed nxn matrices `U`, 'S' and `V`.
-    """
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    return taichi.lang.linalg_impl.svd(A, dt)
-
-
-def eig(A, dt=None):
-    """Compute the eigenvalues and right eigenvectors of a real matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.lang.linalg_impl.eig2x2`.
-
-    Args:
-        A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
-        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
-
-    Returns:
-        eigenvalues (ti.Matrix(n, 2)): The eigenvalues in complex form. Each row stores one eigenvalue. The first number of the eigenvalue represents the real part and the second number represents the imaginary part.
-        eigenvectors (ti.Matrix(n*2, n)): The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector consists of n entries, each of which is represented by two numbers for its real part and imaginary part.
-    """
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    if A.n == 2:
-        return taichi.lang.linalg_impl.eig2x2(A, dt)
-    raise Exception("Eigen solver only supports 2D matrices.")
-
-
-def sym_eig(A, dt=None):
-    """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.lang.linalg_impl.sym_eig2x2`.
-
-    Args:
-        A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
-        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
-
-    Returns:
-        eigenvalues (ti.Vector(n)): The eigenvalues. Each entry store one eigen value.
-        eigenvectors (ti.Matrix(n, n)): The eigenvectors. Each column stores one eigenvector.
-    """
-    assert all(A == A.transpose()), "A needs to be symmetric"
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    if A.n == 2:
-        return taichi.lang.linalg_impl.sym_eig2x2(A, dt)
-    raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 
 def Tape(loss, clear_gradients=True):

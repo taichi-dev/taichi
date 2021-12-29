@@ -378,6 +378,10 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
 
   ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
 
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -729,6 +733,7 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  bool end_is_array_axis{false};
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
@@ -737,7 +742,8 @@ class RangeForStmt : public Stmt {
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               bool end_is_array_axis = false);
 
   bool is_container_statement() const override {
     return true;
@@ -756,7 +762,8 @@ class RangeForStmt : public Stmt {
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
-                     strictly_serialized);
+                     strictly_serialized,
+                     end_is_array_axis);
   TI_DEFINE_ACCEPT
 };
 
@@ -1123,6 +1130,7 @@ class OffloadedStmt : public Stmt {
   int block_dim{1};
   bool reversed{false};
   int num_cpu_threads{1};
+  Stmt *end_stmt{nullptr};
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;

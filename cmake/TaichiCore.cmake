@@ -36,10 +36,8 @@ if (WIN32)
     endif()
 endif()
 
-# Enable GGUI Only if building with Vulkan on Desktop machine as it depends on
-# GLFW which is not supported on Android platform for example
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_VULKAN AND NOT ANDROID)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -76,11 +74,20 @@ file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
     "taichi/ui/*.h"  "taichi/ui/*/*.h" "taichi/ui/*/*/*.h"  "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
 )
+file(GLOB TAICHI_GGUI_GLFW_SOURCE
+  "taichi/ui/common/window_base.cpp"
+  "taichi/ui/backends/vulkan/window.cpp"
+)
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
 
 
 if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
+
+    # Remove GLFW dependencies from the build for Android
+    if(ANDROID)
+        list(REMOVE_ITEM TAICHI_GGUI_SOURCE ${TAICHI_GGUI_GLFW_SOURCE})
+    endif()
 
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
 endif()
@@ -399,9 +406,13 @@ if(TI_WITH_GGUI)
     # Dear ImGui
     add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
     set(IMGUI_DIR external/imgui)
-    include_directories(external/glfw/include)
     include_directories(SYSTEM ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+if(ANDROID)
+    add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_android.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
+else()
+    include_directories(external/glfw/include)
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
+endif()
     target_link_libraries(${CORE_LIBRARY_NAME} imgui)
 
 endif()

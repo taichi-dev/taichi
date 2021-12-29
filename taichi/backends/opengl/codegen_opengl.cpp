@@ -130,6 +130,7 @@ class KernelGen : public IRVisitor {
   bool used_tls_;  // TODO: move into UsedFeature?
   std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access_;
   std::unordered_set<std::string> loaded_args_;
+  std::unordered_map<std::string, int> loaded_vals_;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -508,15 +509,39 @@ class KernelGen : public IRVisitor {
         ptr_signats_.at(stmt->dest->id),  // throw out_of_range if not a pointer
         opengl_data_type_short_name(dt), stmt->dest->short_name(),
         opengl_data_address_shifter(dt), stmt->val->short_name());
+    std::string saved_val_name =
+        fmt::format("_{}_{}_{}_", ptr_signats_.at(stmt->dest->id),
+                    opengl_data_type_short_name(dt), stmt->dest->short_name());
+    if (loaded_vals_.count(saved_val_name)) {
+      loaded_vals_[saved_val_name] = -1;
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    emit("{} {} = _{}_{}_[{} >> {}];",
-         opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats_.at(stmt->src->id), opengl_data_type_short_name(dt),
-         stmt->src->short_name(), opengl_data_address_shifter(dt));
+    std::string saved_val_name =
+        fmt::format("_{}_{}_{}_", ptr_signats_.at(stmt->src->id),
+                    opengl_data_type_short_name(dt), stmt->src->short_name());
+
+    if (!loaded_vals_.count(saved_val_name) ||
+        loaded_vals_[saved_val_name] == -1) {
+      emit("{} {} = _{}_{}_[{} >> {}];",
+           opengl_data_type_name(stmt->element_type()), stmt->short_name(),
+           ptr_signats_.at(stmt->src->id), opengl_data_type_short_name(dt),
+           stmt->src->short_name(), opengl_data_address_shifter(dt));
+
+      emit("{} {} = {};",
+           loaded_vals_.count(saved_val_name)
+               ? ""
+               : opengl_data_type_name(stmt->element_type()),
+           saved_val_name, stmt->short_name());
+      loaded_vals_.insert({saved_val_name, 1});
+
+    } else {
+      emit("{} {} = {};", opengl_data_type_name(stmt->element_type()),
+           stmt->short_name(), saved_val_name);
+    }
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -780,6 +805,12 @@ class KernelGen : public IRVisitor {
     }
 
     emit("}} // End Atomic Op");
+    std::string saved_val_name =
+        fmt::format("_{}_{}_{}_", ptr_signats_.at(stmt->dest->id),
+                    opengl_data_type_short_name(dt), stmt->dest->short_name());
+    if (loaded_vals_.count(saved_val_name)) {
+      loaded_vals_[saved_val_name] = -1;
+    }
   }
 
   bool maybe_generate_fatomics_using_nv_ext(AtomicOpStmt *stmt,

@@ -3,7 +3,10 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #include "taichi/common/core.h"
+
+#ifdef TI_WITH_DX11
 #include <d3d11.h>
+#endif
 
 namespace taichi {
 namespace lang {

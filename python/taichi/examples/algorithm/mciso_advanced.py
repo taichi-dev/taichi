@@ -294,13 +294,6 @@ class MCISO:
         self.use_sparse = blk_size is not None
         self.blk_size = blk_size
 
-        et = [self.et2, self.et3][dim - 2]
-        self.et = ti.Vector.field(dim, int, et.shape[:2])
-
-        @ti.materialize_callback
-        def init_et():
-            self.et.from_numpy(et)
-
         self.m = ti.field(float)  # field to sample
         self.g = ti.Vector.field(self.dim, float)  # normalized gradient
         indices = [ti.ij, ti.ijk][dim - 2]
@@ -315,6 +308,10 @@ class MCISO:
         self.r = ti.Vector.field(
             dim, float,
             (self.N**self.dim, self.dim))  # result buffer, TODO: optimize this
+
+        et = [self.et2, self.et3][dim - 2]
+        self.et = ti.Vector.field(dim, int, et.shape[:2])
+        self.et.from_numpy(et)
 
     @ti.kernel
     def compute_grad(self):

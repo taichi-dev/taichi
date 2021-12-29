@@ -316,6 +316,22 @@ def test_ndarray_cuda_caching_allocator():
 
 
 @ti.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_fill():
+    n = 8
+    a = ti.ndarray(ti.i32, shape=(n))
+    a.fill(2)
+    assert (a[4] == 2)
+
+    a = ti.ndarray(ti.f32, shape=(n))
+    a.fill(2.5)
+    assert (a[4] == 2.5)
+
+    a = ti.ndarray(ti.u32, shape=(n))
+    a.fill(0)
+    assert (a[4] == 0)
+
+
+@ti.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_rw_cache():
     a = ti.Vector.ndarray(3, ti.f32, ())
     b = ti.Vector.ndarray(3, ti.f32, 12)

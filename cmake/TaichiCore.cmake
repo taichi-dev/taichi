@@ -6,6 +6,7 @@ option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
+option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
 
 
 if(UNIX AND NOT APPLE)
@@ -65,6 +66,7 @@ file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
+file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
@@ -165,6 +167,11 @@ if (TI_WITH_VULKAN)
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_REQUIRED_SOURCE})
+
+if (TI_WITH_DX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_DX11_SOURCE})
+endif()
 
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.

@@ -106,7 +106,10 @@ wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
-gpu = [cuda, metal, opengl, vulkan]
+dx11 = _ti_core.dx11
+"""The DX11 backend.
+"""
+gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
@@ -993,6 +996,7 @@ def is_arch_supported(arch, use_gles=False):
         opengl: functools.partial(_ti_core.with_opengl, use_gles),
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
+        dx11: _ti_core.with_dx11,
         wasm: lambda: True,
         cpu: lambda: True,
     }

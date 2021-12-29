@@ -187,7 +187,6 @@ def to_taichi_type(dt):
 
 
 def cook_dtype(dtype):
-    _taichi_skip_traceback = 1
     if isinstance(dtype, _ti_core.DataType):
         return dtype
     if isinstance(dtype, _ti_core.Type):
@@ -210,7 +209,6 @@ def in_python_scope():
 def taichi_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 1
         assert in_taichi_scope(), \
                 f'{func.__name__} cannot be called in Python-scope'
         return func(*args, **kwargs)
@@ -221,7 +219,6 @@ def taichi_scope(func):
 def python_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 1
         assert in_python_scope(), \
                 f'{func.__name__} cannot be called in Taichi-scope'
         return func(*args, **kwargs)

@@ -219,10 +219,9 @@ def copy(dst: ti.template(), src: ti.template()):
     return x % 2 == 1
 ```
 
-## Pretty Taichi-scope traceback
+## Pretty Taichi-scope traceback 
 
-Sometimes the Python stack tracebacks resulted from **Taichi-scope** errors
-could be too complicated to read. For example:
+Taichi reports traceback messages when encountered errors in **Taichi-scope**. For example:
 
 ```python
 import taichi as ti
@@ -247,117 +246,88 @@ def func0():
 func0()
 ```
 
-The above snippet would result in an `AssertionError`:
+The above snippet would trigger a long and scaring `AssertionError`:
 
 ```
 Traceback (most recent call last):
-  File "misc/demo_excepthook.py", line 20, in <module>
-    func0()
-  File "/root/taichi/python/taichi/lang/kernel.py", line 559, in wrapped
-    return primal(*args, **kwargs)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 488, in __call__
-    self.materialize(key=key, args=args, arg_features=arg_features)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 367, in materialize
-    taichi_kernel = taichi_kernel.define(taichi_ast_generator)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 364, in taichi_ast_generator
-    compiled()
-  File "misc/demo_excepthook.py", line 18, in func0
-    func1()
-  File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
-    return fun.__call__(*args)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
-    ret = self.compiled(*args)
-  File "misc/demo_excepthook.py", line 14, in func1
-    func2()
-  File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
-    return fun.__call__(*args)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
-    ret = self.compiled(*args)
-  File "misc/demo_excepthook.py", line 10, in func2
-    func3()
-  File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
-    return fun.__call__(*args)
-  File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
-    ret = self.compiled(*args)
-  File "misc/demo_excepthook.py", line 6, in func3
-    ti.static_assert(1 + 1 == 3)
-  File "/root/taichi/python/taichi/lang/error.py", line 14, in wrapped
-    return foo(*args, **kwargs)
-  File "/root/taichi/python/taichi/lang/impl.py", line 252, in static_assert
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 23, in __call__
+    return method(ctx, node)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 342, in build_Call
+    node.ptr = node.func.ptr(*args, **keywords)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/impl.py", line 471, in static_assert
     assert cond
 AssertionError
-```
 
-Many stack frames are the Taichi compiler implementation details, which
-could be too noisy to read. You could choose to ignore them by using
-`ti.init(excepthook=True)`, which _hooks_ on the exception handler and makes
-the stack traceback from Taichi-scope more intuitive:
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 23, in __call__
+    return method(ctx, node)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 360, in build_Call
+    node.ptr = node.func.ptr(*args, **keywords)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/kernel_impl.py", line 59, in decorated
+    return fun.__call__(*args)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/kernel_impl.py", line 178, in __call__
+    ret = transform_tree(tree, ctx)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/transform.py", line 8, in transform_tree
+    ASTTransformer()(ctx, tree)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 26, in __call__
+    raise e
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 23, in __call__
+    return method(ctx, node)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 488, in build_Module
+    build_stmt(ctx, stmt)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 26, in __call__
+    raise e
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 23, in __call__
+    return method(ctx, node)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 451, in build_FunctionDef
+    build_stmts(ctx, node.body)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 1086, in build_stmts
+    build_stmt(ctx, stmt)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 26, in __call__
+    raise e
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 23, in __call__
+    return method(ctx, node)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer.py", line 964, in build_Expr
+    build_stmt(ctx, node.value)
+  File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 32, in __call__
+    raise TaichiCompilationError(msg)
+taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+    ti.static_assert(1 + 1 == 3)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError:
+
+...
+```
+The error message can be verbose and scary. However, many stack frames reveal 
+Taichi compiler implementation details, which are too noisy for debugging. 
+In current verison, you could choose to supress the level of traceback messages by setting `sys.tracebacklimit`, 
+which makes the stack traceback from Taichi-scope more intuitive:
 
 ```python {2}
 import taichi as ti
-ti.init(excepthook=True)
+import sys
+sys.tracebacklimit=0
 ...
 ```
 
 which makes the result look like:
 
 ```python
-========== Taichi Stack Traceback ==========
-In <module>() at misc/demo_excepthook.py:21:
---------------------------------------------
-@ti.kernel
-def func0():
-    func1()
-
-func0()  <--
---------------------------------------------
-In func0() at misc/demo_excepthook.py:19:
---------------------------------------------
-    func2()
-
-@ti.kernel
-def func0():
-    func1()  <--
-
-func0()
---------------------------------------------
-In func1() at misc/demo_excepthook.py:15:
---------------------------------------------
-    func3()
-
-@ti.func
-def func1():
-    func2()  <--
-
-@ti.kernel
---------------------------------------------
-In func2() at misc/demo_excepthook.py:11:
---------------------------------------------
-    ti.static_assert(1 + 1 == 3)
-
-@ti.func
-def func2():
-    func3()  <--
-
-@ti.func
---------------------------------------------
-In func3() at misc/demo_excepthook.py:7:
---------------------------------------------
-ti.enable_excepthook()
-
-@ti.func
-def func3():
-    ti.static_assert(1 + 1 == 3)  <--
-
-@ti.func
---------------------------------------------
 AssertionError
+
+During handling of the above exception, another exception occurred:
+
+taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+    ti.static_assert(1 + 1 == 3)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError:
+
+...
 ```
 
-:::note
-For IPython / Jupyter notebook users, the IPython stack traceback hook
-will be overriden by the Taichi one when `ti.enable_excepthook()` is called.
-:::
+Moreover, when filing an issue, please always unset the `sys.tracebacklimit` value and paste full traceback messages.
 
 ## Debugging Tips
 

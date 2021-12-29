@@ -28,19 +28,16 @@ def is_taichi_expr(a):
 
 
 def wrap_if_not_expr(a):
-    _taichi_skip_traceback = 1
     return expr.Expr(a) if not is_taichi_expr(a) else a
 
 
 def unary(foo):
     @functools.wraps(foo)
     def imp_foo(x):
-        _taichi_skip_traceback = 2
         return foo(x)
 
     @functools.wraps(foo)
     def wrapped(a):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_unary(imp_foo)
         return imp_foo(a)
@@ -54,17 +51,14 @@ binary_ops = []
 def binary(foo):
     @functools.wraps(foo)
     def imp_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(x, y)
 
     @functools.wraps(foo)
     def rev_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(y, x)
 
     @functools.wraps(foo)
     def wrapped(a, b):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
         if is_taichi_class(b):
@@ -81,22 +75,18 @@ ternary_ops = []
 def ternary(foo):
     @functools.wraps(foo)
     def abc_foo(a, b, c):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def bac_foo(b, a, c):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def cab_foo(c, a, b):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_ternary(abc_foo, b, c)
         if is_taichi_class(b):
@@ -115,12 +105,10 @@ writeback_binary_ops = []
 def writeback_binary(foo):
     @functools.wraps(foo)
     def imp_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(x, wrap_if_not_expr(y))
 
     @functools.wraps(foo)
     def wrapped(a, b):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_writeback_binary(imp_foo, b)
         if is_taichi_class(b):
@@ -134,7 +122,6 @@ def writeback_binary(foo):
 
 
 def cast(obj, dtype):
-    _taichi_skip_traceback = 1
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         # TODO: unify with element_wise_unary
@@ -143,7 +130,6 @@ def cast(obj, dtype):
 
 
 def bit_cast(obj, dtype):
-    _taichi_skip_traceback = 1
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
@@ -152,14 +138,12 @@ def bit_cast(obj, dtype):
 
 
 def _unary_operation(taichi_op, python_op, a):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a):
         return expr.Expr(taichi_op(a.ptr), tb=stack_info())
     return python_op(a)
 
 
 def _binary_operation(taichi_op, python_op, a, b):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
@@ -167,7 +151,6 @@ def _binary_operation(taichi_op, python_op, a, b):
 
 
 def _ternary_operation(taichi_op, python_op, a, b, c):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
         return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())

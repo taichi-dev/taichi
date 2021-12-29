@@ -122,7 +122,6 @@ def wrap_scalar(x):
 
 @taichi_scope
 def subscript(value, *_indices, skip_reordered=False):
-    _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*_indices)
 
@@ -412,7 +411,6 @@ def _clamp_unsigned_to_range(npty, val):
 
 @taichi_scope
 def make_constant_expr_i32(val):
-    _taichi_skip_traceback = 1
     assert isinstance(val, (int, np.integer))
     return Expr(
         _ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
@@ -420,7 +418,6 @@ def make_constant_expr_i32(val):
 
 @taichi_scope
 def make_constant_expr(val):
-    _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip in {i32, u32}:
             # It is not always correct to do such clamp without the type info on
@@ -464,7 +461,6 @@ def static_print(*args, __p=print, **kwargs):
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
-    _taichi_skip_traceback = 1
     if msg is not None:
         assert cond, msg
     else:
@@ -607,7 +603,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             >>> x2 = ti.field(ti.f32)
             >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
     """
-    _taichi_skip_traceback = 1
 
     if isinstance(shape, numbers.Number):
         shape = (shape, )
@@ -623,7 +618,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    del _taichi_skip_traceback
 
     x, x_grad = create_field_member(dtype, name)
     x, x_grad = ScalarField(x), ScalarField(x_grad)
@@ -760,7 +754,6 @@ def ti_assert(cond, msg, extra_args):
 
 @taichi_scope
 def ti_int(_var):
-    _taichi_skip_traceback = 1
     if hasattr(_var, '__ti_int__'):
         return _var.__ti_int__()
     return int(_var)
@@ -768,7 +761,6 @@ def ti_int(_var):
 
 @taichi_scope
 def ti_float(_var):
-    _taichi_skip_traceback = 1
     if hasattr(_var, '__ti_float__'):
         return _var.__ti_float__()
     return float(_var)
@@ -858,7 +850,6 @@ def static(x, *xs):
             >>>     print(1)
             >>>     print(2)
     """
-    _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 

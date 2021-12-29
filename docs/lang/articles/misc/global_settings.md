@@ -22,8 +22,6 @@ sidebar_position: 7
   `ti.init(fast_math=False)`.
 - To print preprocessed Python code:
   `ti.init(print_preprocessed=True)`.
-- To show pretty Taichi-scope stack traceback:
-  `ti.init(excepthook=True)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`.
 
 ## Runtime

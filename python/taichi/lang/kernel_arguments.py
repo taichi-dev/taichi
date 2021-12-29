@@ -3,6 +3,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
+from taichi.lang.matrix import Matrix
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64
 
@@ -38,6 +39,14 @@ def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, False)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype))
+
+
+def decl_matrix_arg(matrixtype):
+    tmp = Matrix(n=matrixtype.n, m=matrixtype.m)
+    for i in range(matrixtype.n):
+        for j in range(matrixtype.m):
+            tmp.set_entry(i, j, decl_scalar_arg(matrixtype.dtype))
+    return tmp
 
 
 def decl_sparse_matrix():

@@ -10,6 +10,7 @@ from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types
 
@@ -392,6 +393,8 @@ class ASTTransformer(Builder):
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
+                elif isinstance(ctx.func.argument_annotations[i], MatrixType):
+                    ctx.global_vars[arg.arg] = kernel_arguments.decl_matrix_arg(ctx.func.argument_annotations[i])
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(

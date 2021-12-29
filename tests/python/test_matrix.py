@@ -364,7 +364,7 @@ def test_copy_matrix_in_taichi_scope():
     test()
 
 
-@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
+@ti.test(arch=[ti.cpu, ti.cuda], dynamic_index=True, debug=True)
 def test_matrix_field_dynamic_index_stride():
     # placeholders
     temp_a = ti.field(ti.f32)
@@ -403,6 +403,17 @@ def test_matrix_field_dynamic_index_stride():
                                                    i) == v.dynamic_index_stride
 
     check_stride()
+
+    @ti.kernel
+    def run():
+        for i in range(128):
+            for j in range(3):
+                v[i][j] = i * j
+
+    run()
+    for i in range(128):
+        for j in range(3):
+            assert v[i][j] == i * j
 
 
 @ti.test(arch=[ti.cpu, ti.cuda])

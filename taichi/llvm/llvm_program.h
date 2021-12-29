@@ -28,12 +28,12 @@ class StructCompiler;
 namespace cuda {
 class CudaDevice;
 class CudaCommandList;
-}
+}  // namespace cuda
 
 namespace cpu {
 class CpuDevice;
 class CpuCommandList;
-}
+}  // namespace cpu
 
 class LlvmProgramImpl : public ProgramImpl {
  public:

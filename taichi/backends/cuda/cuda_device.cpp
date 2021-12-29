@@ -101,7 +101,8 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
 }
 
 CudaCommandList::CudaCommandList(CudaDevice *ti_device)
-  : ti_device_(ti_device){}
+    : ti_device_(ti_device) {
+}
 
 void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto ptr_d = ti_device_->get_alloc_info(ptr).ptr;

@@ -90,6 +90,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
     device_ = std::make_shared<cpu::CpuDevice>();
+    commandlist_ = std::make_shared<cpu::CpuCommandList>();
   }
 
   if (config->kernel_profiler && runtime_mem_info_) {
@@ -104,6 +105,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
     CUDAContext::get_instance().set_debug(config->debug);
     device_ = std::make_shared<cuda::CudaDevice>();
+    commandlist_ = std::make_shared<cuda::CudaCommandList>(cuda_device());
   }
 #endif
 }
@@ -591,6 +593,10 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
 
 std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
   return device_;
+}
+
+std::shared_ptr<CommandList> LlvmProgramImpl::get_commandlist_shared() {
+  return commandlist_;
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

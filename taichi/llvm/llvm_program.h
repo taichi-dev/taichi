@@ -27,10 +27,12 @@ class StructCompiler;
 
 namespace cuda {
 class CudaDevice;
+class CudaCommandList;
 }
 
 namespace cpu {
 class CpuDevice;
+class CpuCommandList;
 }
 
 class LlvmProgramImpl : public ProgramImpl {
@@ -106,6 +108,7 @@ class LlvmProgramImpl : public ProgramImpl {
   uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 
   std::shared_ptr<Device> get_device_shared() override;
+  std::shared_ptr<CommandList> get_commandlist_shared() override;
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -168,6 +171,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::shared_ptr<Device> device_{nullptr};
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
+  std::shared_ptr<CommandList> commandlist_{nullptr};
 };
 }  // namespace lang
 }  // namespace taichi

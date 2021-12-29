@@ -34,6 +34,9 @@ class Ndarray {
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
+  void fill_float(float val);
+  void fill_int(int32_t val);
+  void fill_uint(uint32_t val);
   ~Ndarray();
 
  private:
@@ -50,6 +53,8 @@ class Ndarray {
   // Note that we might consider changing this logic later if we implement
   // dynamic tensor rematerialization.
   std::shared_ptr<Device> device_{nullptr};
+  std::shared_ptr<CommandList> commandlist_{nullptr};
+  void buffer_fill(uint32_t val);
 };
 
 }  // namespace lang

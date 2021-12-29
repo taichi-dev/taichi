@@ -16,7 +16,8 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      device_(prog->get_device_shared()) {
+      device_(prog->get_device_shared()),
+      commandlist_(prog->get_commandlist_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
 #ifdef TI_WITH_LLVM
@@ -55,5 +56,24 @@ std::size_t Ndarray::get_nelement() const {
   return nelement_;
 }
 
+void Ndarray::fill_float(float val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::fill_int(int32_t val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::fill_uint(uint32_t val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::buffer_fill(uint32_t val) {
+  if (commandlist_) {
+    commandlist_->buffer_fill(ndarray_alloc_.get_ptr(), nelement_, val);
+  } else {
+    TI_ERROR("CommandList empty");
+  }
+}
 }  // namespace lang
 }  // namespace taichi

@@ -99,6 +99,18 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
                                                    sizeof(uint64));
   return ret;
 }
+
+CudaCommandList::CudaCommandList(CudaDevice *ti_device)
+  : ti_device_(ti_device){}
+
+void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+  auto ptr_d = ti_device_->get_alloc_info(ptr).ptr;
+  if (ptr_d == nullptr) {
+    TI_ERROR("the DevicePtr is null");
+  }
+  CUDADriver::get_instance().memsetd32((void *)ptr_d, data, size);
+}
+
 }  // namespace cuda
 }  // namespace lang
 }  // namespace taichi

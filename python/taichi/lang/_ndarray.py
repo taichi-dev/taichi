@@ -1,5 +1,6 @@
 import numpy as np
 import taichi.lang
+from taichi.types import primitive_types
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
@@ -98,6 +99,14 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
+        elif impl.current_cfg().arch != _ti_core.Arch.cuda:
+            taichi.lang.meta.fill_ndarray(self, val)
+        elif self.dtype == primitive_types.f32:
+            self.arr.fill_float(val)
+        elif self.dtype == primitive_types.i32:
+            self.arr.fill_int(val)
+        elif self.dtype == primitive_types.u32:
+            self.arr.fill_uint(val)
         else:
             taichi.lang.meta.fill_ndarray(self, val)
 

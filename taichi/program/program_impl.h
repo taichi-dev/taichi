@@ -75,6 +75,10 @@ class ProgramImpl {
     return nullptr;
   }
 
+  virtual std::shared_ptr<CommandList> get_commandlist_shared() {
+    return nullptr;
+  }
+
   virtual DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return kDeviceNullPtr;
   }

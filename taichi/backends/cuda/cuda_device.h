@@ -12,6 +12,8 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
+class CudaDevice;
+
 class CudaResourceBinder : public ResourceBinder {
  public:
   ~CudaResourceBinder() override {
@@ -45,6 +47,7 @@ class CudaPipeline : public Pipeline {
 
 class CudaCommandList : public CommandList {
  public:
+  CudaCommandList(CudaDevice *ti_device);
   ~CudaCommandList() override {
   }
 
@@ -58,10 +61,12 @@ class CudaCommandList : public CommandList {
   void memory_barrier() override{TI_NOT_IMPLEMENTED};
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override{
       TI_NOT_IMPLEMENTED};
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override{
-      TI_NOT_IMPLEMENTED};
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
   void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override{
       TI_NOT_IMPLEMENTED};
+
+ private:
+  CudaDevice *ti_device_{nullptr};
 };
 
 class CudaStream : public Stream {

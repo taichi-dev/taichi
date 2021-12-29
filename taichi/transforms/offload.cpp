@@ -85,19 +85,35 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        if (auto val = s->begin->cast<ConstStmt>()) {
+
+        // TODO: We need to update codegen for each backend gradually so let's
+        // limit it to opengl backend for now.
+        if (arch == Arch::opengl && s->end_is_array_axis) {
+          // range of array must begin with 0.
+          auto begin = s->begin->cast<ConstStmt>();
+          TI_ASSERT(begin && begin->val[0].val_int32() == 0);
           offloaded->const_begin = true;
-          offloaded->begin_value = val->val[0].val_int32();
-        } else {
-          offloaded_ranges.begin_stmts.insert(
-              std::make_pair(offloaded.get(), s->begin));
-        }
-        if (auto val = s->end->cast<ConstStmt>()) {
-          offloaded->const_end = true;
-          offloaded->end_value = val->val[0].val_int32();
-        } else {
+          offloaded->begin_value = 0;
+
+          offloaded->end_stmt =
+              clone_and_replace_ext_axis(s->end, offloaded.get(), s);
           offloaded_ranges.end_stmts.insert(
-              std::make_pair(offloaded.get(), s->end));
+              std::make_pair(offloaded.get(), offloaded->end_stmt));
+        } else {
+          if (auto val = s->begin->cast<ConstStmt>()) {
+            offloaded->const_begin = true;
+            offloaded->begin_value = val->val[0].val_int32();
+          } else {
+            offloaded_ranges.begin_stmts.insert(
+                std::make_pair(offloaded.get(), s->begin));
+          }
+          if (auto val = s->end->cast<ConstStmt>()) {
+            offloaded->const_end = true;
+            offloaded->end_value = val->val[0].val_int32();
+          } else {
+            offloaded_ranges.end_stmts.insert(
+                std::make_pair(offloaded.get(), s->end));
+          }
         }
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
@@ -140,6 +156,28 @@ class Offloader {
   }
 
  private:
+  static Stmt *clone_and_replace_ext_axis(Stmt *stmt,
+                                          OffloadedStmt *offloaded,
+                                          RangeForStmt *range_for) {
+    if (stmt->cast<ExternalTensorShapeAlongAxisStmt>()) {
+      auto new_stmt = stmt->clone();
+      auto new_stmt_ptr = new_stmt.get();
+      offloaded->body->insert(std::move(new_stmt));
+      replace_all_usages_with(range_for, stmt, new_stmt_ptr);
+      return new_stmt_ptr;
+    } else {
+      auto val = stmt->cast<BinaryOpStmt>();
+      TI_ASSERT(val && val->op_type == BinaryOpType::mul);
+      auto new_stmt = stmt->clone();
+      auto new_stmt_ptr = new_stmt.get();
+      auto new_val = new_stmt->cast<BinaryOpStmt>();
+      new_val->lhs = clone_and_replace_ext_axis(val->lhs, offloaded, range_for);
+      new_val->rhs = clone_and_replace_ext_axis(val->rhs, offloaded, range_for);
+      offloaded->body->insert(std::move(new_stmt));
+      replace_all_usages_with(range_for, stmt, new_stmt_ptr);
+      return new_stmt_ptr;
+    }
+  }
   static void emit_struct_for(StructForStmt *for_stmt,
                               Block *root_block,
                               const CompileConfig &config,
@@ -480,15 +518,20 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                                         ->second];
       }
       if (!stmt->const_end) {
-        TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
-                  offloaded_ranges_->end_stmts.end())
-        TI_ASSERT_INFO(local_to_global_offset_.find(
-                           offloaded_ranges_->end_stmts.find(stmt)->second) !=
-                           local_to_global_offset_.end(),
-                       "End fails.")
-        stmt->end_offset =
-            local_to_global_offset_[offloaded_ranges_->end_stmts.find(stmt)
-                                        ->second];
+        if (stmt->end_stmt) {
+          TI_ASSERT(stmt->const_begin);
+          stmt->end_offset = 0;
+        } else {
+          TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
+                    offloaded_ranges_->end_stmts.end())
+          TI_ASSERT_INFO(local_to_global_offset_.find(
+                             offloaded_ranges_->end_stmts.find(stmt)->second) !=
+                             local_to_global_offset_.end(),
+                         "End fails.")
+          stmt->end_offset =
+              local_to_global_offset_[offloaded_ranges_->end_stmts.find(stmt)
+                                          ->second];
+        }
       }
     }
   }

@@ -154,7 +154,6 @@ class Matrix(TaichiOperations):
                 stacklevel=2)
 
     def element_wise_binary(self, foo, other):
-        _taichi_skip_traceback = 1
         other = self.broadcast_copy(other)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
@@ -188,7 +187,6 @@ class Matrix(TaichiOperations):
         return self if foo.__name__ == 'assign' else Matrix(entries)
 
     def element_wise_unary(self, foo):
-        _taichi_skip_traceback = 1
         return Matrix([[foo(self(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
 
@@ -202,10 +200,8 @@ class Matrix(TaichiOperations):
             The matrix-matrix product or matrix-vector product.
 
         """
-        _taichi_skip_traceback = 1
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        del _taichi_skip_traceback
         entries = []
         for i in range(self.n):
             entries.append([])
@@ -222,7 +218,6 @@ class Matrix(TaichiOperations):
             args = args[0]
         if len(args) == 1:
             args = args + (0, )
-        _taichi_skip_traceback = 1
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
@@ -243,7 +238,6 @@ class Matrix(TaichiOperations):
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         assert kwargs == {}
         ret = self.entries[self.linearize_entry_id(*args)]
         if isinstance(ret, SNodeHostAccess):
@@ -266,7 +260,6 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def subscript(self, *indices):
-        _taichi_skip_traceback = 1
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -293,7 +286,6 @@ class Matrix(TaichiOperations):
     @property
     def x(self):
         """Get the first element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
         return self[0]
@@ -301,7 +293,6 @@ class Matrix(TaichiOperations):
     @property
     def y(self):
         """Get the second element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
         return self[1]
@@ -309,7 +300,6 @@ class Matrix(TaichiOperations):
     @property
     def z(self):
         """Get the third element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
         return self[2]
@@ -317,7 +307,6 @@ class Matrix(TaichiOperations):
     @property
     def w(self):
         """Get the fourth element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
         return self[3]
@@ -326,25 +315,21 @@ class Matrix(TaichiOperations):
     @x.setter
     @python_scope
     def x(self, value):
-        _taichi_skip_traceback = 1
         self[0] = value
 
     @y.setter
     @python_scope
     def y(self, value):
-        _taichi_skip_traceback = 1
         self[1] = value
 
     @z.setter
     @python_scope
     def z(self, value):
-        _taichi_skip_traceback = 1
         self[2] = value
 
     @w.setter
     @python_scope
     def w(self, value):
-        _taichi_skip_traceback = 1
         self[3] = value
 
     @property
@@ -419,7 +404,6 @@ class Matrix(TaichiOperations):
             A new matrix with each element's type is dtype.
 
         """
-        _taichi_skip_traceback = 1
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
              for i in range(self.n)])
@@ -893,7 +877,6 @@ class Matrix(TaichiOperations):
     @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
-        _taichi_skip_traceback = 1
         return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod

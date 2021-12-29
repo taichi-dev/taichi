@@ -395,7 +395,6 @@ class _SpecialConfig:
         self.print_preprocessed = False
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.excepthook = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
 
@@ -580,7 +579,6 @@ def init(arch=None,
     env_spec.add('print_preprocessed')
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
-    env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
 

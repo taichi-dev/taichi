@@ -50,7 +50,6 @@ init_args = {
     'print_preprocessed': [False, TF],
     'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
     'gdb_trigger': [False, TF],
-    'excepthook': [False, TF],
     'advanced_optimization': [True, TF],
     'debug': [False, TF],
     'print_ir': [False, TF],
@@ -79,7 +78,6 @@ special_init_cfgs = [
     'print_preprocessed',
     'log_level',
     'gdb_trigger',
-    'excepthook',
 ]
 
 

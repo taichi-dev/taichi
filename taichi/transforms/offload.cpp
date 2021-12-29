@@ -88,7 +88,7 @@ class Offloader {
 
         // TODO: We need to update codegen for each backend gradually so let's
         // limit it to opengl backend for now.
-        if (arch == Arch::opengl && s->range_of_array) {
+        if (arch == Arch::opengl && s->end_is_array_axis) {
           // range of array must begin with 0.
           auto begin = s->begin->cast<ConstStmt>();
           TI_ASSERT(begin && begin->val[0].val_int32() == 0);

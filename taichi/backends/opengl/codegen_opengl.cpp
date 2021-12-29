@@ -1021,7 +1021,6 @@ class KernelGen : public IRVisitor {
         emit("// range from args buffer");
         TI_ASSERT(stmt->const_begin);
         begin_expr = std::to_string(stmt->begin_value);
-        // stmt->end_stmt->accept(this);
         gen_array_range(stmt->end_stmt);
         end_expr = stmt->end_stmt->short_name();
       } else {

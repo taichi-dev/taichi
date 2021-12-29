@@ -27,8 +27,16 @@ struct FieldInfo {
   DEFINE_PROPERTY(FieldSource, field_source);
   DEFINE_PROPERTY(taichi::lang::DataType, dtype);
 
+  // 'snode' is used by default if a Program is currently present. This
+  // is the default behavior and is used automatically when executing
+  // Taichi Kernels from Python or with an active Program.
+  // 'dev_alloc' is only used when no Program is currently present, for
+  // example when loading Taichi AOT modules in an external application
+  // and need to provide some information from those kernels to the GUI
+  // internal structures.
   using SNodePtr = taichi::lang::SNode *;
   DEFINE_PROPERTY(SNodePtr, snode);
+  DEFINE_PROPERTY(taichi::lang::DeviceAllocation, dev_alloc);
 
   FieldInfo() {
     valid = false;

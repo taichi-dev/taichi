@@ -563,7 +563,7 @@ class KernelGen : public IRVisitor {
     for (int j = i; j < num_indices; j++) {
       emit("{} *= {};", linear_index_name, size_var_names[j]);
       emit("{} += {};", linear_index_name, stmt->indices[j]->short_name());
-      arr_name = arr_name + stmt->indices[j]->short_name() + "_";
+      arr_name += (stmt->indices[j]->short_name() + "_");
       emit("int {} = {};", arr_name, linear_index_name);
       loaded_args_.insert(arr_name);
     }

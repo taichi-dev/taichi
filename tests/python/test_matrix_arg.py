@@ -1,5 +1,6 @@
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 
 #Matrix test
@@ -13,11 +14,11 @@ def test_matrix_arg():
         assert mat1[0, 1] == 2
         assert mat1[0, 2] == 3
         assert mat1[1, 0] == 4
-        assert mat1[1, 1] == 5 
+        assert mat1[1, 1] == 5
         assert mat1[1, 2] == 6
         return mat1[0, 0] + mat1[1, 2]
-    assert foo(mat1) == 7
 
+    assert foo(mat1) == 7
 
     mat3 = ti.Matrix([[1, 2], [3, 4], [5, 6]])
 
@@ -28,8 +29,7 @@ def test_matrix_arg():
                 mat[i, j] += var
         return mat[2, 1]
 
-    assert foo2(3, mat3) == 9 
-
+    assert foo2(3, mat3) == 9
 
 
 # Vector test
@@ -42,5 +42,3 @@ def test_vector_arg():
         return vec[0] + vec[1] + vec[2]
 
     assert foo(vec1) == 6
-        
-

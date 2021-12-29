@@ -19,7 +19,7 @@ from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
-from taichi.types import any_arr, primitive_types, template 
+from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging
 
@@ -586,18 +586,24 @@ class Kernel:
                                                      s)
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
-                        for i in range(needed.n):
-                            for j in range(needed.m):
-                                if not isinstance(v[i, j], (int, float)):
-                                    raise KernelArgError(i, needed.dtype.to_string(), type(v[i, j]))
-                                launch_ctx.set_arg_float(actual_argument_slot, float(v[i, j]))
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], (int, float)):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_float(
+                                    actual_argument_slot, float(v[a, b]))
                                 actual_argument_slot += 1
                     elif id(needed.dtype) in primitive_types.integer_type_ids:
-                        for i in range(needed.n):
-                            for j in range(needed.m):
-                                if not isinstance(v[i, j], int):
-                                    raise KernelArgError(i, needed.dtype.to_string(), type(v[i, j]))
-                                launch_ctx.set_arg_int(actual_argument_slot, int(v[i, j]))
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], int):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(v[a, b]))
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(

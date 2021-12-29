@@ -618,7 +618,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-
     x, x_grad = create_field_member(dtype, name)
     x, x_grad = ScalarField(x), ScalarField(x_grad)
     x.set_grad(x_grad)

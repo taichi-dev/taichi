@@ -359,7 +359,7 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test (Windows, ${{ matrix.identifier }})
+    name: Build and Test (Windows)
     needs: [check_code_format, check_files]
     strategy:
       matrix:

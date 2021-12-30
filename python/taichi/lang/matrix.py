@@ -1319,21 +1319,11 @@ class MatrixNdarray(Ndarray):
     """
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
+        self.shape = shape
+        self.n = n
+        self.m = m
         arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
         super().__init__(dtype, arr_shape)
-
-    @property
-    def n(self):
-        return self.arr.shape[0 if self.layout == Layout.SOA else -2]
-
-    @property
-    def m(self):
-        return self.arr.shape[1 if self.layout == Layout.SOA else -1]
-
-    @property
-    def shape(self):
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[2:] if self.layout == Layout.SOA else arr_shape[:-2]
 
     @property
     def element_shape(self):
@@ -1391,17 +1381,10 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
+        self.shape = shape
+        self.n = n
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
         super().__init__(dtype, arr_shape)
-
-    @property
-    def n(self):
-        return self.arr.shape[0 if self.layout == Layout.SOA else -1]
-
-    @property
-    def shape(self):
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[1:] if self.layout == Layout.SOA else arr_shape[:-1]
 
     @property
     def element_shape(self):

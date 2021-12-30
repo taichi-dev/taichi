@@ -17,29 +17,21 @@ class Ndarray:
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the torch tensor.
     """
-    def __init__(self, dtype, shape):
+    def __init__(self, dtype, arr_shape):
         self.host_accessor = None
+        self.dtype = cook_dtype(dtype)
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
             # pylint: disable=E1101
-            self.arr = torch.zeros(shape,
+            self.arr = torch.zeros(arr_shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
 
         else:
             self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
-                                        cook_dtype(dtype), shape)
-
-    @property
-    def shape(self):
-        """Gets ndarray shape.
-
-        Returns:
-            Tuple[Int]: Ndarray shape.
-        """
-        raise NotImplementedError()
+                                        cook_dtype(dtype), arr_shape)
 
     @property
     def element_shape(self):
@@ -49,15 +41,6 @@ class Ndarray:
             Tuple[Int]: Ndarray element shape.
         """
         raise NotImplementedError()
-
-    @property
-    def dtype(self):
-        """Gets data type of each individual value.
-
-        Returns:
-            DataType: Data type of each individual value.
-        """
-        return to_taichi_type(self.arr.dtype)
 
     @property
     def data_handle(self):
@@ -248,9 +231,9 @@ class ScalarNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
     """
-    @property
-    def shape(self):
-        return tuple(self.arr.shape)
+    def __init__(self, dtype, arr_shape):
+        super().__init__(dtype, arr_shape)
+        self.shape = tuple(self.arr.shape)
 
     @property
     def element_shape(self):

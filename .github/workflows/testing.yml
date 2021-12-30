@@ -371,7 +371,7 @@ jobs:
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
       fail-fast: false
-    runs-on: [self-hosted, windows]
+    runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v2

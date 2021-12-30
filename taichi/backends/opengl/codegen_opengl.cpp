@@ -295,10 +295,14 @@ class KernelGen : public IRVisitor {
         (is_gles() ? "#version 310 es\n" : "#version 430 core\n") + extensions +
         "precision highp float;\n" + line_appender_header_.lines() +
         line_appender_.lines();
+    auto &config = kernel_->program->config;
+    const int prescribed_block_dim = config.max_block_dim;
+    workgroup_size_ = prescribed_block_dim > 0
+                          ? std::min(workgroup_size_, prescribed_block_dim)
+                          : workgroup_size_;
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
                           num_workgroups_, workgroup_size_,
                           &this->extptr_access_);
-    auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");

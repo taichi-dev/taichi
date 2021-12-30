@@ -42,11 +42,7 @@ def decl_scalar_arg(dtype):
 
 
 def decl_matrix_arg(matrixtype):
-    tmp = Matrix(n=matrixtype.n, m=matrixtype.m)
-    for i in range(matrixtype.n):
-        for j in range(matrixtype.m):
-            tmp.set_entry(i, j, decl_scalar_arg(matrixtype.dtype))
-    return tmp
+    return Matrix([[decl_scalar_arg(matrixtype.dtype) for _ in matrixtype.m] for _ in matrixtype.n])
 
 
 def decl_sparse_matrix():

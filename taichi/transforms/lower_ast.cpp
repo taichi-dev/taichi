@@ -99,10 +99,10 @@ class LowerAST : public IRVisitor {
       new_if->set_false_statements(std::move(stmt->false_statements));
       new_if->false_statements->mask_var = new_if->false_mask;
     }
-
-    new_if->accept(this);
+    auto pif = new_if.get();
     fctx.push_back(std::move(new_if));
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    pif->accept(this);
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -171,8 +171,9 @@ class LowerAST : public IRVisitor {
     stmt->insert_before_me(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     new_while->body->mask_var = new_while->mask;
-    new_while->accept(this);
+    auto pwhile = new_while.get();
     stmt->parent->replace_with(stmt, std::move(new_while));
+    pwhile->accept(this);
     // insert an alloca for the mask
   }
 
@@ -213,7 +214,6 @@ class LowerAST : public IRVisitor {
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
             new_for->body->statements[0].get();
-        new_for->accept(this);
         fctx.push_back(std::move(new_for));
       } else {
         // transform into a structure as
@@ -263,7 +263,6 @@ class LowerAST : public IRVisitor {
         stmt->insert_before_me(
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         new_while->body->mask_var = new_while->mask;
-        new_while->accept(this);
         fctx.push_back(std::move(new_while));
       }
     } else if (stmt->mesh_for) {
@@ -323,7 +322,6 @@ class LowerAST : public IRVisitor {
       }
       new_for->body->insert(std::move(new_statements), 0);
       new_for->mem_access_opt = stmt->mem_access_opt;
-      new_for->accept(this);
       fctx.push_back(std::move(new_for));
     } else {
       auto tensor = stmt->global_var.cast<ExternalTensorExpression>();
@@ -361,10 +359,11 @@ class LowerAST : public IRVisitor {
             BinaryOpType::div, loop_index, shape[i]);
       }
       new_for->body->insert(std::move(new_statements), 0);
-      new_for->accept(this);
       fctx.push_back(std::move(new_for));
     }
+    auto pfor = fctx.stmts.back().get();
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    pfor->accept(this);
   }
 
   void visit(RangeForStmt *for_stmt) override {

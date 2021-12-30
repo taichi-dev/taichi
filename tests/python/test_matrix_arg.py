@@ -9,13 +9,7 @@ def test_matrix_arg():
 
     @ti.kernel
     def foo(mat: ti.types.matrix(2, 3, ti.i32)) -> ti.i32:
-        assert mat1[0, 0] == 1
-        assert mat1[0, 1] == 2
-        assert mat1[0, 2] == 3
-        assert mat1[1, 0] == 4
-        assert mat1[1, 1] == 5
-        assert mat1[1, 2] == 6
-        return mat1[0, 0] + mat1[1, 2]
+        return mat[0, 0] + mat[1, 2]
 
     assert foo(mat1) == 7
 

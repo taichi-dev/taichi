@@ -385,7 +385,7 @@ jobs:
 
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
-        if: matrix.identifier == 'CPU'
+        # if: matrix.identifier == 'CPU'
         with:
           arch: x64
 

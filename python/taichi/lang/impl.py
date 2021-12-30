@@ -350,6 +350,8 @@ class PyTaichi:
         self._check_field_not_placed()
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
+        self.global_vars = []
+        self.matrix_fields = []
 
     def _register_signal_handlers(self):
         if self._signal_handler_registry is None:

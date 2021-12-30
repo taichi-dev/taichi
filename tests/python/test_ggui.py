@@ -13,8 +13,9 @@ supported_archs = [ti.vulkan, ti.cuda]
 
 
 def get_temp_png():
-    f = tempfile.mkstemp(suffix='.png')
-    return f[1]
+    f, name = tempfile.mkstemp(suffix='.png')
+    os.close(f)
+    return name
 
 
 def write_temp_image(window):

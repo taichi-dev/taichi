@@ -364,16 +364,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - machine: windows-latest
-            wanted_archs: cpu
+          - wanted_archs: cpu
             cmake_args: ""
             identifier: CPU
-          - machine: [self-hosted, windows]
-            wanted_archs: cpu,cuda
+          - wanted_archs: cpu,cuda
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
       fail-fast: false
-    runs-on: ${{ matrix.machine }}
+    runs-on: [self-hosted, windows]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v2
@@ -386,7 +384,6 @@ jobs:
 
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
-        # if: matrix.identifier == 'CPU'
         with:
           arch: x64
 

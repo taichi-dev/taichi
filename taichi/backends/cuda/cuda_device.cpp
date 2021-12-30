@@ -100,16 +100,42 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
   return ret;
 }
 
-CudaCommandList::CudaCommandList(CudaDevice *ti_device)
-    : ti_device_(ti_device) {
+Stream *CudaDevice::get_compute_stream() {
+  // for now assume one compute stream per device
+  if (!compute_stream_) {
+    compute_stream_ = new cuda::CudaStream();
+  }
+  return compute_stream_;
 }
 
+void *CudaDevice::get_cuda_stream() {
+  if (!cuda_stream_) {
+    CUDADriver::get_instance().stream_create(&cuda_stream_,
+                                             CU_STREAM_NON_BLOCKING);
+  }
+  return cuda_stream_;
+}
+
+CudaCommandList::CudaCommandList(CudaDevice *ti_device)
+	: ti_device_(ti_device){}
+
 void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
-  auto ptr_d = ti_device_->get_alloc_info(ptr).ptr;
-  if (ptr_d == nullptr) {
+  auto buffer_ptr = ti_device_->get_alloc_info(ptr).ptr;
+  if (buffer_ptr == nullptr) {
     TI_ERROR("the DevicePtr is null");
   }
-  CUDADriver::get_instance().memsetd32((void *)ptr_d, data, size);
+	auto cu_stream = ti_device_->get_cuda_stream();
+  // defer execution until stream_synchronize
+  CUDADriver::get_instance().memsetd32async((void *)buffer_ptr, data, size, cu_stream);
+}
+
+void *CudaCommandList::finalize() const {
+  return ti_device_->get_cuda_stream();
+}
+
+void CudaStream::submit_synced(CommandList *cmdlist) {
+  auto cu_stream = dynamic_cast<CudaCommandList*>(cmdlist)->finalize();
+  CUDADriver::get_instance().stream_synchronize(cu_stream);
 }
 
 }  // namespace cuda

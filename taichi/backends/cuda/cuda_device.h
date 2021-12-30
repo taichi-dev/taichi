@@ -13,6 +13,7 @@ namespace lang {
 namespace cuda {
 
 class CudaDevice;
+class CudaStream;
 
 class CudaResourceBinder : public ResourceBinder {
  public:
@@ -48,6 +49,7 @@ class CudaPipeline : public Pipeline {
 class CudaCommandList : public CommandList {
  public:
   CudaCommandList(CudaDevice *ti_device);
+
   ~CudaCommandList() override {
   }
 
@@ -64,6 +66,7 @@ class CudaCommandList : public CommandList {
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
   void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override{
       TI_NOT_IMPLEMENTED};
+  void *finalize() const;
 
  private:
   CudaDevice *ti_device_{nullptr};
@@ -75,7 +78,7 @@ class CudaStream : public Stream {
 
   std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
   void submit(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
-  void submit_synced(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
+  void submit_synced(CommandList *cmdlist) override;
 
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
@@ -126,7 +129,8 @@ class CudaDevice : public Device {
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 
-  Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
+  Stream *get_compute_stream() override;
+  void *get_cuda_stream();
 
  private:
   std::vector<AllocInfo> allocations_;
@@ -136,6 +140,9 @@ class CudaDevice : public Device {
     }
   }
   std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
+
+  CudaStream *compute_stream_{nullptr};
+  void *cuda_stream_{nullptr};
 };
 
 }  // namespace cuda

@@ -17,7 +17,7 @@ Ndarray::Ndarray(Program *prog,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
       device_(prog->get_device_shared()),
-      commandlist_(prog->get_commandlist_shared()) {
+      command_list_(prog->get_commandlist_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
 #ifdef TI_WITH_LLVM
@@ -69,11 +69,17 @@ void Ndarray::fill_uint(uint32_t val) {
 }
 
 void Ndarray::buffer_fill(uint32_t val) {
-  if (commandlist_) {
-    commandlist_->buffer_fill(ndarray_alloc_.get_ptr(), nelement_, val);
+#ifdef TI_WITH_LLVM
+  if (!device_ || !command_list_) {
+    TI_ERROR("Buffer empty");
   } else {
-    TI_ERROR("CommandList empty");
+    command_list_->buffer_fill(ndarray_alloc_.get_ptr(), nelement_, val);
+    // Immediately trigger execution
+    device_->get_compute_stream()->submit_synced(command_list_.get());
   }
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 }  // namespace lang
 }  // namespace taichi

@@ -231,9 +231,9 @@ class ScalarNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
     """
-    def __init__(self, dtype, arr_shape):
-        super().__init__(dtype, arr_shape)
-        self.shape = tuple(self.arr.shape)
+    def __init__(self, dtype, shape):
+        super().__init__(dtype, shape)
+        self.shape = shape
 
     @property
     def element_shape(self):

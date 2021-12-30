@@ -200,11 +200,7 @@ class CMakeBuild(build_ext):
                 self.copy_file(moltenvk_path,
                                os.path.join(runtime_dir, 'libMoltenVK.dylib'))
         else:
-            if os.path.exists('runtimes/taichi_core.dll'):
-                core_location = 'runtimes/taichi_core.dll'
-            else:
-                core_location = 'runtimes/Release/taichi_core.dll'
-            self.copy_file(core_location,
+            self.copy_file('runtimes/taichi_core.dll',
                            os.path.join(core_dir, 'taichi_core.pyd'))
 
         if get_os_name() != 'osx':

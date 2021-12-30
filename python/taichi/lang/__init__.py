@@ -395,7 +395,6 @@ class _EnvironmentConfigurator:
 class _SpecialConfig:
     # like CompileConfig in C++, this is the configurations that belong to other submodules
     def __init__(self):
-        self.print_preprocessed = False
         self.log_level = 'info'
         self.gdb_trigger = False
         self.experimental_real_function = False
@@ -579,7 +578,6 @@ def init(arch=None,
         impl.get_runtime().set_default_ip(default_ip)
 
     # submodule configurations (spec_cfg):
-    env_spec.add('print_preprocessed')
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('experimental_real_function')
@@ -604,7 +602,6 @@ def init(arch=None,
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         set_gdb_trigger(spec_cfg.gdb_trigger)
-        impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \

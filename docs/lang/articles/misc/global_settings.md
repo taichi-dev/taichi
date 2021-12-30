@@ -20,8 +20,6 @@ sidebar_position: 7
   errors: `ti.init(advanced_optimization=False)`.
 - Disable fast math to prevent possible undefined math behavior:
   `ti.init(fast_math=False)`.
-- To print preprocessed Python code:
-  `ti.init(print_preprocessed=True)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`.
 
 ## Runtime

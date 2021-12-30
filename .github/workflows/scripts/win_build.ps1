@@ -67,11 +67,6 @@ if ($installVulkan) {
 }
 
 Pop-Location
-try {
-    Get-Command clang
-} catch {
-    $env:PATH = "$libsDir\taichi_llvm\bin;$libsDir\taichi_clang\bin;$env:PATH"
-}
 clang --version
 
 WriteInfo("Setting up Python environment")

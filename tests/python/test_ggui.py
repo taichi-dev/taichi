@@ -20,7 +20,10 @@ def get_temp_png():
 def write_temp_image(window):
     f = get_temp_png()
     window.write_image(f)
-    os.remove(f)
+    try:
+        os.remove(f)
+    except OSError:
+        pass
 
 
 def verify_image(window, image_name):

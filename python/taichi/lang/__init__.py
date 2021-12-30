@@ -27,9 +27,8 @@ from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
                               current_cfg, expr_init, expr_init_func,
                               expr_init_list, field, get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func,
-                              materialize_callback, ndarray, one, root, static,
-                              static_assert, static_print, stop_grad,
+                              insert_expr_stmt_if_ti_func, ndarray, one, root,
+                              static, static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
                               ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy

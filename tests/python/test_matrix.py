@@ -486,3 +486,25 @@ def test_matrix_field_dynamic_index_different_stride():
 
     ti.get_runtime().materialize()
     assert v.dynamic_index_stride is None
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], dynamic_index=True)
+def test_matrix_field_dynamic_index_multiple_materialize():
+    @ti.kernel
+    def empty():
+        pass
+
+    empty()
+
+    n = 5
+    a = ti.Vector.field(3, dtype=ti.i32, shape=n)
+
+    @ti.kernel
+    def func():
+        for i in a:
+            a[i][i % 3] = i
+
+    func()
+    for i in range(n):
+        for j in range(3):
+            assert a[i][j] == (i if j == i % 3 else 0)

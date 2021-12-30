@@ -47,7 +47,6 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
 TF = [True, False]
 init_args = {
     # 'key': [default, choices],
-    'print_preprocessed': [False, TF],
     'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
     'gdb_trigger': [False, TF],
     'advanced_optimization': [True, TF],
@@ -75,7 +74,6 @@ init_args = {
 env_configs = ['TI_' + key.upper() for key in init_args.keys()]
 
 special_init_cfgs = [
-    'print_preprocessed',
     'log_level',
     'gdb_trigger',
 ]

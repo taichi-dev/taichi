@@ -4,7 +4,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
+                              to_numpy_type, to_pytorch_type)
 
 if has_pytorch():
     import torch

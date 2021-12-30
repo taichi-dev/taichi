@@ -498,16 +498,7 @@ class LowerAST : public IRVisitor {
 
   static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
-    while (true) {
-      bool modified = false;
-      try {
-        node->accept(&inst);
-      } catch (IRModified) {
-        modified = true;
-      }
-      if (!modified)
-        break;
-    }
+    node->accept(&inst);
   }
 };
 

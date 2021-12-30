@@ -117,16 +117,18 @@ void *CudaDevice::get_cuda_stream() {
 }
 
 CudaCommandList::CudaCommandList(CudaDevice *ti_device)
-	: ti_device_(ti_device){}
+    : ti_device_(ti_device) {
+}
 
 void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto buffer_ptr = ti_device_->get_alloc_info(ptr).ptr;
   if (buffer_ptr == nullptr) {
     TI_ERROR("the DevicePtr is null");
   }
-	auto cu_stream = ti_device_->get_cuda_stream();
+  auto cu_stream = ti_device_->get_cuda_stream();
   // defer execution until stream_synchronize
-  CUDADriver::get_instance().memsetd32async((void *)buffer_ptr, data, size, cu_stream);
+  CUDADriver::get_instance().memsetd32async((void *)buffer_ptr, data, size,
+                                            cu_stream);
 }
 
 void *CudaCommandList::finalize() const {
@@ -134,7 +136,7 @@ void *CudaCommandList::finalize() const {
 }
 
 void CudaStream::submit_synced(CommandList *cmdlist) {
-  auto cu_stream = dynamic_cast<CudaCommandList*>(cmdlist)->finalize();
+  auto cu_stream = dynamic_cast<CudaCommandList *>(cmdlist)->finalize();
   CUDADriver::get_instance().stream_synchronize(cu_stream);
 }
 

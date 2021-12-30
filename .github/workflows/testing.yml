@@ -372,6 +372,7 @@ jobs:
             wanted_archs: cpu,cuda
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
+      fail-fast: false
     runs-on: ${{ matrix.machine }}
     timeout-minutes: 90
     steps:

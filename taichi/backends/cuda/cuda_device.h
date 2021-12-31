@@ -122,6 +122,7 @@ class CudaDevice : public Device {
   DeviceAllocation import_memory(void *ptr, size_t size);
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
+
  private:
   std::vector<AllocInfo> allocations_;
   void validate_device_alloc(DeviceAllocation alloc) {

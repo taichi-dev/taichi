@@ -10,6 +10,7 @@ Ndarray::Ndarray(Program *prog,
                  const std::vector<int> &shape)
     : dtype(type),
       shape(shape),
+      prog_impl_(prog->get_llvm_program_impl()),
       num_active_indices(shape.size()),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
@@ -69,14 +70,10 @@ void Ndarray::fill_uint(uint32_t val) {
 }
 
 void Ndarray::buffer_fill(uint32_t val) {
+  // This is a temporary solution to bypass device api
+  // should be moved to commandList when available in CUDA
 #ifdef TI_WITH_LLVM
-  if (!device_ || !command_list_) {
-    TI_ERROR("Buffer empty");
-  } else {
-    command_list_->buffer_fill(ndarray_alloc_.get_ptr(), nelement_, val);
-    // Immediately trigger execution
-    device_->get_compute_stream()->submit_synced(command_list_.get());
-  }
+  prog_impl_->fill_ndarray(ndarray_alloc_, nelement_, val);
 #else
   TI_ERROR("Llvm disabled");
 #endif

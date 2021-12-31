@@ -610,5 +610,16 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
     return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
   }
 }
+
+void LlvmProgramImpl::fill_ndarray(DeviceAllocation &alloc, std::size_t size, uint32_t data) {
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  }
+}
 }  // namespace lang
 }  // namespace taichi

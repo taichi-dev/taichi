@@ -107,7 +107,9 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::shared_ptr<Device> get_device_shared() override;
 
-  void fill_ndarray(const DeviceAllocation &alloc, std::size_t size, uint32_t data);
+  void fill_ndarray(const DeviceAllocation &alloc,
+                    std::size_t size,
+                    uint32_t data);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(

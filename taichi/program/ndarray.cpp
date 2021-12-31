@@ -72,7 +72,7 @@ void Ndarray::buffer_fill(uint32_t val) {
   // This is a temporary solution to bypass device api
   // should be moved to commandList when available in CUDA
 #ifdef TI_WITH_LLVM
-  prog_impl_->fill_ndarray(&ndarray_alloc_, nelement_, val);
+  prog_impl_->fill_ndarray(ndarray_alloc_, nelement_, val);
 #else
   TI_ERROR("Llvm disabled");
 #endif

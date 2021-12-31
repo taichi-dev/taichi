@@ -5,7 +5,7 @@ namespace lang {
 
 namespace cuda {
 
-CudaDevice::AllocInfo CudaDevice::get_alloc_info(DeviceAllocation handle) {
+CudaDevice::AllocInfo CudaDevice::get_alloc_info(const DeviceAllocation handle) {
   validate_device_alloc(handle);
   return allocations_[handle.alloc_id];
 }

@@ -255,7 +255,6 @@ class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.materialize_callbacks = []
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
         self.scope_stack = []
@@ -263,7 +262,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.matrix_fields = []
-        self.print_preprocessed = False
         self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32
@@ -347,19 +345,13 @@ class PyTaichi:
 
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
-
-        if self.materialized:
-            return
-
         self.materialized = True
 
         self._check_field_not_placed()
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
-
-        for callback in self.materialize_callbacks:
-            callback()
-        self.materialize_callbacks = []
+        self.global_vars = []
+        self.matrix_fields = []
 
     def _register_signal_handlers(self):
         if self._signal_handler_registry is None:
@@ -385,10 +377,6 @@ pytaichi = PyTaichi()
 
 def get_runtime():
     return pytaichi
-
-
-def materialize_callback(foo):
-    get_runtime().materialize_callbacks.append(foo)
 
 
 def _clamp_unsigned_to_range(npty, val):

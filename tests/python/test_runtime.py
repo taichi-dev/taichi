@@ -47,7 +47,6 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
 TF = [True, False]
 init_args = {
     # 'key': [default, choices],
-    'print_preprocessed': [False, TF],
     'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
     'gdb_trigger': [False, TF],
     'advanced_optimization': [True, TF],
@@ -75,7 +74,6 @@ init_args = {
 env_configs = ['TI_' + key.upper() for key in init_args.keys()]
 
 special_init_cfgs = [
-    'print_preprocessed',
     'log_level',
     'gdb_trigger',
 ]
@@ -126,23 +124,6 @@ def test_init_arch(arch):
 def test_init_bad_arg():
     with pytest.raises(KeyError):
         ti.init(_test_mode=True, debug=True, foo_bar=233)
-
-
-@ti.test(arch=ti.cpu)
-def test_materialize_callback():
-    x = ti.field(ti.f32, (3, 4))
-
-    @ti.materialize_callback
-    @ti.kernel
-    def init_x():
-        for i in range(3):
-            for j in range(4):
-                x[i, j] = i + j + 1
-
-    # x will be initialized on first invocation
-    for i in range(3):
-        for j in range(4):
-            assert x[i, j] == i + j + 1
 
 
 @pytest.mark.parametrize('level', ti.supported_log_levels)

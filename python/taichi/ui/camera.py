@@ -50,7 +50,7 @@ class Camera:
     def z_near(self, z_near):
         self.ptr.z_near(z_near)
 
-    def z_near(self, z_far):
+    def z_far(self, z_far):
         self.ptr.z_far(z_far)
 
     # move the camera according to user inputs, FPS game style.

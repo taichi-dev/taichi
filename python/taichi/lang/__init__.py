@@ -27,9 +27,8 @@ from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
                               current_cfg, expr_init, expr_init_func,
                               expr_init_list, field, get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func,
-                              materialize_callback, ndarray, one, root, static,
-                              static_assert, static_print, stop_grad,
+                              insert_expr_stmt_if_ti_func, ndarray, one, root,
+                              static, static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
                               ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -106,7 +105,10 @@ wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
-gpu = [cuda, metal, opengl, vulkan]
+dx11 = _ti_core.dx11
+"""The DX11 backend.
+"""
+gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
@@ -392,7 +394,6 @@ class _EnvironmentConfigurator:
 class _SpecialConfig:
     # like CompileConfig in C++, this is the configurations that belong to other submodules
     def __init__(self):
-        self.print_preprocessed = False
         self.log_level = 'info'
         self.gdb_trigger = False
         self.experimental_real_function = False
@@ -576,7 +577,6 @@ def init(arch=None,
         impl.get_runtime().set_default_ip(default_ip)
 
     # submodule configurations (spec_cfg):
-    env_spec.add('print_preprocessed')
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('experimental_real_function')
@@ -601,7 +601,6 @@ def init(arch=None,
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         set_gdb_trigger(spec_cfg.gdb_trigger)
-        impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
@@ -993,6 +992,7 @@ def is_arch_supported(arch, use_gles=False):
         opengl: functools.partial(_ti_core.with_opengl, use_gles),
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
+        dx11: _ti_core.with_dx11,
         wasm: lambda: True,
         cpu: lambda: True,
     }

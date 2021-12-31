@@ -114,7 +114,7 @@ window.GUI.begin(name, x, y, width, height)
 window.GUI.text(text)
 is_clicked = window.GUI.button(name)
 new_value = window.GUI.slider_float(name, old_value, min_value, max_value)
-new_color = window.GUI.slider_float(name, old_color)
+new_color = window.GUI.color_edit_3(name, old_color)
 window.GUI.end()
 ```
 

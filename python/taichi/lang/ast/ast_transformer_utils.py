@@ -3,9 +3,6 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-import astor
-from taichi._logging import info
-from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 
 
@@ -223,11 +220,3 @@ class ASTTransformerContext:
                     hint = ''
                 msg += gen_line(self.src[i], hint)
         return msg
-
-
-def print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

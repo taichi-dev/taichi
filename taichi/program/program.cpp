@@ -32,6 +32,10 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
+#ifdef TI_WITH_DX11
+#include "taichi/backends/dx/dx_program.h"
+#include "taichi/backends/dx/dx_api.h"
+#endif
 
 #if defined(TI_ARCH_x64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -86,6 +90,13 @@ Program::Program(Arch desired_arch)
     program_impl_ = std::make_unique<VulkanProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with Vulkan")
+#endif
+  } else if (config.arch == Arch::dx11) {
+#ifdef TI_WITH_DX11
+    TI_ASSERT(directx11::is_dx_api_available());
+    program_impl_ = std::make_unique<Dx11ProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with DX11");
 #endif
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
@@ -334,6 +345,8 @@ Arch Program::get_accessor_arch() {
     return Arch::metal;
   } else if (config.arch == Arch::cc) {
     return Arch::cc;
+  } else if (config.arch == Arch::dx11) {
+    return Arch::dx11;
   } else {
     return get_host_arch();
   }

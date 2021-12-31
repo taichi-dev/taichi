@@ -33,6 +33,29 @@ def test_record():
             assert 'compute_loss' in ''.join(f.readlines())
 
 
+@ti.test(arch=ti.opengl, max_block_dim=32)
+def test_opengl_max_block_dim():
+    density = ti.field(float, shape=(8, 8))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            gl_file_path = res['aot_data']['kernels']['init']['tasks'][0][
+                'src']
+            with open(gl_file_path) as gl_file:
+                s = 'layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n'
+                assert s in gl_file.readlines()
+
+
 @ti.test(arch=ti.opengl)
 def test_save():
     density = ti.field(float, shape=(4, 4))

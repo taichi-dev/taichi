@@ -296,7 +296,7 @@ The following table lists the buffers commonly used in a Taichi program together
 | `gtmp_buffer` | Global                     | Global temporary data                                        | `1`               |
 | `args_buffer` | Kernel-specific            | Arguments passed to the Taichi kernel <ul><li>Scalar arguments</li> <li>Each Ndarray's shape information:  <ul><li>Shape of the Ndarray</li> <li>Element shape</li></ul></li></ul> | `2`               |
 
-1. You *only* need to bind an SSBO for `root_buffer` if your Taichi script uses at least one field. Skip this step if your script does not involve field. 
+1. You *only* need to bind an SSBO for `root_buffer` if your Taichi script uses at least one field. Skip this step if your script does not involve field.
 2. Bind a small SSBO, say an SSBO of 1,024 Bytes, to `1`, the binding index of `gtmp_buffer`.
 3. Bind an SSBO of 64 x 5 = 320 Bytes to `2`, the binding index of `args_buffer`.
 

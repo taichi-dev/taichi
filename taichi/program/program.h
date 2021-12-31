@@ -297,10 +297,6 @@ class Program {
     return program_impl_->get_device_shared();
   }
 
-  std::shared_ptr<CommandList> get_commandlist_shared() {
-    return program_impl_->get_commandlist_shared();
-  }
-
   // TODO: do we still need result_buffer?
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {

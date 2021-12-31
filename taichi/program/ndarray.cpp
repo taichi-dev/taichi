@@ -17,8 +17,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      device_(prog->get_device_shared()),
-      command_list_(prog->get_commandlist_shared()) {
+      device_(prog->get_device_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
 #ifdef TI_WITH_LLVM

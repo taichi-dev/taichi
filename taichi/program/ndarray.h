@@ -53,7 +53,6 @@ class Ndarray {
   // Note that we might consider changing this logic later if we implement
   // dynamic tensor rematerialization.
   std::shared_ptr<Device> device_{nullptr};
-  std::shared_ptr<CommandList> command_list_{nullptr};
   void buffer_fill(uint32_t val);
   LlvmProgramImpl *prog_impl_{nullptr};
 };

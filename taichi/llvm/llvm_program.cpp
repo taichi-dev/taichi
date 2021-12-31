@@ -605,10 +605,10 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
   }
 }
 
-void LlvmProgramImpl::fill_ndarray(DeviceAllocation &alloc,
+void LlvmProgramImpl::fill_ndarray(DeviceAllocation *alloc,
                                    std::size_t size,
                                    uint32_t data) {
-  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  auto ptr = get_ndarray_alloc_info_ptr(*alloc);
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memsetd32((void *)ptr, data, size);

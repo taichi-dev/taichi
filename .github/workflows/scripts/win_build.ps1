@@ -42,25 +42,25 @@ if (-not (Test-Path $libsDir)) {
     New-Item -ItemType Directory -Path $libsDir
 }
 Push-Location $libsDir
-WriteInfo("Download and extract LLVM")
 if (-not (Test-Path "taichi_llvm")) {
+    WriteInfo("Download and extract LLVM")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
     7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
 }
-WriteInfo("Download and extract Clang")
 if (-not (Test-Path "taichi_clang")) {
+    WriteInfo("Download and extract Clang")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
 $env:LLVM_DIR = "$libsDir\taichi_llvm"
-$env:TAICHI_CMAKE_ARGS = "-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+$env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
-    if (-not (Test-Path "VulkanSDK.exe")) {
+    if (-not (Test-Path "VulkanSDK")) {
         curl.exe --retry 10 --retry-delay 5 https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe -Lo VulkanSDK.exe
+        $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+        $installer.WaitForExit();
     }
-    $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-    $installer.WaitForExit();
     $env:VULKAN_SDK = "$libsDir\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"

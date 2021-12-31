@@ -83,7 +83,9 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
-        elif impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
+        elif impl.current_cfg(
+        ).arch != _ti_core.Arch.cuda and impl.current_cfg(
+        ).arch != _ti_core.Arch.x64:
             self.fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             self.arr.fill_float(val)

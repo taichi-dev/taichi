@@ -83,7 +83,7 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         elif impl.current_cfg().arch != _ti_core.Arch.cuda:
-            taichi.lang.meta.fill_ndarray(self, val)
+            self.buffer_fill(val)
         elif self.dtype == primitive_types.f32:
             self.arr.fill_float(val)
         elif self.dtype == primitive_types.i32:
@@ -91,18 +91,7 @@ class Ndarray:
         elif self.dtype == primitive_types.u32:
             self.arr.fill_uint(val)
         else:
-            taichi.lang.meta.fill_ndarray(self, val)
-
-    def ndarray_matrix_fill(self, val):
-        """Fills ndarray with a specific scalar value.
-
-        Args:
-            val (Union[int, float]): Value to fill.
-        """
-        if impl.current_cfg().ndarray_use_torch:
-            self.arr.fill_(val)
-        else:
-            taichi.lang.meta.fill_ndarray_matrix(self, val)
+            self.buffer_fill(val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -279,6 +268,9 @@ class ScalarNdarray(Ndarray):
         ret_arr = ScalarNdarray(self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def buffer_fill(self, val):
+        taichi.lang.meta.fill_ndarray(self, val)
 
     def __repr__(self):
         return '<ti.ndarray>'

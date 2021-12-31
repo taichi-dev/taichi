@@ -359,7 +359,7 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test (Windows)
+    name: Build and Test Windows (${{ matrix.identifier }})
     needs: [check_code_format, check_files]
     strategy:
       matrix:
@@ -367,7 +367,7 @@ jobs:
           - wanted_archs: cpu
             cmake_args: ""
             identifier: CPU
-          - wanted_archs: cpu,cuda
+          - wanted_archs: cpu,cuda,vulkan,opengl
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
       fail-fast: false

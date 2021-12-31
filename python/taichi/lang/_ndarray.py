@@ -208,6 +208,14 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    def fill_by_kernel(self, val):
+        """Fills ndarray with a specific scalar value using a ti.kernel.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        raise NotImplementedError()
+
     def pad_key(self, key):
         if key is None:
             key = ()

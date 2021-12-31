@@ -12,9 +12,6 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
-class CudaDevice;
-class CudaStream;
-
 class CudaResourceBinder : public ResourceBinder {
  public:
   ~CudaResourceBinder() override {

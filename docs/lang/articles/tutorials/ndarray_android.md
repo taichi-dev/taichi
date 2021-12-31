@@ -246,7 +246,6 @@ After generating the necessary GLES compute shaders, you need to write your runt
         }
       },
       "compute_force": {...}
-      }
     },
     "kernel_tmpls": {},
     "fields": [],

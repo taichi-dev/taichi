@@ -350,6 +350,8 @@ class Kernel:
         self.grad = None
         self.argument_annotations = []
         self.argument_names = []
+        self.argument_launch_context_cache = {}
+        self.argument_key_cache = {}
         self.return_type = None
         self.classkernel = _classkernel
         self.extract_arguments()
@@ -604,8 +606,24 @@ class Kernel:
                 self.argument_annotations
             ), f'{len(self.argument_annotations)} arguments needed but {len(args)} provided'
 
-            launch_ctx, tmps, callbacks, has_external_arrays = self.make_kernel_launch_context_bundle(
-                t_kernel, args)
+            use_context_cache = True
+            try:
+                args_signature = args.__hash__()
+            except TypeError:
+                use_context_cache = False
+            if use_context_cache and (args_signature
+                                      in self.argument_launch_context_cache):
+                # Use the cached context for kernel launch
+                launch_ctx, tmps, callbacks, has_external_arrays = self.argument_launch_context_cache[
+                    args_signature]
+            else:
+                # Make kernel launch context
+                launch_ctx, tmps, callbacks, has_external_arrays = self.make_kernel_launch_context_bundle(
+                    t_kernel, args)
+                if use_context_cache:
+                    # Cache the launch context
+                    self.argument_launch_context_cache[args_signature] = (
+                        launch_ctx, tmps, callbacks, has_external_arrays)
 
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
@@ -645,8 +663,18 @@ class Kernel:
         return has_array
 
     def ensure_compiled(self, *args):
-        instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
+        use_context_cache = True
+        try:
+            args_signature = args.__hash__()
+        except TypeError:
+            use_context_cache = False
+        if use_context_cache and (args_signature in self.argument_key_cache):
+            key, arg_features = self.argument_key_cache[args_signature]
+        else:
+            instance_id, arg_features = self.mapper.lookup(args)
+            key = (self.func, instance_id)
+            if use_context_cache:
+                self.argument_key_cache[args_signature] = (key, arg_features)
         self.materialize(key=key, args=args, arg_features=arg_features)
         return key
 

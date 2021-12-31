@@ -14,6 +14,7 @@ from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
@@ -410,6 +411,8 @@ class Kernel:
                     pass
                 elif isinstance(annotation, sparse_matrix_builder):
                     pass
+                elif isinstance(annotation, MatrixType):
+                    pass
                 else:
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
@@ -569,6 +572,32 @@ class Kernel:
                     for ii, s in enumerate(shape):
                         launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
                                                      s)
+                elif isinstance(needed, MatrixType):
+                    if id(needed.dtype) in primitive_types.real_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], (int, float)):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_float(
+                                    actual_argument_slot, float(v[a, b]))
+                                actual_argument_slot += 1
+                    elif id(needed.dtype) in primitive_types.integer_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], int):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(v[a, b]))
+                                actual_argument_slot += 1
+                    else:
+                        raise ValueError(
+                            f'Matrix dtype {needed.dtype} is not integer type or real type.'
+                        )
+                    continue
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'

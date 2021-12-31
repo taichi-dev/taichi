@@ -276,7 +276,6 @@ class LowerAST : public IRVisitor {
           new_for->body->statements[0].get();
       new_for->mem_access_opt = stmt->mem_access_opt;
       new_for->fields_registered = true;
-      new_for->accept(this);
       fctx.push_back(std::move(new_for));
     } else if (stmt->global_var.is<GlobalVariableExpression>()) {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;

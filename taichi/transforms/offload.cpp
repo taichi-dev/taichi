@@ -469,14 +469,7 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
 
   static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
     PromoteIntermediateToGlobalTmp pass(local_to_global_offset);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:

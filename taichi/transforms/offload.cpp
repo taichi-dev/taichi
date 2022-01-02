@@ -681,14 +681,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                   OffloadedRanges *offloaded_ranges) {
     FixCrossOffloadReferences pass(config, local_to_global_offset,
                                    stmt_to_offloaded, offloaded_ranges);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:

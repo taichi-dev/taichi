@@ -646,12 +646,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       } else {
         // For other cases like ArgLoadStmt UnaryOpStmt which needs to load.
         auto load = Stmt::make<GlobalLoadStmt>(global_temporary.get());
-        auto pload = load.get();
         stmt_to_offloaded_[load.get()] = offloaded;
         stmt->set_operand(index, load.get());
         stmt->insert_before_me(std::move(global_temporary));
         stmt->insert_before_me(std::move(load));
-        generic_visit(pload);
       }
     }
     return true;

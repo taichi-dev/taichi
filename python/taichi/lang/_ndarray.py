@@ -74,7 +74,8 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    def ndarray_fill(self, val):
+    @python_scope
+    def fill(self, val):
         """Fills ndarray with a specific scalar value.
 
         Args:
@@ -82,8 +83,10 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
-        elif impl.current_cfg().arch != _ti_core.Arch.cuda:
-            taichi.lang.meta.fill_ndarray(self, val)
+        elif impl.current_cfg(
+        ).arch != _ti_core.Arch.cuda and impl.current_cfg(
+        ).arch != _ti_core.Arch.x64:
+            self.fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             self.arr.fill_float(val)
         elif self.dtype == primitive_types.i32:
@@ -91,18 +94,7 @@ class Ndarray:
         elif self.dtype == primitive_types.u32:
             self.arr.fill_uint(val)
         else:
-            taichi.lang.meta.fill_ndarray(self, val)
-
-    def ndarray_matrix_fill(self, val):
-        """Fills ndarray with a specific scalar value.
-
-        Args:
-            val (Union[int, float]): Value to fill.
-        """
-        if impl.current_cfg().ndarray_use_torch:
-            self.arr.fill_(val)
-        else:
-            taichi.lang.meta.fill_ndarray_matrix(self, val)
+            self.fill_by_kernel(val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -218,6 +210,14 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    def fill_by_kernel(self, val):
+        """Fills ndarray with a specific scalar value using a ti.kernel.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        raise NotImplementedError()
+
     def pad_key(self, key):
         if key is None:
             key = ()
@@ -264,10 +264,6 @@ class ScalarNdarray(Ndarray):
         return self.host_accessor.getter(*self.pad_key(key))
 
     @python_scope
-    def fill(self, val):
-        self.ndarray_fill(val)
-
-    @python_scope
     def to_numpy(self):
         return self.ndarray_to_numpy()
 
@@ -279,6 +275,9 @@ class ScalarNdarray(Ndarray):
         ret_arr = ScalarNdarray(self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        taichi.lang.meta.fill_ndarray(self, val)
 
     def __repr__(self):
         return '<ti.ndarray>'

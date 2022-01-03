@@ -593,7 +593,8 @@ std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
   return device_;
 }
 
-uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
+uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
+    const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
@@ -605,16 +606,18 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
   }
 }
 
-void LlvmProgramImpl::fill_ndarray(DeviceAllocation &alloc,
+void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
                                    std::size_t size,
                                    uint32_t data) {
+  auto ptr = get_ndarray_alloc_info_ptr(alloc);
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    auto ptr = get_ndarray_alloc_info_ptr(alloc);
     CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else {
+    std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
   }
 }
 }  // namespace lang

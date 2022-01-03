@@ -1349,10 +1349,6 @@ class MatrixNdarray(Ndarray):
              for i in range(self.n)])
 
     @python_scope
-    def fill(self, val):
-        self.ndarray_matrix_fill(val)
-
-    @python_scope
     def to_numpy(self):
         return self.ndarray_matrix_to_numpy(as_vector=0)
 
@@ -1365,6 +1361,9 @@ class MatrixNdarray(Ndarray):
                                 self.layout)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        taichi.lang.meta.fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
@@ -1406,10 +1405,6 @@ class VectorNdarray(Ndarray):
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
     @python_scope
-    def fill(self, val):
-        self.ndarray_matrix_fill(val)
-
-    @python_scope
     def to_numpy(self):
         return self.ndarray_matrix_to_numpy(as_vector=1)
 
@@ -1421,6 +1416,9 @@ class VectorNdarray(Ndarray):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        taichi.lang.meta.fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'

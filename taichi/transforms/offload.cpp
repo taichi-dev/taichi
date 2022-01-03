@@ -464,20 +464,12 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
       auto ptr = stmt->insert_after_me(
           Stmt::make<GlobalTemporaryStmt>(offset, stmt->ret_type));
       ptr->insert_after_me(Stmt::make<GlobalStoreStmt>(ptr, stmt));
-      throw IRModified();
     }
   }
 
   static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
     PromoteIntermediateToGlobalTmp pass(local_to_global_offset);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:
@@ -577,7 +569,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     stmt->parent->replace_with(stmt, std::move(replacement), false);
     // To deal with the same offloaded visit_operand()
     stmt_to_offloaded_[stmt] = nullptr;
-    throw IRModified();
   }
 
   // Replace local LD/ST with global LD/ST
@@ -591,7 +582,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       auto global_load = replacement.push_back<GlobalLoadStmt>(ptr);
       stmt_to_offloaded_[global_load] = stmt_to_offloaded_[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
     }
   }
 
@@ -605,7 +595,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
           replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
       stmt_to_offloaded_[global_store] = stmt_to_offloaded_[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
     }
   }
 
@@ -623,10 +612,12 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
     if (op->is<GlobalPtrStmt>()) {
       auto copy = op->clone();
+      auto pcopy = copy.get();
       copy->as<GlobalPtrStmt>()->activate = false;
       stmt_to_offloaded_[copy.get()] = offloaded;
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
+      generic_visit(pcopy);
       return true;
     }
 
@@ -638,9 +629,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
           "{} is not allowed here.", op->type());
       // For cases like ConstStmt
       auto copy = op->clone();
+      auto pcopy = copy.get();
       stmt_to_offloaded_[copy.get()] = offloaded;
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
+      generic_visit(pcopy);
     } else {
       auto global_temporary = Stmt::make<GlobalTemporaryStmt>(
           local_to_global_offset_[op], op->ret_type);
@@ -664,13 +657,9 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
   void generic_visit(Stmt *stmt) {
     int n_op = stmt->num_operands();
-    bool modified = false;
     for (int i = 0; i < n_op; i++) {
-      if (visit_operand(stmt, i))
-        modified = true;
+      visit_operand(stmt, i);
     }
-    if (modified)
-      throw IRModified();
   }
 
   void visit(Stmt *stmt) override {
@@ -690,14 +679,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                   OffloadedRanges *offloaded_ranges) {
     FixCrossOffloadReferences pass(config, local_to_global_offset,
                                    stmt_to_offloaded, offloaded_ranges);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:

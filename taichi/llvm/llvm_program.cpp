@@ -65,26 +65,28 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    int num_SMs;
+    int num_SMs{1};
     CUDADriver::get_instance().device_get_attribute(
         &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
-    int query_max_block_dim;
+    int query_max_block_dim{1024};
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
-    int query_max_block_per_sm;
-    CUDADriver::get_instance().device_get_attribute(
-        &query_max_block_per_sm,
-        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    int version{0};
+    CUDADriver::get_instance().driver_get_version(&version);
+    int query_max_block_per_sm{16};
+    if (version >= 11000) {
+      // query this attribute only when CUDA version is above 11.0
+      CUDADriver::get_instance().device_get_attribute(
+          &query_max_block_per_sm,
+          CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    }
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;
     }
 
     if (config_.saturating_grid_dim == 0) {
-      int version;
-      CUDADriver::get_instance().driver_get_version(&version);
       if (version >= 11000) {
-        // query this attribute only when CUDA version is above 11.0
         TI_TRACE("CUDA max blocks per SM = {}", query_max_block_per_sm);
       }
       config_.saturating_grid_dim = num_SMs * query_max_block_per_sm * 2;

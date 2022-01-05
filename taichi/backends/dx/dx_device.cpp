@@ -8,6 +8,14 @@ bool kD3d11DebugEnabled = false;  // D3D11 debugging is enabled. For testing.
 bool kD3d11ForceRef = false;      // Force REF device. May be used to
                                   // force software rendering.
 
+void debug_enabled(bool enabled) {
+  kD3d11DebugEnabled = enabled;
+}
+
+void force_ref(bool force) {
+  kD3d11ForceRef = force;
+}
+
 void check_dx_error(HRESULT hr, const char *msg) {
   if (!SUCCEEDED(hr)) {
     TI_ERROR("Error in {}: {}", msg, hr);
@@ -104,6 +112,9 @@ HRESULT create_compute_device(ID3D11Device **out_device,
 
 Dx11Device::Dx11Device() {
   create_dx11_device();
+  if (kD3d11DebugEnabled) {
+    info_queue_ = std::make_unique<Dx11InfoQueue>(device_);
+  }
   set_cap(DeviceCapability::spirv_version, 0x10300);
 }
 
@@ -122,14 +133,19 @@ void Dx11Device::create_dx11_device() {
 }
 
 void Dx11Device::destroy_dx11_device() {
-  if (context_ != nullptr) {
-    context_->Release();
-    context_ = nullptr;
-  }
   if (device_ != nullptr) {
     device_->Release();
     device_ = nullptr;
   }
+  if (context_ != nullptr) {
+    context_->Release();
+    context_ = nullptr;
+  }
+}
+
+int Dx11Device::live_dx11_object_count() {
+  TI_ASSERT(info_queue_ != nullptr);
+  return info_queue_->live_object_count();
 }
 
 DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {

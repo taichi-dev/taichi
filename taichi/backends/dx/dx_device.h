@@ -1,13 +1,19 @@
 #pragma once
 
 #include "taichi/backends/device.h"
+#include "taichi/backends/dx/dx_info_queue.h"
 #include <d3d11.h>
 
 namespace taichi {
 namespace lang {
 namespace directx11 {
 
-void check_dx_error(HRESULT hr, const char *msg);
+void debug_enabled(bool);
+void force_ref(bool);
+
+namespace {
+  void check_dx_error(HRESULT hr, const char *msg);
+}
 
 HRESULT create_compute_device(ID3D11Device **out_device,
                               ID3D11DeviceContext **out_context,
@@ -64,11 +70,14 @@ class Dx11Device : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
+  int live_dx11_object_count();
+
  private:
   void create_dx11_device();
   void destroy_dx11_device();
   ID3D11Device *device_{};
   ID3D11DeviceContext *context_{};
+  std::unique_ptr<Dx11InfoQueue> info_queue_{};
 };
 
 }  // namespace directx11

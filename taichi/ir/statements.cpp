@@ -316,18 +316,6 @@ std::unique_ptr<Stmt> MeshForStmt::clone() const {
   return new_stmt;
 }
 
-FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
-                           std::unique_ptr<Block> &&body)
-    : funcid(funcid), body(std::move(body)) {
-  if (this->body)
-    this->body->parent_stmt = this;
-  TI_STMT_REG_FIELDS;
-}
-
-std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
-  return std::make_unique<FuncBodyStmt>(funcid, body->clone());
-}
-
 FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
     : func(func), args(args) {
   TI_STMT_REG_FIELDS;

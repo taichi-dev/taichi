@@ -304,12 +304,6 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FuncBodyStmt *stmt) override {
-    print("func \"{}\" {{");
-    stmt->body->accept(this);
-    print("}}");
-  }
-
   void visit(WhileStmt *stmt) override {
     print("{} : while true {{", stmt->name());
     stmt->body->accept(this);
@@ -637,10 +631,6 @@ class IRPrinter : public IRVisitor {
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);
-  }
-
-  void visit(BlockDimStmt *stmt) override {
-    print("{}{} = block dim", stmt->type_hint(), stmt->name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

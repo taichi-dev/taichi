@@ -52,6 +52,7 @@ class KernelProfiler:
     """
     def __init__(self):
         self._profiling_mode = False
+        self._profiling_toolkit = 'default'
         self._metric_list = [default_cupti_metrics]
         self._total_time_ms = 0.0
         self._traced_records = []
@@ -71,6 +72,18 @@ class KernelProfiler:
     def get_kernel_profiler_mode(self):
         """Get status of :class:`~taichi.profiler.kernelprofiler.KernelProfiler`."""
         return self._profiling_mode
+
+    def set_toolkit(self, toolkit_name='default'):
+        print(f'set_toolkit = {toolkit_name}')
+        status = impl.get_runtime().prog.set_kernel_profiler_toolkit(
+            toolkit_name)
+        if status == True:
+            self._profiling_toolkit = toolkit_name
+        else:
+            _ti_core.warn(
+                f'Failed to set kernel profiler toolkit (toolkit_name) , keep using {self._profiling_toolkit}.'
+            )
+        return status
 
     def get_total_time(self):
         """Get elapsed time of all kernels recorded in KernelProfiler.

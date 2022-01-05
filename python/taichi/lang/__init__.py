@@ -222,6 +222,19 @@ def kernel_profiler_total_time():
     return get_default_kernel_profiler().get_total_time()
 
 
+def set_kernel_profiler_toolkit(toolkit_name='default'):
+    """Set the toolkit used by KernelProfiler.
+
+    Currently, we only support toolkits: ``'default'`` and ``'cupti'``.
+    Args:
+        toolkit_name (str): string of toolkit name.
+
+    Returns:
+        status (bool): whether the setting is successful or not.
+    """
+    return get_default_kernel_profiler().set_toolkit(toolkit_name)
+
+
 def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
     """Set metrics that will be collected by the CUPTI toolkit.
 

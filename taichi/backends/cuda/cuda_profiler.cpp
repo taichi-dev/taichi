@@ -11,22 +11,53 @@ TLANG_NAMESPACE_BEGIN
 // will not affect default toolkit (cuEvent)
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   metric_list_.clear();
-  if (enable) {
+  if (enable) {  // default profiling toolkit: event
     tool_ = ProfilingToolkit::event;
+    event_toolkit_ = std::make_unique<EventToolkit>();
+  }
+}
+
+ProfilingToolkit get_toolkit_enum(std::string toolkit_name) {
+  if (toolkit_name.compare("default") == 0)
+    return ProfilingToolkit::event;
+  if (toolkit_name.compare("cupti") == 0)
+    return ProfilingToolkit::cupti;
+  else
+    return ProfilingToolkit::undef;
+}
+
+bool KernelProfilerCUDA::set_profiler_toolkit(std::string toolkit_name) {
+  sync();
+  ProfilingToolkit set_toolkit = get_toolkit_enum(toolkit_name);
+  TI_TRACE("profiler toolkit enum = {} >>> {}", tool_, set_toolkit);
+  if (set_toolkit == tool_)
+    return true;
+
+  // current toolkit is CUPTI: disable
+  if (tool_ == ProfilingToolkit::cupti) {
+    cupti_toolkit_->end_profiling();
+    cupti_toolkit_->deinit_cupti();
+    cupti_toolkit_->set_status(false);
+    tool_ = ProfilingToolkit::event;
+    TI_TRACE("cupti >>> event ... DONE");
+    return true;
+  }
+  // current toolkit is cuEvent: check CUPTI availability
+  else if (tool_ == ProfilingToolkit::event) {
 #if defined(TI_WITH_CUDA_TOOLKIT)
-    // if Taichi was compiled with CUDA toolit, then use CUPTI
-    // TODO : add set_mode() to select toolkit by user
-    if (check_cupti_availability() && check_cupti_privileges())
+    if (check_cupti_availability() && check_cupti_privileges()) {
+      if (cupti_toolkit_ == nullptr)
+        cupti_toolkit_ = std::make_unique<CuptiToolkit>();
+      cupti_toolkit_->init_cupti();
+      cupti_toolkit_->begin_profiling();
       tool_ = ProfilingToolkit::cupti;
+      cupti_toolkit_->set_status(true);
+      TI_TRACE("event >>> cupti ... DONE");
+      return true;
+    }
 #endif
   }
-  if (tool_ == ProfilingToolkit::event) {
-    event_toolkit_ = std::make_unique<EventToolkit>();
-  } else if (tool_ == ProfilingToolkit::cupti) {
-    cupti_toolkit_ = std::make_unique<CuptiToolkit>();
-    cupti_toolkit_->init_cupti();
-    cupti_toolkit_->begin_profiling();
-  }
+  return false;
 }
 
 std::string KernelProfilerCUDA::get_device_name() {

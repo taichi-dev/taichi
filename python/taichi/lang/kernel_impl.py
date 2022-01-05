@@ -424,6 +424,7 @@ class Kernel:
         if key is None:
             key = (self.func, 0)
         self.runtime.materialize()
+        self.ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
         if key in self.compiled_functions:
             return
         grad_suffix = ""
@@ -489,6 +490,15 @@ class Kernel:
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
+                # Shortened code path for ndarray.
+                if isinstance(v, taichi.lang._ndarray.Ndarray) and not self.ndarray_use_torch:
+                    # Use ndarray's own memory allocator
+                    tmp = v.arr
+                    data_ptr = int(tmp.device_allocation_ptr())
+                    launch_ctx.set_arg_external_array_w_shape(actual_argument_slot, 
+                        data_ptr, tmp.element_size(), tmp.nelement(), v.shape, True)
+                    actual_argument_slot += 1
+                    continue
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
@@ -505,12 +515,10 @@ class Kernel:
                         self.match_ext_arr(v)
                         or isinstance(v, taichi.lang._ndarray.Ndarray)):
                     is_ndarray = False
+                    has_external_arrays = True
                     if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
                         is_ndarray = True
-                    has_external_arrays = True
-                    # ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
-                    ndarray_use_torch = False
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -521,7 +529,7 @@ class Kernel:
                         data_elem_size = 1
                         data_elem_count = tmp.nbytes
                         is_device_allocation = False
-                    elif is_ndarray and not ndarray_use_torch:
+                    elif is_ndarray and not self.ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
                         data_ptr = int(tmp.device_allocation_ptr())

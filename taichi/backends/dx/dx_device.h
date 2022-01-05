@@ -1,10 +1,18 @@
 #pragma once
 
 #include "taichi/backends/device.h"
+#include <d3d11.h>
 
 namespace taichi {
 namespace lang {
 namespace directx11 {
+
+void check_dx_error(HRESULT hr, const char *msg);
+
+HRESULT create_compute_device(ID3D11Device **out_device,
+                              ID3D11DeviceContext **out_context,
+                              bool force_ref,
+                              bool debug_enabled);
 
 class Dx11ResourceBinder : public ResourceBinder {
   ~Dx11ResourceBinder() override;
@@ -55,6 +63,12 @@ class Dx11Device : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+
+ private:
+  void create_dx11_device();
+  void destroy_dx11_device();
+  ID3D11Device *device_{};
+  ID3D11DeviceContext *context_{};
 };
 
 }  // namespace directx11

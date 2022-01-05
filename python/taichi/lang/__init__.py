@@ -269,6 +269,7 @@ def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
         >>> import taichi as ti
 
         >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> ti.set_kernel_profiler_toolkit('cupti')
         >>> num_elements = 128*1024*1024
 
         >>> x = ti.field(ti.f32, shape=num_elements)
@@ -316,6 +317,7 @@ def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
         >>> import taichi as ti
 
         >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> ti.set_kernel_profiler_toolkit('cupti')
         >>> num_elements = 128*1024*1024
 
         >>> x = ti.field(ti.f32, shape=num_elements)

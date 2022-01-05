@@ -50,11 +50,6 @@ void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
   stmt->all_blocks_accept(this);
 }
 
-void BasicStmtVisitor::visit(FuncBodyStmt *stmt) {
-  preprocess_container_stmt(stmt);
-  stmt->body->accept(this);
-}
-
 void BasicStmtVisitor::visit(FrontendWhileStmt *stmt) {
   preprocess_container_stmt(stmt);
   stmt->body->accept(this);

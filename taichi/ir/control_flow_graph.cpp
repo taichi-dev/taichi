@@ -218,8 +218,12 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (!result) {
     // The UD-chain is empty.
-    TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
-            block->statements[position]->id);
+    if (!(var->is<PtrOffsetStmt>() &&
+          var->as<PtrOffsetStmt>()->is_local_ptr())) {
+      // Only exception: tensor alloca is not considered as a store.
+      TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
+              block->statements[position]->id);
+    }
     return nullptr;
   }
   if (!result_visible) {

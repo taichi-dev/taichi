@@ -190,7 +190,6 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
-      .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)

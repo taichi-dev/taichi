@@ -509,7 +509,6 @@ class Kernel:
                         v = v.arr
                         is_ndarray = True
                     has_external_arrays = True
-                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -519,7 +518,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, False)
-                    elif is_ndarray and not ndarray_use_torch:
+                    elif is_ndarray and not impl.get_runtime().ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
                         launch_ctx.set_arg_external_array(

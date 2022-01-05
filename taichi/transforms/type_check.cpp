@@ -462,11 +462,6 @@ class TypeCheck : public IRVisitor {
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(BlockDimStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
-  }
-
   void visit(GetRootStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);

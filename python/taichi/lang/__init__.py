@@ -398,7 +398,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
-        self.ndarray_use_torch = False 
+        self.ndarray_use_torch = False
 
 
 def prepare_sandbox():

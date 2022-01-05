@@ -518,7 +518,8 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, False)
-                    elif is_ndarray and not impl.get_runtime().ndarray_use_torch:
+                    elif is_ndarray and not impl.get_runtime(
+                    ).ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
                         launch_ctx.set_arg_external_array(

@@ -325,7 +325,7 @@ class NdarrayHostAccess:
         else:
             self.indices = indices_first + indices_second
 
-        if self.ndarray_use_torch:
+        if impl.get_runtime().ndarray_use_torch:
 
             def getter():
                 return self.arr[self.indices]

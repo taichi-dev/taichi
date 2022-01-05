@@ -74,14 +74,13 @@ class KernelProfiler:
         return self._profiling_mode
 
     def set_toolkit(self, toolkit_name='default'):
-        print(f'set_toolkit = {toolkit_name}')
         status = impl.get_runtime().prog.set_kernel_profiler_toolkit(
             toolkit_name)
         if status == True:
             self._profiling_toolkit = toolkit_name
         else:
             _ti_core.warn(
-                f'Failed to set kernel profiler toolkit (toolkit_name) , keep using {self._profiling_toolkit}.'
+                f'Failed to set kernel profiler toolkit ({toolkit_name}) , keep using ({self._profiling_toolkit}).'
             )
         return status
 
@@ -223,9 +222,8 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    @staticmethod
-    def _make_table_header(mode):
-        header_str = f'Kernel Profiler({mode})'
+    def _make_table_header(self, mode):
+        header_str = f'Kernel Profiler({mode}, {self._profiling_toolkit})'
         arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()
         if len(device_name) > 1:  # default device_name = ' '

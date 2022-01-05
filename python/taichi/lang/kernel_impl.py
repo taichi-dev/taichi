@@ -496,7 +496,7 @@ class Kernel:
                     tmp = v.arr
                     data_ptr = int(tmp.device_allocation_ptr())
                     launch_ctx.set_arg_external_array_w_shape(actual_argument_slot, 
-                        data_ptr, tmp.element_size(), tmp.nelement(), v.shape, True)
+                        data_ptr, tmp.element_size(), tmp.nelement(), tmp.shape, True)
                     actual_argument_slot += 1
                     continue
                 # Note: do not use sth like "needed == f32". That would be slow.

@@ -491,12 +491,14 @@ class Kernel:
                     continue
                 provided = type(v)
                 # Shortened code path for ndarray.
-                if isinstance(v, taichi.lang._ndarray.Ndarray) and not self.ndarray_use_torch:
+                if isinstance(v, taichi.lang._ndarray.Ndarray
+                              ) and not self.ndarray_use_torch:
                     # Use ndarray's own memory allocator
                     tmp = v.arr
                     data_ptr = int(tmp.device_allocation_ptr())
-                    launch_ctx.set_arg_external_array_w_shape(actual_argument_slot, 
-                        data_ptr, tmp.element_size(), tmp.nelement(), tmp.shape, True)
+                    launch_ctx.set_arg_external_array_w_shape(
+                        actual_argument_slot, data_ptr, tmp.element_size(),
+                        tmp.nelement(), tmp.shape, True)
                     actual_argument_slot += 1
                     continue
                 # Note: do not use sth like "needed == f32". That would be slow.
@@ -533,8 +535,8 @@ class Kernel:
                         # Use ndarray's own memory allocator
                         tmp = v
                         data_ptr = int(tmp.device_allocation_ptr())
-                        data_elem_size =  tmp.element_size()
-                        data_elem_count =  tmp.nelement()
+                        data_elem_size = tmp.element_size()
+                        data_elem_count = tmp.nelement()
                         is_device_allocation = True
                     else:
 
@@ -574,7 +576,9 @@ class Kernel:
                         data_elem_size = tmp.element_size()
                         data_elem_count = tmp.nelement()
                         is_device_allocation = False
-                    launch_ctx.set_arg_external_array_w_shape(actual_argument_slot, data_ptr, data_elem_size, data_elem_count, v.shape, is_device_allocation)
+                    launch_ctx.set_arg_external_array_w_shape(
+                        actual_argument_slot, data_ptr, data_elem_size,
+                        data_elem_count, v.shape, is_device_allocation)
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):

@@ -42,12 +42,11 @@ class Kernel : public Callable {
                                 bool is_device_allocation);
 
     void set_arg_external_array_w_shape(int arg_id,
-                                uint64 ptr,
-                                uint64 elem_count,
-                                uint64 elem_size,
-                                std::vector<int64> shape,
-                                bool is_device_allocation
-                                );
+                                        uint64 ptr,
+                                        uint64 elem_count,
+                                        uint64 elem_size,
+                                        std::vector<int64> shape,
+                                        bool is_device_allocation);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.

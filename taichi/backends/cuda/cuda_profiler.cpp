@@ -20,7 +20,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
 ProfilingToolkit get_toolkit_enum(std::string toolkit_name) {
   if (toolkit_name.compare("default") == 0)
     return ProfilingToolkit::event;
-  if (toolkit_name.compare("cupti") == 0)
+  else if (toolkit_name.compare("cupti") == 0)
     return ProfilingToolkit::cupti;
   else
     return ProfilingToolkit::undef;

@@ -245,12 +245,12 @@ def set_kernel_profiler_toolkit(toolkit_name='default'):
         >>>     for i in x:
         >>>         x[i] = i
 
-        >>> status = ti.set_kernel_profiler_toolkit('default')
+        >>> ti.set_kernel_profiler_toolkit('cupti')
         >>> for i in range(100):
         >>>     fill()
         >>> ti.print_kernel_profile_info()
 
-        >>> ti.set_kernel_profiler_toolkit('cupti')
+        >>> ti.set_kernel_profiler_toolkit('default')
         >>> for i in range(100):
         >>>     fill()
         >>> ti.print_kernel_profile_info()

@@ -74,6 +74,8 @@ class KernelProfiler:
         return self._profiling_mode
 
     def set_toolkit(self, toolkit_name='default'):
+        if self._check_not_turned_on_with_warning_message():
+            return False
         status = impl.get_runtime().prog.set_kernel_profiler_toolkit(
             toolkit_name)
         if status is True:

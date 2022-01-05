@@ -52,8 +52,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::undef;
 
-  // Instances of these toolkits can exist at the same time,
-  // but only one will be enabled at the same time.
+  // Instances of these toolkits may exist at the same time,
+  // but only one will be enabled.
   std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
   std::vector<std::string> metric_list_;

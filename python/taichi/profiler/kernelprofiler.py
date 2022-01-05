@@ -76,7 +76,7 @@ class KernelProfiler:
     def set_toolkit(self, toolkit_name='default'):
         status = impl.get_runtime().prog.set_kernel_profiler_toolkit(
             toolkit_name)
-        if status == True:
+        if status is True:
             self._profiling_toolkit = toolkit_name
         else:
             _ti_core.warn(

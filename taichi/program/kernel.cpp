@@ -266,6 +266,21 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
   ctx_->set_device_allocation(arg_id, is_device_allocation);
 }
 
+void Kernel::LaunchContextBuilder::set_arg_external_array_w_shape(
+    int arg_id,
+    uint64 ptr,
+    uint64 elem_size,
+    uint64 elem_count,
+    std::vector<taichi::int64> shape,
+    bool is_device_allocation) {
+    this->set_arg_external_array(arg_id, ptr, elem_size * elem_count, is_device_allocation);
+    TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
+                  "External array cannot have > {max_num_indices} indices");
+    for (uint64 i = 0; i < shape.size(); ++i){
+      this->set_extra_arg_int(arg_id, i, shape[i]);
+    }
+}
+
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "

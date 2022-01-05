@@ -463,6 +463,8 @@ void export_lang(py::module &m) {
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array",
            &Kernel::LaunchContextBuilder::set_arg_external_array)
+      .def("set_arg_external_array_w_shape",
+           &Kernel::LaunchContextBuilder::set_arg_external_array_w_shape)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 

@@ -509,23 +509,25 @@ class Kernel:
                         v = v.arr
                         is_ndarray = True
                     has_external_arrays = True
-                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
+                    # ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
+                    ndarray_use_torch = False
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        launch_ctx.set_arg_external_array(
-                            actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, False)
+                        data_ptr = int(tmp.ctypes.data)
+                        data_elem_size = 1
+                        data_elem_count = tmp.nbytes
+                        is_device_allocation = False
                     elif is_ndarray and not ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
-                        launch_ctx.set_arg_external_array(
-                            actual_argument_slot,
-                            int(tmp.device_allocation_ptr()),
-                            tmp.element_size() * tmp.nelement(), True)
+                        data_ptr = int(tmp.device_allocation_ptr())
+                        data_elem_size =  tmp.element_size()
+                        data_elem_count =  tmp.nelement()
+                        is_device_allocation = True
                     else:
 
                         def get_call_back(u, v):
@@ -560,18 +562,11 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_external_array(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), False)
-
-                    shape = v.shape
-                    max_num_indices = _ti_core.get_max_num_indices()
-                    assert len(
-                        shape
-                    ) <= max_num_indices, f"External array cannot have > {max_num_indices} indices"
-                    for ii, s in enumerate(shape):
-                        launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
-                                                     s)
+                        data_ptr = int(tmp.data_ptr())
+                        data_elem_size = tmp.element_size()
+                        data_elem_count = tmp.nelement()
+                        is_device_allocation = False
+                    launch_ctx.set_arg_external_array_w_shape(actual_argument_slot, data_ptr, data_elem_size, data_elem_count, v.shape, is_device_allocation)
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):

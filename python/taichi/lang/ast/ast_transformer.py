@@ -9,7 +9,7 @@ from taichi.lang import (expr, impl, kernel_arguments, kernel_impl, matrix,
 from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiNameError
+from taichi.lang.exception import TaichiNameError, TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types

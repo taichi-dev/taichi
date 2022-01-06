@@ -489,16 +489,6 @@ class Kernel:
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
-                # Shortened code path for ndarrays without torch.
-                if isinstance(needed, any_arr) and isinstance(
-                        v, taichi.lang._ndarray.Ndarray
-                ) and not impl.get_runtime().ndarray_use_torch:
-                    # Use ndarray's own memory allocator
-                    launch_ctx.set_arg_external_ndarray(
-                        actual_argument_slot, v.arr)
-                    has_external_arrays = True
-                    actual_argument_slot += 1
-                    continue
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
@@ -515,20 +505,25 @@ class Kernel:
                         self.match_ext_arr(v)
                         or isinstance(v, taichi.lang._ndarray.Ndarray)):
                     is_ndarray = False
-                    has_external_arrays = True
                     if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
                         is_ndarray = True
+                    has_external_arrays = True
                     has_torch = util.has_pytorch()
-                    if isinstance(v, np.ndarray):
+                    is_numpy = isinstance(v, np.ndarray)
+                    if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        data_ptr = int(tmp.ctypes.data)
-                        data_size = tmp.nbytes
-                        is_device_allocation = False
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp.ctypes.data),
+                            tmp.nbytes, v.shape, False)
+                    elif is_ndarray and not impl.get_runtime(
+                    ).ndarray_use_torch:
+                        # Use ndarray's own memory allocator
+                        launch_ctx.set_arg_external_ndarray(actual_argument_slot, v)
                     else:
-                        # is ndarray and use torch
+
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)
@@ -561,12 +556,10 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        data_ptr = int(tmp.data_ptr())
-                        data_size = tmp.element_size() * tmp.nelement()
-                        is_device_allocation = False
-                    launch_ctx.set_arg_external_array_with_shape(
-                        actual_argument_slot, data_ptr, data_size, v.shape,
-                        is_device_allocation)
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement(), v.shape, False)
+
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):

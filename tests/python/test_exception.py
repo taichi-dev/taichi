@@ -28,13 +28,7 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
         msg = f"""\
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
             aaaa(111,
-            ^^^^^^^^^
-                 1211222,
-                 ^^^^^^^^
-
-
-                 23)
-                 ^^^"""
+            ^^^^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -77,7 +71,7 @@ On line {lineno + 9} of file "{file}":
             ^^^^^
 On line {lineno + 5} of file "{file}":
             t()
-            ^^^"""
+            ^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -102,7 +96,7 @@ On line {lineno + 5} of file "{file}":
         msg = f"""\
 On line {lineno + 5} of file "{file}":
             a(11,   22, 3)
-            ^^^^^^^^^^^^^^"""
+            ^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -132,6 +126,6 @@ On line {lineno + 5} of file "{file}":
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg

@@ -1,10 +1,10 @@
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
+from taichi.lang._ndrange import ndrange
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import kernel
-from taichi.lang.ndrange import ndrange
 from taichi.lang.snode import deactivate
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, u8

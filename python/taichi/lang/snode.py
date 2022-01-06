@@ -283,18 +283,17 @@ class SNode:
     @property
     def num_dynamically_allocated(self):
         runtime = impl.get_runtime()
-        runtime.materialize()
+        runtime.materialize_root_fb(False)
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
 
     @property
     def cell_size_bytes(self):
-        runtime = impl.get_runtime()
-        runtime.materialize()
+        impl.get_runtime().materialize_root_fb(False)
         return self.ptr.cell_size_bytes
 
     @property
     def offset_bytes_in_parent_cell(self):
-        impl.get_runtime().materialize()
+        impl.get_runtime().materialize_root_fb(False)
         return self.ptr.offset_bytes_in_parent_cell
 
     def deactivate_all(self):

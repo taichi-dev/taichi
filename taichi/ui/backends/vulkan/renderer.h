@@ -36,7 +36,7 @@ namespace vulkan {
 
 class Renderer {
  public:
-  void init(GLFWwindow *window, const AppConfig &config);
+  void init(TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   void prepare_for_next_frame();

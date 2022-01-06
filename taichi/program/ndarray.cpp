@@ -10,6 +10,7 @@ Ndarray::Ndarray(Program *prog,
                  const std::vector<int> &shape)
     : dtype(type),
       shape(shape),
+      prog_impl_(prog->get_llvm_program_impl()),
       num_active_indices(shape.size()),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
@@ -55,5 +56,26 @@ std::size_t Ndarray::get_nelement() const {
   return nelement_;
 }
 
+void Ndarray::fill_float(float val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::fill_int(int32_t val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::fill_uint(uint32_t val) {
+  buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+void Ndarray::buffer_fill(uint32_t val) {
+  // This is a temporary solution to bypass device api
+  // should be moved to commandList when available in CUDA
+#ifdef TI_WITH_LLVM
+  prog_impl_->fill_ndarray(ndarray_alloc_, nelement_, val);
+#else
+  TI_ERROR("Llvm disabled");
+#endif
+}
 }  // namespace lang
 }  // namespace taichi

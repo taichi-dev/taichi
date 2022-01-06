@@ -261,16 +261,6 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  void visit(FuncBodyStmt *stmt) override {
-    basic_check(stmt);
-    if (!same)
-      return;
-    auto other = other_node_->as<FuncBodyStmt>();
-    other_node_ = other->body.get();
-    stmt->body->accept(this);
-    other_node_ = other;
-  }
-
   void visit(WhileStmt *stmt) override {
     basic_check(stmt);
     if (!same)

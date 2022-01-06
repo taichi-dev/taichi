@@ -248,7 +248,7 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 void Kernel::LaunchContextBuilder::set_arg_external_array(
     int arg_id,
-    uint64 ptr,
+    uintptr_t ptr,
     uint64 size,
     bool is_device_allocation) {
   TI_ASSERT_INFO(
@@ -266,12 +266,12 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
   ctx_->set_device_allocation(arg_id, is_device_allocation);
 }
 
-void Kernel::LaunchContextBuilder::set_arg_external_array_w_shape(
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
-    uint64 ptr,
+    uintptr_t ptr,
     uint64 elem_size,
     uint64 elem_count,
-    std::vector<taichi::int64> shape,
+    const std::vector<int64> &shape,
     bool is_device_allocation) {
   this->set_arg_external_array(arg_id, ptr, elem_size * elem_count,
                                is_device_allocation);

@@ -496,7 +496,7 @@ class Kernel:
                     # Use ndarray's own memory allocator
                     tmp = v.arr
                     data_ptr = int(tmp.device_allocation_ptr())
-                    launch_ctx.set_arg_external_array_w_shape(
+                    launch_ctx.set_arg_external_array_with_shape(
                         actual_argument_slot, data_ptr, tmp.element_size(),
                         tmp.nelement(), tmp.shape, True)
                     actual_argument_slot += 1
@@ -576,7 +576,7 @@ class Kernel:
                         data_elem_size = tmp.element_size()
                         data_elem_count = tmp.nelement()
                         is_device_allocation = False
-                    launch_ctx.set_arg_external_array_w_shape(
+                    launch_ctx.set_arg_external_array_with_shape(
                         actual_argument_slot, data_ptr, data_elem_size,
                         data_elem_count, v.shape, is_device_allocation)
                 elif isinstance(needed, MatrixType):

@@ -5,6 +5,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/arch.h"
 #include "taichi/program/callable.h"
+#include "taichi/program/ndarray.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -42,11 +43,12 @@ class Kernel : public Callable {
                                 bool is_device_allocation);
 
     void set_arg_external_array_with_shape(int arg_id,
-                                        uintptr_t ptr,
-                                        uint64 elem_count,
-                                        uint64 elem_size,
-                                        const std::vector<int64> &shape,
-                                        bool is_device_allocation);
+                                           uintptr_t ptr,
+                                           uint64 size,
+                                           const std::vector<int64> &shape,
+                                           bool is_device_allocation);
+
+    void set_arg_external_ndarray(int arg_id, const Ndarray &arr);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.

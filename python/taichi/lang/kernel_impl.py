@@ -494,11 +494,8 @@ class Kernel:
                 if isinstance(v, taichi.lang._ndarray.Ndarray
                               ) and not self.ndarray_use_torch:
                     # Use ndarray's own memory allocator
-                    tmp = v.arr
-                    data_ptr = int(tmp.device_allocation_ptr())
-                    launch_ctx.set_arg_external_array_with_shape(
-                        actual_argument_slot, data_ptr, tmp.element_size(),
-                        tmp.nelement(), tmp.shape, True)
+                    launch_ctx.set_arg_external_ndarray(actual_argument_slot, v.arr)
+                    has_external_arrays = True
                     actual_argument_slot += 1
                     continue
                 # Note: do not use sth like "needed == f32". That would be slow.
@@ -522,24 +519,15 @@ class Kernel:
                         v = v.arr
                         is_ndarray = True
                     has_torch = util.has_pytorch()
-                    is_numpy = isinstance(v, np.ndarray)
-                    if is_numpy:
+                    if isinstance(v, np.ndarray):
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
                         data_ptr = int(tmp.ctypes.data)
-                        data_elem_size = 1
-                        data_elem_count = tmp.nbytes
+                        data_size = tmp.nbytes
                         is_device_allocation = False
-                    elif is_ndarray and not self.ndarray_use_torch:
-                        # Use ndarray's own memory allocator
-                        tmp = v
-                        data_ptr = int(tmp.device_allocation_ptr())
-                        data_elem_size = tmp.element_size()
-                        data_elem_count = tmp.nelement()
-                        is_device_allocation = True
                     else:
-
+                        # is ndarray and use torch
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)
@@ -573,12 +561,11 @@ class Kernel:
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
                         data_ptr = int(tmp.data_ptr())
-                        data_elem_size = tmp.element_size()
-                        data_elem_count = tmp.nelement()
+                        data_size = tmp.element_size() * tmp.nelement()
                         is_device_allocation = False
                     launch_ctx.set_arg_external_array_with_shape(
-                        actual_argument_slot, data_ptr, data_elem_size,
-                        data_elem_count, v.shape, is_device_allocation)
+                        actual_argument_slot, data_ptr, data_size, 
+                        v.shape, is_device_allocation)
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):

@@ -67,7 +67,12 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited_.insert(stmt->instance_id);
   }
 
+  bool can_handle(Stmt *stmt) {
+    return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>();
+  }
+
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
+    TI_AUTO_PROF;
     // Is this_stmt eliminable given that prev_stmt appears before it and has
     // the same type with it?
     if (this_stmt->is<GlobalPtrStmt>()) {
@@ -94,6 +99,12 @@ class WholeKernelCSE : public BasicStmtVisitor {
 
   void visit(Stmt *stmt) override {
     if (!stmt->common_statement_eliminable())
+      return;
+    // container_statement is no need to be CSE
+    if (stmt->is_container_statement())
+      return;
+    // just deal with simple instruction
+    if (!can_handle(stmt))
       return;
     // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {

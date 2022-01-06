@@ -337,6 +337,7 @@ bool same_statements(
     IRNode *root1,
     IRNode *root2,
     const std::optional<std::unordered_map<int, int>> &id_map) {
+  TI_AUTO_PROF;
   // When id_map is std::nullopt by default, this function tests if
   // root1 and root2 are the same, i.e., have the same type,
   // the same operands and the same fields.
@@ -398,6 +399,7 @@ bool same_value(Stmt *stmt1,
 bool same_value(Stmt *stmt1,
                 Stmt *stmt2,
                 const std::optional<std::unordered_map<int, int>> &id_map) {
+  TI_AUTO_PROF;
   // Test if two statements definitely have the same value.
   if (stmt1 == stmt2)
     return true;

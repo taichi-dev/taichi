@@ -117,6 +117,7 @@ bool CFGNode::reach_kill_variable(Stmt *var) const {
 }
 
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
+  TI_AUTO_PROF;
   // Return the stored data if all definitions in the UD-chain of |var| at
   // this position store the same data.
   int last_def_position = -1;
@@ -231,6 +232,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 }
 
 void CFGNode::reaching_definition_analysis(bool after_lower_access) {
+  TI_AUTO_PROF;
   // Calculate |reach_gen| and |reach_kill|.
   reach_gen.clear();
   reach_kill.clear();
@@ -253,6 +255,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 }
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
+  TI_AUTO_PROF;
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding

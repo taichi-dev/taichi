@@ -157,6 +157,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
 }
 
 bool definitely_same_address(Stmt *var1, Stmt *var2) {
+  TI_AUTO_PROF;
   return alias_analysis(var1, var2) == AliasResult::same;
 }
 

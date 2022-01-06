@@ -68,12 +68,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited_.insert(stmt->instance_id);
   }
 
-  bool can_handle(Stmt *stmt) {
-    return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
-           stmt->is<ConstStmt>() || stmt->is<GlobalPtrStmt>() ||
-           stmt->is<GetRootStmt>() ;
-  }
-
   struct Myhash
   {
     std::size_t operator()(const Stmt *stmt) const noexcept{
@@ -126,9 +120,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
     // container_statement is no need to be CSE
     if (stmt->is_container_statement())
       return;
-    // just deal with simple instruction
-    //if (!can_handle(stmt))
-    //  return;
     // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {
       visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);

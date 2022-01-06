@@ -592,15 +592,38 @@ class ASTTransformer(Builder):
         return inner
 
     @staticmethod
+    def build_static_short_circuit_and(operands):
+        for operand in operands:
+            if not operand.ptr:
+                return operand.ptr
+        return operands[-1].ptr
+
+    @staticmethod
+    def build_static_short_circuit_or(operands):
+        for operand in operands:
+            if operand.ptr:
+                return operand.ptr
+        return operands[-1].ptr
+
+    @staticmethod
     def build_BoolOp(ctx, node):
         build_stmts(ctx, node.values)
-        ops = {
-            ast.And: ASTTransformer.build_short_circuit_and,
-            ast.Or: ASTTransformer.build_short_circuit_or,
-        } if impl.get_runtime().short_circuit_operators else {
-            ast.And: ASTTransformer.build_normal_bool_op(ti_ops.logical_and),
-            ast.Or: ASTTransformer.build_normal_bool_op(ti_ops.logical_or),
-        }
+        if ctx.is_in_static_scope:
+            ops = {
+                ast.And: ASTTransformer.build_static_short_circuit_and,
+                ast.Or: ASTTransformer.build_static_short_circuit_or,
+            }
+        elif impl.get_runtime().short_circuit_operators:
+            ops = {
+                ast.And: ASTTransformer.build_short_circuit_and,
+                ast.Or: ASTTransformer.build_short_circuit_or,
+            }
+        else:
+            ops = {
+                ast.And:
+                ASTTransformer.build_normal_bool_op(ti_ops.logical_and),
+                ast.Or: ASTTransformer.build_normal_bool_op(ti_ops.logical_or),
+            }
         op = ops.get(type(node.op))
         node.ptr = op(node.values)
         return node.ptr

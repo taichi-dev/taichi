@@ -424,7 +424,6 @@ class Kernel:
         if key is None:
             key = (self.func, 0)
         self.runtime.materialize()
-        self.ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
         if key in self.compiled_functions:
             return
         grad_suffix = ""
@@ -493,7 +492,8 @@ class Kernel:
                 # Shortened code path for ndarrays without torch.
                 if isinstance(needed, any_arr) and isinstance(
                         v, taichi.lang._ndarray.Ndarray
-                ) and not self.ndarray_use_torch:
+                ) and not impl.get_runtime(
+                    ).ndarray_use_torch:
                     # Use ndarray's own memory allocator
                     launch_ctx.set_arg_external_ndarray(
                         actual_argument_slot, v.arr)

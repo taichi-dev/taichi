@@ -178,9 +178,8 @@ class ASTTransformerContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        var = self.global_vars.get(name)
-        if var is not None:
-            return var
+        if name in self.global_vars:
+            return self.global_vars[name]
         return getattr(builtins, name, None)
 
     def get_pos_info(self, node):

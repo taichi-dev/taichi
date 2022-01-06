@@ -1,4 +1,5 @@
 import ast
+import copy
 import functools
 import inspect
 import re
@@ -331,12 +332,17 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(_func):
-    closure_vars = inspect.getclosurevars(_func)
-    return {
-        **closure_vars.globals,
-        **closure_vars.nonlocals,
-        **closure_vars.builtins
-    }
+    # Discussions: https://github.com/taichi-dev/taichi/issues/282
+    global_vars = copy.copy(_func.__globals__)
+
+    freevar_names = _func.__code__.co_freevars
+    closure = _func.__closure__
+    if closure:
+        freevar_values = list(map(lambda x: x.cell_contents, closure))
+        for name, value in zip(freevar_names, freevar_values):
+            global_vars[name] = value
+
+    return global_vars
 
 
 class Kernel:

@@ -179,7 +179,7 @@ class ASTTransformerContext:
             if name in s:
                 return s[name]
         var = self.global_vars.get(name)
-        if var:
+        if var is not None:
             return var
         return getattr(builtins, name, None)
 

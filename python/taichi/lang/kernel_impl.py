@@ -521,7 +521,8 @@ class Kernel:
                     elif is_ndarray and not impl.get_runtime(
                     ).ndarray_use_torch:
                         # Use ndarray's own memory allocator
-                        launch_ctx.set_arg_external_ndarray(actual_argument_slot, v)
+                        launch_ctx.set_arg_external_ndarray(
+                            actual_argument_slot, v)
                     else:
 
                         def get_call_back(u, v):
@@ -558,7 +559,8 @@ class Kernel:
                                 callbacks.append(get_call_back(v, gpu_v))
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape, False)
+                            tmp.element_size() * tmp.nelement(), v.shape,
+                            False)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:

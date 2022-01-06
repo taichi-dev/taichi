@@ -32,6 +32,7 @@ class Matrix(TaichiOperations):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.dynamic_index_stride = None
 
         if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -69,14 +70,15 @@ class Matrix(TaichiOperations):
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n)], dt,
                         expr.make_expr_group([expr.Expr(x) for x in n]))
+                    self.dynamic_index_stride = ti_core.data_type_size(dt)
                     mat = []
                     for i in range(len(n)):
                         mat.append(
                             list([
-                                impl.local_subscript_with_offset(
+                                impl.make_tensor_element_expr(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i), ),
-                                    (len(n), ))
+                                    (len(n), ), self.dynamic_index_stride)
                             ]))
             else:  # now init a Matrix
                 if in_python_scope():
@@ -109,16 +111,18 @@ class Matrix(TaichiOperations):
                         [len(n), len(n[0])], dt,
                         expr.make_expr_group(
                             [expr.Expr(x) for row in n for x in row]))
+                    self.dynamic_index_stride = ti_core.data_type_size(dt)
                     mat = []
                     for i in range(len(n)):
                         mat.append([])
                         for j in range(len(n[0])):
                             mat[i].append(
-                                impl.local_subscript_with_offset(
+                                impl.make_tensor_element_expr(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i),
                                      impl.make_constant_expr_i32(j)),
-                                    (len(n), len(n[0]))))
+                                    (len(n), len(n[0])),
+                                    self.dynamic_index_stride))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -150,7 +154,6 @@ class Matrix(TaichiOperations):
                 stacklevel=2)
 
     def element_wise_binary(self, foo, other):
-        _taichi_skip_traceback = 1
         other = self.broadcast_copy(other)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
@@ -184,7 +187,6 @@ class Matrix(TaichiOperations):
         return self if foo.__name__ == 'assign' else Matrix(entries)
 
     def element_wise_unary(self, foo):
-        _taichi_skip_traceback = 1
         return Matrix([[foo(self(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
 
@@ -198,10 +200,8 @@ class Matrix(TaichiOperations):
             The matrix-matrix product or matrix-vector product.
 
         """
-        _taichi_skip_traceback = 1
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        del _taichi_skip_traceback
         entries = []
         for i in range(self.n):
             entries.append([])
@@ -218,7 +218,6 @@ class Matrix(TaichiOperations):
             args = args[0]
         if len(args) == 1:
             args = args + (0, )
-        _taichi_skip_traceback = 1
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
@@ -239,7 +238,6 @@ class Matrix(TaichiOperations):
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         assert kwargs == {}
         ret = self.entries[self.linearize_entry_id(*args)]
         if isinstance(ret, SNodeHostAccess):
@@ -262,7 +260,6 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def subscript(self, *indices):
-        _taichi_skip_traceback = 1
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -270,25 +267,25 @@ class Matrix(TaichiOperations):
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
+            assert self.dynamic_index_stride is not None
             if len(indices) == 1:
-                return impl.local_subscript_with_offset(
-                    self.local_tensor_proxy, (i, ), (self.n, ))
-            return impl.local_subscript_with_offset(self.local_tensor_proxy,
-                                                    (i, j), (self.n, self.m))
-        # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
+                return impl.make_tensor_element_expr(self.local_tensor_proxy,
+                                                     (i, ), (self.n, ),
+                                                     self.dynamic_index_stride)
+            return impl.make_tensor_element_expr(self.local_tensor_proxy,
+                                                 (i, j), (self.n, self.m),
+                                                 self.dynamic_index_stride)
         if impl.current_cfg().dynamic_index and isinstance(
-                self.entries[0], expr.Expr) and not ti_core.is_custom_type(
-                    self.entries[0].ptr.get_ret_type(
-                    )) and self.entries[0].ptr.is_global_ptr():
-            # TODO: Add API to query whether AOS or SOA
-            return impl.global_subscript_with_offset(self.entries[0], (i, j),
-                                                     (self.n, self.m), True)
+                self,
+                _MatrixFieldElement) and self.dynamic_index_stride is not None:
+            return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
+                                                 (self.n, self.m),
+                                                 self.dynamic_index_stride)
         return self(i, j)
 
     @property
     def x(self):
         """Get the first element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
         return self[0]
@@ -296,7 +293,6 @@ class Matrix(TaichiOperations):
     @property
     def y(self):
         """Get the second element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
         return self[1]
@@ -304,7 +300,6 @@ class Matrix(TaichiOperations):
     @property
     def z(self):
         """Get the third element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
         return self[2]
@@ -312,7 +307,6 @@ class Matrix(TaichiOperations):
     @property
     def w(self):
         """Get the fourth element of a matrix."""
-        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
         return self[3]
@@ -321,25 +315,21 @@ class Matrix(TaichiOperations):
     @x.setter
     @python_scope
     def x(self, value):
-        _taichi_skip_traceback = 1
         self[0] = value
 
     @y.setter
     @python_scope
     def y(self, value):
-        _taichi_skip_traceback = 1
         self[1] = value
 
     @z.setter
     @python_scope
     def z(self, value):
-        _taichi_skip_traceback = 1
         self[2] = value
 
     @w.setter
     @python_scope
     def w(self, value):
-        _taichi_skip_traceback = 1
         self[3] = value
 
     @property
@@ -414,7 +404,6 @@ class Matrix(TaichiOperations):
             A new matrix with each element's type is dtype.
 
         """
-        _taichi_skip_traceback = 1
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
              for i in range(self.n)])
@@ -888,7 +877,6 @@ class Matrix(TaichiOperations):
     @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
-        _taichi_skip_traceback = 1
         return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod
@@ -1084,6 +1072,7 @@ class _IntermediateMatrix(Matrix):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.dynamic_index_stride = None
 
 
 class _MatrixFieldElement(_IntermediateMatrix):
@@ -1138,7 +1127,10 @@ class MatrixField(Field):
             self.dynamic_index_stride = 0
             return
         length = len(paths[0])
-        if any(len(path) != length for path in paths):
+        if any(
+                len(path) != length or ti_core.is_custom_type(path[length -
+                                                                   1].dtype)
+                for path in paths):
             return
         for i in range(length):
             if any(path[i] != paths[0][i] for path in paths):
@@ -1327,21 +1319,11 @@ class MatrixNdarray(Ndarray):
     """
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
+        self.shape = shape
+        self.n = n
+        self.m = m
         arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
         super().__init__(dtype, arr_shape)
-
-    @property
-    def n(self):
-        return self.arr.shape[0 if self.layout == Layout.SOA else -2]
-
-    @property
-    def m(self):
-        return self.arr.shape[1 if self.layout == Layout.SOA else -1]
-
-    @property
-    def shape(self):
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[2:] if self.layout == Layout.SOA else arr_shape[:-2]
 
     @property
     def element_shape(self):
@@ -1367,10 +1349,6 @@ class MatrixNdarray(Ndarray):
              for i in range(self.n)])
 
     @python_scope
-    def fill(self, val):
-        self.ndarray_matrix_fill(val)
-
-    @python_scope
     def to_numpy(self):
         return self.ndarray_matrix_to_numpy(as_vector=0)
 
@@ -1383,6 +1361,9 @@ class MatrixNdarray(Ndarray):
                                 self.layout)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        taichi.lang.meta.fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
@@ -1399,17 +1380,10 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
+        self.shape = shape
+        self.n = n
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
         super().__init__(dtype, arr_shape)
-
-    @property
-    def n(self):
-        return self.arr.shape[0 if self.layout == Layout.SOA else -1]
-
-    @property
-    def shape(self):
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[1:] if self.layout == Layout.SOA else arr_shape[:-1]
 
     @property
     def element_shape(self):
@@ -1431,10 +1405,6 @@ class VectorNdarray(Ndarray):
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
     @python_scope
-    def fill(self, val):
-        self.ndarray_matrix_fill(val)
-
-    @python_scope
     def to_numpy(self):
         return self.ndarray_matrix_to_numpy(as_vector=1)
 
@@ -1446,6 +1416,9 @@ class VectorNdarray(Ndarray):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        taichi.lang.meta.fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'

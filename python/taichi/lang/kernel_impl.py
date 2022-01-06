@@ -14,6 +14,7 @@ from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
@@ -50,12 +51,10 @@ def func(fn):
     """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
-    _taichi_skip_traceback = 1
     fun = Func(fn, _classfunc=is_classfunc)
 
     @functools.wraps(fn)
     def decorated(*args):
-        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     decorated._is_taichi_function = True
@@ -82,7 +81,6 @@ def pyfunc(fn):
 
     @functools.wraps(fn)
     def decorated(*args):
-        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     decorated._is_taichi_function = True
@@ -141,7 +139,6 @@ class Func:
         self.pyfunc = _pyfunc
         self.argument_annotations = []
         self.argument_names = []
-        _taichi_skip_traceback = 1
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
@@ -153,7 +150,6 @@ class Func:
         self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
-        _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             if not self.pyfunc:
                 raise TaichiSyntaxError(
@@ -310,7 +306,6 @@ class TaichiCallableTemplateMapper:
 
     def lookup(self, args):
         if len(args) != self.num_args:
-            _taichi_skip_traceback = 1
             raise TypeError(
                 f'{self.num_args} argument(s) needed but {len(args)} provided.'
             )
@@ -357,9 +352,7 @@ class Kernel:
         self.argument_names = []
         self.return_type = None
         self.classkernel = _classkernel
-        _taichi_skip_traceback = 1
         self.extract_arguments()
-        del _taichi_skip_traceback
         self.template_slot_locations = []
         for i, anno in enumerate(self.argument_annotations):
             if isinstance(anno, template):
@@ -409,7 +402,6 @@ class Kernel:
                 if i == 0 and self.classkernel:  # The |self| parameter
                     annotation = template()
                 else:
-                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         'Taichi kernels parameters must be type annotated')
             else:
@@ -419,8 +411,9 @@ class Kernel:
                     pass
                 elif isinstance(annotation, sparse_matrix_builder):
                     pass
+                elif isinstance(annotation, MatrixType):
+                    pass
                 else:
-                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
@@ -428,7 +421,6 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
-        _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
         self.runtime.materialize()
@@ -452,7 +444,6 @@ class Kernel:
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
-            _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
@@ -581,6 +572,32 @@ class Kernel:
                     for ii, s in enumerate(shape):
                         launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
                                                      s)
+                elif isinstance(needed, MatrixType):
+                    if id(needed.dtype) in primitive_types.real_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], (int, float)):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_float(
+                                    actual_argument_slot, float(v[a, b]))
+                                actual_argument_slot += 1
+                    elif id(needed.dtype) in primitive_types.integer_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], int):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(v[a, b]))
+                                actual_argument_slot += 1
+                    else:
+                        raise ValueError(
+                            f'Matrix dtype {needed.dtype} is not integer type or real type.'
+                        )
+                    continue
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
@@ -638,7 +655,6 @@ class Kernel:
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1
-        _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
@@ -680,7 +696,6 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
     # Can decorators determine if a function is being defined inside a class?
     # https://stackoverflow.com/a/8793684/12003165
     is_classkernel = _inside_class(level_of_class_stackframe + 1)
-    _taichi_skip_traceback = 1
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
@@ -699,7 +714,6 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         # See also: _BoundedDifferentiableMethod, data_oriented.
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
             # If we reach here (we should never), it means the class is not decorated
             # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])
@@ -711,7 +725,6 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
             return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
@@ -751,7 +764,6 @@ def kernel(fn):
         >>>     for i in x:
         >>>         x[i] = i
     """
-    _taichi_skip_traceback = 1
     return _kernel_impl(fn, level_of_class_stackframe=3)
 
 
@@ -773,13 +785,11 @@ class _BoundedDifferentiableMethod:
         self.__name__ = None
 
     def __call__(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         if self._is_staticmethod:
             return self._primal(*args, **kwargs)
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         return self._adjoint(self._kernel_owner, *args, **kwargs)
 
 
@@ -813,7 +823,6 @@ def data_oriented(cls):
         The decorated class.
     """
     def _getattr(self, item):
-        _taichi_skip_traceback = 1
         method = cls.__dict__.get(item, None)
         is_property = method.__class__ == property
         is_staticmethod = method.__class__ == staticmethod

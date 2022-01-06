@@ -7,7 +7,11 @@
 #endif
 
 #include <imgui.h>
+#ifdef ANDROID
+#include <imgui_impl_android.h>
+#else
 #include <imgui_impl_glfw.h>
+#endif
 #include <imgui_impl_vulkan.h>
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/common/gui_base.h"
@@ -19,7 +23,7 @@ namespace vulkan {
 
 class Gui final : public GuiBase {
  public:
-  Gui(AppContext *app_context, SwapChain *swap_chain, GLFWwindow *window);
+  Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
   void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);

@@ -71,9 +71,6 @@ When creating a Taichi program using
 `ti.init(arch=desired_arch, **kwargs)`, pass in the following parameters
 to make the Taichi compiler print out IRs in different stages:
 
-- `print_preprocessed=True`: print results of the frontend Python
-  AST transform. The resulting scripts will generate a Taichi Frontend
-  AST when executed.
 - `print_ir=True`: print the Taichi IR transformation process of
   kernel (excluding accessors) compilation.
 - `print_accessor_ir=True`: print the IR transformation process of

@@ -19,7 +19,7 @@ This section provides some general guidelines for the Taichi community and tips 
 Always use straightforward (sometimes even brute-force) solutions: Complicated code usually suggests a lack of design or over-engineering.
 
 > - "There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. *The first method is far more difficult*." — [C.A.R. Hoare](https://en.wikipedia.org/wiki/Tony_Hoare)
-> - "Perfection (in design) is achieved not when there is nothing more to add, but rather when there is nothing more to take away." [Antoine de Saint-Exupéry](https://en.wikipedia.org/wiki/The_Cathedral_and_the_Bazaar)
+> - "Perfection (in design) is achieved not when there is nothing more to add, but rather when there is nothing more to take away." — [Antoine de Saint-Exupéry](https://en.wikipedia.org/wiki/The_Cathedral_and_the_Bazaar)
 
 ### Juxtapose pros and cons
 
@@ -65,7 +65,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 | Issue Tag                                                    | Description               | Target developer                               |
 | ------------------------------------------------------------ | ------------------------- | ---------------------------------------------- |
 | [good first issue](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"good+first+issue") | Issues that are easy to start with                          | Developers new to Taichi                       |
-| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | Issues *Slightly* more challenging | Developers who wish to dive deeper into Taichi |
+| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | Issues *slightly* more challenging | Developers who wish to dive deeper into Taichi |
 
 ### Best practices
 
@@ -218,34 +218,34 @@ Your PR will make it into the commit history in the the master branch or even Ta
     - If a PR deals with a feature visible to the end-users, initialize the most relevant tag and the PR will [make it into the release notes](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py). For example, `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, or `[CUDA]`. Ensure that your PR title has *AT MOST* one tag dealt this way.
     - If a PR deals with the underlying or intermediate implementation, then it is for the developers and you need to ensure that all its tags are *in lowercase*. For example, `[metal]`, `[vulkan]`, `[ir]`, `[lang]`, or `[cuda]`.
 
-:::danger INCORRECT
-`[Lang][refactor]` (sans space)
-:::
+  :::danger INCORRECT
+  `[Lang][refactor]` (sans space)
+  :::
 
-:::tip CORRECT
-`[Lang] [refactor]`
-:::
+  :::tip CORRECT
+  `[Lang] [refactor]`
+  :::
 
-:::danger INCORRECT
-`[GUI] [Mac] Support modifier keys` (both tags have their initial capitalized)
-:::
+  :::danger INCORRECT
+  `[GUI] [Mac] Support modifier keys` (both tags have their initial capitalized)
+  :::
 
-:::tip CORRECT
-`[gui] [Mac] Support modifier keys` (only one tag has its initial capitalized)
-:::
+  :::tip CORRECT
+  `[gui] [Mac] Support modifier keys` (only one tag has its initial capitalized)
+  :::
 
 - **Title naming conventions:**
   - Keep your PR title short enough but ensure that it carries necessary information.
   - Do not include back quotes ("\`") in your PR title.
   - Capitalize the initial letter of your title, which is the word immediately after your tag(s).
 
-:::danger INCORRECT
-`[Doc] improve documentation` (the initial of the title is not capitalized)
-:::
+  :::danger INCORRECT
+  `[Doc] improve documentation` (the initial of the title is not capitalized)
+  :::
 
-:::tip CORRECT
-`[Doc] Improve documentation`
-:::
+  :::tip CORRECT
+  `[Doc] Improve documentation`
+  :::
 
 :::note
 

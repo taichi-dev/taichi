@@ -14,7 +14,7 @@ void SwapChain::init(class AppContext *app_context) {
   app_context_ = app_context;
   SurfaceConfig config;
   config.vsync = app_context_->config.vsync;
-  config.window_handle = app_context_->glfw_window();
+  config.window_handle = app_context_->taichi_window();
   config.width = app_context_->config.width;
   config.height = app_context_->config.height;
   surface_ = app_context_->device().create_surface(config);

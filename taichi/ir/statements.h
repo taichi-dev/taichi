@@ -378,6 +378,10 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
 
   ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
 
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -729,6 +733,7 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  bool end_is_array_axis{false};
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
@@ -737,7 +742,8 @@ class RangeForStmt : public Stmt {
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               bool end_is_array_axis = false);
 
   bool is_container_statement() const override {
     return true;
@@ -756,7 +762,8 @@ class RangeForStmt : public Stmt {
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
-                     strictly_serialized);
+                     strictly_serialized,
+                     end_is_array_axis);
   TI_DEFINE_ACCEPT
 };
 
@@ -843,27 +850,6 @@ class MeshForStmt : public Stmt {
 };
 
 /**
- * An inline Taichi function.
- * TODO: This statement seems unused.
- */
-class FuncBodyStmt : public Stmt {
- public:
-  std::string funcid;
-  std::unique_ptr<Block> body;
-
-  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body);
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
-  std::unique_ptr<Stmt> clone() const override;
-
-  TI_STMT_DEF_FIELDS(funcid);
-  TI_DEFINE_ACCEPT
-};
-
-/**
  * Call an inline Taichi function.
  */
 class FuncCallStmt : public Stmt {
@@ -910,19 +896,6 @@ class WhileStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(mask);
   TI_DEFINE_ACCEPT
-};
-
-// TODO: remove this
-class PragmaSLPStmt : public Stmt {
- public:
-  int slp_width;
-
-  PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  TI_STMT_DEF_FIELDS(slp_width);
-  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // TODO: document for this
@@ -1123,6 +1096,7 @@ class OffloadedStmt : public Stmt {
   int block_dim{1};
   bool reversed{false};
   int num_cpu_threads{1};
+  Stmt *end_stmt{nullptr};
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;
@@ -1286,21 +1260,6 @@ class BlockCornerIndexStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-// TODO: remove this
-class BlockDimStmt : public Stmt {
- public:
-  BlockDimStmt() {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

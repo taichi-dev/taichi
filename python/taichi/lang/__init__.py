@@ -398,6 +398,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
+        self.ndarray_use_torch = False
 
 
 def prepare_sandbox():
@@ -581,6 +582,7 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
+    env_spec.add('ndarray_use_torch')
 
     # compiler configurations (ti.cfg):
     for key in dir(cfg):
@@ -605,6 +607,8 @@ def init(arch=None,
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
+        impl.get_runtime().ndarray_use_torch = \
+            spec_cfg.ndarray_use_torch
         _logging.set_logging_level(spec_cfg.log_level.lower())
 
     # select arch (backend):
@@ -619,11 +623,11 @@ def init(arch=None,
 
     # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
     # So it won't work.
-    if cfg.arch == opengl and cfg.ndarray_use_torch:
+    if cfg.arch == opengl and spec_cfg.ndarray_use_torch:
         _logging.warn(
             'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
         )
-        cfg.ndarray_use_torch = False
+        impl.get_runtime().ndarray_use_torch = False
 
     if _test_mode:
         return spec_cfg

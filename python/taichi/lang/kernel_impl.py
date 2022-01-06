@@ -490,11 +490,13 @@ class Kernel:
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
-                # Shortened code path for ndarray.
-                if isinstance(v, taichi.lang._ndarray.Ndarray
-                              ) and not self.ndarray_use_torch:
+                # Shortened code path for ndarrays without torch.
+                if isinstance(needed, any_arr) and isinstance(
+                        v, taichi.lang._ndarray.Ndarray
+                ) and not self.ndarray_use_torch:
                     # Use ndarray's own memory allocator
-                    launch_ctx.set_arg_external_ndarray(actual_argument_slot, v.arr)
+                    launch_ctx.set_arg_external_ndarray(
+                        actual_argument_slot, v.arr)
                     has_external_arrays = True
                     actual_argument_slot += 1
                     continue
@@ -564,8 +566,8 @@ class Kernel:
                         data_size = tmp.element_size() * tmp.nelement()
                         is_device_allocation = False
                     launch_ctx.set_arg_external_array_with_shape(
-                        actual_argument_slot, data_ptr, data_size, 
-                        v.shape, is_device_allocation)
+                        actual_argument_slot, data_ptr, data_size, v.shape,
+                        is_device_allocation)
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):

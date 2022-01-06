@@ -6,6 +6,7 @@
 #include "taichi/system/profiler.h"
 
 #include <typeindex>
+#include <functional>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -47,7 +48,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
  private:
   std::unordered_set<int> visited_;
   // each scope corresponds to an unordered_set
-  std::vector<std::unordered_map<std::type_index, std::unordered_set<Stmt *>>>
+  std::vector<std::unordered_map<std::size_t , std::unordered_set<Stmt *>>>
       visible_stmts_;
   DelayedIRModifier modifier_;
 
@@ -70,6 +71,20 @@ class WholeKernelCSE : public BasicStmtVisitor {
   bool can_handle(Stmt *stmt) {
     return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>();
   }
+
+  struct Myhash
+  {
+    std::size_t operator()(const Stmt *stmt) const noexcept{
+      std::size_t hash_code ;
+      hash_code = std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
+      auto op = stmt->get_operands();
+      for (auto &x: op){
+       hash_code = (hash_code >> 1) ^ (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
+      }
+      return hash_code;
+    }
+  };
+
 
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
     TI_AUTO_PROF;
@@ -108,11 +123,11 @@ class WholeKernelCSE : public BasicStmtVisitor {
       return;
     // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {
-      visible_stmts_.back()[std::type_index(typeid(*stmt))].insert(stmt);
+      visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);
       return;
     }
     for (auto &scope : visible_stmts_) {
-      for (auto &prev_stmt : scope[std::type_index(typeid(*stmt))]) {
+      for (auto &prev_stmt : scope[Myhash{}(stmt)]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
           MarkUndone::run(&visited_, stmt);
           stmt->replace_usages_with(prev_stmt);
@@ -121,7 +136,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
         }
       }
     }
-    visible_stmts_.back()[std::type_index(typeid(*stmt))].insert(stmt);
+    visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);
     set_done(stmt);
   }
 

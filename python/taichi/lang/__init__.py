@@ -12,7 +12,6 @@ from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
 
-import taichi.lang.meta
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
@@ -750,7 +749,8 @@ def Tape(loss, clear_gradients=True):
     if clear_gradients:
         clear_all_gradients()
 
-    taichi.lang.meta.clear_loss(loss)
+    from taichi._kernels import clear_loss  # pylint: disable=C0415
+    clear_loss(loss)
 
     return runtime.get_tape(loss)
 
@@ -771,7 +771,9 @@ def clear_all_gradients():
 
         places = tuple(places)
         if places:
-            taichi.lang.meta.clear_gradients(places)
+            from taichi._kernels import \
+                clear_gradients  # pylint: disable=C0415
+            clear_gradients(places)
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)

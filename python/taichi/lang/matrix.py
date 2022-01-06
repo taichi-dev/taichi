@@ -2,7 +2,6 @@ import numbers
 from collections.abc import Iterable
 
 import numpy as np
-import taichi.lang
 from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod
@@ -1175,7 +1174,8 @@ class MatrixField(Field):
             val = tuple(val_tuple)
         assert len(val) == self.n
         assert len(val[0]) == self.m
-        taichi.lang.meta.fill_matrix(self, val)
+        from taichi._kernels import fill_matrix  # pylint: disable=C0415
+        fill_matrix(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False, dtype=None):
@@ -1196,7 +1196,8 @@ class MatrixField(Field):
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
-        taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
+        from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
+        matrix_to_ext_arr(self, arr, as_vector)
         runtime_ops.sync()
         return arr
 
@@ -1218,7 +1219,8 @@ class MatrixField(Field):
         arr = torch.empty(self.shape + shape_ext,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
-        taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
+        from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
+        matrix_to_ext_arr(self, arr, as_vector)
         runtime_ops.sync()
         return arr
 
@@ -1232,7 +1234,8 @@ class MatrixField(Field):
             assert len(arr.shape) == len(self.shape) + 2
         dim_ext = 1 if as_vector else 2
         assert len(arr.shape) == len(self.shape) + dim_ext
-        taichi.lang.meta.ext_arr_to_matrix(arr, self, as_vector)
+        from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
+        ext_arr_to_matrix(arr, self, as_vector)
         runtime_ops.sync()
 
     @python_scope
@@ -1363,7 +1366,9 @@ class MatrixNdarray(Ndarray):
         return ret_arr
 
     def fill_by_kernel(self, val):
-        taichi.lang.meta.fill_ndarray_matrix(self, val)
+        from taichi._kernels import \
+            fill_ndarray_matrix  # pylint: disable=C0415
+        fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
@@ -1418,7 +1423,9 @@ class VectorNdarray(Ndarray):
         return ret_arr
 
     def fill_by_kernel(self, val):
-        taichi.lang.meta.fill_ndarray_matrix(self, val)
+        from taichi._kernels import \
+            fill_ndarray_matrix  # pylint: disable=C0415
+        fill_ndarray_matrix(self, val)
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'

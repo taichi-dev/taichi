@@ -87,7 +87,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
 
 
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
-    TI_AUTO_PROF;
     // Is this_stmt eliminable given that prev_stmt appears before it and has
     // the same type with it?
     if (this_stmt->type() != prev_stmt->type())

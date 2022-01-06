@@ -48,7 +48,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
  private:
   std::unordered_set<int> visited_;
   // each scope corresponds to an unordered_set
-  std::vector<std::unordered_map<std::size_t , std::unordered_set<Stmt *> > >
+  std::vector<std::unordered_map<std::size_t, std::unordered_set<Stmt *> > >
       visible_stmts_;
   DelayedIRModifier modifier_;
 
@@ -68,23 +68,22 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited_.insert(stmt->instance_id);
   }
 
-  struct Myhash
-  {
-    std::size_t operator()(const Stmt *stmt) const noexcept{
-      std::size_t hash_code {0};
-      auto hash_type = std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
-        auto op = stmt->get_operands();
-        for (auto &x : op) {
-          if (x == nullptr)
-            continue;
-          hash_code =
-              (hash_code) ^
-              (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
-        }
+  struct Myhash {
+    std::size_t operator()(const Stmt *stmt) const noexcept {
+      std::size_t hash_code{0};
+      auto hash_type =
+          std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
+      auto op = stmt->get_operands();
+      for (auto &x : op) {
+        if (x == nullptr)
+          continue;
+        hash_code =
+            (hash_code) ^
+            (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
+      }
       return hash_type ^ hash_code;
     }
   };
-
 
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
     // Is this_stmt eliminable given that prev_stmt appears before it and has

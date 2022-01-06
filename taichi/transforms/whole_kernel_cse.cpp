@@ -69,7 +69,10 @@ class WholeKernelCSE : public BasicStmtVisitor {
   }
 
   bool can_handle(Stmt *stmt) {
-    return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>();
+    return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
+            stmt->is<LoopUniqueStmt>() || stmt->is<ExternalPtrStmt>() ||
+           stmt->is<GlobalTemporaryStmt>() ||
+           stmt->is<ThreadLocalPtrStmt>() || stmt->is<BlockLocalPtrStmt>();
   }
 
   struct Myhash
@@ -79,6 +82,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
       hash_code = std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
       auto op = stmt->get_operands();
       for (auto &x: op){
+        if(x == nullptr)continue;
        hash_code = (hash_code >> 1) ^ (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
       }
       return hash_code;

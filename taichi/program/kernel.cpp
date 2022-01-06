@@ -270,10 +270,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,
     uint64 size,
-      const std::vector<int64> &shape,
+    const std::vector<int64> &shape,
     bool is_device_allocation) {
-  this->set_arg_external_array(arg_id, ptr, size,
-                               is_device_allocation);
+  this->set_arg_external_array(arg_id, ptr, size, is_device_allocation);
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   for (uint64 i = 0; i < shape.size(); ++i) {

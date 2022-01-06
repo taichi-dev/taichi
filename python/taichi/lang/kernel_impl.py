@@ -492,8 +492,7 @@ class Kernel:
                 # Shortened code path for ndarrays without torch.
                 if isinstance(needed, any_arr) and isinstance(
                         v, taichi.lang._ndarray.Ndarray
-                ) and not impl.get_runtime(
-                    ).ndarray_use_torch:
+                ) and not impl.get_runtime().ndarray_use_torch:
                     # Use ndarray's own memory allocator
                     launch_ctx.set_arg_external_ndarray(
                         actual_argument_slot, v.arr)

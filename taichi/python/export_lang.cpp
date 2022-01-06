@@ -464,8 +464,7 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_external_ndarray",
-           &Kernel::LaunchContextBuilder::set_arg_external_ndarray)
+      .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 

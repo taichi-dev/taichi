@@ -45,10 +45,9 @@ class Kernel : public Callable {
     void set_arg_external_array_with_shape(int arg_id,
                                            uintptr_t ptr,
                                            uint64 size,
-                                           const std::vector<int64> &shape,
-                                           bool is_device_allocation);
+                                           const std::vector<int64> &shape);
 
-    void set_arg_external_ndarray(int arg_id, const Ndarray &arr);
+    void set_arg_ndarray(int arg_id, const Ndarray &arr);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.

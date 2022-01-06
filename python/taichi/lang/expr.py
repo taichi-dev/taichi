@@ -2,7 +2,6 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.matrix import Matrix
 from taichi.lang.util import is_taichi_class
 
 
@@ -10,7 +9,6 @@ from taichi.lang.util import is_taichi_class
 class Expr(TaichiOperations):
     """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr` which holds an instance of C++ Expression class."""
     def __init__(self, *args, tb=None):
-        _taichi_skip_traceback = 1
         self.tb = tb
         if len(args) == 1:
             if isinstance(args[0], _ti_core.Expr):
@@ -54,6 +52,7 @@ def make_var_list(size):
 
 
 def make_expr_group(*exprs):
+    from taichi.lang.matrix import Matrix  # pylint: disable=C0415
     if len(exprs) == 1:
         if isinstance(exprs[0], (list, tuple)):
             exprs = exprs[0]

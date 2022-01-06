@@ -5,17 +5,26 @@
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
+#ifdef ANDROID
+#include <android/native_window.h>
+#endif
 
 TI_UI_NAMESPACE_BEGIN
+
+#ifdef ANDROID
+using TaichiWindow = ANativeWindow;
+#else
+using TaichiWindow = GLFWwindow;
+#endif
 
 namespace vulkan {
 
 class AppContext {
  public:
-  void init(GLFWwindow *glfw_window, const AppConfig &config);
+  void init(TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
-  GLFWwindow *glfw_window() const;
+  TaichiWindow *taichi_window() const;
 
   taichi::lang::vulkan::VulkanDevice &device();
   const taichi::lang::vulkan::VulkanDevice &device() const;
@@ -30,7 +39,7 @@ class AppContext {
   // not owned
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
 
-  GLFWwindow *glfw_window_{nullptr};
+  TaichiWindow *taichi_window_{nullptr};
 };
 
 }  // namespace vulkan

@@ -123,7 +123,6 @@ class MeshElementField:
                 else:
                     self.getter_dict[key] = self.field_dict[key]
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self.getter_dict[key]
 
         return getter

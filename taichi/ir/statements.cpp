@@ -240,7 +240,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            int bit_vectorize,
                            int num_cpu_threads,
                            int block_dim,
-                           bool strictly_serialized)
+                           bool strictly_serialized,
+                           bool end_is_array_axis)
     : begin(begin),
       end(end),
       body(std::move(body)),
@@ -248,7 +249,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
-      strictly_serialized(strictly_serialized) {
+      strictly_serialized(strictly_serialized),
+      end_is_array_axis(end_is_array_axis) {
   reversed = false;
   this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
@@ -312,18 +314,6 @@ std::unique_ptr<Stmt> MeshForStmt::clone() const {
   new_stmt->minor_relation_types = minor_relation_types;
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
-}
-
-FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
-                           std::unique_ptr<Block> &&body)
-    : funcid(funcid), body(std::move(body)) {
-  if (this->body)
-    this->body->parent_stmt = this;
-  TI_STMT_REG_FIELDS;
-}
-
-std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
-  return std::make_unique<FuncBodyStmt>(funcid, body->clone());
 }
 
 FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)

@@ -33,6 +33,29 @@ def test_record():
             assert 'compute_loss' in ''.join(f.readlines())
 
 
+@ti.test(arch=ti.opengl, max_block_dim=32)
+def test_opengl_max_block_dim():
+    density = ti.field(float, shape=(8, 8))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            gl_file_path = res['aot_data']['kernels']['init']['tasks'][0][
+                'src']
+            with open(gl_file_path) as gl_file:
+                s = 'layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n'
+                assert s in gl_file.readlines()
+
+
 @ti.test(arch=ti.opengl)
 def test_save():
     density = ti.field(float, shape=(4, 4))
@@ -202,7 +225,7 @@ def test_opengl_8_ssbo():
 
 @ti.test(arch=ti.opengl)
 def test_opengl_exceed_max_ssbo():
-    # 7 ndarrays + gtmp + args > 8 (maximum allowed)
+    # 8 ndarrays + args > 8 (maximum allowed)
     n = 4
     density1 = ti.ndarray(dtype=ti.f32, shape=(n, n))
     density2 = ti.ndarray(dtype=ti.f32, shape=(n, n))
@@ -211,12 +234,13 @@ def test_opengl_exceed_max_ssbo():
     density5 = ti.ndarray(dtype=ti.f32, shape=(n, n))
     density6 = ti.ndarray(dtype=ti.f32, shape=(n, n))
     density7 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density8 = ti.ndarray(dtype=ti.f32, shape=(n, n))
 
     @ti.kernel
     def init(d: ti.i32, density1: ti.any_arr(), density2: ti.any_arr(),
              density3: ti.any_arr(), density4: ti.any_arr(),
              density5: ti.any_arr(), density6: ti.any_arr(),
-             density7: ti.any_arr()):
+             density7: ti.any_arr(), density8: ti.any_arr()):
         for i, j in density1:
             density1[i, j] = d + 1
             density2[i, j] = d + 2
@@ -225,10 +249,11 @@ def test_opengl_exceed_max_ssbo():
             density5[i, j] = d + 5
             density6[i, j] = d + 6
             density7[i, j] = d + 7
+            density8[i, j] = d + 8
 
     with pytest.raises(RuntimeError):
         init(0, density1, density2, density3, density4, density5, density6,
-             density7)
+             density7, density8)
 
 
 @ti.test(arch=ti.opengl)

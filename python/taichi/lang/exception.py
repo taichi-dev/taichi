@@ -1,10 +1,10 @@
-class TaichiSyntaxError(Exception):
+class TaichiCompilationError(Exception):
+    pass
+
+
+class TaichiSyntaxError(TaichiCompilationError):
     pass
 
 
 class InvalidOperationError(Exception):
-    pass
-
-
-class TaichiCompilationError(Exception):
     pass

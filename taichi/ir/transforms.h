@@ -40,7 +40,6 @@ bool alg_simp(IRNode *root, const CompileConfig &config);
 bool demote_operations(IRNode *root, const CompileConfig &config);
 bool binary_op_simplify(IRNode *root, const CompileConfig &config);
 bool whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root, bool after_lower_access);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config);

@@ -1,11 +1,9 @@
 import ast
+import traceback
 from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-import astor
-from taichi._logging import info
-from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 
 
@@ -23,13 +21,13 @@ class Builder:
             return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
-                raise e
-            msg = str(e)
-            if not isinstance(e, TaichiCompilationError):
-                msg = f"{e.__class__.__name__}: " + msg
-            msg = ctx.get_pos_info(node) + msg
+                raise e.with_traceback(None)
             ctx.raised = True
-            raise TaichiCompilationError(msg)
+            if not isinstance(e, TaichiCompilationError):
+                msg = ctx.get_pos_info(node) + traceback.format_exc()
+                raise TaichiCompilationError(msg) from None
+            msg = ctx.get_pos_info(node) + str(e)
+            raise type(e)(msg) from None
 
 
 class VariableScopeGuard:
@@ -223,11 +221,3 @@ class ASTTransformerContext:
                     hint = ''
                 msg += gen_line(self.src[i], hint)
         return msg
-
-
-def print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

@@ -39,7 +39,11 @@ void Renderable::init_buffers() {
 
 void Renderable::update_data(const RenderableInfo &info) {
   Program &program = get_current_program();
-  program.synchronize();
+  // We might not have a current program if GGUI is used in external apps to
+  // load AOT modules
+  if (current_program) {
+    program.synchronize();
+  }
 
   int num_vertices = info.vbo.shape[0];
   int num_indices;
@@ -66,7 +70,13 @@ void Renderable::update_data(const RenderableInfo &info) {
     init_buffers();
   }
 
-  DevicePtr vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
+  // If there is no current program, VBO information should be provided directly
+  // instead of accessing through the current SNode
+  DevicePtr vbo_dev_ptr = info.vbo.dev_alloc.get_ptr();
+  if (current_program) {
+    vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
+  }
+
   uint64_t vbo_size = sizeof(Vertex) * num_vertices;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(

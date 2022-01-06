@@ -201,7 +201,14 @@ class ASTTransformerContext:
             hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
             msg += gen_line(self.src[node.lineno - 1], hint)
         else:
-            for i in range(node.lineno - 1, node.end_lineno):
+            node_type = node.__class__.__name__
+
+            if node_type in ["For", "While", "FunctionDef", "If"]:
+                end_lineno = max(node.body[0].lineno - 1, node.lineno)
+            else:
+                end_lineno = node.end_lineno
+
+            for i in range(node.lineno - 1, end_lineno):
                 last = len(self.src[i])
                 while last > 0 and (self.src[i][last - 1].isspace() or
                                     not self.src[i][last - 1].isprintable()):

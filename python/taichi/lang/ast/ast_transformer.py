@@ -4,9 +4,9 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import (expr, impl, kernel_arguments, kernel_impl, matrix,
-                         mesh, ndrange)
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
+from taichi.lang._ndrange import ndrange
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
@@ -650,7 +650,7 @@ class ASTTransformer(Builder):
         for wanted, name in [
             (impl.static, 'static'),
             (impl.grouped, 'grouped'),
-            (ndrange.ndrange, 'ndrange'),
+            (ndrange, 'ndrange'),
         ]:
             if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
@@ -672,7 +672,7 @@ class ASTTransformer(Builder):
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
-            if not isinstance(ndrange_arg, ndrange.ndrange):
+            if not isinstance(ndrange_arg, ndrange):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
                 )

@@ -17,6 +17,7 @@ from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (InvalidOperationError,
@@ -25,8 +26,9 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
-                              current_cfg, expr_init, expr_init_func,
-                              expr_init_list, field, get_runtime, grouped,
+                              current_cfg, deactivate_all_snodes, expr_init,
+                              expr_init_func, expr_init_list, field,
+                              get_runtime, grouped,
                               insert_expr_stmt_if_ti_func, ndarray, one, root,
                               static, static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
@@ -773,12 +775,6 @@ def clear_all_gradients():
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
-
-
-def deactivate_all_snodes():
-    """Recursively deactivate all SNodes."""
-    for root_fb in FieldsBuilder.finalized_roots():
-        root_fb.deactivate_all()
 
 
 def benchmark(_func, repeat=300, args=()):

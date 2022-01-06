@@ -2,7 +2,6 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.matrix import Matrix
 from taichi.lang.util import is_taichi_class
 
 
@@ -53,6 +52,7 @@ def make_var_list(size):
 
 
 def make_expr_group(*exprs):
+    from taichi.lang.matrix import Matrix  # pylint: disable=C0415
     if len(exprs) == 1:
         if isinstance(exprs[0], (list, tuple)):
             exprs = exprs[0]

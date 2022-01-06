@@ -23,8 +23,7 @@ def test_exception_multiline():
     if version_info < (3, 8):
         msg = f"""\
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
-            aaaa(111,
-TypeError: 'NoneType' object is not callable"""
+            aaaa(111,"""
     else:
         msg = f"""\
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
@@ -35,10 +34,9 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
 
 
                  23)
-                 ^^^
-TypeError: 'NoneType' object is not callable"""
+                 ^^^"""
     print(e.value.args[0])
-    assert e.value.args[0] == msg
+    assert e.value.args[0][:len(msg)] == msg
 
 
 @ti.test()
@@ -68,8 +66,7 @@ On line {lineno + 13} of file "{file}":
 On line {lineno + 9} of file "{file}":
             baz()
 On line {lineno + 5} of file "{file}":
-            t()
-TypeError: 'NoneType' object is not callable"""
+            t()"""
     else:
         msg = f"""\
 On line {lineno + 13} of file "{file}":
@@ -80,10 +77,9 @@ On line {lineno + 9} of file "{file}":
             ^^^^^
 On line {lineno + 5} of file "{file}":
             t()
-            ^^^
-TypeError: 'NoneType' object is not callable"""
+            ^^^"""
     print(e.value.args[0])
-    assert e.value.args[0] == msg
+    assert e.value.args[0][:len(msg)] == msg
 
 
 @ti.test()
@@ -101,16 +97,14 @@ def test_tab():
     if version_info < (3, 8):
         msg = f"""\
 On line {lineno + 5} of file "{file}":
-            a(11,   22, 3)
-TypeError: 'NoneType' object is not callable"""
+            a(11,   22, 3)"""
     else:
         msg = f"""\
 On line {lineno + 5} of file "{file}":
             a(11,   22, 3)
-            ^^^^^^^^^^^^^^
-TypeError: 'NoneType' object is not callable"""
+            ^^^^^^^^^^^^^^"""
     print(e.value.args[0])
-    assert e.value.args[0] == msg
+    assert e.value.args[0][:len(msg)] == msg
 
 
 @ti.test()
@@ -129,7 +123,7 @@ def test_super_long_line():
         msg = f"""\
 On line {lineno + 5} of file "{file}":
             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
-TypeError: 'NoneType' object is not callable"""
+"""
     else:
         msg = f"""\
 On line {lineno + 5} of file "{file}":
@@ -138,7 +132,6 @@ On line {lineno + 5} of file "{file}":
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'NoneType' object is not callable"""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
     print(e.value.args[0])
-    assert e.value.args[0] == msg
+    assert e.value.args[0][:len(msg)] == msg

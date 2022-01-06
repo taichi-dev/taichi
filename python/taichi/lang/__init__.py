@@ -17,23 +17,22 @@ from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (InvalidOperationError,
                                    TaichiCompilationError, TaichiSyntaxError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (GroupedNDRange, axes, begin_frontend_if,
+from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
                               current_cfg, deactivate_all_snodes, expr_init,
                               expr_init_func, expr_init_list, field,
-                              get_runtime, global_subscript_with_offset,
-                              grouped, insert_expr_stmt_if_ti_func,
-                              local_subscript_with_offset,
-                              materialize_callback, ndarray, ndrange, one,
-                              root, static, static_assert, static_print,
-                              stop_grad, subscript, ti_assert, ti_float,
-                              ti_format, ti_int, ti_print, zero)
+                              get_runtime, grouped,
+                              insert_expr_stmt_if_ti_func, ndarray, one, root,
+                              static, static_assert, static_print, stop_grad,
+                              subscript, ti_assert, ti_float, ti_format,
+                              ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -56,11 +55,12 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
 
-import taichi as ti
+from taichi import _logging
 
 runtime = impl.get_runtime()
 
@@ -107,7 +107,10 @@ wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
-gpu = [cuda, metal, opengl, vulkan]
+dx11 = _ti_core.dx11
+"""The DX11 backend.
+"""
+gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
@@ -393,10 +396,8 @@ class _EnvironmentConfigurator:
 class _SpecialConfig:
     # like CompileConfig in C++, this is the configurations that belong to other submodules
     def __init__(self):
-        self.print_preprocessed = False
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.excepthook = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
 
@@ -536,10 +537,10 @@ def init(arch=None,
     default_fp = _deepcopy(default_fp)
     default_ip = _deepcopy(default_ip)
     kwargs = _deepcopy(kwargs)
-    ti.reset()
+    reset()
 
     spec_cfg = _SpecialConfig()
-    env_comp = _EnvironmentConfigurator(kwargs, ti.cfg)
+    env_comp = _EnvironmentConfigurator(kwargs, cfg)
     env_spec = _EnvironmentConfigurator(kwargs, spec_cfg)
 
     # configure default_fp/ip:
@@ -551,9 +552,9 @@ def init(arch=None,
                 f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
             )
         if env_default_fp == '32':
-            default_fp = ti.f32
+            default_fp = f32
         elif env_default_fp == '64':
-            default_fp = ti.f64
+            default_fp = f64
         elif env_default_fp is not None:
             raise ValueError(
                 f'Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64')
@@ -565,9 +566,9 @@ def init(arch=None,
                 f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
             )
         if env_default_ip == '32':
-            default_ip = ti.i32
+            default_ip = i32
         elif env_default_ip == '64':
-            default_ip = ti.i64
+            default_ip = i64
         elif env_default_ip is not None:
             raise ValueError(
                 f'Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64')
@@ -578,18 +579,16 @@ def init(arch=None,
         impl.get_runtime().set_default_ip(default_ip)
 
     # submodule configurations (spec_cfg):
-    env_spec.add('print_preprocessed')
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
-    env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
 
     # compiler configurations (ti.cfg):
-    for key in dir(ti.cfg):
+    for key in dir(cfg):
         if key in ['arch', 'default_fp', 'default_ip']:
             continue
-        _cast = type(getattr(ti.cfg, key))
+        _cast = type(getattr(cfg, key))
         if _cast is bool:
             _cast = None
         env_comp.add(key, _cast)
@@ -603,45 +602,40 @@ def init(arch=None,
 
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
-        ti.set_gdb_trigger(spec_cfg.gdb_trigger)
-        impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        set_gdb_trigger(spec_cfg.gdb_trigger)
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
-        ti.set_logging_level(spec_cfg.log_level.lower())
-        if spec_cfg.excepthook:
-            # TODO(#1405): add a way to restore old excepthook
-            ti.enable_excepthook()
+        _logging.set_logging_level(spec_cfg.log_level.lower())
 
     # select arch (backend):
     env_arch = os.environ.get('TI_ARCH')
     if env_arch is not None:
-        ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
+        _logging.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    ti.cfg.arch = adaptive_arch_select(arch, enable_fallback, ti.cfg.use_gles)
-    if ti.cfg.arch == cc:
+    cfg.arch = adaptive_arch_select(arch, enable_fallback, cfg.use_gles)
+    if cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
-    print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
+    print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
 
     # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
     # So it won't work.
-    if ti.cfg.arch == opengl and ti.cfg.ndarray_use_torch:
-        ti.warn(
+    if cfg.arch == opengl and cfg.ndarray_use_torch:
+        _logging.warn(
             'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
         )
-        ti.cfg.ndarray_use_torch = False
+        cfg.ndarray_use_torch = False
 
     if _test_mode:
         return spec_cfg
 
-    get_default_kernel_profiler().set_kernel_profiler_mode(
-        ti.cfg.kernel_profiler)
+    get_default_kernel_profiler().set_kernel_profiler_mode(cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()
 
-    ti.trace('Materializing runtime...')
+    _logging.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
     impl._root_fb = FieldsBuilder()
@@ -667,7 +661,7 @@ def block_local(*args):
         *args (List[Field]): A list of sparse Taichi fields.
     """
     if impl.current_cfg().opt_level == 0:
-        ti.warn("""opt_level = 1 is enforced to enable bls analysis.""")
+        _logging.warn("""opt_level = 1 is enforced to enable bls analysis.""")
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
@@ -783,9 +777,9 @@ def benchmark(_func, repeat=300, args=()):
     def run_benchmark():
         compile_time = time.time()
         _func(*args)  # compile the kernel first
-        ti.sync()
+        sync()
         compile_time = time.time() - compile_time
-        ti.stat_write('compilation_time', compile_time)
+        stat_write('compilation_time', compile_time)
         codegen_stat = _ti_core.stat()
         for line in codegen_stat.split('\n'):
             try:
@@ -795,29 +789,29 @@ def benchmark(_func, repeat=300, args=()):
             a = a.strip()
             b = int(float(b))
             if a == 'codegen_kernel_statements':
-                ti.stat_write('compiled_inst', b)
+                stat_write('compiled_inst', b)
             if a == 'codegen_offloaded_tasks':
-                ti.stat_write('compiled_tasks', b)
+                stat_write('compiled_tasks', b)
             elif a == 'launched_tasks':
-                ti.stat_write('launched_tasks', b)
+                stat_write('launched_tasks', b)
 
         # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
         for _ in range(3):
             _func(*args)
-            ti.sync()
-        ti.clear_kernel_profile_info()
+            sync()
+        clear_kernel_profile_info()
         t = time.time()
         for _ in range(repeat):
             _func(*args)
-            ti.sync()
+            sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
-        ti.stat_write('wall_clk_t', avg)
-        device_time = ti.kernel_profiler_total_time()
+        stat_write('wall_clk_t', avg)
+        device_time = kernel_profiler_total_time()
         avg_device_time = device_time / repeat
-        ti.stat_write('exec_t', avg_device_time)
+        stat_write('exec_t', avg_device_time)
 
     run_benchmark()
 
@@ -853,7 +847,7 @@ def benchmark_plot(fn=None,
     assert len(cases) >= 1
     if len(cases) == 1:
         cases = [cases[0], cases[0]]
-        ti.warning(
+        warning(
             'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
         )
 
@@ -958,8 +952,8 @@ def stat_write(key, value):
         return
     if case_name.startswith('benchmark_'):
         case_name = case_name[10:]
-    arch_name = _ti_core.arch_name(ti.cfg.arch)
-    async_mode = 'async' if ti.cfg.async_mode else 'sync'
+    arch_name = _ti_core.arch_name(cfg.arch)
+    async_mode = 'async' if cfg.async_mode else 'sync'
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/benchmark.yml'
     try:
@@ -994,6 +988,7 @@ def is_arch_supported(arch, use_gles=False):
         opengl: functools.partial(_ti_core.with_opengl, use_gles),
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
+        dx11: _ti_core.with_dx11,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -1019,7 +1014,7 @@ def adaptive_arch_select(arch, enable_fallback, use_gles):
             return a
     if not enable_fallback:
         raise RuntimeError(f'Arch={arch} is not supported')
-    ti.warn(f'Arch={arch} is not supported, falling back to CPU')
+    _logging.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 
 

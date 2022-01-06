@@ -1,4 +1,3 @@
-torch
 pytest
 pytest-xdist
 pytest-rerunfailures

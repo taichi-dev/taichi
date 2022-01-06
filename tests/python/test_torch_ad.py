@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 
@@ -48,6 +50,7 @@ def test_torch_ad():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(sys.platform == 'win32', reason='not working on Windows.')
 @ti.test(exclude=ti.opengl)
 def test_torch_ad_gpu():
     if not torch.cuda.is_available():

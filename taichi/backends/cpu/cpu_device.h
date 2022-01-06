@@ -83,7 +83,7 @@ class CpuDevice : public Device {
     bool use_cached{false};
   };
 
-  AllocInfo get_alloc_info(DeviceAllocation handle);
+  AllocInfo get_alloc_info(const DeviceAllocation handle);
 
   ~CpuDevice() override{};
 
@@ -116,7 +116,7 @@ class CpuDevice : public Device {
   std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
       virtual_memories_;
 
-  void validate_device_alloc(DeviceAllocation alloc) {
+  void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");
     }

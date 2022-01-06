@@ -5,7 +5,7 @@ namespace lang {
 
 namespace cpu {
 
-CpuDevice::AllocInfo CpuDevice::get_alloc_info(DeviceAllocation handle) {
+CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
   validate_device_alloc(handle);
   return allocations_[handle.alloc_id];
 }

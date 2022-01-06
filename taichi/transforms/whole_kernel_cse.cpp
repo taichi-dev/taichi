@@ -48,7 +48,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
  private:
   std::unordered_set<int> visited_;
   // each scope corresponds to an unordered_set
-  std::vector<std::unordered_map<std::size_t , std::unordered_set<Stmt *>>>
+  std::vector<std::unordered_map<std::size_t , std::unordered_set<Stmt *> > >
       visible_stmts_;
   DelayedIRModifier modifier_;
 
@@ -70,22 +70,24 @@ class WholeKernelCSE : public BasicStmtVisitor {
 
   bool can_handle(Stmt *stmt) {
     return stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
-            stmt->is<LoopUniqueStmt>() || stmt->is<ExternalPtrStmt>() ||
-           stmt->is<GlobalTemporaryStmt>() ||
-           stmt->is<ThreadLocalPtrStmt>() || stmt->is<BlockLocalPtrStmt>();
+           stmt->is<ConstStmt>() || stmt->is<GlobalPtrStmt>() ||
+           stmt->is<GetRootStmt>() ;
   }
 
   struct Myhash
   {
     std::size_t operator()(const Stmt *stmt) const noexcept{
-      std::size_t hash_code ;
-      hash_code = std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
-      auto op = stmt->get_operands();
-      for (auto &x: op){
-        if(x == nullptr)continue;
-       hash_code = (hash_code >> 1) ^ (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
-      }
-      return hash_code;
+      std::size_t hash_code {0};
+      auto hash_type = std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
+        auto op = stmt->get_operands();
+        for (auto &x : op) {
+          if (x == nullptr)
+            continue;
+          hash_code =
+              (hash_code) ^
+              (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
+        }
+      return hash_type ^ hash_code;
     }
   };
 
@@ -94,6 +96,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
     TI_AUTO_PROF;
     // Is this_stmt eliminable given that prev_stmt appears before it and has
     // the same type with it?
+    if (this_stmt->type() != prev_stmt->type())
+      return false;
     if (this_stmt->is<GlobalPtrStmt>()) {
       auto this_ptr = this_stmt->as<GlobalPtrStmt>();
       auto prev_ptr = prev_stmt->as<GlobalPtrStmt>();
@@ -123,8 +127,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
     if (stmt->is_container_statement())
       return;
     // just deal with simple instruction
-    if (!can_handle(stmt))
-      return;
+    //if (!can_handle(stmt))
+    //  return;
     // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {
       visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);

@@ -120,7 +120,6 @@ class ASTTransformerContext:
         self.raised = False
         self.non_static_status = NonStaticStatus()
         self.returned = False
-        self.allow_undefined_name = False
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

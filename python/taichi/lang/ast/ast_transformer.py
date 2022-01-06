@@ -9,7 +9,7 @@ from taichi.lang import (expr, impl, kernel_arguments, kernel_impl, matrix,
 from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiNameError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types
@@ -21,12 +21,16 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
+        if node.ptr is None and not ctx.allow_undefined_name:
+            raise TaichiNameError(f'Name "{node.id}" is not defined')
         return node.ptr
 
     @staticmethod
     def build_AnnAssign(ctx, node):
         build_stmt(ctx, node.value)
+        ctx.allow_undefined_name = True
         build_stmt(ctx, node.target)
+        ctx.allow_undefined_name = False
         build_stmt(ctx, node.annotation)
 
         is_static_assign = isinstance(
@@ -70,7 +74,9 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Assign(ctx, node):
         build_stmt(ctx, node.value)
+        ctx.allow_undefined_name = True
         build_stmts(ctx, node.targets)
+        ctx.allow_undefined_name = False
 
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
@@ -138,7 +144,9 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_NamedExpr(ctx, node):
         build_stmt(ctx, node.value)
+        ctx.allow_undefined_name = True
         build_stmt(ctx, node.target)
+        ctx.allow_undefined_name = False
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
         node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,

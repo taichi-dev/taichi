@@ -85,6 +85,13 @@ class JITSessionCUDA : public JITSession {
 
   explicit JITSessionCUDA(llvm::DataLayout data_layout)
       : data_layout(data_layout) {
+    TI_WARN(
+        "Please call JITSessionCUDA(Program * prog, llvm::DataLayout "
+        "data_layout)");
+  }
+
+  JITSessionCUDA(Program *prog, llvm::DataLayout data_layout)
+      : JITSession(prog), data_layout(data_layout) {
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override;
@@ -94,11 +101,15 @@ class JITSessionCUDA : public JITSession {
   }
 
   static std::string compile_module_to_ptx(
-      std::unique_ptr<llvm::Module> &module);
+      std::unique_ptr<llvm::Module> &module,
+      bool print_kernel_llvm_ir,
+      bool fast_math,
+      bool print_kernel_llvm_ir_optimized);
 };
 
 #endif
 
-std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Arch arch);
+std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Program *prog,
+                                                         Arch arch);
 
 TLANG_NAMESPACE_END

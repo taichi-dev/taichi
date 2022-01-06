@@ -18,6 +18,7 @@ namespace taichi {
 namespace lang {
 
 class JITSessionCPU;
+class Program;
 
 /**
  * Manages an LLVMContext for Taichi's usage.
@@ -37,7 +38,7 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
 
-  TaichiLLVMContext(Arch arch);
+  TaichiLLVMContext(Program *prog, Arch arch);
 
   virtual ~TaichiLLVMContext();
 

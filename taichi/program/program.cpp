@@ -77,7 +77,8 @@ Program::Program(Arch desired_arch)
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
 #ifdef TI_WITH_LLVM
-    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+    program_impl_ =
+        std::make_unique<LlvmProgramImpl>(this, config, profiler.get());
 #else
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
@@ -533,6 +534,7 @@ void Program::print_memory_profiler_info() {
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
             config.arch == Arch::vulkan || config.arch == Arch::opengl);
+
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }

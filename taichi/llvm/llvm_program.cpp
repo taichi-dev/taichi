@@ -1,6 +1,7 @@
 #include "llvm_program.h"
 #include "llvm/IR/Module.h"
 
+#include "taichi/program/program.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/program/arch.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -34,9 +35,10 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
 }
 }  // namespace
 
-LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
+LlvmProgramImpl::LlvmProgramImpl(Program *prog,
+                                 CompileConfig &config_,
                                  KernelProfilerBase *profiler)
-    : ProgramImpl(config_) {
+    : ProgramImpl(config_), prog_(prog) {
   runtime_mem_info_ = Runtime::create(config_.arch);
   if (config_.arch == Arch::cuda) {
     if (!runtime_mem_info_) {
@@ -62,7 +64,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
-  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
+  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(prog_, host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs{1};
@@ -123,7 +125,8 @@ void LlvmProgramImpl::initialize_host() {
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   if (config->arch == Arch::cuda && llvm_context_device_ == nullptr) {
-    llvm_context_device_ = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(prog_, Arch::cuda);
     llvm_context_device_->init_runtime_jit_module();
   }
 }

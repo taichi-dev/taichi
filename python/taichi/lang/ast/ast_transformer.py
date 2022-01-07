@@ -4,9 +4,9 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import (expr, impl, kernel_arguments, kernel_impl, matrix,
-                         mesh, ndrange)
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
+from taichi.lang._ndrange import ndrange
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
@@ -592,15 +592,38 @@ class ASTTransformer(Builder):
         return inner
 
     @staticmethod
+    def build_static_short_circuit_and(operands):
+        for operand in operands:
+            if not operand.ptr:
+                return operand.ptr
+        return operands[-1].ptr
+
+    @staticmethod
+    def build_static_short_circuit_or(operands):
+        for operand in operands:
+            if operand.ptr:
+                return operand.ptr
+        return operands[-1].ptr
+
+    @staticmethod
     def build_BoolOp(ctx, node):
         build_stmts(ctx, node.values)
-        ops = {
-            ast.And: ASTTransformer.build_short_circuit_and,
-            ast.Or: ASTTransformer.build_short_circuit_or,
-        } if impl.get_runtime().short_circuit_operators else {
-            ast.And: ASTTransformer.build_normal_bool_op(ti_ops.logical_and),
-            ast.Or: ASTTransformer.build_normal_bool_op(ti_ops.logical_or),
-        }
+        if ctx.is_in_static_scope:
+            ops = {
+                ast.And: ASTTransformer.build_static_short_circuit_and,
+                ast.Or: ASTTransformer.build_static_short_circuit_or,
+            }
+        elif impl.get_runtime().short_circuit_operators:
+            ops = {
+                ast.And: ASTTransformer.build_short_circuit_and,
+                ast.Or: ASTTransformer.build_short_circuit_or,
+            }
+        else:
+            ops = {
+                ast.And:
+                ASTTransformer.build_normal_bool_op(ti_ops.logical_and),
+                ast.Or: ASTTransformer.build_normal_bool_op(ti_ops.logical_or),
+            }
         op = ops.get(type(node.op))
         node.ptr = op(node.values)
         return node.ptr
@@ -650,7 +673,7 @@ class ASTTransformer(Builder):
         for wanted, name in [
             (impl.static, 'static'),
             (impl.grouped, 'grouped'),
-            (ndrange.ndrange, 'ndrange'),
+            (ndrange, 'ndrange'),
         ]:
             if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
@@ -672,7 +695,7 @@ class ASTTransformer(Builder):
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
-            if not isinstance(ndrange_arg, ndrange.ndrange):
+            if not isinstance(ndrange_arg, ndrange):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
                 )

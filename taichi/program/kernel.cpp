@@ -248,7 +248,7 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 void Kernel::LaunchContextBuilder::set_arg_external_array(
     int arg_id,
-    uint64 ptr,
+    uintptr_t ptr,
     uint64 size,
     bool is_device_allocation) {
   TI_ASSERT_INFO(
@@ -264,6 +264,31 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
   kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_device_allocation(arg_id, is_device_allocation);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
+    int arg_id,
+    uintptr_t ptr,
+    uint64 size,
+    const std::vector<int64> &shape) {
+  this->set_arg_external_array(arg_id, ptr, size, false);
+  TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, shape[i]);
+  }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
+                                                   const Ndarray &arr) {
+  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
+  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
+  this->set_arg_external_array(arg_id, ptr, arr_size, true);
+  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < arr.shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
+  }
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {

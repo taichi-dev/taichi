@@ -4,6 +4,8 @@ import os
 
 import numpy as np
 import taichi.lang
+from taichi._kernels import (tensor_to_image, vector_to_fast_image,
+                             vector_to_image)
 from taichi._lib import core as _ti_core
 from taichi.lang.field import Field, ScalarField
 from taichi.tools.util import core_vec, core_veci
@@ -257,7 +259,7 @@ class GUI:
             assert img.dtype in [ti.f32, ti.f64, ti.u8], \
                 "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
-            taichi.lang.meta.vector_to_fast_image(img, self.img)
+            vector_to_fast_image(img, self.img)
             return
 
         if isinstance(img, ScalarField):
@@ -268,7 +270,7 @@ class GUI:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape \
                     == self.res, "Image resolution does not match GUI resolution"
-                taichi.lang.meta.tensor_to_image(img, self.img)
+                tensor_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, taichi.lang.matrix.MatrixField):
@@ -281,7 +283,7 @@ class GUI:
                 assert img.n in [2, 3, 4] and img.m == 1, \
                     "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
 
-                taichi.lang.meta.vector_to_image(img, self.img)
+                vector_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, np.ndarray):

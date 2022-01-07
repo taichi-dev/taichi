@@ -30,6 +30,70 @@ struct CompiledFieldData {
             column_num);
 };
 
+struct CompiledOffloadedTask {
+  std::string type;
+  std::string name;
+  // Do we need to inline the source code?
+  std::string source_path;
+  int gpu_block_size{0};
+
+  TI_IO_DEF(type, name, source_path, gpu_block_size);
+};
+
+struct ScalarArg {
+  std::string dtype_name;
+  // Unit: byte
+  size_t offset_in_args_buf{0};
+
+  TI_IO_DEF(dtype_name, offset_in_args_buf);
+};
+
+struct ArrayArg {
+  std::string dtype_name;
+  std::size_t field_dim{0};
+  // If |element_shape| is empty, it means this is a scalar
+  std::vector<int> element_shape;
+  // Unit: byte
+  std::size_t shape_offset_in_args_buf{0};
+  // For Vulkan/OpenGL/Metal, this is the binding index
+  int bind_index{0};
+
+  TI_IO_DEF(dtype_name,
+            field_dim,
+            element_shape,
+            shape_offset_in_args_buf,
+            bind_index);
+};
+
+struct CompiledTaichiKernel {
+  std::vector<CompiledOffloadedTask> tasks;
+  int arg_count{0};
+  int ret_count{0};
+  size_t args_buf_size{0};
+  size_t ret_buf_size{0};
+
+  std::unordered_map<int, ScalarArg> scalar_args;
+  std::unordered_map<int, ArrayArg> arr_args;
+
+  TI_IO_DEF(tasks,
+            arg_count,
+            ret_count,
+            args_buf_size,
+            ret_buf_size,
+            scalar_args,
+            arr_args);
+};
+
+struct ModuleData {
+  std::unordered_map<std::string, CompiledTaichiKernel> kernels;
+  std::unordered_map<std::string, CompiledTaichiKernel> kernel_tmpls;
+  std::vector<aot::CompiledFieldData> fields;
+
+  size_t root_buffer_size;
+
+  TI_IO_DEF(kernels, kernel_tmpls, fields, root_buffer_size);
+};
+
 }  // namespace aot
 }  // namespace lang
 }  // namespace taichi

@@ -11,6 +11,8 @@
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
 
+#define TI_WITH_OPENGL 1
+ 
 #ifdef TI_WITH_OPENGL
 #include "glad/gl.h"
 #include "glad/egl.h"

@@ -198,8 +198,7 @@ class KernelGen : public IRVisitor {
     return res;
   }
 
-  void generate_bottom() {
-    // TODO(archibate): <kernel_name>() really necessary? How about just main()?
+  void generate_task_bottom(OffloadedTaskType task_type) {
     emit("void main()");
     emit("{{");
     if (used.random)
@@ -301,7 +300,7 @@ class KernelGen : public IRVisitor {
                           ? std::min(workgroup_size_, prescribed_block_dim)
                           : workgroup_size_;
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
-                          num_workgroups_, workgroup_size_,
+                          task_type, num_workgroups_, workgroup_size_,
                           &this->extptr_access_);
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -1145,10 +1144,10 @@ class KernelGen : public IRVisitor {
     generate_header();
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;
-    using Type = OffloadedStmt::TaskType;
-    if (stmt->task_type == Type::serial) {
+    const auto task_type = stmt->task_type;
+    if (task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(stmt);
-    } else if (stmt->task_type == Type::range_for) {
+    } else if (task_type == OffloadedTaskType::range_for) {
       generate_range_for_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
@@ -1157,7 +1156,7 @@ class KernelGen : public IRVisitor {
                stmt->task_name());
     }
     is_top_level_ = true;
-    generate_bottom();
+    generate_task_bottom(task_type);
     loaded_args_.clear();
   }
 

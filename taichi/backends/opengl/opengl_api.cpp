@@ -1,25 +1,25 @@
-//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
+#include <list>
+
 #include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/backends/opengl/opengl_utils.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/gl.h"
 #include "glad/egl.h"
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
-#endif
+#endif  // TI_WITH_OPENGL
 
-#include <list>
-
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace opengl {
 
 #define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
@@ -224,10 +224,10 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
+    const auto dtype_name = kernel->args[i].dt.to_string();
     if (kernel->args[i].is_array) {
       arr_args[i] = CompiledArrayArg(
-          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
-           /*dtype_name=*/kernel->args[i].dt.to_string(),
+          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
            /*field_dim=*/kernel->args[i].total_dim -
                kernel->args[i].element_shape.size(),
            /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
@@ -236,8 +236,8 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});
     } else {
-      scalar_args[i] =
-          ScalarArg({/*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
+      scalar_args[i] = ScalarArg(
+          {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
     }
   }
 
@@ -253,6 +253,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
 void CompiledTaichiKernel::add(
     const std::string &name,
     const std::string &source_code,
+    OffloadedTaskType type,
     int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
@@ -271,7 +272,7 @@ void CompiledTaichiKernel::add(
 
   TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", name, num_workgroups,
            workgroup_size, source);
-  tasks.push_back({name, source, workgroup_size, num_workgroups});
+  tasks.push_back({name, source, type, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {
@@ -609,4 +610,5 @@ bool is_gles() {
 }
 
 }  // namespace opengl
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

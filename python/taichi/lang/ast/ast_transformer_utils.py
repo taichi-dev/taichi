@@ -5,7 +5,8 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError, TaichiNameError
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
+                                   TaichiSyntaxError)
 
 
 class Builder:

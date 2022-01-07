@@ -19,14 +19,15 @@
 #include <unordered_map>
 #include <vector>
 
-#ifdef TI_INCLUDED
-#else
+#include "taichi/common/core.h"
+
+#ifndef TI_INCLUDED
 #define TI_NAMESPACE_END
 #define TI_EXPORT
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
-#endif
+#endif  // TI_INCLUDED
 
 template <typename T>
 TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);

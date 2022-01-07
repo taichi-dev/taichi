@@ -21,11 +21,11 @@ def test_exception_multiline():
         # yapf: enable
 
     if version_info < (3, 8):
-        msg = f"""\
+        msg = f"""
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
             aaaa(111,"""
     else:
-        msg = f"""\
+        msg = f"""
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
             aaaa(111,
             ^^^^^^^^^
@@ -60,7 +60,7 @@ def test_exception_from_func():
     lineno = frameinfo.lineno
     file = frameinfo.filename
     if version_info < (3, 8):
-        msg = f"""\
+        msg = f"""
 On line {lineno + 13} of file "{file}":
             bar()
 On line {lineno + 9} of file "{file}":
@@ -68,7 +68,7 @@ On line {lineno + 9} of file "{file}":
 On line {lineno + 5} of file "{file}":
             t()"""
     else:
-        msg = f"""\
+        msg = f"""
 On line {lineno + 13} of file "{file}":
             bar()
             ^^^^^
@@ -95,11 +95,11 @@ def test_tab():
     lineno = frameinfo.lineno
     file = frameinfo.filename
     if version_info < (3, 8):
-        msg = f"""\
+        msg = f"""
 On line {lineno + 5} of file "{file}":
             a(11,   22, 3)"""
     else:
-        msg = f"""\
+        msg = f"""
 On line {lineno + 5} of file "{file}":
             a(11,   22, 3)
             ^^^^^^^^^^^^^^"""
@@ -120,12 +120,12 @@ def test_super_long_line():
     lineno = frameinfo.lineno
     file = frameinfo.filename
     if version_info < (3, 8):
-        msg = f"""\
+        msg = f"""
 On line {lineno + 5} of file "{file}":
             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
 """
     else:
-        msg = f"""\
+        msg = f"""
 On line {lineno + 5} of file "{file}":
             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaa
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -153,7 +153,7 @@ def test_exception_in_node_with_body():
         foo()
     lineno = frameinfo.lineno
     file = frameinfo.filename
-    msg = f"""\
+    msg = f"""
 On line {lineno + 3} of file "{file}":
         for i in range(1, 2, 3):
         ^^^^^^^^^^^^^^^^^^^^^^^^

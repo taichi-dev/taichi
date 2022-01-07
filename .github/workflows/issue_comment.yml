@@ -19,3 +19,4 @@ jobs:
             format
             benchmark
             rebase
+            rerun

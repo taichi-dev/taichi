@@ -5,7 +5,8 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
+                                   TaichiSyntaxError)
 
 
 class Builder:
@@ -180,7 +181,10 @@ class ASTTransformerContext:
                 return s[name]
         if name in self.global_vars:
             return self.global_vars[name]
-        return getattr(builtins, name, None)
+        try:
+            return getattr(builtins, name)
+        except AttributeError:
+            raise TaichiNameError(f'Name "{name}" is not defined')
 
     def get_pos_info(self, node):
         msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'

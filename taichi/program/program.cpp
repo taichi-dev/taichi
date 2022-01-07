@@ -534,7 +534,6 @@ void Program::print_memory_profiler_info() {
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
             config.arch == Arch::vulkan || config.arch == Arch::opengl);
-
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }

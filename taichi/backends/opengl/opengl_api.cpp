@@ -12,9 +12,9 @@
 #include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_OPENGL
-#include "GLFW/glfw3.h"
-#include "glad/egl.h"
 #include "glad/gl.h"
+#include "glad/egl.h"
+#include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
 #endif  // TI_WITH_OPENGL
 

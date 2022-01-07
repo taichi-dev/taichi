@@ -795,8 +795,8 @@ Value IRBuilder::rand_i32(Value global_tmp_) {
 }
 
 Value IRBuilder::get_const(const SType &dtype,
-                            const uint64_t *pvalue,
-                            bool cache) {
+                           const uint64_t *pvalue,
+                           bool cache) {
   auto key = std::make_pair(dtype.id, pvalue[0]);
   if (cache) {
     auto it = const_tbl_.find(key);

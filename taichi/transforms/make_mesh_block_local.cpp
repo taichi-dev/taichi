@@ -66,7 +66,8 @@ void MakeMeshBlockLocal::replace_conv_statements() {
 
   irpass::analysis::gather_statements(offload_->body.get(), [&](Stmt *stmt) {
     if (auto idx_conv = stmt->cast<MeshIndexConversionStmt>()) {
-      if (idx_conv->mesh == offload_->mesh && idx_conv->conv_type == conv_type_ &&
+      if (idx_conv->mesh == offload_->mesh &&
+          idx_conv->conv_type == conv_type_ &&
           idx_conv->idx_type == element_type_) {
         idx_conv_stmts.push_back(idx_conv);
       }
@@ -327,7 +328,8 @@ void MakeMeshBlockLocal::fetch_mapping(
     thread_idx_stmt = block_->push_back<LoopLinearIndexStmt>(
         offload_);  // Equivalent to CUDA threadIdx
   }
-  Stmt *total_element_num = offload_->total_num_local.find(element_type_)->second;
+  Stmt *total_element_num =
+      offload_->total_num_local.find(element_type_)->second;
   Stmt *total_element_offset =
       offload_->total_offset_local.find(element_type_)->second;
 
@@ -457,8 +459,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
     }
 
     mapping_snode_ = (offload->mesh->index_mapping
-                         .find(std::make_pair(element_type, conv_type))
-                         ->second);
+                          .find(std::make_pair(element_type, conv_type))
+                          ->second);
     mapping_data_type_ = mapping_snode_->dt.ptr_removed();
     mapping_dtype_size_ = data_type_size(mapping_data_type_);
 
@@ -535,8 +537,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
     TI_ASSERT(conv_type_ != mesh::ConvType::g2r);  // g2r will not be cached.
 
     mapping_snode_ = (offload->mesh->index_mapping
-                         .find(std::make_pair(element_type_, conv_type_))
-                         ->second);
+                          .find(std::make_pair(element_type_, conv_type_))
+                          ->second);
     mapping_data_type_ = mapping_snode_->dt.ptr_removed();
     mapping_dtype_size_ = data_type_size(mapping_data_type_);
 

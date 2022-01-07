@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
 
 namespace taichi {

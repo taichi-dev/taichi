@@ -20,9 +20,7 @@
 #include <vector>
 
 #ifdef TI_INCLUDED
-TI_NAMESPACE_BEGIN
 #else
-#define TI_NAMESPACE_BEGIN
 #define TI_NAMESPACE_END
 #define TI_EXPORT
 #define TI_TRACE
@@ -58,7 +56,9 @@ template <typename T>
 using is_unit_t = typename is_unit<T>::type;
 
 }  // namespace type
+
 class TextSerializer;
+
 namespace detail {
 
 template <size_t N>
@@ -902,5 +902,3 @@ static_assert(
             std::declval<const std::vector<std::unique_ptr<int>> &>())),
         std::vector<std::unique_ptr<int>> &>(),
     "");
-
-TI_NAMESPACE_END

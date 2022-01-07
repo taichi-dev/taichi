@@ -29,6 +29,8 @@
 #define TI_ASSERT assert
 #endif  // TI_INCLUDED
 
+// FIXME: Add namespace!
+
 template <typename T>
 TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
@@ -226,7 +228,7 @@ inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
     TI_ERROR("Cannot open file: {}", fn);
     return std::vector<uint8_t>();
   }
-  if (ends_with(fn, ".zip")) {
+  if (taichi::ends_with(fn, ".zip")) {
     std::fclose(f);
     // Read zip file, e.g. particles.tcb.zip
     return zip::read(fn);
@@ -259,10 +261,10 @@ inline void write_data_to_file(const std::string &fn,
              fn);
     assert(f != nullptr);
   }
-  if (ends_with(fn, ".tcb.zip")) {
+  if (taichi::ends_with(fn, ".tcb.zip")) {
     std::fclose(f);
     zip::write(fn, data, size);
-  } else if (ends_with(fn, ".tcb")) {
+  } else if (taichi::ends_with(fn, ".tcb")) {
     fwrite(data, sizeof(uint8_t), size, f);
     std::fclose(f);
   } else {

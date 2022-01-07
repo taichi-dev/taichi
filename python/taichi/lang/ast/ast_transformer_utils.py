@@ -1,4 +1,5 @@
 import ast
+import builtins
 import traceback
 from enum import Enum
 from sys import version_info
@@ -177,7 +178,9 @@ class ASTTransformerContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.global_vars.get(name)
+        if name in self.global_vars:
+            return self.global_vars[name]
+        return getattr(builtins, name, None)
 
     def get_pos_info(self, node):
         msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'

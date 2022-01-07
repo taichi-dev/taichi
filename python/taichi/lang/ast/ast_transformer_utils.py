@@ -6,7 +6,8 @@ from sys import version_info
 from textwrap import TextWrapper
 
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
-                                   TaichiSyntaxError)
+                                   TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 
 
 class Builder:
@@ -25,6 +26,7 @@ class Builder:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)
             ctx.raised = True
+            e = handle_exception_from_cpp(e)
             if not isinstance(e, TaichiCompilationError):
                 msg = ctx.get_pos_info(node) + traceback.format_exc()
                 raise TaichiCompilationError(msg) from None

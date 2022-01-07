@@ -10,8 +10,8 @@ def test_unary_op():
         a = 1
         b = ti.floor(a)
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match="TypeError: 'floor' takes real inputs only"):
+    with pytest.raises(ti.TaichiTypeError,
+                       match="'floor' takes real inputs only"):
         floor()
 
 
@@ -23,9 +23,8 @@ def test_binary_op():
         b = 3.1
         c = a & b
 
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match=r"TypeError: unsupported operand type\(s\) for '&'"):
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"unsupported operand type\(s\) for '&'"):
         bitwise_float()
 
 
@@ -52,6 +51,5 @@ def test_subscript():
     def any_array(x: ti.any_arr()):
         b = x[3, 1.1]
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match="TypeError: indices must be integers"):
+    with pytest.raises(ti.TaichiTypeError, match="indices must be integers"):
         any_array(a)

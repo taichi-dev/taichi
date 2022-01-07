@@ -129,3 +129,29 @@ bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
+
+
+@pytest.mark.skipif(version_info < (3, 8), reason="This is a feature for python>=3.8")
+@ti.test()
+def test_exception_in_node_with_body():
+    frameinfo = getframeinfo(currentframe())
+    @ti.kernel
+    def foo():
+        for i in range(1, 2, 3):
+            a = 1
+            b = 1
+            c = 1
+            d = 1
+
+    with pytest.raises(ti.TaichiCompilationError) as e:
+        foo()
+    lineno = frameinfo.lineno
+    file = frameinfo.filename
+    msg = f"""\
+On line {lineno + 3} of file "{file}":
+        for i in range(1, 2, 3):
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Range should have 1 or 2 arguments, found 3"""
+    print(e.value.args[0])
+    assert e.value.args[0] == msg
+

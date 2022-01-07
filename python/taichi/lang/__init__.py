@@ -12,11 +12,11 @@ from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
 
-import taichi.lang.meta
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (InvalidOperationError,
@@ -26,8 +26,9 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
-                              current_cfg, expr_init, expr_init_func,
-                              expr_init_list, field, get_runtime, grouped,
+                              current_cfg, deactivate_all_snodes, expr_init,
+                              expr_init_func, expr_init_list, field,
+                              get_runtime, grouped,
                               insert_expr_stmt_if_ti_func, ndarray, one, root,
                               static, static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
@@ -399,6 +400,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
+        self.ndarray_use_torch = False
 
 
 def prepare_sandbox():
@@ -582,6 +584,7 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
+    env_spec.add('ndarray_use_torch')
 
     # compiler configurations (ti.cfg):
     for key in dir(cfg):
@@ -606,6 +609,8 @@ def init(arch=None,
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
+        impl.get_runtime().ndarray_use_torch = \
+            spec_cfg.ndarray_use_torch
         _logging.set_logging_level(spec_cfg.log_level.lower())
 
     # select arch (backend):
@@ -620,11 +625,11 @@ def init(arch=None,
 
     # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
     # So it won't work.
-    if cfg.arch == opengl and cfg.ndarray_use_torch:
+    if cfg.arch == opengl and spec_cfg.ndarray_use_torch:
         _logging.warn(
             'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
         )
-        cfg.ndarray_use_torch = False
+        impl.get_runtime().ndarray_use_torch = False
 
     if _test_mode:
         return spec_cfg
@@ -745,7 +750,8 @@ def Tape(loss, clear_gradients=True):
     if clear_gradients:
         clear_all_gradients()
 
-    taichi.lang.meta.clear_loss(loss)
+    from taichi._kernels import clear_loss  # pylint: disable=C0415
+    clear_loss(loss)
 
     return runtime.get_tape(loss)
 
@@ -766,16 +772,12 @@ def clear_all_gradients():
 
         places = tuple(places)
         if places:
-            taichi.lang.meta.clear_gradients(places)
+            from taichi._kernels import \
+                clear_gradients  # pylint: disable=C0415
+            clear_gradients(places)
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
-
-
-def deactivate_all_snodes():
-    """Recursively deactivate all SNodes."""
-    for root_fb in FieldsBuilder.finalized_roots():
-        root_fb.deactivate_all()
 
 
 def benchmark(_func, repeat=300, args=()):

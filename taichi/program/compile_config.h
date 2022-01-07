@@ -41,7 +41,6 @@ struct CompileConfig {
   bool make_thread_local;
   bool make_block_local;
   bool detect_read_only;
-  bool ndarray_use_torch;
   bool ndarray_use_cached_allocator;
   DataType default_fp;
   DataType default_ip;

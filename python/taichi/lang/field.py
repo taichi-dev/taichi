@@ -159,7 +159,8 @@ class Field:
         if self.shape != other.shape:
             raise ValueError(f"ti.field shape {self.shape} does not match"
                              f" the source field shape {other.shape}")
-        taichi.lang.meta.tensor_to_tensor(self, other)
+        from taichi._kernels import tensor_to_tensor  # pylint: disable=C0415
+        tensor_to_tensor(self, other)
 
     @python_scope
     def __setitem__(self, key, value):
@@ -221,7 +222,8 @@ class ScalarField(Field):
 
     @python_scope
     def fill(self, val):
-        taichi.lang.meta.fill_tensor(self, val)
+        from taichi._kernels import fill_tensor  # pylint: disable=C0415
+        fill_tensor(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
@@ -229,7 +231,8 @@ class ScalarField(Field):
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415
         arr = np.zeros(shape=self.shape, dtype=dtype)
-        taichi.lang.meta.tensor_to_ext_arr(self, arr)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
@@ -241,7 +244,8 @@ class ScalarField(Field):
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
-        taichi.lang.meta.tensor_to_ext_arr(self, arr)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
@@ -256,7 +260,8 @@ class ScalarField(Field):
                                  f" the numpy array shape {arr.shape}")
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
-        taichi.lang.meta.ext_arr_to_tensor(arr, self)
+        from taichi._kernels import ext_arr_to_tensor  # pylint: disable=C0415
+        ext_arr_to_tensor(arr, self)
         taichi.lang.runtime_ops.sync()
 
     @python_scope

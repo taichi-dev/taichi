@@ -359,18 +359,8 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test (Windows)
+    name: Build and Test Windows
     needs: [check_code_format, check_files]
-    strategy:
-      matrix:
-        include:
-          - wanted_archs: cpu
-            cmake_args: ""
-            identifier: CPU
-          - wanted_archs: cpu,cuda
-            cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
-            identifier: GPU
-      fail-fast: false
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
@@ -391,9 +381,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ccache_cache
-          key: ccache-win64-${{ matrix.identifier }}-${{ github.sha }}
+          key: ccache-win64-${{ github.sha }}
           restore-keys: |
-            ccache-win64-${{ matrix.identifier }}-
+            ccache-win64-
 
       - name: Build
         shell: powershell
@@ -411,9 +401,8 @@ jobs:
           }
           .\.github\workflows\scripts\win_test.ps1
         env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
-          TAICHI_CMAKE_ARGS: ${{ matrix.cmake_args }}
+          TI_WANTED_ARCHS: cpu,cuda,opengl
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
 
   build_and_test_m1:

@@ -52,6 +52,7 @@ struct CompiledOffloadedTask {
 };
 
 struct ScalarArg {
+  std::string dtype_name;
   size_t offset_in_bytes_in_args_buf{0};
 
   TI_IO_DEF(offset_in_bytes_in_args_buf);

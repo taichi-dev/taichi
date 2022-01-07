@@ -224,10 +224,10 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
+    const auto dtype_name = kernel->args[i].dt.to_string();
     if (kernel->args[i].is_array) {
       arr_args[i] = CompiledArrayArg(
-          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
-           /*dtype_name=*/kernel->args[i].dt.to_string(),
+          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
            /*field_dim=*/kernel->args[i].total_dim -
                kernel->args[i].element_shape.size(),
            /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
@@ -236,8 +236,8 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});
     } else {
-      scalar_args[i] =
-          ScalarArg({/*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
+      scalar_args[i] = ScalarArg(
+          {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
     }
   }
 

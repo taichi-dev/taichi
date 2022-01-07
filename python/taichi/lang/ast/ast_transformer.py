@@ -21,8 +21,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
-        if node.ptr is None:
-            raise TaichiNameError(f'Name "{node.id}" is not defined')
         return node.ptr
 
     @staticmethod

@@ -9,7 +9,7 @@ import taichi as ti
 @ti.test()
 def test_exception_multiline():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiCompilationError) as e:
+    with pytest.raises(ti.TaichiNameError) as e:
         # yapf: disable
         @ti.kernel
         def foo():
@@ -28,13 +28,7 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
         msg = f"""\
 On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
             aaaa(111,
-            ^^^^^^^^^
-                 1211222,
-                 ^^^^^^^^
-
-
-                 23)
-                 ^^^"""
+            ^^^^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -42,7 +36,7 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
 @ti.test()
 def test_exception_from_func():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiCompilationError) as e:
+    with pytest.raises(ti.TaichiNameError) as e:
 
         @ti.func
         def baz():
@@ -77,7 +71,7 @@ On line {lineno + 9} of file "{file}":
             ^^^^^
 On line {lineno + 5} of file "{file}":
             t()
-            ^^^"""
+            ^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -85,7 +79,7 @@ On line {lineno + 5} of file "{file}":
 @ti.test()
 def test_tab():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiCompilationError) as e:
+    with pytest.raises(ti.TaichiNameError) as e:
         # yapf: disable
         @ti.kernel
         def foo():
@@ -102,7 +96,7 @@ On line {lineno + 5} of file "{file}":
         msg = f"""\
 On line {lineno + 5} of file "{file}":
             a(11,   22, 3)
-            ^^^^^^^^^^^^^^"""
+            ^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 
@@ -110,7 +104,7 @@ On line {lineno + 5} of file "{file}":
 @ti.test()
 def test_super_long_line():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiCompilationError) as e:
+    with pytest.raises(ti.TaichiNameError) as e:
         # yapf: disable
         @ti.kernel
         def foo():
@@ -132,7 +126,7 @@ On line {lineno + 5} of file "{file}":
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"""
     print(e.value.args[0])
     assert e.value.args[0][:len(msg)] == msg
 

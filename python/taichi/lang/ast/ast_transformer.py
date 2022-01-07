@@ -26,7 +26,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_AnnAssign(ctx, node):
         build_stmt(ctx, node.value)
-        build_stmt(ctx, node.target)
         build_stmt(ctx, node.annotation)
 
         is_static_assign = isinstance(
@@ -60,7 +59,7 @@ class ASTTransformer(Builder):
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:
-            var = target.ptr
+            var = build_stmt(ctx, target)
             if var.ptr.get_ret_type() != anno:
                 raise TaichiSyntaxError(
                     "Static assign cannot have type overloading")
@@ -70,7 +69,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Assign(ctx, node):
         build_stmt(ctx, node.value)
-        build_stmts(ctx, node.targets)
 
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
@@ -131,14 +129,13 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            var = target.ptr
+            var = build_stmt(ctx, target)
             var.assign(value)
         return var
 
     @staticmethod
     def build_NamedExpr(ctx, node):
         build_stmt(ctx, node.value)
-        build_stmt(ctx, node.target)
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
         node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,
@@ -202,7 +199,6 @@ class ASTTransformer(Builder):
     def process_generators(ctx, node, now_comp, func, result):
         if now_comp >= len(node.generators):
             return func(ctx, node, result)
-        build_stmt(ctx, node.generators[now_comp].target)
         _iter = build_stmt(ctx, node.generators[now_comp].iter)
         for value in _iter:
             with ctx.variable_scope_guard():

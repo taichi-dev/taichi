@@ -20,8 +20,8 @@ from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (InvalidOperationError,
-                                   TaichiCompilationError, TaichiSyntaxError,
-                                   TaichiTypeError)
+                                   TaichiCompilationError, TaichiNameError, 
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
@@ -224,6 +224,42 @@ def kernel_profiler_total_time():
     return get_default_kernel_profiler().get_total_time()
 
 
+def set_kernel_profiler_toolkit(toolkit_name='default'):
+    """Set the toolkit used by KernelProfiler.
+
+    Currently, we only support toolkits: ``'default'`` and ``'cupti'``.
+
+    Args:
+        toolkit_name (str): string of toolkit name.
+
+    Returns:
+        status (bool): whether the setting is successful or not.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(arch=ti.cuda, kernel_profiler=True)
+        >>> x = ti.field(ti.f32, shape=1024*1024)
+
+        >>> @ti.kernel
+        >>> def fill():
+        >>>     for i in x:
+        >>>         x[i] = i
+
+        >>> ti.set_kernel_profiler_toolkit('cupti')
+        >>> for i in range(100):
+        >>>     fill()
+        >>> ti.print_kernel_profile_info()
+
+        >>> ti.set_kernel_profiler_toolkit('default')
+        >>> for i in range(100):
+        >>>     fill()
+        >>> ti.print_kernel_profile_info()
+    """
+    return get_default_kernel_profiler().set_toolkit(toolkit_name)
+
+
 def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
     """Set metrics that will be collected by the CUPTI toolkit.
 
@@ -235,6 +271,7 @@ def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
         >>> import taichi as ti
 
         >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> ti.set_kernel_profiler_toolkit('cupti')
         >>> num_elements = 128*1024*1024
 
         >>> x = ti.field(ti.f32, shape=num_elements)
@@ -282,6 +319,7 @@ def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
         >>> import taichi as ti
 
         >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> ti.set_kernel_profiler_toolkit('cupti')
         >>> num_elements = 128*1024*1024
 
         >>> x = ti.field(ti.f32, shape=num_elements)

@@ -52,6 +52,7 @@ class KernelProfiler:
     """
     def __init__(self):
         self._profiling_mode = False
+        self._profiling_toolkit = 'default'
         self._metric_list = [default_cupti_metrics]
         self._total_time_ms = 0.0
         self._traced_records = []
@@ -71,6 +72,19 @@ class KernelProfiler:
     def get_kernel_profiler_mode(self):
         """Get status of :class:`~taichi.profiler.kernelprofiler.KernelProfiler`."""
         return self._profiling_mode
+
+    def set_toolkit(self, toolkit_name='default'):
+        if self._check_not_turned_on_with_warning_message():
+            return False
+        status = impl.get_runtime().prog.set_kernel_profiler_toolkit(
+            toolkit_name)
+        if status is True:
+            self._profiling_toolkit = toolkit_name
+        else:
+            _ti_core.warn(
+                f'Failed to set kernel profiler toolkit ({toolkit_name}) , keep using ({self._profiling_toolkit}).'
+            )
+        return status
 
     def get_total_time(self):
         """Get elapsed time of all kernels recorded in KernelProfiler.
@@ -210,9 +224,8 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    @staticmethod
-    def _make_table_header(mode):
-        header_str = f'Kernel Profiler({mode})'
+    def _make_table_header(self, mode):
+        header_str = f'Kernel Profiler({mode}, {self._profiling_toolkit})'
         arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()
         if len(device_name) > 1:  # default device_name = ' '

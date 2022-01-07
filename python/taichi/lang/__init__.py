@@ -20,7 +20,7 @@ from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (InvalidOperationError,
-                                   TaichiCompilationError, TaichiNameError, 
+                                   TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField

@@ -5,8 +5,10 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-from taichi.lang.exception import (TaichiCompilationError, TaichiNameError, 
-                                   TaichiSyntaxError, handle_exception_from_cpp)
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
+                                   TaichiSyntaxError,
+                                   handle_exception_from_cpp)
+
 
 class Builder:
     def __call__(self, ctx, node):

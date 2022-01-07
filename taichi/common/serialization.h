@@ -231,7 +231,7 @@ inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
   if (taichi::ends_with(fn, ".zip")) {
     std::fclose(f);
     // Read zip file, e.g. particles.tcb.zip
-    return zip::read(fn);
+    return taichi::zip::read(fn);
   } else {
     // Read uncompressed file, e.g. particles.tcb
     assert(f != nullptr);
@@ -263,7 +263,7 @@ inline void write_data_to_file(const std::string &fn,
   }
   if (taichi::ends_with(fn, ".tcb.zip")) {
     std::fclose(f);
-    zip::write(fn, data, size);
+    taichi::zip::write(fn, data, size);
   } else if (taichi::ends_with(fn, ".tcb")) {
     fwrite(data, sizeof(uint8_t), size, f);
     std::fclose(f);

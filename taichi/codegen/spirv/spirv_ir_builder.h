@@ -346,11 +346,11 @@ class IRBuilder {
         ib_.add(v);
       }
     }
-    if (gl_global_invocation_id.id != 0) {
-      ib_.add(gl_global_invocation_id);
+    if (gl_global_invocation_id_.id != 0) {
+      ib_.add(gl_global_invocation_id_);
     }
-    if (gl_num_work_groups.id != 0) {
-      ib_.add(gl_num_work_groups);
+    if (gl_num_work_groups_.id != 0) {
+      ib_.add(gl_num_work_groups_);
     }
     ib_.commit(&entry_);
     ib_.begin(spv::OpExecutionMode)
@@ -476,7 +476,7 @@ class IRBuilder {
     return val;
   }
 
-  Value get_const_(const SType &dtype, const uint64_t *pvalue, bool cache);
+  Value get_const(const SType &dtype, const uint64_t *pvalue, bool cache);
   SType declare_primitive_type(DataType dt);
 
   void init_random_function(Value global_tmp_);
@@ -509,16 +509,16 @@ class IRBuilder {
   SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v3_uint_;
-  Value gl_global_invocation_id;
-  Value gl_num_work_groups;
-  Value gl_work_group_size;
+  Value gl_global_invocation_id_;
+  Value gl_num_work_groups_;
+  Value gl_work_group_size_;
 
   // Random function and variables
   bool init_rand_{false};
-  Value _rand_x_;
-  Value _rand_y_;
-  Value _rand_z_;
-  Value _rand_w_;  // per-thread local variable
+  Value rand_x_;
+  Value rand_y_;
+  Value rand_z_;
+  Value rand_w_;  // per-thread local variable
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;

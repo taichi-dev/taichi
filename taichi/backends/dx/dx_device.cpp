@@ -37,6 +37,7 @@ ResourceBinder *Dx11Pipeline::resource_binder() {
   return nullptr;
 }
 
+namespace {
 HRESULT create_compute_device(ID3D11Device **out_device,
                               ID3D11DeviceContext **out_context,
                               bool force_ref,
@@ -110,6 +111,48 @@ HRESULT create_compute_device(ID3D11Device **out_device,
   return hr;
 }
 
+HRESULT create_raw_buffer(ID3D11Device *device,
+                          UINT size,
+                          void *init_data,
+                          ID3D11Buffer **out_buf) {
+  *out_buf = nullptr;
+  D3D11_BUFFER_DESC desc = {};
+  desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+  desc.ByteWidth = size;
+  desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+  if (init_data) {
+    D3D11_SUBRESOURCE_DATA data;
+    data.pSysMem = init_data;
+    return device->CreateBuffer(&desc, &data, out_buf);
+  } else {
+    return device->CreateBuffer(&desc, nullptr, out_buf);
+  }
+}
+
+HRESULT create_buffer_uav(ID3D11Device *device,
+                          ID3D11Buffer *buffer,
+                          ID3D11UnorderedAccessView **out_uav) {
+  D3D11_BUFFER_DESC buf_desc = {};
+  buffer->GetDesc(&buf_desc);
+  D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+  uav_desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+  uav_desc.Buffer.FirstElement = 0;
+  if (buf_desc.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS) {
+    uav_desc.Format = DXGI_FORMAT_R32_TYPELESS;
+    uav_desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+    uav_desc.Buffer.NumElements = buf_desc.ByteWidth / 4;
+  } else if (buf_desc.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_STRUCTURED) {
+    uav_desc.Format = DXGI_FORMAT_UNKNOWN;
+    uav_desc.Buffer.NumElements =
+        buf_desc.ByteWidth / buf_desc.StructureByteStride;
+  } else
+    return E_INVALIDARG;
+  return device->CreateUnorderedAccessView(buffer, &uav_desc, out_uav);
+}
+
+
+}  // namespace
+
 Dx11Device::Dx11Device() {
   create_dx11_device();
   if (kD3d11DebugEnabled) {
@@ -149,11 +192,45 @@ int Dx11Device::live_dx11_object_count() {
 }
 
 DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
-  TI_NOT_IMPLEMENTED;
+  ID3D11Buffer *buf;
+  HRESULT hr;
+  hr = create_raw_buffer(device_, params.size, nullptr, &buf);
+  check_dx_error(hr, "create raw buffer");
+  alloc_id_to_buffer_[alloc_serial_] = buf;
+
+  ID3D11UnorderedAccessView *uav;
+  hr = create_buffer_uav(device_, buf, &uav);
+  check_dx_error(hr, "create UAV for buffer");
+  alloc_id_to_uav_[alloc_serial_] = uav;
+
+  // Set debug names
+  std::string buf_name = "buffer alloc#" + std::to_string(alloc_serial_) +
+                         " size=" + std::to_string(params.size) + '\0';
+  hr = buf->SetPrivateData(WKPDID_D3DDebugObjectName, buf_name.size(),
+                           buf_name.c_str());
+  check_dx_error(hr, "set name for buffer");
+
+  std::string uav_name = "UAV of " + buf_name;
+  hr = uav->SetPrivateData(WKPDID_D3DDebugObjectName, uav_name.size(),
+                           uav_name.c_str());
+  check_dx_error(hr, "set name for UAV");
+
+  DeviceAllocation alloc;
+  alloc.device = this;
+  alloc.alloc_id = alloc_serial_;
+  ++alloc_serial_;
+
+  return alloc;
 }
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {
-  TI_NOT_IMPLEMENTED;
+  uint32_t alloc_id = handle.alloc_id;
+  ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
+  buf->Release();
+  alloc_id_to_buffer_.erase(alloc_id);
+  ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
+  uav->Release();
+  alloc_id_to_uav_.erase(alloc_id);
 }
 
 std::unique_ptr<Pipeline> Dx11Device::create_pipeline(

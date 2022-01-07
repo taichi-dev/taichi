@@ -10,15 +10,7 @@ namespace directx11 {
 
 void debug_enabled(bool);
 void force_ref(bool);
-
-namespace {
-  void check_dx_error(HRESULT hr, const char *msg);
-}
-
-HRESULT create_compute_device(ID3D11Device **out_device,
-                              ID3D11DeviceContext **out_context,
-                              bool force_ref,
-                              bool debug_enabled);
+void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceBinder : public ResourceBinder {
   ~Dx11ResourceBinder() override;
@@ -75,9 +67,19 @@ class Dx11Device : public GraphicsDevice {
  private:
   void create_dx11_device();
   void destroy_dx11_device();
+  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
+  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
   ID3D11Device *device_{};
   ID3D11DeviceContext *context_{};
   std::unique_ptr<Dx11InfoQueue> info_queue_{};
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_buffer_;  // binding ID to buffer
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
+  std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
+      alloc_id_to_uav_;  // binding ID to UAV
+  int alloc_serial_;
 };
 
 }  // namespace directx11

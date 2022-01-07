@@ -19,8 +19,6 @@ class JITSession {
   Program *prog;
 
  public:
-  JITSession();
-
   JITSession(Program *program);
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,

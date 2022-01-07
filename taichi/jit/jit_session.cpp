@@ -14,10 +14,6 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Program *prog,
                                                          Arch arch);
 #endif
 
-JITSession::JITSession() : prog(&get_current_program()) {
-  TI_WARN("Please call JITSession::JITSession(Program *)");
-}
-
 JITSession::JITSession(Program *program) : prog(program) {
 }
 

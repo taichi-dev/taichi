@@ -83,13 +83,6 @@ class JITSessionCUDA : public JITSession {
  public:
   llvm::DataLayout data_layout;
 
-  explicit JITSessionCUDA(llvm::DataLayout data_layout)
-      : data_layout(data_layout) {
-    TI_WARN(
-        "Please call JITSessionCUDA(Program * prog, llvm::DataLayout "
-        "data_layout)");
-  }
-
   JITSessionCUDA(Program *prog, llvm::DataLayout data_layout)
       : JITSession(prog), data_layout(data_layout) {
   }

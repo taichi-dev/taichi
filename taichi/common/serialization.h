@@ -19,17 +19,16 @@
 #include <unordered_map>
 #include <vector>
 
-#include "taichi/common/core.h"
-
-#ifndef TI_INCLUDED
+#ifdef TI_INCLUDED
+TI_NAMESPACE_BEGIN
+#else
+#define TI_NAMESPACE_BEGIN
 #define TI_NAMESPACE_END
 #define TI_EXPORT
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
-#endif  // TI_INCLUDED
-
-// FIXME: Add namespace!
+#endif
 
 template <typename T>
 TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
@@ -59,9 +58,7 @@ template <typename T>
 using is_unit_t = typename is_unit<T>::type;
 
 }  // namespace type
-
 class TextSerializer;
-
 namespace detail {
 
 template <size_t N>
@@ -228,10 +225,10 @@ inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
     TI_ERROR("Cannot open file: {}", fn);
     return std::vector<uint8_t>();
   }
-  if (taichi::ends_with(fn, ".zip")) {
+  if (ends_with(fn, ".zip")) {
     std::fclose(f);
     // Read zip file, e.g. particles.tcb.zip
-    return taichi::zip::read(fn);
+    return zip::read(fn);
   } else {
     // Read uncompressed file, e.g. particles.tcb
     assert(f != nullptr);
@@ -261,10 +258,10 @@ inline void write_data_to_file(const std::string &fn,
              fn);
     assert(f != nullptr);
   }
-  if (taichi::ends_with(fn, ".tcb.zip")) {
+  if (ends_with(fn, ".tcb.zip")) {
     std::fclose(f);
-    taichi::zip::write(fn, data, size);
-  } else if (taichi::ends_with(fn, ".tcb")) {
+    zip::write(fn, data, size);
+  } else if (ends_with(fn, ".tcb")) {
     fwrite(data, sizeof(uint8_t), size, f);
     std::fclose(f);
   } else {
@@ -905,3 +902,5 @@ static_assert(
             std::declval<const std::vector<std::unique_ptr<int>> &>())),
         std::vector<std::unique_ptr<int>> &>(),
     "");
+
+TI_NAMESPACE_END

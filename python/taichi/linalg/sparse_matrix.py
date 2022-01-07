@@ -23,7 +23,6 @@ class SparseMatrix:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
             self.matrix = sm
-        self.shape = (self.n, self.m)
 
     def __add__(self, other):
         """Addition operation for sparse matrix.
@@ -125,6 +124,10 @@ class SparseMatrix:
     def shape(self):
         """The shape of the sparse matrix."""
         return self.shape
+
+    @shape.getter
+    def shape(self):
+        return (self.n, self.m)
 
 
 class SparseMatrixBuilder:

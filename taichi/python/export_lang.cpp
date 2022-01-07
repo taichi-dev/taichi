@@ -282,6 +282,10 @@ void export_lang(py::module &m) {
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
+      .def("set_kernel_profiler_toolkit",
+           [](Program *program, const std::string toolkit_name) {
+             return program->profiler->set_profiler_toolkit(toolkit_name);
+           })
       .def("clear_kernel_profile_info", &Program::clear_kernel_profile_info)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })

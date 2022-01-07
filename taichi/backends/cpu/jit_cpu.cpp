@@ -102,8 +102,10 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
-  JITSessionCPU(Program *prog, JITTargetMachineBuilder JTMB, DataLayout DL)
-      : JITSession(prog),
+  JITSessionCPU(LlvmProgramImpl *llvm_prog,
+                JITTargetMachineBuilder JTMB,
+                DataLayout DL)
+      : JITSession(llvm_prog),
         object_layer_(es_,
                       [&]() {
                         auto smgr = std::make_unique<SectionMemoryManager>();
@@ -134,22 +136,19 @@ class JITSessionCPU : public JITSession {
   }
 
   void global_optimize_module(llvm::Module *module) override {
-    global_optimize_module_cpu(module, prog->config.fast_math,
-                               prog->config.print_kernel_llvm_ir_optimized);
+    global_optimize_module_cpu(module);
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
     TI_ASSERT(max_reg == 0);  // No need to specify max_reg on CPUs
     TI_ASSERT(M);
-    global_optimize_module_cpu(M.get(), prog->config.fast_math,
-                               prog->config.print_kernel_llvm_ir_optimized);
+    global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut_);
     auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_));
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
-    auto *thread_safe_context = prog->get_llvm_program_impl()
-                                    ->get_llvm_context(host_arch())
+    auto *thread_safe_context = llvm_prog->get_llvm_context(host_arch())
                                     ->get_this_thread_thread_safe_context();
     cantFail(compile_layer_.add(
         dylib,
@@ -187,19 +186,14 @@ class JITSessionCPU : public JITSession {
   }
 
  private:
-  static void global_optimize_module_cpu(llvm::Module *module,
-                                         bool fast_math,
-                                         bool print_kernel_llvm_ir_optimized);
+  void global_optimize_module_cpu(llvm::Module *module);
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
   return session_->lookup_in_module(dylib_, name);
 }
 
-void JITSessionCPU::global_optimize_module_cpu(
-    llvm::Module *module,
-    bool fast_math,
-    bool print_kernel_llvm_ir_optimized) {
+void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_AUTO_PROF
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
@@ -215,7 +209,7 @@ void JITSessionCPU::global_optimize_module_cpu(
 
   TargetOptions options;
   options.PrintMachineCode = false;
-  if (fast_math) {
+  if (llvm_prog->config->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
@@ -273,7 +267,7 @@ void JITSessionCPU::global_optimize_module_cpu(
     module_pass_manager.run(*module);
   }
 
-  if (print_kernel_llvm_ir_optimized) {
+  if (llvm_prog->config->print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module);
@@ -285,11 +279,12 @@ void JITSessionCPU::global_optimize_module_cpu(
   }
 }
 
-std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Program *prog,
-                                                        Arch arch) {
+std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
+    LlvmProgramImpl *llvm_prog,
+    Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
-  return std::make_unique<JITSessionCPU>(prog, target_info.first,
+  return std::make_unique<JITSessionCPU>(llvm_prog, target_info.first,
                                          target_info.second);
 }
 

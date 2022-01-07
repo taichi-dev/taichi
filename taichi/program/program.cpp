@@ -77,8 +77,7 @@ Program::Program(Arch desired_arch)
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
 #ifdef TI_WITH_LLVM
-    program_impl_ =
-        std::make_unique<LlvmProgramImpl>(this, config, profiler.get());
+    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 #else
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif

@@ -6,10 +6,8 @@ TLANG_NAMESPACE_BEGIN
 
 JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                        int max_reg) {
-  auto ptx = compile_module_to_ptx(M, prog->config.print_kernel_llvm_ir,
-                                   prog->config.fast_math,
-                                   prog->config.print_kernel_llvm_ir_optimized);
-  if (prog->config.print_kernel_nvptx) {
+  auto ptx = compile_module_to_ptx(M);
+  if (llvm_prog->config->print_kernel_nvptx) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
     writer.write(ptx);
@@ -73,10 +71,7 @@ std::string convert(std::string new_name) {
 }
 
 std::string JITSessionCUDA::compile_module_to_ptx(
-    std::unique_ptr<llvm::Module> &module,
-    bool print_kernel_llvm_ir,
-    bool fast_math,
-    bool print_kernel_llvm_ir_optimized) {
+    std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   if (llvm::verifyModule(*module, &llvm::errs())) {
@@ -86,7 +81,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   using namespace llvm;
 
-  if (print_kernel_llvm_ir) {
+  if (llvm_prog->config->print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (CUDA)");
     writer.write(module.get());
@@ -108,7 +103,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   TargetOptions options;
   options.PrintMachineCode = 0;
-  if (fast_math) {
+  if (llvm_prog->config->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
     // Setting UnsafeFPMath true will result in approximations such as
@@ -211,7 +206,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     module_pass_manager.run(*module);
   }
 
-  if (print_kernel_llvm_ir_optimized) {
+  if (llvm_prog->config->print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",
         "optimized LLVM IR (CUDA)");
@@ -225,18 +220,20 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   return buffer;
 }
 
-std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Program *prog,
-                                                         Arch arch) {
+std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
+    LlvmProgramImpl *llvm_prog,
+    Arch arch) {
   TI_ASSERT(arch == Arch::cuda);
   // https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html#data-layout
   auto data_layout = llvm::DataLayout(
       "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-"
       "f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64");
-  return std::make_unique<JITSessionCUDA>(prog, data_layout);
+  return std::make_unique<JITSessionCUDA>(llvm_prog, data_layout);
 }
 #else
-std::unique_ptr<JITSession> create_llvm_jit_session_cuda(Program *prog,
-                                                         Arch arch) {
+std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
+    LlvmProgramImpl *llvm_prog,
+    Arch arch) {
   TI_NOT_IMPLEMENTED
 }
 #endif

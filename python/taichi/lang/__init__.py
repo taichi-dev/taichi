@@ -398,7 +398,7 @@ class _SpecialConfig:
         self.log_level = 'info'
         self.gdb_trigger = False
         self.experimental_real_function = False
-        self.short_circuit_operators = False
+        self.short_circuit_operators = True
         self.ndarray_use_torch = False
 
 

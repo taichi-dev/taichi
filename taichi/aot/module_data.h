@@ -67,19 +67,19 @@ struct ArrayArg {
 
 struct CompiledTaichiKernel {
   std::vector<CompiledOffloadedTask> tasks;
-  int arg_count{0};
-  int ret_count{0};
-  size_t args_buf_size{0};
-  size_t ret_buf_size{0};
+  int args_count{0};
+  int rets_count{0};
+  size_t args_buffer_size{0};
+  size_t rets_buffer_size{0};
 
   std::unordered_map<int, ScalarArg> scalar_args;
   std::unordered_map<int, ArrayArg> arr_args;
 
   TI_IO_DEF(tasks,
-            arg_count,
-            ret_count,
-            args_buf_size,
-            ret_buf_size,
+            args_count,
+            rets_count,
+            args_buffer_size,
+            rets_buffer_size,
             scalar_args,
             arr_args);
 };

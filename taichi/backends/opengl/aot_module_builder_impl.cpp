@@ -42,10 +42,10 @@ class AotDataConverter {
     for (const auto &t : in.tasks) {
       res.tasks.push_back(visit(t));
     }
-    res.arg_count = in.arg_count;
-    res.ret_count = in.ret_count;
-    res.args_buf_size = in.args_buf_size;
-    res.ret_buf_size = in.ret_buf_size;
+    res.args_count = in.arg_count;
+    res.rets_count = in.ret_count;
+    res.args_buffer_size = in.args_buf_size;
+    res.rets_buffer_size = in.ret_buf_size;
     for (const auto &[arg_id, val] : in.scalar_args) {
       res.scalar_args[arg_id] = visit(val);
     }

@@ -56,7 +56,7 @@ def advance():
             NoV = vel[i].dot(disp)
             if NoV < 0: vel[i] -= NoV * disp / disp2
         # rect boundary condition:
-        cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
+        cond = (pos[i] < 0) & (vel[i] < 0) | (pos[i] > 1) & (vel[i] > 0)
         for j in ti.static(range(pos.n)):
             if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]

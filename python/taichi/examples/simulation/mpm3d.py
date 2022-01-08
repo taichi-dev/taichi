@@ -57,8 +57,8 @@ def substep():
         if grid_m[I] > 0:
             grid_v[I] /= grid_m[I]
         grid_v[I][1] -= dt * gravity
-        cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[
-            I] > 0)
+        cond = (I < bound) & (grid_v[I] < 0) | \
+               (I > n_grid - bound) & (grid_v[I] > 0)
         grid_v[I] = 0 if cond else grid_v[I]
     ti.block_dim(n_grid)
     for p in x:

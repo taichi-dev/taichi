@@ -12,7 +12,7 @@ from taichi.lang import impl, runtime_ops, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
@@ -718,7 +718,10 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
-            return primal(*args, **kwargs)
+            try:
+                return primal(*args, **kwargs)
+            except TaichiCompilationError as e:
+                raise type(e)('\n' + str(e)) from None
 
         wrapped.grad = adjoint
 

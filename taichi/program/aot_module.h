@@ -6,6 +6,7 @@
 #include "taichi/aot/module_data.h"
 #include "taichi/backends/device.h"
 #include "taichi/ir/snode.h"
+#include "taichi/aot/module_data.h"
 
 namespace taichi {
 namespace lang {

@@ -95,7 +95,8 @@ void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
 }  // namespace
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    StructCompiledResult &compiled_structs, bool allow_nv_shader_extension)
+    StructCompiledResult &compiled_structs,
+    bool allow_nv_shader_extension)
     : compiled_structs_(compiled_structs),
       allow_nv_shader_extension_(allow_nv_shader_extension) {
   aot_data_.root_buffer_size = compiled_structs_.root_size;
@@ -136,7 +137,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
-  if (snode->type == SNodeType::root) return 0;
+  if (snode->type == SNodeType::root)
+    return 0;
   int chid = find_children_id(snode);
   const auto &parent_meta =
       compiled_structs_.snode_map.at(snode->parent->node_type_name);
@@ -146,9 +148,11 @@ size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
                                                  const SNode *rep_snode,
-                                                 bool is_scalar, DataType dt,
+                                                 bool is_scalar,
+                                                 DataType dt,
                                                  std::vector<int> shape,
-                                                 int row_num, int column_num) {
+                                                 int row_num,
+                                                 int column_num) {
   uint32_t gl_dtype_enum = to_gl_dtype_enum(dt);
 
   // Note that currently we only support adding dense fields in AOT for all

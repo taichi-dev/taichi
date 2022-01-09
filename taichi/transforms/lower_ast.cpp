@@ -394,14 +394,6 @@ class LowerAST : public IRVisitor {
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
-  void visit(FrontendEvalStmt *stmt) override {
-    // expand rhs
-    auto expr = stmt->expr;
-    auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-  }
-
   void visit(FrontendAssignStmt *assign) override {
     // expand rhs
     auto expr = assign->rhs;

@@ -554,7 +554,7 @@ void export_lang(py::module &m) {
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
 
-          current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
+          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {

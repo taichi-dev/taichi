@@ -120,19 +120,6 @@ class FrontendPrintStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// This statement evaluates the expression.
-// The expression should have side effects otherwise the expression will do
-// nothing.
-class FrontendEvalStmt : public Stmt {
- public:
-  Expr expr;
-
-  FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
-  }
-
-  TI_DEFINE_ACCEPT
-};
-
 class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;

@@ -145,8 +145,8 @@ def test_evolve():
             num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
-            y[i, j] = (num_active_neighbors == 3) or (num_active_neighbors == 2
-                                                      and x[i, j] == 1)
+            y[i, j] = (num_active_neighbors == 3) | \
+                      ((num_active_neighbors == 2) & (x[i, j] == 1))
 
     @ti.kernel
     def evolve_naive(x: ti.template(), y: ti.template()):

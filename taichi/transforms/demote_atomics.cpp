@@ -71,10 +71,9 @@ class DemoteAtomics : public BasicStmtVisitor {
               idx = idx->as<MeshIndexConversionStmt>()->idx;
             }
             if (idx->is<LoopIndexStmt>() &&
-                idx->as<LoopIndexStmt>()->is_mesh_index()) {
+                idx->as<LoopIndexStmt>()->is_mesh_index() &&
+                loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()->snodes.data[0]] != nullptr) {
               demote = true;
-              int x = loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()->snodes.data[0]] != nullptr;
-              TI_INFO("not empty: {}", x);
             }
           }
         }

@@ -963,7 +963,7 @@ class ASTTransformer(Builder):
                             'Backend ' + str(impl.default_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
                     return ASTTransformer.build_mesh_for(ctx, node)
-                elif isinstance(node.iter.ptr, mesh.MeshRelationAccessProxy):
+                if isinstance(node.iter.ptr, mesh.MeshRelationAccessProxy):
                     return ASTTransformer.build_nested_mesh_for(ctx, node)
                 # Struct for
                 return ASTTransformer.build_struct_for(ctx,

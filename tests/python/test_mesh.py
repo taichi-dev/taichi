@@ -229,7 +229,7 @@ def test_mesh_local():
 @ti.test(require=ti.extension.mesh)
 def test_nested_mesh_for():
     mesh_builder = ti.Mesh.Tet()
-    mesh_builder.faces.place({'a': ti.i32, 'b' : ti.i32})
+    mesh_builder.faces.place({'a': ti.i32, 'b': ti.i32})
     mesh_builder.faces.link(mesh_builder.verts)
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
 

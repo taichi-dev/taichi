@@ -68,8 +68,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited_.insert(stmt->instance_id);
   }
 
-  struct Myhash {
-    std::size_t operator()(const Stmt *stmt) const noexcept {
+  static std::size_t operand_type_hash(const Stmt *stmt) {
       std::size_t hash_code{0};
       auto hash_type =
           std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
@@ -83,7 +82,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
       }
       return hash_type ^ hash_code;
     }
-  };
 
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
     // Is this_stmt eliminable given that prev_stmt appears before it and has
@@ -120,11 +118,11 @@ class WholeKernelCSE : public BasicStmtVisitor {
       return;
     // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {
-      visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);
+      visible_stmts_.back()[operand_type_hash(stmt)].insert(stmt);
       return;
     }
     for (auto &scope : visible_stmts_) {
-      for (auto &prev_stmt : scope[Myhash{}(stmt)]) {
+      for (auto &prev_stmt : scope[operand_type_hash(stmt)]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
           MarkUndone::run(&visited_, stmt);
           stmt->replace_usages_with(prev_stmt);
@@ -133,7 +131,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
         }
       }
     }
-    visible_stmts_.back()[Myhash{}(stmt)].insert(stmt);
+    visible_stmts_.back()[operand_type_hash(stmt)].insert(stmt);
     set_done(stmt);
   }
 

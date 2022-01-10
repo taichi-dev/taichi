@@ -6,7 +6,6 @@
 #include "taichi/system/profiler.h"
 
 #include <typeindex>
-#include <functional>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -69,19 +68,19 @@ class WholeKernelCSE : public BasicStmtVisitor {
   }
 
   static std::size_t operand_type_hash(const Stmt *stmt) {
-      std::size_t hash_code{0};
-      auto hash_type =
-          std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
-      auto op = stmt->get_operands();
-      for (auto &x : op) {
-        if (x == nullptr)
-          continue;
-        hash_code =
-            (hash_code) ^
-            (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
-      }
-      return hash_type ^ hash_code;
+    std::size_t hash_code{0};
+    auto hash_type =
+        std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
+    auto op = stmt->get_operands();
+    for (auto &x : op) {
+      if (x == nullptr)
+        continue;
+      hash_code =
+          (hash_code) ^
+          (std::hash<unsigned long>{}(reinterpret_cast<unsigned long>(x)));
     }
+    return hash_type ^ hash_code;
+  }
 
   static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
     // Is this_stmt eliminable given that prev_stmt appears before it and has

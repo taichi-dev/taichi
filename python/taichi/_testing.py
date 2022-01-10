@@ -4,6 +4,7 @@ import itertools
 import os
 from tempfile import mkstemp
 
+import pytest
 from taichi._lib import core as _ti_core
 from taichi.lang import (cc, cpu, cuda, gpu, is_arch_supported, metal, opengl,
                          vulkan)
@@ -73,7 +74,7 @@ class TestParam:
 
 
 _test_features = {
-    #"packed":
+    # "packed":
     # [TestValue(True, []),
     #  TestValue(False, [])],
     "dynamic_index":
@@ -154,47 +155,60 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = list(filter(lambda x: x in archs_expected, arch))
 
     def decorator(foo):
+        def noop(*args, **kwargs):
+            print('No supported arch found. Skipping.')
+
+        if len(arch) == 0:
+            return noop
+
+        arch_params_sets = [arch, *_test_features.values()]
+        arch_params_combinations = list(itertools.product(*arch_params_sets))
+
+        arg_values = []
+        ids = []
+        cnt = 0
+        for arch_params in arch_params_combinations:
+            req_arch, req_params = arch_params[0], arch_params[1:]
+
+            if (req_arch not in arch) or (req_arch in exclude):
+                continue
+
+            if not all(
+                    _ti_core.is_extension_supported(req_arch, e)
+                    for e in require):
+                continue
+
+            skip = False
+            current_options = copy.deepcopy(options)
+            for feature, param in zip(_test_features, req_params):
+                value = param.value
+                required_extensions = param.required_extensions
+                if current_options.get(feature, value) != value or any(
+                        not _ti_core.is_extension_supported(req_arch, e)
+                        for e in required_extensions):
+                    skip = True
+                else:
+                    # Fill in the missing feature
+                    current_options[feature] = value
+            if skip:
+                continue
+
+            cnt += 1
+            arg_values.append((req_arch, current_options))
+            ids.append(f'{req_arch}-{cnt}')
+
+        @pytest.mark.parametrize('req_arch,current_options',
+                                 arg_values,
+                                 ids=ids)
         @functools.wraps(foo)
-        def wrapped(*args, **kwargs):
-            if len(arch) == 0:
-                print('No supported arch found. Skipping.')
-                return
+        def wrapped(req_arch, current_options, *args, **kwargs):
+            ti.init(arch=req_arch, enable_fallback=False, **current_options)
+            foo(*args, **kwargs)
+            ti.reset()
 
-            arch_params_sets = [arch, *_test_features.values()]
-            arch_params_combinations = list(
-                itertools.product(*arch_params_sets))
-
-            for arch_params in arch_params_combinations:
-                req_arch, req_params = arch_params[0], arch_params[1:]
-
-                if (req_arch not in arch) or (req_arch in exclude):
-                    continue
-
-                if not all(
-                        _ti_core.is_extension_supported(req_arch, e)
-                        for e in require):
-                    continue
-
-                skip = False
-                current_options = copy.deepcopy(options)
-                for feature, param in zip(_test_features, req_params):
-                    value = param.value
-                    required_extensions = param.required_extensions
-                    if current_options.get(feature, value) != value or any(
-                            not _ti_core.is_extension_supported(req_arch, e)
-                            for e in required_extensions):
-                        skip = True
-                    else:
-                        # Fill in the missing feature
-                        current_options[feature] = value
-                if skip:
-                    continue
-
-                ti.init(arch=req_arch,
-                        enable_fallback=False,
-                        **current_options)
-                foo(*args, **kwargs)
-                ti.reset()
+        # Since the wrapped function does not have the 2 arguments we added, we have to make the wrapper function
+        # to become the original function.
+        del wrapped.__dict__['__wrapped__']
 
         return wrapped
 

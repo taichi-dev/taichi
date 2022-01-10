@@ -1,7 +1,6 @@
 #include "llvm_program.h"
 #include "llvm/IR/Module.h"
 
-#include "taichi/program/program.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/program/arch.h"
 #include "taichi/platform/cuda/detect_cuda.h"

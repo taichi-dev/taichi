@@ -483,6 +483,8 @@ def check_version():
         payload['python'] = 'cp38'
     elif python_version.startswith('3.9.'):
         payload['python'] = 'cp39'
+    elif python_version.startswith('3.10.'):
+        payload['python'] = 'cp310'
 
     # We do not want request exceptions break users' usage of Taichi.
     try:

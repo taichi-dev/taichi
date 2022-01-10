@@ -228,7 +228,11 @@ void export_lang(py::module &m) {
       .def_readwrite("mesh_localize_all_attr_mappings",
                      &CompileConfig::mesh_localize_all_attr_mappings)
       .def_readwrite("demote_no_access_mesh_fors",
-                     &CompileConfig::demote_no_access_mesh_fors);
+                     &CompileConfig::demote_no_access_mesh_fors)
+      .def_readwrite("auto_mesh_local",
+                     &CompileConfig::auto_mesh_local)
+      .def_readwrite("auto_mesh_local_default_occupacy",
+                     &CompileConfig::auto_mesh_local_default_occupacy);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

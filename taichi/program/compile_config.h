@@ -101,6 +101,8 @@ struct CompileConfig {
   bool mesh_localize_from_end_mapping{false};
   bool mesh_localize_all_attr_mappings{false};
   bool demote_no_access_mesh_fors{true};
+  bool auto_mesh_local{false};
+  int auto_mesh_local_default_occupacy{4};
 
   CompileConfig();
 };

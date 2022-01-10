@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/program/compile_config.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/mesh.h"
@@ -123,7 +124,7 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
-  MeshBLSAnalyzer(OffloadedStmt *for_stmt, MeshBLSCaches *caches, bool auto_mesh_local);
+  MeshBLSAnalyzer(OffloadedStmt *for_stmt, MeshBLSCaches *caches, bool auto_mesh_local, const CompileConfig &config);
 
   void visit(GlobalPtrStmt *stmt) override {
   }
@@ -145,7 +146,8 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   OffloadedStmt *for_stmt_{nullptr};
   MeshBLSCaches *caches_{nullptr};
   bool analysis_ok_{true};
-  bool auto_mesh_local{false};
+  bool auto_mesh_local_{false};
+  CompileConfig config_;
 };
 
 }  // namespace lang

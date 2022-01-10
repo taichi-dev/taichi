@@ -417,9 +417,9 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
         SNodeAccessFlag::mesh_local).size() > 0) { // disable when user determine which attributes to be cached manually
           auto_mesh_local = false;
   }
-  auto caches = irpass::analysis::initialize_mesh_local_attribute(offload, auto_mesh_local);
+  auto caches = irpass::analysis::initialize_mesh_local_attribute(offload, auto_mesh_local, config);
 
-  if (auto_mesh_local) {
+  if (auto_mesh_local && config.arch == Arch::cuda) {
     const auto to_type = *offload->major_to_types.begin();
     std::size_t shared_mem_size_per_block = default_shared_mem_size / config.auto_mesh_local_default_occupacy;
     int available_bytes = shared_mem_size_per_block / offload->mesh->patch_max_element_num.find(to_type)->second;

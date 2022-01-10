@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                        int max_reg) {
   auto ptx = compile_module_to_ptx(M);
-  if (llvm_prog->config->print_kernel_nvptx) {
+  if (this->llvm_prog()->config->print_kernel_nvptx) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
     writer.write(ptx);
@@ -81,7 +81,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   using namespace llvm;
 
-  if (llvm_prog->config->print_kernel_llvm_ir) {
+  if (this->llvm_prog()->config->print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (CUDA)");
     writer.write(module.get());
@@ -103,7 +103,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   TargetOptions options;
   options.PrintMachineCode = 0;
-  if (llvm_prog->config->fast_math) {
+  if (this->llvm_prog()->config->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
     // Setting UnsafeFPMath true will result in approximations such as
@@ -206,7 +206,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     module_pass_manager.run(*module);
   }
 
-  if (llvm_prog->config->print_kernel_llvm_ir_optimized) {
+  if (this->llvm_prog()->config->print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",
         "optimized LLVM IR (CUDA)");

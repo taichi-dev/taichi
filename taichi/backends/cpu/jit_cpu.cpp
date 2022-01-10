@@ -148,7 +148,8 @@ class JITSessionCPU : public JITSession {
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
-    auto *thread_safe_context = llvm_prog->get_llvm_context(host_arch())
+    auto *thread_safe_context = this->llvm_prog()
+                                    ->get_llvm_context(host_arch())
                                     ->get_this_thread_thread_safe_context();
     cantFail(compile_layer_.add(
         dylib,
@@ -209,7 +210,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
 
   TargetOptions options;
   options.PrintMachineCode = false;
-  if (llvm_prog->config->fast_math) {
+  if (this->llvm_prog()->config->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
@@ -267,7 +268,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     module_pass_manager.run(*module);
   }
 
-  if (llvm_prog->config->print_kernel_llvm_ir_optimized) {
+  if (this->llvm_prog()->config->print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module);

@@ -14,9 +14,11 @@ TLANG_NAMESPACE_BEGIN
 class LlvmProgramImpl;
 
 class JITSession {
+ private:
+  LlvmProgramImpl *llvm_prog_;
+
  protected:
   std::vector<std::unique_ptr<JITModule>> modules;
-  LlvmProgramImpl *llvm_prog;
 
  public:
   JITSession(LlvmProgramImpl *llvm_prog);
@@ -39,6 +41,11 @@ class JITSession {
   }
 
   virtual ~JITSession() = default;
+
+ protected:
+  LlvmProgramImpl *llvm_prog() const {
+    return llvm_prog_;
+  }
 };
 
 TLANG_NAMESPACE_END

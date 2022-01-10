@@ -15,7 +15,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     Arch arch);
 #endif
 
-JITSession::JITSession(LlvmProgramImpl *llvm_prog) : llvm_prog(llvm_prog) {
+JITSession::JITSession(LlvmProgramImpl *llvm_prog) : llvm_prog_(llvm_prog) {
 }
 
 std::unique_ptr<JITSession> JITSession::create(LlvmProgramImpl *llvm_prog,

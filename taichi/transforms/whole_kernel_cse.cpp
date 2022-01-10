@@ -71,6 +71,9 @@ class WholeKernelCSE : public BasicStmtVisitor {
     std::size_t hash_code{0};
     auto hash_type =
         std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
+    if (stmt->is<GlobalPtrStmt>() || stmt->is<LoopUniqueStmt>()) {
+      return hash_type;
+    }
     auto op = stmt->get_operands();
     for (auto &x : op) {
       if (x == nullptr)

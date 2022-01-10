@@ -98,7 +98,8 @@ class MeshBLSCaches {
               Stmt *idx) {
     if (caches.find(snode) == caches.end())
       return false;
-    return caches.find(snode)->second.access(element_type, conv_type, flags, idx);
+    return caches.find(snode)->second.access(element_type, conv_type, flags,
+                                             idx);
   }
 
   Rec finalize() {
@@ -124,7 +125,10 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
-  MeshBLSAnalyzer(OffloadedStmt *for_stmt, MeshBLSCaches *caches, bool auto_mesh_local, const CompileConfig &config);
+  MeshBLSAnalyzer(OffloadedStmt *for_stmt,
+                  MeshBLSCaches *caches,
+                  bool auto_mesh_local,
+                  const CompileConfig &config);
 
   void visit(GlobalPtrStmt *stmt) override {
   }

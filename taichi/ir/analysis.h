@@ -242,7 +242,9 @@ std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
           /* total= */ std::unordered_set<mesh::MeshElementType>>
 gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config);
 std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
-    OffloadedStmt *offload, bool auto_mesh_local, const CompileConfig &config);
+    OffloadedStmt *offload,
+    bool auto_mesh_local,
+    const CompileConfig &config);
 
 }  // namespace analysis
 }  // namespace irpass

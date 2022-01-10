@@ -6,8 +6,14 @@
 namespace taichi {
 namespace lang {
 
-MeshBLSAnalyzer::MeshBLSAnalyzer(OffloadedStmt *for_stmt, MeshBLSCaches *caches, bool auto_mesh_local, const CompileConfig &config)
-    : for_stmt_(for_stmt), caches_(caches), auto_mesh_local_(auto_mesh_local), config_(config) {
+MeshBLSAnalyzer::MeshBLSAnalyzer(OffloadedStmt *for_stmt,
+                                 MeshBLSCaches *caches,
+                                 bool auto_mesh_local,
+                                 const CompileConfig &config)
+    : for_stmt_(for_stmt),
+      caches_(caches),
+      auto_mesh_local_(auto_mesh_local),
+      config_(config) {
   TI_AUTO_PROF;
   allow_undefined_visitor = true;
   invoke_default_visitor = false;
@@ -32,16 +38,19 @@ void MeshBLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   for (int l = 0; l < stmt->width(); l++) {
     auto snode = ptr->snodes[l];
     if (!caches_->has(snode)) {
-      if (auto_mesh_local_ && 
-          (flag == AccessFlag::accumulate || (flag == AccessFlag::read && config_.arch == Arch::cuda)) &&
-          (!idx->is<LoopIndexStmt>() || !idx->as<LoopIndexStmt>()->is_mesh_index())) {
+      if (auto_mesh_local_ &&
+          (flag == AccessFlag::accumulate ||
+           (flag == AccessFlag::read && config_.arch == Arch::cuda)) &&
+          (!idx->is<LoopIndexStmt>() ||
+           !idx->as<LoopIndexStmt>()->is_mesh_index())) {
         caches_->insert(snode);
       } else {
         continue;
       }
     }
 
-    if (!caches_->access(snode, element_type, conv_type, flag, idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
+    if (!caches_->access(snode, element_type, conv_type, flag,
+                         idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
       analysis_ok_ = false;
       break;
     }
@@ -82,7 +91,9 @@ namespace irpass {
 namespace analysis {
 
 std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
-    OffloadedStmt *offload, bool auto_mesh_local, const CompileConfig &config) {
+    OffloadedStmt *offload,
+    bool auto_mesh_local,
+    const CompileConfig &config) {
   TI_AUTO_PROF
   TI_ASSERT(offload->task_type == OffloadedTaskType::mesh_for);
   std::unique_ptr<MeshBLSCaches> caches;

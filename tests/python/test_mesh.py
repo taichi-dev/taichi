@@ -7,7 +7,7 @@ import taichi as ti
 this_dir = os.path.dirname(os.path.abspath(__file__))
 model_file_path = os.path.join(this_dir, 'ell.json')
 
-'''
+
 @ti.test(require=ti.extension.mesh)
 def test_mesh_patch_idx():
     mesh_builder = ti.Mesh.Tet()
@@ -224,12 +224,12 @@ def test_mesh_local():
         assert res1[i] == res2[i]
         assert res1[i] == res3[i]
         assert res1[i] == res4[i]
-'''
+
 
 @ti.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
 def test_auto_mesh_local():
     mesh_builder = ti.Mesh.Tet()
-    mesh_builder.verts.place({'a': ti.i32, 's' : ti.i32})
+    mesh_builder.verts.place({'a': ti.i32, 's': ti.i32})
     mesh_builder.faces.link(mesh_builder.verts)
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
     ext_a = ti.field(ti.i32, shape=len(model.verts))

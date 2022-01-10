@@ -429,8 +429,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
     if (mappings_.find(std::make_pair(to_type, mesh::ConvType::l2r)) != mappings_.end()) {
       available_bytes -= 4;
     }
-    TI_INFO("available cache attributes bytes = {}", available_bytes);
-    TI_INFO("caches size = {}", caches->caches.size());
+    TI_TRACE("available cache attributes bytes = {}", available_bytes);
+    TI_TRACE("caches size = {}", caches->caches.size());
     std::vector<MeshBLSCache> priority_caches;
     for (const auto [snode, cache] : caches->caches) {
       priority_caches.push_back(cache);
@@ -446,7 +446,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
       if (available_bytes < 0) {
         break;    // not enough space to ensure occupacy
       }
-      TI_INFO("available = {}, x = {}, loop_index = {}, unique_access = {}", available_bytes, cache.total_flags, int(cache.loop_index), cache.unique_accessed);
+      TI_TRACE("available = {}, x = {}, loop_index = {}, unique_access = {}", available_bytes, cache.total_flags, int(cache.loop_index), cache.unique_accessed);
       caches->caches.insert(std::make_pair(cache.snode, cache));
     }
   }

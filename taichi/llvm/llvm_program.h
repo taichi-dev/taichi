@@ -24,7 +24,6 @@ class Module;
 namespace taichi {
 namespace lang {
 class StructCompiler;
-class Program;
 
 namespace cuda {
 class CudaDevice;

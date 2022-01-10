@@ -896,9 +896,12 @@ class KernelGen : public IRVisitor {
     const auto axis = stmt->axis;
     used.buf_args = true;
     used.int32 = true;
-    emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
-         taichi_opengl_extra_args_base / sizeof(int), arg_id,
-         taichi_max_num_indices, axis);
+    if (!loaded_args_.count(name)) {
+      emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
+           taichi_opengl_extra_args_base / sizeof(int), arg_id,
+           taichi_max_num_indices, axis);
+      loaded_args_.insert(name);
+    }
   }
 
   std::string make_kernel_name() {
@@ -969,15 +972,11 @@ class KernelGen : public IRVisitor {
     }
   };
   void gen_array_range(Stmt *stmt) {
-    if (auto val = stmt->cast<ExternalTensorShapeAlongAxisStmt>()) {
-      val->accept(this);
-    } else {
-      TI_ASSERT(stmt->is<BinaryOpStmt>());
-      auto bop = stmt->cast<BinaryOpStmt>();
-      gen_array_range(bop->lhs);
-      gen_array_range(bop->rhs);
-      bop->accept(this);
+    int num_operands = stmt->num_operands();
+    for (int i = 0; i < num_operands; i++) {
+      gen_array_range(stmt->operand(i));
     }
+    stmt->accept(this);
   }
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);

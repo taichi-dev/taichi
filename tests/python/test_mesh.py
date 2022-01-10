@@ -7,6 +7,7 @@ import taichi as ti
 this_dir = os.path.dirname(os.path.abspath(__file__))
 model_file_path = os.path.join(this_dir, 'ell.json')
 
+
 @ti.test(require=ti.extension.mesh)
 def test_mesh_patch_idx():
     mesh_builder = ti.Mesh.Tet()
@@ -248,9 +249,16 @@ def test_nested_mesh_for():
 @ti.test(require=ti.extension.mesh)
 def test_multiple_mesh_major_relations():
     mesh = ti.TetMesh()
-    mesh.verts.place({'s' : ti.i32, 's_' : ti.i32, 's1' : ti.i32, 'a' : ti.i32, 'b' : ti.i32, 'c' : ti.i32})
-    mesh.edges.place({'s2' : ti.i32})
-    mesh.cells.place({'s3' : ti.i32})
+    mesh.verts.place({
+        's': ti.i32,
+        's_': ti.i32,
+        's1': ti.i32,
+        'a': ti.i32,
+        'b': ti.i32,
+        'c': ti.i32
+    })
+    mesh.edges.place({'s2': ti.i32})
+    mesh.cells.place({'s3': ti.i32})
     mesh.verts.link(mesh.verts)
     mesh.verts.link(mesh.edges)
     mesh.verts.link(mesh.cells)
@@ -259,9 +267,12 @@ def test_multiple_mesh_major_relations():
 
     @ti.kernel
     def foo():
-        for u in model.verts: u.s1 = u.id
-        for e in model.edges: e.s2 = e.id
-        for c in model.cells: c.s3 = c.id
+        for u in model.verts:
+            u.s1 = u.id
+        for e in model.edges:
+            e.s2 = e.id
+        for c in model.cells:
+            c.s3 = c.id
 
         ti.mesh_local(model.verts.s1, model.edges.s2, model.cells.s3)
         for u in model.verts:
@@ -283,7 +294,8 @@ def test_multiple_mesh_major_relations():
         for u in model.verts:
             for i in range(u.cells.size):
                 u.c += u.cells[i].s3
-        for u in model.verts: u.s_ = u.a * u.b * u.c
+        for u in model.verts:
+            u.s_ = u.a * u.b * u.c
 
     foo()
 

@@ -67,7 +67,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited_.insert(stmt->instance_id);
   }
 
-  static std::size_t operand_type_hash(const Stmt *stmt) {
+  static std::size_t operand_hash(const Stmt *stmt) {
     std::size_t hash_code{0};
     auto hash_type =
         std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
@@ -116,12 +116,13 @@ class WholeKernelCSE : public BasicStmtVisitor {
     if (stmt->is_container_statement())
       return;
     // Generic visitor for all CSE-able statements.
+    std::size_t hash_value = operand_hash(stmt);
     if (is_done(stmt)) {
-      visible_stmts_.back()[operand_type_hash(stmt)].insert(stmt);
+      visible_stmts_.back()[hash_value].insert(stmt);
       return;
     }
     for (auto &scope : visible_stmts_) {
-      for (auto &prev_stmt : scope[operand_type_hash(stmt)]) {
+      for (auto &prev_stmt : scope[hash_value]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
           MarkUndone::run(&visited_, stmt);
           stmt->replace_usages_with(prev_stmt);
@@ -130,7 +131,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
         }
       }
     }
-    visible_stmts_.back()[operand_type_hash(stmt)].insert(stmt);
+    visible_stmts_.back()[hash_value].insert(stmt);
     set_done(stmt);
   }
 

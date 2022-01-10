@@ -42,7 +42,6 @@ def approx(expected, **kwargs):
 
     kwargs['rel'] = max(kwargs.get('rel', 1e-6), get_rel_eps())
 
-    import pytest  # pylint: disable=C0415
     return pytest.approx(expected, **kwargs)
 
 

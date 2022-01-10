@@ -72,7 +72,8 @@ class DemoteAtomics : public BasicStmtVisitor {
             }
             if (idx->is<LoopIndexStmt>() &&
                 idx->as<LoopIndexStmt>()->is_mesh_index() &&
-                loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()->snodes.data[0]] != nullptr) {
+                loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()
+                                     ->snodes.data[0]] != nullptr) {
               demote = true;
             }
           }

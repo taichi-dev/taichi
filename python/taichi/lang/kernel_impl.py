@@ -476,6 +476,42 @@ class Kernel:
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
+    def get_torch_callbacks(self, v, is_ndarray, has_torch):
+        callbacks = []
+
+        def get_call_back(u, v):
+            def call_back():
+                u.copy_(v)
+
+            return call_back
+
+        assert has_torch
+        assert isinstance(v, torch.Tensor)
+        tmp = v
+        taichi_arch = self.runtime.prog.config.arch
+        # Ndarray means its memory is allocated on the specified taichi arch.
+        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
+        # taichi cpu/cuda backend as well.
+        # Note I put x64/arm64/cuda here to be more specific.
+        assert not is_ndarray or taichi_arch in (
+            _ti_core.Arch.cuda, _ti_core.Arch.x64, _ti_core.Arch.arm64
+        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
+
+        if str(v.device).startswith('cuda'):
+            # External tensor on cuda
+            if taichi_arch != _ti_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.to(device='cpu', copy=True)
+                tmp = host_v
+                callbacks.append(get_call_back(v, host_v))
+        else:
+            # External tensor on cpu
+            if taichi_arch == _ti_core.Arch.cuda:
+                gpu_v = v.cuda()
+                tmp = gpu_v
+                callbacks.append(get_call_back(v, gpu_v))
+        return tmp, callbacks
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -486,6 +522,8 @@ class Kernel:
             tmps = []
             callbacks = []
             has_external_arrays = False
+            has_torch = util.has_pytorch()
+            ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -506,15 +544,21 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
-                elif isinstance(needed, any_arr) and (
-                        self.match_ext_arr(v)
-                        or isinstance(v, taichi.lang._ndarray.Ndarray)):
-                    is_ndarray = False
-                    if isinstance(v, taichi.lang._ndarray.Ndarray):
-                        v = v.arr
-                        is_ndarray = True
+                elif isinstance(needed, any_arr) and isinstance(
+                        v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
-                    has_torch = util.has_pytorch()
+                    v = v.arr
+                    if ndarray_use_torch:
+                        tmp, torch_callbacks = self.get_torch_callbacks(
+                            v, True, has_torch)
+                        callbacks += torch_callbacks
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement(), v.shape)
+                    else:
+                        launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
+                    has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
@@ -523,44 +567,10 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, v.shape)
-                    elif is_ndarray and not impl.get_runtime(
-                    ).ndarray_use_torch:
-                        # Use ndarray's own memory allocator
-                        launch_ctx.set_arg_ndarray(actual_argument_slot, v)
                     else:
-
-                        def get_call_back(u, v):
-                            def call_back():
-                                u.copy_(v)
-
-                            return call_back
-
-                        assert has_torch
-                        assert isinstance(v, torch.Tensor)
-                        tmp = v
-                        taichi_arch = self.runtime.prog.config.arch
-                        # Ndarray means its memory is allocated on the specified taichi arch.
-                        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
-                        # taichi cpu/cuda backend as well.
-                        # Note I put x64/arm64/cuda here to be more specific.
-                        assert not is_ndarray or taichi_arch in (
-                            _ti_core.Arch.cuda, _ti_core.Arch.x64,
-                            _ti_core.Arch.arm64
-                        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
-
-                        if str(v.device).startswith('cuda'):
-                            # External tensor on cuda
-                            if taichi_arch != _ti_core.Arch.cuda:
-                                # copy data back to cpu
-                                host_v = v.to(device='cpu', copy=True)
-                                tmp = host_v
-                                callbacks.append(get_call_back(v, host_v))
-                        else:
-                            # External tensor on cpu
-                            if taichi_arch == _ti_core.Arch.cuda:
-                                gpu_v = v.cuda()
-                                tmp = gpu_v
-                                callbacks.append(get_call_back(v, gpu_v))
+                        tmp, torch_callbacks = self.get_torch_callbacks(
+                            v, False, has_torch)
+                        callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)

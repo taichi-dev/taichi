@@ -50,7 +50,7 @@ def test_opengl_max_block_dim():
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             gl_file_path = res['aot_data']['kernels']['init']['tasks'][0][
-                'src']
+                'source_path']
             with open(gl_file_path) as gl_file:
                 s = 'layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n'
                 assert s in gl_file.readlines()

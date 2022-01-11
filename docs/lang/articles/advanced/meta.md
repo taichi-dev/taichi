@@ -18,7 +18,7 @@ Every kernel in Taichi is a template kernel, even if it has no template argument
 
 ## Template metaprogramming
 
-By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
+By using `ti.template()` as an argument type hint, a Taichi field or a python object can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 
 ```python {2}
 @ti.kernel
@@ -173,3 +173,28 @@ def reset():
       # The inner loop must be unrolled since j is an index for accessing a vector
       x[i][j] = 0
 ```
+
+## Compile-time recursion of `ti.func`
+
+A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines whether to recurse is evaluated at compile time.
+
+You can combine [compile-time branching](#compile-time-evaluations) and [template](#template-metaprogramming) to write compile-time recursive functions.
+
+For example, `sum_from_one_to` is a compile-time recursive function that calculates the sum of numbers from `1` to `n`.
+
+```python {1-6}
+@ti.func
+def sum_from_one_to(n: ti.template())->ti.i32:
+    ret = 0
+    if ti.static(n > 0):
+        ret = n + sum_from_one_to(n - 1)
+    return ret
+
+@ti.kernel
+def sum_from_one_to_ten():
+    print(sum_from_one_to(10)) # prints 55
+```
+
+:::caution WARNING
+When the recursion is too deep, it is not recommended to use compile-time recursion because deeper compile-time recursion expands to longer code during compilation, resulting in increased compilation time.
+:::

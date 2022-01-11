@@ -887,6 +887,36 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
+    def build_nested_mesh_for(ctx, node):
+        targets = ASTTransformer.get_for_loop_targets(node)
+        if len(targets) != 1:
+            raise TaichiSyntaxError(
+                "Nested-mesh for should have 1 loop target, found {len(targets)}"
+            )
+        target = targets[0]
+
+        with ctx.variable_scope_guard():
+            ctx.mesh = node.iter.ptr.mesh
+            assert isinstance(ctx.mesh, impl.MeshInstance)
+            loop_name = node.target.id + '_index__'
+            loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            ctx.create_variable(loop_name, loop_var)
+            begin = expr.Expr(0)
+            end = node.iter.ptr.size
+            _ti_core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+            entry_expr = _ti_core.get_relation_access(
+                ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
+                node.iter.ptr.to_element_type, loop_var.ptr)
+            entry_expr.type_check()
+            mesh_idx = mesh.MeshElementFieldProxy(
+                ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
+            ctx.create_variable(target, mesh_idx)
+            build_stmts(ctx, node.body)
+            _ti_core.end_frontend_range_for()
+
+        return None
+
+    @staticmethod
     def build_For(ctx, node):
         if node.orelse:
             raise TaichiSyntaxError(
@@ -933,6 +963,8 @@ class ASTTransformer(Builder):
                             'Backend ' + str(impl.default_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
                     return ASTTransformer.build_mesh_for(ctx, node)
+                if isinstance(node.iter.ptr, mesh.MeshRelationAccessProxy):
+                    return ASTTransformer.build_nested_mesh_for(ctx, node)
                 # Struct for
                 return ASTTransformer.build_struct_for(ctx,
                                                        node,

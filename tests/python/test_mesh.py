@@ -224,3 +224,23 @@ def test_mesh_local():
         assert res1[i] == res2[i]
         assert res1[i] == res3[i]
         assert res1[i] == res4[i]
+
+
+@ti.test(require=ti.extension.mesh)
+def test_nested_mesh_for():
+    mesh_builder = ti.Mesh.Tet()
+    mesh_builder.faces.place({'a': ti.i32, 'b': ti.i32})
+    mesh_builder.faces.link(mesh_builder.verts)
+    model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
+
+    @ti.kernel
+    def foo():
+        for f in model.faces:
+            for i in range(f.verts.size):
+                f.a += f.verts[i].id
+            for v in f.verts:
+                f.b += v.id
+
+    a = model.faces.a.to_numpy()
+    b = model.faces.b.to_numpy()
+    assert (a == b).all() == 1

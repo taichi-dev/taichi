@@ -16,15 +16,19 @@ def video_mpm99(result_dir):
     from taichi.examples.simulation.mpm99 import (dt, initialize, material,
                                                   substep, ti, x)
 
-    video_manager = ti.VideoManager(output_dir=result_dir, framerate=24,
+    video_manager = ti.VideoManager(output_dir=result_dir,
+                                    framerate=24,
                                     automatic_build=False)
     initialize()
-    gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41,
+    gui = ti.GUI("Taichi MLS-MPM-99",
+                 res=512,
+                 background_color=0x112F41,
                  show_gui=False)
     for i in range(FRAMES):
         for s in range(int(2e-3 // dt)):
             substep()
-        gui.circles(x.to_numpy(), radius=1.5,
+        gui.circles(x.to_numpy(),
+                    radius=1.5,
                     palette=[0x068587, 0xED553B, 0xEEEEF0],
                     palette_indices=material)
         video_manager.write_frame(gui.get_image())

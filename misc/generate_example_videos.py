@@ -1,5 +1,5 @@
-import re
 import os
+import re
 import subprocess
 import sys
 
@@ -13,4 +13,8 @@ for example_dir in os.listdir(example_root):
     for filename in os.listdir(full_dir):
         match = re.match(r'test_(\w+)\.py', filename)
         if match:
-            subprocess.run(["python", os.path.join(full_dir, filename), os.path.join(sys.argv[1], match.group(1))])
+            subprocess.run([
+                "python",
+                os.path.join(full_dir, filename),
+                os.path.join(sys.argv[1], match.group(1))
+            ])

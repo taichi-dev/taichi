@@ -476,7 +476,7 @@ class Kernel:
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
-    def get_torch_callbacks(self, v, is_ndarray, has_torch):
+    def get_torch_callbacks(self, v, has_torch, is_ndarray=True):
         callbacks = []
 
         def get_call_back(u, v):
@@ -549,8 +549,9 @@ class Kernel:
                     has_external_arrays = True
                     v = v.arr
                     if ndarray_use_torch:
+                        is_ndarray = True
                         tmp, torch_callbacks = self.get_torch_callbacks(
-                            v, True, has_torch)
+                            v, has_torch, is_ndarray)
                         callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
@@ -568,8 +569,9 @@ class Kernel:
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, v.shape)
                     else:
+                        is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
-                            v, False, has_torch)
+                            v, has_torch, is_ndarray)
                         callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),

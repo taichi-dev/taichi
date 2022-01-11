@@ -143,7 +143,7 @@ TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
   auto *eptr2 = builder.create_external_ptr(arg2, indices);
 
   const auto aa = alias_analysis(eptr1, eptr2);
-  EXPECT_EQ(aa, AliasResult::uncertain);
+  EXPECT_EQ(aa, AliasResult::different);
 }
 
 }  // namespace analysis

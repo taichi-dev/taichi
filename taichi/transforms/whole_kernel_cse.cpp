@@ -72,6 +72,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     auto hash_type =
         std::hash<std::type_index>{}(std::type_index(typeid(stmt)));
     if (stmt->is<GlobalPtrStmt>() || stmt->is<LoopUniqueStmt>()) {
+      // special cases in common_statement_eliminable()
       return hash_type;
     }
     auto op = stmt->get_operands();
@@ -116,7 +117,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (!stmt->common_statement_eliminable())
       return;
-    // container_statement is no need to be CSE
+    // container_statement does not need to be CSE-ed
     if (stmt->is_container_statement())
       return;
     // Generic visitor for all CSE-able statements.

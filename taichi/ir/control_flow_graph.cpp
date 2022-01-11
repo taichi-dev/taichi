@@ -218,12 +218,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (!result) {
     // The UD-chain is empty.
-    if (!(var->is<PtrOffsetStmt>() &&
-          var->as<PtrOffsetStmt>()->is_local_ptr())) {
-      // Only exception: tensor alloca is not considered as a store.
-      TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
-              block->statements[position]->id);
-    }
+    TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
+            block->statements[position]->id);
     return nullptr;
   }
   if (!result_visible) {
@@ -631,11 +627,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         auto stmt = nodes[i]->block->statements[j].get();
         if (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
-            stmt->is<GlobalTemporaryStmt>() ||
-            (stmt->is<PtrOffsetStmt>() &&
-             stmt->cast<PtrOffsetStmt>()->origin->is<GlobalTemporaryStmt>()) ||
-            (stmt->is<PtrOffsetStmt>() &&
-             stmt->cast<PtrOffsetStmt>()->is_unlowered_global_ptr())) {
+            stmt->is<GlobalTemporaryStmt>() || stmt->is<PtrOffsetStmt>()) {
           // TODO: unify them
           // A global pointer that may contain some data before this kernel.
           nodes[start_node]->reach_gen.insert(stmt);

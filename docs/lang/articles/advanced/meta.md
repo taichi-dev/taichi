@@ -192,7 +192,7 @@ def sum_from_one_to(n: ti.template()) -> ti.i32:
 
 @ti.kernel
 def sum_from_one_to_ten():
-    print(sum_from_one_to(10)) # prints 55
+    print(sum_from_one_to(10))  # prints 55
 ```
 
 :::caution WARNING

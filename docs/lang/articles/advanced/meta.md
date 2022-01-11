@@ -184,7 +184,7 @@ For example, `sum_from_one_to` is a compile-time recursive function that calcula
 
 ```python {1-6}
 @ti.func
-def sum_from_one_to(n: ti.template())->ti.i32:
+def sum_from_one_to(n: ti.template()) -> ti.i32:
     ret = 0
     if ti.static(n > 0):
         ret = n + sum_from_one_to(n - 1)

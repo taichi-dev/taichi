@@ -1,5 +1,6 @@
 import ast
 import collections.abc
+import itertools
 from collections import ChainMap
 
 import astor
@@ -371,7 +372,7 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_scalar_ret(ctx.func.return_type)
+                kernel_arguments.decl_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.argument_annotations[i],
@@ -468,9 +469,20 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                _ti_core.create_kernel_return(
-                    ti_ops.cast(expr.Expr(node.value.ptr),
-                                ctx.func.return_type).ptr)
+                print(ctx.func.return_type)
+                if id(ctx.func.return_type) in primitive_types.type_ids:
+                    _ti_core.create_kernel_exprgroup_return(
+                        expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr),
+                                    ctx.func.return_type).ptr))
+                else:
+                    _ti_core.create_kernel_exprgroup_return(
+                        expr.make_expr_group([
+                            ti_ops.cast(
+                                exp, ctx.func.return_type.dtype if isinstance(
+                                    ctx.func.return_type, MatrixType) else
+                                ctx.func.return_type) for exp in list(itertools.chain.from_iterable(node.value.ptr.to_list()))
+                        ]))
+
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value

@@ -455,6 +455,8 @@ void export_lang(py::module &m) {
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
+      .def("get_ret_matrix_int", &Kernel::get_ret_matrix_int)
+      .def("get_ret_matrix_float", &Kernel::get_ret_matrix_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def("__call__",
            [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
@@ -633,8 +635,8 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(value));
+  m.def("create_kernel_exprgroup_return", [&](const ExprGroup &group) {
+    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(group));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -925,6 +927,10 @@ void export_lang(py::module &m) {
           return get_current_program().current_callable->insert_arr_arg(
               dt, total_dim, shape);
         });
+
+  m.def("decl_tensor_type", [&](std::vector<int> shape, DataType element) {
+    return TypeFactory::create_tensor_type(shape, element);
+  });
 
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);

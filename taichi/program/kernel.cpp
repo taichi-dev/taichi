@@ -314,6 +314,7 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
   return *ctx_;
 }
 
+
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
@@ -344,6 +345,7 @@ float64 Kernel::get_ret_float(int i) {
   }
 }
 
+
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
@@ -369,6 +371,70 @@ int64 Kernel::get_ret_int(int i) {
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+std::vector<int64> Kernel::get_ret_matrix_int(int i) {
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  auto dt= rets[i].dt->as<TensorType>()->get_element_type();
+  std::vector<int64> res;
+  for (int j =0; j <size; j++){
+    if (dt->is_primitive(PrimitiveTypeID::i32)) {
+       res.emplace_back((int64)program->fetch_result<int32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+      res.emplace_back((int64)program->fetch_result<int64>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+      res.emplace_back((int64)program->fetch_result<int8>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+      res.emplace_back((int64)program->fetch_result<int16>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+      res.emplace_back((int64)program->fetch_result<uint8>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+      res.emplace_back((int64)program->fetch_result<uint16>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+      res.emplace_back((int64)program->fetch_result<uint32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+      res.emplace_back((int64)program->fetch_result<uint64>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      res.emplace_back((int64)program->fetch_result<float32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      res.emplace_back((int64)program->fetch_result<float64>(j));
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+  return res;
+}
+
+std::vector<float64> Kernel::get_ret_matrix_float(int i) {
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  auto dt= rets[i].dt->as<TensorType>()->get_element_type();
+  std::vector<float64> res;
+  for (int j =0; j <size; j++){
+    if (dt->is_primitive(PrimitiveTypeID::i32)) {
+      res.emplace_back((float64)program->fetch_result<int32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+      res.emplace_back((float64)program->fetch_result<int64>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+      res.emplace_back((float64)program->fetch_result<int8>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+      res.emplace_back((float64)program->fetch_result<int16>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+      res.emplace_back((float64)program->fetch_result<uint8>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+      res.emplace_back((float64)program->fetch_result<uint16>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+      res.emplace_back((float64)program->fetch_result<uint32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+      res.emplace_back((float64)program->fetch_result<uint64>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      res.emplace_back((float64)program->fetch_result<float32>(j));
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      res.emplace_back((float64)program->fetch_result<float64>(j));
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+  return res;
 }
 
 void Kernel::set_arch(Arch arch) {

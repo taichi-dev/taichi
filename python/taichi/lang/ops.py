@@ -129,6 +129,13 @@ def cast(obj, dtype):
     return expr.Expr(_ti_core.value_cast(expr.Expr(obj).ptr, dtype))
 
 
+def group_cast(group, dtype):
+    dtype = cook_dtype(dtype)
+    if is_taichi_class(group):
+        return group.cast(dtype)
+    return _ti_core.ExprGroup()
+
+
 def bit_cast(obj, dtype):
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):

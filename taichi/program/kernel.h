@@ -97,6 +97,10 @@ class Kernel : public Callable {
 
   int64 get_ret_int(int i);
 
+  std::vector<int64> get_ret_matrix_int(int i);
+
+  std::vector<float64> get_ret_matrix_float(int i);
+
   void set_arch(Arch arch);
 
   void account_for_offloaded(OffloadedStmt *stmt);

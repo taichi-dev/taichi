@@ -314,7 +314,6 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
   return *ctx_;
 }
 
-
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
@@ -345,7 +344,6 @@ float64 Kernel::get_ret_float(int i) {
   }
 }
 
-
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
@@ -375,11 +373,11 @@ int64 Kernel::get_ret_int(int i) {
 
 std::vector<int64> Kernel::get_ret_matrix_int(int i) {
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
-  auto dt= rets[i].dt->as<TensorType>()->get_element_type();
+  auto dt = rets[i].dt->as<TensorType>()->get_element_type();
   std::vector<int64> res;
-  for (int j =0; j <size; j++){
+  for (int j = 0; j < size; j++) {
     if (dt->is_primitive(PrimitiveTypeID::i32)) {
-       res.emplace_back((int64)program->fetch_result<int32>(j));
+      res.emplace_back((int64)program->fetch_result<int32>(j));
     } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
       res.emplace_back((int64)program->fetch_result<int64>(j));
     } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
@@ -407,9 +405,9 @@ std::vector<int64> Kernel::get_ret_matrix_int(int i) {
 
 std::vector<float64> Kernel::get_ret_matrix_float(int i) {
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
-  auto dt= rets[i].dt->as<TensorType>()->get_element_type();
+  auto dt = rets[i].dt->as<TensorType>()->get_element_type();
   std::vector<float64> res;
-  for (int j =0; j <size; j++){
+  for (int j = 0; j < size; j++) {
     if (dt->is_primitive(PrimitiveTypeID::i32)) {
       res.emplace_back((float64)program->fetch_result<int32>(j));
     } else if (dt->is_primitive(PrimitiveTypeID::i64)) {

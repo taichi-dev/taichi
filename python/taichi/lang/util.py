@@ -191,6 +191,8 @@ def cook_dtype(dtype):
         return dtype
     if isinstance(dtype, _ti_core.Type):
         return _ti_core.DataType(dtype)
+    if isinstance(dtype, impl.MatrixType):
+        return _ti_core.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
     if dtype is float:
         return impl.get_runtime().default_fp
     if dtype is int:

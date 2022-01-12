@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Type system
 
-Data types in Taichi consist of Primitive Types and Compound Types. Primitive Types are the numerical data types used by backends, while Compound Types are user-defined types of data records composed of multiple members.
+Data types in Taichi consist of Primitive Types and Compound Types. Primitive Types are the numerical data types used by different backends, while Compound Types are user-defined types of data records composed of multiple members.
 
 ## Primitive types
 
@@ -54,16 +54,16 @@ Supported types on each backend:
 
 | type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
 | ---- | -------- | ------- | ----- | -------- |
-| i8   | > OK     | > N/A   | > OK  | > EXT    |
-| i16  | > OK     | > N/A   | > OK  | > EXT    |
-| i32  | > OK     | > OK    | > OK  | > OK     |
-| i64  | > OK     | > EXT   | > N/A | > EXT    |
-| u8   | > OK     | > N/A   | > OK  | > EXT    |
-| u16  | > OK     | > N/A   | > OK  | > EXT    |
-| u32  | > OK     | > N/A   | > OK  | > OK     |
-| u64  | > OK     | > N/A   | > N/A | > EXT    |
-| f32  | > OK     | > OK    | > OK  | > OK     |
-| f64  | > OK     | > OK    | > N/A | > EXT    |
+| i8   | OK  ✔️    | N/A   | OK  | EXT    |
+| i16  | OK  ✅    | N/A   | OK  | EXT    |
+| i32  | OK :heavy_check_mark:    | OK    | OK  | OK     |
+| i64  | OK     | EXT   | N/A | EXT    |
+| u8   | OK     | N/A   | OK  | EXT    |
+| u16  | OK     | N/A   | OK  | EXT    |
+| u32  | OK     | N/A   | OK  | OK     |
+| u64  | OK     | N/A   | N/A | EXT    |
+| f32  | OK     | OK    | OK  | OK     |
+| f64  | OK     | OK    | N/A | EXT    |
 
 (OK: supported, EXT: require extension, N/A: not available)
 :::

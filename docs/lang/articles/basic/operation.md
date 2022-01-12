@@ -1,14 +1,10 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 ---
 
-# Arithmetic operations 
+# Operations
 
-Arithmetic operations in Taichi
-
-### Supported operations
-
-#### Arithmetic operators
+## Arithmetic operators for primitive types
 
 | Operation | Result                          |
 | --------- | ------------------------------- |
@@ -57,7 +53,8 @@ desired types, using `ti.cast`. Please see
 default numerical types.
 :::
 
-#### Logic operators
+
+## Logic operators
 
 | Operation          | Result                                                        |
 | ------------------ | ------------------------------------------------------------- |
@@ -72,7 +69,7 @@ default numerical types.
 | `a and b`          | if `a` is False, then `a`, else `b`                           |
 | `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
 
-#### Bitwise operators
+## Bitwise operators
 
 | Operation               | Result                              |
 | ----------------------- | ----------------------------------- |
@@ -81,7 +78,7 @@ default numerical types.
 | `a ^ b`                 | bitwise exclusive or of `a` and `b` |
 | <code>a &#124; b</code> | bitwise or of `a` and `b`           |
 
-#### Trigonometric functions
+## Trigonometric functions
 
 ```python
 ti.sin(x)
@@ -93,7 +90,7 @@ ti.atan2(x, y)
 ti.tanh(x)
 ```
 
-#### Other arithmetic functions
+## Other arithmetic functions
 
 ```python
 ti.sqrt(x)
@@ -105,7 +102,7 @@ ti.floor(x)
 ti.ceil(x)
 ```
 
-#### Builtin-alike functions
+## Builtin-alike functions
 
 ```python
 abs(x)
@@ -114,13 +111,13 @@ min(x, y, ...)
 pow(x, y)  # Same as `x ** y`.
 ```
 
-#### Random number generator
+## Random number generator
 
 ```python
 ti.random(dtype=float)
 ```
 
-### Supported atomic operations
+## Supported atomic operations
 
 In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically
 [atomic](https://en.wikipedia.org/wiki/Fetch-and-add).
@@ -190,13 +187,11 @@ Supported atomic operations on each backend:
 :::
 
 
-## Compound types
+## Matrices operations
 
-User-defined compound types can be created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
-
-### Supported operations
-
-[Supported operations on primitive types](#supported-operations) can also be applied on compound types. In these cases, they are applied in an element-wise manner. For example:
+The previously mentioned operations on primitive types can also be applied on 
+compound types such as matrices. 
+In these cases, they are applied in an element-wise manner. For example:
 
 ```python
 B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
@@ -232,3 +227,19 @@ for i in ti.static(range(2)):
     for j in ti.static(range(3)):
         A[i, j] += B[i, j]
 ```
+
+In addition, the following methods are supported matrices operations:
+
+```python
+a = ti.Matrix([[2, 3], [4, 5]])
+a.transpose()   # the transposed matrix of `a`, will not effect the data in `a`.
+a.trace()       # the trace of matrix `a`, the returned scalar value can be computed as `a[0, 0] + a[1, 1] + ...`.
+a.determinant() # the determinant of matrix `a`.
+a.inverse()     # (ti.Matrix) the inverse of matrix `a`.
+```
+
+:::note
+For now, determinant() and inverse() only works in Taichi-scope, and the 
+size of the matrix must be 1x1, 2x2, 3x3 or 4x4.
+:::
+

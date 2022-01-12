@@ -54,8 +54,7 @@ class AotDataConverter {
     res.type = offloaded_task_type_name(in.task_type);
     res.name = in.name;
     res.source_path = in.source_path;
-    res.gpu_block_size =
-        in.advisory_total_num_threads / in.advisory_num_threads_per_group;
+    res.gpu_block_size = in.advisory_num_threads_per_group;
     return res;
   }
 

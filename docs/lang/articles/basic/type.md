@@ -286,13 +286,17 @@ def func(a: ti.f32) -> ti.i64:
 
 ### Type casts
 
-All data types are static in the **Taichi scope**. Therefore, casts are needed when you want to assign a certain type of data to another one.
-
-#### Implicit casts
+When using Taichi, you may encounter situations when certain type of data needs
+to be assigned to another type. In this case, type casts are needed. Here, we
+list four use cases commonly seen during Taichi programming, namely implicit
+casts, explicit casts, casting vectors and matrices, and bit-casts.
 
 :::caution
-The type of a variable is **determined on its initialization**.
+In Taichi, the type of a variable is **determined on its initialization**.
+All data types are static in the **Taichi scope**,
 :::
+
+#### Implicit casts
 
 When a _low-precision_ variable is assigned to a _high-precision_
 variable, it will be implicitly promoted to the _high-precision_ type

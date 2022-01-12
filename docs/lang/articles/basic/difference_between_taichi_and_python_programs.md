@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Difference between taichi and python programs
 
-Although taichi uses Python as the frontend, there are some differences between taichi and python programs. 
+Although taichi uses Python as the frontend, there are some differences between taichi and python programs.
 Main differences are:
 
 1. Taichi only supports one return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.
@@ -52,10 +52,10 @@ def discarded_after_first_return(a: ti.i32) -> ti.i32:
     return 1
     if a:  # Discarded
         return 1  # Discarded
-        
+
 discarded_after_first_return(0)  # OK: returns 1
 ```
-- If there is [static `if`](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement in all circumstances. 
+- If there are [compile-time evaluations](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement in all circumstances.
 Otherwise, error occurs when the branch that does not have return statement is chosen.
 ```python {7-8, 15-16}
 @ti.kernel

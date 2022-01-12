@@ -18,3 +18,5 @@ jobs:
           commands: |
             format
             benchmark
+            rebase
+            rerun

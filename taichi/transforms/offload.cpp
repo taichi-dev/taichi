@@ -13,7 +13,22 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 namespace {
-
+bool demotable_axis_load(Stmt *stmt) {
+  // Stmt involving simple arithmetic of ExternalTensorShapeAlongAxisStmt
+  // shouldn't be saved in global tmp, just clone them to each shader
+  // separately.
+  int n_op = stmt->num_operands();
+  if (n_op == 0) {
+    return stmt->is<ExternalTensorShapeAlongAxisStmt>() ||
+           stmt->is<ConstStmt>();
+  }
+  for (int i = 0; i < n_op; i++) {
+    auto op = stmt->operand(i);
+    if (!demotable_axis_load(op))
+      return false;
+  }
+  return true;
+}
 class SquashPtrOffset : public IRVisitor {
  public:
   SquashPtrOffset() {
@@ -85,36 +100,29 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-
-        // TODO: We need to update codegen for each backend gradually so let's
-        // limit it to opengl backend for now.
-        if (arch == Arch::opengl && s->end_is_array_axis) {
-          // range of array must begin with 0.
-          auto begin = s->begin->cast<ConstStmt>();
-          TI_ASSERT(begin && begin->val[0].val_int32() == 0);
+        if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
-          offloaded->begin_value = 0;
-
-          offloaded->end_stmt =
-              clone_and_replace_ext_axis(s->end, offloaded.get(), s);
-          offloaded_ranges.end_stmts.insert(
-              std::make_pair(offloaded.get(), offloaded->end_stmt));
+          offloaded->begin_value = val->val[0].val_int32();
         } else {
-          if (auto val = s->begin->cast<ConstStmt>()) {
-            offloaded->const_begin = true;
-            offloaded->begin_value = val->val[0].val_int32();
-          } else {
-            offloaded_ranges.begin_stmts.insert(
-                std::make_pair(offloaded.get(), s->begin));
-          }
-          if (auto val = s->end->cast<ConstStmt>()) {
-            offloaded->const_end = true;
-            offloaded->end_value = val->val[0].val_int32();
-          } else {
-            offloaded_ranges.end_stmts.insert(
-                std::make_pair(offloaded.get(), s->end));
-          }
+          offloaded_ranges.begin_stmts.insert(
+              std::make_pair(offloaded.get(), s->begin));
         }
+
+        if (auto val = s->end->cast<ConstStmt>()) {
+          offloaded->const_end = true;
+          offloaded->end_value = val->val[0].val_int32();
+        } else {
+          if (arch == Arch::opengl && demotable_axis_load(s->end)) {
+            // TODO: We need to update codegen for each backend gradually so
+            // let's limit it to opengl backend for now.
+            auto end_copy = s->end->clone();
+            offloaded->end_stmt = end_copy.get();
+            offloaded->body->insert(std::move(end_copy));
+          }
+          offloaded_ranges.end_stmts.insert(
+              std::make_pair(offloaded.get(), s->end));
+        }
+
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
@@ -156,28 +164,6 @@ class Offloader {
   }
 
  private:
-  static Stmt *clone_and_replace_ext_axis(Stmt *stmt,
-                                          OffloadedStmt *offloaded,
-                                          RangeForStmt *range_for) {
-    if (stmt->cast<ExternalTensorShapeAlongAxisStmt>()) {
-      auto new_stmt = stmt->clone();
-      auto new_stmt_ptr = new_stmt.get();
-      offloaded->body->insert(std::move(new_stmt));
-      replace_all_usages_with(range_for, stmt, new_stmt_ptr);
-      return new_stmt_ptr;
-    } else {
-      auto val = stmt->cast<BinaryOpStmt>();
-      TI_ASSERT(val && val->op_type == BinaryOpType::mul);
-      auto new_stmt = stmt->clone();
-      auto new_stmt_ptr = new_stmt.get();
-      auto new_val = new_stmt->cast<BinaryOpStmt>();
-      new_val->lhs = clone_and_replace_ext_axis(val->lhs, offloaded, range_for);
-      new_val->rhs = clone_and_replace_ext_axis(val->rhs, offloaded, range_for);
-      offloaded->body->insert(std::move(new_stmt));
-      replace_all_usages_with(range_for, stmt, new_stmt_ptr);
-      return new_stmt_ptr;
-    }
-  }
   static void emit_struct_for(StructForStmt *for_stmt,
                               Block *root_block,
                               const CompileConfig &config,
@@ -397,6 +383,8 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
         (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
+    if (config_.arch == Arch::opengl && demotable_axis_load(stmt))
+      return;
     // Not yet allocated
     if (local_to_global_.find(top_level_ptr) == local_to_global_.end()) {
       local_to_global_[top_level_ptr] =
@@ -511,7 +499,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       }
       if (!stmt->const_end) {
         if (stmt->end_stmt) {
-          TI_ASSERT(stmt->const_begin);
+          stmt->end_stmt->accept(this);
           stmt->end_offset = 0;
         } else {
           TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
@@ -622,12 +610,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     }
 
     if (local_to_global_offset_.find(op) == local_to_global_offset_.end()) {
-      TI_ASSERT_INFO(
-          op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
-              op->is<GlobalTemporaryStmt>() || op->is<ExternalPtrStmt>() ||
-              (op->is<ArgLoadStmt>() && op->as<ArgLoadStmt>()->is_ptr),
-          "{} is not allowed here.", op->type());
-      // For cases like ConstStmt
+      // For stmts that are not promoted to global tmp, clone them into current
+      // offloaded task. E.g.
+      // ConstStmt/PtrOffsetStmt/GlobalTemporaryStmt/ExternalTensorShapeAlongAxisStmt
+      // etc.
       auto copy = op->clone();
       auto pcopy = copy.get();
       stmt_to_offloaded_[copy.get()] = offloaded;

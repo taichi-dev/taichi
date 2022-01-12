@@ -106,7 +106,6 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on opengl backend.");
-  // TODO(#3334): Convert |aot_data_| with AotDataConverter
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(aot_data_, bin_path);
   // Json format doesn't support multiple line strings.
@@ -121,11 +120,9 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
       write_glsl_file(output_dir, t);
     }
   }
-
-  const std::string txt_path = fmt::format("{}/metadata.json", output_dir);
-  TextSerializer ts;
-  ts.serialize_to_json("aot_data", aot_data_copy);
-  ts.write_to_file(txt_path);
+  auto aot_module_data = AotDataConverter::convert(aot_data_copy);
+  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
+  aot_module_data.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,

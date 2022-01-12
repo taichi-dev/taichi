@@ -170,8 +170,9 @@ Taichi functions can be nested.
 :::
 
 :::caution
-Currently, all functions are force-inlined. Therefore, no recursion is
-allowed.
+Currently, all functions are force-inlined. Therefore, no runtime recursion is allowed.
+
+Compile-time recursion is an advanced metaprogramming feature for experienced programmers. See [Metaprogramming](/lang/articles/advanced/meta#compile-time-recursion-of-tifunc) for more information.
 :::
 
 ### Arguments and return values

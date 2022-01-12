@@ -359,7 +359,7 @@ class ASTTransformer(Builder):
                 pass
             else:
                 try:
-                    file = inspect.getfile(func)
+                    file = inspect.getfile(inspect.getmodule(func))
                 except TypeError:
                     file = None
                 if file and os.path.commonpath([

@@ -188,8 +188,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
-         stmt->value->raw_name());
+    emit("ti_ctx->args[0].val_{} = {};", data_types_name(stmt->element_types()),
+         stmt->values_raw_names());
   }
 
   void visit(ConstStmt *stmt) override {

@@ -196,6 +196,9 @@ class TensorType : public Type {
   std::vector<int> get_shape() const {
     return shape_;
   }
+  Type *get_compute_type() override {
+    return this;
+  }
 
   std::string to_string() const override;
 

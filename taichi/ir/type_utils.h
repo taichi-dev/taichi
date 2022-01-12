@@ -7,6 +7,8 @@ namespace lang {
 
 std::string data_type_name(DataType t);
 
+std::string data_types_name(std::vector<DataType> types);
+
 std::string data_type_format(DataType dt);
 
 int data_type_size(DataType t);

@@ -18,7 +18,7 @@ The _category_ can be one of:
 - `u` for unsigned integers, e.g. 128, 256
 - `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
 
-The _digital number_ can be either `8`, `16`, `32`, or `64`. 
+The _digital number_ can be either `8`, `16`, `32`, or `64`.
 It represents how many **bits** are used in storing the data. The larger
 the bit number is, the higher the precision is.
 
@@ -51,7 +51,7 @@ Currently in Taichi, the supported primitive types on each backend are:
 ### Type promotion
 
 When Taichi performs binary operations on different types, the result is a
-promoted type. This is known as type promotion. Following the C programming 
+promoted type. This is known as type promotion. Following the C programming
 language convention, Taichi always chooses the more precise type to contain the
 result value. For example:
 

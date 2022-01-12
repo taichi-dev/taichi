@@ -184,8 +184,9 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   field_data.dtype_name = dt.to_string();
   field_data.shape = shape;
   field_data.mem_offset_in_parent = dense_desc.mem_offset_in_parent_cell;
-  field_data.row_num = row_num;
-  field_data.column_num = column_num;
+  if (!is_scalar) {
+    field_data.element_shape = {row_num, column_num};
+  }
   ti_aot_data_.fields.push_back(field_data);
 }
 

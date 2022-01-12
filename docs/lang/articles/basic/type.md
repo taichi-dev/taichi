@@ -240,14 +240,13 @@ Supported atomic operations on each backend:
 
 ### Type promotion
 
-Binary operations on different types will give you a promoted type,
-following the C programming language convention, e.g.:
+When Taichi performs binary operations on different types, the result is a
+promoted type. This is known as type promotion. Following the C programming 
+language convention, Taichi always chooses the more precise type to contain the
+result value. For example:
 
 - `i32 + f32 = f32` (integer + float = float)
 - `i32 + i64 = i64` (less-bits + more-bits = more-bits)
-
-Basically it will try to choose the more precise type to contain the
-result value.
 
 ### Default precisions
 

@@ -119,6 +119,9 @@ def foo():
     a = 1
     print(a)  # 1.0
 ```
+In this example, variable `a` is initialized with `float` type. On the next line, the assign statement will cast `1` from `int` type to `float` type implicitly.
+
+
 
 When a _high-precision_ variable is assigned to a _low-precision_ type,
 it will be implicitly down-cast into the _low-precision_ type and Taichi
@@ -131,6 +134,8 @@ def foo():
     a = 3.14
     print(a)  # 3
 ```
+In this example, variable `a` is initialized with `int` type. On the next line, the assign statement will cast `3.14` from `float` type to `int` type implicitly.
+
 
 #### Explicit casts
 
@@ -198,6 +203,7 @@ my_vec3f = ti.types.vector(3, float)
 my_mat2f = ti.types.matrix(2, 2, float)
 my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 ```
+In this example, we define four compound types which can be used to create fields and create local variables. We can learn how to use it below.
 
 ### Creating fields
 
@@ -213,6 +219,7 @@ vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(128, 128, 128))
 mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
 ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(1024, 768))
 ```
+In this example, we define three fields which have different types and shapes by two ways. They are exactly the same.
 
 ### Creating local variables
 
@@ -224,3 +231,4 @@ mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
 vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```
+In this example, we define five local variables which have different types. On the definition statement of `vec2`, there is a implicit cast operation when try to combine `my_vec2i(0)` with `1`.

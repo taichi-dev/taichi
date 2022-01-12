@@ -46,9 +46,6 @@ class AotDataConverter {
     for (const auto &arg : in.ctx_attribs.args()) {
       res.scalar_args[arg.index] = visit(arg);
     }
-    for (const auto &ret : in.ctx_attribs.rets()) {
-      res.arr_args[ret.index] = visit(ret);
-    }
     return res;
   }
 
@@ -67,13 +64,6 @@ class AotDataConverter {
     aot::ScalarArg res{};
     res.dtype_name = in.dt.to_string();
     res.offset_in_args_buf = in.offset_in_mem;
-    return res;
-  }
-
-  aot::ArrayArg visit(
-      const spirv::KernelContextAttributes::RetAttributes &in) const {
-    aot::ArrayArg res{};
-    TI_ERROR("Ndarray is not yet supported on vulkan backend");
     return res;
   }
 };

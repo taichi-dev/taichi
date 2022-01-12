@@ -38,7 +38,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
   void write_spv_file(const std::string &output_dir,
-                      const TaskAttributes &k,
+                      TaskAttributes &k,
                       const std::vector<uint32_t> &source_code) const;
 
   uint32_t to_vk_dtype_enum(DataType dt);

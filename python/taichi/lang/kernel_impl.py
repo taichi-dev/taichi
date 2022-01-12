@@ -235,7 +235,7 @@ class Func:
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
-                    annotation, template):
+                              annotation, template):
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
@@ -272,10 +272,10 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_element_dim(arg, 1)
-                anno.check_element_shape((arg.n,))
+                anno.check_element_shape((arg.n, ))
                 anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
-                return arg.dtype, len(arg.shape) + 1, (arg.n,), arg.layout
+                return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_element_dim(arg, 2)
                 anno.check_element_shape((arg.n, arg.m))
@@ -294,7 +294,7 @@ class TaichiCallableTemplateMapper:
             element_shape = (
             ) if element_dim == 0 else shape[:
                                              element_dim] if layout == Layout.SOA else shape[
-                                                                                       -element_dim:]
+                                                 -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
         return type(arg).__name__,
 
@@ -619,10 +619,12 @@ class Kernel:
                     ret = t_kernel.get_ret_float(0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     it = iter(t_kernel.get_ret_matrix_int(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.n)] for _ in range(ret_dt.m)])
+                    ret = Matrix([[next(it) for _ in range(ret_dt.n)]
+                                  for _ in range(ret_dt.m)])
                 else:
                     it = iter(t_kernel.get_ret_matrix_float(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.n)]for _ in range(ret_dt.m)])
+                    ret = Matrix([[next(it) for _ in range(ret_dt.n)]
+                                  for _ in range(ret_dt.m)])
 
             if callbacks:
                 for c in callbacks:
@@ -824,7 +826,6 @@ def data_oriented(cls):
     Returns:
         The decorated class.
     """
-
     def _getattr(self, item):
         method = cls.__dict__.get(item, None)
         is_property = method.__class__ == property

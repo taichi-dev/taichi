@@ -472,15 +472,18 @@ class ASTTransformer(Builder):
                 print(ctx.func.return_type)
                 if id(ctx.func.return_type) in primitive_types.type_ids:
                     _ti_core.create_kernel_exprgroup_return(
-                        expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr),
-                                    ctx.func.return_type).ptr))
+                        expr.make_expr_group(
+                            ti_ops.cast(expr.Expr(node.value.ptr),
+                                        ctx.func.return_type).ptr))
                 else:
                     _ti_core.create_kernel_exprgroup_return(
                         expr.make_expr_group([
                             ti_ops.cast(
                                 exp, ctx.func.return_type.dtype if isinstance(
                                     ctx.func.return_type, MatrixType) else
-                                ctx.func.return_type) for exp in list(itertools.chain.from_iterable(node.value.ptr.to_list()))
+                                ctx.func.return_type) for exp in list(
+                                    itertools.chain.from_iterable(
+                                        node.value.ptr.to_list()))
                         ]))
 
                 # For args[0], it is an ast.Attribute, because it loads the

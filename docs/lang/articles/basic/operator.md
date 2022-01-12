@@ -2,9 +2,10 @@
 sidebar_position: 4
 ---
 
-# Operations
+# Operators
 
-## Arithmetic operators for primitive types
+## Supported operators for primitive types
+### Arithmetic operators
 
 | Operation | Result                          |
 | --------- | ------------------------------- |
@@ -54,7 +55,7 @@ default numerical types.
 :::
 
 
-## Logic operators
+### Logic operators
 
 | Operation          | Result                                                        |
 | ------------------ | ------------------------------------------------------------- |
@@ -69,7 +70,7 @@ default numerical types.
 | `a and b`          | if `a` is False, then `a`, else `b`                           |
 | `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
 
-## Bitwise operators
+### Bitwise operators
 
 | Operation               | Result                              |
 | ----------------------- | ----------------------------------- |
@@ -78,7 +79,7 @@ default numerical types.
 | `a ^ b`                 | bitwise exclusive or of `a` and `b` |
 | <code>a &#124; b</code> | bitwise or of `a` and `b`           |
 
-## Trigonometric functions
+### Trigonometric functions
 
 ```python
 ti.sin(x)
@@ -90,7 +91,7 @@ ti.atan2(x, y)
 ti.tanh(x)
 ```
 
-## Other arithmetic functions
+### Other arithmetic functions
 
 ```python
 ti.sqrt(x)
@@ -102,7 +103,7 @@ ti.floor(x)
 ti.ceil(x)
 ```
 
-## Builtin-alike functions
+### Builtin-alike functions
 
 ```python
 abs(x)
@@ -111,13 +112,13 @@ min(x, y, ...)
 pow(x, y)  # Same as `x ** y`.
 ```
 
-## Random number generator
+### Random number generator
 
 ```python
 ti.random(dtype=float)
 ```
 
-## Supported atomic operations
+### Supported atomic operations
 
 In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically
 [atomic](https://en.wikipedia.org/wiki/Fetch-and-add).
@@ -187,8 +188,7 @@ Supported atomic operations on each backend:
 :::
 
 
-## Matrices operations
-
+## Supported operators for matrices
 The previously mentioned operations on primitive types can also be applied on 
 compound types such as matrices. 
 In these cases, they are applied in an element-wise manner. For example:

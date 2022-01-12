@@ -86,12 +86,12 @@ print(ti.raw_mod(-2, 3))  # -2
 
 :::note
 
-Python 3 distinguishes `/` (true division) and `//` (floor division), e.g., `1.0 / 2.0 = 0.5`, `1 / 2 = 0.5`, `1 // 2 = 0`,
+Python3 distinguishes `/` (true division) and `//` (floor division), e.g., `1.0 / 2.0 = 0.5`, `1 / 2 = 0.5`, `1 // 2 = 0`,
 `4.2 // 2 = 2`. Taichi follows the same design:
 
-- **True divisions** on integral types will first cast their
+- **True divisions** on integral types first cast their
   operands to the default floating point type.
-- **Floor divisions** on floating point types will first cast their
+- **Floor divisions** on floating point types first cast their
   operands to the default integral type.
 
 To avoid such implicit casting, you can manually cast your operands to

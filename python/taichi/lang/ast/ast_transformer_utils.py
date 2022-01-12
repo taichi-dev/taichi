@@ -45,6 +45,23 @@ class VariableScopeGuard:
         self.scopes.pop()
 
 
+class StaticStatus:
+    def __init__(self):
+        self.is_in_static_scope = False
+
+
+class StaticScopeGuard:
+    def __init__(self, status):
+        self.status = status
+
+    def __enter__(self):
+        self.prev = self.status.is_in_static_scope
+        self.status.is_in_static_scope = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.status.is_in_static_scope = self.prev
+
+
 class NonStaticStatus:
     def __init__(self):
         self.is_in_non_static_scope = False
@@ -106,7 +123,6 @@ class ASTTransformerContext:
         self.loop_scopes = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
-        self.is_in_static_scope = False
         self.arg_features = arg_features
         self.returns = None
         self.global_vars = global_vars
@@ -123,6 +139,7 @@ class ASTTransformerContext:
         self.lineno_offset = start_lineno - 1
         self.raised = False
         self.non_static_status = NonStaticStatus()
+        self.static_status = StaticStatus()
         self.returned = False
 
     # e.g.: FunctionDef, Module, Global
@@ -137,6 +154,9 @@ class ASTTransformerContext:
 
     def non_static_scope_guard(self):
         return NonStaticScopeGuard(self.non_static_status)
+
+    def static_scope_guard(self):
+        return StaticScopeGuard(self.static_status)
 
     def current_scope(self):
         return self.local_scopes[-1]
@@ -159,6 +179,9 @@ class ASTTransformerContext:
 
     def is_in_non_static(self):
         return self.non_static_status.is_in_non_static_scope
+
+    def is_in_static_scope(self):
+        return self.static_status.is_in_static_scope
 
     def is_var_declared(self, name):
         for s in self.local_scopes:

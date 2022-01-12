@@ -113,7 +113,7 @@ class TaichiMain:
     def _get_examples_dir() -> Path:
         """Get the path to the examples directory."""
 
-        root_dir = utils.package_root()
+        root_dir = utils.package_root
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -215,7 +215,7 @@ class TaichiMain:
     @register
     def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
-        changelog_md = os.path.join(utils.package_root(), 'CHANGELOG.md')
+        changelog_md = os.path.join(utils.package_root, 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 

@@ -360,8 +360,8 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
+    auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
+        load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices])));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
@@ -403,9 +403,9 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
-        load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
+        ExprGroup(load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
             keys.dtype, keys.num_active_indices, keys.num_active_indices,
-            0))[indices]));
+            0))[indices])));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());

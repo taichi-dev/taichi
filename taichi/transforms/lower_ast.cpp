@@ -387,10 +387,14 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    auto expr = stmt->value;
+    auto expr_group = stmt->values;
     auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    fctx.push_back<ReturnStmt>(fctx.back_stmt());
+    std::vector<Stmt *> return_ele;
+    for (auto &x : expr_group.exprs) {
+      x->flatten(&fctx);
+      return_ele.push_back(fctx.back_stmt());
+    }
+    fctx.push_back<ReturnStmt>(return_ele);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 

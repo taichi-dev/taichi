@@ -76,8 +76,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       return false;
     });
 
-    for (auto alloca_pair : touched_allocas) {
-      auto alloca = alloca_pair;
+    for (auto alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = alloca->parent; b; b = b->parent_block()) {
@@ -93,8 +92,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     }
 
     bool qualified_atomics = true;
-    for (auto atomics_pair : touched_global_atomics) {
-      auto atomics = atomics_pair;
+    for (auto atomics : touched_global_atomics) {
       // Test if the atomics belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = atomics->parent; b; b = b->parent_block()) {

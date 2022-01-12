@@ -35,22 +35,8 @@ For example, the two most commonly used types:
 
 ### Supported primitive types
 
-Currently, supported primitive types in Taichi are
+Currently in Taichi, the supported primitive types on each backend are:
 
-- int8 `ti.i8`
-- int16 `ti.i16`
-- int32 `ti.i32`
-- int64 `ti.i64`
-- uint8 `ti.u8`
-- uint16 `ti.u16`
-- uint32 `ti.u32`
-- uint64 `ti.u64`
-- float32 `ti.f32`
-- float64 `ti.f64`
-
-:::note
-
-Supported types on each backend:
 
 | type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
 | ---- | -------- | ------- | ----- | -------- |
@@ -66,11 +52,7 @@ Supported types on each backend:
 | f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
 (:large_orange_diamond: requires extension)
-:::
 
-:::note
-Boolean types are represented using `ti.i32`.
-:::
 
 ### Supported operations
 

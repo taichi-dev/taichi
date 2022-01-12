@@ -226,6 +226,43 @@ def test_mesh_local():
         assert res1[i] == res4[i]
 
 
+@ti.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
+def test_auto_mesh_local():
+    mesh_builder = ti.Mesh.Tet()
+    mesh_builder.verts.place({'a': ti.i32, 's': ti.i32})
+    mesh_builder.faces.link(mesh_builder.verts)
+    model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
+    ext_a = ti.field(ti.i32, shape=len(model.verts))
+
+    @ti.kernel
+    def foo(cache: ti.template()):
+        for v in model.verts:
+            v.s = v.id
+        if ti.static(cache):
+            ti.mesh_local(ext_a, model.verts.a)
+        for f in model.faces:
+            m = f.verts[0].s + f.verts[1].s + f.verts[2].s
+            f.verts[0].a += m
+            f.verts[1].a += m
+            f.verts[2].a += m
+            for i in range(3):
+                ext_a[f.verts[i].id] += m
+
+    foo(False)
+    res1 = model.verts.a.to_numpy()
+    res2 = ext_a.to_numpy()
+    model.verts.a.fill(0)
+    ext_a.fill(0)
+    foo(True)
+    res3 = model.verts.a.to_numpy()
+    res4 = ext_a.to_numpy()
+
+    for i in range(len(model.verts)):
+        assert res1[i] == res2[i]
+        assert res1[i] == res3[i]
+        assert res1[i] == res4[i]
+
+
 @ti.test(require=ti.extension.mesh)
 def test_nested_mesh_for():
     mesh_builder = ti.Mesh.Tet()

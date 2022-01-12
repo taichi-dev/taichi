@@ -350,7 +350,9 @@ class ASTTransformer(Builder):
         elif func is all:
             node.ptr = ti_ops.ti_all(*args, **keywords)
         else:
-            if ctx.is_in_static_scope():
+            if ctx.is_in_static_scope():  # allow external function in static scope
+                pass
+            elif func in [abs, sum]:  # supported built-ins
                 pass
             elif hasattr(func, "_is_taichi_function") or hasattr(
                     func, "_is_wrapped_kernel"):  # taichi func/kernel

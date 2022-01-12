@@ -5,7 +5,6 @@
 #include "taichi/system/profiler.h"
 
 #include <set>
-#include <stack>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -26,7 +25,6 @@ class GatherStmts : public BasicStmtVisitor {
     stmts.push_back(stmt);
   }
 };
-
 
 void reverse_segments(IRNode *root) {
   TI_AUTO_PROF;

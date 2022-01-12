@@ -54,18 +54,18 @@ Supported types on each backend:
 
 | type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
 | ---- | -------- | ------- | ----- | -------- |
-| i8   | OK  ✔️    | N/A   | OK  | EXT    |
-| i16  | OK  ✅    | N/A   | OK  | EXT    |
-| i32  | OK :heavy_check_mark:    | OK    | OK  | OK     |
-| i64  | OK     | EXT   | N/A | EXT    |
-| u8   | OK     | N/A   | OK  | EXT    |
-| u16  | OK     | N/A   | OK  | EXT    |
-| u32  | OK     | N/A   | OK  | OK     |
-| u64  | OK     | N/A   | N/A | EXT    |
-| f32  | OK     | OK    | OK  | OK     |
-| f64  | OK     | OK    | N/A | EXT    |
+| i8   |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| i16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| i32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
+| i64  |:heavy_check_mark:|:large_orange_diamond:|:x:               |:large_orange_diamond:|
+| u8   |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| u16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| u32  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:heavy_check_mark:    |
+| u64  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
+| f32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
+| f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
-(OK: supported, EXT: require extension, N/A: not available)
+(:large_orange_diamond: requires extension)
 :::
 
 :::note

@@ -4,6 +4,7 @@ import inspect
 import os
 import warnings
 from collections import ChainMap
+from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
@@ -354,6 +355,8 @@ class ASTTransformer(Builder):
             elif hasattr(func, "_is_taichi_function") or hasattr(
                     func, "_is_wrapped_kernel"):  # taichi func/kernel
                 pass
+            elif hasattr(func, "is_taichi_class"):
+                pass
             else:
                 try:
                     file = inspect.getfile(func)
@@ -364,8 +367,15 @@ class ASTTransformer(Builder):
                 ]) == package_root:  # functions inside taichi
                     pass
                 else:
+                    if version_info >= (3, 9):
+                        name = ast.unparse(node.func)
+                    else:
+                        try:
+                            name = func.__name__
+                        except AttributeError:
+                            name = str(func)
                     warnings.warn_explicit(
-                        f'Calling non-taichi function "{func.__name__}". '
+                        f'Calling non-taichi function "{name}". '
                         f'Scope inside the function is not be processed by the Taichi transformer. '
                         f'The function may not work as expected. Proceed with caution! '
                         f'Maybe you can consider turning it into a @ti.func?',

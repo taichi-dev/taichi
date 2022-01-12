@@ -399,3 +399,25 @@ def test_triple_for_loops_bls():
     for i in range(N):
         assert b.grad[i * 2] == min(min(N - i - 1, i + 1), M) * N
         assert b.grad[i * 2 + 1] == min(min(N - i - 1, i + 1), M) * N
+
+
+@ti.test(require=ti.extension.adstack)
+def test_mixed_inner_loops():
+    x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    arr = ti.field(dtype=ti.f32, shape=(5))
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def mixed_inner_loops():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(2):
+                loss[None] += ti.sin(x[None]) + 1.0
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    mixed_inner_loops()
+    mixed_inner_loops.grad()
+
+    assert loss[None] == 10.0
+    assert x.grad[None] == 15.0

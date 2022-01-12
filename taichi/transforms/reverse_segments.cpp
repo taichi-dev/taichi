@@ -78,8 +78,8 @@ void reverse_segments(IRNode *root) {
   for (auto &&s : block->statements) {
     if (s->is<FrontendForStmt>()) {
       has_for = true;
-      mixed_statement_checker(
-          static_cast<FrontendForStmt *>(s.get())->body.get());
+      //      mixed_statement_checker(
+      //          static_cast<FrontendForStmt *>(s.get())->body.get());
       statement_blocks.emplace_back();
       statement_blocks.back().push_back(std::move(s));
       statement_blocks.emplace_back();

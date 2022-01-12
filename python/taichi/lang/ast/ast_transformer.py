@@ -368,7 +368,7 @@ class ASTTransformer(Builder):
                     pass
                 else:
                     if version_info >= (3, 9):
-                        name = ast.unparse(node.func)
+                        name = ast.unparse(node.func)  # pylint: disable=E1101
                     else:
                         try:
                             name = func.__name__

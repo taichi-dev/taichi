@@ -189,8 +189,8 @@ Supported atomic operations on each backend:
 
 ## Matrices operations
 
-The previously mentioned operations on primitive types can also be applied on 
-compound types such as matrices. 
+The previously mentioned operations on primitive types can also be applied on
+compound types such as matrices.
 In these cases, they are applied in an element-wise manner. For example:
 
 ```python
@@ -239,7 +239,6 @@ a.inverse()     # (ti.Matrix) the inverse of matrix `a`.
 ```
 
 :::note
-For now, determinant() and inverse() only works in Taichi-scope, and the 
+For now, determinant() and inverse() only works in Taichi-scope, and the
 size of the matrix must be 1x1, 2x2, 3x3 or 4x4.
 :::
-

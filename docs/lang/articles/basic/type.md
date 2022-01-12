@@ -46,7 +46,7 @@ Currently in Taichi, the supported primitive types on each backend are:
 | f32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
 | f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
-(:large_orange_diamond: requires extension)
+(:large_orange_diamond: means extension required)
 
 ### Default precisions
 

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Type system
 
-Data types in Taichi consist of Primitive Types and Compound Types. Primitive Types are the numerical data types used by different backends, while Compound Types are user-defined types of data records composed of multiple members.
+Data types in Taichi consist of _primitive types_ and _compound types_. Primitive types are the numerical data types used by different backends, while compound types are user-defined types of data records composed of multiple members.
 
 ## Primitive types
 
@@ -42,21 +42,11 @@ Currently in Taichi, the supported primitive types on each backend are:
 | u16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
 | u32  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:heavy_check_mark:    |
 | u64  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
-| f16  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
+| f16  |:heavy_check_mark:|:x:                   |:x:               |:heavy_check_mark:    |
 | f32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
 | f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
 (:large_orange_diamond: requires extension)
-
-### Type promotion
-
-When Taichi performs binary operations on different types, the result is a
-promoted type. This is known as type promotion. Following the C programming
-language convention, Taichi always chooses the more precise type to contain the
-result value. For example:
-
-- `i32 + f32 = f32` (integer + float = float)
-- `i32 + i64 = i64` (less-bits + more-bits = more-bits)
 
 ### Default precisions
 
@@ -74,7 +64,7 @@ ti.init(default_ip=ti.i32)
 ti.init(default_ip=ti.i64)
 ```
 
-Also note that you may use `float` or `int` in type definitions as
+In addition, you can use `float` or `int` in type definitions as
 aliases for default precisions, e.g.:
 
 ```python
@@ -93,6 +83,16 @@ def func(a: float) -> int:
 def func(a: ti.f32) -> ti.i64:
     ...
 ```
+
+### Type promotion
+
+When Taichi performs binary operations on different types, the result is a
+promoted type. This is known as type promotion. Following the C programming
+language convention, Taichi always chooses the more precise type to contain the
+result value. For example:
+
+- `i32 + f32 = f32` (integer + float = float)
+- `i32 + i64 = i64` (less-bits + more-bits = more-bits)
 
 ### Type casts
 

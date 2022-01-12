@@ -48,6 +48,7 @@ Currently in Taichi, the supported primitive types on each backend are:
 | u16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
 | u32  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:heavy_check_mark:    |
 | u64  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
+| f16  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
 | f32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
 | f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
@@ -229,12 +230,12 @@ Supported atomic operations on each backend:
 
 | type | CPU/CUDA | OpenGL | Metal | C source |
 | ---- | -------- | ------ | ----- | -------- |
-| i32  | > OK     | > OK   | > OK  | > OK     |
-| f32  | > OK     | > OK   | > OK  | > OK     |
-| i64  | > OK     | > EXT  | > N/A | > OK     |
-| f64  | > OK     | > EXT  | > N/A | > OK     |
+| i32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+| f32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+| i64  |:heavy_check_mark:|:large_orange_diamond:|:x:|:heavy_check_mark:|
+| f64  |:heavy_check_mark:|:large_orange_diamond:|:x:|:heavy_check_mark:|
 
-(OK: supported; EXT: require extension; N/A: not available)
+(:large_orange_diamond: requires extension)
 :::
 
 ### Type promotion

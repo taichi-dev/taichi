@@ -192,8 +192,8 @@ Supported atomic operations on each backend:
 
 ## Supported operators for matrices
 
-The previously mentioned operations on primitive types can also be applied on 
-compound types such as matrices. 
+The previously mentioned operations on primitive types can also be applied on
+compound types such as matrices.
 In these cases, they are applied in an element-wise manner. For example:
 
 ```python

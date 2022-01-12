@@ -18,15 +18,9 @@ The _category_ can be one of:
 - `u` for unsigned integers, e.g. 128, 256
 - `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
 
-The _digital number_ can be one of:
-
-- `8`
-- `16`
-- `32`
-- `64`
-
+The _digital number_ can be either `8`, `16`, `32`, or `64`. 
 It represents how many **bits** are used in storing the data. The larger
-the bit number, the higher the precision is.
+the bit number is, the higher the precision is.
 
 For example, the two most commonly used types:
 
@@ -293,7 +287,7 @@ casts, explicit casts, casting vectors and matrices, and bit-casts.
 
 :::caution
 In Taichi, the type of a variable is **determined on its initialization**.
-All data types are static in the **Taichi scope**,
+All data types are static in the **Taichi scope**.
 :::
 
 #### Implicit casts

@@ -22,10 +22,6 @@ Main differences are:
 def error_kernel_no_return_annotation():
     return 0  # Error: Have return statement but have no return type annotation
 
-@ti.func
-def ok_func_no_return_annotation():
-    return 0  # Ok: Return type annotation of function is optional
-
 @ti.kernel
 def error_kernel_no_return() -> ti.i31:  # Error: Have return type annotation but have no return statement
     pass
@@ -87,11 +83,11 @@ def ok_return_inside_static_for() -> ti.i32:
 ## Variable Scoping
 
 In Python, a variable defined inside an `if`/`for`/`while` block can be accessed outside the block.
-However, in Taichi, the variables can only be accessed within the block it is defined.
+**However**, in Taichi, the variables can only be accessed **within the block it is defined**.
 
 ```python {5,13,17,22}
 @ti.kernel
-def error_access_var_outside_for()->ti.i32:
+def error_access_var_outside_for() -> ti.i32:
     for i in range(10):
         a = i
     return a  # Error: variable "a" not found

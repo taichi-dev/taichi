@@ -120,8 +120,8 @@ Taichi does not support `set`.
 
 ### Comprehensions
 
-Taichi partially supports list comprehension and dictionary comprehension, 
+Taichi partially supports list comprehension and dictionary comprehension,
 and does not support set comprehension.
 
-For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time. 
+For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time.
 The iterators and conditions are implicitly in static scopes (within `ti.static()`).

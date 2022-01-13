@@ -523,17 +523,16 @@ class TaskCodegen : public IRVisitor {
     // TODO: use stmt->ret_id instead of 0 as index
     const auto &ret_attribs = ctx_attribs_->rets()[0];
     const int index_in_buffer = ret_attribs.offset_in_mem / sizeof(int32_t);
-    spirv::Value idx_val =
-        ir_->int_immediate_number(ir_->i32_type(), index_in_buffer);
-    spirv::Value buffer_val = ir_->struct_array_access(
-        ir_->i32_type(),
-        get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
-    if (stmt->values.size() == 1) {
-      spirv::Value val = ir_->query_value(stmt->values.back()->raw_name());
+    int idx{0};
+    for (auto &x : stmt->values) {
+      spirv::Value idx_val =
+          ir_->int_immediate_number(ir_->i32_type(), index_in_buffer + idx);
+      spirv::Value buffer_val = ir_->struct_array_access(
+          ir_->i32_type(),
+          get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
+      spirv::Value val = ir_->query_value(x->raw_name());
       ir_->store_variable(
           buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
-    } else {
-      TI_NOT_IMPLEMENTED;
     }
   }
 

@@ -134,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v2
         with:
@@ -155,7 +155,7 @@ jobs:
       - name: Download Pre-Built LLVM 10.0.0
         run: python misc/ci_download.py
         env:
-          CI_PLATFORM: macos-latest
+          CI_PLATFORM: macos-10.15
 
       - name: Create Python Wheel
         run: |
@@ -317,8 +317,18 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Add Visual Studio Shell to ENV
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ccache_cache
+          key: ccache-win64-clang-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-clang-
 
       - name: Build Python Wheel
         shell: powershell
@@ -341,6 +351,7 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
+          pip install torch
           ti diagnose
           python tests/run_tests.py -vr2 -t2
         env:

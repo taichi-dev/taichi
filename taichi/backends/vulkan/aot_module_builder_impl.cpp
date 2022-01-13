@@ -13,6 +13,9 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
   aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
+  if (!compiled_structs.empty()) {
+    ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
+  }
 }
 
 uint32_t AotModuleBuilderImpl::to_vk_dtype_enum(DataType dt) {
@@ -51,20 +54,6 @@ void AotModuleBuilderImpl::write_spv_file(
   fs.close();
 }
 
-std::vector<uint32_t> AotModuleBuilderImpl::read_spv_file(
-    const std::string &output_dir,
-    const TaskAttributes &k) {
-  const std::string spv_path = fmt::format("{}/{}.spv", output_dir, k.name);
-  std::vector<uint32_t> source_code;
-  std::ifstream fs(spv_path, std::ios_base::binary | std::ios::ate);
-  size_t size = fs.tellg();
-  fs.seekg(0, std::ios::beg);
-  source_code.resize(size / sizeof(uint32_t));
-  fs.read((char *)source_code.data(), size);
-  fs.close();
-  return source_code;
-}
-
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
@@ -84,23 +73,6 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   TextSerializer ts;
   ts.serialize_to_json("aot_data", ti_aot_data_);
   ts.write_to_file(txt_path);
-}
-
-void AotModuleBuilderImpl::load(const std::string &output_dir) {
-  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
-  read_from_binary_file(ti_aot_data_, bin_path);
-  for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
-    auto k = ti_aot_data_.kernels[i];
-    std::vector<std::vector<uint32_t>> spirv_sources_codes;
-    for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-      std::vector<uint32_t> res = read_spv_file(output_dir, k.tasks_attribs[j]);
-      spirv_sources_codes.push_back(res);
-    }
-
-    VkRuntime::RegisterParams params;
-    params.kernel_attribs = ti_aot_data_.kernels[i];
-    params.task_spirv_source_codes = spirv_sources_codes;
-  }
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -145,6 +117,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
+  TI_ERROR("Templated kernels are not yet supported on vulkan aot.");
 }
 
 }  // namespace vulkan

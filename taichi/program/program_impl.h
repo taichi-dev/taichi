@@ -4,7 +4,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {

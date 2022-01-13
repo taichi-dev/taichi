@@ -91,7 +91,6 @@ def test_static_assert_is_static():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_static_assert_message():
     x = 3
 
@@ -99,7 +98,8 @@ def test_static_assert_message():
     def func():
         ti.static_assert(x == 4, "Oh, no!")
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())

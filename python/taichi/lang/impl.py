@@ -4,13 +4,16 @@ from typing import Iterable
 
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._logging import warn
 from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import (Matrix, MatrixField, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -24,8 +27,6 @@ from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import get_traceback, warning
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
-import taichi as ti
-
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
@@ -37,13 +38,9 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if isinstance(rhs, Matrix):
-        if rhs.in_python_scope or isinstance(rhs, _IntermediateMatrix):
-            return Matrix(rhs.to_list())
-        return rhs
+        return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
-        if rhs.in_python_scope or isinstance(rhs, _IntermediateStruct):
-            return Struct(rhs.to_dict())
-        return rhs
+        return Struct(rhs.to_dict())
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -54,7 +51,7 @@ def expr_init(rhs):
         return rhs
     if isinstance(rhs, _ti_core.Arch):
         return rhs
-    if isinstance(rhs, ti.ndrange):
+    if isinstance(rhs, ndrange):
         return rhs
     if isinstance(rhs, MeshElementFieldProxy):
         return rhs
@@ -67,9 +64,9 @@ def expr_init(rhs):
 
 @taichi_scope
 def expr_init_list(xs, expected):
-    if not isinstance(xs, (list, tuple, ti.Matrix)):
+    if not isinstance(xs, (list, tuple, Matrix)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
-    if isinstance(xs, ti.Matrix):
+    if isinstance(xs, Matrix):
         if not xs.m == 1:
             raise ValueError(
                 'Matrices with more than one columns cannot be unpacked')
@@ -125,7 +122,6 @@ def wrap_scalar(x):
 
 @taichi_scope
 def subscript(value, *_indices, skip_reordered=False):
-    _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*_indices)
 
@@ -183,10 +179,7 @@ def subscript(value, *_indices, skip_reordered=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return _IntermediateMatrix(value.n, value.m, [
-                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
-                for e in value.get_field_members()
-            ])
+            return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
             return _IntermediateStruct(
                 {k: subscript(v, *_indices)
@@ -224,18 +217,10 @@ def subscript(value, *_indices, skip_reordered=False):
 
 
 @taichi_scope
-def local_subscript_with_offset(_var, _indices, shape):
+def make_tensor_element_expr(_var, _indices, shape, stride):
     return Expr(
-        _ti_core.local_subscript_with_offset(_var, make_expr_group(*_indices),
-                                             shape))
-
-
-@taichi_scope
-def global_subscript_with_offset(_var, _indices, shape, is_aos):
-    return Expr(
-        _ti_core.global_subscript_with_offset(_var.ptr,
-                                              make_expr_group(*_indices),
-                                              shape, is_aos))
+        _ti_core.make_tensor_element_expr(_var, make_expr_group(*_indices),
+                                          shape, stride))
 
 
 @taichi_scope
@@ -270,7 +255,6 @@ class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.materialize_callbacks = []
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
         self.scope_stack = []
@@ -278,7 +262,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.matrix_fields = []
-        self.print_preprocessed = False
         self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32
@@ -356,20 +339,19 @@ class PyTaichi:
                     f'{shapes}:\n{self._get_tb(_field.get_field_members()[0])}'
                 )
 
+    def _calc_matrix_field_dynamic_index_stride(self):
+        for _field in self.matrix_fields:
+            _field.calc_dynamic_index_stride()
+
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
-
-        if self.materialized:
-            return
-
         self.materialized = True
 
         self._check_field_not_placed()
         self._check_matrix_field_member_shape()
-
-        for callback in self.materialize_callbacks:
-            callback()
-        self.materialize_callbacks = []
+        self._calc_matrix_field_dynamic_index_stride()
+        self.global_vars = []
+        self.matrix_fields = []
 
     def _register_signal_handlers(self):
         if self._signal_handler_registry is None:
@@ -397,10 +379,6 @@ def get_runtime():
     return pytaichi
 
 
-def materialize_callback(foo):
-    get_runtime().materialize_callbacks.append(foo)
-
-
 def _clamp_unsigned_to_range(npty, val):
     # npty: np.int32 or np.int64
     iif = np.iinfo(npty)
@@ -413,7 +391,7 @@ def _clamp_unsigned_to_range(npty, val):
         # the signed or the unsigned type.
         return val
     new_val = val - cap
-    ti.warn(
+    warn(
         f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
     )
     return new_val
@@ -421,7 +399,6 @@ def _clamp_unsigned_to_range(npty, val):
 
 @taichi_scope
 def make_constant_expr_i32(val):
-    _taichi_skip_traceback = 1
     assert isinstance(val, (int, np.integer))
     return Expr(
         _ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
@@ -429,7 +406,6 @@ def make_constant_expr_i32(val):
 
 @taichi_scope
 def make_constant_expr(val):
-    _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip in {i32, u32}:
             # It is not always correct to do such clamp without the type info on
@@ -473,7 +449,6 @@ def static_print(*args, __p=print, **kwargs):
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
-    _taichi_skip_traceback = 1
     if msg is not None:
         assert cond, msg
     else:
@@ -511,6 +486,12 @@ class _UninitializedRootFieldsBuilder:
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
+def deactivate_all_snodes():
+    """Recursively deactivate all SNodes."""
+    for root_fb in FieldsBuilder.finalized_roots():
+        root_fb.deactivate_all()
+
+
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
     @staticmethod
@@ -534,7 +515,7 @@ class _Root:
         warning(
             """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
         )
-        ti.deactivate_all_snodes()
+        deactivate_all_snodes()
 
     @property
     def shape(self):
@@ -616,7 +597,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             >>> x2 = ti.field(ti.f32)
             >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
     """
-    _taichi_skip_traceback = 1
 
     if isinstance(shape, numbers.Number):
         shape = (shape, )
@@ -631,8 +611,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
-
-    del _taichi_skip_traceback
 
     x, x_grad = create_field_member(dtype, name)
     x, x_grad = ScalarField(x), ScalarField(x_grad)
@@ -732,13 +710,13 @@ def ti_format(*args, **kwargs):
     new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, ti.Expr):
+        if isinstance(x, Expr):
             new_mixed.append('{}')
             args.append(x)
         else:
             new_mixed.append(x)
     for k, v in kwargs.items():
-        if isinstance(v, ti.Expr):
+        if isinstance(v, Expr):
             new_mixed_kwargs[k] = '{}'
             args.append(v)
         else:
@@ -769,7 +747,6 @@ def ti_assert(cond, msg, extra_args):
 
 @taichi_scope
 def ti_int(_var):
-    _taichi_skip_traceback = 1
     if hasattr(_var, '__ti_int__'):
         return _var.__ti_int__()
     return int(_var)
@@ -777,7 +754,6 @@ def ti_int(_var):
 
 @taichi_scope
 def ti_float(_var):
-    _taichi_skip_traceback = 1
     if hasattr(_var, '__ti_float__'):
         return _var.__ti_float__()
     return float(_var)
@@ -867,13 +843,11 @@ def static(x, *xs):
             >>>     print(1)
             >>>     print(2)
     """
-    _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
-    if isinstance(x,
-                  (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
-                   ti.GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x, (bool, int, float, range, list, tuple, enumerate, ndrange,
+                      GroupedNDRange, zip, filter, map)) or x is None:
         return x
     if isinstance(x, AnyArray):
         return x
@@ -895,10 +869,10 @@ def grouped(x):
 
     Example::
 
-        >>> for I in ti.grouped(ti.ndrange(8, 16)):
+        >>> for I in ti.grouped(ndrange(8, 16)):
         >>>     print(I[0] + I[1])
     """
-    if isinstance(x, ti.ndrange):
+    if isinstance(x, ndrange):
         return x.grouped()
     return x
 

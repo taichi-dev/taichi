@@ -1,25 +1,25 @@
-//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
+#include <list>
+
 #include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/backends/opengl/opengl_utils.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/gl.h"
 #include "glad/egl.h"
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
-#endif
+#endif  // TI_WITH_OPENGL
 
-#include <list>
-
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace opengl {
 
 #define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
@@ -224,10 +224,10 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
-    if (kernel->args[i].is_external_array) {
+    const auto dtype_name = kernel->args[i].dt.to_string();
+    if (kernel->args[i].is_array) {
       arr_args[i] = CompiledArrayArg(
-          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
-           /*dtype_name=*/kernel->args[i].dt.to_string(),
+          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
            /*field_dim=*/kernel->args[i].total_dim -
                kernel->args[i].element_shape.size(),
            /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
@@ -236,8 +236,8 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});
     } else {
-      scalar_args[i] =
-          ScalarArg({/*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
+      scalar_args[i] = ScalarArg(
+          {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
     }
   }
 
@@ -253,6 +253,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
 void CompiledTaichiKernel::add(
     const std::string &name,
     const std::string &source_code,
+    OffloadedTaskType type,
     int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
@@ -271,7 +272,7 @@ void CompiledTaichiKernel::add(
 
   TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", name, num_workgroups,
            workgroup_size, source);
-  tasks.push_back({name, source, workgroup_size, num_workgroups});
+  tasks.push_back({name, source, type, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {
@@ -357,41 +358,59 @@ void CompiledTaichiKernel::set_used(const UsedFeature &used) {
   this->used = used;
 }
 
-OpenGlRuntime::~OpenGlRuntime() = default;
+OpenGlRuntime::~OpenGlRuntime() {
+  saved_arg_bufs.clear();
+  impl.reset(nullptr);
+  device.reset();
+}
 
 void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
                                         Kernel *kernel,
                                         OpenGlRuntime *runtime) const {
   uint8_t *args_buf_mapped = nullptr;
   auto args = kernel->args;
+  // If we have external array args we'll have to do host-device memcpy.
+  // Whether we get external array arg is runtime information.
+  bool has_ext_arr = false;
+  bool synced = false;
+
+  if (program_.args_buf_size || program_.ret_buf_size) {
+    args_buf_ =
+        device_->allocate_memory_unique({taichi_opengl_external_arr_base,
+                                         /*host_write=*/true,
+                                         /*host_read=*/true,
+                                         /*export_sharing=*/false});
+  }
 
   // Prepare external arrays/ndarrays
   // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
   // DeviceAllocation*
-  // - For raw ptrs, arr_bufs_[i] contains its DeviceAllocation on device.
+  // - For raw ptrs, its content will be synced to device through
+  // ext_arr_bufs_[i] which is its corresponding DeviceAllocation on device.
   // Note shapes of these external arrays still reside in argument buffer,
   // see more details below.
   for (auto &item : program_.arr_args) {
     int i = item.first;
-    if (!args[i].is_external_array || args[i].size == 0 ||
-        ctx.is_device_allocation[i])
+    TI_ASSERT(args[i].is_array);
+    if (args[i].size == 0 || ctx.is_device_allocation[i])
       continue;
+    has_ext_arr = true;
     if (args[i].size != item.second.total_size ||
-        arr_bufs_[i] == kDeviceNullAllocation) {
-      if (arr_bufs_[i] != kDeviceNullAllocation) {
-        device_->dealloc_memory(arr_bufs_[i]);
+        ext_arr_bufs_[i] == kDeviceNullAllocation) {
+      if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
+        device_->dealloc_memory(ext_arr_bufs_[i]);
       }
-      arr_bufs_[i] = device_->allocate_memory(
+      ext_arr_bufs_[i] = device_->allocate_memory(
           {args[i].size, /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false});
       item.second.total_size = args[i].size;
     }
     void *host_ptr = (void *)ctx.args[i];
-    void *baseptr = device_->map(arr_bufs_[i]);
+    void *baseptr = device_->map(ext_arr_bufs_[i]);
     if (program_.check_ext_arr_read(i)) {
       std::memcpy((char *)baseptr, host_ptr, args[i].size);
     }
-    device_->unmap(arr_bufs_[i]);
+    device_->unmap(ext_arr_bufs_[i]);
   }
   // clang-format off
   // Prepare argument buffer
@@ -403,7 +422,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   // |................taichi_opengl_external_arr_base..............|
   // clang-format on
   if (program_.args_buf_size) {
-    args_buf_mapped = (uint8_t *)device_->map(args_buf_);
+    args_buf_mapped = (uint8_t *)device_->map(*args_buf_);
     std::memcpy(args_buf_mapped, ctx.args,
                 program_.arg_count * sizeof(uint64_t));
     if (program_.arr_args.size()) {
@@ -412,7 +431,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
           ctx.extra_args,
           size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
     }
-    device_->unmap(args_buf_);
+    device_->unmap(*args_buf_);
   }
 
   // Prepare runtime
@@ -436,7 +455,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
       binder->buffer(0, static_cast<int>(GLBufId::Root), core_bufs.root);
     binder->buffer(0, static_cast<int>(GLBufId::Gtmp), core_bufs.gtmp);
     if (program_.args_buf_size || program_.ret_buf_size)
-      binder->buffer(0, static_cast<int>(GLBufId::Args), args_buf_);
+      binder->buffer(0, static_cast<int>(GLBufId::Args), *args_buf_);
     // TODO: properly assert and throw if we bind more than allowed SSBOs.
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
@@ -447,20 +466,22 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
 
         binder->buffer(0, bind_id, *ptr);
       } else {
-        binder->buffer(0, bind_id, arr_bufs_[arg_id]);
+        binder->buffer(0, bind_id, ext_arr_bufs_[arg_id]);
       }
     }
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
-    cmdlist->bind_resources(binder);
+    if (i == 0)
+      cmdlist->bind_resources(binder);
     cmdlist->dispatch(task.num_groups, 1, 1);
     cmdlist->memory_barrier();
     i++;
   }
 
-  if (program_.used.print || program_.arr_args.size() ||
-      program_.ret_buf_size) {
+  if (program_.used.print || has_ext_arr || program_.ret_buf_size) {
+    // We'll do device->host memcpy later so sync is required.
     device_->get_compute_stream()->submit_synced(cmdlist.get());
+    synced = true;
   } else {
     device_->get_compute_stream()->submit(cmdlist.get());
   }
@@ -471,24 +492,29 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
                         program_.str_table);
   }
 
-  for (int i = 0; i < args.size(); i++) {
-    if (!args[i].is_external_array)
-      continue;
-    if (args[i].size == 0)
-      continue;
-    if (!ctx.is_device_allocation[i]) {
-      uint8_t *baseptr = (uint8_t *)device_->map(arr_bufs_[i]);
-      memcpy((void *)ctx.args[i], baseptr, args[i].size);
-
-      device_->unmap(arr_bufs_[i]);
+  if (has_ext_arr) {
+    for (auto &item : program_.arr_args) {
+      int i = item.first;
+      if (args[i].size != 0 && !ctx.is_device_allocation[i]) {
+        uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
+        memcpy((void *)ctx.args[i], baseptr, args[i].size);
+        device_->unmap(ext_arr_bufs_[i]);
+      }
     }
   }
 
   if (program_.ret_buf_size) {
-    uint8_t *baseptr = (uint8_t *)device_->map(args_buf_);
+    uint8_t *baseptr = (uint8_t *)device_->map(*args_buf_);
     memcpy(runtime->result_buffer, baseptr + taichi_opengl_ret_base,
            program_.ret_buf_size);
-    device_->unmap(args_buf_);
+    device_->unmap(*args_buf_);
+  }
+  if (program_.args_buf_size || program_.ret_buf_size) {
+    runtime->saved_arg_bufs.push_back(std::move(args_buf_));
+  }
+
+  if (synced) {
+    runtime->saved_arg_bufs.clear();
   }
 }
 
@@ -496,13 +522,6 @@ DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
     CompiledTaichiKernel &&program,
     Device *device)
     : device_(device), program_(std::move(program)) {
-  if (program_.args_buf_size || program_.ret_buf_size) {
-    args_buf_ = device->allocate_memory({taichi_opengl_external_arr_base,
-                                         /*host_write=*/true,
-                                         /*host_read=*/true,
-                                         /*export_sharing=*/false});
-  }
-
   for (auto &t : program_.tasks) {
     compiled_pipeline_.push_back(device->create_pipeline(
         {PipelineSourceType::glsl_src, t.src.data(), t.src.size()}, t.name));
@@ -591,4 +610,5 @@ bool is_gles() {
 }
 
 }  // namespace opengl
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

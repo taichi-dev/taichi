@@ -37,7 +37,7 @@ classifiers = [
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 8
-TI_VERSION_PATCH = 8
+TI_VERSION_PATCH = 10
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/_lib/runtime/*')
@@ -200,7 +200,7 @@ class CMakeBuild(build_ext):
                 self.copy_file(moltenvk_path,
                                os.path.join(runtime_dir, 'libMoltenVK.dylib'))
         else:
-            self.copy_file('runtimes/Release/taichi_core.dll',
+            self.copy_file('runtimes/taichi_core.dll',
                            os.path.join(core_dir, 'taichi_core.pyd'))
 
         if get_os_name() != 'osx':
@@ -233,7 +233,6 @@ class Clean(clean):
             'taichi/common/commit_hash.h', 'taichi/common/version.h'
         ]
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
         generated_files += glob.glob('python/taichi/_lib/core/*.so')
         generated_files += glob.glob('python/taichi/_lib/core/*.pyd')
         for f in generated_files:

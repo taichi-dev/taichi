@@ -120,19 +120,6 @@ class FrontendPrintStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// This statement evaluates the expression.
-// The expression should have side effects otherwise the expression will do
-// nothing.
-class FrontendEvalStmt : public Stmt {
- public:
-  Expr expr;
-
-  FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
-  }
-
-  TI_DEFINE_ACCEPT
-};
-
 class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;
@@ -530,13 +517,14 @@ class TensorElementExpression : public Expression {
   Expr var;
   ExprGroup indices;
   std::vector<int> shape;
-  int layout_stride{1};
+  int stride{0};
 
   TensorElementExpression(const Expr &var,
                           const ExprGroup &indices,
                           const std::vector<int> &shape,
-                          int layout_stride)
-      : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
+                          int stride)
+      : var(var), indices(indices.loaded()), shape(shape), stride(stride) {
+    // TODO: shape & indices check
   }
 
   void type_check() override;
@@ -559,7 +547,7 @@ class TensorElementExpression : public Expression {
       if (i + 1 < (int)shape.size())
         ss << ", ";
     }
-    ss << ", layout_stride = " + std::to_string(layout_stride);
+    ss << ", stride = " + std::to_string(stride);
     ss << ')';
   }
 

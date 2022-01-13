@@ -1,10 +1,10 @@
 import numpy as np
-import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
+                              to_numpy_type, to_pytorch_type)
+from taichi.types import primitive_types
 
 if has_pytorch():
     import torch
@@ -17,29 +17,22 @@ class Ndarray:
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the torch tensor.
     """
-    def __init__(self, dtype, shape):
+    def __init__(self, dtype, arr_shape):
         self.host_accessor = None
-        if impl.current_cfg().ndarray_use_torch:
+        self.dtype = cook_dtype(dtype)
+        self.ndarray_use_torch = impl.get_runtime().ndarray_use_torch
+        if self.ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
             # pylint: disable=E1101
-            self.arr = torch.zeros(shape,
+            self.arr = torch.zeros(arr_shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
 
         else:
             self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
-                                        cook_dtype(dtype), shape)
-
-    @property
-    def shape(self):
-        """Gets ndarray shape.
-
-        Returns:
-            Tuple[Int]: Ndarray shape.
-        """
-        raise NotImplementedError()
+                                        cook_dtype(dtype), arr_shape)
 
     @property
     def element_shape(self):
@@ -49,15 +42,6 @@ class Ndarray:
             Tuple[Int]: Ndarray element shape.
         """
         raise NotImplementedError()
-
-    @property
-    def dtype(self):
-        """Gets data type of each individual value.
-
-        Returns:
-            DataType: Data type of each individual value.
-        """
-        return to_taichi_type(self.arr.dtype)
 
     @property
     def data_handle(self):
@@ -90,27 +74,27 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    def ndarray_fill(self, val):
+    @python_scope
+    def fill(self, val):
         """Fills ndarray with a specific scalar value.
 
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             self.arr.fill_(val)
+        elif impl.current_cfg(
+        ).arch != _ti_core.Arch.cuda and impl.current_cfg(
+        ).arch != _ti_core.Arch.x64:
+            self.fill_by_kernel(val)
+        elif self.dtype == primitive_types.f32:
+            self.arr.fill_float(val)
+        elif self.dtype == primitive_types.i32:
+            self.arr.fill_int(val)
+        elif self.dtype == primitive_types.u32:
+            self.arr.fill_uint(val)
         else:
-            taichi.lang.meta.fill_ndarray(self, val)
-
-    def ndarray_matrix_fill(self, val):
-        """Fills ndarray with a specific scalar value.
-
-        Args:
-            val (Union[int, float]): Value to fill.
-        """
-        if impl.current_cfg().ndarray_use_torch:
-            self.arr.fill_(val)
-        else:
-            taichi.lang.meta.fill_ndarray_matrix(self, val)
+            self.fill_by_kernel(val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -118,11 +102,12 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             return self.arr.cpu().numpy()
 
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        taichi.lang.meta.ndarray_to_ext_arr(self, arr)
+        from taichi._kernels import ndarray_to_ext_arr  # pylint: disable=C0415
+        ndarray_to_ext_arr(self, arr)
         impl.get_runtime().sync()
         return arr
 
@@ -132,11 +117,13 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             return self.arr.cpu().numpy()
 
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, as_vector)
+        from taichi._kernels import \
+            ndarray_matrix_to_ext_arr  # pylint: disable=C0415
+        ndarray_matrix_to_ext_arr(self, arr, as_vector)
         impl.get_runtime().sync()
         return arr
 
@@ -152,7 +139,7 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
@@ -160,7 +147,9 @@ class Ndarray:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
 
-            taichi.lang.meta.ext_arr_to_ndarray(arr, self)
+            from taichi._kernels import \
+                ext_arr_to_ndarray  # pylint: disable=C0415
+            ext_arr_to_ndarray(arr, self)
             impl.get_runtime().sync()
 
     def ndarray_matrix_from_numpy(self, arr, as_vector):
@@ -175,7 +164,7 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
@@ -183,7 +172,9 @@ class Ndarray:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
 
-            taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, as_vector)
+            from taichi._kernels import \
+                ext_arr_to_ndarray_matrix  # pylint: disable=C0415
+            ext_arr_to_ndarray_matrix(arr, self, as_vector)
             impl.get_runtime().sync()
 
     @python_scope
@@ -215,7 +206,8 @@ class Ndarray:
         """
         assert isinstance(other, Ndarray)
         assert tuple(self.arr.shape) == tuple(other.arr.shape)
-        taichi.lang.meta.ndarray_to_ndarray(self, other)
+        from taichi._kernels import ndarray_to_ndarray  # pylint: disable=C0415
+        ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
 
     def __deepcopy__(self, memo=None):
@@ -223,6 +215,14 @@ class Ndarray:
 
         Returns:
             Ndarray: The result ndarray.
+        """
+        raise NotImplementedError()
+
+    def fill_by_kernel(self, val):
+        """Fills ndarray with a specific scalar value using a ti.kernel.
+
+        Args:
+            val (Union[int, float]): Value to fill.
         """
         raise NotImplementedError()
 
@@ -248,9 +248,9 @@ class ScalarNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
     """
-    @property
-    def shape(self):
-        return tuple(self.arr.shape)
+    def __init__(self, dtype, arr_shape):
+        super().__init__(dtype, arr_shape)
+        self.shape = tuple(self.arr.shape)
 
     @property
     def element_shape(self):
@@ -258,7 +258,7 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             self.arr.__setitem__(key, value)
         else:
             self.initialize_host_accessor()
@@ -266,14 +266,10 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __getitem__(self, key):
-        if impl.current_cfg().ndarray_use_torch:
+        if self.ndarray_use_torch:
             return self.arr.__getitem__(key)
         self.initialize_host_accessor()
         return self.host_accessor.getter(*self.pad_key(key))
-
-    @python_scope
-    def fill(self, val):
-        self.ndarray_fill(val)
 
     @python_scope
     def to_numpy(self):
@@ -287,6 +283,10 @@ class ScalarNdarray(Ndarray):
         ret_arr = ScalarNdarray(self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
+
+    def fill_by_kernel(self, val):
+        from taichi._kernels import fill_ndarray  # pylint: disable=C0415
+        fill_ndarray(self, val)
 
     def __repr__(self):
         return '<ti.ndarray>'
@@ -333,7 +333,7 @@ class NdarrayHostAccess:
         else:
             self.indices = indices_first + indices_second
 
-        if impl.current_cfg().ndarray_use_torch:
+        if impl.get_runtime().ndarray_use_torch:
 
             def getter():
                 return self.arr[self.indices]

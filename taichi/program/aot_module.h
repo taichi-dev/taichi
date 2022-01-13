@@ -3,35 +3,29 @@
 #include <string>
 #include <vector>
 
-#include "taichi/ir/snode.h"
+#include "taichi/aot/module_data.h"
 #include "taichi/backends/device.h"
+#include "taichi/ir/snode.h"
+#include "taichi/aot/module_data.h"
+
 namespace taichi {
 namespace lang {
 
 class Kernel;
 class DataType;
 
-namespace aot {
-struct CompiledFieldData {
-  std::string field_name;
-  uint32_t dtype;
-  std::string dtype_name;
-  size_t mem_offset_in_parent{0};
-  std::vector<int> shape;
-  bool is_scalar{false};
-  int row_num{0};
-  int column_num{0};
+class AotModuleLoader {
+ public:
+  virtual ~AotModuleLoader() = default;
 
-  TI_IO_DEF(field_name,
-            dtype,
-            dtype_name,
-            mem_offset_in_parent,
-            shape,
-            is_scalar,
-            row_num,
-            column_num);
+  // @TODO: Add method get_kernel(...) once the kernel field data will be
+  // generic/common across all backends.
+
+  virtual bool get_field(const std::string &name,
+                         aot::CompiledFieldData &field) = 0;
+
+  virtual size_t get_root_size() const = 0;
 };
-}  // namespace aot
 
 class AotModuleBuilder {
  public:

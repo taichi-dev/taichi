@@ -113,7 +113,6 @@ def test_local_atomics():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(Exception)
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -121,11 +120,11 @@ def test_loop_var_life():
             pass
         print(i)
 
-    test()
+    with pytest.raises(Exception):
+        test()
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(Exception)
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():
@@ -133,7 +132,8 @@ def test_loop_var_life_double_iters():
             pass
         print(i)
 
-    test()
+    with pytest.raises(Exception):
+        test()
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])

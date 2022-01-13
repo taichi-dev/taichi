@@ -8,7 +8,7 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 
 namespace taichi {
 namespace lang {
@@ -21,8 +21,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
-
-  void load(const std::string &output_dir) override;
 
  private:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
@@ -42,9 +40,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void write_spv_file(const std::string &output_dir,
                       const TaskAttributes &k,
                       const std::vector<uint32_t> &source_code) const;
-
-  std::vector<uint32_t> read_spv_file(const std::string &output_dir,
-                                      const TaskAttributes &k);
 
   uint32_t to_vk_dtype_enum(DataType dt);
 

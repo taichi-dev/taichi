@@ -1,10 +1,6 @@
 import taichi as ti
 
 
-def ti_support_dynamic(test):
-    return ti.archs_excluding(ti.opengl, ti.cc, ti.vulkan)(test)
-
-
 @ti.test(exclude=[ti.opengl, ti.cc, ti.vulkan])
 def test_dynamic():
     x = ti.field(ti.i32)

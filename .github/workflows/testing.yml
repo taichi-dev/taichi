@@ -231,7 +231,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-10.15
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
@@ -359,9 +359,9 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test (Windows)
+    name: Build and Test Windows
     needs: [check_code_format, check_files]
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v2
@@ -372,8 +372,18 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Add Visual Studio Shell to ENV
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ccache_cache
+          key: ccache-win64-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-
 
       - name: Build
         shell: powershell
@@ -389,16 +399,10 @@ jobs:
           if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
             exit 0
           }
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          . venv\Scripts\activate.ps1
-          python -c "import taichi"
-          ti diagnose
-          ti changelog
-          echo wanted arch: $env:TI_WANTED_ARCHS
-          python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
+          .\.github\workflows\scripts\win_test.ps1
         env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: cpu,cuda,opengl
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
 
   build_and_test_m1:

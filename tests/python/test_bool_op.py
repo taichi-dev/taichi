@@ -47,3 +47,21 @@ def test_or_not_shorted():
         return False or True
 
     assert func() == 1
+
+
+@ti.test(debug=True)
+def test_static_or():
+    @ti.kernel
+    def func() -> ti.i32:
+        return ti.static(0 or 3 or 5)
+
+    assert func() == 3
+
+
+@ti.test(debug=True)
+def test_static_and():
+    @ti.kernel
+    def func() -> ti.i32:
+        return ti.static(5 and 2 and 0)
+
+    assert func() == 0

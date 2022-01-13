@@ -110,8 +110,8 @@ def substep(g_x: float, g_y: float, g_z: float):
         if grid_m[I] > 0:
             grid_v[I] /= grid_m[I]
         grid_v[I] += dt * ti.Vector([g_x, g_y, g_z])
-        cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[
-            I] > 0
+        cond = (I < bound) & (grid_v[I] < 0) | \
+               (I > n_grid - bound) & (grid_v[I] > 0)
         grid_v[I] = 0 if cond else grid_v[I]
     ti.block_dim(n_grid)
     for p in x:

@@ -63,14 +63,10 @@ def test_assign_assign():
 def test_assign_ann():
     @ti.kernel
     def func_ann():
-        # need to introduce ti as a global var
-        my_float = ti.f32
         a: ti.i32 = 1
         b: ti.f32 = a
-        d: my_float = 1
         assert a == 1
         assert b == 1.0
-        assert d == 1.0
 
     func_ann()
 

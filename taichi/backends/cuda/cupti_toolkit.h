@@ -35,8 +35,10 @@ class CuptiToolkit {
   bool update_record(uint32_t records_size_after_sync,
                      std::vector<KernelProfileTracedRecord> &traced_records);
   void reset_metrics(const std::vector<std::string> &metrics);
+  void set_status(bool enable);
 
  private:
+  bool enabled_{false};
   CuptiConfig cupti_config_;
   CuptiImage cupti_image_;
 };

@@ -800,11 +800,18 @@ CuptiToolkit::CuptiToolkit() {
   for (uint idx = 0; idx < metric_list_size; idx++) {
     cupti_config_.metric_list.push_back(MetricListDefault[idx]);
   }
+  set_status(true);
 }
 
 CuptiToolkit::~CuptiToolkit() {
-  end_profiling();
-  deinit_cupti();
+  if (enabled_) {
+    end_profiling();
+    deinit_cupti();
+  }
+}
+
+void CuptiToolkit::set_status(bool enable) {
+  enabled_ = enable;
 }
 
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
@@ -1097,6 +1104,9 @@ CuptiToolkit::CuptiToolkit() {
   TI_NOT_IMPLEMENTED;
 }
 CuptiToolkit::~CuptiToolkit() {
+  TI_NOT_IMPLEMENTED;
+}
+void CuptiToolkit::set_status(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {

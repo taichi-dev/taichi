@@ -240,10 +240,6 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendEvalStmt *stmt) override {
-    print("{} = eval {}", stmt->name(), stmt->expr.serialize());
-  }
-
   void visit(FrontendPrintStmt *print_stmt) override {
     std::vector<std::string> contents;
     for (auto const &c : print_stmt->contents) {
@@ -300,12 +296,6 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendFuncDefStmt *stmt) override {
     print("function \"{}\" {{", stmt->funcid);
-    stmt->body->accept(this);
-    print("}}");
-  }
-
-  void visit(FuncBodyStmt *stmt) override {
-    print("func \"{}\" {{");
     stmt->body->accept(this);
     print("}}");
   }
@@ -549,6 +539,9 @@ class IRPrinter : public IRVisitor {
       }
       if (stmt->const_end) {
         end_str = std::to_string(stmt->end_value);
+      } else if (stmt->end_stmt && !stmt->end_stmt->is<ConstStmt>()) {
+        // range_for end is a non-const stmt (e.g. ndarray axis)
+        end_str = stmt->end_stmt->name();
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
@@ -634,10 +627,6 @@ class IRPrinter : public IRVisitor {
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);
-  }
-
-  void visit(BlockDimStmt *stmt) override {
-    print("{}{} = block dim", stmt->type_hint(), stmt->name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

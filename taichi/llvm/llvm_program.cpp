@@ -62,27 +62,34 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
-  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
+  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(this, host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    int num_SMs;
+    int num_SMs{1};
     CUDADriver::get_instance().device_get_attribute(
         &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
-    int query_max_block_dim;
+    int query_max_block_dim{1024};
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
-    int query_max_block_per_sm;
-    CUDADriver::get_instance().device_get_attribute(
-        &query_max_block_per_sm,
-        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    int version{0};
+    CUDADriver::get_instance().driver_get_version(&version);
+    int query_max_block_per_sm{16};
+    if (version >= 11000) {
+      // query this attribute only when CUDA version is above 11.0
+      CUDADriver::get_instance().device_get_attribute(
+          &query_max_block_per_sm,
+          CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    }
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;
     }
 
     if (config_.saturating_grid_dim == 0) {
-      TI_INFO("CUDA max blocks per SM = {}", query_max_block_per_sm);
-      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm;
+      if (version >= 11000) {
+        TI_TRACE("CUDA max blocks per SM = {}", query_max_block_per_sm);
+      }
+      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm * 2;
     }
 #endif
   }
@@ -116,7 +123,8 @@ void LlvmProgramImpl::initialize_host() {
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   if (config->arch == Arch::cuda && llvm_context_device_ == nullptr) {
-    llvm_context_device_ = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(this, Arch::cuda);
     llvm_context_device_->init_runtime_jit_module();
   }
 }
@@ -593,7 +601,8 @@ std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
   return device_;
 }
 
-uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
+uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
+    const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
@@ -602,6 +611,21 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
 #endif
   } else {
     return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
+  }
+}
+
+void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
+                                   std::size_t size,
+                                   uint32_t data) {
+  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
   }
 }
 }  // namespace lang

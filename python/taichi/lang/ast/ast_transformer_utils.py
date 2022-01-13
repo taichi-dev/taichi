@@ -1,12 +1,13 @@
 import ast
+import builtins
+import traceback
 from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-import astor
-from taichi._logging import info
-from taichi.lang import impl
-from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
+                                   TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 
 
 class Builder:
@@ -23,13 +24,14 @@ class Builder:
             return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
-                raise e
-            msg = str(e)
-            if not isinstance(e, TaichiCompilationError):
-                msg = f"{e.__class__.__name__}: " + msg
-            msg = ctx.get_pos_info(node) + msg
+                raise e.with_traceback(None)
             ctx.raised = True
-            raise TaichiCompilationError(msg)
+            e = handle_exception_from_cpp(e)
+            if not isinstance(e, TaichiCompilationError):
+                msg = ctx.get_pos_info(node) + traceback.format_exc()
+                raise TaichiCompilationError(msg) from None
+            msg = ctx.get_pos_info(node) + str(e)
+            raise type(e)(msg) from None
 
 
 class VariableScopeGuard:
@@ -179,7 +181,12 @@ class ASTTransformerContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.global_vars.get(name)
+        if name in self.global_vars:
+            return self.global_vars[name]
+        try:
+            return getattr(builtins, name)
+        except AttributeError:
+            raise TaichiNameError(f'Name "{name}" is not defined')
 
     def get_pos_info(self, node):
         msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
@@ -203,7 +210,14 @@ class ASTTransformerContext:
             hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
             msg += gen_line(self.src[node.lineno - 1], hint)
         else:
-            for i in range(node.lineno - 1, node.end_lineno):
+            node_type = node.__class__.__name__
+
+            if node_type in ["For", "While", "FunctionDef", "If"]:
+                end_lineno = max(node.body[0].lineno - 1, node.lineno)
+            else:
+                end_lineno = node.end_lineno
+
+            for i in range(node.lineno - 1, end_lineno):
                 last = len(self.src[i])
                 while last > 0 and (self.src[i][last - 1].isspace() or
                                     not self.src[i][last - 1].isprintable()):
@@ -223,11 +237,3 @@ class ASTTransformerContext:
                     hint = ''
                 msg += gen_line(self.src[i], hint)
         return msg
-
-
-def print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

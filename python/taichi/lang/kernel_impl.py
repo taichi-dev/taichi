@@ -8,18 +8,20 @@ import textwrap
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, util
+from taichi.lang import impl, runtime_ops, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
+from taichi.lang.expr import Expr
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
-import taichi as ti
+from taichi import _logging
 
 if util.has_pytorch():
     import torch
@@ -49,12 +51,10 @@ def func(fn):
     """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
-    _taichi_skip_traceback = 1
     fun = Func(fn, _classfunc=is_classfunc)
 
     @functools.wraps(fn)
     def decorated(*args):
-        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     decorated._is_taichi_function = True
@@ -81,7 +81,6 @@ def pyfunc(fn):
 
     @functools.wraps(fn)
     def decorated(*args):
-        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     decorated._is_taichi_function = True
@@ -140,7 +139,6 @@ class Func:
         self.pyfunc = _pyfunc
         self.argument_annotations = []
         self.argument_names = []
-        _taichi_skip_traceback = 1
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
@@ -152,7 +150,6 @@ class Func:
         self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
-        _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             if not self.pyfunc:
                 raise TaichiSyntaxError(
@@ -190,7 +187,7 @@ class Func:
             if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
-        return ti.Expr(
+        return Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
 
@@ -309,7 +306,6 @@ class TaichiCallableTemplateMapper:
 
     def lookup(self, args):
         if len(args) != self.num_args:
-            _taichi_skip_traceback = 1
             raise TypeError(
                 f'{self.num_args} argument(s) needed but {len(args)} provided.'
             )
@@ -335,12 +331,17 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(_func):
-    closure_vars = inspect.getclosurevars(_func)
-    return {
-        **closure_vars.globals,
-        **closure_vars.nonlocals,
-        **closure_vars.builtins
-    }
+    # Discussions: https://github.com/taichi-dev/taichi/issues/282
+    global_vars = _func.__globals__.copy()
+
+    freevar_names = _func.__code__.co_freevars
+    closure = _func.__closure__
+    if closure:
+        freevar_values = list(map(lambda x: x.cell_contents, closure))
+        for name, value in zip(freevar_names, freevar_values):
+            global_vars[name] = value
+
+    return global_vars
 
 
 class Kernel:
@@ -356,9 +357,7 @@ class Kernel:
         self.argument_names = []
         self.return_type = None
         self.classkernel = _classkernel
-        _taichi_skip_traceback = 1
         self.extract_arguments()
-        del _taichi_skip_traceback
         self.template_slot_locations = []
         for i, anno in enumerate(self.argument_annotations):
             if isinstance(anno, template):
@@ -408,7 +407,6 @@ class Kernel:
                 if i == 0 and self.classkernel:  # The |self| parameter
                     annotation = template()
                 else:
-                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         'Taichi kernels parameters must be type annotated')
             else:
@@ -418,8 +416,9 @@ class Kernel:
                     pass
                 elif isinstance(annotation, sparse_matrix_builder):
                     pass
+                elif isinstance(annotation, MatrixType):
+                    pass
                 else:
-                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
@@ -427,7 +426,6 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
-        _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
         self.runtime.materialize()
@@ -437,7 +435,7 @@ class Kernel:
         if self.is_grad:
             grad_suffix = "_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
-        ti.trace(f"Compiling kernel {kernel_name}...")
+        _logging.trace(f"Compiling kernel {kernel_name}...")
 
         tree, ctx = _get_tree_and_ctx(
             self,
@@ -451,7 +449,6 @@ class Kernel:
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
-            _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
@@ -479,6 +476,42 @@ class Kernel:
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
+    def get_torch_callbacks(self, v, has_torch, is_ndarray=True):
+        callbacks = []
+
+        def get_call_back(u, v):
+            def call_back():
+                u.copy_(v)
+
+            return call_back
+
+        assert has_torch
+        assert isinstance(v, torch.Tensor)
+        tmp = v
+        taichi_arch = self.runtime.prog.config.arch
+        # Ndarray means its memory is allocated on the specified taichi arch.
+        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
+        # taichi cpu/cuda backend as well.
+        # Note I put x64/arm64/cuda here to be more specific.
+        assert not is_ndarray or taichi_arch in (
+            _ti_core.Arch.cuda, _ti_core.Arch.x64, _ti_core.Arch.arm64
+        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
+
+        if str(v.device).startswith('cuda'):
+            # External tensor on cuda
+            if taichi_arch != _ti_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.to(device='cpu', copy=True)
+                tmp = host_v
+                callbacks.append(get_call_back(v, host_v))
+        else:
+            # External tensor on cpu
+            if taichi_arch == _ti_core.Arch.cuda:
+                gpu_v = v.cuda()
+                tmp = gpu_v
+                callbacks.append(get_call_back(v, gpu_v))
+        return tmp, callbacks
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -489,6 +522,8 @@ class Kernel:
             tmps = []
             callbacks = []
             has_external_arrays = False
+            has_torch = util.has_pytorch()
+            ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -509,77 +544,65 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
-                elif isinstance(needed, any_arr) and (
-                        self.match_ext_arr(v)
-                        or isinstance(v, taichi.lang._ndarray.Ndarray)):
-                    is_ndarray = False
-                    if isinstance(v, taichi.lang._ndarray.Ndarray):
-                        v = v.arr
-                        is_ndarray = True
+                elif isinstance(needed, any_arr) and isinstance(
+                        v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
-                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
-                    has_torch = util.has_pytorch()
+                    v = v.arr
+                    if ndarray_use_torch:
+                        is_ndarray = True
+                        tmp, torch_callbacks = self.get_torch_callbacks(
+                            v, has_torch, is_ndarray)
+                        callbacks += torch_callbacks
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement(), v.shape)
+                    else:
+                        launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
+                    has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        launch_ctx.set_arg_external_array(
+                        launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, False)
-                    elif is_ndarray and not ndarray_use_torch:
-                        # Use ndarray's own memory allocator
-                        tmp = v
-                        launch_ctx.set_arg_external_array(
-                            actual_argument_slot,
-                            int(tmp.device_allocation_ptr()),
-                            tmp.element_size() * tmp.nelement(), True)
+                            tmp.nbytes, v.shape)
                     else:
-
-                        def get_call_back(u, v):
-                            def call_back():
-                                u.copy_(v)
-
-                            return call_back
-
-                        assert has_torch
-                        assert isinstance(v, torch.Tensor)
-                        tmp = v
-                        taichi_arch = self.runtime.prog.config.arch
-                        # Ndarray means its memory is allocated on the specified taichi arch.
-                        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
-                        # taichi cpu/cuda backend as well.
-                        # Note I put x64/arm64/cuda here to be more specific.
-                        assert not is_ndarray or taichi_arch in (
-                            _ti_core.Arch.cuda, _ti_core.Arch.x64,
-                            _ti_core.Arch.arm64
-                        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
-
-                        if str(v.device).startswith('cuda'):
-                            # External tensor on cuda
-                            if taichi_arch != _ti_core.Arch.cuda:
-                                # copy data back to cpu
-                                host_v = v.to(device='cpu', copy=True)
-                                tmp = host_v
-                                callbacks.append(get_call_back(v, host_v))
-                        else:
-                            # External tensor on cpu
-                            if taichi_arch == _ti_core.Arch.cuda:
-                                gpu_v = v.cuda()
-                                tmp = gpu_v
-                                callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_external_array(
+                        is_ndarray = False
+                        tmp, torch_callbacks = self.get_torch_callbacks(
+                            v, has_torch, is_ndarray)
+                        callbacks += torch_callbacks
+                        launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), False)
+                            tmp.element_size() * tmp.nelement(), v.shape)
 
-                    shape = v.shape
-                    max_num_indices = _ti_core.get_max_num_indices()
-                    assert len(
-                        shape
-                    ) <= max_num_indices, f"External array cannot have > {max_num_indices} indices"
-                    for ii, s in enumerate(shape):
-                        launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
-                                                     s)
+                elif isinstance(needed, MatrixType):
+                    if id(needed.dtype) in primitive_types.real_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], (int, float)):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_float(
+                                    actual_argument_slot, float(v[a, b]))
+                                actual_argument_slot += 1
+                    elif id(needed.dtype) in primitive_types.integer_type_ids:
+                        for a in range(needed.n):
+                            for b in range(needed.m):
+                                if not isinstance(v[a, b], int):
+                                    raise KernelArgError(
+                                        i, needed.dtype.to_string(),
+                                        type(v[a, b]))
+                                launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(v[a, b]))
+                                actual_argument_slot += 1
+                    else:
+                        raise ValueError(
+                            f'Matrix dtype {needed.dtype} is not integer type or real type.'
+                        )
+                    continue
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
@@ -597,9 +620,9 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (ti.current_cfg().async_mode
+            if has_ret or (impl.current_cfg().async_mode
                            and has_external_arrays):
-                ti.sync()
+                runtime_ops.sync()
 
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
@@ -633,11 +656,10 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         if self.is_grad and impl.current_cfg().opt_level == 0:
-            ti.warn(
+            _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1
-        _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
@@ -679,7 +701,6 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
     # Can decorators determine if a function is being defined inside a class?
     # https://stackoverflow.com/a/8793684/12003165
     is_classkernel = _inside_class(level_of_class_stackframe + 1)
-    _taichi_skip_traceback = 1
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
@@ -698,7 +719,6 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         # See also: _BoundedDifferentiableMethod, data_oriented.
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
             # If we reach here (we should never), it means the class is not decorated
             # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])
@@ -710,8 +730,10 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
-            return primal(*args, **kwargs)
+            try:
+                return primal(*args, **kwargs)
+            except TaichiCompilationError as e:
+                raise type(e)('\n' + str(e)) from None
 
         wrapped.grad = adjoint
 
@@ -750,7 +772,6 @@ def kernel(fn):
         >>>     for i in x:
         >>>         x[i] = i
     """
-    _taichi_skip_traceback = 1
     return _kernel_impl(fn, level_of_class_stackframe=3)
 
 
@@ -772,13 +793,11 @@ class _BoundedDifferentiableMethod:
         self.__name__ = None
 
     def __call__(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         if self._is_staticmethod:
             return self._primal(*args, **kwargs)
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
-        _taichi_skip_traceback = 1
         return self._adjoint(self._kernel_owner, *args, **kwargs)
 
 
@@ -812,7 +831,6 @@ def data_oriented(cls):
         The decorated class.
     """
     def _getattr(self, item):
-        _taichi_skip_traceback = 1
         method = cls.__dict__.get(item, None)
         is_property = method.__class__ == property
         is_staticmethod = method.__class__ == staticmethod

@@ -120,6 +120,10 @@ class SparseMatrix:
     def __repr__(self):
         return self.matrix.to_string()
 
+    def shape(self):
+        """The shape of the sparse matrix."""
+        return (self.n, self.m)
+
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.

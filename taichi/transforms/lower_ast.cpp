@@ -75,7 +75,6 @@ class LowerAST : public IRVisitor {
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     }
-    throw IRModified();
   }
 
   void visit(FrontendIfStmt *stmt) override {
@@ -100,10 +99,10 @@ class LowerAST : public IRVisitor {
       new_if->set_false_statements(std::move(stmt->false_statements));
       new_if->false_statements->mask_var = new_if->false_mask;
     }
-
+    auto pif = new_if.get();
     fctx.push_back(std::move(new_if));
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
+    pif->accept(this);
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -132,7 +131,6 @@ class LowerAST : public IRVisitor {
     }
     fctx.push_back<PrintStmt>(new_contents);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -141,7 +139,6 @@ class LowerAST : public IRVisitor {
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
     stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
     stmt->parent->replace_with(stmt, std::move(stmts));
-    throw IRModified();
   }
 
   void visit(FrontendContinueStmt *stmt) override {
@@ -174,9 +171,10 @@ class LowerAST : public IRVisitor {
     stmt->insert_before_me(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     new_while->body->mask_var = new_while->mask;
+    auto pwhile = new_while.get();
     stmt->parent->replace_with(stmt, std::move(new_while));
+    pwhile->accept(this);
     // insert an alloca for the mask
-    throw IRModified();
   }
 
   void visit(WhileStmt *stmt) override {
@@ -343,6 +341,7 @@ class LowerAST : public IRVisitor {
       for (int i = 0; i < (int)shape.size(); i++) {
         end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
       }
+      // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->vectorize,
           stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
@@ -360,8 +359,9 @@ class LowerAST : public IRVisitor {
       new_for->body->insert(std::move(new_statements), 0);
       fctx.push_back(std::move(new_for));
     }
+    auto pfor = fctx.stmts.back().get();
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
+    pfor->accept(this);
   }
 
   void visit(RangeForStmt *for_stmt) override {
@@ -391,16 +391,6 @@ class LowerAST : public IRVisitor {
     expr->flatten(&fctx);
     fctx.push_back<ReturnStmt>(fctx.back_stmt());
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
-  }
-
-  void visit(FrontendEvalStmt *stmt) override {
-    // expand rhs
-    auto expr = stmt->expr;
-    auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   void visit(FrontendAssignStmt *assign) override {
@@ -431,7 +421,6 @@ class LowerAST : public IRVisitor {
     }
     fctx.stmts.back()->set_tb(assign->tb);
     assign->parent->replace_with(assign, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -468,7 +457,6 @@ class LowerAST : public IRVisitor {
     }
 
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   void visit(FrontendAssertStmt *stmt) override {
@@ -489,28 +477,17 @@ class LowerAST : public IRVisitor {
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     stmt->val->flatten(&fctx);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
   }
 
   static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
-    while (true) {
-      bool modified = false;
-      try {
-        node->accept(&inst);
-      } catch (IRModified) {
-        modified = true;
-      }
-      if (!modified)
-        break;
-    }
+    node->accept(&inst);
   }
 };
 

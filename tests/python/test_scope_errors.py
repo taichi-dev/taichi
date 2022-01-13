@@ -1,8 +1,9 @@
+import pytest
+
 import taichi as ti
 
 
 @ti.test()
-@ti.must_throw(Exception)
 def test_if():
     x = ti.field(ti.f32)
 
@@ -16,11 +17,11 @@ def test_if():
             a = 1
         print(a)
 
-    func()
+    with pytest.raises(Exception):
+        func()
 
 
 @ti.test()
-@ti.must_throw(Exception)
 def test_for():
     x = ti.field(ti.f32)
 
@@ -32,11 +33,11 @@ def test_for():
             a = i
         print(a)
 
-    func()
+    with pytest.raises(Exception):
+        func()
 
 
 @ti.test()
-@ti.must_throw(Exception)
 def test_while():
     x = ti.field(ti.f32)
 
@@ -48,4 +49,5 @@ def test_while():
             a = 0
         print(a)
 
-    func()
+    with pytest.raises(Exception):
+        func()

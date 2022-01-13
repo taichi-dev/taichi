@@ -17,19 +17,19 @@ class Callable {
 
   struct Arg {
     DataType dt;
-    // For arr args
-    bool is_external_array{false};
+    bool is_array{
+        false};  // This is true for both ndarray and external array args.
     std::size_t size{0};  // TODO: size is runtime information, maybe remove?
     std::size_t total_dim{0};             // total dim of array
     std::vector<int> element_shape = {};  // shape of each element
 
     explicit Arg(const DataType &dt = PrimitiveType::unknown,
-                 bool is_external_array = false,
+                 bool is_array = false,
                  std::size_t size = 0,
                  int total_dim = 0,
                  std::vector<int> element_shape = {})
         : dt(dt),
-          is_external_array(is_external_array),
+          is_array(is_array),
           size(size),
           total_dim(total_dim),
           element_shape(std::move(element_shape)) {
@@ -48,7 +48,7 @@ class Callable {
 
   virtual ~Callable() = default;
 
-  int insert_arg(const DataType &dt, bool is_external_array);
+  int insert_arg(const DataType &dt, bool is_array);
 
   int insert_arr_arg(const DataType &dt,
                      int total_dim,

@@ -3,7 +3,9 @@
 #include <optional>
 #include <string>
 
+#if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
+#endif
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
@@ -77,7 +79,8 @@ TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
 
-  py::register_exception<TaichiTypeError>(m, "TypeError", PyExc_TypeError);
+  py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
+                                          PyExc_TypeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -188,7 +191,6 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
-      .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
@@ -226,7 +228,11 @@ void export_lang(py::module &m) {
       .def_readwrite("mesh_localize_all_attr_mappings",
                      &CompileConfig::mesh_localize_all_attr_mappings)
       .def_readwrite("demote_no_access_mesh_fors",
-                     &CompileConfig::demote_no_access_mesh_fors);
+                     &CompileConfig::demote_no_access_mesh_fors)
+      .def_readwrite("experimental_auto_mesh_local",
+                     &CompileConfig::experimental_auto_mesh_local)
+      .def_readwrite("auto_mesh_local_default_occupacy",
+                     &CompileConfig::auto_mesh_local_default_occupacy);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -281,6 +287,10 @@ void export_lang(py::module &m) {
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
+      .def("set_kernel_profiler_toolkit",
+           [](Program *program, const std::string toolkit_name) {
+             return program->profiler->set_profiler_toolkit(toolkit_name);
+           })
       .def("clear_kernel_profile_info", &Program::clear_kernel_profile_info)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })
@@ -420,6 +430,9 @@ void export_lang(py::module &m) {
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
+      .def("fill_float", &Ndarray::fill_float)
+      .def("fill_int", &Ndarray::fill_int)
+      .def("fill_uint", &Ndarray::fill_uint)
       .def("read_int",
            [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
              return get_ndarray_rw_accessors(ndarray).read_int(I);
@@ -458,6 +471,9 @@ void export_lang(py::module &m) {
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array",
            &Kernel::LaunchContextBuilder::set_arg_external_array)
+      .def("set_arg_external_array_with_shape",
+           &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -542,7 +558,7 @@ void export_lang(py::module &m) {
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
 
-          current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
+          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -764,7 +780,8 @@ void export_lang(py::module &m) {
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape, 1),
+          Expr::make<TensorElementExpression>(var, indices, shape,
+                                              data_type_size(element_type)),
           load_if_ptr(elements.exprs[i])));
     }
     return var;
@@ -814,6 +831,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
+  m.def("data_type_size", data_type_size);
   m.def("is_custom_type", is_custom_type);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
@@ -831,28 +849,9 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices,
-           const std::vector<int> &shape, bool is_aos) {
-          // TODO: Add test for dimension check
-          if (is_aos)
-            return Expr::make<TensorElementExpression>(var, indices, shape, 1);
-          else {
-            SNode *snode = var.cast<GlobalPtrExpression>()
-                               ->var.cast<GlobalVariableExpression>()
-                               ->snode;
-            return Expr::make<TensorElementExpression>(
-                var, indices, shape,
-                snode->get_total_num_elements_towards_root());
-          }
-        });
-
-  m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices,
-           const std::vector<int> &shape) {
-          // TODO: Add test for dimension check
-          return Expr::make<TensorElementExpression>(var, indices, shape, 1);
-        });
+  m.def("make_tensor_element_expr",
+        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+                   const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
@@ -921,9 +920,8 @@ void export_lang(py::module &m) {
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](const DataType &dt, bool is_external_array) {
-    return get_current_program().current_callable->insert_arg(
-        dt, is_external_array);
+  m.def("decl_arg", [&](const DataType &dt, bool is_array) {
+    return get_current_program().current_callable->insert_arg(dt, is_array);
   });
 
   m.def("decl_arr_arg",
@@ -1020,7 +1018,9 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
+#if TI_WITH_LLVM
   m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+#endif
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

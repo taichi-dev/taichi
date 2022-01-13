@@ -8,6 +8,9 @@
 #include "spdlog/common.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#ifdef ANDROID
+#include "spdlog/sinks/android_sink.h"
+#endif
 #include "taichi/common/core.h"
 
 namespace taichi {
@@ -52,8 +55,13 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 }
 
 Logger::Logger() {
+#ifdef ANDROID
+  console_ = spdlog::android_logger_mt("android", "taichi");
+  console_->flush_on(spdlog::level::trace);
+#else
   console_ = spdlog::stdout_color_mt("console");
   console_->flush_on(spdlog::level::trace);
+#endif
   TI_LOG_SET_PATTERN("%^[%L %D %X.%e %t] %v%$");
 
   set_level_default();

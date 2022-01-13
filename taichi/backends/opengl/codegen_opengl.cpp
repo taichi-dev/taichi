@@ -119,7 +119,7 @@ class KernelGen : public IRVisitor {
   bool is_top_level_{true};
   CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
-  int arr_bind_idx = static_cast<int>(GLBufId::Arr);
+  int arr_bind_idx_ = static_cast<int>(GLBufId::Arr);
 
   // per-offload variables:
   LineAppender line_appender_;
@@ -129,6 +129,7 @@ class KernelGen : public IRVisitor {
   int workgroup_size_{1};
   bool used_tls_;  // TODO: move into UsedFeature?
   std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access_;
+  std::unordered_set<std::string> loaded_args_;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -197,8 +198,7 @@ class KernelGen : public IRVisitor {
     return res;
   }
 
-  void generate_bottom() {
-    // TODO(archibate): <kernel_name>() really necessary? How about just main()?
+  void generate_task_bottom(OffloadedTaskType task_type) {
     emit("void main()");
     emit("{{");
     if (used.random)
@@ -294,10 +294,14 @@ class KernelGen : public IRVisitor {
         (is_gles() ? "#version 310 es\n" : "#version 430 core\n") + extensions +
         "precision highp float;\n" + line_appender_header_.lines() +
         line_appender_.lines();
-    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
-                          num_workgroups_, workgroup_size_,
-                          &this->extptr_access_);
     auto &config = kernel_->program->config;
+    const int prescribed_block_dim = config.max_block_dim;
+    workgroup_size_ = prescribed_block_dim > 0
+                          ? std::min(workgroup_size_, prescribed_block_dim)
+                          : workgroup_size_;
+    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
+                          task_type, num_workgroups_, workgroup_size_,
+                          &this->extptr_access_);
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");
@@ -502,51 +506,58 @@ class KernelGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->val->element_type();
+    std::string index = stmt->dest->is<ExternalPtrStmt>()
+                            ? stmt->dest->short_name()
+                            : fmt::format("{} >> {}", stmt->dest->short_name(),
+                                          opengl_data_address_shifter(dt));
+
     emit(
-        "_{}_{}_[{} >> {}] = {};",
+        "_{}_{}_[{}] = {};",
         ptr_signats_.at(stmt->dest->id),  // throw out_of_range if not a pointer
-        opengl_data_type_short_name(dt), stmt->dest->short_name(),
-        opengl_data_address_shifter(dt), stmt->val->short_name());
+        opengl_data_type_short_name(dt), index, stmt->val->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    emit("{} {} = _{}_{}_[{} >> {}];",
-         opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats_.at(stmt->src->id), opengl_data_type_short_name(dt),
-         stmt->src->short_name(), opengl_data_address_shifter(dt));
+    std::string index = stmt->src->is<ExternalPtrStmt>()
+                            ? stmt->src->short_name()
+                            : fmt::format("{} >> {}", stmt->src->short_name(),
+                                          opengl_data_address_shifter(dt));
+
+    emit("{} {} = _{}_{}_[{}];", opengl_data_type_name(stmt->element_type()),
+         stmt->short_name(), ptr_signats_.at(stmt->src->id),
+         opengl_data_type_short_name(dt), index);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto linear_index_name = fmt::format("_li_{}", stmt->short_name());
+    const auto linear_index_name = stmt->short_name();
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
-    emit("int {} = 0;", linear_index_name);
-    emit("{{ // linear seek");
-    {
-      ScopedIndent _s(line_appender_);
-      const int num_indices = stmt->indices.size();
-      std::vector<std::string> size_var_names;
-      for (int i = 0; i < num_indices; i++) {
-        used.buf_args = true;
-        used.int32 = true;
-        std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
+    const int num_indices = stmt->indices.size();
+    std::vector<std::string> size_var_names;
+    for (int i = 0; i < num_indices; i++) {
+      used.buf_args = true;
+      used.int32 = true;
+      std::string var_name = fmt::format("_s{}_{}{}", i, "arr", arg_id);
+
+      if (!loaded_args_.count(var_name)) {
         emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
              taichi_opengl_extra_args_base / sizeof(int), arg_id,
              taichi_max_num_indices, i);
-        size_var_names.push_back(std::move(var_name));
+        loaded_args_.insert(var_name);
       }
-      for (int i = 0; i < num_indices; i++) {
-        emit("{} *= {};", linear_index_name, size_var_names[i]);
-        emit("{} += {};", linear_index_name, stmt->indices[i]->short_name());
-      }
+      size_var_names.push_back(std::move(var_name));
     }
-    emit("}}");
 
-    emit("int {} = {} << {};", stmt->short_name(), linear_index_name,
-         opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
+    emit("int {} = {};", linear_index_name,
+         num_indices == 0 ? "0" : stmt->indices[0]->short_name());
+
+    for (int i = 1; i < num_indices; i++) {
+      emit("{} *= {};", linear_index_name, size_var_names[i]);
+      emit("{} += {};", linear_index_name, stmt->indices[i]->short_name());
+    }
 
     ptr_signats_[stmt->id] = "arr" + std::to_string(arg_id);
   }
@@ -651,6 +662,9 @@ class KernelGen : public IRVisitor {
       // floor(x / y)
       emit("{} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
            rhs_name, lhs_name, rhs_name);
+      // FIXME: hack! doesn't make too much difference on mobile.
+      // emit("{} {} = {} & int({} - 1); // mod", dt_name, bin_name, lhs_name,
+      // rhs_name);
       return;
     } else if (bin->op_type == BinaryOpType::atan2) {
       if (bin->element_type() ==
@@ -750,10 +764,15 @@ class KernelGen : public IRVisitor {
       }
       used.simulated_atomic_float = true;
       used.int32 = true;  // since simulated atomics are based on _data_i32_
-      emit("{} = {}_{}_{}({} >> {}, {});", stmt->short_name(),
+      std::string index =
+          stmt->dest->is<ExternalPtrStmt>()
+              ? stmt->dest->short_name()
+              : fmt::format("{} >> {}", stmt->dest->short_name(),
+                            opengl_data_address_shifter(dt));
+      emit("{} = {}_{}_{}({}, {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+           index, val_name);
     }
 
     emit("}} // End Atomic Op");
@@ -777,10 +796,16 @@ class KernelGen : public IRVisitor {
          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
           dt->is_primitive(PrimitiveTypeID::f64)));
     if (check_int || (check_add && check_float)) {
-      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
+      std::string index =
+          stmt->dest->is<ExternalPtrStmt>()
+              ? stmt->dest->short_name()
+              : fmt::format("{} >> {}", stmt->dest->short_name(),
+                            opengl_data_address_shifter(dt));
+
+      emit("{} = {}(_{}_{}_[{}], {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+           index, val_name);
       return true;
     }
     return false;
@@ -841,7 +866,7 @@ class KernelGen : public IRVisitor {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
       if (!used.arr_arg_to_bind_idx.count(stmt->arg_id)) {
-        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx++;
+        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx_++;
       }
     } else {
       used.buf_args = true;
@@ -887,9 +912,12 @@ class KernelGen : public IRVisitor {
     const auto axis = stmt->axis;
     used.buf_args = true;
     used.int32 = true;
-    emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
-         taichi_opengl_extra_args_base / sizeof(int), arg_id,
-         taichi_max_num_indices, axis);
+    if (!loaded_args_.count(name)) {
+      emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
+           taichi_opengl_extra_args_base / sizeof(int), arg_id,
+           taichi_max_num_indices, axis);
+      loaded_args_.insert(name);
+    }
   }
 
   std::string make_kernel_name() {
@@ -959,7 +987,13 @@ class KernelGen : public IRVisitor {
       gen->emit("}}");
     }
   };
-
+  void gen_array_range(Stmt *stmt) {
+    int num_operands = stmt->num_operands();
+    for (int i = 0; i < num_operands; i++) {
+      gen_array_range(stmt->operand(i));
+    }
+    stmt->accept(this);
+  }
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string glsl_kernel_name = make_kernel_name();
@@ -1000,13 +1034,22 @@ class KernelGen : public IRVisitor {
       stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
-      emit("// range known at runtime");
-      auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
-                                          : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                        stmt->begin_offset);
-      auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
-                                      : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                    stmt->end_offset);
+      std::string begin_expr, end_expr;
+      if (stmt->end_stmt) {
+        emit("// range from args buffer");
+        TI_ASSERT(stmt->const_begin);
+        begin_expr = std::to_string(stmt->begin_value);
+        gen_array_range(stmt->end_stmt);
+        end_expr = stmt->end_stmt->short_name();
+      } else {
+        emit("// range known at runtime");
+        begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
+                                       : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                     stmt->begin_offset);
+        end_expr = stmt->const_end
+                       ? std::to_string(stmt->end_value)
+                       : fmt::format("_gtmp_i32_[{} >> 2]", stmt->end_offset);
+      }
       workgroup_size_ = stmt->block_dim;
       num_workgroups_ = stmt->grid_dim;
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
@@ -1116,10 +1159,10 @@ class KernelGen : public IRVisitor {
     generate_header();
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;
-    using Type = OffloadedStmt::TaskType;
-    if (stmt->task_type == Type::serial) {
+    const auto task_type = stmt->task_type;
+    if (task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(stmt);
-    } else if (stmt->task_type == Type::range_for) {
+    } else if (task_type == OffloadedTaskType::range_for) {
       generate_range_for_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
@@ -1128,7 +1171,8 @@ class KernelGen : public IRVisitor {
                stmt->task_name());
     }
     is_top_level_ = true;
-    generate_bottom();
+    generate_task_bottom(task_type);
+    loaded_args_.clear();
   }
 
   void visit(StructForStmt *) override {

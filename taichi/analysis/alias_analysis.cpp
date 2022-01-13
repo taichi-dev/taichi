@@ -91,16 +91,35 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
                : AliasResult::uncertain;
   }
 
+  TI_ASSERT(var1->width() == 1);
+  TI_ASSERT(var2->width() == 1);
+
   if (var1->is<ExternalPtrStmt>() || var2->is<ExternalPtrStmt>()) {
     if (!var1->is<ExternalPtrStmt>() || !var2->is<ExternalPtrStmt>())
       return AliasResult::different;
-    return AliasResult::uncertain;
+    auto ptr1 = var1->as<ExternalPtrStmt>();
+    auto ptr2 = var2->as<ExternalPtrStmt>();
+    if (ptr1->base_ptrs[0] != ptr2->base_ptrs[0]) {
+      auto base1 = ptr1->base_ptrs[0]->as<ArgLoadStmt>();
+      auto base2 = ptr2->base_ptrs[0]->as<ArgLoadStmt>();
+      return base1->arg_id != base2->arg_id ? AliasResult::different
+                                            : AliasResult::uncertain;
+    }
+    TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
+    bool uncertain = false;
+    for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+      auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
+      if (!diff.is_diff_certain) {
+        uncertain = true;
+      } else if (diff.diff_range != 0) {
+        return AliasResult::different;
+      }
+    }
+    return uncertain ? AliasResult::uncertain : AliasResult::same;
   }
 
   // If both statements are GlobalPtrStmts or GetChStmts, we can check by
   // SNode::id.
-  TI_ASSERT(var1->width() == 1);
-  TI_ASSERT(var2->width() == 1);
   auto get_snode_id = [](Stmt *s) {
     if (auto ptr = s->cast<GlobalPtrStmt>()) {
       return ptr->snodes[0]->id;

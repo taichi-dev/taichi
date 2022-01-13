@@ -1,20 +1,21 @@
 #pragma once
 
-#include "taichi/common/core.h"
-#include "taichi/ir/transforms.h"
-
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 #include "taichi/backends/device.h"
-#include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/common/core.h"
+#include "taichi/ir/offloaded_task_type.h"
+#include "taichi/ir/transforms.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class Kernel;
 class OffloadedStmt;
@@ -43,6 +44,7 @@ extern int opengl_threads_per_block;
 struct CompiledOffloadedTask {
   std::string name;
   std::string src;
+  OffloadedTaskType type;
   int workgroup_size;
   int num_groups;
 
@@ -50,6 +52,7 @@ struct CompiledOffloadedTask {
 };
 
 struct ScalarArg {
+  std::string dtype_name;
   size_t offset_in_bytes_in_args_buf{0};
 
   TI_IO_DEF(offset_in_bytes_in_args_buf);
@@ -74,6 +77,7 @@ struct CompiledTaichiKernel {
   void init_args(Kernel *kernel);
   void add(const std::string &name,
            const std::string &source_code,
+           OffloadedTaskType type,
            int num_workgrous,
            int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =
@@ -120,15 +124,15 @@ class DeviceCompiledTaichiKernel {
 
   std::vector<std::unique_ptr<Pipeline>> compiled_pipeline_;
 
-  DeviceAllocation args_buf_{kDeviceNullAllocation};
+  mutable std::unique_ptr<DeviceAllocationGuard> args_buf_{nullptr};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
   // Only saves numpy/torch cpu based external array since they don't have
   // DeviceAllocation.
   // Taichi |Ndarray| manages their own DeviceAllocation so it's not saved here.
-  mutable DeviceAllocation arr_bufs_[taichi_max_num_args]{
+  mutable DeviceAllocation ext_arr_bufs_[taichi_max_num_args]{
       kDeviceNullAllocation};
 };
 
 }  // namespace opengl
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

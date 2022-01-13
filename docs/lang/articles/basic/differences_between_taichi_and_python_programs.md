@@ -17,7 +17,7 @@ Main differences are:
 - If a taichi kernel has a return statement, it must have return type annotation.
 - If a taichi function has a return statement, return type annotation is recommended, and it will be mandatory in the future.
 
-```python {3, 7, 10, 14}
+```python {3,7,10,14}
 @ti.kernel
 def error_kernel_no_return_annotation():
     return 0  # Error: Have return statement but have no return type annotation
@@ -57,7 +57,7 @@ discarded_after_first_return(0)  # OK: returns 1
 ```
 - If there are [compile-time evaluations](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement in all circumstances.
 Otherwise, error occurs when the branch that does not have return statement is chosen.
-```python {7-8, 15-16, 21, 23-24}
+```python {7-8,15-16,21,23-24}
 @ti.kernel
 def return_inside_static_if(a: ti.template()) -> ti.i32:
     if ti.static(a):

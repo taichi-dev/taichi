@@ -895,24 +895,22 @@ class ReturnStmt : public Stmt {
     return names;
   }
   std::string values_raw_names() {
-    std::string names = "[";
+    std::string names  ;
     for (auto &x : values) {
       names += x->raw_name() + ", ";
     }
     names.pop_back();
     names.pop_back();
-    names += "]";
     return names;
   }
 
   std::string values_short_names() {
-    std::string names = "[";
+    std::string names ;
     for (auto &x : values) {
       names += x->short_name() + ", ";
     }
     names.pop_back();
     names.pop_back();
-    names += "]";
     return names;
   }
 

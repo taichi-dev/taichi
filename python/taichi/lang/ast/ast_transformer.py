@@ -379,7 +379,7 @@ class ASTTransformer(Builder):
                 ]) == package_root:  # functions inside taichi
                     pass
                 else:
-                    name = unparse(node.func)
+                    name = unparse(node.func).strip()
                     warnings.warn_explicit(
                         f'Calling non-taichi function "{name}". '
                         f'Scope inside the function is not be processed by the Taichi transformer. '

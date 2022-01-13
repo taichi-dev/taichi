@@ -134,7 +134,7 @@ def foo():
     a = 3.14
     print(a)  # 3
 ```
-In this example, variable `a` is initialized with `int` type. On the next line, the assign statement will cast `3.14` from `float` type to `int` type implicitly.
+In this example, variable `a` is initialized with an `int` type. On the next line, the assignment statement casts `3.14` from `float` to `int` implicitly.
 
 
 #### Explicit casts

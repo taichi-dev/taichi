@@ -1,4 +1,5 @@
 import argparse
+
 import taichi as ti
 
 FRAMES = 100

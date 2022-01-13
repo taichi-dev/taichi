@@ -203,7 +203,7 @@ my_vec3f = ti.types.vector(3, float)
 my_mat2f = ti.types.matrix(2, 2, float)
 my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 ```
-In this example, we define four compound types for creating fields and local variables. 
+In this example, we define four compound types for creating fields and local variables.
 
 ### Creating fields
 
@@ -231,4 +231,4 @@ mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
 vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```
-In this example, we define five local variables, each of a different type. In the definition statement of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`. 
+In this example, we define five local variables, each of a different type. In the definition statement of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.

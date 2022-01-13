@@ -67,15 +67,29 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;
     ra.dt = kr.dt;
-    const size_t dt_bytes = data_type_size(ra.dt);
-    if (dt_bytes > 4) {
-      // Metal doesn't support 64bit data buffers.
-      TI_ERROR(
-          "SPIRV kernel only supports less than 32-bit return value, got {}",
-          data_type_name(ra.dt));
+    size_t dt_bytes {0};
+    if (auto tensor_type = ra.dt->as<TensorType>()){
+      dt_bytes = data_type_size(ra.dt);
+      ra.is_array = true;
+      ra.stride = tensor_type->get_num_elements() * dt_bytes;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR(
+            "SPIRV kernel only supports less than 32-bit return value, got {} which is Tensor's element type",
+            data_type_name(tensor_type->get_element_type()));
+      }
     }
-    ra.is_array = false;  // TODO(#909): this is a temporary limitation
-    ra.stride = dt_bytes;
+    else {
+      dt_bytes = data_type_size(ra.dt);
+      ra.is_array = false;
+      ra.stride = dt_bytes;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR(
+            "SPIRV kernel only supports less than 32-bit return value, got {}",
+            data_type_name(ra.dt));
+      }
+    }
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);
   }

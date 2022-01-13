@@ -66,6 +66,11 @@ int data_type_size(DataType t) {
   //  setting a loud failure on pointers);
   //  2. Support pointer types here.
   t.set_is_pointer(false);
+  // If DataType is a TensorType, returns its element type size
+  if(auto tensor_type = t->as<TensorType>()){
+    return data_type_size(tensor_type->get_element_type());
+  }
+
   if (false) {
   } else if (t->is_primitive(PrimitiveTypeID::f16))
     return 2;

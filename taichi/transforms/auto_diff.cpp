@@ -43,8 +43,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     // Note:
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
-    //  - An IB has no atomics operations to the global variables which require
-    //  gradient
+    //  - No atomics operations to the global variables which require gradient
 
     bool qualified = true;
     std::set<AllocaStmt *> touched_allocas;

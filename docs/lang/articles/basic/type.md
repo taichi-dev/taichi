@@ -231,4 +231,4 @@ mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
 vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```
-In this example, we define five local variables which have different types. On the definition statement of `vec2`, there is a implicit cast operation when try to combine `my_vec2i(0)` with `1`.
+In this example, we define five local variables, each of a different type. In the definition statement of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`. 

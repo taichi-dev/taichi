@@ -203,7 +203,7 @@ my_vec3f = ti.types.vector(3, float)
 my_mat2f = ti.types.matrix(2, 2, float)
 my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 ```
-In this example, we define four compound types which can be used to create fields and create local variables. We can learn how to use it below.
+In this example, we define four compound types for creating fields and local variables. 
 
 ### Creating fields
 

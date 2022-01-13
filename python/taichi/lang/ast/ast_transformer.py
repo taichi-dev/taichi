@@ -21,6 +21,11 @@ from taichi.types import annotations, primitive_types
 
 from taichi import linalg
 
+if version_info < (3, 9):
+    from astunparse import unparse
+else:
+    from ast import unparse
+
 
 class ASTTransformer(Builder):
     @staticmethod
@@ -350,9 +355,14 @@ class ASTTransformer(Builder):
         elif func is all:
             node.ptr = ti_ops.ti_all(*args, **keywords)
         else:
-            if ctx.is_in_static_scope():  # allow external function in static scope
+            if ctx.is_in_static_scope(
+            ):  # allow external function in static scope
                 pass
-            elif func in [abs, sum]:  # supported built-ins
+            elif id(func) in [id(abs),
+                              id(sum),
+                              id(max),
+                              id(min),
+                              id(pow)]:  # supported built-ins
                 pass
             elif hasattr(func, "_is_taichi_function") or hasattr(
                     func, "_is_wrapped_kernel"):  # taichi func/kernel
@@ -369,13 +379,7 @@ class ASTTransformer(Builder):
                 ]) == package_root:  # functions inside taichi
                     pass
                 else:
-                    if version_info >= (3, 9):
-                        name = ast.unparse(node.func)  # pylint: disable=E1101
-                    else:
-                        try:
-                            name = func.__name__
-                        except AttributeError:
-                            name = str(func)
+                    name = unparse(node.func)
                     warnings.warn_explicit(
                         f'Calling non-taichi function "{name}". '
                         f'Scope inside the function is not be processed by the Taichi transformer. '

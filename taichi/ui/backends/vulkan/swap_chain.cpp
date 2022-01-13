@@ -68,7 +68,22 @@ void SwapChain::write_image(const std::string &filename) {
   auto [w, h] = surface_->get_size();
   DeviceAllocation img_buffer = surface_->get_image_data();
   unsigned char *ptr = (unsigned char *)app_context_->device().map(img_buffer);
-  imwrite(filename, (size_t)ptr, w, h, 4);
+  auto format = surface_->image_format();
+  if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {
+    TI_TRACE("Converting BGRA8 to RGBA for file output");
+    std::vector<uint32_t> converted(w * h);
+    uint32_t *u32ptr = (uint32_t *)ptr;
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        auto pixel = u32ptr[j * w + i];
+        converted[j * w + i] = ((pixel << 16) & 0xFF0000) | (pixel & 0x0000FF00) |
+                               ((pixel >> 16) & 0xFF) | (pixel & 0xFF000000);
+      }
+    }
+    imwrite(filename, (size_t)converted.data(), w, h, 4);
+  } else {
+    imwrite(filename, (size_t)ptr, w, h, 4);
+  }
   app_context_->device().unmap(img_buffer);
 }
 

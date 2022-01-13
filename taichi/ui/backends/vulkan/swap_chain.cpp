@@ -76,8 +76,9 @@ void SwapChain::write_image(const std::string &filename) {
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
         auto pixel = u32ptr[j * w + i];
-        converted[j * w + i] = ((pixel << 16) & 0xFF0000) | (pixel & 0x0000FF00) |
-                               ((pixel >> 16) & 0xFF) | (pixel & 0xFF000000);
+        converted[j * w + i] = ((pixel << 16) & 0xFF0000) |
+                               (pixel & 0x0000FF00) | ((pixel >> 16) & 0xFF) |
+                               (pixel & 0xFF000000);
       }
     }
     imwrite(filename, (size_t)converted.data(), w, h, 4);

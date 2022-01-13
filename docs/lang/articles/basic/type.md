@@ -219,7 +219,7 @@ vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(128, 128, 128))
 mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
 ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(1024, 768))
 ```
-In this example, we define three fields which have different types and shapes by two ways. They are exactly the same.
+In this example, we define three fields in two different ways but of exactly the same effect.
 
 ### Creating local variables
 

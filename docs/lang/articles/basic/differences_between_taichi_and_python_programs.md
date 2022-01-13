@@ -7,8 +7,8 @@ sidebar_position: 2
 Although Taichi uses Python as the frontend, there are some differences between Taichi and Python programs.
 Main differences are:
 
-1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.](#return-statement)
-2. Taichi uses lexical scoping (static scoping) while python uses dynamic scoping.
+1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program](#return-statement)
+2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)
 3. Taichi does not support some of Python's language features.
 
 ## Return statement
@@ -83,11 +83,35 @@ def ok_return_inside_static_for() -> ti.i32:
         if ti.static(i == 8):  # Static if
             return a  # OK: Returns 36
 ```
-## Scoping
 
-There are two main types of scoping, **lexical scoping** (also called **static scoping**) and **dynamic scoping**.
+## Variable Scoping
 
-In languages using lexical scoping (Taichi, C/C++, Java), 
-the visibility of a variable limits in the scope where it is defined.
+In Python, a variable defined inside an `if`/`for`/`while` block can be accessed outside the block. 
+However, in Taichi, the variables can only be accessed within the block it is defined. 
 
-In languages using dynamic scoping (Python)
+```python {5,13,17,22}
+@ti.kernel
+def error_access_var_outside_for()->ti.i32:
+    for i in range(10):
+        a = i
+    return a  # Error: variable "a" not found
+    
+@ti.kernel
+def error_access_var_outside_if(a: ti.i32) -> ti.i32:
+    if a:
+        b = 1
+    else:
+        b = 2
+    return b  # Error: variable "b" not found
+
+@ti.kernel
+def ok_define_var_before_if(a: ti.i32) -> ti.i32:
+    b = 0
+    if a:
+        b = 1
+    else:
+        b = 2
+    return b  # OK: "b" is defined before "if"
+
+ok_define_var_before_if(0)  # Returns 2
+```

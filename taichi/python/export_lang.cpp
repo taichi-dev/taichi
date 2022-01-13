@@ -455,8 +455,6 @@ void export_lang(py::module &m) {
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_matrix_int", &Kernel::get_ret_matrix_int)
-      .def("get_ret_matrix_float", &Kernel::get_ret_matrix_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def("__call__",
            [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {

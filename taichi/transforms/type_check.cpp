@@ -432,16 +432,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    if (stmt->get_kernel() != nullptr) {
-      TI_ASSERT(stmt->get_kernel()->rets.size() == 1);
-      if (auto ret_tensor =
-              stmt->get_kernel()->rets[0].dt->cast<TensorType>()) {
-        TI_ASSERT(ret_tensor->get_num_elements() == stmt->values.size());
-      } else {
-        TI_ASSERT(stmt->values.size() == 1);
-        TI_ASSERT(stmt->values[0]->ret_type->vector_width() == 1);
-      }
-    }
+    stmt->ret_type = stmt->values[0]->ret_type;
+    TI_ASSERT(stmt->ret_type->vector_width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) override {

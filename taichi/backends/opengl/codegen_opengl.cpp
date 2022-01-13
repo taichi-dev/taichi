@@ -843,7 +843,7 @@ class KernelGen : public IRVisitor {
          opengl_data_type_short_name(stmt->element_types()[0]),
          taichi_opengl_ret_base,
          opengl_data_address_shifter(stmt->element_types()[0]),
-         stmt->values_short_names());
+         stmt->values[0]->short_name());
   }
 
   void visit(ArgLoadStmt *stmt) override {

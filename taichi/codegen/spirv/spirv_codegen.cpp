@@ -529,7 +529,7 @@ class TaskCodegen : public IRVisitor {
         ir_->i32_type(),
         get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
     if (stmt->values.size() == 1) {
-      spirv::Value val = ir_->query_value(stmt->values.back()->raw_name());
+      spirv::Value val = ir_->query_value(stmt->values[0]->raw_name());
       ir_->store_variable(
           buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
     } else {

@@ -696,8 +696,8 @@ struct NodeManager {
 
 extern "C" {
 
-void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret, u32 idx) {
-  runtime->set_result(taichi_result_buffer_ret_value_id + idx, ret);
+void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret) {
+  runtime->set_result(taichi_result_buffer_ret_value_id, ret);
 }
 
 void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {

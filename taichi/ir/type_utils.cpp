@@ -19,16 +19,6 @@ std::string data_type_name(DataType t) {
     TI_NOT_IMPLEMENTED
 }
 
-std::string data_types_name(std::vector<DataType> types) {
-  std::string names;
-  for (auto &x : types) {
-    names += data_type_name(x) + ", ";
-  }
-  names.pop_back();
-  names.pop_back();
-  return names;
-}
-
 std::string data_type_format(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return "%hd";

@@ -12,6 +12,9 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
+class CudaDevice;
+class CudaStream;
+
 class CudaResourceBinder : public ResourceBinder {
  public:
   ~CudaResourceBinder() override {
@@ -45,6 +48,7 @@ class CudaPipeline : public Pipeline {
 
 class CudaCommandList : public CommandList {
  public:
+  CudaCommandList(CudaDevice *ti_device, CudaStream *stream);
   ~CudaCommandList() override {
   }
 
@@ -58,21 +62,29 @@ class CudaCommandList : public CommandList {
   void memory_barrier() override{TI_NOT_IMPLEMENTED};
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override{
       TI_NOT_IMPLEMENTED};
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override{
-      TI_NOT_IMPLEMENTED};
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
   void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override{
       TI_NOT_IMPLEMENTED};
+
+ private:
+  CudaDevice *ti_device_{nullptr};
+  CudaStream *stream_{nullptr};
 };
 
 class CudaStream : public Stream {
  public:
+   CudaStream(CudaDevice &device, void *cuda_stream);
   ~CudaStream() override{};
 
-  std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
+  std::unique_ptr<CommandList> new_command_list() override;
   void submit(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
-  void submit_synced(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
+  void submit_synced(CommandList *cmdlist) override;
 
   void command_sync() override{TI_NOT_IMPLEMENTED};
+
+ private:
+  CudaDevice &device_;
+  void *cuda_stream_{nullptr};
 };
 
 class CudaDevice : public Device {
@@ -95,9 +107,14 @@ class CudaDevice : public Device {
     bool use_cached{false};
   };
 
-  AllocInfo get_alloc_info(const DeviceAllocation handle);
+  struct Params {
+    void *stream;
+  };
 
+  void init_cuda_structs(Params &params);
   ~CudaDevice() override{};
+
+  AllocInfo get_alloc_info(const DeviceAllocation handle);
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   DeviceAllocation allocate_memory_runtime(
@@ -121,7 +138,9 @@ class CudaDevice : public Device {
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 
-  Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
+  Stream *get_compute_stream() override;
+
+  void *get_cu_stream() const { return cuda_stream_; }
 
  private:
   std::vector<AllocInfo> allocations_;
@@ -130,6 +149,9 @@ class CudaDevice : public Device {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
+  void *cuda_stream_{nullptr};
+  std::unique_ptr<CudaStream> stream_{nullptr}; 
+bool has_stream{0};
   std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
 };
 

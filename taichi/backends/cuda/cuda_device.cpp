@@ -93,6 +93,17 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
   return alloc;
 }
 
+void CudaDevice::init_cuda_structs(Params &params) {
+  cuda_stream_ = params.stream;
+}
+
+Stream *CudaDevice::get_compute_stream() {
+  if (!stream_) {
+    stream_ = std::make_unique<CudaStream>(*this, cuda_stream_);
+  }
+  return stream_.get();
+}
+
 uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
   CUDADriver::get_instance().stream_synchronize(nullptr);
   uint64 ret;
@@ -100,6 +111,36 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
                                                    sizeof(uint64));
   return ret;
 }
+
+CudaCommandList::CudaCommandList(CudaDevice *ti_device, CudaStream *stream) 
+  : ti_device_(ti_device),
+    stream_(stream) {}
+
+void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+  // pass
+  auto buffer_ptr = ti_device_->get_alloc_info(ptr).ptr;
+  if (buffer_ptr == nullptr) {
+    TI_ERROR("the DevicePtr is null");
+  }
+	
+  CUDADriver::get_instance().memsetd32async((void *)buffer_ptr, data, 
+    size, ti_device_->get_cu_stream());
+}
+
+CudaStream::CudaStream(CudaDevice &device, void *cuda_stream)
+  : device_(device), cuda_stream_(cuda_stream) {}
+
+std::unique_ptr<CommandList> CudaStream::new_command_list() {
+  return std::make_unique<CudaCommandList>(&device_, this);
+}
+
+void CudaStream::submit_synced(CommandList *cmdlist) {
+  CUDADriver::get_instance().stream_synchronize(cuda_stream_);
+}
+
+
+
+
 }  // namespace cuda
 }  // namespace lang
 }  // namespace taichi

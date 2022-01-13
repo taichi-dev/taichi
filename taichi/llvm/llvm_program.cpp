@@ -12,8 +12,6 @@
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
-#include "taichi/backends/cuda/cuda_device.h"
-
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -111,6 +109,14 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
     CUDAContext::get_instance().set_debug(config->debug);
     device_ = std::make_shared<cuda::CudaDevice>();
+
+
+    void *cuda_stream{nullptr};
+    CUDADriver::get_instance().stream_create(&cuda_stream, CU_STREAM_NON_BLOCKING);
+
+    cuda::CudaDevice::Params params;
+	  params.stream = cuda_stream;
+		cuda_device()->init_cuda_structs(params);
   }
 #endif
 }
@@ -617,14 +623,17 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
 void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
                                    std::size_t size,
                                    uint32_t data) {
-  auto ptr = get_ndarray_alloc_info_ptr(alloc);
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
+  Stream *stream = device_->get_compute_stream();
+  auto cmdlist = stream->new_command_list();
+  cmdlist->buffer_fill(alloc.get_ptr(), size, data);
+  stream->submit_synced(cmdlist.get());
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
+    auto ptr = get_ndarray_alloc_info_ptr(alloc);
     std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
   }
 }

@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Difference between taichi and python programs
+# Differences between taichi and python programs
 
 Although Taichi uses Python as the frontend, there are some differences between taichi and python programs.
 Main differences are:

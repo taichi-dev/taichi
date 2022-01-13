@@ -508,3 +508,15 @@ def test_matrix_field_dynamic_index_multiple_materialize():
     for i in range(n):
         for j in range(3):
             assert a[i][j] == (i if j == i % 3 else 0)
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], dynamic_index=True, debug=True)
+def test_local_vector_initialized_in_a_loop():
+    @ti.kernel
+    def foo():
+        for c in range(10):
+            p = ti.Vector([c, c * 2])
+            for i in range(2):
+                assert p[i] == c * (i + 1)
+
+    foo()

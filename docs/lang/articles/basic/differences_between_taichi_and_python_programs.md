@@ -2,12 +2,12 @@
 sidebar_position: 2
 ---
 
-# Differences between taichi and python programs
+# Differences between Taichi and Python programs
 
-Although Taichi uses Python as the frontend, there are some differences between taichi and python programs.
+Although Taichi uses Python as the frontend, there are some differences between Taichi and Python programs.
 Main differences are:
 
-1. Taichi only supports one return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.
+1. Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.
 2. Taichi uses lexical scoping (static scoping) while python uses dynamic scoping.
 3. Taichi does not support some of Python's language features.
 
@@ -74,4 +74,12 @@ def return_inside_static_if_no_return_outside(a: ti.template()) -> ti.i32:
 
 return_inside_static_if_no_return_outside(1)  # OK: returns 1
 return_inside_static_if_no_return_outside(0)  # Error: No return statement
+
+@ti.kernel
+def ok_return_inside_static_for() -> ti.i32:
+    a = 0
+    for i in ti.static(range(10)):
+        a += i
+        if ti.static(i == 8):
+            return a  # OK: returns 36
 ```

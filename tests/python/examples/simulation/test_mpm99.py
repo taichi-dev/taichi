@@ -1,4 +1,5 @@
-import sys
+import argparse
+import taichi as ti
 
 FRAMES = 100
 
@@ -14,7 +15,7 @@ def test_mpm99():
 
 def video_mpm99(result_dir):
     from taichi.examples.simulation.mpm99 import (dt, initialize, material,
-                                                  substep, ti, x)
+                                                  substep, x)
 
     video_manager = ti.VideoManager(output_dir=result_dir,
                                     framerate=24,
@@ -37,5 +38,7 @@ def video_mpm99(result_dir):
 
 
 if __name__ == '__main__':
-    assert len(sys.argv) == 2
-    video_mpm99(sys.argv[1])
+    parser = argparse.ArgumentParser(description='Generate mpm99 video')
+    parser.add_argument('output_directory',
+                        help='output directory of generated video')
+    video_mpm99(parser.parse_args().output_directory)

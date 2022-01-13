@@ -1,11 +1,12 @@
+import argparse
 import os
 import re
 import subprocess
-import sys
 
-if len(sys.argv) != 2:
-    print('usage: generate_example_videos.py <output_directory>')
-    exit(0)
+parser = argparse.ArgumentParser(description='Generate all videos of examples')
+parser.add_argument('output_directory',
+                    help='output directory of generated videos')
+output_dir = parser.parse_args().output_directory
 
 example_root = os.path.join('..', 'tests', 'python', 'examples')
 for example_dir in os.listdir(example_root):
@@ -16,5 +17,5 @@ for example_dir in os.listdir(example_root):
             subprocess.run([
                 "python",
                 os.path.join(full_dir, filename),
-                os.path.join(sys.argv[1], match.group(1))
+                os.path.join(output_dir, match.group(1))
             ])

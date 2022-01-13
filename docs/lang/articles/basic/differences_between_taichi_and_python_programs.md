@@ -86,8 +86,8 @@ def ok_return_inside_static_for() -> ti.i32:
 
 ## Variable Scoping
 
-In Python, a variable defined inside an `if`/`for`/`while` block can be accessed outside the block. 
-However, in Taichi, the variables can only be accessed within the block it is defined. 
+In Python, a variable defined inside an `if`/`for`/`while` block can be accessed outside the block.
+However, in Taichi, the variables can only be accessed within the block it is defined.
 
 ```python {5,13,17,22}
 @ti.kernel
@@ -95,7 +95,7 @@ def error_access_var_outside_for()->ti.i32:
     for i in range(10):
         a = i
     return a  # Error: variable "a" not found
-    
+
 @ti.kernel
 def error_access_var_outside_if(a: ti.i32) -> ti.i32:
     if a:

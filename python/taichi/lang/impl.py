@@ -12,8 +12,8 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import (Matrix, MatrixField, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement)
+from taichi.lang.matrix import (Matrix, MatrixField, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,

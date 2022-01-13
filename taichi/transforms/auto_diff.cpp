@@ -58,12 +58,10 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
         touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
       // atomics here must be ones applied to global variables
-      else if (auto atomics = stmt->cast<AtomicOpStmt>();
-               atomics) {
+      else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
         bool require_grad = false;
         TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
-        for (auto node :
-             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
+        for (auto node : atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
           if (node->has_grad()) {
             require_grad = true;
             break;

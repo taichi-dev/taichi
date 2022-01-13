@@ -50,13 +50,13 @@ def test_opengl_max_block_dim():
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             gl_file_path = res['aot_data']['kernels']['init']['tasks'][0][
-                'src']
+                'source_path']
             with open(gl_file_path) as gl_file:
                 s = 'layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n'
                 assert s in gl_file.readlines()
 
 
-@ti.test(arch=ti.opengl)
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_save():
     density = ti.field(float, shape=(4, 4))
 
@@ -71,7 +71,8 @@ def test_save():
             density[0, 0] += 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
+        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+        m = ti.aot.Module(ti.cfg.arch)
         m.add_field('density', density)
         m.add_kernel(init)
         with m.add_kernel_template(foo) as kt:
@@ -82,7 +83,7 @@ def test_save():
             json.load(json_file)
 
 
-@ti.test(arch=ti.opengl)
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_non_dense_snode():
     n = 8
     x = ti.field(dtype=ti.f32)
@@ -92,12 +93,12 @@ def test_non_dense_snode():
     blk.dense(ti.i, n).place(y)
 
     with pytest.raises(RuntimeError, match='AOT: only supports dense field'):
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module(ti.cfg.arch)
         m.add_field('x', x)
         m.add_field('y', y)
 
 
-@ti.test(arch=ti.opengl)
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_mpm88_aot():
     n_particles = 8192
     n_grid = 128
@@ -177,7 +178,7 @@ def test_mpm88_aot():
             J[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module(ti.cfg.arch)
         m.add_field("x", x)
         m.add_field("v", v)
         m.add_field("C", C)
@@ -256,7 +257,7 @@ def test_opengl_exceed_max_ssbo():
              density7, density8)
 
 
-@ti.test(arch=ti.opengl)
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_mpm99_aot():
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality
@@ -383,7 +384,7 @@ def test_mpm99_aot():
             Jp[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module(ti.cfg.arch)
         m.add_field('x', x)
         m.add_field('v', v)
         m.add_field('C', C)

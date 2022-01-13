@@ -62,7 +62,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
-  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
+  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(this, host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs{1};
@@ -123,7 +123,8 @@ void LlvmProgramImpl::initialize_host() {
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   if (config->arch == Arch::cuda && llvm_context_device_ == nullptr) {
-    llvm_context_device_ = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(this, Arch::cuda);
     llvm_context_device_->init_runtime_jit_module();
   }
 }

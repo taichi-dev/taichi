@@ -1,8 +1,4 @@
 [build]
-  command = "git clone https://github.com/taichi-dev/docs.taichi.graphics.git; rm -rf docs.taichi.graphics/website/docs/lang; cp -rf docs/lang docs.taichi.graphics/website/docs/lang; cd docs.taichi.graphics/website; npm install --global yarn@1.22; yarn install; yarn build"
-
-  publish = "docs.taichi.graphics/website/build"
-
   # Cancel the build if there're no changes detected in docs/ folder.
   ignore = "git remote add upstream https://github.com/taichi-dev/taichi.git; git fetch upstream master; git diff --quiet $COMMIT_REF upstream/master -- docs/"
 

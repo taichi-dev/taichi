@@ -7,7 +7,7 @@ sidebar_position: 2
 Although Taichi uses Python as the frontend, there are some differences between Taichi and Python programs.
 Main differences are:
 
-1. Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.
+1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program while Python supports return statements in other places.](#return-statement)
 2. Taichi uses lexical scoping (static scoping) while python uses dynamic scoping.
 3. Taichi does not support some of Python's language features.
 
@@ -83,3 +83,11 @@ def ok_return_inside_static_for() -> ti.i32:
         if ti.static(i == 8):  # Static if
             return a  # OK: Returns 36
 ```
+## Scoping
+
+There are two main types of scoping, **lexical scoping** (also called **static scoping**) and **dynamic scoping**.
+
+In languages using lexical scoping (Taichi, C/C++, Java), 
+the visibility of a variable limits in the scope where it is defined.
+
+In languages using dynamic scoping (Python)

@@ -57,29 +57,29 @@ discarded_after_first_return(0)  # OK: returns 1
 ```
 - If there are [compile-time evaluations](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement in all circumstances.
 Otherwise, error occurs when the branch that does not have return statement is chosen.
-```python {7-8, 15-16}
+```python {7-8, 15-16, 21, 23-24}
 @ti.kernel
 def return_inside_static_if(a: ti.template()) -> ti.i32:
     if ti.static(a):
         return 1
     return 0
 
-return_inside_static_if(1)  # OK: returns 1
-return_inside_static_if(0)  # OK: returns 0
+return_inside_static_if(1)  # OK: Returns 1
+return_inside_static_if(0)  # OK: Returns 0
 
 @ti.kernel
 def return_inside_static_if_no_return_outside(a: ti.template()) -> ti.i32:
     if ti.static(a):
         return 1
 
-return_inside_static_if_no_return_outside(1)  # OK: returns 1
+return_inside_static_if_no_return_outside(1)  # OK: Returns 1
 return_inside_static_if_no_return_outside(0)  # Error: No return statement
 
 @ti.kernel
 def ok_return_inside_static_for() -> ti.i32:
     a = 0
-    for i in ti.static(range(10)):
+    for i in ti.static(range(10)):  # Static for
         a += i
-        if ti.static(i == 8):
-            return a  # OK: returns 36
+        if ti.static(i == 8):  # Static if
+            return a  # OK: Returns 36
 ```

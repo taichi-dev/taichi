@@ -526,7 +526,7 @@ class TaskCodegen : public IRVisitor {
     int idx{0};
     for (auto &x : stmt->values) {
       spirv::Value idx_val =
-          ir_->int_immediate_number(ir_->i32_type(), index_in_buffer + idx);
+          ir_->int_immediate_number(ir_->i32_type(), index_in_buffer + (idx++));
       spirv::Value buffer_val = ir_->struct_array_access(
           ir_->i32_type(),
           get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);

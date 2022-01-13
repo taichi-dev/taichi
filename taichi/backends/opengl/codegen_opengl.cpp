@@ -839,11 +839,14 @@ class KernelGen : public IRVisitor {
   void visit(ReturnStmt *stmt) override {
     used.buf_args = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[{} >> {} + 0] = {};",
-         opengl_data_type_short_name(stmt->element_types()[0]),
-         taichi_opengl_ret_base,
-         opengl_data_address_shifter(stmt->element_types()[0]),
-         stmt->values_short_names());
+    int idx{0};
+    for (auto &value : stmt->values) {
+      emit("_args_{}_[{} >> {} + {}] = {};",
+           opengl_data_type_short_name(stmt->element_types()[0]),
+           taichi_opengl_ret_base, idx++,
+           opengl_data_address_shifter(stmt->element_types()[0]),
+           stmt->values_short_names());
+    }
   }
 
   void visit(ArgLoadStmt *stmt) override {

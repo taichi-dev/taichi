@@ -9,7 +9,7 @@ Main differences are:
 
 1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program](#return-statement)
 2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)
-3. Taichi does not support some of Python's language features.
+3. [Taichi does not fully support some language features of Python.](#unsupportedpartially-supported-python-language-features)
 
 ## Return statement
 
@@ -80,7 +80,7 @@ def ok_return_inside_static_for() -> ti.i32:
             return a  # OK: Returns 36
 ```
 
-## Variable Scoping
+## Variable scoping
 
 In Python, a variable defined inside an `if`/`for`/`while` block can be accessed outside the block.
 **However**, in Taichi, the variables can only be accessed **within the block it is defined**.
@@ -111,3 +111,17 @@ def ok_define_var_before_if(a: ti.i32) -> ti.i32:
 
 ok_define_var_before_if(0)  # Returns 2
 ```
+
+## Unsupported/partially supported Python language features
+
+### Set
+
+Taichi does not support `set`.
+
+### Comprehensions
+
+Taichi partially supports list comprehension and dictionary comprehension, 
+and does not support set comprehension.
+
+For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time. 
+The iterators and conditions are implicitly in static scopes (within `ti.static()`).

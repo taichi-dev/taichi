@@ -31,7 +31,7 @@ while gui.running:
 
 ## Display a window
 
-The following saves frames of the window to `.png`s:
+The following code snippet saves frames of the window to `.png`s:
 
 ```python
     for frame in range(10000):
@@ -57,7 +57,7 @@ For simplicity, we use numpy arrays in the examples below.
 
 :::tip
 
-Here only regular APIs are listed. For full and detailed API description, please
+Here only most commonly used APIs are listed. For full and detailed API description, please
 refer to [API docs](https://api-docs.taichi.graphics/autoapi/taichi/ui/gui/index.html#module-taichi.ui.gui).
 
 :::
@@ -87,7 +87,7 @@ draws triangles with color in red and three points positioned at X, Y, and Z.
 
 ## RGB & Hex conversion.
 
-A handy tool to convert colors from RGB to hex or from hex to RGB.
+A handy tool to convert colors from RGB to hex or vice versa.
 
 ```python
 rgb = (0.4, 0.8, 1.0)
@@ -248,7 +248,7 @@ while gui.running:
 ## Image I/O
 
 `ti.imwrite(img, filename)` can export a `np.ndarray` or Taichi field
-(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a specified location `filename`.
+(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a specified file `filename`.
 
 Same as `ti.GUI.show(filename)`, the format of the exported image is determined by **the suffix of** `filename` as well. Now `ti.imwrite` supports exporting images to `png`, `img` and `jpg` and we recommend using `png`.
 

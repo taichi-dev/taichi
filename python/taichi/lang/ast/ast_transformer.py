@@ -367,7 +367,7 @@ class ASTTransformer(Builder):
             elif hasattr(func, "_is_taichi_function") or hasattr(
                     func, "_is_wrapped_kernel"):  # taichi func/kernel
                 pass
-            elif hasattr(func, "is_taichi_class"):
+            elif hasattr(func, "is_taichi_class"):  # Matrix/Struct
                 pass
             else:
                 try:

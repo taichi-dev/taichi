@@ -58,7 +58,8 @@ namespace lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch_(arch) {
+TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
+    : arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
   main_thread_data_ = get_this_thread_data();
@@ -92,7 +93,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch_(arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(arch);
+  jit = JITSession::create(llvm_prog, arch);
   TI_TRACE("Taichi llvm context created.");
 }
 
@@ -435,7 +436,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
     if (!func) {
       TI_INFO("Function {} not found", func_name);
     } else
-      func->setLinkage(Function::InternalLinkage);
+      func->setLinkage(llvm::Function::InternalLinkage);
   }
 }
 

@@ -117,6 +117,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
+  TI_ERROR("Templated kernels are not yet supported on vulkan aot.");
 }
 
 }  // namespace vulkan

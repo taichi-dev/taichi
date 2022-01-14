@@ -4,9 +4,10 @@ import taichi as ti
 
 
 class BenchmarkItem:
+    name = 'item'
+
     def __init__(self):
         self._items = {}  # {tag: {impl: xxx, ...}}
-        self._name = 'item'
 
     def get(self):
         return self._items  #dict
@@ -19,6 +20,9 @@ class BenchmarkItem:
 
     def tag_in_item(self, tag: str):
         return tag in self._items
+
+    def impl(self, tag: str):
+        return self._items[tag]['impl']
 
 
 class DataType(BenchmarkItem):

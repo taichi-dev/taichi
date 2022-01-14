@@ -31,7 +31,7 @@ class BenchmarkPlan:
         for item in self.items:
             for tag in tags:
                 if item.tag_in_item(tag):
-                    impl_list.append(item._items[tag]['impl'])
+                    impl_list.append(item.impl(tag))
         return tuple(impl_list)
 
     def _init_taichi(self, arch, tags):

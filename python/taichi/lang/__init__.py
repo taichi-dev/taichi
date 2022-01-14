@@ -762,7 +762,7 @@ def Tape(loss, clear_gradients=True):
     :func:`~taichi.ad.grad_replaced` for gradient functions.
 
     Args:
-        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be [].
+        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
         clear_gradients(Bool): Before `with` body start, clear all gradients or not.
 
     Returns:

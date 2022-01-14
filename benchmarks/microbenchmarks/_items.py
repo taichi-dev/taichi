@@ -1,0 +1,51 @@
+from microbenchmarks._utils import _size2tag
+
+import taichi as ti
+
+
+class BenchmarkItem:
+    def __init__(self):
+        self._items = {}  # {tag: {impl: xxx, ...}}
+        self._name = 'item'
+
+    def get(self):
+        return self._items  #dict
+
+    def get_tags(self):
+        return [key for key in self._items]
+
+    def items(self):
+        return self._items.items()  #dict.items()
+
+    def tag_in_item(self, tag: str):
+        return tag in self._items
+
+
+class DataType(BenchmarkItem):
+    name = 'dtype'
+
+    def __init__(self):
+        self._items = {
+            str(ti.i32): {
+                'impl': ti.i32
+            },
+            str(ti.i64): {
+                'impl': ti.i64
+            },
+            str(ti.f32): {
+                'impl': ti.f32
+            },
+            str(ti.f64): {
+                'impl': ti.f64
+            }
+        }
+
+
+class DataSize(BenchmarkItem):
+    name = 'dsize'
+
+    def __init__(self):
+        self._items = {}
+        for i in range(1, 10):  # [4KB,16KB...256MB]
+            size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
+            self._items[_size2tag(size_bytes)] = {'impl': size_bytes}

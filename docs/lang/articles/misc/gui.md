@@ -57,8 +57,8 @@ For simplicity, we use numpy arrays in the examples below.
 
 :::tip
 
-Here only most commonly used APIs are listed. For full and detailed API description, please
-refer to [API docs](https://api-docs.taichi.graphics/autoapi/taichi/ui/gui/index.html#module-taichi.ui.gui).
+Here we only list the most commonly-used APIs. For a full list of APIs and the detailed API descriptions, please
+see the [API docs](https://api-docs.taichi.graphics/autoapi/taichi/ui/gui/index.html#module-taichi.ui.gui).
 
 :::
 
@@ -87,7 +87,7 @@ draws triangles with color in red and three points positioned at X, Y, and Z.
 
 ## RGB & Hex conversion.
 
-A handy tool to convert colors from RGB to hex or vice versa.
+A handy tool for converting colors from RGB to hex and vice versa.
 
 ```python
 rgb = (0.4, 0.8, 1.0)
@@ -141,7 +141,7 @@ gui.get_event(ti.GUI.PRESS)
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-`gui.running` can help check the state of the window. `ti.GUI.EXIT` occurs when
+`gui.running` checks the state of the window. `ti.GUI.EXIT` occurs when
 you click on the close (X) button of a window. `gui.running` will obtain
 `False` when the GUI is being closed.
 
@@ -176,8 +176,8 @@ For example, loop until ESC is pressed:
         gui.set_image(img)
         gui.show()
 
-`gui.is_pressed(key, ...)` can detect the keys you pressed. It must be used
-together with `gui.get_event`, or it won't be updated! For example:
+`gui.is_pressed(key, ...)` detects the keys you pressed. You must use it
+together with `gui.get_event`. Otherwise, it is not updated. For example:
 
     while True:
         gui.get_event()  # must be called before is_pressed
@@ -203,7 +203,7 @@ while True:
         print('Go right!')
 ```
 
-`gui.get_cursor_pos()` can return current cursor position within the window. For example:
+`gui.get_cursor_pos()` retrieves the current cursor position on the window. For example:
 
     mouse_x, mouse_y = gui.get_cursor_pos()
 
@@ -247,8 +247,8 @@ while gui.running:
 
 ## Image I/O
 
-`ti.imwrite(img, filename)` can export a `np.ndarray` or Taichi field
-(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a specified file `filename`.
+`ti.imwrite(img, filename)` exports an `np.ndarray` or a Taichi field
+(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a file with a specified `filename`.
 
 Same as `ti.GUI.show(filename)`, the format of the exported image is determined by **the suffix of** `filename` as well. Now `ti.imwrite` supports exporting images to `png`, `img` and `jpg` and we recommend using `png`.
 

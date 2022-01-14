@@ -122,7 +122,7 @@ def foo():
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
 computational overhead at runtime:
 
-### Static Scope {#static-scope}
+### Static Scope
 `ti.static` is a function which receives one argument. It is a hint for the compiler to evaluate the argument at compile time.
 The scope of the argument of `ti.static` is called static-scope.
 

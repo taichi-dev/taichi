@@ -121,7 +121,7 @@ Currently, Taichi does not support `set`.
 List and dictionary before assigning to a variable works as the python list and dictionary.
 However, after assigning to a variable, the content of the list and the values (not keys) of the dictionary are converted to Taichi variables.
 
-Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/api/articles/advanced/meta#static-scope) (inside `ti.static()`).
+Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/articles/advanced/meta#static-scope) (inside `ti.static()`).
 
 ```python {3,11-12,20}
 @ti.kernel
@@ -153,7 +153,7 @@ Taichi partially supports list comprehension and dictionary comprehension,
 and does not support set comprehension.
 
 For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time.
-The iterators and conditions are implicitly in [static scope](/lang/api/articles/advanced/meta#static-scope).
+The iterators and conditions are implicitly in [static scope](/lang/articles/advanced/meta#static-scope).
 
 ### Operator `is`
 

@@ -121,7 +121,7 @@ Currently, Taichi does not support `set`.
 List and dictionary before assigning to a variable works as the python list and dictionary.
 However, after assigning to a variable, the content of the list and the values (not keys) of the dictionary are converted to Taichi variables.
 
-Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/api/articles/meta#static-scope) (inside `ti.static()`).
+Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/api/articles/advanced/meta#static-scope) (inside `ti.static()`).
 
 ```python {3,11-12,20}
 @ti.kernel

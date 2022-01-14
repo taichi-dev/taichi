@@ -10,6 +10,9 @@ Main differences are:
 1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program](#return-statement)
 2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)
 3. [Taichi does not fully support some language features of Python.](#unsupportedpartially-supported-python-language-features)
+  - [Set, list, dictionary and operator `in`](#set-list-dictionary-and-operator-in)
+  - [Comprehensions](#comprehensions)
+  - [Operator `is`](#operator-is)
 
 ## Return statement and return type annotation
 

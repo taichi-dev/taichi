@@ -53,7 +53,6 @@ class AotDataConverter {
     aot::CompiledOffloadedTask res{};
     res.type = offloaded_task_type_name(in.task_type);
     res.name = in.name;
-    res.source_path = in.source_path;
     res.gpu_block_size = in.advisory_num_threads_per_group;
     return res;
   }
@@ -103,15 +102,15 @@ uint32_t AotModuleBuilderImpl::to_vk_dtype_enum(DataType dt) {
   }
 }
 
-void AotModuleBuilderImpl::write_spv_file(
+std::string AotModuleBuilderImpl::write_spv_file(
     const std::string &output_dir,
-    TaskAttributes &k,
+    const TaskAttributes &k,
     const std::vector<uint32_t> &source_code) const {
   const std::string spv_path = fmt::format("{}/{}.spv", output_dir, k.name);
-  k.source_path = spv_path;
   std::ofstream fs(spv_path, std::ios_base::binary | std::ios::trunc);
   fs.write((char *)source_code.data(), source_code.size() * sizeof(uint32_t));
   fs.close();
+  return spv_path;
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -121,21 +120,18 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(ti_aot_data_, bin_path);
 
-  // Copy to avoid messing up the original ti_aot_data_.
-  TaichiAotData ti_aot_data_copy = ti_aot_data_;
-  for (int i = 0; i < ti_aot_data_copy.kernels.size(); ++i) {
-    auto &k = ti_aot_data_copy.kernels[i];
+  auto converted = AotDataConverter::convert(ti_aot_data_);
+  for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
+    auto &k = ti_aot_data_.kernels[i];
     for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-      write_spv_file(output_dir, k.tasks_attribs[j],
-                     ti_aot_data_.spirv_codes[i][j]);
+      std::string spv_path = write_spv_file(output_dir, k.tasks_attribs[j],
+                                            ti_aot_data_.spirv_codes[i][j]);
+      converted.kernels[k.name].tasks[j].source_path = spv_path;
     }
   }
 
-  auto converted = AotDataConverter::convert(ti_aot_data_copy);
   const std::string json_path = fmt::format("{}/metadata.json", output_dir);
-  TextSerializer ts;
-  ts.serialize_to_json("aot_data", converted);
-  ts.write_to_file(json_path);
+  converted.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,

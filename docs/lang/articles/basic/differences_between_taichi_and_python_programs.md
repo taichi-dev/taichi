@@ -155,7 +155,7 @@ def error_non_static_in():
 Taichi partially supports list comprehension and dictionary comprehension,
 and does not support set comprehension.
 
-For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time.
+For list comprehensions and dictionary comprehensions, the `if`s and `for`s in them are evaluated at compile time.
 The iterators and conditions are implicitly in [static scope](/lang/articles/advanced/meta#static-scope).
 
 ### Operator `is`

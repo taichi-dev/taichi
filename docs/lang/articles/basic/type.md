@@ -29,7 +29,7 @@ For example, the two most commonly used types:
 
 ### Supported primitive types
 
-Currently in Taichi, the supported primitive types on each backend are:
+The supported primitive types in Taichi on each backend are:
 
 
 | type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
@@ -64,8 +64,8 @@ ti.init(default_ip=ti.i32)
 ti.init(default_ip=ti.i64)
 ```
 
-In addition, you can use `float` or `int` in type definitions as
-aliases for default precisions, e.g.:
+You can use `float` or `int` as the alias for the default precision
+when defining a type. For example:
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f32)
@@ -94,7 +94,7 @@ result value. For example:
 - `i32 + f32 = f32` (integer + float = float)
 - `i32 + i64 = i64` (less-bits + more-bits = more-bits)
 
-### Type casts
+### Type cast
 
 When using Taichi, you may encounter situations when certain type of data needs
 to be assigned to another type. In this case, type casts are needed. Here, we
@@ -106,7 +106,7 @@ In Taichi, the type of a variable is **determined on its initialization**.
 All data types are static in the **Taichi scope**.
 :::
 
-#### Implicit casts
+#### Implicit cast
 
 When a _low-precision_ variable is assigned to a _high-precision_
 variable, it will be implicitly promoted to the _high-precision_ type

@@ -4,8 +4,8 @@ sidebar_position: 2
 
 # Differences between Taichi and Python programs
 
-Although Taichi uses Python as the frontend, there are some differences between Taichi and Python programs.
-Main differences are:
+Although Taichi uses Python as the frontend, Taichi has its own set of rules that differs from Python in some aspects.
+Major differences are:
 
 1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program](#return-statement)
 2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)
@@ -16,9 +16,9 @@ Main differences are:
 
 ## Return statement and return type annotation
 
-- If a taichi kernel/function does not have a return statement, it must not have return type annotation.
-- If a taichi kernel has a return statement, it must have return type annotation.
-- If a taichi function has a return statement, return type annotation is recommended, and it will be mandatory in the future.
+- If a Taichi kernel/function does not have a return statement, it must not have return type annotation.
+- If a Taichi kernel has a return statement, it must have return type annotation.
+- If a Taichi function has a return statement, return type annotation is recommended, and it will be mandatory in the future.
 
 ```python {3,7,10,14}
 @ti.kernel
@@ -124,7 +124,7 @@ Currently, Taichi does not support `set`.
 List and dictionary before assigning to a variable works as the python list and dictionary.
 However, after assigning to a variable, the content of the list and the values (not keys) of the dictionary are converted to Taichi variables.
 
-Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/articles/advanced/meta#static-scope) (inside `ti.static()`).
+Taichi does not have a runtime implementation of `in` currently. Therefore, operator `in` and `not in` only works in  [static scope](/lang/articles/advanced/meta#static-scope) (inside `ti.static()`).
 
 ```python {3,11-12,20}
 @ti.kernel
@@ -153,7 +153,7 @@ def error_non_static_in():
 ### Comprehensions
 
 Taichi partially supports list comprehension and dictionary comprehension,
-and does not support set comprehension.
+but does not support set comprehension.
 
 For list comprehensions and dictionary comprehensions, the `if`s and `for`s in them are evaluated at compile time.
 The iterators and conditions are implicitly in [static scope](/lang/articles/advanced/meta#static-scope).

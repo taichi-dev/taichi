@@ -153,7 +153,7 @@ Taichi partially supports list comprehension and dictionary comprehension,
 and does not support set comprehension.
 
 For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time.
-The iterators and conditions are implicitly in [static scope](/lang/api/articles/meta#static-scope).
+The iterators and conditions are implicitly in [static scope](/lang/api/articles/advanced/meta#static-scope).
 
 ### Operator `is`
 

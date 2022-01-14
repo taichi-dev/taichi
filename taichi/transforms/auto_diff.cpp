@@ -59,12 +59,10 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       }
       // atomics here must be ones applied to global variables
       else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
-        bool require_grad = false;
         TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
         for (const auto &node :
              atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
           if (node->has_grad()) {
-            require_grad = true;
             touched_global_atomics.insert(atomics);
             break;
           }

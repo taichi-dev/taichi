@@ -11,7 +11,7 @@ Main differences are:
 2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)
 3. [Taichi does not fully support some language features of Python.](#unsupportedpartially-supported-python-language-features)
 
-## Return statement
+## Return statement and return type annotation
 
 - If a taichi kernel/function does not have a return statement, it must not have return type annotation.
 - If a taichi kernel has a return statement, it must have return type annotation.
@@ -31,7 +31,7 @@ def error_func_no_return() -> ti.i31:  # Error: Have return type annotation but 
     pass
 ```
 
-- The return statement can not be in non-static `if`/`for`/`while` scope.
+- The return statement can not be in a scope of non-static `if`/`for`/`while`.
 
 ```python {4}
 @ti.kernel
@@ -52,7 +52,7 @@ def discarded_after_first_return(a: ti.i32) -> ti.i32:
 discarded_after_first_return(0)  # OK: returns 1
 ```
 - If there are [compile-time evaluations](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement under all circumstances.
-Otherwise, error occurs when the branch that does not have return statement is chosen.
+Otherwise, error occurs when a branch is chosen which does not have return statement.
 ```python {7-8,15-16,21,23-24}
 @ti.kernel
 def return_inside_static_if(a: ti.template()) -> ti.i32:
@@ -114,9 +114,38 @@ ok_define_var_before_if(0)  # Returns 2
 
 ## Unsupported/partially supported Python language features
 
-### Set
+### Set, list, dictionary and operator `in`
 
-Taichi does not support `set`.
+Currently, Taichi does not support `set`.
+
+List and dictionary before assigning to a variable works as the python list and dictionary.
+However, after assigning to a variable, the content of the list and the values (not keys) of the dictionary are converted to Taichi variables.
+
+Taichi does not have a runtime implementation of `in` currently. So, operator `in` and `not in` only works in  [static scope](/lang/api/articles/meta#static-scope) (inside `ti.static()`).
+
+```python {3,11-12,20}
+@ti.kernel
+def list_without_assign() -> ti.i32:
+    if ti.static(1 in [1, 2]):  # [1, 2]
+        return 1
+    return 0
+
+list_without_assign()  # Returns 1
+
+@ti.kernel
+def list_assigned() -> ti.i32:
+    a = [1, 2]  # a: [Variable(1), Variable(2)]
+    if ti.static(1 in a):  # 1 is not in [Variable(1), Variable(2)]
+        return 1
+    return 0
+
+list_assigned()  # Returns 0
+
+@ti.kernel
+def error_non_static_in():
+    if i in [1, 2]:  # Error: Cannot use `in` outside static scope
+        pass
+```
 
 ### Comprehensions
 
@@ -124,4 +153,8 @@ Taichi partially supports list comprehension and dictionary comprehension,
 and does not support set comprehension.
 
 For list comprehension and dictionary comprehension, the `if`s and `for`s in it are evaluated in compile time.
-The iterators and conditions are implicitly in static scopes (within `ti.static()`).
+The iterators and conditions are implicitly in [static scope](/lang/api/articles/meta#static-scope).
+
+### Operator `is`
+
+Currently, Taichi does not support operator `is` and `is not`.

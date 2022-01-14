@@ -12,4 +12,3 @@ coverage:
         paths:
           - python/taichi/lang
         threshold: 2%
-

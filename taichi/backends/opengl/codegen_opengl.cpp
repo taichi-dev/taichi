@@ -844,10 +844,9 @@ class KernelGen : public IRVisitor {
       emit("_args_{}_[({} >> {}) + {}] = {};",
            opengl_data_type_short_name(value->element_type()),
            taichi_opengl_ret_base,
-           opengl_data_address_shifter(value->element_type()),
-           idx,
+           opengl_data_address_shifter(value->element_type()), idx,
            value->short_name());
-      idx+=2;
+      idx += 2;
     }
   }
 

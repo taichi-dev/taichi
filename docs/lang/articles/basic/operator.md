@@ -80,6 +80,8 @@ default numerical types.
 | `a & b`                 | bitwise and of `a` and `b`          |
 | `a ^ b`                 | bitwise exclusive or of `a` and `b` |
 | <code>a &#124; b</code> | bitwise or of `a` and `b`           |
+| `a << b`                | left-shift `a` by `b` bits          |
+| `a >> b`                | right-shift `a` by `b` bits         |
 
 ### Trigonometric functions
 
@@ -103,6 +105,7 @@ ti.log(x)
 ti.round(x)
 ti.floor(x)
 ti.ceil(x)
+ti.sum(x)
 ```
 
 ### Builtin-alike functions
@@ -239,6 +242,7 @@ a.transpose()   # the transposed matrix of `a`, will not effect the data in `a`.
 a.trace()       # the trace of matrix `a`, the returned scalar value can be computed as `a[0, 0] + a[1, 1] + ...`.
 a.determinant() # the determinant of matrix `a`.
 a.inverse()     # (ti.Matrix) the inverse of matrix `a`.
+a@a             # @ denotes matrix multiplication
 ```
 
 :::note

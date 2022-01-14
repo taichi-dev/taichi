@@ -67,7 +67,7 @@ int data_type_size(DataType t) {
   //  2. Support pointer types here.
   t.set_is_pointer(false);
   // If DataType is a TensorType, returns its element type size
-  if (auto tensor_type = t->as<TensorType>()) {
+  if (auto tensor_type = t->cast<TensorType>()) {
     return data_type_size(tensor_type->get_element_type());
   }
 

@@ -841,11 +841,13 @@ class KernelGen : public IRVisitor {
     // TODO: use stmt->ret_id instead of 0 as index
     int idx{0};
     for (auto &value : stmt->values) {
-      emit("_args_{}_[{} >> {} + {}] = {};",
-           opengl_data_type_short_name(stmt->element_types()[0]),
-           taichi_opengl_ret_base, idx++,
-           opengl_data_address_shifter(stmt->element_types()[0]),
-           stmt->values_short_names());
+      emit("_args_{}_[({} >> {}) + {}] = {};",
+           opengl_data_type_short_name(value->element_type()),
+           taichi_opengl_ret_base,
+           opengl_data_address_shifter(value->element_type()),
+           idx,
+           value->short_name());
+      idx+=2;
     }
   }
 

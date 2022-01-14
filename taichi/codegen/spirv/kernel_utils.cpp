@@ -68,7 +68,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     RetAttributes ra;
     ra.dt = kr.dt;
     size_t dt_bytes{0};
-    if (auto tensor_type = ra.dt->as<TensorType>()) {
+    if (auto tensor_type = ra.dt->cast<TensorType>()) {
       dt_bytes = data_type_size(ra.dt);
       ra.is_array = true;
       ra.stride = tensor_type->get_num_elements() * dt_bytes;

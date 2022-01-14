@@ -18,6 +18,7 @@ constexpr std::size_t taichi_page_size = 4096;
 constexpr std::size_t taichi_error_message_max_length = 2048;
 constexpr std::size_t taichi_error_message_max_num_arguments = 32;
 constexpr std::size_t taichi_result_buffer_entries = 32;
+constexpr std::size_t taichi_max_num_ret_values = 30;
 // slot for kernel return value
 constexpr std::size_t taichi_result_buffer_ret_value_id = 0;
 // slot for error code and error message char *

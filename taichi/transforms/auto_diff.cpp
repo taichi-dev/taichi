@@ -61,7 +61,8 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
         bool require_grad = false;
         TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
-        for (const auto& node : atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
+        for (const auto &node :
+             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
           if (node->has_grad()) {
             require_grad = true;
             touched_global_atomics.insert(atomics);
@@ -72,7 +73,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       return false;
     });
 
-    for (const auto& alloca : touched_allocas) {
+    for (const auto &alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = alloca->parent; b; b = b->parent_block()) {
@@ -88,7 +89,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     }
 
     bool qualified_atomics = true;
-    for (const auto& atomics : touched_global_atomics) {
+    for (const auto &atomics : touched_global_atomics) {
       // Test if the atomics belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = atomics->parent; b; b = b->parent_block()) {

@@ -422,6 +422,7 @@ def test_mixed_inner_loops():
     assert loss[None] == 10.0
     assert x.grad[None] == 15.0
 
+
 @ti.test(require=ti.extension.adstack)
 def test_mixed_inner_loops_tape():
     x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)

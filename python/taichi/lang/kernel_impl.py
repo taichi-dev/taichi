@@ -619,13 +619,12 @@ class Kernel:
                     ret = t_kernel.get_ret_float(0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     it = iter(t_kernel.get_ret_matrix_int(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.n)]
-                                  for _ in range(ret_dt.m)])
+                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                  for _ in range(ret_dt.n)])
                 else:
                     it = iter(t_kernel.get_ret_matrix_float(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.n)]
-                                  for _ in range(ret_dt.m)])
-
+                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                  for _ in range(ret_dt.n)])
             if callbacks:
                 for c in callbacks:
                     c()

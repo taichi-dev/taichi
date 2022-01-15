@@ -183,7 +183,17 @@ class Program {
     return *kernels.back();
   }
 
-Function *create_function(const FunctionKey &func_key);
+  Kernel &kernel(const std::function<void(Kernel *)> &body,
+                 const std::string &name = "",
+                 bool grad = false) {
+    // Expr::set_allow_store(true);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    // Expr::set_allow_store(false);
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
+  }
+
+  Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?

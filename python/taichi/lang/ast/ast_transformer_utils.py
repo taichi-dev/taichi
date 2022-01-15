@@ -11,7 +11,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
 
 
 class Builder:
-    def __call__(self, ctx, node):
+    def __call__(self, ast_builder, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
             if method is None:
@@ -21,7 +21,7 @@ class Builder:
                 except:
                     error_msg = f'Unsupported node {node}'
                 raise TaichiSyntaxError(error_msg)
-            return method(ctx, node)
+            return method(ast_builder, ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)

@@ -89,7 +89,7 @@ def expr_init_func(
     return expr_init(rhs)
 
 
-def begin_frontend_struct_for(group, loop_range):
+def begin_frontend_struct_for(ast_builder, group, loop_range):
     if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
         raise TypeError(
             'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
@@ -100,10 +100,11 @@ def begin_frontend_struct_for(group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    _ti_core.begin_frontend_struct_for(group, loop_range.loop_range())
+    ast_builder.begin_frontend_struct_for(group, loop_range.loop_range())
 
 
-def begin_frontend_if(cond):
+def begin_frontend_if(ast_builder, cond):
+    assert ast_builder is not None
     if is_taichi_class(cond):
         raise ValueError(
             'The truth value of vectors/matrices is ambiguous.\n'
@@ -111,7 +112,7 @@ def begin_frontend_if(cond):
             '    if all(x == y):\n'
             'or\n'
             '    if any(x != y):\n')
-    _ti_core.begin_frontend_if(Expr(cond).ptr)
+    ast_builder.begin_frontend_if(Expr(cond).ptr)
 
 
 def wrap_scalar(x):
@@ -224,7 +225,7 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
 
 
 @taichi_scope
-def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
+def insert_expr_stmt_if_ti_func(ast_builder, func, *args, **kwargs):
     """This method is used only for real functions. It inserts a
     FrontendExprStmt to the C++ AST to hold the function call if `func` is a
     Taichi function.
@@ -246,7 +247,7 @@ def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
         # Invokes Func.__call__.
         func_call_result = func(*args, **kwargs)
         # Insert FrontendExprStmt here.
-        return _ti_core.insert_expr_stmt(func_call_result.ptr)
+        return ast_builder.insert_expr_stmt(func_call_result.ptr)
     # Call the non-Taichi function directly.
     return func(*args, **kwargs)
 
@@ -699,7 +700,7 @@ def ti_print(*_vars, sep=' ', end='\n'):
     entries = vars2entries(_vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
-    _ti_core.create_print(contentries)
+    get_runtime().prog.current_ast_builder().create_print(contentries)
 
 
 @taichi_scope

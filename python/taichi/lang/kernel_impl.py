@@ -171,7 +171,8 @@ class Func:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        ret = transform_tree(tree, ctx)
+        ret = transform_tree(impl.get_runtime().prog.current_ast_builder(),
+                             tree, ctx)
         if not impl.get_runtime().experimental_real_function:
             if self.return_type and not ctx.returned:
                 raise TaichiSyntaxError(
@@ -193,8 +194,10 @@ class Func:
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        self.compiled[key.instance_id] = lambda: transform_tree(tree, ctx)
-        self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
+        fn = _ti_core.create_function(key)
+        self.taichi_functions[key.instance_id] = fn
+        self.compiled[key.instance_id] = lambda: transform_tree(
+            fn.ast_builder(), tree, ctx)
         self.taichi_functions[key.instance_id].set_function_body(
             self.compiled[key.instance_id])
 
@@ -448,7 +451,7 @@ class Kernel:
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
-        def taichi_ast_generator():
+        def taichi_ast_generator(kernel_cxx):
             if self.runtime.inside_kernel:
                 raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
@@ -458,7 +461,7 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
-                transform_tree(tree, ctx)
+                transform_tree(kernel_cxx.ast_builder(), tree, ctx)
                 if not impl.get_runtime().experimental_real_function:
                     if self.return_type and not ctx.returned:
                         raise TaichiSyntaxError(

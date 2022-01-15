@@ -183,7 +183,7 @@ class Program {
     return *kernels.back();
   }
 
-  Function *create_function(const FunctionKey &func_key);
+Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
@@ -301,6 +301,11 @@ class Program {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
+  // Get current_ast_builder
+  ASTBuilder *current_ast_builder() {
+    return current_callable ? &current_callable->context->builder() : nullptr;
   }
 
  private:

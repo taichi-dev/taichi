@@ -28,18 +28,18 @@ def test_binary_op():
         bitwise_float()
 
 
-# @ti.test(arch=ti.cpu)
-# def test_ternary_op():
-#     @ti.kernel
-#     def select():
-#         a = 1.1
-#         b = 3
-#         c = 3.6
-#         d = b if a else c
-#
-#     with pytest.raises(ti.TaichiCompilationError,
-#                        match="for 'select': 'f32', 'i32' and 'f32'"):
-#         select()
+@ti.test(arch=ti.cpu)
+def test_ternary_op():
+    @ti.kernel
+    def select():
+        a = 1.1
+        b = 3
+        c = 3.6
+        d = b if a else c
+
+    with pytest.raises(TypeError,
+                       match="`if` conditions must be of type int32"):
+        select()
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')

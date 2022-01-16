@@ -111,11 +111,12 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     device_ = std::make_shared<cuda::CudaDevice>();
 
     void *cuda_stream{nullptr};
-    CUDADriver::get_instance().stream_create(&cuda_stream, CU_STREAM_NON_BLOCKING);
+    CUDADriver::get_instance().stream_create(&cuda_stream,
+                                             CU_STREAM_NON_BLOCKING);
 
     cuda::CudaDevice::Params params;
-	  params.stream = cuda_stream;
-		cuda_device()->init_cuda_structs(params);
+    params.stream = cuda_stream;
+    cuda_device()->init_cuda_structs(params);
   }
 #endif
 }
@@ -624,10 +625,10 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
                                    uint32_t data) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-  Stream *stream = device_->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
-  cmdlist->buffer_fill(alloc.get_ptr(), size, data);
-  stream->submit_synced(cmdlist.get());
+    Stream *stream = device_->get_compute_stream();
+    auto cmdlist = stream->new_command_list();
+    cmdlist->buffer_fill(alloc.get_ptr(), size, data);
+    stream->submit_synced(cmdlist.get());
 #else
     TI_NOT_IMPLEMENTED
 #endif

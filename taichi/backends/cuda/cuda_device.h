@@ -78,7 +78,7 @@ class CudaCommandList : public CommandList {
 
 class CudaStream : public Stream {
  public:
-   CudaStream(CudaDevice &device, void *cu_stream);
+  CudaStream(CudaDevice &device, void *cu_stream);
   ~CudaStream() override{};
 
   std::unique_ptr<CommandList> new_command_list() override;
@@ -145,7 +145,9 @@ class CudaDevice : public Device {
 
   Stream *get_compute_stream() override;
 
-  void *get_cu_stream() const { return cu_stream_; }
+  void *get_cu_stream() const {
+    return cu_stream_;
+  }
 
  private:
   std::vector<AllocInfo> allocations_;
@@ -155,7 +157,7 @@ class CudaDevice : public Device {
     }
   }
   void *cu_stream_{nullptr};
-  std::unique_ptr<CudaStream> stream_{nullptr}; 
+  std::unique_ptr<CudaStream> stream_{nullptr};
   std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
 };
 

@@ -110,7 +110,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     CUDAContext::get_instance().set_debug(config->debug);
     device_ = std::make_shared<cuda::CudaDevice>();
 
-
     void *cuda_stream{nullptr};
     CUDADriver::get_instance().stream_create(&cuda_stream, CU_STREAM_NON_BLOCKING);
 

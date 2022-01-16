@@ -94,12 +94,12 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
 }
 
 void CudaDevice::init_cuda_structs(Params &params) {
-  cuda_stream_ = params.stream;
+  cu_stream_ = params.stream;
 }
 
 Stream *CudaDevice::get_compute_stream() {
   if (!stream_) {
-    stream_ = std::make_unique<CudaStream>(*this, cuda_stream_);
+    stream_ = std::make_unique<CudaStream>(*this, cu_stream_);
   }
   return stream_.get();
 }
@@ -114,32 +114,46 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
 
 CudaCommandList::CudaCommandList(CudaDevice *ti_device, CudaStream *stream) 
   : ti_device_(ti_device),
-    stream_(stream) {}
+    stream_(stream) {
+  // enable cuda graph stream capture mode to defer command list's executions
+  auto cu_stream = ti_device_->get_cu_stream();
+  CUDADriver::get_instance().stream_begin_capture(cu_stream, CU_STREAM_CAPTURE_MODE_GLOBAL);
+}
+
+CUgraphExec CudaCommandList::finalize() {
+  auto cu_stream = ti_device_->get_cu_stream();
+  CUDADriver::get_instance().stream_end_capture(cu_stream, &graph_);
+  CUDADriver::get_instance().graph_instantiate(&graph_exec_, graph_, nullptr, nullptr, 0);
+  return graph_exec_;
+}
 
 void CudaCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
-  // pass
   auto buffer_ptr = ti_device_->get_alloc_info(ptr).ptr;
   if (buffer_ptr == nullptr) {
-    TI_ERROR("the DevicePtr is null");
+    TI_ERROR("the device ptr is null");
   }
 	
   CUDADriver::get_instance().memsetd32async((void *)buffer_ptr, data, 
     size, ti_device_->get_cu_stream());
 }
 
-CudaStream::CudaStream(CudaDevice &device, void *cuda_stream)
-  : device_(device), cuda_stream_(cuda_stream) {}
+CudaStream::CudaStream(CudaDevice &device, void *cu_stream)
+  : device_(device), cu_stream_(cu_stream) {}
 
 std::unique_ptr<CommandList> CudaStream::new_command_list() {
   return std::make_unique<CudaCommandList>(&device_, this);
 }
 
-void CudaStream::submit_synced(CommandList *cmdlist) {
-  CUDADriver::get_instance().stream_synchronize(cuda_stream_);
+void CudaStream::submit_synced(CommandList *cmdlist_) {
+  CudaCommandList *cmdlist = static_cast<CudaCommandList *>(cmdlist_);
+  CUgraphExec graph_exec = cmdlist->finalize();
+
+  // graph launch requires an explicit cuda stream
+  CUstream stream_graph_launch{nullptr};
+  CUDADriver::get_instance().stream_create(&stream_graph_launch, CU_STREAM_NON_BLOCKING);
+  CUDADriver::get_instance().graph_launch(graph_exec, stream_graph_launch);
+  CUDADriver::get_instance().stream_synchronize(stream_graph_launch);
 }
-
-
-
 
 }  // namespace cuda
 }  // namespace lang

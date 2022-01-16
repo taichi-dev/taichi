@@ -13,6 +13,8 @@ using CUstream = void *;
 using CUdeviceptr = void *;
 using CUmipmappedArray = void *;
 using CUarray = void *;
+using CUgraph = void *;
+using CUgraphExec = void *;
 
 // copied from <cuda.h>
 

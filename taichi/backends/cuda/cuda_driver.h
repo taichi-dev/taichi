@@ -40,6 +40,7 @@ constexpr uint32 CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING = 41;
 constexpr uint32 CUDA_SUCCESS = 0;
 constexpr uint32 CU_MEMORYTYPE_DEVICE = 2;
+constexpr uint32 CU_STREAM_CAPTURE_MODE_GLOBAL = 0;
 
 std::string get_cuda_error_message(uint32 err);
 

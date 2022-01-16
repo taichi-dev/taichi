@@ -9,7 +9,6 @@ PER_CUDA_FUNCTION(device_get, cuDeviceGet, void *, void *);
 PER_CUDA_FUNCTION(device_get_name, cuDeviceGetName, char *, int, void *);
 PER_CUDA_FUNCTION(device_get_attribute, cuDeviceGetAttribute, int *, uint32, void *);
 
-
 // Context management
 PER_CUDA_FUNCTION(context_create, cuCtxCreate_v2, void*, int, void *);
 PER_CUDA_FUNCTION(context_set_current, cuCtxSetCurrent, void *);
@@ -17,6 +16,13 @@ PER_CUDA_FUNCTION(context_get_current, cuCtxGetCurrent, void **);
 
 // Stream management
 PER_CUDA_FUNCTION(stream_create, cuStreamCreate, void **, uint32);
+
+// Graph management
+PER_CUDA_FUNCTION(stream_begin_capture, cuStreamBeginCapture, void *, uint32);
+PER_CUDA_FUNCTION(stream_end_capture, cuStreamEndCapture, void *, void **);
+PER_CUDA_FUNCTION(graph_instantiate, cuGraphInstantiate, void **, void *,
+                  void **, char*, size_t);
+PER_CUDA_FUNCTION(graph_launch, cuGraphLaunch, void *, void *);
 
 // Memory management
 PER_CUDA_FUNCTION(memcpy_host_to_device, cuMemcpyHtoD_v2, void *, void *, std::size_t);
@@ -28,7 +34,7 @@ PER_CUDA_FUNCTION(malloc, cuMemAlloc_v2, void **, std::size_t);
 PER_CUDA_FUNCTION(malloc_managed, cuMemAllocManaged, void **, std::size_t, uint32);
 PER_CUDA_FUNCTION(memset, cuMemsetD8_v2, void *, uint8, std::size_t);
 PER_CUDA_FUNCTION(memsetd32, cuMemsetD32_v2, void *, uint32, std::size_t);
-PER_CUDA_FUNCTION(memsetd32async, cuMemsetD32Async, void *, uint32, std::size_t, CUstream);
+PER_CUDA_FUNCTION(memsetd32async, cuMemsetD32Async, void *, uint32, std::size_t, void *);
 PER_CUDA_FUNCTION(mem_free, cuMemFree_v2, void *);
 PER_CUDA_FUNCTION(mem_advise, cuMemAdvise, void *, std::size_t, uint32, uint32);
 PER_CUDA_FUNCTION(mem_get_info, cuMemGetInfo_v2, std::size_t *, std::size_t *);

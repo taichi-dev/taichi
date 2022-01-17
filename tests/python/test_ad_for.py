@@ -442,3 +442,99 @@ def test_mixed_inner_loops_tape():
 
     assert loss[None] == 10.0
     assert x.grad[None] == 15.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=32)
+def test_inner_loops_local_variable_fixed_stack_size_tape():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_inner_loops_local_variable():
+        for i in arr:
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    x[None] = 0.0
+    with ti.Tape(loss=loss):
+        test_inner_loops_local_variable()
+
+    assert loss[None] == 18.0
+    assert x.grad[None] == 18.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=32)
+def test_inner_loops_local_variable_fixed_stack_size_kernel_grad():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_inner_loops_local_variable():
+        for i in arr:
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_inner_loops_local_variable()
+    test_inner_loops_local_variable.grad()
+
+    assert loss[None] == 18.0
+    assert x.grad[None] == 18.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=0)
+def test_inner_loops_local_variable_adaptive_stack_size_tape():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_inner_loops_local_variable():
+        for i in arr:
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    x[None] = 0.0
+    with ti.Tape(loss=loss):
+        test_inner_loops_local_variable()
+
+    assert loss[None] == 18.0
+    assert x.grad[None] == 18.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=0)
+def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_inner_loops_local_variable():
+        for i in arr:
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_inner_loops_local_variable()
+    test_inner_loops_local_variable.grad()
+
+    assert loss[None] == 18.0
+    assert x.grad[None] == 18.0
+
+

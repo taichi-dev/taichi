@@ -44,8 +44,10 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
     //  - No atomics operations to the global variables which require gradient
+    //  when there is no local load/store allocas
 
     bool qualified = true;
+    bool qualified_atomics = true;
     std::set<AllocaStmt *> touched_allocas;
     std::set<AtomicOpStmt *> touched_global_atomics;
     // TODO: remove this abuse since it *gathers nothing* but only visit
@@ -71,39 +73,42 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       return false;
     });
 
-    for (const auto &alloca : touched_allocas) {
-      // Test if the alloca belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
+    bool is_local_store_load_exist = !touched_allocas.empty();
+    if(is_local_store_load_exist) {
+      for (const auto &alloca : touched_allocas) {
+        // Test if the alloca belongs to the current block
+        bool belong_to_this_block = false;
+        for (auto b = alloca->parent; b; b = b->parent_block()) {
+          if (b == block) {
+            belong_to_this_block = true;
+          }
         }
-      }
-      if (!belong_to_this_block) {
-        // This block is not an IB since it loads/modifies outside variables
-        qualified = false;
-        break;
-      }
-    }
-
-    bool qualified_atomics = true;
-    for (const auto &atomics : touched_global_atomics) {
-      // Test if the atomics belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = atomics->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
+        if (!belong_to_this_block) {
+          // This block is not an IB since it loads/modifies outside variables
+          qualified = false;
           break;
         }
       }
-      if (belong_to_this_block) {
-        // This block is not an IB since it has atomics operation to global
-        // variables
-        qualified_atomics = false;
-        break;
+    }else{
+      for (const auto &atomics : touched_global_atomics) {
+        // Test if the atomics belongs to the current block
+        bool belong_to_this_block = false;
+        for (auto b = atomics->parent; b; b = b->parent_block()) {
+          if (b == block) {
+            belong_to_this_block = true;
+            break;
+          }
+        }
+        if (belong_to_this_block) {
+          // This block is not an IB since it has atomics operation to global
+          // variables
+          qualified_atomics = false;
+          break;
+        }
       }
     }
-    return qualified && qualified_atomics;
+    if (is_local_store_load_exist) return qualified;
+    return qualified_atomics;
   }
 
   void visit_loop_body(Block *block) {

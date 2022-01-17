@@ -31,7 +31,7 @@ Notice that a SNodeTree is in fact a type. To solve this problem, we need to avo
 
 ### Python API
 
-Taichi AOT modules should only contain static program and data, like this:
+Taichi AOT modules should only contain the static program data, including functions, kernels and types. Here's one possible API:
 
 ```python
 # This program is only for demonstration, it can't run on current version

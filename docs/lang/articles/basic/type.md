@@ -87,7 +87,8 @@ def func(a: ti.f32) -> ti.i64:
 ### Type promotion
 
 When Taichi performs binary operations on different types, the result is a
-promoted type. This is known as type promotion. Following the C programming
+promoted type. This is known as [type promotion](https://en.wikipedia.org/wiki/Type_conversion#Type_promotion). 
+Following the C programming
 language convention, Taichi always chooses the more precise type to contain the
 result value. For example:
 
@@ -103,14 +104,16 @@ casts, explicit casts, casting vectors and matrices, and bit-casts.
 
 :::caution
 In Taichi, the type of a variable is **determined on its initialization**.
-All data types are static in the **Taichi scope**.
+All data types are static in the **Taichi scope**. (Static here means the type
+is known at compile time. Based on this information, the compiler can decide
+whether the performed action is legal or not.)
 :::
 
 #### Implicit cast
 
 When a _low-precision_ variable is assigned to a _high-precision_
-variable, it will be implicitly promoted to the _high-precision_ type
-and no warning will be raised:
+variable, it is implicitly promoted to the _high-precision_ type
+without any warning:
 
 ```python {4}
 @ti.kernel

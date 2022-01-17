@@ -2,9 +2,9 @@
 
 ## Goals
 
-- Make Taichi deployable with full functionalities (including sparse / quant / mesh)
-- Users can manage the ownership of the system resources (including RAM, VRAM, GPU devices, command lists)
-- The provided Taichi runtime API should be independent of arch as much as possible
+1. Make Taichi deployable with full functionalities (including sparse / quant / mesh)
+2. Users can manage the ownership of the system resources (including RAM, VRAM, GPU devices, command lists)
+3. The provided Taichi runtime API should be independent of arch as much as possible
 
 ## Current Problems
 
@@ -21,9 +21,10 @@ def run():
     b[I] = a[I] * 4.2
 ```
 
-It is hard to deploy this code with AOT: `a` and `b` are runtime resources, which will couple kernel invocation of `run` and memory allocation for `a` and `b`.
+It is hard to deploy the above code snippet using AOT, because the static program and the runtime resources are coupled. the run kernel is the static program code, while a and b represent runtime memory resources. Assuming we would like to package them into an AOT module, there are two options here:
 
-It is not a good idea to pack all these things into a module. The memory allocation process must be deployed to user applications, which will violate Goal 2.
+1. The logic for allocating a and b is included inside the module. Upon the module loading time, they will be allocated as well. This is what we want to prevent (violating Goal 2).
+2. The logic is not included. However, we still need to include their SNode type information (i.e., the SNodeTree produced by their definition). This complicates the AOT solution.
 
 Notice that a SNodeTree is in fact a type. To solve this problem, we need to avoid memory allocation for `a` and `b`, but only keep their types (which is a SNodeTree). We can bind the actual physical memory after compilation.
 
@@ -102,5 +103,5 @@ Except `GetDeviceMemory` depends on arch (like `void *` for CUDA, `VkBuffer` for
 
 - Should the shape of SNodeTree be static?
 - Should the compiled results support multiple arch?
-- Is it possible to support compute graph for host logic?
+- Shall we allow users to place multiple structs inside a single SNodeTree builder?
 - How to support non-field structures (like `Mesh`)?

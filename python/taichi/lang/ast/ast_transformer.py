@@ -520,7 +520,6 @@ class ASTTransformer(Builder):
             ast.BitAnd: lambda l, r: l & r,
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
-        print(node.left.ptr, node.right.ptr)
         node.ptr = op(node.left.ptr, node.right.ptr)
         return node.ptr
 

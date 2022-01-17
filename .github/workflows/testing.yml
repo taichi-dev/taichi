@@ -231,7 +231,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-10.15
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON

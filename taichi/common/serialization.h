@@ -818,6 +818,7 @@ class TextSerializer : public Serializer {
     add_key("has_value");
     process(val.has_value());
     if (val.has_value()) {
+      add_raw(",");
       add_key("value");
       process(val.value());
     }

@@ -19,6 +19,21 @@ def test_sparse_matrix_builder():
 
 
 @ti.test(arch=ti.cpu)
+def test_sparse_matrix_shape():
+    n, m = 8, 9
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, m, max_num_triplets=100)
+
+    @ti.kernel
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+        for i, j in ti.ndrange(n, m):
+            Abuilder[i, j] += i + j
+
+    fill(Abuilder)
+    A = Abuilder.build()
+    assert A.shape() == (n, m)
+
+
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_element_access():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)

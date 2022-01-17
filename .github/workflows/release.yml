@@ -134,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v2
         with:
@@ -155,7 +155,7 @@ jobs:
       - name: Download Pre-Built LLVM 10.0.0
         run: python misc/ci_download.py
         env:
-          CI_PLATFORM: macos-latest
+          CI_PLATFORM: macos-10.15
 
       - name: Create Python Wheel
         run: |

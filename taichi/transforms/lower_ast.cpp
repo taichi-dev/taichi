@@ -345,8 +345,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->vectorize,
           stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
-          stmt->strictly_serialized,
-          /*end_is_array_axis=*/!end->is<ConstStmt>());
+          stmt->strictly_serialized);
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);

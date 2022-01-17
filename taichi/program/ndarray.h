@@ -16,6 +16,7 @@ namespace taichi {
 namespace lang {
 
 class Program;
+class LlvmProgramImpl;
 
 class Ndarray {
  public:

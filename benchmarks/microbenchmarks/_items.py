@@ -7,7 +7,7 @@ class BenchmarkItem:
     name = 'item'
 
     def __init__(self):
-        self._items = {}  # {tag: {impl: xxx, ...}}
+        self._items = {}  # {tag: xxx, ...}
 
     def get(self):
         return self._items  #dict
@@ -22,7 +22,7 @@ class BenchmarkItem:
         return tag in self._items
 
     def impl(self, tag: str):
-        return self._items[tag]['impl']
+        return self._items[tag]
 
 
 class DataType(BenchmarkItem):
@@ -30,18 +30,10 @@ class DataType(BenchmarkItem):
 
     def __init__(self):
         self._items = {
-            str(ti.i32): {
-                'impl': ti.i32
-            },
-            str(ti.i64): {
-                'impl': ti.i64
-            },
-            str(ti.f32): {
-                'impl': ti.f32
-            },
-            str(ti.f64): {
-                'impl': ti.f64
-            }
+            str(ti.i32): ti.i32,
+            str(ti.i64): ti.i64,
+            str(ti.f32): ti.f32,
+            str(ti.f64): ti.f64
         }
 
 
@@ -52,4 +44,4 @@ class DataSize(BenchmarkItem):
         self._items = {}
         for i in range(1, 10):  # [4KB,16KB...256MB]
             size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
-            self._items[_size2tag(size_bytes)] = {'impl': size_bytes}
+            self._items[_size2tag(size_bytes)] = size_bytes

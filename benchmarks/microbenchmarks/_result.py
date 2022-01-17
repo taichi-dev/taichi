@@ -18,7 +18,7 @@ class Result(BenchmarkItem):
     name = 'result'
 
     def __init__(self):
-        self._items = {'kernel_elapsed_time_ms': {'impl': kernel_executor}}
+        self._items = {'kernel_elapsed_time_ms': kernel_executor}
 
     @staticmethod
     def init_taichi(arch: str, result_tag: str):

@@ -45,7 +45,7 @@ class BenchmarkPlan:
         for item in self.items:
             for tag in tags:
                 if item.tag_in_item(tag):
-                    kwargs[item.name] = (item._items[tag]['impl'])
+                    kwargs[item.name] = item.impl(tag)
         return kwargs
 
     def _init_taichi(self, arch, tags):

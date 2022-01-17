@@ -337,8 +337,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def warn_if_is_external_func(ctx, node):
         func = node.func.ptr
-        if ctx.is_in_static_scope(
-        ):  # allow external function in static scope
+        if ctx.is_in_static_scope():  # allow external function in static scope
             return
         if hasattr(func, "_is_taichi_function") or hasattr(
                 func, "_is_wrapped_kernel"):  # taichi func/kernel
@@ -349,17 +348,16 @@ class ASTTransformer(Builder):
             file = inspect.getfile(inspect.getmodule(func))
         except TypeError:
             file = None
-        if file and os.path.commonpath([
-                file, package_root
-        ]) == package_root:  # functions inside taichi
+        if file and os.path.commonpath(
+            [file, package_root]) == package_root:  # functions inside taichi
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
             f'Calling non-taichi function "{name}". '
             f'Scope inside the function is not be processed by the Taichi transformer. '
             f'The function may not work as expected. Proceed with caution! '
-            f'Maybe you can consider turning it into a @ti.func?',
-            UserWarning, ctx.file, node.lineno + ctx.lineno_offset)
+            f'Maybe you can consider turning it into a @ti.func?', UserWarning,
+            ctx.file, node.lineno + ctx.lineno_offset)
 
     @staticmethod
     def build_Call(ctx, node):

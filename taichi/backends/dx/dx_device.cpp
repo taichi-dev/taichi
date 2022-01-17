@@ -150,7 +150,6 @@ HRESULT create_buffer_uav(ID3D11Device *device,
   return device->CreateUnorderedAccessView(buffer, &uav_desc, out_uav);
 }
 
-
 }  // namespace
 
 Dx11Device::Dx11Device() {

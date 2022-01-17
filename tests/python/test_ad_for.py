@@ -455,16 +455,18 @@ def test_inner_loops_local_variable_fixed_stack_size_tape():
         for i in arr:
             for j in range(3):
                 s = 0.0
+                t = 0.0
                 for k in range(3):
                     s += ti.sin(x[None]) + 1.0
-                loss[None] += s
+                    t += ti.sin(x[None])
+                loss[None] += s + t
 
     x[None] = 0.0
     with ti.Tape(loss=loss):
         test_inner_loops_local_variable()
 
     assert loss[None] == 18.0
-    assert x.grad[None] == 18.0
+    assert x.grad[None] == 36.0
 
 
 @ti.test(require=ti.extension.adstack, ad_stack_size=32)
@@ -478,9 +480,11 @@ def test_inner_loops_local_variable_fixed_stack_size_kernel_grad():
         for i in arr:
             for j in range(3):
                 s = 0.0
+                t = 0.0
                 for k in range(3):
                     s += ti.sin(x[None]) + 1.0
-                loss[None] += s
+                    t += ti.sin(x[None])
+                loss[None] += s + t
 
     loss.grad[None] = 1.0
     x[None] = 0.0
@@ -488,7 +492,7 @@ def test_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     test_inner_loops_local_variable.grad()
 
     assert loss[None] == 18.0
-    assert x.grad[None] == 18.0
+    assert x.grad[None] == 36.0
 
 
 @ti.test(require=ti.extension.adstack, ad_stack_size=0)
@@ -502,16 +506,18 @@ def test_inner_loops_local_variable_adaptive_stack_size_tape():
         for i in arr:
             for j in range(3):
                 s = 0.0
+                t = 0.0
                 for k in range(3):
                     s += ti.sin(x[None]) + 1.0
-                loss[None] += s
+                    t += ti.sin(x[None])
+                loss[None] += s + t
 
     x[None] = 0.0
     with ti.Tape(loss=loss):
         test_inner_loops_local_variable()
 
     assert loss[None] == 18.0
-    assert x.grad[None] == 18.0
+    assert x.grad[None] == 36.0
 
 
 @ti.test(require=ti.extension.adstack, ad_stack_size=0)
@@ -525,9 +531,11 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
         for i in arr:
             for j in range(3):
                 s = 0.0
+                t = 0.0
                 for k in range(3):
                     s += ti.sin(x[None]) + 1.0
-                loss[None] += s
+                    t += ti.sin(x[None])
+                loss[None] += s + t
 
     loss.grad[None] = 1.0
     x[None] = 0.0
@@ -535,6 +543,6 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     test_inner_loops_local_variable.grad()
 
     assert loss[None] == 18.0
-    assert x.grad[None] == 18.0
+    assert x.grad[None] == 36.0
 
 

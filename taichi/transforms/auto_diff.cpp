@@ -74,7 +74,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     });
 
     bool is_local_store_load_exist = !touched_allocas.empty();
-    if(is_local_store_load_exist) {
+    if (is_local_store_load_exist) {
       for (const auto &alloca : touched_allocas) {
         // Test if the alloca belongs to the current block
         bool belong_to_this_block = false;
@@ -89,7 +89,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
           break;
         }
       }
-    }else{
+    } else {
       for (const auto &atomics : touched_global_atomics) {
         // Test if the atomics belongs to the current block
         bool belong_to_this_block = false;
@@ -107,7 +107,8 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
         }
       }
     }
-    if (is_local_store_load_exist) return qualified;
+    if (is_local_store_load_exist)
+      return qualified;
     return qualified_atomics;
   }
 

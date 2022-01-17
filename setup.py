@@ -242,15 +242,6 @@ class Clean(clean):
                     os.remove(f)
 
 
-requirements = [
-    'numpy',
-    'sourceinspect>=0.0.4',
-    'colorama',
-    'astor',
-]
-if sys.version_info < (3, 9):
-    requirements.append('astunparse')
-
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
@@ -260,7 +251,13 @@ setup(name=project_name,
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.10",
-      install_requires=requirements,
+      install_requires=[
+          'numpy',
+          'sourceinspect>=0.0.4',
+          'colorama',
+          'astor',
+          'astunparse;python_version<"3.9"'
+      ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
       license='MIT',

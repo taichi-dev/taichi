@@ -354,7 +354,7 @@ class ASTTransformer(Builder):
         name = unparse(node.func).strip()
         warnings.warn_explicit(
             f'Calling non-taichi function "{name}". '
-            f'Scope inside the function is not be processed by the Taichi transformer. '
+            f'Scope inside the function is not processed by the Taichi AST transformer. '
             f'The function may not work as expected. Proceed with caution! '
             f'Maybe you can consider turning it into a @ti.func?', UserWarning,
             ctx.file, node.lineno + ctx.lineno_offset)

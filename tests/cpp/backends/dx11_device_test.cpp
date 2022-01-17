@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
 
@@ -81,3 +83,5 @@ TEST(Dx11InfoQueueTest, ParseReferenceCount) {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif

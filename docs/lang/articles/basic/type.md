@@ -87,7 +87,7 @@ def func(a: ti.f32) -> ti.i64:
 ### Type promotion
 
 When Taichi performs binary operations on different types, the result is a
-promoted type. This is known as [type promotion](https://en.wikipedia.org/wiki/Type_conversion#Type_promotion). 
+promoted type. This is known as [type promotion](https://en.wikipedia.org/wiki/Type_conversion#Type_promotion).
 Following the C programming
 language convention, Taichi always chooses the more precise type to contain the
 result value. For example:

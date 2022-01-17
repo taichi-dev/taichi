@@ -4,6 +4,28 @@ sidebar_position: 1
 
 # Kernels and functions
 
+Taichi has two types of functions: Taichi kernel, and Taichi functions. 
+
+Scope inside Taichi kernels and Taichi functions is called Taichi scope, and scope outside it is called Python scope. 
+
+A Taichi kernel is the entrypoint of a Taichi program, and it is similar to `__global__` function in CUDA. It can only be called inside Python scope.
+
+A Taichi function can only be called inside Taichi scope, and it is similar to `__device__` function in CUDA. 
+
+Major differences of Taichi kernels and Taichi functions are listed in the table below.
+
+| | Taichi kernels | Taichi functions |
+| :--- | :---: | :---: |
+| Can be called in | Python scope | Taichi scope |
+| Argument type annotation | Mandatory | Recommended |
+| Return type annotation | Mandatory| Recommended |
+| Return value | Scalar/Vector/Matrix | Arbitrary |
+| Number of arguments | Up to 8 (for many backends) | Unlimited |
+| Number of return values in a return statement | 1 | Unlimited |
+
+
+
+
 ## Taichi-scope vs Python-scope
 
 Code decorated by `@ti.kernel` or `@ti.func` is in the **Taichi-scope**.
@@ -45,7 +67,6 @@ For people from CUDA, Taichi kernels are similar to `__global__` functions.
 Kernels can have multiple arguments, which support passing values from Python-scope to Taichi-scope conveniently.
 
 :::note
-For kernels executed on OpenGL and CC backends, the number of arguments is limited to 8.
 :::
 
 Kernel arguments must be type hinted:
@@ -59,18 +80,23 @@ my_kernel(24, 3.2)  # prints: 27.2
 ```
 
 :::note
+For OpenGL, Vulkan, and CC backends, the kernel has 8 argument spaces.
 
-For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
-`ti.Vector` as an argument is not supported yet:
+Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments. 
+A scalar argument occupies 1 argument space, and a `ti.Matrix` or`ti.Vector` occupies argument spaces equal to the number of elements inside it.
 
-```python {2,7}
+```python {2,7,11}
 @ti.kernel
-def valid_kernel(vx: ti.f32, vy: ti.f32):
+def valid_scalar_argument(vx: ti.f32, vy: ti.f32):
     v = ti.Vector([vx, vy])
     ...
 
 @ti.kernel
-def error_kernel(v: ti.Vector): # Error: Invalid type annotation
+def valid_matrix_argument(u: ti.i32, v: ti.types.matrix(2, 2, ti.i32)):  # OK: takes 5 argument spaces
+    ...
+
+@ti.kernel
+def error_too_many_arguments(u: ti.i32, v: ti.f32, w: ti.types.vector(7, ti.i32)):  # Error: takes 9 argument spaces
     ...
 ```
 
@@ -78,7 +104,7 @@ def error_kernel(v: ti.Vector): # Error: Invalid type annotation
 
 ### Return value
 
-It is optional for a kernel to have a return value. If specified, it must be a type hinted **scalar** value:
+It is optional for a kernel to have a return value. If specified, it must be a type hinted **scalar/vector/matrix** value:
 
 ```python {2}
 @ti.kernel
@@ -100,21 +126,20 @@ print(my_kernel())  # 128, cast into ti.i32
 
 :::note
 
-For now, a kernel can only have one scalar return value. Returning
-`ti.Matrix`, `ti.Vector` or Python-style tuple is not supported:
+For now, a kernel can only have one return value.
 
 ```python {3,9}
 
 @ti.kernel
-def valid_kernel() -> ti.f32:
+def valid_scalar_return() -> ti.f32:
     return 128.0  # Return 128.0
 
 @ti.kernel
-def error_kernel() -> ti.Matrix:
-    return ti.Matrix([[1, 0], [0, 1]])  # Compilation error
+def valid_matrix_return() -> ti.types.matrix(2, 2, ti.i32):
+    return ti.Matrix([[1, 0], [0, 1]])
 
 @ti.kernel
-def error_kernel() -> (ti.i32, ti.f32):
+def error_multiple_return() -> (ti.i32, ti.f32):
     x = 1
     y = 0.5
     return x, y  # Compilation error
@@ -230,27 +255,6 @@ def my_kernel():
     print(x)  # 25
     ...
 ```
-
-:::note
-
-Unlike kernels, functions **do support vectors or matrices as arguments
-and return values**:
-
-```python {2,6}
-@ti.func
-def sdf(u):  # functions support matrices and vectors as arguments. No type-hints needed.
-    return u.norm() - 1
-
-@ti.kernel
-def render(d_x: ti.f32, d_y: ti.f32):  # Kernels do not support vector/matrix arguments yet.
-    d = ti.Vector([d_x, d_y])
-    p = ti.Vector([0.0, 0.0])
-    t = sdf(p)
-    p += d * t
-    ...
-```
-
-:::
 
 :::caution
 

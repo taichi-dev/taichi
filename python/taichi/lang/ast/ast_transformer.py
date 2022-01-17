@@ -486,7 +486,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Return(ctx, node):
         if not impl.get_runtime().experimental_real_function:
-            if ctx.is_in_non_static():
+            if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
         build_stmt(ctx, node.value)
@@ -1032,7 +1032,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        with ctx.non_static_scope_guard():
+        with ctx.non_static_control_flow_guard():
             impl.begin_frontend_if(node.test.ptr)
             _ti_core.begin_frontend_if_true()
             build_stmts(ctx, node.body)

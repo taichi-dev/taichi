@@ -4,22 +4,45 @@ sidebar_position: 3
 
 # Fields
 
-Fields are **global** variables provided by Taichi. **Global** indicates that fields can be read/written from both the Python scope and the Taichi scope. A field can be considered as a multi-dimensional array of elements, and it can be either **dense** or **sparse**. Similar to a NumPy `ndarray` object, a field has a data type and a shape. Moreover, an element of a field can be a scalar, a **vector**, a **matrix**, or a **struct**.
+Taichi fields are used to store data. In general, field is a **global** data container, can be read/written from both the Python scope and the Taichi scope. 
 
+A field has its data type and shape, can be considered as a multi-dimensional array of elements,
+an element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
+Element of field can be either **dense** or **sparse**, more details at [Sparse computation](/lang/articles/advanced/sparse)
+
+:::note
 The term **field** is borrowed from mathematics and physics. If you
 have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it will be straightforward to understand the fields in Taichi.
-
-To be noticed:
-* Fields are always accessed by indices.
-* Field values are initially zero.
-* Sparse fields are initially inactive.
-
-:::tip
-In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
 :::
 
 ## Scalar fields
+Let's first talk about scalar fields, whose elements are simply scalars.
 
+### Declaration
+* A 0D scalar field is simply a single scalar.
+* A 1D scalar field is a 1D linear array.
+* A 2D scalar field can be used to represent a 2D regular grid of values. For example, a gray-scale image.
+* A 3D scalar field can be used for volumetric data.
+
+``` python
+import taichi as ti
+ti.init(arch=cpu)
+
+single_scalar    = ti.field(ti.i32, shape=())           # 0-D
+linear_array     = ti.field(ti.f32, shape=128)          # 1-D
+gray_scale_image = ti.field(ti.i8,  shape=(512, 512))   # 2-D
+volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
+```
+
+### Access elements of scalar fields
+访问 4种 
+x[None] = 2
+
+To be noticed:
+* Field values are initially zero. #验证?
+
+
+### Example
 A simple example might help you understand scalar fields. Assume you have a rectangular wok on the top of a fire. At each point of the wok, there would be a temperature. The surface of the wok forms a heat field. The width and height of the wok are similar to the `shape` of the Taichi scalar field. The temperature (0-D scalar) is like the element of the Taichi scalar field. We could use the following field to represent the
 heat field on the wok:
 
@@ -27,15 +50,21 @@ heat field on the wok:
 heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 ```
 
-### Access elements of scalar fields
+### debug mode ? 
 - If `x` is a 3D scalar field (`ti.field(dtype=ti.f32, shape=(10, 20, 30)`), access its element with `x[i, j, k]` (`0 <= i < 10, 0 <= j < 20, 0 <= k < 30`).
-- When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
+
 
 :::caution
-Please **always** use indexing to access entries in fields.
+Fields are **always** accessed by indices.
+When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
 :::
 
-## Vector fields
+:::tip
+In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
+:::
+
+
+## Vector fields and Matrix fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represented with:
 ```python
 gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))

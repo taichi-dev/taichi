@@ -316,6 +316,52 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_call_if_is_builtin(node, args, keywords):
+        func = node.func.ptr
+        replace_func = {
+            id(print): impl.ti_print,
+            id(min): ti_ops.ti_min,
+            id(max): ti_ops.ti_max,
+            id(int): impl.ti_int,
+            id(float): impl.ti_float,
+            id(any): ti_ops.ti_any,
+            id(all): ti_ops.ti_all,
+            id(abs): abs,
+            id(pow): pow,
+        }
+        if id(func) in replace_func:
+            node.ptr = replace_func[id(func)](*args, **keywords)
+            return True
+        return False
+
+    @staticmethod
+    def warn_if_is_external_func(ctx, node):
+        func = node.func.ptr
+        if ctx.is_in_static_scope(
+        ):  # allow external function in static scope
+            return
+        if hasattr(func, "_is_taichi_function") or hasattr(
+                func, "_is_wrapped_kernel"):  # taichi func/kernel
+            return
+        if hasattr(func, "is_taichi_class"):  # Matrix/Struct
+            return
+        try:
+            file = inspect.getfile(inspect.getmodule(func))
+        except TypeError:
+            file = None
+        if file and os.path.commonpath([
+                file, package_root
+        ]) == package_root:  # functions inside taichi
+            return
+        name = unparse(node.func).strip()
+        warnings.warn_explicit(
+            f'Calling non-taichi function "{name}". '
+            f'Scope inside the function is not be processed by the Taichi transformer. '
+            f'The function may not work as expected. Proceed with caution! '
+            f'Maybe you can consider turning it into a @ti.func?',
+            UserWarning, ctx.file, node.lineno + ctx.lineno_offset)
+
+    @staticmethod
     def build_Call(ctx, node):
         if ASTTransformer.get_decorator(ctx, node) == 'static':
             with ctx.static_scope_guard():
@@ -340,53 +386,11 @@ class ASTTransformer(Builder):
                 node.func.value.ptr, str) and node.func.attr == 'format':
             args.insert(0, node.func.value.ptr)
             node.ptr = impl.ti_format(*args, **keywords)
-        elif func is print:
-            node.ptr = impl.ti_print(*args, **keywords)
-        elif func is min:
-            node.ptr = ti_ops.ti_min(*args, **keywords)
-        elif func is max:
-            node.ptr = ti_ops.ti_max(*args, **keywords)
-        elif func is int:
-            node.ptr = impl.ti_int(*args, **keywords)
-        elif func is float:
-            node.ptr = impl.ti_float(*args, **keywords)
-        elif func is any:
-            node.ptr = ti_ops.ti_any(*args, **keywords)
-        elif func is all:
-            node.ptr = ti_ops.ti_all(*args, **keywords)
-        else:
-            if ctx.is_in_static_scope(
-            ):  # allow external function in static scope
-                pass
-            elif id(func) in [id(abs),
-                              id(sum),
-                              id(max),
-                              id(min),
-                              id(pow)]:  # supported built-ins
-                pass
-            elif hasattr(func, "_is_taichi_function") or hasattr(
-                    func, "_is_wrapped_kernel"):  # taichi func/kernel
-                pass
-            elif hasattr(func, "is_taichi_class"):  # Matrix/Struct
-                pass
-            else:
-                try:
-                    file = inspect.getfile(inspect.getmodule(func))
-                except TypeError:
-                    file = None
-                if file and os.path.commonpath([
-                        file, package_root
-                ]) == package_root:  # functions inside taichi
-                    pass
-                else:
-                    name = unparse(node.func).strip()
-                    warnings.warn_explicit(
-                        f'Calling non-taichi function "{name}". '
-                        f'Scope inside the function is not be processed by the Taichi transformer. '
-                        f'The function may not work as expected. Proceed with caution! '
-                        f'Maybe you can consider turning it into a @ti.func?',
-                        UserWarning, ctx.file, node.lineno + ctx.lineno_offset)
-            node.ptr = func(*args, **keywords)
+        elif ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+            return node.ptr
+
+        node.ptr = func(*args, **keywords)
+        ASTTransformer.warn_if_is_external_func(ctx, node)
 
         return node.ptr
 

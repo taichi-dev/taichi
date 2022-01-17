@@ -1,6 +1,6 @@
 import itertools
 
-from microbenchmarks._results import Results
+from microbenchmarks._result import Result
 from microbenchmarks._utils import get_ti_arch, tags2name
 
 import taichi as ti
@@ -26,26 +26,8 @@ class BenchmarkPlan:
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
 
-    def _get_func_agrs(self, tags):
-        impl_list = []
-        for item in self.items:
-            for tag in tags:
-                if item.tag_in_item(tag):
-                    impl_list.append(item.impl(tag))
-        return tuple(impl_list)
-
-    def _init_taichi(self, arch, tags):
-        for tag in tags:
-            if Results.init_taichi(arch, tag):
-                return True
-        return False
-
     def set_func(self, func):
         self.func = func
-
-    def _run_func(self, tags: list):
-        return self.func(self.arch, self.basic_repeat_times,
-                         *self._get_func_agrs(tags))
 
     def run(self):
         for case, plan in self.plan.items():
@@ -58,6 +40,20 @@ class BenchmarkPlan:
         rdict = {'results': self.plan, 'info': self.info}
         return rdict
 
-    def print_plan(self):
-        for name in self.plan:
-            print(name)
+    def _get_kwargs(self, tags):
+        kwargs = {}
+        for item in self.items:
+            for tag in tags:
+                if item.tag_in_item(tag):
+                    kwargs[item.name] = (item._items[tag]['impl'])
+        return kwargs
+
+    def _init_taichi(self, arch, tags):
+        for tag in tags:
+            if Result.init_taichi(arch, tag):
+                return True
+        return False
+
+    def _run_func(self, tags: list):
+        return self.func(self.arch, self.basic_repeat_times,
+                         **self._get_kwargs(tags))

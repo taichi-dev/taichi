@@ -544,5 +544,3 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
 
     assert loss[None] == 18.0
     assert x.grad[None] == 36.0
-
-

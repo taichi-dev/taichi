@@ -121,7 +121,6 @@ class Kernel : public Callable {
             const std::string &name = "",
             bool grad = false);
 
- private:
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
   // The closure that, if invoked, lauches the backend kernel (shader)

@@ -469,7 +469,6 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                print(ctx.func.return_type)
                 if id(ctx.func.return_type) in primitive_types.type_ids:
                     _ti_core.create_kernel_exprgroup_return(
                         expr.make_expr_group(

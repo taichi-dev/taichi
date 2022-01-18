@@ -55,7 +55,7 @@ def import_ti_core():
 
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)  # pylint: disable=E1101
-    lib_dir = os.path.join(package_root(), '_lib', 'runtime')
+    lib_dir = os.path.join(package_root, '_lib', 'runtime')
     core.set_lib_dir(locale_encode(lib_dir))
     return core
 
@@ -78,13 +78,12 @@ def is_ci():
     return os.environ.get('TI_CI', '') == '1'
 
 
-def package_root():
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+package_root = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 def get_core_shared_object():
-    directory = os.path.join(package_root(), '_lib')
+    directory = os.path.join(package_root, '_lib')
     return os.path.join(directory, 'libtaichi_core.so')
 
 
@@ -103,7 +102,7 @@ def check_exists(src):
 
 ti_core = import_ti_core()
 
-ti_core.set_python_package_dir(package_root())
+ti_core.set_python_package_dir(package_root)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:

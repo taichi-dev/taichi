@@ -13,3 +13,4 @@ pylint
 requests==2.26
 twine
 wheel
+astunparse

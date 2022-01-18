@@ -43,9 +43,12 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     // Note:
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
+    //  - No atomics operations to the global variables which require gradient
+
     bool qualified = true;
     std::set<AllocaStmt *> touched_allocas;
-    // TODO: remove this abuse since it *gathers nothing*
+    std::set<AtomicOpStmt *> touched_global_atomics;
+    // TODO: remove this abuse since it *gathers nothing* but only visit
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
         for (auto &lane : local_load->src.data) {
@@ -54,9 +57,21 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
         touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
+      // atomics here must be ones applied to global variables
+      else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
+        TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
+        for (const auto &node :
+             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
+          if (node->has_grad()) {
+            touched_global_atomics.insert(atomics);
+            break;
+          }
+        }
+      }
       return false;
     });
-    for (auto alloca : touched_allocas) {
+
+    for (const auto &alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = alloca->parent; b; b = b->parent_block()) {
@@ -70,7 +85,25 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
         break;
       }
     }
-    return qualified;
+
+    bool qualified_atomics = true;
+    for (const auto &atomics : touched_global_atomics) {
+      // Test if the atomics belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = atomics->parent; b; b = b->parent_block()) {
+        if (b == block) {
+          belong_to_this_block = true;
+          break;
+        }
+      }
+      if (belong_to_this_block) {
+        // This block is not an IB since it has atomics operation to global
+        // variables
+        qualified_atomics = false;
+        break;
+      }
+    }
+    return qualified && qualified_atomics;
   }
 
   void visit_loop_body(Block *block) {

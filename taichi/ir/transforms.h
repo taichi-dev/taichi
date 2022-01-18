@@ -47,6 +47,7 @@ void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
+void frontend_type_check(IRNode *root);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
 bool inlining(IRNode *root,

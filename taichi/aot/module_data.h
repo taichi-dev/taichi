@@ -17,8 +17,7 @@ struct CompiledFieldData {
   size_t mem_offset_in_parent{0};
   std::vector<int> shape;
   bool is_scalar{false};
-  int row_num{0};
-  int column_num{0};
+  std::vector<int> element_shape;
 
   TI_IO_DEF(field_name,
             dtype,
@@ -26,8 +25,7 @@ struct CompiledFieldData {
             mem_offset_in_parent,
             shape,
             is_scalar,
-            row_num,
-            column_num);
+            element_shape);
 };
 
 struct CompiledOffloadedTask {
@@ -90,6 +88,12 @@ struct ModuleData {
   std::vector<aot::CompiledFieldData> fields;
 
   size_t root_buffer_size;
+
+  void dump_json(std::string path) {
+    TextSerializer ts;
+    ts.serialize_to_json("aot_data", *this);
+    ts.write_to_file(path);
+  }
 
   TI_IO_DEF(kernels, kernel_tmpls, fields, root_buffer_size);
 };

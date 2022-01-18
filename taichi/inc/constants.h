@@ -27,6 +27,10 @@ constexpr std::size_t taichi_result_buffer_runtime_query_id = 2;
 
 constexpr int taichi_listgen_max_element_size = 1024;
 
+// use for auto mesh_local to determine shared-mem size per block (in bytes)
+// TODO: get this at runtime
+constexpr std::size_t default_shared_mem_size = 65536;
+
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g) {
   union {

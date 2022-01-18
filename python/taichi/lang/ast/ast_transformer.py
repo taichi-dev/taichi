@@ -1,9 +1,14 @@
 import ast
 import collections.abc
+import inspect
+import os
+import warnings
 from collections import ChainMap
+from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
+from taichi._lib.utils import package_root
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import ndrange
@@ -15,6 +20,11 @@ from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types
 
 from taichi import linalg
+
+if version_info < (3, 9):
+    from astunparse import unparse
+else:
+    from ast import unparse
 
 
 class ASTTransformer(Builder):
@@ -199,12 +209,14 @@ class ASTTransformer(Builder):
     def process_generators(ctx, node, now_comp, func, result):
         if now_comp >= len(node.generators):
             return func(ctx, node, result)
-        _iter = build_stmt(ctx, node.generators[now_comp].iter)
+        with ctx.static_scope_guard():
+            _iter = build_stmt(ctx, node.generators[now_comp].iter)
         for value in _iter:
             with ctx.variable_scope_guard():
                 ASTTransformer.build_assign_unpack(
                     ctx, node.generators[now_comp].target, value, True)
-                build_stmts(ctx, node.generators[now_comp].ifs)
+                with ctx.static_scope_guard():
+                    build_stmts(ctx, node.generators[now_comp].ifs)
                 ASTTransformer.process_ifs(ctx, node, now_comp, 0, func,
                                            result)
         return None
@@ -219,13 +231,6 @@ class ASTTransformer(Builder):
             ASTTransformer.process_ifs(ctx, node, now_comp, now_if + 1, func,
                                        result)
 
-        return None
-
-    @staticmethod
-    def build_comprehension(ctx, node):
-        build_stmt(ctx, node.target)
-        build_stmt(ctx, node.iter)
-        build_stmts(ctx, node.ifs)
         return None
 
     @staticmethod
@@ -311,16 +316,60 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_call_if_is_builtin(node, args, keywords):
+        func = node.func.ptr
+        replace_func = {
+            id(print): impl.ti_print,
+            id(min): ti_ops.ti_min,
+            id(max): ti_ops.ti_max,
+            id(int): impl.ti_int,
+            id(float): impl.ti_float,
+            id(any): ti_ops.ti_any,
+            id(all): ti_ops.ti_all,
+            id(abs): abs,
+            id(pow): pow,
+        }
+        if id(func) in replace_func:
+            node.ptr = replace_func[id(func)](*args, **keywords)
+            return True
+        return False
+
+    @staticmethod
+    def warn_if_is_external_func(ctx, node):
+        func = node.func.ptr
+        if ctx.is_in_static_scope():  # allow external function in static scope
+            return
+        if hasattr(func, "_is_taichi_function") or hasattr(
+                func, "_is_wrapped_kernel"):  # taichi func/kernel
+            return
+        if hasattr(func, "is_taichi_class"):  # Matrix/Struct
+            return
+        try:
+            file = inspect.getfile(inspect.getmodule(func))
+        except TypeError:
+            file = None
+        if file and os.path.commonpath(
+            [file, package_root]) == package_root:  # functions inside taichi
+            return
+        name = unparse(node.func).strip()
+        warnings.warn_explicit(
+            f'Calling non-taichi function "{name}". '
+            f'Scope inside the function is not processed by the Taichi AST transformer. '
+            f'The function may not work as expected. Proceed with caution! '
+            f'Maybe you can consider turning it into a @ti.func?', UserWarning,
+            ctx.file, node.lineno + ctx.lineno_offset)
+
+    @staticmethod
     def build_Call(ctx, node):
-        is_in_static_scope_prev = ctx.is_in_static_scope
         if ASTTransformer.get_decorator(ctx, node) == 'static':
-            ctx.is_in_static_scope = True
-
-        build_stmt(ctx, node.func)
-        build_stmts(ctx, node.args)
-        build_stmts(ctx, node.keywords)
-
-        ctx.is_in_static_scope = is_in_static_scope_prev
+            with ctx.static_scope_guard():
+                build_stmt(ctx, node.func)
+                build_stmts(ctx, node.args)
+                build_stmts(ctx, node.keywords)
+        else:
+            build_stmt(ctx, node.func)
+            build_stmts(ctx, node.args)
+            build_stmts(ctx, node.keywords)
 
         args = []
         for arg in node.args:
@@ -329,34 +378,17 @@ class ASTTransformer(Builder):
             else:
                 args.append(arg.ptr)
         keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))
+        func = node.func.ptr
 
-        if isinstance(node.func, ast.Attribute):
-            attr_name = node.func.attr
-            if attr_name == 'format' and isinstance(node.func.value.ptr, str):
-                args.insert(0, node.func.value.ptr)
-                node.ptr = impl.ti_format(*args, **keywords)
-            else:
-                node.ptr = node.func.ptr(*args, **keywords)
-        elif isinstance(node.func, ast.Name):
-            func_name = node.func.id
-            if func_name == 'print':
-                node.ptr = impl.ti_print(*args, **keywords)
-            elif func_name == 'min':
-                node.ptr = ti_ops.ti_min(*args, **keywords)
-            elif func_name == 'max':
-                node.ptr = ti_ops.ti_max(*args, **keywords)
-            elif func_name == 'int':
-                node.ptr = impl.ti_int(*args, **keywords)
-            elif func_name == 'float':
-                node.ptr = impl.ti_float(*args, **keywords)
-            elif func_name == 'any':
-                node.ptr = ti_ops.ti_any(*args, **keywords)
-            elif func_name == 'all':
-                node.ptr = ti_ops.ti_all(*args, **keywords)
-            else:
-                node.ptr = node.func.ptr(*args, **keywords)
-        else:
-            node.ptr = node.func.ptr(*args, **keywords)
+        if isinstance(node.func, ast.Attribute) and isinstance(
+                node.func.value.ptr, str) and node.func.attr == 'format':
+            args.insert(0, node.func.value.ptr)
+            node.ptr = impl.ti_format(*args, **keywords)
+        elif ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+            return node.ptr
+
+        node.ptr = func(*args, **keywords)
+        ASTTransformer.warn_if_is_external_func(ctx, node)
 
         return node.ptr
 
@@ -456,7 +488,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Return(ctx, node):
         if not impl.get_runtime().experimental_real_function:
-            if ctx.is_in_non_static():
+            if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
         build_stmt(ctx, node.value)
@@ -604,7 +636,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_BoolOp(ctx, node):
         build_stmts(ctx, node.values)
-        if ctx.is_in_static_scope:
+        if ctx.is_in_static_scope():
             ops = {
                 ast.And: ASTTransformer.build_static_short_circuit_and,
                 ast.Or: ASTTransformer.build_static_short_circuit_or,
@@ -640,7 +672,7 @@ class ASTTransformer(Builder):
             ast.In: lambda l, r: l in r,
             ast.NotIn: lambda l, r: l not in r,
         }
-        if ctx.is_in_static_scope:
+        if ctx.is_in_static_scope():
             ops = {**ops, **ops_static}
         operands = [node.left.ptr
                     ] + [comparator.ptr for comparator in node.comparators]
@@ -1002,7 +1034,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        with ctx.non_static_scope_guard():
+        with ctx.non_static_control_flow_guard():
             impl.begin_frontend_if(node.test.ptr)
             _ti_core.begin_frontend_if_true()
             build_stmts(ctx, node.body)

@@ -159,9 +159,13 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   // matter too much for now.
   TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
               "AOT: only supports dense field");
+  std::vector<int> element_shape;
+  if (!is_scalar) {
+    element_shape = {row_num, column_num};
+  }
   aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
                               get_snode_base_address(rep_snode), shape,
-                              is_scalar, row_num, column_num});
+                              is_scalar, element_shape});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

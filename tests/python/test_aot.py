@@ -65,6 +65,20 @@ def test_save():
         for i, j in density:
             density[i, j] = 1
 
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+        m = ti.aot.Module(ti.cfg.arch)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            json.load(json_file)
+
+
+@ti.test(arch=ti.opengl)
+def test_save_template_kernel():
+    density = ti.field(float, shape=(4, 4))
+
     @ti.kernel
     def foo(n: ti.template()):
         for i in range(n):
@@ -74,7 +88,6 @@ def test_save():
         # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
         m = ti.aot.Module(ti.cfg.arch)
         m.add_field('density', density)
-        m.add_kernel(init)
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)

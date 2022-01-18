@@ -4,13 +4,13 @@ sidebar_position: 1
 
 # Kernels and functions
 
-Taichi has two types of functions: Taichi kernel, and Taichi functions. 
+Taichi has two types of functions: Taichi kernel, and Taichi functions.
 
-Scope inside Taichi kernels and Taichi functions is called Taichi scope, and scope outside it is called Python scope. 
+Scope inside Taichi kernels and Taichi functions is called Taichi scope, and scope outside it is called Python scope.
 
 A Taichi kernel is the entrypoint of a Taichi program, and it is similar to `__global__` function in CUDA. It can only be called inside Python scope.
 
-A Taichi function can only be called inside Taichi scope, and it is similar to `__device__` function in CUDA. 
+A Taichi function can only be called inside Taichi scope, and it is similar to `__device__` function in CUDA.
 
 Major differences of Taichi kernels and Taichi functions are listed in the table below.
 
@@ -20,8 +20,9 @@ Major differences of Taichi kernels and Taichi functions are listed in the table
 | Argument type annotation | Mandatory | Recommended |
 | Return type annotation | Mandatory| Recommended |
 | Return value | Scalar/Vector/Matrix | Arbitrary |
-| Number of arguments | Up to 8 (for many backends) | Unlimited |
+| Number of total elements in arguments | Up to 64 | Unlimited |
 | Number of return values in a return statement | 1 | Unlimited |
+| Number of elements in return value | Up to 30 | Unlimited |
 
 
 
@@ -80,10 +81,8 @@ my_kernel(24, 3.2)  # prints: 27.2
 ```
 
 :::note
-For OpenGL, Vulkan, and CC backends, the kernel has 8 argument spaces.
-
-Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments. 
-A scalar argument occupies 1 argument space, and a `ti.Matrix` or`ti.Vector` occupies argument spaces equal to the number of elements inside it.
+Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments. The total number of elements in kernel arguments must not exceed 64.
+The element number of a scalar argument is 1, and the element number of a `ti.Matrix` or`ti.Vector` is the number of elements inside it.
 
 ```python {2,7,11}
 @ti.kernel
@@ -92,11 +91,11 @@ def valid_scalar_argument(vx: ti.f32, vy: ti.f32):
     ...
 
 @ti.kernel
-def valid_matrix_argument(u: ti.i32, v: ti.types.matrix(2, 2, ti.i32)):  # OK: takes 5 argument spaces
+def valid_matrix_argument(u: ti.i32, v: ti.types.matrix(2, 2, ti.i32)):  # OK: has 5 elements in total
     ...
 
 @ti.kernel
-def error_too_many_arguments(u: ti.i32, v: ti.f32, w: ti.types.vector(7, ti.i32)):  # Error: takes 9 argument spaces
+def error_too_many_arguments(u: ti.i32, v: ti.i64, w: ti.types.matrix(7, 9, ti.i64)):  # Error: has 65 elements in total
     ...
 ```
 
@@ -126,7 +125,7 @@ print(my_kernel())  # 128, cast into ti.i32
 
 :::note
 
-For now, a kernel can only have one return value.
+For now, a kernel can only have one return value, and the number of elements in the return value must not exceed 30.
 
 ```python {3,9}
 

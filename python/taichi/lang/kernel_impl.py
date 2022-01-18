@@ -300,7 +300,7 @@ class TaichiCallableTemplateMapper:
     def extract(self, args):
         extracted = []
         for arg, anno in zip(args, self.annotations):
-            if isinstance(anno,(any_arr, template)):
+            if isinstance(anno, (any_arr, template)):
                 extracted.append(self.extract_arg(arg, anno))
         return tuple(extracted)
 

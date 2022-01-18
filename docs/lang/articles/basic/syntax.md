@@ -20,9 +20,9 @@ Major differences of Taichi kernels and Taichi functions are listed in the table
 | Argument type annotation | Mandatory | Recommended |
 | Return type annotation | Mandatory| Recommended |
 | Return value | Scalar/Vector/Matrix | Arbitrary |
-| Number of total elements in arguments | Up to 64 | Unlimited |
-| Number of return values in a return statement | 1 | Unlimited |
-| Number of elements in return value | Up to 30 | Unlimited |
+| Max number of total elements in arguments | 8 (for OpenGL and CC) or 64 (other) | Unlimited |
+| Max number of return values in a return statement | 1 | Unlimited |
+| Max number of elements in return value | 30 | Unlimited |
 
 
 

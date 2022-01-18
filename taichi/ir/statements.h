@@ -873,6 +873,7 @@ class ReturnStmt : public Stmt {
   explicit ReturnStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
+
   explicit ReturnStmt(Stmt *value) : values({value}) {
     TI_STMT_REG_FIELDS;
   }

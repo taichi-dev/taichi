@@ -296,16 +296,12 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
-        if anno is int:
-            return impl.get_runtime().default_ip,
-        if anno is float:
-            return impl.get_runtime().default_fp,
-        return anno,
 
     def extract(self, args):
         extracted = []
         for arg, anno in zip(args, self.annotations):
-            extracted.append(self.extract_arg(arg, anno))
+            if isinstance(anno,(any_arr, template)):
+                extracted.append(self.extract_arg(arg, anno))
         return tuple(extracted)
 
     def lookup(self, args):

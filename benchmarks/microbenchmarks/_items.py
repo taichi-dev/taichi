@@ -13,7 +13,7 @@ class BenchmarkItem:
         return self._items  #dict
 
     def get_tags(self):
-        return [key for key in self._items]
+        return self._items.keys()
 
     def items(self):
         return self._items.items()  #dict.items()

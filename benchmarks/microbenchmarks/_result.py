@@ -24,6 +24,5 @@ class Result(BenchmarkItem):
     def init_taichi(arch: str, result_tag: str):
         if result_tag == 'kernel_elapsed_time_ms':
             ti.init(kernel_profiler=True, arch=get_ti_arch(arch))
-        else:
-            return False
-        return True
+            return True
+        return False

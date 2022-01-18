@@ -926,10 +926,6 @@ void export_lang(py::module &m) {
               dt, total_dim, shape);
         });
 
-  m.def("decl_tensor_type", [&](std::vector<int> shape, DataType element) {
-    return TypeFactory::create_tensor_type(shape, element);
-  });
-
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);
   });

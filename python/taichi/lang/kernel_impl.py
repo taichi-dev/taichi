@@ -296,7 +296,10 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
-        return anno.to_string(),
+        if id(type(arg)) in primitive_types:
+            return anno.to_string()
+        else:
+            return type(arg).__name__,
 
     def extract(self, args):
         extracted = []

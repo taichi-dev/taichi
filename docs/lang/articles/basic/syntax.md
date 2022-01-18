@@ -4,15 +4,15 @@ sidebar_position: 1
 
 # Kernels and functions
 
-Taichi has two types of functions: Taichi kernel, and Taichi functions.
+Taichi has two types of functions: Taichi kernels, and Taichi functions.
 
-Scope inside Taichi kernels and Taichi functions is called Taichi scope, and scope outside it is called Python scope.
+Scope inside Taichi kernels and Taichi functions is called Taichi scope, and scope outside them is called Python scope.
 
-A Taichi kernel is the entrypoint of a Taichi program, and it is similar to `__global__` function in CUDA. It can only be called inside Python scope.
+A Taichi kernel is the entrypoint of a Taichi program, and it is similar to a `__global__` function in CUDA. It can only be called inside Python scope.
 
-A Taichi function can only be called inside Taichi scope, and it is similar to `__device__` function in CUDA.
+A Taichi function can only be called inside Taichi scope, and it is similar to a `__device__` function in CUDA.
 
-Major differences of Taichi kernels and Taichi functions are listed in the table below.
+Major differences between Taichi kernels and Taichi functions are listed in the table below.
 
 | | Taichi kernels | Taichi functions |
 | :--- | :---: | :---: |
@@ -22,7 +22,7 @@ Major differences of Taichi kernels and Taichi functions are listed in the table
 | Return value | Scalar/Vector/Matrix | Arbitrary |
 | Max number of total elements in arguments | 8 (for OpenGL and CC) or 64 (other) | Unlimited |
 | Max number of return values in a return statement | 1 | Unlimited |
-| Max number of elements in return value | 30 | Unlimited |
+| Max number of total elements in return values | 30 | Unlimited |
 
 
 
@@ -83,7 +83,7 @@ my_kernel(24, 3.2)  # prints: 27.2
 :::note
 Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments.
 The total number of elements in kernel arguments must not exceed 8 on OpenGL and CC backends, or 64 on other backends.
-The element number of a scalar argument is 1, and the element number of a `ti.Matrix` or`ti.Vector` is the number of elements inside it.
+The number of elements in a scalar argument is 1, and the number of elements in a `ti.Matrix` or`ti.Vector` is the number of elements inside it.
 
 ```python {2,7,11}
 @ti.kernel

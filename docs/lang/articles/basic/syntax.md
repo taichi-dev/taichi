@@ -127,8 +127,7 @@ print(my_kernel())  # 128, cast into ti.i32
 
 For now, a kernel can only have one return value, and the number of elements in the return value must not exceed 30.
 
-```python {3,9}
-
+```python {2,6,10}
 @ti.kernel
 def valid_scalar_return() -> ti.f32:
     return 128.0  # Return 128.0

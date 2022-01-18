@@ -1075,7 +1075,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(
-        stmt->values.size() <= 30 &&
+        stmt->values.size() <= taichi_max_num_ret_value &&
         "ERROR: Return list's size must less than or equal to 30 currently!");
     auto intermediate_bits = 0;
     if (stmt->values.size() == 1) {

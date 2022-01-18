@@ -19,11 +19,11 @@ struct RuntimeContext {
   // - primitive_types
   // - raw ptrs: for external array, or torch-based ndarray
   // - DeviceAllocation*: for taichi ndaray
-  uint64 args[taichi_max_num_args_total];
+  uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;
   // |is_device_allocation| is true iff args[i] is a DeviceAllocation*.
-  bool is_device_allocation[taichi_max_num_args_total]{false};
+  bool is_device_allocation[taichi_max_num_args]{false};
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 

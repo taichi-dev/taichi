@@ -1,4 +1,4 @@
-from microbenchmarks._utils import _size2tag
+from microbenchmarks._utils import size2tag
 
 import taichi as ti
 
@@ -7,10 +7,10 @@ class BenchmarkItem:
     name = 'item'
 
     def __init__(self):
-        self._items = {}  # {tag: xxx, ...}
+        self._items = {}  # {'tag': impl, ...}
 
     def get(self):
-        return self._items  #dict
+        return self._items
 
     def get_tags(self):
         return self._items.keys()
@@ -44,4 +44,4 @@ class DataSize(BenchmarkItem):
         self._items = {}
         for i in range(1, 10):  # [4KB,16KB...256MB]
             size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
-            self._items[_size2tag(size_bytes)] = size_bytes
+            self._items[size2tag(size_bytes)] = size_bytes

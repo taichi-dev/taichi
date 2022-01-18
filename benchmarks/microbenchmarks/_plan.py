@@ -22,7 +22,7 @@ class BenchmarkPlan:
             self.items.append(item())
             items_list.append(item().get_tags())
             self.info[item.name] = item().get_tags()
-        case_list = list(itertools.product(*items_list))  #items generate case
+        case_list = list(itertools.product(*items_list))  #items generate cases
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
 
@@ -42,10 +42,9 @@ class BenchmarkPlan:
 
     def _get_kwargs(self, tags):
         kwargs = {}
-        for item in self.items:
-            for tag in tags:
-                if item.tag_in_item(tag):
-                    kwargs[item.name] = item.impl(tag)
+        tags = tags[1:]  # tags = [case_name, item1_tag, item2_tag, ...]
+        for item, tag in zip(self.items, tags):
+            kwargs[item.name] = item.impl(tag)
         return kwargs
 
     def _init_taichi(self, arch, tags):

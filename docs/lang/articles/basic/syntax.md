@@ -81,7 +81,8 @@ my_kernel(24, 3.2)  # prints: 27.2
 ```
 
 :::note
-Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments. The total number of elements in kernel arguments must not exceed 64.
+Taichi supports scalars, `ti.Matrix` and`ti.Vector` as kernel arguments. 
+The total number of elements in kernel arguments must not exceed 8 on OpenGL and CC backends, or 64 on other backends.
 The element number of a scalar argument is 1, and the element number of a `ti.Matrix` or`ti.Vector` is the number of elements inside it.
 
 ```python {2,7,11}

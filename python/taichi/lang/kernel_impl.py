@@ -313,7 +313,6 @@ class TaichiCallableTemplateMapper:
             )
 
         key = self.extract(args)
-        print(key)
         if key not in self.mapping:
             count = len(self.mapping)
             self.mapping[key] = count
@@ -649,8 +648,6 @@ class Kernel:
         return has_array
 
     def ensure_compiled(self, *args):
-        print(self.func)
-        print(args)
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
         self.materialize(key=key, args=args, arg_features=arg_features)

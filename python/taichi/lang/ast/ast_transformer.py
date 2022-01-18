@@ -1,6 +1,5 @@
 import ast
 import collections.abc
-import itertools
 import inspect
 import os
 import warnings

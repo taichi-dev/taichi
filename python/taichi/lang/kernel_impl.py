@@ -14,7 +14,7 @@ from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import Matrix, MatrixType
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder

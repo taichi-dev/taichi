@@ -35,10 +35,4 @@ std::unique_ptr<JITSession> JITSession::create(LlvmProgramImpl *llvm_prog,
 #endif
 }
 
-#ifdef TI_WITH_LLVM
-llvm::DataLayout JITSession::get_data_layout() {
-  TI_NOT_IMPLEMENTED
-}
-#endif
-
 TLANG_NAMESPACE_END

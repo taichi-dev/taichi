@@ -296,9 +296,11 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
-        if id(type(arg)) in primitive_types.type_ids:
-            return anno.to_string()
-        return type(arg).__name__,
+        if anno is int:
+            return impl.get_runtime().default_ip,
+        if anno is float:
+            return impl.get_runtime().default_fp,
+        return anno,
 
     def extract(self, args):
         extracted = []
@@ -313,7 +315,6 @@ class TaichiCallableTemplateMapper:
             )
 
         key = self.extract(args)
-        print(key)
         if key not in self.mapping:
             count = len(self.mapping)
             self.mapping[key] = count
@@ -649,8 +650,6 @@ class Kernel:
         return has_array
 
     def ensure_compiled(self, *args):
-        print(self.func)
-        print(args)
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
         self.materialize(key=key, args=args, arg_features=arg_features)

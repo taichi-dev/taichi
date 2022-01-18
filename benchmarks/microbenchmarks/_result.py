@@ -14,8 +14,8 @@ def kernel_executor(repeat, func, *args):
     return ti.kernel_profiler_total_time() * 1000 / repeat  #ms
 
 
-class Result(BenchmarkItem):
-    name = 'result'
+class ResultType(BenchmarkItem):
+    name = 'get_result'
 
     def __init__(self):
         self._items = {'kernel_elapsed_time_ms': kernel_executor}

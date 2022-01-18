@@ -1,6 +1,6 @@
 import itertools
 
-from microbenchmarks._result import Result
+from microbenchmarks._result import ResultType
 from microbenchmarks._utils import get_ti_arch, tags2name
 
 import taichi as ti
@@ -17,11 +17,11 @@ class BenchmarkPlan:
         self.func = None
 
     def create_plan(self, *items):
+        self.items = list(items)
         items_list = [[self.name]]
-        for item in items:
-            self.items.append(item())
-            items_list.append(item().get_tags())
-            self.info[item.name] = item().get_tags()
+        for item in self.items:
+            items_list.append(item.get_tags())
+            self.info[item.name] = item.get_tags()
         case_list = list(itertools.product(*items_list))  #items generate cases
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
@@ -49,7 +49,7 @@ class BenchmarkPlan:
 
     def _init_taichi(self, arch, tags):
         for tag in tags:
-            if Result.init_taichi(arch, tag):
+            if ResultType.init_taichi(arch, tag):
                 return True
         return False
 

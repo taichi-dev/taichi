@@ -12,59 +12,72 @@ The term **field** is borrowed from mathematics and physics. If you
 have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it will be straightforward to understand the fields in Taichi.
 :::
 
-## Scalar field
-We introduce fields through this very basic field type, whose elements are simply scalars.
-
-### Declaration
+## Scalar fields
+We start introducing fields from this very basic type, whose elements are simply scalars.
 * A 0D scalar field is a single scalar.
 * A 1D scalar field is a 1D linear array.
 * A 2D scalar field can be used to represent a 2D regular grid of values. For example, a gray-scale image.
 * A 3D scalar field can be used for volumetric data.
 
+### Declaration
+
 ``` python
 import taichi as ti
 ti.init(arch=cpu)
 
-single_scalar    = ti.field(ti.i32, shape=())           # 0-D
+gravity          = ti.field(ti.i32, shape=())           # 0-D
 linear_array     = ti.field(ti.f32, shape=128)          # 1-D
-gray_scale_image = ti.field(ti.i8,  shape=(512, 512))   # 2-D
+gray_scale_image = ti.field(ti.i8,  shape=(640, 480))   # 2-D
 volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 ```
 
 ### Access elements of scalar fields
 
 ``` python
-single_scalar[None] = 2
-single_scalar[None] = 2
-single_scalar[None] = 2
-single_scalar[None] = 2
+gravity[None]          = 9.8
+linear_array[0]        = 1.0
+gray_scale_image[1,2]  = 255
+volumetric_data[3,3,3] = 2.0
+```
+
+### Meta data
+
+``` python
+linear_array.shape     # (128,)
+volumetric_data.dtype  # ti.f32
 ```
 
 To be noticed:
 * Field values are initially zero.
-
+* Fields are **always** accessed by indices. When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`.
 
 ### Example
-A simple example might help you understand scalar fields. Assume you have a rectangular wok on the top of a fire. At each point of the wok, there would be a temperature. The surface of the wok forms a heat field. The width and height of the wok are similar to the `shape` of the Taichi scalar field. The temperature (0-D scalar) is like the element of the Taichi scalar field. We could use the following field to represent the
-heat field on the wok:
+A simple example might help you understand scalar fields. 
+Assume you have a gray-scale image. At each point of the image, there would be a pixel value. The width and height of the image are similar to the `shape` of the Taichi scalar field. The pixel value (0-D scalar) is like the element of the Taichi scalar field. We could use the following code to generate gray-scale image with random pixel values:
 
 ``` python
-heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
+import taichi as ti
+
+ti.init(arch=ti.cpu)
+width, height = 640,480
+gray_scale_image = ti.field(dtype=ti.f32, shape=(width, height))
+
+@ti.kernel
+def fill_image():
+    for i,j in gray_scale_image:
+      gray_scale_image[i,j] = ti.random()
+
+fill_image()
+
+gui = ti.GUI('gray-scale image with random values', (width, height))
+while gui.running:
+    gui.set_image(gray_scale_image)
+    gui.show()
 ```
-
-### debug mode ? 
-- If `x` is a 3D scalar field (`ti.field(dtype=ti.f32, shape=(10, 20, 30)`), access its element with `x[i, j, k]` (`0 <= i < 10, 0 <= j < 20, 0 <= k < 30`).
-
-
-:::caution
-Fields are **always** accessed by indices.
-When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
-:::
 
 :::tip
 In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
 :::
-
 
 ## Vector fields and Matrix fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represented with:

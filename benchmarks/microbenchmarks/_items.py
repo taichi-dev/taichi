@@ -13,13 +13,7 @@ class BenchmarkItem:
         return self._items
 
     def get_tags(self):
-        return self._items.keys()
-
-    def items(self):
-        return self._items.items()  #dict.items()
-
-    def tag_in_item(self, tag: str):
-        return tag in self._items
+        return list(self._items.keys())
 
     def impl(self, tag: str):
         return self._items[tag]

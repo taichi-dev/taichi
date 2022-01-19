@@ -8,64 +8,45 @@ Data types in Taichi consist of _primitive types_ and _compound types_. Primitiv
 
 ## Primitive types
 
-Taichi supports common numerical data types. Each type is denoted as a
-character indicating its _category_ and a number of _precision bits_,
-e.g., `i32` and `f64`.
+Taichi supports common numerical data types as its primitive types. Each type is denoted as a
+character indicating its _category_ followed by a number indicating its _precision bits_. The
+_category_ can be either `i` (for signed integers), `u` (for unsigned integers), or `f` (for floating-point numbers). The _precision bits_ can be either `8`, `16`, `32`, or `64`,
+which represents the number of **bits** for storing the data. For example, the two most commonly used types:
 
-The _category_ can be one of:
+- `i32` represents a 32-bit signed integer;
+- `f32` represents a 32-bit floating-point number.
 
-- `i` for signed integers, e.g. 24, -32
-- `u` for unsigned integers, e.g. 128, 256
-- `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
+### Supported primitive types on each backend
 
-The _digital number_ can be either `8`, `16`, `32`, or `64`.
-It represents how many **bits** are used in storing the data. The larger
-the bit number is, the higher the precision is.
+| type | CPU              | CUDA             | OpenGL               | Metal            |  Vulkan              |
+| ---- | ---------------- | ---------------- | -------------------- | ---------------- | -------------------- |
+| i8   |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| i16  |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| i32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
+| i64  |:heavy_check_mark:|:heavy_check_mark:|:large_orange_diamond:|:x:               |:large_orange_diamond:|
+| u8   |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| u16  |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
+| u32  |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:heavy_check_mark:|:heavy_check_mark:    |
+| u64  |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
+| f16  |:heavy_check_mark:|:heavy_check_mark:|:x:                   |:x:               |:heavy_check_mark:    |
+| f32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
+| f64  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
 
-For example, the two most commonly used types:
+(:large_orange_diamond: Requiring extensions of the backend)
 
-- `i32` represents a 32-bit signed integer.
-- `f32` represents a 32-bit floating point number.
+### Default types for integers and floating-point numbers
 
-### Supported primitive types
-
-The supported primitive types in Taichi on each backend are:
-
-
-| type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
-| ---- | -------- | ------- | ----- | -------- |
-| i8   |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
-| i16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
-| i32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
-| i64  |:heavy_check_mark:|:large_orange_diamond:|:x:               |:large_orange_diamond:|
-| u8   |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
-| u16  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:large_orange_diamond:|
-| u32  |:heavy_check_mark:|:x:                   |:heavy_check_mark:|:heavy_check_mark:    |
-| u64  |:heavy_check_mark:|:x:                   |:x:               |:large_orange_diamond:|
-| f16  |:heavy_check_mark:|:x:                   |:x:               |:heavy_check_mark:    |
-| f32  |:heavy_check_mark:|:heavy_check_mark:    |:heavy_check_mark:|:heavy_check_mark:    |
-| f64  |:heavy_check_mark:|:heavy_check_mark:    |:x:               |:large_orange_diamond:|
-
-(:large_orange_diamond: Requiring extension.)
-
-### Default precisions
-
-By default, all numerical literals have 32-bit precisions. For example,
-`42` has type `ti.i32` and `3.14` has type `ti.f32`.
-
-Default integer and float-point precisions (`default_ip` and
-`default_fp`) can be specified when initializing Taichi:
+An integer literal, e.g., `42`, has default type `ti.i32`, while a floating-point literal,
+e.g., `3.14`, has default type `ti.f32`. This behavior can be changed by explicitly specifying
+default types when initializing Taichi:
 
 ```python
-ti.init(default_fp=ti.f32)
-ti.init(default_fp=ti.f64)
-
-ti.init(default_ip=ti.i32)
-ti.init(default_ip=ti.i64)
+ti.init(default_ip=ti.i64)  # set default integer type to ti.i64
+ti.init(default_fp=ti.f64)  # set default floating-point type to ti.f64
 ```
 
-You can use `float` or `int` as the alias for the default precision
-when defining a type. For example:
+In addition, you can use `int` as an alias for the default integer type, and `float` as an alias
+for the default floating-point type:
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f32)
@@ -78,72 +59,27 @@ y = ti.field(ti.i64, 5)
 
 def func(a: float) -> int:
     ...
-
 # is equivalent to:
 def func(a: ti.f32) -> ti.i64:
     ...
 ```
 
-### Type promotion
+### Explicit type casting
 
-When Taichi performs binary operations on different types, the result is a
-promoted type. This is known as [type promotion](https://en.wikipedia.org/wiki/Type_conversion#Type_promotion).
-Following the C programming
-language convention, Taichi always chooses the more precise type to contain the
-result value. For example:
-
-- `i32 + f32 = f32` (integer + float = float)
-- `i32 + i64 = i64` (less-bits + more-bits = more-bits)
-
-### Type cast
-
-When using Taichi, you may encounter situations when certain type of data needs
-to be assigned to another type. In this case, type casts are needed. Here, we
-list four use cases commonly seen during Taichi programming, namely implicit
-casts, explicit casts, casting vectors and matrices, and bit-casts.
+Just like programming in other languages, you may encounter situations where you have a certain
+type of data, but it is not feasible for the assignment or calculation you want to perform. In this
+case, you can do *explicit type casting*. There are two kinds of explicit type casting in Taichi,
+namely `ti.cast` and `ti.bit_cast`.
 
 :::caution
-In Taichi, the type of a variable is **determined on its initialization**.
-All data types are static in the **Taichi scope**. (Static here means the type
-is known at compile time. Based on this information, the compiler can decide
-whether the performed action is legal or not.)
+In Taichi-scope, the type of a variable is **static** and **determined on its initialization**.
+That is, you can never change the type of a variable. The compiler relies on this compile-time
+information to check the validity of expressions in Taichi programs.
 :::
 
-#### Implicit cast
+#### `ti.cast`
 
-When a _low-precision_ variable is assigned to a _high-precision_
-variable, it is implicitly promoted to the _high-precision_ type
-without any warning:
-
-```python {4}
-@ti.kernel
-def foo():
-    a = 3.14
-    a = 1
-    print(a)  # 1.0
-```
-In this example, variable `a` is initialized with `float` type. On the next line, the assign statement will cast `1` from `int` type to `float` type implicitly.
-
-
-
-When a _high-precision_ variable is assigned to a _low-precision_ type,
-it will be implicitly down-cast into the _low-precision_ type and Taichi
-will raise a warning:
-
-```python {4}
-@ti.kernel
-def foo():
-    a = 1
-    a = 3.14
-    print(a)  # 3
-```
-In this example, variable `a` is initialized with an `int` type. On the next line, the assignment statement casts `3.14` from `float` to `int` implicitly.
-
-
-#### Explicit casts
-
-You may use `ti.cast` to explicitly cast scalar values between different
-types:
+`ti.cast()` is used for normal type casting as in other programming languages:
 
 ```python {4-5}
 @ti.kernel
@@ -153,8 +89,8 @@ def foo():
     c = ti.cast(b, ti.f32)  # 3.0
 ```
 
-Equivalently, use `int()` and `float()` to convert values to float-point
-or integer types of default precisions:
+You can also use `int()` and `float()` to convert values to default integer and floating-point
+types:
 
 ```python {4-5}
 @ti.kernel
@@ -164,37 +100,70 @@ def foo():
     c = float(b)  # 3.0
 ```
 
-#### Casting vectors and matrices
+#### `ti.bit_cast`
 
-Type casts applied to vectors/matrices are element-wise:
-
-```python {4,6}
-@ti.kernel
-def foo():
-    u = ti.Vector([2.3, 4.7])
-    v = int(u)              # ti.Vector([2, 4])
-    # If you are using ti.i32 as default_ip, this is equivalent to:
-    v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
-```
-
-#### Bit-casts
-
-Use `ti.bit_cast` to bit-cast a value into another data type. The
-underlying bits will be preserved in this cast. The new type must have
-the same width as the the old type. For example, bit-casting `i32` to
-`f64` is not allowed. Use this operation with caution.
+Use `ti.bit_cast` to cast a value into another type **with its underlying bits preserved**:
 
 ```python {4-5}
 @ti.kernel
 def foo():
     a = 3.14
-    b = ti.bit_cast(a, ti.i32) # 1078523331
-    c = ti.bit_cast(b, ti.f32) # 3.14
+    b = ti.bit_cast(a, ti.i32)  # 1078523331
+    c = ti.bit_cast(b, ti.f32)  # 3.14
 ```
 
+Note that the new type must have the same precision bits as the old type (`i32`->`f64` is not
+allowed). Use this operation with caution.
+
 :::note
-For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
+`ti.bit_cast` is equivalent to `reinterpret_cast` in C++.
 :::
+
+### Implicit type casting
+
+When you accidentally use a value in a place where a different type is expected, implicit type
+casting is triggered for the following cases.
+
+:::caution
+Relying on implicit type casting is bad practice and one major source of bugs.
+:::
+
+#### Implicit type casting in binary operations
+
+Following the [implicit conversion rules] of the C programming language, Taichi implicitly casts
+binary operation operands into a *common type* if they have different types. Some simple but most
+commonly used rules are listed below:
+
+- `i32 + f32 = f32` (int + float = float)
+- `i32 + i64 = i64` (low precision bits + high precision bits = high precision bits)
+
+#### Implicit type casting in assignments
+
+When a value is assigned to a variable with a different type, the value is implicitly cast into that
+type. If the type of the variable differs from the common type of the variable and the value, a
+warning about losing precisions is raised.
+
+In the following example, variable `a` is initialized with `float` type. On the next line, the
+assignment casts `1` from `int` type to `float` type implicitly without any warning:
+
+```python {4}
+@ti.kernel
+def foo():
+    a = 3.14
+    a = 1
+    print(a)  # 1.0
+```
+
+In the following example, variable `a` is initialized with `int` type. On the next line, the
+assignment casts `3.14` from `float` to `int` implicitly with a warning.
+
+```python {4}
+@ti.kernel
+def foo():
+    a = 1
+    a = 3.14
+    print(a)  # 3
+```
 
 ## Compound types
 
@@ -235,3 +204,16 @@ vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform impli
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```
 In this example, we define five local variables, each of a different type. In the definition statement of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.
+
+### Type casting on vectors and matrices
+
+Type casting on vectors/matrices is element-wise:
+
+```python {4,6}
+@ti.kernel
+def foo():
+    u = ti.Vector([2.3, 4.7])
+    v = int(u)              # ti.Vector([2, 4])
+    # If you are using ti.i32 as default_ip, this is equivalent to:
+    v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
+```

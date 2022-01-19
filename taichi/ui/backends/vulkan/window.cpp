@@ -1,21 +1,24 @@
 #include "taichi/ui/backends/vulkan/window.h"
+#include "taichi/program/callable.h"
+
+using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-Window::Window(const AppConfig &config) : WindowBase(config) {
+Window::Window(Program *prog, const AppConfig &config) : WindowBase(config) {
   init(config);
 }
 
-void Window::init(const AppConfig &config) {
+void Window::init(Program *prog, const AppConfig &config) {
   if (config_.show_window) {
     glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
   }
 
   renderer_ = std::make_unique<Renderer>();
   renderer_->init(glfw_window_, config);
-  canvas_ = std::make_unique<Canvas>(renderer_.get());
+  canvas_ = std::make_unique<Canvas>(prog, renderer_.get());
   gui_ = std::make_unique<Gui>(&renderer_->app_context(),
                                &renderer_->swap_chain(), glfw_window_);
 

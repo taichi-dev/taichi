@@ -30,6 +30,12 @@
 #include "renderables/circles.h"
 #include "renderables/lines.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -43,17 +49,17 @@ class Renderer {
 
   void set_background_color(const glm::vec3 &color);
 
-  void set_image(const SetImageInfo &info);
+  void set_image(lang::Program *prog, const SetImageInfo &info);
 
-  void triangles(const TrianglesInfo &info);
+  void triangles(lang::Program *prog, const TrianglesInfo &info);
 
-  void circles(const CirclesInfo &info);
+  void circles(lang::Program *prog, const CirclesInfo &info);
 
-  void lines(const LinesInfo &info);
+  void lines(lang::Program *prog, const LinesInfo &info);
 
-  void mesh(const MeshInfo &info, Scene *scene);
+  void mesh(lang::Program *prog, const MeshInfo &info, Scene *scene);
 
-  void particles(const ParticlesInfo &info, Scene *scene);
+  void particles(lang::Program *prog, const ParticlesInfo &info, Scene *scene);
 
   void scene(Scene *scene);
 

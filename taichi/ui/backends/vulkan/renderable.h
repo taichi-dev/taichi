@@ -20,6 +20,12 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -38,7 +44,7 @@ struct RenderableConfig {
 
 class Renderable {
  public:
-  void update_data(const RenderableInfo &info);
+  void update_data(lang::Program *prog, const RenderableInfo &info);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);

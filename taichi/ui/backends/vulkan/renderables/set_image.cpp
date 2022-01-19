@@ -1,6 +1,9 @@
 #include "set_image.h"
 
+#include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
+
+using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -24,9 +27,8 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
   app_context_->device().unmap(uniform_buffer_);
 }
 
-void SetImage::update_data(const SetImageInfo &info) {
-  Program &program = get_current_program();
-  program.synchronize();
+void SetImage::update_data(Program *prog, const SetImageInfo &info) {
+  prog->synchronize();
 
   const FieldInfo &img = info.img;
 
@@ -46,7 +48,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
+  DevicePtr img_dev_ptr = get_device_ptr(prog, img.snode);
   uint64_t img_size = pixels * 4;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(

@@ -21,6 +21,12 @@
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -29,7 +35,7 @@ class Triangles final : public Renderable {
  public:
   Triangles(AppContext *app_context);
 
-  void update_data(const TrianglesInfo &info);
+  void update_data(lang::Program *prog, const TrianglesInfo &info);
 
  private:
   struct UniformBufferObject {

@@ -1,6 +1,8 @@
 #include "renderer.h"
 #include "taichi/ui/utils/utils.h"
 
+using taichi::lang::Program;
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -38,39 +40,41 @@ void Renderer::set_background_color(const glm::vec3 &color) {
   background_color_ = color;
 }
 
-void Renderer::set_image(const SetImageInfo &info) {
+void Renderer::set_image(Program *prog, const SetImageInfo &info) {
   SetImage *s = get_renderable_of_type<SetImage>();
-  s->update_data(info);
+  s->update_data(prog, info);
   next_renderable_ += 1;
 }
 
-void Renderer::triangles(const TrianglesInfo &info) {
+void Renderer::triangles(Program *prog, const TrianglesInfo &info) {
   Triangles *triangles = get_renderable_of_type<Triangles>();
-  triangles->update_data(info);
+  triangles->update_data(prog, info);
   next_renderable_ += 1;
 }
 
-void Renderer::lines(const LinesInfo &info) {
+void Renderer::lines(Program *prog, const LinesInfo &info) {
   Lines *lines = get_renderable_of_type<Lines>();
-  lines->update_data(info);
+  lines->update_data(prog, info);
   next_renderable_ += 1;
 }
 
-void Renderer::circles(const CirclesInfo &info) {
+void Renderer::circles(Program *prog, const CirclesInfo &info) {
   Circles *circles = get_renderable_of_type<Circles>();
-  circles->update_data(info);
+  circles->update_data(prog, info);
   next_renderable_ += 1;
 }
 
-void Renderer::mesh(const MeshInfo &info, Scene *scene) {
+void Renderer::mesh(Program *prog, const MeshInfo &info, Scene *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>();
-  mesh->update_data(info, *scene);
+  mesh->update_data(prog, info, *scene);
   next_renderable_ += 1;
 }
 
-void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
+void Renderer::particles(Program *prog,
+                         const ParticlesInfo &info,
+                         Scene *scene) {
   Particles *particles = get_renderable_of_type<Particles>();
-  particles->update_data(info, *scene);
+  particles->update_data(prog, info, *scene);
   next_renderable_ += 1;
 }
 

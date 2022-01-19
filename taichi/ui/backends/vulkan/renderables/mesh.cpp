@@ -25,8 +25,10 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   app_context_->device().unmap(uniform_buffer_);
 }
 
-void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
-  Renderable::update_data(info.renderable_info);
+void Mesh::update_data(Program *prog,
+                       const MeshInfo &info,
+                       const Scene &scene) {
+  Renderable::update_data(prog, info.renderable_info);
 
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {

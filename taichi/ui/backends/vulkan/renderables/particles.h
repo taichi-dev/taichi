@@ -21,6 +21,12 @@
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/backends/vulkan/scene.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -29,7 +35,9 @@ class Particles final : public Renderable {
  public:
   Particles(AppContext *app_context);
 
-  void update_data(const ParticlesInfo &info, const Scene &scene);
+  void update_data(lang::Program *prog,
+                   const ParticlesInfo &info,
+                   const Scene &scene);
 
  private:
   struct UniformBufferObject {

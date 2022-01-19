@@ -11,8 +11,8 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Lines::update_data(const LinesInfo &info) {
-  Renderable::update_data(info.renderable_info);
+void Lines::update_data(Program *prog, const LinesInfo &info) {
+  Renderable::update_data(prog, info.renderable_info);
 
   update_ubo(info.color, info.renderable_info.has_per_vertex_color);
 

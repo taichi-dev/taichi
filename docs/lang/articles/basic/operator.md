@@ -132,6 +132,14 @@ pow(x, y)  # Same as `x ** y`.
 ti.random(dtype=float)
 ```
 
+:::note
+
+The return number has a range that is type dependent. For example, floating
+point type returns a number between 0 and 1, while integer type such as `ti.i32`
+returns a number between -2147483648 and 2147483647.
+
+:::
+
 ### Supported atomic operations
 
 In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically

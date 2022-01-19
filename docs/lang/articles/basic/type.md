@@ -132,7 +132,7 @@ Relying on implicit type casting is bad practice and one major source of bugs.
 
 Following the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) of the C programming language, Taichi implicitly casts
 binary operation operands into a *common type* if they have different types. Some simple but most
-commonly used rules to determine common types are listed below:
+commonly used rules to determine the common type of two types are listed below:
 
 - `i32 + f32 = f32` (int + float = float)
 - `i32 + i64 = i64` (low precision bits + high precision bits = high precision bits)

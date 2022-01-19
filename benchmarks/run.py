@@ -12,8 +12,8 @@ benchmark_suites = [MicroBenchmark]
 class BenchmarkInfo:
     def __init__(self):
         """init with commit info"""
-        self.commit_hash = get_commit_hash()  #[:8]
-        self.datetime = [datatime_with_format()]  #init with start time
+        self.commit_hash = get_commit_hash()
+        self.datetime = datatime_with_format()
         self.suites = {}
         print(f'commit_hash = {self.commit_hash}')
 
@@ -50,13 +50,9 @@ def main():
     info = BenchmarkInfo()
     suites = BenchmarkSuites()
     suites.run()
-    #save result
+    #save benchmark results & info
     suites.save(benchmark_dir)
-    #add benchmark info
     info.suites = suites.get_suites_info()
-    info.datetime.append(datatime_with_format())  #end time
-
-    #save benchmark info
     info_path = os.path.join(benchmark_dir, '_info.json')
     info_str = dump2json(info)
     with open(info_path, 'w') as f:

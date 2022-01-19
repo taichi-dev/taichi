@@ -181,20 +181,54 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
-          stmt->is<GlobalLoadStmt>())) {
+          stmt->is<GlobalLoadStmt>() || stmt->is<AllocaStmt>())) {
       // TODO: this list may be incomplete
       return;
     }
-    // Create a alloc
-    auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
-    auto alloc_ptr = alloc.get();
-    TI_ASSERT(alloca_block_);
-    alloca_block_->insert(std::move(alloc), 0);
-    auto load = stmt->insert_after_me(
-        Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
-    irpass::replace_all_usages_with(stmt->parent, stmt, load);
-    // Create the load first so that the operand of the store won't get replaced
-    stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
+
+    if (stmt->is<AllocaStmt>()) {
+      // Create a new alloc at the top of an ib to replace the old alloca
+      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      irpass::replace_all_usages_with(alloc_ptr->parent, alloc_ptr, stmt);
+      // Search all the usages of the old stmt and replace it with the new one
+      irpass::analysis::gather_statements(stmt->parent, [&](Stmt *stmt_to_check) -> bool {
+        if (stmt_to_check == stmt)
+        { // skip itself
+        }else if (auto local_load = stmt_to_check->cast<LocalLoadStmt>(); local_load) {
+          for (auto &lane : local_load->src.data) {
+            if(lane.var == stmt)
+              lane.var = alloc_ptr;
+          }
+        } else if (auto local_store = stmt_to_check->cast<LocalStoreStmt>(); local_store) {
+          if(local_store->dest == stmt)
+            local_store->dest = alloc_ptr;
+        }
+        return false;
+      });
+      // Replace the old alloca with a local store
+      // and it will be replaced by a AdStackPushStmt in the following pass
+      auto dtype = stmt->ret_type;
+      auto zero = stmt->insert_after_me(
+          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(
+          Stmt::make<LocalStoreStmt>(alloc_ptr, zero));
+      // Remove the old stmt
+      stmt->parent->erase(stmt);
+    } else {
+      // Create a alloc
+      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      auto load = stmt->insert_after_me(
+          Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
+      irpass::replace_all_usages_with(stmt->parent, stmt, load);
+      // Create the load first so that the operand of the store won't get replaced
+      stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
+    }
   }
 
   void visit(RangeForStmt *stmt) override {
@@ -227,8 +261,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
     TI_ASSERT(alloc->width() == 1);
     bool load_only =
         irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
-          if (auto store = s->cast<LocalStoreStmt>())
+          if (auto store = s->cast<LocalStoreStmt>()) {
             return store->dest == alloc;
+          }
           else if (auto atomic = s->cast<AtomicOpStmt>()) {
             return atomic->dest == alloc;
           } else {
@@ -805,7 +840,7 @@ class BackupSSA : public BasicStmtVisitor {
         if (op->is<AdStackLoadTopStmt>()) {
           // Just create another AdStackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));
-        } else {
+        }else{
           auto alloca = load(op);
           TI_ASSERT(op->width() == 1);
           stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(

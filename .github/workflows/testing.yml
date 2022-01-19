@@ -251,9 +251,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: sccache_cache
-          key: sccache-mac-${{ github.sha }}
+          key: sccache-${{ matrix.os }}-${{ github.sha }}
           restore-keys: |
-            sccache-mac-
+            sccache-${{ matrix.os }}-
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
@@ -287,7 +287,9 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          python3 -c "from pip._internal.utils import compatibility_tags;print(*compatibility_tags.get_supported(),sep='\n')"
+          python3 -c "from pip._vendor import packaging; print(packaging.__version__)"
+          python3 -m pip install --upgrade pip
+          python3 -c "from pip._vendor import packaging; print(packaging.__version__)"
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}

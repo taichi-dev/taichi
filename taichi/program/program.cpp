@@ -405,7 +405,7 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
     auto ret = Stmt::make<FrontendReturnStmt>(
         ExprGroup(load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
             keys.dtype, keys.num_active_indices, keys.num_active_indices,
-            0))[indices]));
+            0))[indices])));
     this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());

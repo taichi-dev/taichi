@@ -87,13 +87,11 @@ gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
 `x, y, z` are the sizes of each dimension of the 3D space respectively. `n` is the number of elements of the gravity force vector.
 
 ### Access elements of vector fields
+There are **two** indexing operators `[]` when you access a member of a vector field: the first is for field indexing, and the second is for vector indexing.
 - The gravity force vector could be accessed by `gravitational_field[i, j, k]` (`0 <= i < x, 0 <= j < y, 0 <= k < z`).
 - The `p`-th member of the gravity force vector could be accessed by `gravitational_field[i, j, k][p]` (`0 <= p < n`).
 - The 0-D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]` (`0 <= p < n`).
 
-:::note
-As you may have noticed, there are **two** indexing operators `[]` when you access a member of a vector from a vector field: the first is for field indexing, and the second is for vector indexing.
-:::
 
 ## Matrix fields
 
@@ -102,25 +100,18 @@ infinitesimal point in a material exists a strain and a stress tensor. The strai
 ```python
 strain_tensor_field = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=(x, y, z))
 ```
-
 `x, y, z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
 
 In a general case, suppose you have a `128 x 64` field called `A`, and each element is
 a `3 x 2` matrix, you can define it with `A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
 
 ### Access elements of matrix fields
-- If you want to get the matrix of grid node `i, j`, please use
-  `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
-- To get the element on the first row and second column of that
-  matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
+There are **two** indexing operators `[]` when you access a member of a matrix from a matrix field:
+the first is for field indexing, and the second is for matrix indexing.
+- If you want to get the matrix of grid node `i, j`, please use `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
+- To get the element on the first row and second column of that matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
 - The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
-
-:::note
-- As you may have noticed, there are **two** indexing operators `[]`
-  when you access a member of a matrix from a matrix field: the
-  first is for field indexing, and the second is for matrix indexing.
 - `ti.Vector` is simply an alias of `ti.Matrix`.
-:::
 
 ### Matrix size
 
@@ -128,16 +119,16 @@ For performance reasons matrix operations will be unrolled during the compile st
 suggest using only small matrices. For example, `2x1`, `3x3`, `4x4`
 matrices are fine, yet `32x6` is probably too big as a matrix size.
 
-:::caution
-Due to the unrolling mechanisms, operating on large matrices (e.g.
-`32x128`) can lead to a very long compilation time and low performance.
-:::
-
 If you have a dimension that is too large (e.g. `64`), it's better to
 declare a field of size `64`. E.g., instead of declaring
 `ti.Matrix.field(64, 32, dtype=ti.f32, shape=(3, 2))`, declare
 `ti.Matrix.field(3, 2, dtype=ti.f32, shape=(64, 32))`. Try to put large
 dimensions to fields instead of matrices.
+
+:::caution
+Due to the unrolling mechanisms, operating on large matrices (e.g.
+`32x128`) can lead to a very long compilation time and low performance.
+:::
 
 ## Struct fields
 In addition to vectors and matrices, field elements can be user-defined structs. A struct variable may contain scalars, vectors/matrices, or other structs as its members. A struct field is created by providing a dictionary of the name and data type of each member. For example, a 1D field of particles with position, velocity, acceleration, and mass for each particle can be represented as:

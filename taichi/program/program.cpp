@@ -194,11 +194,12 @@ void Program::materialize_runtime() {
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan);
   program_impl_->destroy_snode_tree(snode_tree);
+  deleted_snode_tree_ids_.push(snode_tree->id());
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
                                    bool compile_only) {
-  const int id = snode_trees_.size();
+  const int id = allocate_snode_tree_id();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
@@ -207,8 +208,12 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
     program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
                                           result_buffer);
   }
-  snode_trees_.push_back(std::move(tree));
-
+  if (id < snode_trees_.size()) {
+    snode_trees_[id] = std::move(tree);
+  } else {
+    TI_ASSERT(id == snode_trees_.size());
+    snode_trees_.push_back(std::move(tree));
+  }
   return snode_trees_[id].get();
 }
 
@@ -567,6 +572,16 @@ LlvmProgramImpl *Program::get_llvm_program_impl() {
 #else
   TI_ERROR("Llvm disabled");
 #endif
+}
+
+int Program::allocate_snode_tree_id() {
+  if (deleted_snode_tree_ids_.empty()) {
+    return snode_trees_.size();
+  } else {
+    int id = deleted_snode_tree_ids_.top();
+    deleted_snode_tree_ids_.pop();
+    return id;
+  }
 }
 
 }  // namespace lang

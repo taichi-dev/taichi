@@ -269,6 +269,8 @@ class Program {
    */
   SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
+  int allocate_snode_tree_id();
+
   /**
    * Gets the root of a SNode tree.
    *
@@ -310,6 +312,7 @@ class Program {
   NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+  std::stack<int> deleted_snode_tree_ids_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;

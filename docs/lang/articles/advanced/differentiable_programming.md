@@ -299,37 +299,14 @@ assert x.grad[2] == 3.0
 ### Kernel Simplicity Rule
 
 :::note Kernel Simplicity Rule
-Kernel body must consist of multiple simply nested for-loops. For example, each for-loop can either contain exactly one (nested) for-loop (and no other statements), or a group of statements without loops.
+Kernel body must consist of multiple for-loops or non-for statements.
 :::
 
 Example:
 
 ```python
 @ti.kernel
-def differentiable_task1():
-    # Good: simple for loop
-    for i in x:
-        x[i] = y[i]
-
-@ti.kernel
-def differentiable_task2():
-    # Good: one nested for loop
-    for i in range(10):
-        for j in range(20):
-            for k in range(300):
-                ... do whatever you want, as long as there are no loops
-
-@ti.kernel
-def differentiable_task3():
-    # Bad: the outer for loop contains two for loops.
-    for i in range(10):
-        for j in range(20):
-            ...
-        for j in range(20):
-            ...
-
-@ti.kernel
-def differentiable_task4():
+def differentiable_task():
     # Bad: mixed usage of for-loop and a statement without looping. Please split them into two kernels.
     loss[None] += x[0]
     for i in range(10):
@@ -345,26 +322,6 @@ to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assigne
 if you see any silent wrong results.
 :::
 
-### Workaround kernel simplicity rule
-
-:::tip
-**static for-loops** (e.g. `for i in ti.static(range(4))`) will get
-unrolled by the Python frontend preprocessor and therefore does not
-count as a level of loop.
-:::
-
-For instance, we can rewrite `differentiable_task3` listed above using `ti.static`:
-
-``` python
-@ti.kernel
-def differentiable_task3():
-    # Good: ti.static unrolls the inner loops so that it now only has one simple for loop.
-    for i in range(10):
-        for j in ti.static(range(20)):
-            ...
-        for j in ti.static(range(20)):
-            ...
-```
 
 ## Extending Taichi Autodiff system
 

@@ -23,11 +23,11 @@ We start introducing fields from this very basic type, whose elements are simply
 
 ``` python
 import taichi as ti
-ti.init(arch=cpu)
+ti.init(arch=ti.cpu)
 
-gravity          = ti.field(ti.i32, shape=())           # 0-D
-linear_array     = ti.field(ti.f32, shape=128)          # 1-D
-gray_scale_image = ti.field(ti.i8,  shape=(640, 480))   # 2-D
+gravity          = ti.field(ti.f32, shape=())           # 0-D
+linear_array     = ti.field(ti.i32, shape=128)          # 1-D
+gray_scale_image = ti.field(ti.u8,  shape=(640, 480))   # 2-D
 volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 ```
 
@@ -35,7 +35,7 @@ volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 
 ``` python
 gravity[None]          = 9.8
-linear_array[0]        = 1.0
+linear_array[0]        = 1
 gray_scale_image[1,2]  = 255
 volumetric_data[3,3,3] = 2.0
 ```
@@ -44,7 +44,7 @@ volumetric_data[3,3,3] = 2.0
 
 ``` python
 linear_array.shape     # (128,)
-volumetric_data.dtype  # ti.f32
+volumetric_data.dtype  # f32
 ```
 
 To be noticed:

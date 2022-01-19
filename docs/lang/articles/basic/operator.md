@@ -85,9 +85,9 @@ default numerical types.
 
 :::note
 
-The `>>` operation denotes the 
+The `>>` operation denotes the
 [Shift Logical](https://en.wikipedia.org/wiki/Logical_shift) Right (SHR) operation. For the
-[Shift Arithmetic](https://en.wikipedia.org/wiki/Arithmetic_shift) Right (SAR) operation, 
+[Shift Arithmetic](https://en.wikipedia.org/wiki/Arithmetic_shift) Right (SAR) operation,
 consider using `ti.bit_shr()` or `ti.bit_shl()` for the left shift operation.
 
 :::

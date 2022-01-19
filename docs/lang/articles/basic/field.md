@@ -152,8 +152,7 @@ particle = ti.types.struct(
 particle_field = particle.field(shape=(n,))
 ```
 
-Members of a struct field can be accessed either locally (i.e., member of a struct field element)
-or globally (i.e., member field of a struct field):
+Members of a struct field can be accessed either locally (i.e., member of a struct field element) or globally (i.e., member field of a struct field):
 ```python
 # set the position of the first particle to origin
 particle_field[0] # local ti.Struct

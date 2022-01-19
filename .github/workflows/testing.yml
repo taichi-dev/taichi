@@ -140,6 +140,7 @@ jobs:
     name: Build and Test linux (CPU)
     needs: [check_code_format, check_files]
     timeout-minutes: 60
+    if: "false"
     strategy:
       matrix:
         include:
@@ -231,8 +232,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-10.15
-            python: 3.7
+          - os: macos-11
+            python: 3.9
             with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: "cpu"
@@ -294,6 +295,7 @@ jobs:
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
+    if: "false"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -363,6 +365,7 @@ jobs:
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
+    if: "false"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -409,6 +412,7 @@ jobs:
     name: Build and Test (Apple M1)
     needs: [check_code_format, check_files]
     timeout-minutes: 60
+    if: "false"
     strategy:
       matrix:
         include:

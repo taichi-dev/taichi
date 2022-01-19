@@ -598,3 +598,127 @@ def test_more_inner_loops_local_variable_fixed_stack_size_tape():
 
     assert loss[None] == 12.0
     assert x.grad[None] == 36.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
+def test_stacked_inner_loops_local_variable_fixed_stack_size_kernel_grad():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_stacked_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_stacked_inner_loops_local_variable()
+    test_stacked_inner_loops_local_variable.grad()
+
+    assert loss[None] == 36.0
+    assert x.grad[None] == 38.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
+def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size_kernel_grad(
+):
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable()
+    test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable.grad()
+
+    assert loss[None] == 54.0
+    assert x.grad[None] == 56.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+def test_stacked_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_stacked_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_stacked_inner_loops_local_variable()
+    test_stacked_inner_loops_local_variable.grad()
+
+    assert loss[None] == 36.0
+    assert x.grad[None] == 38.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_size_kernel_grad(
+):
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    loss.grad[None] = 1.0
+    x[None] = 0.0
+    test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable()
+    test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable.grad()
+
+    assert loss[None] == 54.0
+    assert x.grad[None] == 56.0

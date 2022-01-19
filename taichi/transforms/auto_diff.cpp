@@ -44,7 +44,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
     //  - No atomics operations to the global variables which require gradient
-    //  when there is no local load/store allocas
 
     bool qualified = true;
     bool qualified_atomics = true;
@@ -73,43 +72,39 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       return false;
     });
 
-    bool is_local_store_load_exist = !touched_allocas.empty();
-    if (is_local_store_load_exist) {
-      for (const auto &alloca : touched_allocas) {
-        // Test if the alloca belongs to the current block
-        bool belong_to_this_block = false;
-        for (auto b = alloca->parent; b; b = b->parent_block()) {
-          if (b == block) {
-            belong_to_this_block = true;
-          }
-        }
-        if (!belong_to_this_block) {
-          // This block is not an IB since it loads/modifies outside variables
-          qualified = false;
-          break;
+    for (const auto &alloca : touched_allocas) {
+      // Test if the alloca belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = alloca->parent; b; b = b->parent_block()) {
+        if (b == block) {
+          belong_to_this_block = true;
         }
       }
-    } else {
-      for (const auto &atomics : touched_global_atomics) {
-        // Test if the atomics belongs to the current block
-        bool belong_to_this_block = false;
-        for (auto b = atomics->parent; b; b = b->parent_block()) {
-          if (b == block) {
-            belong_to_this_block = true;
-            break;
-          }
-        }
-        if (belong_to_this_block) {
-          // This block is not an IB since it has atomics operation to global
-          // variables
-          qualified_atomics = false;
-          break;
-        }
+      if (!belong_to_this_block) {
+        // This block is not an IB since it loads/modifies outside variables
+        qualified = false;
+        break;
       }
     }
-    if (is_local_store_load_exist)
-      return qualified;
-    return qualified_atomics;
+
+    for (const auto &atomics : touched_global_atomics) {
+      // Test if the atomics belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = atomics->parent; b; b = b->parent_block()) {
+        if (b == block) {
+          belong_to_this_block = true;
+          break;
+        }
+      }
+      if (belong_to_this_block) {
+        // This block is not an IB since it has atomics operation to global
+        // variables
+        qualified_atomics = false;
+        break;
+      }
+    }
+
+    return qualified && qualified_atomics;
   }
 
   void visit_loop_body(Block *block) {
@@ -217,7 +212,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
             return false;
           });
       // Replace the old alloca with a local store
-      // and it will be replaced by a AdStackPushStmt in the following pass
+      // and it will be replaced by a AdStackPushStmt in the following
+      // ReplaceLocalVarWithStacks pass
       auto dtype = stmt->ret_type;
       auto zero =
           stmt->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));

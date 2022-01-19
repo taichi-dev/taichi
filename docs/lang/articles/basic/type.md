@@ -143,8 +143,9 @@ When a value is assigned to a variable with a different type, the value is impli
 type. If the type of the variable differs from the common type of the variable and the value, a
 warning about losing precisions is raised.
 
-In the following example, variable `a` is initialized with `float` type. On the next line, the
-assignment casts `1` from `int` type to `float` type implicitly without any warning:
+In the following example, variable `a` is initialized with type `float`. On the next line, the
+assignment casts `1` from `int` to `float` implicitly without any warning because the type of the
+variable is the same as the common type `float`:
 
 ```python {4}
 @ti.kernel
@@ -155,7 +156,8 @@ def foo():
 ```
 
 In the following example, variable `a` is initialized with `int` type. On the next line, the
-assignment casts `3.14` from `float` to `int` implicitly with a warning.
+assignment casts `3.14` from `float` to `int` implicitly with a warning because the type of the
+variable differs from the common type `float`:
 
 ```python {4}
 @ti.kernel

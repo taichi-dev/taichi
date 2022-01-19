@@ -200,10 +200,6 @@ class TensorType : public Type {
     return this;
   }
 
-  Type *get_compute_type() override {
-    return this;
-  }
-
   std::string to_string() const override;
 
  private:

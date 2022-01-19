@@ -1,7 +1,7 @@
 import ast
 import collections.abc
-import itertools
 import inspect
+import itertools
 import os
 import warnings
 from collections import ChainMap
@@ -512,12 +512,13 @@ class ASTTransformer(Builder):
                             ti_ops.cast(
                                 exp, ctx.func.return_type.dtype if isinstance(
                                     ctx.func.return_type, MatrixType) else
-                                ctx.func.return_type) for exp in
-                                    itertools.chain.from_iterable(
-                                        node.value.ptr.to_list())
+                                ctx.func.return_type)
+                            for exp in itertools.chain.from_iterable(
+                                node.value.ptr.to_list())
                         ]))
                 else:
-                    raise TaichiSyntaxError("The return type is not supported now!")
+                    raise TaichiSyntaxError(
+                        "The return type is not supported now!")
 
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we

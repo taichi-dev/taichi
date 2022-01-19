@@ -862,7 +862,9 @@ class KernelGen : public IRVisitor {
            taichi_opengl_ret_base,
            opengl_data_address_shifter(value->element_type()), idx,
            value->short_name());
-      idx += 2;// opengl only support i32 array, but there are i64 slots in taichi's result buffer,so we need two slots to make them match.
+      idx += 2;
+      // opengl only support i32 array, but there are i64 slots in
+      // taichi's result buffer,so we need two slots to make them match.
     }
   }
 

@@ -189,7 +189,7 @@ CCContext *CCProgramImpl::update_context(RuntimeContext *ctx) {
 void CCProgramImpl::context_to_result_buffer() {
   TI_ASSERT(result_buffer_);
   std::memcpy(result_buffer_, context_->args,
-              taichi_max_num_ret_values * sizeof(uint64));
+              taichi_max_num_ret_value * sizeof(uint64));
   context_->earg = nullptr;
 }
 

@@ -50,7 +50,7 @@ TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
   EXPECT_EQ(bin_op->op_type, BinaryOpType::bit_shl);
   EXPECT_EQ(bin_op->rhs, const_stmt);
   EXPECT_TRUE(ir_block->statements[3]->is<ReturnStmt>());
-  EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->value, bin_op);
+  EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->values[0], bin_op);
 }
 
 TEST_F(BinaryOpSimplifyTest, ModPOT) {
@@ -98,7 +98,7 @@ TEST_F(BinaryOpSimplifyTest, ModPOT) {
   EXPECT_EQ(bin_op->op_type, BinaryOpType::bit_and);
   EXPECT_EQ(bin_op->rhs, const_stmt);
   EXPECT_TRUE(ir_block->statements[3]->is<ReturnStmt>());
-  EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->value, bin_op);
+  EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->values[0], bin_op);
 }
 
 }  // namespace lang

@@ -100,6 +100,12 @@ class DIE : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    // TODO: A hack to make sure end_stmt is registered.
+    // Ideally end_stmt should be its own Block instead.
+    if (stmt->end_stmt &&
+        used.find(stmt->end_stmt->instance_id) == used.end()) {
+      used.insert(stmt->end_stmt->instance_id);
+    }
     stmt->all_blocks_accept(this, true);
   }
 };

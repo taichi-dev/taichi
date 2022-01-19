@@ -73,6 +73,7 @@ struct TaskAttributes {
   };
 
   std::string name;
+  std::string source_path;
   // Total number of threads to launch (i.e. threads per grid). Note that this
   // is only advisory, because eventually this number is also determined by the
   // runtime config. This works because grid strided loop is supported.

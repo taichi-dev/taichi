@@ -404,17 +404,73 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   // Step 0: simplify l2g + g2r -> l2r
   simplify_nested_conversion();
 
-  // Step 1: use Mesh BLS analyzer to gather which mesh attributes user declared
-  // to cache
-  auto caches = irpass::analysis::initialize_mesh_local_attribute(offload);
-  rec_ = caches->finalize();
-
-  // Step 2: A analyzer to determine which mapping should be localized
+  // Step 1: A analyzer to determine which mapping should be localized
   mappings_.clear();
   gather_candidate_mapping();
+
+  // Step 1: use Mesh BLS analyzer to gather which mesh attributes user declared
+  // to cache
+  bool auto_mesh_local = config.experimental_auto_mesh_local;
+  if (offload->major_to_types.size() !=
+          1 ||  // not support multiple major relations yet
+      offload->minor_relation_types.size() >
+          0 ||  // not support minor relations yet
+      offload->mem_access_opt.get_snodes_with_flag(SNodeAccessFlag::mesh_local)
+              .size() > 0) {  // disable when user determine which attributes to
+                              // be cached manually
+    auto_mesh_local = false;
+  }
+  auto caches = irpass::analysis::initialize_mesh_local_attribute(
+      offload, auto_mesh_local, config);
+
+  if (auto_mesh_local && config.arch == Arch::cuda) {
+    const auto to_type = *offload->major_to_types.begin();
+    std::size_t shared_mem_size_per_block =
+        default_shared_mem_size / config.auto_mesh_local_default_occupacy;
+    int available_bytes =
+        shared_mem_size_per_block /
+        offload->mesh->patch_max_element_num.find(to_type)->second;
+    if (mappings_.find(std::make_pair(to_type, mesh::ConvType::l2g)) !=
+        mappings_.end()) {
+      available_bytes -= 4;
+    }
+    if (mappings_.find(std::make_pair(to_type, mesh::ConvType::l2r)) !=
+        mappings_.end()) {
+      available_bytes -= 4;
+    }
+    TI_TRACE("available cache attributes bytes = {}", available_bytes);
+    TI_TRACE("caches size = {}", caches->caches.size());
+    std::vector<MeshBLSCache> priority_caches;
+    for (const auto [snode, cache] : caches->caches) {
+      priority_caches.push_back(cache);
+    }
+    std::sort(priority_caches.begin(), priority_caches.end(),
+              [](const MeshBLSCache &a, const MeshBLSCache &b) {
+                return a.total_flags > b.total_flags ||
+                       (a.total_flags == b.total_flags &&
+                        a.loop_index > b.loop_index) ||
+                       (a.total_flags == b.total_flags &&
+                        a.loop_index == b.loop_index &&
+                        a.unique_accessed > b.unique_accessed);
+              });
+    caches->caches.clear();
+    for (const auto &cache : priority_caches) {
+      available_bytes -= data_type_size(cache.snode->dt);
+      if (available_bytes < 0) {
+        break;  // not enough space to ensure occupacy
+      }
+      TI_TRACE("available = {}, x = {}, loop_index = {}, unique_access = {}",
+               available_bytes, cache.total_flags, int(cache.loop_index),
+               cache.unique_accessed);
+      caches->caches.insert(std::make_pair(cache.snode, cache));
+    }
+  }
+  rec_ = caches->finalize();
+
   // If a mesh attribute is in bls, the config makes its index mapping must also
   // be in bls
-  if (config.mesh_localize_all_attr_mappings) {
+  if (config.mesh_localize_all_attr_mappings &&
+      !config.experimental_auto_mesh_local) {
     for (auto [mapping, attr_set] : rec_) {
       if (mappings_.find(mapping) == mappings_.end()) {
         mappings_.insert(mapping);

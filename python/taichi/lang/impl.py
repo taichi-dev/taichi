@@ -8,7 +8,7 @@ from taichi._logging import warn
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import InvalidOperationError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -430,7 +430,8 @@ def make_constant_expr(val):
             return Expr(_ti_core.make_const_expr_f32(val))
         assert False
     else:
-        raise ValueError(f'Invalid constant scalar expression: {type(val)}')
+        raise TaichiTypeError(
+            f'Invalid constant scalar data type: {type(val)}')
 
 
 def reset():

@@ -106,7 +106,6 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on opengl backend.");
-  // TODO(#3334): Convert |aot_data_| with AotDataConverter
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(aot_data_, bin_path);
   // Json format doesn't support multiple line strings.
@@ -121,11 +120,9 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
       write_glsl_file(output_dir, t);
     }
   }
-
-  const std::string txt_path = fmt::format("{}/metadata.json", output_dir);
-  TextSerializer ts;
-  ts.serialize_to_json("aot_data", aot_data_copy);
-  ts.write_to_file(txt_path);
+  auto aot_module_data = AotDataConverter::convert(aot_data_copy);
+  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
+  aot_module_data.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -162,9 +159,13 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   // matter too much for now.
   TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
               "AOT: only supports dense field");
+  std::vector<int> element_shape;
+  if (!is_scalar) {
+    element_shape = {row_num, column_num};
+  }
   aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
                               get_snode_base_address(rep_snode), shape,
-                              is_scalar, row_num, column_num});
+                              is_scalar, element_shape});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

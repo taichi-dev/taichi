@@ -65,6 +65,6 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
         element_shape, layout)
 
 
-def decl_scalar_ret(dtype):
+def decl_ret(dtype):
     dtype = cook_dtype(dtype)
     return _ti_core.decl_ret(dtype)

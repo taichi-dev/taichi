@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/program/compile_config.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/mesh.h"
@@ -21,6 +22,8 @@ class MeshBLSCache {
 
   bool initialized;
   bool finalized;
+  bool loop_index;
+  int unique_accessed;
   AccessFlag total_flags;
 
   MeshBLSCache() = default;
@@ -29,11 +32,14 @@ class MeshBLSCache {
     total_flags = AccessFlag(0);
     initialized = false;
     finalized = false;
+    loop_index = false;
+    unique_accessed = 0;
   }
 
   bool access(mesh::MeshElementType element_type,
               mesh::ConvType conv_type,
-              AccessFlag flags) {
+              AccessFlag flags,
+              Stmt *idx) {
     if (!initialized) {
       initialized = true;
       this->conv_type = conv_type;
@@ -43,6 +49,11 @@ class MeshBLSCache {
         return false;
     }
     this->total_flags |= flags;
+    if (idx->is<LoopIndexStmt>()) {
+      loop_index = true;
+    } else {
+      unique_accessed++;
+    }
     return true;
   }
 
@@ -83,10 +94,12 @@ class MeshBLSCaches {
   bool access(SNode *snode,
               mesh::MeshElementType element_type,
               mesh::ConvType conv_type,
-              AccessFlag flags) {
+              AccessFlag flags,
+              Stmt *idx) {
     if (caches.find(snode) == caches.end())
       return false;
-    return caches.find(snode)->second.access(element_type, conv_type, flags);
+    return caches.find(snode)->second.access(element_type, conv_type, flags,
+                                             idx);
   }
 
   Rec finalize() {
@@ -112,7 +125,10 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
-  MeshBLSAnalyzer(OffloadedStmt *for_stmt, MeshBLSCaches *caches);
+  MeshBLSAnalyzer(OffloadedStmt *for_stmt,
+                  MeshBLSCaches *caches,
+                  bool auto_mesh_local,
+                  const CompileConfig &config);
 
   void visit(GlobalPtrStmt *stmt) override {
   }
@@ -134,6 +150,8 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   OffloadedStmt *for_stmt_{nullptr};
   MeshBLSCaches *caches_{nullptr};
   bool analysis_ok_{true};
+  bool auto_mesh_local_{false};
+  CompileConfig config_;
 };
 
 }  // namespace lang

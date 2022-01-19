@@ -32,7 +32,7 @@ class JITSession {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual llvm::DataLayout get_data_layout();
+  virtual llvm::DataLayout get_data_layout() = 0;
 
   static std::unique_ptr<JITSession> create(LlvmProgramImpl *llvm_prog,
                                             Arch arch);

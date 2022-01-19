@@ -34,11 +34,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    // TODO: use PrimitiveType::u1 when it's supported
-    TI_ASSERT_INFO(
-        if_stmt->cond->ret_type->is_primitive(PrimitiveTypeID::i32),
-        "`if` conditions must be of type int32, consider using `if x != 0:` "
-        "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -256,17 +251,9 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type = stmt->cast_type;
     }
     if (!is_real(stmt->operand->ret_type)) {
-      if (is_trigonometric(stmt->op_type)) {
-        TI_ERROR("[{}] Trigonometric operator takes real inputs only, at {}",
-                 stmt->name(), stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::round ||
-                 stmt->op_type == UnaryOpType::floor ||
-                 stmt->op_type == UnaryOpType::ceil) {
-        TI_ERROR("[{}] round/floor/ceil takes real inputs only at {}",
-                 stmt->name(), stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::sqrt ||
-                 stmt->op_type == UnaryOpType::exp ||
-                 stmt->op_type == UnaryOpType::log) {
+      if (stmt->op_type == UnaryOpType::sqrt ||
+          stmt->op_type == UnaryOpType::exp ||
+          stmt->op_type == UnaryOpType::log) {
         cast(stmt->operand, config_.default_fp);
       }
     }
@@ -361,11 +348,6 @@ class TypeCheck : public IRVisitor {
     if (!matching) {
       error();
     }
-    if (binary_is_bitwise(stmt->op_type)) {
-      if (!is_integral(stmt->lhs->ret_type)) {
-        error("Error: bitwise operations can only apply to integral types.");
-      }
-    }
     if (is_comparison(stmt->op_type)) {
       stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
           stmt->lhs->width(), PrimitiveType::i32);
@@ -403,7 +385,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
-    TI_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
     stmt->ret_type = stmt->input->ret_type;
   }
 
@@ -425,14 +406,13 @@ class TypeCheck : public IRVisitor {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(rt != PrimitiveType::unknown);
     TI_ASSERT(rt->vector_width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    stmt->ret_type = stmt->value->ret_type;
+    stmt->ret_type = stmt->values[0]->ret_type;
     TI_ASSERT(stmt->ret_type->vector_width() == 1);
   }
 

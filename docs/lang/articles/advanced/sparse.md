@@ -17,7 +17,7 @@ oftentimes, they only care about a small fraction of this dense grid since the r
 
 <center>
 
-![BVH](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bvh_small.png)
+![BVH](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bvh_small.png?raw=true)
 
 </center>
 
@@ -100,7 +100,7 @@ As the below figure shown, the active blocks and pixels are green. You can write
 
 <center>
 
-![Pointer](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_small.png)
+![Pointer](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_small.png?raw=true)
 
 </center>
 
@@ -109,7 +109,7 @@ In fact, the sparse field is a Snode tree shown in the following figure. You cou
 
 <center>
 
-![Pointer Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_tree_small.png)
+![Pointer Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_tree_small.png?raw=true)
 
 </center>
 
@@ -151,7 +151,7 @@ The code snippet above also creates an 8x8 sparse grid. The only difference betw
 
 <center>
 
-![Bitmasked](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_small.png)
+![Bitmasked](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_small.png?raw=true)
 
 </center>
 
@@ -159,7 +159,7 @@ The code snippet above also creates an 8x8 sparse grid. The only difference betw
 The bitmasked Snodes are like dense Snodes which have auxiliary activity values.
 <center>
 
-![Bitmasked Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_tree_small.png)
+![Bitmasked Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_tree_small.png?raw=true)
 
 </center>
 
@@ -185,7 +185,7 @@ def make_lists():
 
 <center>
 
-![Dynamic](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/dynamic_small.png)
+![Dynamic](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/dynamic_small.png?raw=true)
 
 </center>
 
@@ -243,7 +243,7 @@ activity_checking(pixel, [7, 3])  # output: 1
 
 <center>
 
-![Activation](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/activation_small.png)
+![Activation](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/activation_small.png?raw=true)
 
 </center>
 

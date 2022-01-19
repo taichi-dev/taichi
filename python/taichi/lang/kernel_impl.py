@@ -296,7 +296,7 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
-        # the '#' is just a placeholder
+        # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
         return '#'
 
     def extract(self, args):

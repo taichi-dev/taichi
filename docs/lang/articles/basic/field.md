@@ -52,7 +52,7 @@ To be noticed:
 * Fields are **always** accessed by indices. When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`.
 
 ### Example
-A simple example might help you understand scalar fields. 
+A simple example might help you understand scalar fields.
 Assume you have a gray-scale image. At each point of the image, there would be a pixel value. The width and height of the image are similar to the `shape` of the Taichi scalar field. The pixel value (0-D scalar) is like the element of the Taichi scalar field. We could use the following code to generate gray-scale image with random pixel values:
 
 ``` python
@@ -79,7 +79,7 @@ while gui.running:
 In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
 :::
 
-## Vector fields and Matrix fields
+## Vector fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represented with:
 ```python
 gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))

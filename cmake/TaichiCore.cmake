@@ -8,7 +8,6 @@ option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
 
-
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
     # https://stackoverflow.com/a/32259072/12003165

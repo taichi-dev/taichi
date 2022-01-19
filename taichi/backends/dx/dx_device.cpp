@@ -4,18 +4,6 @@ namespace taichi {
 namespace lang {
 namespace directx11 {
 
-bool kD3d11DebugEnabled = false;  // D3D11 debugging is enabled. For testing.
-bool kD3d11ForceRef = false;      // Force REF device. May be used to
-                                  // force software rendering.
-
-void debug_enabled(bool enabled) {
-  kD3d11DebugEnabled = enabled;
-}
-
-void force_ref(bool force) {
-  kD3d11ForceRef = force;
-}
-
 void check_dx_error(HRESULT hr, const char *msg) {
   if (!SUCCEEDED(hr)) {
     TI_ERROR("Error in {}: {}", msg, hr);

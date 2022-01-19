@@ -7,11 +7,9 @@
 
 namespace taichi {
 namespace lang {
+namespace directx11 {
 
 TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
-  // Enable debug layer
-  directx11::debug_enabled(true);
-
   std::unique_ptr<directx11::Dx11Device> device =
       std::make_unique<directx11::Dx11Device>();
 
@@ -27,20 +25,28 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   // ID3D11RasterizerState
   // ID3D11Sampler
   // ID3D11Query
-  const int count0 = device->live_dx11_object_count();
-  EXPECT_EQ(count0, 8);
+  int count0, count1, count2;
+  if (kD3d11DebugEnabled) {
+    count0 = device->live_dx11_object_count();
+    EXPECT_EQ(count0, 8);
+  }
 
   taichi::lang::Device::AllocParams params;
   params.size = 1048576;
   const taichi::lang::DeviceAllocation device_alloc =
       device->allocate_memory(params);
-  const int count1 = device->live_dx11_object_count();
-  // Should have allocated an UAV and a Buffer, so 2 more objects.
-  EXPECT_EQ(count1 - count0, 2);
+  if (kD3d11DebugEnabled) {
+    count1 = device->live_dx11_object_count();
+    // Should have allocated an UAV and a Buffer, so 2 more objects.
+    EXPECT_EQ(count1 - count0, 2);
+  }
+
   // The 2 objects should have been released.
   device->dealloc_memory(device_alloc);
-  const int count2 = device->live_dx11_object_count();
-  EXPECT_EQ(count2 - count1, -2);
+  if (kD3d11DebugEnabled) {
+    count2 = device->live_dx11_object_count();
+    EXPECT_EQ(count2 - count1, -2);
+  }
 }
 
 TEST(Dx11InfoQueueTest, ParseReferenceCount) {
@@ -81,6 +87,7 @@ TEST(Dx11InfoQueueTest, ParseReferenceCount) {
   EXPECT_EQ(entries.size(), 8);
 }
 
+}  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
 

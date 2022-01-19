@@ -8,6 +8,11 @@ namespace taichi {
 namespace lang {
 namespace directx11 {
 
+// Only enable debug layer when the corresponding testing facility is enabled
+constexpr bool kD3d11DebugEnabled = true;
+constexpr bool kD3d11ForceRef = false;  // Force REF device. May be used to
+                                        // force software rendering.
+
 void debug_enabled(bool);
 void force_ref(bool);
 void check_dx_error(HRESULT hr, const char *msg);

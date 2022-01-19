@@ -178,25 +178,25 @@ PhiValue IRBuilder::make_phi(const SType &out_type, uint32_t num_incoming) {
 Value IRBuilder::int_immediate_number(const SType &dtype,
                                       int64_t value,
                                       bool cache) {
-  return get_const_(dtype, reinterpret_cast<uint64_t *>(&value), cache);
+  return get_const(dtype, reinterpret_cast<uint64_t *>(&value), cache);
 }
 
 Value IRBuilder::uint_immediate_number(const SType &dtype,
                                        uint64_t value,
                                        bool cache) {
-  return get_const_(dtype, &value, cache);
+  return get_const(dtype, &value, cache);
 }
 
 Value IRBuilder::float_immediate_number(const SType &dtype,
                                         double value,
                                         bool cache) {
   if (data_type_bits(dtype.dt) == 64) {
-    return get_const_(dtype, reinterpret_cast<uint64_t *>(&value), cache);
+    return get_const(dtype, reinterpret_cast<uint64_t *>(&value), cache);
   } else if (data_type_bits(dtype.dt) == 32) {
     float fvalue = static_cast<float>(value);
     uint32_t *ptr = reinterpret_cast<uint32_t *>(&fvalue);
     uint64_t data = ptr[0];
-    return get_const_(dtype, &data, cache);
+    return get_const(dtype, &data, cache);
   } else {
     TI_ERROR("Type {} not supported.", dtype.dt->to_string());
   }
@@ -406,46 +406,46 @@ void IRBuilder::set_work_group_size(const std::array<int, 3> group_size) {
   Value size_z =
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(group_size[2]));
 
-  if (gl_work_group_size.id == 0) {
-    gl_work_group_size.id = id_counter_++;
+  if (gl_work_group_size_.id == 0) {
+    gl_work_group_size_.id = id_counter_++;
   }
   ib_.begin(spv::OpConstantComposite)
-      .add_seq(t_v3_uint_, gl_work_group_size, size_x, size_y, size_z)
+      .add_seq(t_v3_uint_, gl_work_group_size_, size_x, size_y, size_z)
       .commit(&global_);
-  this->decorate(spv::OpDecorate, gl_work_group_size, spv::DecorationBuiltIn,
+  this->decorate(spv::OpDecorate, gl_work_group_size_, spv::DecorationBuiltIn,
                  spv::BuiltInWorkgroupSize);
 }
 
 Value IRBuilder::get_num_work_groups(uint32_t dim_index) {
-  if (gl_num_work_groups.id == 0) {
+  if (gl_num_work_groups_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_v3_uint_, spv::StorageClassInput);
-    gl_num_work_groups = new_value(ptr_type, ValueKind::kVectorPtr);
+    gl_num_work_groups_ = new_value(ptr_type, ValueKind::kVectorPtr);
     ib_.begin(spv::OpVariable)
-        .add_seq(ptr_type, gl_num_work_groups, spv::StorageClassInput)
+        .add_seq(ptr_type, gl_num_work_groups_, spv::StorageClassInput)
         .commit(&global_);
-    this->decorate(spv::OpDecorate, gl_num_work_groups, spv::DecorationBuiltIn,
+    this->decorate(spv::OpDecorate, gl_num_work_groups_, spv::DecorationBuiltIn,
                    spv::BuiltInNumWorkgroups);
   }
   SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
   Value ptr = this->make_value(
-      spv::OpAccessChain, pint_type, gl_num_work_groups,
+      spv::OpAccessChain, pint_type, gl_num_work_groups_,
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
 
   return this->make_value(spv::OpLoad, t_uint32_, ptr);
 }
 Value IRBuilder::get_global_invocation_id(uint32_t dim_index) {
-  if (gl_global_invocation_id.id == 0) {
+  if (gl_global_invocation_id_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_v3_uint_, spv::StorageClassInput);
-    gl_global_invocation_id = new_value(ptr_type, ValueKind::kVectorPtr);
+    gl_global_invocation_id_ = new_value(ptr_type, ValueKind::kVectorPtr);
     ib_.begin(spv::OpVariable)
-        .add_seq(ptr_type, gl_global_invocation_id, spv::StorageClassInput)
+        .add_seq(ptr_type, gl_global_invocation_id_, spv::StorageClassInput)
         .commit(&global_);
-    this->decorate(spv::OpDecorate, gl_global_invocation_id,
+    this->decorate(spv::OpDecorate, gl_global_invocation_id_,
                    spv::DecorationBuiltIn, spv::BuiltInGlobalInvocationId);
   }
   SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
   Value ptr = this->make_value(
-      spv::OpAccessChain, pint_type, gl_global_invocation_id,
+      spv::OpAccessChain, pint_type, gl_global_invocation_id_,
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
 
   return this->make_value(spv::OpLoad, t_uint32_, ptr);
@@ -753,19 +753,19 @@ Value IRBuilder::rand_u32(Value global_tmp_) {
   Value _19u = uint_immediate_number(t_uint32_, 19u);
   Value _8u = uint_immediate_number(t_uint32_, 8u);
   Value _1000000007u = uint_immediate_number(t_uint32_, 1000000007u);
-  Value tmp0 = load_variable(_rand_x_, t_uint32_);
+  Value tmp0 = load_variable(rand_x_, t_uint32_);
   Value tmp1 = make_value(spv::OpShiftLeftLogical, t_uint32_, tmp0, _11u);
   Value tmp_t = make_value(spv::OpBitwiseXor, t_uint32_, tmp0, tmp1);  // t
-  store_variable(_rand_x_, load_variable(_rand_y_, t_uint32_));
-  store_variable(_rand_y_, load_variable(_rand_z_, t_uint32_));
-  Value tmp_w = load_variable(_rand_w_, t_uint32_);  // reuse w
-  store_variable(_rand_z_, tmp_w);
+  store_variable(rand_x_, load_variable(rand_y_, t_uint32_));
+  store_variable(rand_y_, load_variable(rand_z_, t_uint32_));
+  Value tmp_w = load_variable(rand_w_, t_uint32_);  // reuse w
+  store_variable(rand_z_, tmp_w);
   Value tmp2 = make_value(spv::OpShiftRightLogical, t_uint32_, tmp_w, _19u);
   Value tmp3 = make_value(spv::OpBitwiseXor, t_uint32_, tmp_w, tmp2);
   Value tmp4 = make_value(spv::OpShiftRightLogical, t_uint32_, tmp_t, _8u);
   Value tmp5 = make_value(spv::OpBitwiseXor, t_uint32_, tmp_t, tmp4);
   Value new_w = make_value(spv::OpBitwiseXor, t_uint32_, tmp3, tmp5);
-  store_variable(_rand_w_, new_w);
+  store_variable(rand_w_, new_w);
   Value val = make_value(spv::OpIMul, t_uint32_, new_w, _1000000007u);
 
   return val;
@@ -794,9 +794,9 @@ Value IRBuilder::rand_i32(Value global_tmp_) {
   return val;
 }
 
-Value IRBuilder::get_const_(const SType &dtype,
-                            const uint64_t *pvalue,
-                            bool cache) {
+Value IRBuilder::get_const(const SType &dtype,
+                           const uint64_t *pvalue,
+                           bool cache) {
   auto key = std::make_pair(dtype.id, pvalue[0]);
   if (cache) {
     auto it = const_tbl_.find(key);
@@ -862,31 +862,31 @@ SType IRBuilder::declare_primitive_type(DataType dt) {
 void IRBuilder::init_random_function(Value global_tmp_) {
   // variables declare
   SType local_type = get_pointer_type(t_uint32_, spv::StorageClassPrivate);
-  _rand_x_ = new_value(local_type, ValueKind::kVariablePtr);
-  _rand_y_ = new_value(local_type, ValueKind::kVariablePtr);
-  _rand_z_ = new_value(local_type, ValueKind::kVariablePtr);
-  _rand_w_ = new_value(local_type, ValueKind::kVariablePtr);
-  global_values.push_back(_rand_x_);
-  global_values.push_back(_rand_y_);
-  global_values.push_back(_rand_z_);
-  global_values.push_back(_rand_w_);
+  rand_x_ = new_value(local_type, ValueKind::kVariablePtr);
+  rand_y_ = new_value(local_type, ValueKind::kVariablePtr);
+  rand_z_ = new_value(local_type, ValueKind::kVariablePtr);
+  rand_w_ = new_value(local_type, ValueKind::kVariablePtr);
+  global_values.push_back(rand_x_);
+  global_values.push_back(rand_y_);
+  global_values.push_back(rand_z_);
+  global_values.push_back(rand_w_);
   ib_.begin(spv::OpVariable)
-      .add_seq(local_type, _rand_x_, spv::StorageClassPrivate)
+      .add_seq(local_type, rand_x_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(local_type, _rand_y_, spv::StorageClassPrivate)
+      .add_seq(local_type, rand_y_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(local_type, _rand_z_, spv::StorageClassPrivate)
+      .add_seq(local_type, rand_z_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(local_type, _rand_w_, spv::StorageClassPrivate)
+      .add_seq(local_type, rand_w_, spv::StorageClassPrivate)
       .commit(&global_);
-  debug(spv::OpName, _rand_x_, "_rand_x");
-  debug(spv::OpName, _rand_y_, "_rand_y");
-  debug(spv::OpName, _rand_z_, "_rand_z");
-  debug(spv::OpName, _rand_w_, "_rand_w");
-  SType gtmp_type = get_pointer_type(t_int32_, spv::StorageClassStorageBuffer);
+  debug(spv::OpName, rand_x_, "_rand_x");
+  debug(spv::OpName, rand_y_, "_rand_y");
+  debug(spv::OpName, rand_z_, "_rand_z");
+  debug(spv::OpName, rand_w_, "_rand_w");
+  SType gtmp_type = get_pointer_type(t_uint32_, spv::StorageClassStorageBuffer);
   Value rand_gtmp_ = new_value(gtmp_type, ValueKind::kVariablePtr);
   debug(spv::OpName, rand_gtmp_, "rand_gtmp");
 
@@ -915,8 +915,8 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   Value _362436069u = uint_immediate_number(t_uint32_, 362436069u);
   Value _521288629u = uint_immediate_number(t_uint32_, 521288629u);
   Value _88675123u = uint_immediate_number(t_uint32_, 88675123u);
-  Value _1 = int_immediate_number(t_int32_, 1);
-  Value _1024 = int_immediate_number(t_int32_, 1024);
+  Value _1 = int_immediate_number(t_uint32_, 1);
+  Value _1024 = int_immediate_number(t_uint32_, 1024);
 
   // init_rand_ segment (inline to main)
   // ad-hoc: hope no kernel will use more than 1024 gtmp variables...
@@ -928,11 +928,11 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
   Value tmp0 = new_value(pint_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpAccessChain)
-      .add_seq(pint_type, tmp0, gl_global_invocation_id,
+      .add_seq(pint_type, tmp0, gl_global_invocation_id_,
                uint_immediate_number(t_uint32_, 0))
       .commit(&func_header_);
   Value tmp1 = load_var(tmp0, t_uint32_);
-  Value tmp2_ = load_var(rand_gtmp_, t_int32_);
+  Value tmp2_ = load_var(rand_gtmp_, t_uint32_);
   Value tmp2 = new_value(t_uint32_, ValueKind::kNormal);
   ib_.begin(spv::OpBitcast)
       .add_seq(t_uint32_, tmp2, tmp2_)
@@ -961,19 +961,19 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   ib_.begin(spv::OpIMul)
       .add_seq(t_uint32_, tmp8, _1000000007u, tmp7)
       .commit(&func_header_);
-  store_var(_rand_x_, tmp8);
-  store_var(_rand_y_, _362436069u);
-  store_var(_rand_z_, _521288629u);
-  store_var(_rand_w_, _88675123u);
+  store_var(rand_x_, tmp8);
+  store_var(rand_y_, _362436069u);
+  store_var(rand_z_, _521288629u);
+  store_var(rand_w_, _88675123u);
   // Yes, this is not an atomic operation, but just fine since no matter
   // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
   // us to set different seeds for different threads.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
-  Value tmp9 = load_var(rand_gtmp_, t_int32_);
-  Value tmp10 = new_value(t_int32_, ValueKind::kNormal);
+  Value tmp9 = load_var(rand_gtmp_, t_uint32_);
+  Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
   ib_.begin(spv::OpIAdd)
-      .add_seq(t_int32_, tmp10, tmp9, _1)
+      .add_seq(t_uint32_, tmp10, tmp9, _1)
       .commit(&func_header_);
   store_var(rand_gtmp_, tmp10);
 

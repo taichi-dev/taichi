@@ -61,6 +61,23 @@ class DemoteAtomics : public BasicStmtVisitor {
             break;
           }
         }
+        // demote from-end atomics
+        if (current_offloaded->task_type == OffloadedTaskType::mesh_for) {
+          if (dest->indices.size() == 1 &&
+              dest->indices[0]->is<MeshIndexConversionStmt>()) {
+            auto idx = dest->indices[0]->as<MeshIndexConversionStmt>()->idx;
+            while (idx->is<MeshIndexConversionStmt>()) {  // special case: l2g +
+                                                          // g2r
+              idx = idx->as<MeshIndexConversionStmt>()->idx;
+            }
+            if (idx->is<LoopIndexStmt>() &&
+                idx->as<LoopIndexStmt>()->is_mesh_index() &&
+                loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()
+                                     ->snodes.data[0]] != nullptr) {
+              demote = true;
+            }
+          }
+        }
       }
     }
     if (stmt->dest->is<AllocaStmt>() ||

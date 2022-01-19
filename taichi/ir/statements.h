@@ -733,7 +733,6 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
-  bool end_is_array_axis{false};
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
@@ -742,8 +741,7 @@ class RangeForStmt : public Stmt {
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized,
-               bool end_is_array_axis = false);
+               bool strictly_serialized);
 
   bool is_container_statement() const override {
     return true;
@@ -762,8 +760,7 @@ class RangeForStmt : public Stmt {
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
-                     strictly_serialized,
-                     end_is_array_axis);
+                     strictly_serialized);
   TI_DEFINE_ACCEPT
 };
 
@@ -873,6 +870,7 @@ class ReturnStmt : public Stmt {
   explicit ReturnStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
+
   explicit ReturnStmt(Stmt *value) : values({value}) {
     TI_STMT_REG_FIELDS;
   }

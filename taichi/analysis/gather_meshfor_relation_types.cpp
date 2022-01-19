@@ -29,9 +29,6 @@ class GatherMeshforRelationTypes : public BasicStmtVisitor {
     TI_ASSERT(stmt->minor_relation_types.size() == 0);
     mesh_for = stmt;
     stmt->body->accept(this);
-    TI_ASSERT_INFO(
-        stmt->major_to_types.size() <= 1,
-        "Now ti.Mesh only allows single type first-order relation accesss");
     mesh_for = nullptr;
   }
 

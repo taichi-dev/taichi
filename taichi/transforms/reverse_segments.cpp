@@ -64,12 +64,15 @@ void reverse_segments(IRNode *root) {
     }
   }
     */
-  if (has_for && has_non_for)
+  if (has_for && has_non_for) {
     TI_ERROR(
-        "Invalid program input for autodiff. Please check the documentation "
-        "for the \"Kernel Simplicity Rule\":\n"
+        "Invalid program input for autodiff: "
+        "Mixed usage of for-loop and a statement without looping. \n"
+        "Please check the documentation "
+        "for the \"Kernel Simplicity Rule\" \"differentiable_task4\":\n"
         "https://docs.taichi.graphics/lang/articles/advanced/"
         "differentiable_programming#kernel-simplicity-rule");
+  }
   for (auto &sblock : statement_blocks) {
     for (auto &&s : sblock) {
       block->statements.push_back(std::move(s));

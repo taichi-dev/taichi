@@ -1076,9 +1076,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
                   [](const DataType &t) { return t.is_pointer(); })) {
     TI_NOT_IMPLEMENTED
   } else {
-    TI_ASSERT(
-        stmt->values.size() <= 30 &&
-        "ERROR: Return list's size must less than or equal to 30 currently!");
+    TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
     int idx = 0;
     for (auto &value : stmt->values) {
       auto intermediate_bits = 0;
@@ -1104,7 +1102,6 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
           "LLVMRuntime_store_result",
           {get_runtime(), extended,
            llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, idx++))});
-      // Need add
     }
   }
 }

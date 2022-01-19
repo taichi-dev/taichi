@@ -48,6 +48,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (start_from_ast) {
+    irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
   }
@@ -307,6 +308,7 @@ void compile_inline_function(IRNode *ir,
   }
 
   if (start_from_ast) {
+    irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
   }

@@ -37,7 +37,7 @@ classifiers = [
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 8
-TI_VERSION_PATCH = 10
+TI_VERSION_PATCH = 11
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/_lib/runtime/*')
@@ -252,10 +252,8 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.10",
       install_requires=[
-          'numpy',
-          'sourceinspect>=0.0.4',
-          'colorama',
-          'astor',
+          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'astor',
+          'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],

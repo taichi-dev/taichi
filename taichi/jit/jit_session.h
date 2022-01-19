@@ -11,13 +11,17 @@ TLANG_NAMESPACE_BEGIN
 
 // Backend JIT compiler for all archs
 
+class LlvmProgramImpl;
+
 class JITSession {
+ private:
+  LlvmProgramImpl *llvm_prog_;
+
  protected:
   std::vector<std::unique_ptr<JITModule>> modules;
 
  public:
-  JITSession() {
-  }
+  JITSession(LlvmProgramImpl *llvm_prog);
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
                                 int max_reg = 0) = 0;
@@ -28,14 +32,20 @@ class JITSession {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual llvm::DataLayout get_data_layout();
+  virtual llvm::DataLayout get_data_layout() = 0;
 
-  static std::unique_ptr<JITSession> create(Arch arch);
+  static std::unique_ptr<JITSession> create(LlvmProgramImpl *llvm_prog,
+                                            Arch arch);
 
   virtual void global_optimize_module(llvm::Module *module) {
   }
 
   virtual ~JITSession() = default;
+
+ protected:
+  LlvmProgramImpl *llvm_prog() const {
+    return llvm_prog_;
+  }
 };
 
 TLANG_NAMESPACE_END

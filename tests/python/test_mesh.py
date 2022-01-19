@@ -224,3 +224,118 @@ def test_mesh_local():
         assert res1[i] == res2[i]
         assert res1[i] == res3[i]
         assert res1[i] == res4[i]
+
+
+@ti.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
+def test_auto_mesh_local():
+    mesh_builder = ti.Mesh.Tet()
+    mesh_builder.verts.place({'a': ti.i32, 's': ti.i32})
+    mesh_builder.faces.link(mesh_builder.verts)
+    model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
+    ext_a = ti.field(ti.i32, shape=len(model.verts))
+
+    @ti.kernel
+    def foo(cache: ti.template()):
+        for v in model.verts:
+            v.s = v.id
+        if ti.static(cache):
+            ti.mesh_local(ext_a, model.verts.a)
+        for f in model.faces:
+            m = f.verts[0].s + f.verts[1].s + f.verts[2].s
+            f.verts[0].a += m
+            f.verts[1].a += m
+            f.verts[2].a += m
+            for i in range(3):
+                ext_a[f.verts[i].id] += m
+
+    foo(False)
+    res1 = model.verts.a.to_numpy()
+    res2 = ext_a.to_numpy()
+    model.verts.a.fill(0)
+    ext_a.fill(0)
+    foo(True)
+    res3 = model.verts.a.to_numpy()
+    res4 = ext_a.to_numpy()
+
+    for i in range(len(model.verts)):
+        assert res1[i] == res2[i]
+        assert res1[i] == res3[i]
+        assert res1[i] == res4[i]
+
+
+@ti.test(require=ti.extension.mesh)
+def test_nested_mesh_for():
+    mesh_builder = ti.Mesh.Tet()
+    mesh_builder.faces.place({'a': ti.i32, 'b': ti.i32})
+    mesh_builder.faces.link(mesh_builder.verts)
+    model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
+
+    @ti.kernel
+    def foo():
+        for f in model.faces:
+            for i in range(f.verts.size):
+                f.a += f.verts[i].id
+            for v in f.verts:
+                f.b += v.id
+
+    a = model.faces.a.to_numpy()
+    b = model.faces.b.to_numpy()
+    assert (a == b).all() == 1
+
+
+@ti.test(require=ti.extension.mesh)
+def test_multiple_mesh_major_relations():
+    mesh = ti.TetMesh()
+    mesh.verts.place({
+        's': ti.i32,
+        's_': ti.i32,
+        's1': ti.i32,
+        'a': ti.i32,
+        'b': ti.i32,
+        'c': ti.i32
+    })
+    mesh.edges.place({'s2': ti.i32})
+    mesh.cells.place({'s3': ti.i32})
+    mesh.verts.link(mesh.verts)
+    mesh.verts.link(mesh.edges)
+    mesh.verts.link(mesh.cells)
+
+    model = mesh.build(ti.Mesh.load_meta(model_file_path))
+
+    @ti.kernel
+    def foo():
+        for u in model.verts:
+            u.s1 = u.id
+        for e in model.edges:
+            e.s2 = e.id
+        for c in model.cells:
+            c.s3 = c.id
+
+        ti.mesh_local(model.verts.s1, model.edges.s2, model.cells.s3)
+        for u in model.verts:
+            a, b, c = 0, 0, 0
+            for i in range(u.verts.size):
+                a += u.verts[i].s1
+            for i in range(u.edges.size):
+                b += u.edges[i].s2
+            for i in range(u.cells.size):
+                c += u.cells[i].s3
+            u.s = a * b * c
+
+        for u in model.verts:
+            for i in range(u.verts.size):
+                u.a += u.verts[i].s1
+        for u in model.verts:
+            for i in range(u.edges.size):
+                u.b += u.edges[i].s2
+        for u in model.verts:
+            for i in range(u.cells.size):
+                u.c += u.cells[i].s3
+        for u in model.verts:
+            u.s_ = u.a * u.b * u.c
+
+    foo()
+
+    sum1 = model.verts.s.to_numpy().sum()
+    sum2 = model.verts.s_.to_numpy().sum()
+    assert sum1 == sum2

@@ -491,18 +491,23 @@ def tonemap(accumulated: ti.f32):
                                           100.0)
 
 
-gui = ti.GUI('Cornell Box', res, fast_gui=True)
-gui.fps_limit = 300
-last_t = time.time()
-i = 0
-while gui.running:
-    render()
-    interval = 10
-    if i % interval == 0:
-        tonemap(i)
-        print("{:.2f} samples/s ({} iters)".format(
-            interval / (time.time() - last_t), i))
-        last_t = time.time()
-        gui.set_image(tonemapped_buffer)
-        gui.show()
-    i += 1
+def main():
+    gui = ti.GUI('Cornell Box', res, fast_gui=True)
+    gui.fps_limit = 300
+    last_t = time.time()
+    i = 0
+    while gui.running:
+        render()
+        interval = 10
+        if i % interval == 0:
+            tonemap(i)
+            print("{:.2f} samples/s ({} iters)".format(
+                interval / (time.time() - last_t), i))
+            last_t = time.time()
+            gui.set_image(tonemapped_buffer)
+            gui.show()
+        i += 1
+
+
+if __name__ == '__main__':
+    main()

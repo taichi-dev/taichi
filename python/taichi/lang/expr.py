@@ -2,6 +2,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.exception import TaichiTypeError
 from taichi.lang.util import is_taichi_class
 
 
@@ -17,16 +18,21 @@ class Expr(TaichiOperations):
                 self.ptr = args[0].ptr
                 self.tb = args[0].tb
             elif is_taichi_class(args[0]):
-                raise ValueError('cannot initialize scalar expression from '
-                                 f'taichi class: {type(args[0])}')
+                raise TaichiTypeError(
+                    'Cannot initialize scalar expression from '
+                    f'taichi class: {type(args[0])}')
             else:
                 # assume to be constant
                 arg = args[0]
-                try:
-                    if isinstance(arg, np.ndarray):
-                        arg = arg.dtype(arg)
-                except:
-                    pass
+                if isinstance(arg, np.ndarray):
+                    if arg.shape:
+                        raise TaichiTypeError(
+                            "Only 0-dimensional numpy array can be used to initialize a scalar expression"
+                        )
+                    try:
+                        arg = arg.dtype.type(arg)
+                    except:
+                        pass
                 self.ptr = impl.make_constant_expr(arg).ptr
         else:
             assert False

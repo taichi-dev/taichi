@@ -637,8 +637,8 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(value));
+  m.def("create_kernel_exprgroup_return", [&](const ExprGroup &group) {
+    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(group));
   });
 
   m.def("insert_continue_stmt", [&]() {

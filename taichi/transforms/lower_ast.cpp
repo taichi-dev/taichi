@@ -386,7 +386,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    auto expr = stmt->value;
+    auto expr = stmt->values[0];
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
     fctx.push_back<ReturnStmt>(fctx.back_stmt());

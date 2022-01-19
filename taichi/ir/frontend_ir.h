@@ -215,9 +215,9 @@ class FrontendWhileStmt : public Stmt {
 
 class FrontendReturnStmt : public Stmt {
  public:
-  Expr value;
+  ExprGroup values;
 
-  FrontendReturnStmt(const Expr &value) : value(value) {
+  FrontendReturnStmt(const ExprGroup &group) : values(group) {
   }
 
   bool is_container_statement() const override {

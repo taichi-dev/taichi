@@ -91,7 +91,8 @@ def _get_tree_and_ctx(self,
                       excluded_parameters=(),
                       is_kernel=True,
                       arg_features=None,
-                      args=None):
+                      args=None,
+                      ast_builder=None):
     file = oinspect.getsourcefile(self.func)
     src, start_lineno = oinspect.getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
@@ -124,7 +125,8 @@ def _get_tree_and_ctx(self,
                                        argument_data=args,
                                        src=src,
                                        start_lineno=start_lineno,
-                                       file=file)
+                                       file=file,
+                                       ast_builder=ast_builder)
 
 
 class Func:
@@ -170,9 +172,12 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        ret = transform_tree(impl.get_runtime().prog.current_ast_builder(),
-                             tree, ctx)
+        tree, ctx = _get_tree_and_ctx(
+            self,
+            is_kernel=False,
+            args=args,
+            ast_builder=impl.get_runtime().prog.current_ast_builder())
+        ret = transform_tree(tree, ctx)
         if not impl.get_runtime().experimental_real_function:
             if self.return_type and not ctx.returned:
                 raise TaichiSyntaxError(
@@ -195,11 +200,14 @@ class Func:
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
         fn = _ti_core.create_function(key)
+
+        def func_body():
+            ctx.ast_builder = fn.ast_builder()
+            transform_tree(tree, ctx)
+
         self.taichi_functions[key.instance_id] = fn
-        self.compiled[key.instance_id] = lambda: transform_tree(
-            fn.ast_builder(), tree, ctx)
-        self.taichi_functions[key.instance_id].set_function_body(
-            self.compiled[key.instance_id])
+        self.compiled[key.instance_id] = func_body
+        self.taichi_functions[key.instance_id].set_function_body(func_body)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -461,7 +469,8 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
-                transform_tree(kernel_cxx.ast_builder(), tree, ctx)
+                ctx.ast_builder = kernel_cxx.ast_builder()
+                transform_tree(tree, ctx)
                 if not impl.get_runtime().experimental_real_function:
                     if self.return_type and not ctx.returned:
                         raise TaichiSyntaxError(

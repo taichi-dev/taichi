@@ -11,7 +11,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
 
 
 class Builder:
-    def __call__(self, ast_builder, ctx, node):
+    def __call__(self, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
             if method is None:
@@ -21,7 +21,7 @@ class Builder:
                 except:
                     error_msg = f'Unsupported node {node}'
                 raise TaichiSyntaxError(error_msg)
-            return method(ast_builder, ctx, node)
+            return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)
@@ -100,7 +100,8 @@ class ASTTransformerContext:
                  argument_data=None,
                  file=None,
                  src=None,
-                 start_lineno=None):
+                 start_lineno=None,
+                 ast_builder=None):
         self.func = func
         self.local_scopes = []
         self.loop_scopes = []
@@ -124,6 +125,7 @@ class ASTTransformerContext:
         self.raised = False
         self.non_static_status = NonStaticStatus()
         self.returned = False
+        self.ast_builder = ast_builder
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

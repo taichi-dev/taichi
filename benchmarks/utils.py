@@ -1,5 +1,10 @@
+import datetime
 import functools
+import json
 import os
+
+import jsbeautifier
+from taichi._lib import core as ti_core
 
 import taichi as ti
 
@@ -27,3 +32,18 @@ def benchmark_async(func):
                 func(scale)
 
     return body
+
+
+def dump2json(obj):
+    obj2dict = obj if type(obj) is dict else obj.__dict__
+    options = jsbeautifier.default_options()
+    options.indent_size = 4
+    return jsbeautifier.beautify(json.dumps(obj2dict), options)
+
+
+def datatime_with_format():
+    return datetime.datetime.now().isoformat()
+
+
+def get_commit_hash():
+    return ti_core.get_commit_hash()

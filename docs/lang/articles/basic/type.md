@@ -69,7 +69,7 @@ def func(a: ti.f32) -> ti.i64:
 Just like programming in other languages, you may encounter situations where you have a certain
 type of data, but it is not feasible for the assignment or calculation you want to perform. In this
 case, you can do *explicit type casting*. There are two kinds of explicit type casting in Taichi,
-namely `ti.cast` and `ti.bit_cast`.
+namely *normal casting* and *bit casting*.
 
 :::caution
 In Taichi-scope, the type of a variable is **static** and **determined on its initialization**.
@@ -77,7 +77,7 @@ That is, you can never change the type of a variable. The compiler relies on thi
 information to check the validity of expressions in Taichi programs.
 :::
 
-#### `ti.cast`
+#### Normal casting
 
 `ti.cast()` is used for normal type casting as in other programming languages:
 
@@ -100,9 +100,9 @@ def foo():
     c = float(b)  # 3.0
 ```
 
-#### `ti.bit_cast`
+#### Bit casting
 
-Use `ti.bit_cast` to cast a value into another type **with its underlying bits preserved**:
+Use `ti.bit_cast()` to cast a value into another type **with its underlying bits preserved**:
 
 ```python {4-5}
 @ti.kernel
@@ -130,7 +130,7 @@ Relying on implicit type casting is bad practice and one major source of bugs.
 
 #### Implicit type casting in binary operations
 
-Following the [implicit conversion rules] of the C programming language, Taichi implicitly casts
+Following the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) of the C programming language, Taichi implicitly casts
 binary operation operands into a *common type* if they have different types. Some simple but most
 commonly used rules are listed below:
 

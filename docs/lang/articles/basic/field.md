@@ -3,23 +3,20 @@ sidebar_position: 3
 ---
 
 # Fields
+Taichi fields are used to store data. In general, fields are used as global data containers, which can be read and written from both the Python scope and the Taichi scope.
 
-Taichi fields are used to store data. In general, field is a **global** data container, can be read/written from both the Python scope and the Taichi scope. 
-
-A field has its data type and shape, can be considered as a multi-dimensional array of elements,
-an element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
-Element of field can be either **dense** or **sparse**, more details at [Sparse computation](/lang/articles/advanced/sparse)
+A field has its data type and shape, can be considered as a multi-dimensional array of elements, an element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**. The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed in [Sparse computation](/lang/articles/advanced/sparse)
 
 :::note
 The term **field** is borrowed from mathematics and physics. If you
 have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it will be straightforward to understand the fields in Taichi.
 :::
 
-## Scalar fields
-Let's first talk about scalar fields, whose elements are simply scalars.
+## Scalar field
+We introduce fields through this very basic field type, whose elements are simply scalars.
 
 ### Declaration
-* A 0D scalar field is simply a single scalar.
+* A 0D scalar field is a single scalar.
 * A 1D scalar field is a 1D linear array.
 * A 2D scalar field can be used to represent a 2D regular grid of values. For example, a gray-scale image.
 * A 3D scalar field can be used for volumetric data.
@@ -35,11 +32,16 @@ volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 ```
 
 ### Access elements of scalar fields
-访问 4种 
-x[None] = 2
+
+``` python
+single_scalar[None] = 2
+single_scalar[None] = 2
+single_scalar[None] = 2
+single_scalar[None] = 2
+```
 
 To be noticed:
-* Field values are initially zero. #验证?
+* Field values are initially zero.
 
 
 ### Example

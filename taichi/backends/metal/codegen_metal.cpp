@@ -395,7 +395,7 @@ class KernelCodegenImpl : public IRVisitor {
     // TODO: use stmt->ret_id instead of 0 as index
     int idx{0};
     for (auto &value : stmt->values) {
-      emit("*{}.ret0()[{}] = {};", kContextVarName, idx++, value->raw_name());
+      emit("{}.ret0()[{}] = {};", kContextVarName, idx++, value->raw_name());
     }
   }
 

@@ -128,7 +128,7 @@ casting is triggered for the following cases.
 Relying on implicit type casting is bad practice and one major source of bugs.
 :::
 
-#### Implicit type casting in binary operations
+#### In binary operations
 
 Following the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) of the C programming language, Taichi implicitly casts
 binary operation operands into a *common type* if they have different types. Some simple but most
@@ -137,7 +137,7 @@ commonly used rules are listed below:
 - `i32 + f32 = f32` (int + float = float)
 - `i32 + i64 = i64` (low precision bits + high precision bits = high precision bits)
 
-#### Implicit type casting in assignments
+#### In assignments
 
 When a value is assigned to a variable with a different type, the value is implicitly cast into that
 type. If the type of the variable differs from the common type of the variable and the value, a

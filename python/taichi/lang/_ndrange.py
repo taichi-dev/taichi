@@ -12,7 +12,7 @@ class ndrange:
                 args[i] = (0, arg)
             if len(args[i]) != 2:
                 raise TaichiSyntaxError(
-                    "The arguments of ndrange should be tuples/lists like (begin, end)"
+                    "Every argument of ndrange should be a scalar or a tuple/list like (begin, end)"
                 )
         self.bounds = args
 

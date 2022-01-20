@@ -168,7 +168,11 @@ for examples on using autodiff-based force evaluation MPM and FEM.
 
 As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
 If there're multiple output variables that you want to back-propagate
-gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`.
+gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`. 
+Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually 
+before calling the `kernel.grad()`. The reason is that the `grad` of the output variables themselves 
+will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation. 
+If using `ti.Tape()`, the program will help you do this under the hood. 
 
 ```python {13-14}
 import taichi as ti
@@ -188,6 +192,8 @@ def func():
 
 for i in range(N):
     x[i] = i
+
+# Set the `grad` of the output variables to `1` before calling `func.grad()`.
 loss.grad[None] = 1
 loss2.grad[None] = 1
 
@@ -296,10 +302,13 @@ func_break_rule_2.grad()
 assert x.grad[1] == 4.0
 assert x.grad[2] == 3.0
 ```
-### Kernel Simplicity Rule
 
-:::note Kernel Simplicity Rule
-Kernel body must consist of multiple for-loops or non-for statements.
+### Avoid mixed usage of parallel for-loop and non-for statements
+Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system. 
+Please split them into two kernels.
+
+:::note
+Kernel body must only consist of either multiple for-loops or non-for statements.
 :::
 
 Example:
@@ -307,7 +316,7 @@ Example:
 ```python
 @ti.kernel
 def differentiable_task():
-    # Bad: mixed usage of for-loop and a statement without looping. Please split them into two kernels.
+    # Bad: mixed usage of a parallel for-loop and a statement without looping. Please split them into two kernels.
     loss[None] += x[0]
     for i in range(10):
         ...

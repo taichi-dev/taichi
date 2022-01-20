@@ -1,9 +1,9 @@
 import itertools
 
+import taichi as ti
+
 from microbenchmarks._result import ResultType
 from microbenchmarks._utils import get_ti_arch, tags2name
-
-import taichi as ti
 
 
 class BenchmarkPlan:
@@ -14,7 +14,7 @@ class BenchmarkPlan:
         self.info = {'name': self.name}
         self.plan = {}  # {'tags': [...], 'result': None}
         self.items = []
-        self.func = None
+        self.func_lut = None
 
     def create_plan(self, *items):
         self.items = list(items)
@@ -26,8 +26,8 @@ class BenchmarkPlan:
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
 
-    def set_func(self, func):
-        self.func = func
+    def set_func(self, func_lut):
+        self.func_lut = func_lut
 
     def run(self):
         for case, plan in self.plan.items():
@@ -54,5 +54,8 @@ class BenchmarkPlan:
         return False
 
     def _run_func(self, tags: list):
-        return self.func(self.arch, self.basic_repeat_times,
-                         **self._get_kwargs(tags))
+        for tag in tags:
+            if tag in self.func_lut:
+                return self.func_lut[tag](self.arch, self.basic_repeat_times,
+                                          **self._get_kwargs(tags))
+        return None

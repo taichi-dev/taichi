@@ -1,6 +1,23 @@
-from taichi._lib import core as ti_core
+from time import perf_counter
 
 import taichi as ti
+from taichi._lib import core as ti_core
+
+
+class End2EndTimer:
+    def __init__(self):
+        self._ts1 = 0
+        self._ts2 = 0
+
+    def tick(self):
+        ti.sync()
+        self._ts1 = perf_counter()
+        return self._ts1
+
+    def tock(self):
+        ti.sync()
+        self._ts2 = perf_counter()
+        return self._ts2 - self._ts1
 
 
 def size2tag(size_in_byte):

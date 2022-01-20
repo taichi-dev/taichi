@@ -1,25 +1,65 @@
-from microbenchmarks._items import DataSize, DataType
+import taichi as ti
+
+from microbenchmarks._items import Container, DataSize, DataType
 from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._result import ResultType
 from microbenchmarks._utils import dtype_size, scaled_repeat_times
 
-import taichi as ti
 
-
-def fill_default(arch, repeat, dtype, dsize, get_result):
+def fill_default(arch, repeat, container, dtype, dsize, get_result):
     @ti.kernel
     def fill_field(dst: ti.template()):
         for I in ti.grouped(dst):
             dst[I] = ti.cast(0.7, dtype)
 
+    @ti.kernel
+    def fill_array(dst: ti.any_arr()):
+        for i in dst:
+            dst[i] = ti.cast(0.7, dtype)
+
     repeat = scaled_repeat_times(arch, dsize, repeat)
     num_elements = dsize // dtype_size(dtype)
-    x = ti.field(dtype, num_elements)
-    return get_result(repeat, fill_field, x)
+    x = container(dtype, num_elements)
+    func = fill_field if container == ti.field else fill_array
+    return get_result(repeat, func, x)
+
+
+def fill_sparse(arch, repeat, container, dtype, dsize, get_result):
+    # if dsize > 67108864:                       #dsize < 64 MB: Sparse-specific parameters
+    #     return None
+    repeat = scaled_repeat_times(
+        arch, dsize, 1)  #basic_repeat_time = 1: Sparse-specific parameters
+    num_elements = dsize // dtype_size(dtype) // 8
+
+    block = ti.root.pointer(ti.i, num_elements)
+    x = ti.field(dtype)
+    block.dense(ti.i, 8).place(x)
+
+    @ti.kernel
+    def active_all():
+        for i in ti.ndrange(num_elements):
+            ti.activate(block, [i])
+
+    active_all()
+
+    @ti.kernel
+    def fill_const(dst: ti.template()):
+        for i in x:
+            dst[i] = ti.cast(0.7, dtype)
+
+    return get_result(repeat, fill_const, x)
+
+
+#use container tag
+func_lut = {
+    'field': fill_default,
+    'ndarray': fill_default,
+    'sparse': fill_sparse
+}
 
 
 class FillPlan(BenchmarkPlan):
     def __init__(self, arch: str):
         super().__init__('fill', arch, basic_repeat_times=10)
-        self.create_plan(DataType(), DataSize(), ResultType())
-        self.set_func(fill_default)
+        self.create_plan(Container(), DataType(), DataSize(), ResultType())
+        self.set_func(func_lut)

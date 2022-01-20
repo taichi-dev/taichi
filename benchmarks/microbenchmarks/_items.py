@@ -1,6 +1,6 @@
-from microbenchmarks._utils import size2tag
-
 import taichi as ti
+
+from microbenchmarks._utils import size2tag
 
 
 class BenchmarkItem:
@@ -39,3 +39,14 @@ class DataSize(BenchmarkItem):
         for i in range(1, 10):  # [4KB,16KB...256MB]
             size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
             self._items[size2tag(size_bytes)] = size_bytes
+
+
+class Container(BenchmarkItem):
+    name = 'container'
+
+    def __init__(self):
+        self._items = {
+            'field': ti.field,
+            'ndarray': ti.ndarray,
+            # 'sparse': None,  # implement by feature
+        }

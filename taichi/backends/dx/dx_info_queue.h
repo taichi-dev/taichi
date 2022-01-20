@@ -16,7 +16,7 @@ class Dx11InfoQueue {
     int intref;
   };
   static std::vector<Entry> parse_reference_count(
-      const std::vector<std::string>);
+      const std::vector<std::string>&);
   explicit Dx11InfoQueue(ID3D11Device *device);
   int live_object_count();
 

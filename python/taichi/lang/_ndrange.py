@@ -1,3 +1,6 @@
+import collections.abc
+
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import _IntermediateMatrix
 
 
@@ -5,11 +8,12 @@ class ndrange:
     def __init__(self, *args):
         args = list(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, list):
-                args[i] = tuple(arg)
-            if not isinstance(arg, tuple):
+            if not isinstance(arg, collections.abc.Sequence):
                 args[i] = (0, arg)
-            assert len(args[i]) == 2
+            if len(args[i]) != 2:
+                raise TaichiSyntaxError(
+                    "The arguments of ndrange should be tuples/lists like (begin, end)"
+                )
         self.bounds = args
 
         self.dimensions = [None] * len(args)

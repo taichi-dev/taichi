@@ -217,3 +217,15 @@ def test_ndrange_ast_transform():
             else:
                 r = 0
             assert A[i, j] == r
+
+
+@ti.test()
+def test_grouped_ndrange_star():
+    @ti.kernel
+    def foo() -> ti.i32:
+        ret = 0
+        for I in ti.grouped(ti.ndrange(*[[1, 3]] * 3)):
+            ret += I[0] + I[1] + I[2]
+        return ret
+
+    assert foo() == 36

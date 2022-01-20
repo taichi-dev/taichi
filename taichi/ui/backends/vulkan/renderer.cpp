@@ -78,7 +78,7 @@ void Renderer::particles(Program *prog,
   next_renderable_ += 1;
 }
 
-void Renderer::scene(Scene *scene) {
+void Renderer::scene(Program *prog, Scene *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
   }
@@ -91,12 +91,12 @@ void Renderer::scene(Scene *scene) {
   for (int i = 0; i < object_count; ++i) {
     if (mesh_id < scene->mesh_infos_.size() &&
         scene->mesh_infos_[mesh_id].object_id == i) {
-      mesh(scene->mesh_infos_[mesh_id], scene);
+      mesh(prog, scene->mesh_infos_[mesh_id], scene);
       ++mesh_id;
     }
     if (particles_id < scene->particles_infos_.size() &&
         scene->particles_infos_[particles_id].object_id == i) {
-      particles(scene->particles_infos_[particles_id], scene);
+      particles(prog, scene->particles_infos_[particles_id], scene);
       ++particles_id;
     }
   }

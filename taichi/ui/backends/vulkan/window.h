@@ -51,7 +51,7 @@ class Window final : public WindowBase {
   bool drawn_frame_{false};
 
  private:
-  void init(const AppConfig &config);
+  void init(lang::Program *prog, const AppConfig &config);
 
   void prepare_for_next_frame();
 

@@ -8,7 +8,7 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 Window::Window(Program *prog, const AppConfig &config) : WindowBase(config) {
-  init(config);
+  init(prog, config);
 }
 
 void Window::init(Program *prog, const AppConfig &config) {

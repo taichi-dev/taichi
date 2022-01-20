@@ -61,7 +61,7 @@ class Renderer {
 
   void particles(lang::Program *prog, const ParticlesInfo &info, Scene *scene);
 
-  void scene(Scene *scene);
+  void scene(lang::Program *prog, Scene *scene);
 
   void draw_frame(Gui *gui);
 

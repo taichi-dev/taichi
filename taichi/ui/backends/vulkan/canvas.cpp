@@ -35,7 +35,7 @@ void Canvas::circles(const CirclesInfo &info) {
 
 void Canvas::scene(SceneBase *scene_base) {
   if (Scene *scene = dynamic_cast<Scene *>(scene_base)) {
-    renderer_->scene(scene);
+    renderer_->scene(prog_, scene);
   } else {
     throw std::runtime_error("Scene is not vulkan scene");
   }

@@ -311,7 +311,7 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, bool, std::string, Arch,
+      .def(py::init<Program*, std::string, py::tuple, bool, bool, std::string, Arch,
                     bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)

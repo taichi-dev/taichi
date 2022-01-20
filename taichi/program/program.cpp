@@ -362,7 +362,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     }
     auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices])));
-    current_ast_builder().insert(std::move(ret));
+    this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -397,7 +397,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_reader");
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
-  auto &ker = kernel([keys] {
+  auto &ker = kernel([keys, this] {
     ExprGroup indices;
     for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
@@ -406,7 +406,7 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
         ExprGroup(load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
             keys.dtype, keys.num_active_indices, keys.num_active_indices,
             0))[indices])));
-    current_ast_builder().insert(std::move(ret));
+    this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;

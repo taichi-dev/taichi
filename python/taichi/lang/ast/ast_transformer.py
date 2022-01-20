@@ -571,48 +571,48 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
-    def build_short_circuit_and(operands):
+    def build_short_circuit_and(ast_builder, operands):
         if len(operands) == 1:
             return operands[0].ptr
 
         val = impl.expr_init(None)
         lhs = operands[0].ptr
-        impl.begin_frontend_if(lhs)
+        impl.begin_frontend_if(ast_builder, lhs)
 
-        _ti_core.begin_frontend_if_true()
-        rhs = ASTTransformer.build_short_circuit_and(operands[1:])
+        ast_builder.begin_frontend_if_true()
+        rhs = ASTTransformer.build_short_circuit_and(ast_builder, operands[1:])
         val.assign(rhs)
-        _ti_core.pop_scope()
+        ast_builder.pop_scope()
 
-        _ti_core.begin_frontend_if_false()
+        ast_builder.begin_frontend_if_false()
         val.assign(0)
-        _ti_core.pop_scope()
+        ast_builder.pop_scope()
 
         return val
 
     @staticmethod
-    def build_short_circuit_or(operands):
+    def build_short_circuit_or(ast_builder, operands):
         if len(operands) == 1:
             return operands[0].ptr
 
         val = impl.expr_init(None)
         lhs = operands[0].ptr
-        impl.begin_frontend_if(lhs)
+        impl.begin_frontend_if(ast_builder, lhs)
 
-        _ti_core.begin_frontend_if_true()
+        ast_builder.begin_frontend_if_true()
         val.assign(1)
-        _ti_core.pop_scope()
+        ast_builder.pop_scope()
 
-        _ti_core.begin_frontend_if_false()
-        rhs = ASTTransformer.build_short_circuit_or(operands[1:])
+        ast_builder.begin_frontend_if_false()
+        rhs = ASTTransformer.build_short_circuit_or(ast_builder, operands[1:])
         val.assign(rhs)
-        _ti_core.pop_scope()
+        ast_builder.pop_scope()
 
         return val
 
     @staticmethod
     def build_normal_bool_op(op):
-        def inner(operands):
+        def inner(ast_builder, operands):
             result = op(operands[0].ptr, operands[1].ptr)
             for i in range(2, len(operands)):
                 result = op(result, operands[i].ptr)
@@ -621,14 +621,14 @@ class ASTTransformer(Builder):
         return inner
 
     @staticmethod
-    def build_static_short_circuit_and(operands):
+    def build_static_short_circuit_and(ast_builder, operands):
         for operand in operands:
             if not operand.ptr:
                 return operand.ptr
         return operands[-1].ptr
 
     @staticmethod
-    def build_static_short_circuit_or(operands):
+    def build_static_short_circuit_or(ast_builder, operands):
         for operand in operands:
             if operand.ptr:
                 return operand.ptr
@@ -654,7 +654,7 @@ class ASTTransformer(Builder):
                 ast.Or: ASTTransformer.build_normal_bool_op(ti_ops.logical_or),
             }
         op = ops.get(type(node.op))
-        node.ptr = op(node.values)
+        node.ptr = op(ctx.ast_builder, node.values)
         return node.ptr
 
     @staticmethod
@@ -767,7 +767,7 @@ class ASTTransformer(Builder):
         with ctx.variable_scope_guard():
             loop_name = node.target.id
             ctx.check_loop_var(loop_name)
-            loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             if len(node.iter.args) not in [1, 2]:
                 raise TaichiSyntaxError(
@@ -785,9 +785,10 @@ class ASTTransformer(Builder):
                 end = ti_ops.cast(
                     expr.Expr(build_stmt(ctx, node.iter.args[0])),
                     primitive_types.i32)
-            _ti_core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
+                                                     end.ptr)
             build_stmts(ctx, node.body)
-            _ti_core.end_frontend_range_for()
+            ctx.ast_builder.end_frontend_range_for()
         return None
 
     @staticmethod
@@ -798,10 +799,10 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
-            _ti_core.begin_frontend_range_for(ndrange_loop_var.ptr,
-                                              ndrange_begin.ptr,
-                                              ndrange_end.ptr)
+            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                                     ndrange_begin.ptr,
+                                                     ndrange_end.ptr)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             for i, target in enumerate(targets):
@@ -818,7 +819,7 @@ class ASTTransformer(Builder):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
             build_stmts(ctx, node.body)
-            _ti_core.end_frontend_range_for()
+            ctx.ast_builder.end_frontend_range_for()
         return None
 
     @staticmethod
@@ -829,10 +830,10 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
-            _ti_core.begin_frontend_range_for(ndrange_loop_var.ptr,
-                                              ndrange_begin.ptr,
-                                              ndrange_end.ptr)
+            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                                     ndrange_begin.ptr,
+                                                     ndrange_end.ptr)
 
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
@@ -856,7 +857,7 @@ class ASTTransformer(Builder):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
             build_stmts(ctx, node.body)
-            _ti_core.end_frontend_range_for()
+            ctx.ast_builder.end_frontend_range_for()
         return None
 
     @staticmethod
@@ -878,23 +879,25 @@ class ASTTransformer(Builder):
                 loop_var = build_stmt(ctx, node.iter)
                 loop_indices = expr.make_var_list(size=len(loop_var.shape))
                 expr_group = expr.make_expr_group(loop_indices)
-                impl.begin_frontend_struct_for(expr_group, loop_var)
+                impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
+                                               loop_var)
                 ctx.create_variable(
                     target, matrix.Vector(loop_indices,
                                           dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
-                _ti_core.end_frontend_range_for()
+                ctx.ast_builder.end_frontend_struct_for()
             else:
                 _vars = []
                 for name in targets:
-                    var = expr.Expr(_ti_core.make_id_expr(""))
+                    var = expr.Expr(ctx.ast_builder.make_id_expr(""))
                     _vars.append(var)
                     ctx.create_variable(name, var)
                 loop_var = node.iter.ptr
                 expr_group = expr.make_expr_group(*_vars)
-                impl.begin_frontend_struct_for(expr_group, loop_var)
+                impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
+                                               loop_var)
                 build_stmts(ctx, node.body)
-                _ti_core.end_frontend_range_for()
+                ctx.ast_builder.end_frontend_struct_for()
         return None
 
     @staticmethod
@@ -906,17 +909,18 @@ class ASTTransformer(Builder):
         target = targets[0]
 
         with ctx.variable_scope_guard():
-            var = expr.Expr(_ti_core.make_id_expr(""))
+            var = expr.Expr(ctx.ast_builder.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh,
                                                   node.iter.ptr._type, var.ptr)
             ctx.create_variable(target, mesh_idx)
-            _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
-                                             node.iter.ptr._type)
+            ctx.ast_builder.begin_frontend_mesh_for(mesh_idx.ptr,
+                                                    ctx.mesh.mesh_ptr,
+                                                    node.iter.ptr._type)
             build_stmts(ctx, node.body)
             ctx.mesh = None
-            _ti_core.end_frontend_range_for()
+            ctx.ast_builder.end_frontend_mesh_for()
         return None
 
     @staticmethod
@@ -932,12 +936,13 @@ class ASTTransformer(Builder):
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             loop_name = node.target.id + '_index__'
-            loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
             end = node.iter.ptr.size
-            _ti_core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
-            entry_expr = _ti_core.get_relation_access(
+            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
+                                                     end.ptr)
+            entry_expr = ctx.ast_builder.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
             entry_expr.type_check()
@@ -945,7 +950,7 @@ class ASTTransformer(Builder):
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)
             build_stmts(ctx, node.body)
-            _ti_core.end_frontend_range_for()
+            ctx.ast_builder.end_frontend_range_for()
 
         return None
 
@@ -1010,16 +1015,16 @@ class ASTTransformer(Builder):
                 "'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            _ti_core.begin_frontend_while(expr.Expr(1).ptr)
+            ctx.ast_builder.begin_frontend_while(expr.Expr(1).ptr)
             while_cond = build_stmt(ctx, node.test)
-            impl.begin_frontend_if(while_cond)
-            _ti_core.begin_frontend_if_true()
-            _ti_core.pop_scope()
-            _ti_core.begin_frontend_if_false()
-            _ti_core.insert_break_stmt()
-            _ti_core.pop_scope()
+            impl.begin_frontend_if(ctx.ast_builder, while_cond)
+            ctx.ast_builder.begin_frontend_if_true()
+            ctx.ast_builder.pop_scope()
+            ctx.ast_builder.begin_frontend_if_false()
+            ctx.ast_builder.insert_break_stmt()
+            ctx.ast_builder.pop_scope()
             build_stmts(ctx, node.body)
-            _ti_core.pop_scope()
+            ctx.ast_builder.pop_scope()
         return None
 
     @staticmethod
@@ -1036,13 +1041,13 @@ class ASTTransformer(Builder):
             return node
 
         with ctx.non_static_control_flow_guard():
-            impl.begin_frontend_if(node.test.ptr)
-            _ti_core.begin_frontend_if_true()
+            impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
+            ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)
-            _ti_core.pop_scope()
-            _ti_core.begin_frontend_if_false()
+            ctx.ast_builder.pop_scope()
+            ctx.ast_builder.begin_frontend_if_false()
             build_stmts(ctx, node.orelse)
-            _ti_core.pop_scope()
+            ctx.ast_builder.pop_scope()
         return None
 
     @staticmethod
@@ -1055,7 +1060,7 @@ class ASTTransformer(Builder):
 
         args = [build_stmt(ctx, node.value.func)
                 ] + [arg.ptr for arg in build_stmts(ctx, node.value.args)]
-        impl.insert_expr_stmt_if_ti_func(*args)
+        impl.insert_expr_stmt_if_ti_func(ctx.ast_builder, *args)
 
         return None
 
@@ -1083,13 +1088,13 @@ class ASTTransformer(Builder):
 
         val = impl.expr_init(None)
 
-        impl.begin_frontend_if(node.test.ptr)
-        _ti_core.begin_frontend_if_true()
+        impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
+        ctx.ast_builder.begin_frontend_if_true()
         val.assign(node.body.ptr)
-        _ti_core.pop_scope()
-        _ti_core.begin_frontend_if_false()
+        ctx.ast_builder.pop_scope()
+        ctx.ast_builder.begin_frontend_if_false()
         val.assign(node.orelse.ptr)
-        _ti_core.pop_scope()
+        ctx.ast_builder.pop_scope()
 
         node.ptr = val
         return node.ptr
@@ -1143,7 +1148,7 @@ class ASTTransformer(Builder):
         if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Break)
         else:
-            _ti_core.insert_break_stmt()
+            ctx.ast_builder.insert_break_stmt()
         return None
 
     @staticmethod
@@ -1151,7 +1156,7 @@ class ASTTransformer(Builder):
         if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Continue)
         else:
-            _ti_core.insert_continue_stmt()
+            ctx.ast_builder.insert_continue_stmt()
         return None
 
     @staticmethod

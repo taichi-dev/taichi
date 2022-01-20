@@ -183,6 +183,16 @@ class Program {
     return *kernels.back();
   }
 
+  Kernel &kernel(const std::function<void(Kernel *)> &body,
+                 const std::string &name = "",
+                 bool grad = false) {
+    // Expr::set_allow_store(true);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    // Expr::set_allow_store(false);
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
+  }
+
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
@@ -301,6 +311,10 @@ class Program {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
+  ASTBuilder *current_ast_builder() {
+    return current_callable ? &current_callable->context->builder() : nullptr;
   }
 
  private:

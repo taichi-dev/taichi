@@ -56,6 +56,47 @@ def test_opengl_max_block_dim():
                 assert s in gl_file.readlines()
 
 
+@ti.test(arch=ti.opengl)
+def test_aot_field_range_hint():
+    density = ti.field(float, shape=(8, 8))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
+                'range_hint']
+            assert range_hint == '64'
+
+
+@ti.test(arch=ti.opengl)
+def test_aot_ndarray_range_hint():
+    density = ti.ndarray(dtype=ti.f32, shape=(8, 8))
+
+    @ti.kernel
+    def init(density: ti.any_arr()):
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_kernel(init, (density, ))
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
+                'range_hint']
+            assert range_hint == 'arg 0'
+
+
 @ti.test(arch=[ti.opengl, ti.vulkan])
 def test_save():
     density = ti.field(float, shape=(4, 4))

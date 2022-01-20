@@ -193,24 +193,9 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
-      irpass::replace_all_usages_with(alloc_ptr->parent, alloc_ptr, stmt);
-      // Search all the usages of the old stmt and replace it with the new one
-      irpass::analysis::gather_statements(
-          stmt->parent, [&](Stmt *stmt_to_check) -> bool {
-            if (stmt_to_check == stmt) {  // skip itself
-            } else if (auto local_load = stmt_to_check->cast<LocalLoadStmt>();
-                       local_load) {
-              for (auto &lane : local_load->src.data) {
-                if (lane.var == stmt)
-                  lane.var = alloc_ptr;
-              }
-            } else if (auto local_store = stmt_to_check->cast<LocalStoreStmt>();
-                       local_store) {
-              if (local_store->dest == stmt)
-                local_store->dest = alloc_ptr;
-            }
-            return false;
-          });
+      // Replace all the usages of the old stmt with that of the new one
+      irpass::replace_all_usages_with(stmt->parent, stmt, alloc_ptr);
+
       // Replace the old alloca with a local store
       // and it will be replaced by a AdStackPushStmt in the following
       // ReplaceLocalVarWithStacks pass

@@ -13,10 +13,7 @@ def size2tag(size_in_byte):
 
 
 def tags2name(tag_list):
-    name = ''
-    for tag in tag_list:
-        name += '_' + tag
-    return name.lstrip("_")
+    return '_'.join(tag_list)
 
 
 def dtype_size(ti_dtype):

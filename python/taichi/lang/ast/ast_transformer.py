@@ -144,7 +144,7 @@ class ASTTransformer(Builder):
                 var.assign(value)
             except AttributeError:
                 raise TaichiSyntaxError(
-                    f"Variable '{unparse(target)}' cannot be assigned. Maybe it is not a Taichi object?"
+                    f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
                 )
         return var
 

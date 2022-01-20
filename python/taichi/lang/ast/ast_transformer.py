@@ -339,8 +339,9 @@ class ASTTransformer(Builder):
         if hasattr(func, "_is_taichi_function") or hasattr(
                 func, "_is_wrapped_kernel"):  # taichi func/kernel
             return
-        if hasattr(func,
-                   "__module__") and func.__module__.startswith("taichi."):
+        if hasattr(
+                func, "__module__"
+        ) and func.__module__ and func.__module__.startswith("taichi."):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
@@ -375,7 +376,9 @@ class ASTTransformer(Builder):
                 node.func.value.ptr, str) and node.func.attr == 'format':
             args.insert(0, node.func.value.ptr)
             node.ptr = impl.ti_format(*args, **keywords)
-        elif ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+            return node.ptr
+
+        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)

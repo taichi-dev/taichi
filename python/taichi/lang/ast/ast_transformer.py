@@ -1,14 +1,11 @@
 import ast
 import collections.abc
-import inspect
-import os
 import warnings
 from collections import ChainMap
 from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi._lib.utils import package_root
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import ndrange

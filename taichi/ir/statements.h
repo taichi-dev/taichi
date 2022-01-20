@@ -733,6 +733,7 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  std::string range_hint;
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
@@ -741,7 +742,8 @@ class RangeForStmt : public Stmt {
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               std::string range_hint = "");
 
   bool is_container_statement() const override {
     return true;
@@ -1094,6 +1096,7 @@ class OffloadedStmt : public Stmt {
   bool reversed{false};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
+  std::string range_hint = "";
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;

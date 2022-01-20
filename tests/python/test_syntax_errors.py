@@ -290,3 +290,17 @@ def test_func_def_inside_func():
     with pytest.raises(ti.TaichiCompilationError,
                        match='Function definition not allowed'):
         k()
+
+
+@ti.test()
+def test_redefining_template_args():
+    @ti.kernel
+    def foo(a: ti.template()):
+        a = 5
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            "Variable 'a' cannot be assigned. Maybe it is not a Taichi object?"
+    ):
+        foo(1)

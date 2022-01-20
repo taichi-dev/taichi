@@ -25,10 +25,8 @@ def fill_default(arch, repeat, container, dtype, dsize, get_result):
 
 
 def fill_sparse(arch, repeat, container, dtype, dsize, get_result):
-    # if dsize > 67108864:                       #dsize < 64 MB: Sparse-specific parameters
-    #     return None
-    repeat = scaled_repeat_times(
-        arch, dsize, 1)  #basic_repeat_time = 1: Sparse-specific parameters
+    repeat = scaled_repeat_times(arch, dsize, 1)
+    #basic_repeat_time = 1: Sparse-specific parameters
     num_elements = dsize // dtype_size(dtype) // 8
 
     block = ti.root.pointer(ti.i, num_elements)
@@ -50,7 +48,7 @@ def fill_sparse(arch, repeat, container, dtype, dsize, get_result):
     return get_result(repeat, fill_const, x)
 
 
-#use container tag
+#use container_tag to get customized implementation
 func_lut = {
     'field': fill_default,
     'ndarray': fill_default,
@@ -61,5 +59,7 @@ func_lut = {
 class FillPlan(BenchmarkPlan):
     def __init__(self, arch: str):
         super().__init__('fill', arch, basic_repeat_times=10)
-        self.create_plan(Container(), DataType(), DataSize(), ResultType())
+        fill_container = Container()
+        fill_container.update({'sparse': None})  #None: implement by feature
+        self.create_plan(fill_container, DataType(), DataSize(), ResultType())
         self.set_func(func_lut)

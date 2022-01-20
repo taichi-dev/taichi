@@ -18,6 +18,13 @@ class BenchmarkItem:
     def impl(self, tag: str):
         return self._items[tag]
 
+    def remove(self, tags: list):
+        for tag in tags:
+            self._items.pop(tag)
+
+    def update(self, adict: dict):
+        self._items.update(adict)
+
 
 class DataType(BenchmarkItem):
     name = 'dtype'
@@ -45,8 +52,4 @@ class Container(BenchmarkItem):
     name = 'container'
 
     def __init__(self):
-        self._items = {
-            'field': ti.field,
-            'ndarray': ti.ndarray,
-            # 'sparse': None,  # implement by feature
-        }
+        self._items = {'field': ti.field, 'ndarray': ti.ndarray}

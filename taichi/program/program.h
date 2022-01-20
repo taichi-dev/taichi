@@ -313,7 +313,6 @@ class Program {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
 
-  // Get current_ast_builder
   ASTBuilder *current_ast_builder() {
     return current_callable ? &current_callable->context->builder() : nullptr;
   }

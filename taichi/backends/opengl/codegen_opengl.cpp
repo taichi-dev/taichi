@@ -119,7 +119,6 @@ class KernelGen : public IRVisitor {
   bool is_top_level_{true};
   CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
-  int arr_bind_idx_ = static_cast<int>(GLBufId::Arr);
 
   // per-offload variables:
   LineAppender line_appender_;
@@ -866,7 +865,8 @@ class KernelGen : public IRVisitor {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
       if (!used.arr_arg_to_bind_idx.count(stmt->arg_id)) {
-        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx_++;
+        used.arr_arg_to_bind_idx[stmt->arg_id] =
+            static_cast<int>(GLBufId::Arr) + stmt->arg_id;
       }
     } else {
       used.buf_args = true;

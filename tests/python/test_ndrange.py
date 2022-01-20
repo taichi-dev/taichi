@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 
@@ -229,3 +230,18 @@ def test_grouped_ndrange_star():
         return ret
 
     assert foo() == 36
+
+
+@ti.test()
+def test_ndrange_three_arguments():
+    @ti.kernel
+    def foo():
+        for i in ti.ndrange((1, 2, 3)):
+            pass
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Every argument of ndrange should be a scalar or a tuple/list like \(begin, end\)"
+    ):
+        foo()

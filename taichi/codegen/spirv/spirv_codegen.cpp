@@ -526,14 +526,17 @@ class TaskCodegen : public IRVisitor {
     int idx{0};
     for (auto &x : stmt->values) {
       spirv::Value idx_val =
-          ir_->int_immediate_number(ir_->i32_type(), index_in_buffer + (idx++));
+          ir_->int_immediate_number(ir_->i32_type(), index_in_buffer + idx);
       spirv::Value buffer_val = ir_->struct_array_access(
           ir_->i32_type(),
           get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
       spirv::Value val = ir_->query_value(x->raw_name());
       ir_->store_variable(
           buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
+      idx += 2;
     }
+    // spirV only support i32 array, but there are i64 slots in
+    // taichi's result buffer,so we need two slots to make them match.
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

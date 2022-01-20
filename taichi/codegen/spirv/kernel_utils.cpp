@@ -71,7 +71,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     if (auto tensor_type = ra.dt->cast<TensorType>()) {
       dt_bytes = data_type_size(ra.dt);
       ra.is_array = true;
-      ra.stride = tensor_type->get_num_elements() * dt_bytes;
+      ra.stride = tensor_type->get_num_elements() * dt_bytes * 2;
+      // we use two slots to represent one element
       if (dt_bytes > 4) {
         // Metal doesn't support 64bit data buffers.
         TI_ERROR(
@@ -82,7 +83,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     } else {
       dt_bytes = data_type_size(ra.dt);
       ra.is_array = false;
-      ra.stride = dt_bytes;
+      ra.stride = dt_bytes * 2;
+      // we use two slots to represent one element
       if (dt_bytes > 4) {
         // Metal doesn't support 64bit data buffers.
         TI_ERROR(

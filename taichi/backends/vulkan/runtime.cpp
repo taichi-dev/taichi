@@ -167,8 +167,7 @@ class HostDeviceContextBlitter {
       const auto dt = ret.dt;
       do {
         if (ret.is_array) {
-          void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(host_ptr, device_ptr, ret.stride);
+          std::memcpy(host_result_buffer_, device_ptr, ret.stride);
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {

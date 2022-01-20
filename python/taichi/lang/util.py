@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 from taichi._lib import core as _ti_core
-from taichi.lang import (matrix,impl)
+from taichi.lang import impl
 from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
                                           u16, u32, u64)
 
@@ -191,8 +191,6 @@ def cook_dtype(dtype):
         return dtype
     if isinstance(dtype, _ti_core.Type):
         return _ti_core.DataType(dtype)
-    if isinstance(dtype, matrix.MatrixType):
-        return _ti_core.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
     if dtype is float:
         return impl.get_runtime().default_fp
     if dtype is int:

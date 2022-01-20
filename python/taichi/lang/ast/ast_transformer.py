@@ -342,14 +342,8 @@ class ASTTransformer(Builder):
         if hasattr(func, "_is_taichi_function") or hasattr(
                 func, "_is_wrapped_kernel"):  # taichi func/kernel
             return
-        if hasattr(func, "is_taichi_class"):  # Matrix/Struct
-            return
-        try:
-            file = inspect.getfile(inspect.getmodule(func))
-        except TypeError:
-            file = None
-        if file and os.path.commonpath(
-            [file, package_root]) == package_root:  # functions inside taichi
+        if hasattr(func,
+                   "__module__") and func.__module__.startswith("taichi."):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(

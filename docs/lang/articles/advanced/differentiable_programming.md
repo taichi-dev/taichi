@@ -168,11 +168,11 @@ for examples on using autodiff-based force evaluation MPM and FEM.
 
 As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
 If there're multiple output variables that you want to back-propagate
-gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`. 
-Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually 
-before calling the `kernel.grad()`. The reason is that the `grad` of the output variables themselves 
-will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation. 
-If using `ti.Tape()`, the program will help you do this under the hood. 
+gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`.
+Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually
+before calling the `kernel.grad()`. The reason is that the `grad` of the output variables themselves
+will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation.
+If using `ti.Tape()`, the program will help you do this under the hood.
 
 ```python {13-14}
 import taichi as ti
@@ -304,7 +304,7 @@ assert x.grad[2] == 3.0
 ```
 
 ### Avoid mixed usage of parallel for-loop and non-for statements
-Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system. 
+Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system.
 Please split the two kinds of statements into different kernels.
 
 :::note

@@ -305,7 +305,7 @@ assert x.grad[2] == 3.0
 
 ### Avoid mixed usage of parallel for-loop and non-for statements
 Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system. 
-Please split them into two kernels.
+Please split the two kinds of statements into different kernels.
 
 :::note
 Kernel body must only consist of either multiple for-loops or non-for statements.

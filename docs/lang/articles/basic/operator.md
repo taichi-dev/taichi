@@ -32,11 +32,14 @@ print(2 % 3)   # 2
 print(-2 % 3)  # 1
 ```
 
-For C-style mod (`%`), please use `ti.raw_mod`:
+For C-style mod (`%`), please use `ti.raw_mod`. This function also receives floating points as arguments.
+
+`ti.raw_mod(a, b)` returns `a - b * int(float(a) / b)`.
 
 ```python
-print(ti.raw_mod(2, 3))   # 2
-print(ti.raw_mod(-2, 3))  # -2
+print(ti.raw_mod(2, 3))      # 2
+print(ti.raw_mod(-2, 3))     # -2
+print(ti.raw_mod(3.5, 1.5))  # 0.5
 ```
 :::
 
@@ -54,6 +57,15 @@ To avoid such implicit casting, you can manually cast your operands to
 desired types, using `ti.cast`. Please see
 [Default precisions](#default-precisions) for more details on
 default numerical types.
+
+Taichi also provides `ti.raw_div` function which performs true division if one of the operands is floating point type
+and performs floor division if both operands are integral types.
+
+```python
+print(ti.raw_div(5, 2))    # 2
+print(ti.raw_div(5, 2.0))  # 2.5
+```
+
 :::
 
 
@@ -136,9 +148,16 @@ ti.random(dtype=float)
 
 :::note
 
-The return number has a range that is type dependent. For example, floating
-point type returns a number between 0 and 1, while integer type such as `ti.i32`
-returns a number between -2147483648 and 2147483647.
+`ti.random` supports `u32`, `i32`, `u64`, `i64`, and all floating point types.
+The return value has a range that is type dependent.
+
+| Type | Range |
+| --- | --- |
+| i32 | -2,147,483,648 to 2,147,483,647 |
+| u32 | 0 to 4,294,967,295 |
+| i64 | -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 |
+| u64 | 0 to 18,446,744,073,709,551,615 |
+| floating point | 0.0 to 1.0 |
 
 :::
 

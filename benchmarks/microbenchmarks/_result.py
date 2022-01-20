@@ -1,7 +1,7 @@
-import taichi as ti
-
 from microbenchmarks._items import BenchmarkItem
 from microbenchmarks._utils import End2EndTimer, get_ti_arch
+
+import taichi as ti
 
 
 def end2end_executor(repeat, func, *args):

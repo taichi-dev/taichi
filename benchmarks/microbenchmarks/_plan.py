@@ -1,9 +1,9 @@
 import itertools
 
-import taichi as ti
-
 from microbenchmarks._result import ResultType
 from microbenchmarks._utils import get_ti_arch, tags2name
+
+import taichi as ti
 
 
 class BenchmarkPlan:

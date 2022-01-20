@@ -1,9 +1,9 @@
-import taichi as ti
-
 from microbenchmarks._items import Container, DataSize, DataType
 from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._result import ResultType
 from microbenchmarks._utils import dtype_size, scaled_repeat_times
+
+import taichi as ti
 
 
 def fill_default(arch, repeat, container, dtype, dsize, get_result):

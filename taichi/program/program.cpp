@@ -194,7 +194,7 @@ void Program::materialize_runtime() {
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan);
   program_impl_->destroy_snode_tree(snode_tree);
-  deleted_snode_tree_ids_.push(snode_tree->id());
+  free_snode_tree_ids_.push(snode_tree->id());
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
@@ -575,11 +575,11 @@ LlvmProgramImpl *Program::get_llvm_program_impl() {
 }
 
 int Program::allocate_snode_tree_id() {
-  if (deleted_snode_tree_ids_.empty()) {
+  if (free_snode_tree_ids_.empty()) {
     return snode_trees_.size();
   } else {
-    int id = deleted_snode_tree_ids_.top();
-    deleted_snode_tree_ids_.pop();
+    int id = free_snode_tree_ids_.top();
+    free_snode_tree_ids_.pop();
     return id;
   }
 }

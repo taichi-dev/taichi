@@ -56,7 +56,7 @@ def test_opengl_max_block_dim():
                 assert s in gl_file.readlines()
 
 
-@ti.test(arch=ti.opengl)
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_field_range_hint():
     density = ti.field(float, shape=(8, 8))
 

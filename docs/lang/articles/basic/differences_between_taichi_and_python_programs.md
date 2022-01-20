@@ -4,8 +4,7 @@ sidebar_position: 2
 
 # Differences between Taichi and Python programs
 
-Although Taichi uses Python as the frontend, Taichi has its own set of rules that differs from Python in some aspects.
-Major differences are:
+Although Taichi uses Python as the frontend, it follows a different set of rules in many aspects, including: 
 
 1. [Taichi only supports return statement outside non-static `if`/`for`/`while` scope in the program](#return-statement)
 2. [Variables defined inside an `if`/`for`/`while` block cannot be accessed outside the block.](#variable-scoping)

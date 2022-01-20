@@ -68,7 +68,7 @@ void reverse_segments(IRNode *root) {
     TI_ERROR(
         "Invalid program input for autodiff: "
         "Mixed usage of for-loops and statements without looping. \n"
-        "Please split them into two kernels."
+        "Please split them into two kernels. \n"
         "Please check the documentation for more details:\n"
         "https://docs.taichi.graphics/lang/articles/advanced/"
         "differentiable_programming");

@@ -41,7 +41,7 @@ The following code snippet saves frames of the window to `.png`s:
 ```
 
 :::note
-Current fps will show besides the title of the window. By default, fps is limited to 60.
+Current FPS will show besides the title of the window. By default, FPS is limited to 60.
 We can change this number by setting `gui.fps_limit = the_number_we_want`.
 :::
 

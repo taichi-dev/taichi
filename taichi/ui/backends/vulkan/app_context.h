@@ -27,7 +27,9 @@ namespace vulkan {
 
 class AppContext {
  public:
-  void init(lang::Device *device, TaichiWindow *window, const AppConfig &config);
+  void init(lang::Device *device,
+            TaichiWindow *window,
+            const AppConfig &config);
   void cleanup();
 
   TaichiWindow *taichi_window() const;

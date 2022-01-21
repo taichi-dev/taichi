@@ -107,12 +107,12 @@ vec_field = ti.Vector.field(n, dtype=ti.f32, shape=(w,h))
 def fill_vector():
     for i,j in vec_field:
         for k in ti.static(range(n)):
-            #ti.static unrolls the inner loops 
+            #ti.static unrolls the inner loops
             vec_field[i,j][k] = ti.random()
 
 fill_vector()
 print(vec_field[w-1,h-1][n-1])
-``` 
+```
 
 ## Matrix fields
 Field elements can also be matrices. In continuum mechanics, each

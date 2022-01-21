@@ -9,6 +9,12 @@
 #include <android/native_window.h>
 #endif
 
+namespace taichi {
+namespace lang {
+class Device;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 #ifdef ANDROID
@@ -21,7 +27,7 @@ namespace vulkan {
 
 class AppContext {
  public:
-  void init(TaichiWindow *window, const AppConfig &config);
+  void init(lang::Device *device, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   TaichiWindow *taichi_window() const;

@@ -33,6 +33,7 @@
 namespace taichi {
 namespace lang {
 class Program;
+class Device;
 }  // namespace lang
 }  // namespace taichi
 
@@ -42,7 +43,9 @@ namespace vulkan {
 
 class Renderer {
  public:
-  void init(TaichiWindow *window, const AppConfig &config);
+  void init(lang::Device *device,
+            TaichiWindow *window,
+            const AppConfig &config);
   void cleanup();
 
   void prepare_for_next_frame();

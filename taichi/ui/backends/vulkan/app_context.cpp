@@ -63,14 +63,16 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
-void AppContext::init(TaichiWindow *window, const AppConfig &config) {
+void AppContext::init(Device *device,
+                      TaichiWindow *window,
+                      const AppConfig &config) {
   taichi_window_ = window;
   this->config = config;
 
   // Create a Vulkan device if the original configuration is not for Vulkan or
   // there is no active current program (usage from external library for AOT
   // modules for example).
-  if (config.ti_arch != Arch::vulkan || current_program == nullptr) {
+  if (config.ti_arch != Arch::vulkan || device == nullptr) {
     VulkanDeviceCreator::Params evd_params;
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
@@ -96,8 +98,7 @@ void AppContext::init(TaichiWindow *window, const AppConfig &config) {
     };
     embedded_vulkan_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
   } else {
-    vulkan_device_ = static_cast<VulkanDevice *>(
-        get_current_program().get_graphics_device());
+    vulkan_device_ = static_cast<VulkanDevice *>(device);
   }
 }
 

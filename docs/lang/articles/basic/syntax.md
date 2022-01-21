@@ -15,7 +15,7 @@ A Taichi function can only be called inside Taichi scope, and it is similar to a
 Major differences between Taichi kernels and Taichi functions are listed in the table below.
 
 | | Taichi kernels | Taichi functions |
-| :--- | :---: | :---: |
+| :--- | :--- | :--- |
 | Can be called in | Python scope | Taichi scope |
 | Argument type annotation | Mandatory | Recommended |
 | Return type annotation | Mandatory| Recommended |

@@ -137,7 +137,12 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            var.assign(value)
+            try:
+                var.assign(value)
+            except AttributeError:
+                raise TaichiSyntaxError(
+                    f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
+                )
         return var
 
     @staticmethod
@@ -402,7 +407,7 @@ class ASTTransformer(Builder):
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.argument_annotations[i],
                               annotations.template):
-                    continue
+                    ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
                                 linalg.sparse_matrix_builder):
                     ctx.create_variable(arg.arg,
@@ -416,9 +421,10 @@ class ASTTransformer(Builder):
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.argument_annotations[i], MatrixType):
-                    ctx.global_vars[
-                        arg.arg] = kernel_arguments.decl_matrix_arg(
-                            ctx.func.argument_annotations[i])
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_matrix_arg(
+                            ctx.func.argument_annotations[i]))
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(

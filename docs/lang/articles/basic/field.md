@@ -4,11 +4,11 @@ sidebar_position: 3
 
 # Fields
 Taichi fields are used to store data.
-In general, fields are used as global data containers that can be read and written from both the Python scope and the Taichi scope.
+In general, fields are global data containers that can be read and written from both the Python scope and the Taichi scope.
 
 A field has its own data type and shape and can be considered as a multi-dimensional array of elements.
 An element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
-The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed in [Sparse computation](/lang/articles/advanced/sparse).
+The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse computation](/lang/articles/advanced/sparse).
 
 :::note
 The term **field** is borrowed from mathematics and physics.
@@ -19,7 +19,7 @@ it will be straightforward to understand the fields in Taichi.
 ## Scalar fields
 We start introducing fields from this very basic type, the elements of scalar fields are simply scalars.
 * A 0D scalar field is a single scalar.
-* A 1D scalar field is a 1D linear array.
+* A 1D scalar field is an array.
 * A 2D scalar field can be used to represent a 2D regular grid of values.
 * A 3D scalar field can be used for volumetric data.
 
@@ -48,15 +48,16 @@ linear_array.shape     # (128,)
 volumetric_data.dtype  # f32
 ```
 
-To be noticed:
+:::note
 * Field values are initially zero.
 * Fields are **always** accessed by indices. When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`.
+:::
 
 ### Example
 An example might help you understand scalar fields.
 Assume you have a gray-scale image. At each point in the image, there would be a pixel value. The width and height of the image are similar to the `shape` of the Taichi scalar field. The pixel value (0-D scalar) is like the element of the Taichi scalar field. We could use the following code to generate a gray-scale image with random pixel values:
 
-``` python
+``` python {5}
 import taichi as ti
 
 ti.init(arch=ti.cpu)
@@ -66,7 +67,7 @@ gray_scale_image = ti.field(dtype=ti.f32, shape=(width, height))
 @ti.kernel
 def fill_image():
     for i,j in gray_scale_image:
-      gray_scale_image[i,j] = ti.random()
+        gray_scale_image[i,j] = ti.random()
 
 fill_image()
 
@@ -93,6 +94,25 @@ There are **two** indexing operators `[]` when you access a member of a vector f
 - The `p`-th member of the gravity force vector could be accessed by `gravitational_field[i, j, k][p]` (`0 <= p < n`).
 - The 0-D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]` (`0 <= p < n`).
 
+### Example
+This example helps you understand how to access vector fields:
+``` python
+import taichi as ti
+ti.init(arch=ti.cuda)
+
+n,w,h = 3,128,64
+vec_field = ti.Vector.field(n, dtype=ti.f32, shape=(w,h))
+
+@ti.kernel
+def fill_vector():
+    for i,j in vec_field:
+        for k in ti.static(range(n)):
+            #ti.static unrolls the inner loops 
+            vec_field[i,j][k] = ti.random()
+
+fill_vector()
+print(vec_field[w-1,h-1][n-1])
+``` 
 
 ## Matrix fields
 Field elements can also be matrices. In continuum mechanics, each
@@ -125,7 +145,7 @@ declare a field of size `64`. E.g., instead of declaring
 dimensions to fields instead of matrices.
 
 :::caution
-Due to the unrolling mechanisms, operating on large matrices (e.g.
+Due to the unrolling mechanism, operating on large matrices (e.g.
 `32x128`) can lead to a very long compilation time and low performance.
 :::
 

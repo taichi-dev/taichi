@@ -57,7 +57,7 @@ whose values are the relative position of the object range from 0.0 to 1.0.
 
 Acceptable input for positions are Taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
 
-To convert Taichi field to numpy array, use `to_numpy()` on Taichi fields. By doing this, we can also use data 
+To convert Taichi field to numpy array, use `to_numpy()` on Taichi fields. By doing this, we can also use data
 from Taichi program in other visualization APIs such as matplotlib.
 :::
 

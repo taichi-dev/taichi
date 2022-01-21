@@ -1,14 +1,11 @@
 import ast
 import collections.abc
-import inspect
-import os
 import warnings
 from collections import ChainMap
 from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi._lib.utils import package_root
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import ndrange
@@ -342,14 +339,9 @@ class ASTTransformer(Builder):
         if hasattr(func, "_is_taichi_function") or hasattr(
                 func, "_is_wrapped_kernel"):  # taichi func/kernel
             return
-        if hasattr(func, "is_taichi_class"):  # Matrix/Struct
-            return
-        try:
-            file = inspect.getfile(inspect.getmodule(func))
-        except TypeError:
-            file = None
-        if file and os.path.commonpath(
-            [file, package_root]) == package_root:  # functions inside taichi
+        if hasattr(
+                func, "__module__"
+        ) and func.__module__ and func.__module__.startswith("taichi."):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
@@ -384,7 +376,9 @@ class ASTTransformer(Builder):
                 node.func.value.ptr, str) and node.func.attr == 'format':
             args.insert(0, node.func.value.ptr)
             node.ptr = impl.ti_format(*args, **keywords)
-        elif ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+            return node.ptr
+
+        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)

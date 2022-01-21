@@ -40,6 +40,12 @@ The following code snippet saves frames of the window to `.png`s:
         gui.show(f'{frame:06d}.png')
 ```
 
+:::note
+Current fps will show besides the title of the window. By default, fps is limited to 60.
+We can change this number by setting `gui.fps_limit = the_number_we_want`.
+:::
+
+
 ## Paint on a window
 Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
 
@@ -49,10 +55,10 @@ The position parameter of every drawing API expects input of 2-element tuples,
 whose values are the relative position of the object range from 0.0 to 1.0.
 (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
-Acceptable input for positions are taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
+Acceptable input for positions are Taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
 
-For simplicity, we use numpy arrays in the examples below.
-
+To convert Taichi field to numpy array, use `to_numpy()` on Taichi fields. By doing this, we can also use data 
+from Taichi program in other visualization APIs such as matplotlib.
 :::
 
 :::tip

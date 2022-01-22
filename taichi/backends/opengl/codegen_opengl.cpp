@@ -58,15 +58,6 @@ GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
 
 using irpass::ExternalPtrAccess;
 
-int find_children_id(const SNode *snode) {
-  auto parent = snode->parent;
-  for (int i = 0; i < parent->ch.size(); i++) {
-    if (parent->ch[i].get() == snode)
-      return i;
-  }
-  TI_ERROR("Child not found in parent!");
-}
-
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -471,7 +462,9 @@ class KernelGen : public IRVisitor {
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
       emit("int _ad_{} = {} + {} * {};", stmt->short_name(),
-           get_snode_base_address(stmt->snode), stmt->short_name(),
+           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
+               .mem_offset_in_root,
+           stmt->short_name(),
            struct_compiled_->snode_map.at(stmt->snode->node_type_name)
                .elem_stride);
       emit("_data_{}_[_ad_{} >> {}] = {};", opengl_data_type_short_name(dt),
@@ -1072,18 +1065,9 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
-  size_t get_snode_base_address(const SNode *snode) {
-    if (snode->type == SNodeType::root)
-      return 0;
-    int chid = find_children_id(snode);
-    const auto &parent_meta =
-        struct_compiled_->snode_map.at(snode->parent->node_type_name);
-    auto choff = parent_meta.children_offsets[chid];
-    return choff + get_snode_base_address(snode->parent);
-  }
-
   size_t get_snode_meta_address(const SNode *snode) {
-    auto addr = get_snode_base_address(snode);
+    auto addr = struct_compiled_->snode_map.at(snode->node_type_name)
+                    .mem_offset_in_root;
     addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
     addr -= opengl_get_snode_meta_size(*snode);
     return addr;

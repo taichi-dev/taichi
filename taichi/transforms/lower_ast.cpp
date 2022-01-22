@@ -345,7 +345,8 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->vectorize,
           stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
-          stmt->strictly_serialized);
+          stmt->strictly_serialized,
+          /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
@@ -386,7 +387,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    auto expr = stmt->value;
+    auto expr = stmt->values[0];
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
     fctx.push_back<ReturnStmt>(fctx.back_stmt());

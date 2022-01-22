@@ -17,12 +17,11 @@ if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif ()
 
+# Do not enable lto for APPLE since it made linking extremely slow.
 if (WIN32)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=thin")
     endif()
-elseif(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=thin")
 endif()
 
 if (WIN32)

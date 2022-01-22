@@ -733,6 +733,7 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  std::string range_hint;
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
@@ -741,7 +742,8 @@ class RangeForStmt : public Stmt {
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               std::string range_hint = "");
 
   bool is_container_statement() const override {
     return true;
@@ -865,13 +867,35 @@ class FuncCallStmt : public Stmt {
  */
 class ReturnStmt : public Stmt {
  public:
-  Stmt *value;
+  std::vector<Stmt *> values;
 
-  explicit ReturnStmt(Stmt *value) : value(value) {
+  explicit ReturnStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(value);
+  explicit ReturnStmt(Stmt *value) : values({value}) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  std::vector<DataType> element_types() {
+    std::vector<DataType> ele_types;
+    for (auto &x : values) {
+      ele_types.push_back(x->element_type());
+    }
+    return ele_types;
+  }
+
+  std::string values_raw_names() {
+    std::string names;
+    for (auto &x : values) {
+      names += x->raw_name() + ", ";
+    }
+    names.pop_back();
+    names.pop_back();
+    return names;
+  }
+
+  TI_STMT_DEF_FIELDS(values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1094,6 +1118,7 @@ class OffloadedStmt : public Stmt {
   bool reversed{false};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
+  std::string range_hint = "";
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;

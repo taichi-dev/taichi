@@ -43,9 +43,13 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     // Note:
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
+    //  - No atomics operations to the global variables which require gradient
+
     bool qualified = true;
+    bool qualified_atomics = true;
     std::set<AllocaStmt *> touched_allocas;
-    // TODO: remove this abuse since it *gathers nothing*
+    std::set<AtomicOpStmt *> touched_global_atomics;
+    // TODO: remove this abuse since it *gathers nothing* but only visit
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
         for (auto &lane : local_load->src.data) {
@@ -54,9 +58,21 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
         touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
+      // atomics here must be ones applied to global variables
+      else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
+        TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
+        for (const auto &node :
+             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
+          if (node->has_grad()) {
+            touched_global_atomics.insert(atomics);
+            break;
+          }
+        }
+      }
       return false;
     });
-    for (auto alloca : touched_allocas) {
+
+    for (const auto &alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = alloca->parent; b; b = b->parent_block()) {
@@ -70,7 +86,25 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
         break;
       }
     }
-    return qualified;
+
+    for (const auto &atomics : touched_global_atomics) {
+      // Test if the atomics belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = atomics->parent; b; b = b->parent_block()) {
+        if (b == block) {
+          belong_to_this_block = true;
+          break;
+        }
+      }
+      if (belong_to_this_block) {
+        // This block is not an IB since it has atomics operation to global
+        // variables
+        qualified_atomics = false;
+        break;
+      }
+    }
+
+    return qualified && qualified_atomics;
   }
 
   void visit_loop_body(Block *block) {
@@ -148,20 +182,42 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
-          stmt->is<GlobalLoadStmt>())) {
+          stmt->is<GlobalLoadStmt>() || stmt->is<AllocaStmt>())) {
       // TODO: this list may be incomplete
       return;
     }
-    // Create a alloc
-    auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
-    auto alloc_ptr = alloc.get();
-    TI_ASSERT(alloca_block_);
-    alloca_block_->insert(std::move(alloc), 0);
-    auto load = stmt->insert_after_me(
-        Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
-    irpass::replace_all_usages_with(stmt->parent, stmt, load);
-    // Create the load first so that the operand of the store won't get replaced
-    stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
+
+    if (stmt->is<AllocaStmt>()) {
+      // Create a new alloc at the top of an ib to replace the old alloca
+      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      // Replace all the usages of the old stmt with that of the new one
+      irpass::replace_all_usages_with(stmt->parent, stmt, alloc_ptr);
+
+      // Replace the old alloca with a local store
+      // and it will be replaced by a AdStackPushStmt in the following
+      // ReplaceLocalVarWithStacks pass
+      auto dtype = stmt->ret_type;
+      auto zero =
+          stmt->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, zero));
+      // Remove the old stmt
+      stmt->parent->erase(stmt);
+    } else {
+      // Create a alloc
+      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      auto load = stmt->insert_after_me(
+          Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
+      irpass::replace_all_usages_with(stmt->parent, stmt, load);
+      // Create the load first so that the operand of the store won't get
+      // replaced
+      stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
+    }
   }
 
   void visit(RangeForStmt *stmt) override {
@@ -194,9 +250,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
     TI_ASSERT(alloc->width() == 1);
     bool load_only =
         irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
-          if (auto store = s->cast<LocalStoreStmt>())
+          if (auto store = s->cast<LocalStoreStmt>()) {
             return store->dest == alloc;
-          else if (auto atomic = s->cast<AtomicOpStmt>()) {
+          } else if (auto atomic = s->cast<AtomicOpStmt>()) {
             return atomic->dest == alloc;
           } else {
             return false;

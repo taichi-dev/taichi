@@ -22,12 +22,6 @@
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/backends/device.h"
 
-namespace taichi {
-namespace lang {
-class Program;
-}  // namespace lang
-}  // namespace taichi
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -45,7 +39,7 @@ class SetImage final : public Renderable {
 
   SetImage(AppContext *app_context);
 
-  void update_data(lang::Program *prog, const SetImageInfo &info);
+  void update_data(const SetImageInfo &info);
 
   virtual void cleanup() override;
 

@@ -31,12 +31,6 @@
 #include "taichi/ui/backends/vulkan/renderables/circles.h"
 #include "taichi/ui/backends/vulkan/renderables/lines.h"
 
-namespace taichi {
-namespace lang {
-class Program;
-}  // namespace lang
-}  // namespace taichi
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -58,7 +52,6 @@ class Canvas final : public CanvasBase {
   virtual void scene(SceneBase *scene_base) override;
 
  private:
-  lang::Program *prog_;
   Renderer *renderer_;
 };
 

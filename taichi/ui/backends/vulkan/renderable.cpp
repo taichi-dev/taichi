@@ -38,9 +38,10 @@ void Renderable::init_buffers() {
   create_bindings();
 }
 
-void Renderable::update_data(Program *prog, const RenderableInfo &info) {
+void Renderable::update_data(const RenderableInfo &info) {
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
+  Program *prog = app_context_->prog();
   if (prog) {
     prog->synchronize();
   }

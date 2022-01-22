@@ -27,7 +27,8 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
   app_context_->device().unmap(uniform_buffer_);
 }
 
-void SetImage::update_data(Program *prog, const SetImageInfo &info) {
+void SetImage::update_data(const SetImageInfo &info) {
+  Program *prog = app_context_->prog();
   prog->synchronize();
 
   const FieldInfo &img = info.img;

@@ -31,10 +31,8 @@ void Particles::update_ubo(glm::vec3 color,
   app_context_->device().unmap(uniform_buffer_);
 }
 
-void Particles::update_data(Program *prog,
-                            const ParticlesInfo &info,
-                            const Scene &scene) {
-  Renderable::update_data(prog, info.renderable_info);
+void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
+  Renderable::update_data(info.renderable_info);
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);

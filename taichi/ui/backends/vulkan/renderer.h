@@ -33,7 +33,6 @@
 namespace taichi {
 namespace lang {
 class Program;
-class Device;
 }  // namespace lang
 }  // namespace taichi
 
@@ -43,28 +42,26 @@ namespace vulkan {
 
 class Renderer {
  public:
-  void init(lang::Device *device,
-            TaichiWindow *window,
-            const AppConfig &config);
+  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   void prepare_for_next_frame();
 
   void set_background_color(const glm::vec3 &color);
 
-  void set_image(lang::Program *prog, const SetImageInfo &info);
+  void set_image(const SetImageInfo &info);
 
-  void triangles(lang::Program *prog, const TrianglesInfo &info);
+  void triangles(const TrianglesInfo &info);
 
-  void circles(lang::Program *prog, const CirclesInfo &info);
+  void circles(const CirclesInfo &info);
 
-  void lines(lang::Program *prog, const LinesInfo &info);
+  void lines(const LinesInfo &info);
 
-  void mesh(lang::Program *prog, const MeshInfo &info, Scene *scene);
+  void mesh(const MeshInfo &info, Scene *scene);
 
-  void particles(lang::Program *prog, const ParticlesInfo &info, Scene *scene);
+  void particles(const ParticlesInfo &info, Scene *scene);
 
-  void scene(lang::Program *prog, Scene *scene);
+  void scene(Scene *scene);
 
   void draw_frame(Gui *gui);
 

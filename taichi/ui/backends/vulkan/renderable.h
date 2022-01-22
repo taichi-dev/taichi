@@ -44,7 +44,7 @@ struct RenderableConfig {
 
 class Renderable {
  public:
-  void update_data(lang::Program *prog, const RenderableInfo &info);
+  void update_data(const RenderableInfo &info);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);

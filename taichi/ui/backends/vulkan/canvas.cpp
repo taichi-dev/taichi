@@ -9,8 +9,7 @@ namespace vulkan {
 
 using namespace taichi::lang;
 
-Canvas::Canvas(Program *prog, Renderer *renderer)
-    : prog_(prog), renderer_(renderer) {
+Canvas::Canvas(Program *prog, Renderer *renderer) : renderer_(renderer) {
 }
 
 void Canvas::set_background_color(const glm::vec3 &color) {
@@ -18,24 +17,24 @@ void Canvas::set_background_color(const glm::vec3 &color) {
 }
 
 void Canvas::set_image(const SetImageInfo &info) {
-  renderer_->set_image(prog_, info);
+  renderer_->set_image(info);
 }
 
 void Canvas::triangles(const TrianglesInfo &info) {
-  renderer_->triangles(prog_, info);
+  renderer_->triangles(info);
 }
 
 void Canvas::lines(const LinesInfo &info) {
-  renderer_->lines(prog_, info);
+  renderer_->lines(info);
 }
 
 void Canvas::circles(const CirclesInfo &info) {
-  renderer_->circles(prog_, info);
+  renderer_->circles(info);
 }
 
 void Canvas::scene(SceneBase *scene_base) {
   if (Scene *scene = dynamic_cast<Scene *>(scene_base)) {
-    renderer_->scene(prog_, scene);
+    renderer_->scene(scene);
   } else {
     throw std::runtime_error("Scene is not vulkan scene");
   }

@@ -21,12 +21,6 @@
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
 
-namespace taichi {
-namespace lang {
-class Program;
-}  // namespace lang
-}  // namespace taichi
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -35,7 +29,7 @@ class Lines final : public Renderable {
  public:
   Lines(AppContext *app_context);
 
-  void update_data(lang::Program *prog, const LinesInfo &info);
+  void update_data(const LinesInfo &info);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

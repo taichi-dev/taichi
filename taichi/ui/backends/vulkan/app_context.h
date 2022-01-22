@@ -11,7 +11,7 @@
 
 namespace taichi {
 namespace lang {
-class Device;
+class Program;
 }  // namespace lang
 }  // namespace taichi
 
@@ -27,12 +27,11 @@ namespace vulkan {
 
 class AppContext {
  public:
-  void init(lang::Device *device,
-            TaichiWindow *window,
-            const AppConfig &config);
+  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   TaichiWindow *taichi_window() const;
+  lang::Program *prog() const;
 
   taichi::lang::vulkan::VulkanDevice &device();
   const taichi::lang::vulkan::VulkanDevice &device() const;
@@ -48,6 +47,8 @@ class AppContext {
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
 
   TaichiWindow *taichi_window_{nullptr};
+
+  lang::Program *prog_{nullptr};
 };
 
 }  // namespace vulkan

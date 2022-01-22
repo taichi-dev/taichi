@@ -1,7 +1,6 @@
 #include "renderer.h"
 #include "taichi/ui/utils/utils.h"
 
-using taichi::lang::Device;
 using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
@@ -11,10 +10,10 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Renderer::init(Device *device,
+void Renderer::init(Program *prog,
                     TaichiWindow *window,
                     const AppConfig &config) {
-  app_context_.init(device, window, config);
+  app_context_.init(prog, window, config);
   swap_chain_.init(&app_context_);
 }
 
@@ -43,45 +42,43 @@ void Renderer::set_background_color(const glm::vec3 &color) {
   background_color_ = color;
 }
 
-void Renderer::set_image(Program *prog, const SetImageInfo &info) {
+void Renderer::set_image(const SetImageInfo &info) {
   SetImage *s = get_renderable_of_type<SetImage>();
-  s->update_data(prog, info);
+  s->update_data(info);
   next_renderable_ += 1;
 }
 
-void Renderer::triangles(Program *prog, const TrianglesInfo &info) {
+void Renderer::triangles(const TrianglesInfo &info) {
   Triangles *triangles = get_renderable_of_type<Triangles>();
-  triangles->update_data(prog, info);
+  triangles->update_data(info);
   next_renderable_ += 1;
 }
 
-void Renderer::lines(Program *prog, const LinesInfo &info) {
+void Renderer::lines(const LinesInfo &info) {
   Lines *lines = get_renderable_of_type<Lines>();
-  lines->update_data(prog, info);
+  lines->update_data(info);
   next_renderable_ += 1;
 }
 
-void Renderer::circles(Program *prog, const CirclesInfo &info) {
+void Renderer::circles(const CirclesInfo &info) {
   Circles *circles = get_renderable_of_type<Circles>();
-  circles->update_data(prog, info);
+  circles->update_data(info);
   next_renderable_ += 1;
 }
 
-void Renderer::mesh(Program *prog, const MeshInfo &info, Scene *scene) {
+void Renderer::mesh(const MeshInfo &info, Scene *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>();
-  mesh->update_data(prog, info, *scene);
+  mesh->update_data(info, *scene);
   next_renderable_ += 1;
 }
 
-void Renderer::particles(Program *prog,
-                         const ParticlesInfo &info,
-                         Scene *scene) {
+void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
   Particles *particles = get_renderable_of_type<Particles>();
-  particles->update_data(prog, info, *scene);
+  particles->update_data(info, *scene);
   next_renderable_ += 1;
 }
 
-void Renderer::scene(Program *prog, Scene *scene) {
+void Renderer::scene(Scene *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
   }
@@ -94,12 +91,12 @@ void Renderer::scene(Program *prog, Scene *scene) {
   for (int i = 0; i < object_count; ++i) {
     if (mesh_id < scene->mesh_infos_.size() &&
         scene->mesh_infos_[mesh_id].object_id == i) {
-      mesh(prog, scene->mesh_infos_[mesh_id], scene);
+      mesh(scene->mesh_infos_[mesh_id], scene);
       ++mesh_id;
     }
     if (particles_id < scene->particles_infos_.size() &&
         scene->particles_infos_[particles_id].object_id == i) {
-      particles(prog, scene->particles_infos_[particles_id], scene);
+      particles(scene->particles_infos_[particles_id], scene);
       ++particles_id;
     }
   }

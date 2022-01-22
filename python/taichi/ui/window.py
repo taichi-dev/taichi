@@ -21,9 +21,8 @@ class Window(_ti_core.PyWindow):
 
         ti_arch = default_cfg().arch
         is_packed = default_cfg().packed
-        super().__init__(get_runtime().prog, name,
-                         res, vsync, show_window, package_path, ti_arch,
-                         is_packed)
+        super().__init__(get_runtime().prog, name, res, vsync, show_window,
+                         package_path, ti_arch, is_packed)
 
     @property
     def running(self):

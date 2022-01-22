@@ -20,12 +20,6 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 
-namespace taichi {
-namespace lang {
-class Program;
-}  // namespace lang
-}  // namespace taichi
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {

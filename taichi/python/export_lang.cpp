@@ -1066,7 +1066,8 @@ void export_lang(py::module &m) {
     }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    return Expr::make<GlobalThreadIndexExpression>();
+    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
+                                                  std::vector<Expr>{});
   });
 
   m.def("insert_patch_idx_expr", [&]() {

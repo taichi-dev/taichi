@@ -151,16 +151,6 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void GlobalThreadIndexExpression::flatten(FlattenContext *ctx) {
-  auto tid_stmt = std::make_unique<GlobalThreadIndexStmt>();
-  ctx->push_back(std::move(tid_stmt));
-  stmt = ctx->back_stmt();
-}
-
-void GlobalThreadIndexExpression::type_check() {
-  ret_type = PrimitiveType::i32;
-}
-
 void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << '(';
   if (is_cast()) {

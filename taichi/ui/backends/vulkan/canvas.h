@@ -37,7 +37,7 @@ namespace vulkan {
 
 class Canvas final : public CanvasBase {
  public:
-  Canvas(lang::Program *prog, Renderer *renderer);
+  Canvas(Renderer *renderer);
 
   virtual void set_background_color(const glm::vec3 &color) override;
 

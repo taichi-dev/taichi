@@ -1,15 +1,13 @@
 #include "canvas.h"
 #include "taichi/ui/utils/utils.h"
 
-using taichi::lang::Program;
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
 using namespace taichi::lang;
 
-Canvas::Canvas(Program *prog, Renderer *renderer) : renderer_(renderer) {
+Canvas::Canvas(Renderer *renderer) : renderer_(renderer) {
 }
 
 void Canvas::set_background_color(const glm::vec3 &color) {

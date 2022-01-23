@@ -320,7 +320,8 @@ class IRBuilder {
   // Declare buffer argument of function
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
-                        uint32_t binding);
+                        uint32_t binding,
+                        const std::string &name);
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
 
   // Declare a new function

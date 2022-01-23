@@ -355,7 +355,7 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
 Value IRBuilder::buffer_argument(const SType &value_type,
                                  uint32_t descriptor_set,
                                  uint32_t binding,
-                                 const std::string& name) {
+                                 const std::string &name) {
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;
@@ -370,7 +370,7 @@ Value IRBuilder::buffer_argument(const SType &value_type,
   this->debug(spv::OpName, sarr_type, name + "_struct_array");
 
   SType ptr_type = get_pointer_type(sarr_type, storage_class);
-  
+
   this->debug(spv::OpName, sarr_type, name + "_ptr");
 
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);

@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -474,17 +475,8 @@ def check_version():
         else:
             payload['platform'] = 'macosx_11_0_arm64'
 
-    python_version = platform.python_version()
-    if python_version.startswith('3.6.'):
-        payload['python'] = 'cp36'
-    elif python_version.startswith('3.7.'):
-        payload['python'] = 'cp37'
-    elif python_version.startswith('3.8.'):
-        payload['python'] = 'cp38'
-    elif python_version.startswith('3.9.'):
-        payload['python'] = 'cp39'
-    elif python_version.startswith('3.10.'):
-        payload['python'] = 'cp310'
+    python_version = sys.version_info
+    payload['python'] = f'cp{python_version[0]}{python_version[1]}'
 
     # We do not want request exceptions break users' usage of Taichi.
     try:

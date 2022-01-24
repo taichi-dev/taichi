@@ -1,6 +1,6 @@
 import itertools
 
-from microbenchmarks._result import ResultType
+from microbenchmarks._metric import MetricType
 from microbenchmarks._utils import get_ti_arch, tags2name
 
 import taichi as ti
@@ -49,7 +49,7 @@ class BenchmarkPlan:
 
     def _init_taichi(self, arch, tags):
         for tag in tags:
-            if ResultType.init_taichi(arch, tag):
+            if MetricType.init_taichi(arch, tag):
                 return True
         return False
 

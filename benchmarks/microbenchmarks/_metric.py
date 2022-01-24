@@ -27,8 +27,8 @@ def kernel_executor(repeat, func, *args):
     return ti.kernel_profiler_total_time() * 1000 / repeat  #ms
 
 
-class ResultType(BenchmarkItem):
-    name = 'get_result'
+class MetricType(BenchmarkItem):
+    name = 'get_metric'
 
     def __init__(self):
         self._items = {
@@ -37,10 +37,10 @@ class ResultType(BenchmarkItem):
         }
 
     @staticmethod
-    def init_taichi(arch: str, result_tag: str):
-        if result_tag == 'kernel_elapsed_time_ms':
+    def init_taichi(arch: str, metric_tag: str):
+        if metric_tag == 'kernel_elapsed_time_ms':
             ti.init(kernel_profiler=True, arch=get_ti_arch(arch))
-        elif result_tag == 'end2end_time_ms':
+        elif metric_tag == 'end2end_time_ms':
             ti.init(kernel_profiler=False, arch=get_ti_arch(arch))
         else:
             return False

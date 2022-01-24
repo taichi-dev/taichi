@@ -1,6 +1,5 @@
 import math
 
-from taichi._lib import core as _ti_core
 from taichi.lang import impl, matrix, ops
 from taichi.lang.impl import expr_init, get_runtime, static
 from taichi.lang.kernel_impl import func, pyfunc

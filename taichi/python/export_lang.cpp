@@ -657,11 +657,10 @@ void export_lang(py::module &m) {
         [](std::size_t func_addr, std::string source, std::string filename,
            std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
-          auto expr = Expr::make<ExternalFuncCallExpression>(
+          auto stmt = Stmt::make<FrontendExternalFuncStmt>(
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
-
-          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
+          current_ast_builder().insert(std::move(stmt));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {

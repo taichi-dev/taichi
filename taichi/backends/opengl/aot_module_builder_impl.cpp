@@ -63,6 +63,7 @@ class AotDataConverter {
     res.type = offloaded_task_type_name(in.type);
     res.name = in.name;
     res.source_path = in.src;
+    res.range_hint = in.range_hint;
     res.gpu_block_size = in.workgroup_size;
     return res;
   }

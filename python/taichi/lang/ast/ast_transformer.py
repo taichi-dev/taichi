@@ -1,14 +1,11 @@
 import ast
 import collections.abc
-import inspect
-import os
 import warnings
 from collections import ChainMap
 from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi._lib.utils import package_root
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import ndrange
@@ -140,7 +137,12 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            var.assign(value)
+            try:
+                var.assign(value)
+            except AttributeError:
+                raise TaichiSyntaxError(
+                    f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
+                )
         return var
 
     @staticmethod
@@ -342,14 +344,9 @@ class ASTTransformer(Builder):
         if hasattr(func, "_is_taichi_function") or hasattr(
                 func, "_is_wrapped_kernel"):  # taichi func/kernel
             return
-        if hasattr(func, "is_taichi_class"):  # Matrix/Struct
-            return
-        try:
-            file = inspect.getfile(inspect.getmodule(func))
-        except TypeError:
-            file = None
-        if file and os.path.commonpath(
-            [file, package_root]) == package_root:  # functions inside taichi
+        if hasattr(
+                func, "__module__"
+        ) and func.__module__ and func.__module__.startswith("taichi."):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
@@ -384,7 +381,9 @@ class ASTTransformer(Builder):
                 node.func.value.ptr, str) and node.func.attr == 'format':
             args.insert(0, node.func.value.ptr)
             node.ptr = impl.ti_format(*args, **keywords)
-        elif ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+            return node.ptr
+
+        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)
@@ -408,7 +407,7 @@ class ASTTransformer(Builder):
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.argument_annotations[i],
                               annotations.template):
-                    continue
+                    ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
                                 linalg.sparse_matrix_builder):
                     ctx.create_variable(arg.arg,
@@ -422,9 +421,10 @@ class ASTTransformer(Builder):
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.argument_annotations[i], MatrixType):
-                    ctx.global_vars[
-                        arg.arg] = kernel_arguments.decl_matrix_arg(
-                            ctx.func.argument_annotations[i])
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_matrix_arg(
+                            ctx.func.argument_annotations[i]))
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(

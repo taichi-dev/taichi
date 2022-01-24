@@ -30,13 +30,19 @@
 #include "renderables/circles.h"
 #include "renderables/lines.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
 class Renderer {
  public:
-  void init(TaichiWindow *window, const AppConfig &config);
+  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   void prepare_for_next_frame();

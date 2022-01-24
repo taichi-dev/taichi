@@ -280,6 +280,16 @@ class Program {
   SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
+   * Allocates a SNode tree id for a new SNode tree
+   *
+   * @return The SNode tree id allocated
+   *
+   * Returns and consumes a free SNode tree id if there is any,
+   * Otherwise returns the size of `snode_trees_`
+   */
+  int allocate_snode_tree_id();
+
+  /**
    * Gets the root of a SNode tree.
    *
    * @param tree_id Index of the SNode tree
@@ -324,6 +334,7 @@ class Program {
   NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+  std::stack<int> free_snode_tree_ids_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;

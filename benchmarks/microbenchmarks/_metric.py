@@ -37,10 +37,10 @@ class MetricType(BenchmarkItem):
         }
 
     @staticmethod
-    def init_taichi(arch: str, metric_tag: str):
-        if metric_tag == 'kernel_elapsed_time_ms':
+    def init_taichi(arch: str, tag_list: list):
+        if set(['kernel_elapsed_time_ms']).issubset(tag_list):
             ti.init(kernel_profiler=True, arch=get_ti_arch(arch))
-        elif metric_tag == 'end2end_time_ms':
+        elif set(['end2end_time_ms']).issubset(tag_list):
             ti.init(kernel_profiler=False, arch=get_ti_arch(arch))
         else:
             return False

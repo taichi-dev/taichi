@@ -1,4 +1,4 @@
-from microbenchmarks._items import Container, DataSize, DataType
+from microbenchmarks._items import BenchmarkItem, Container, DataSize, DataType
 from microbenchmarks._metric import MetricType
 from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._utils import dtype_size, scaled_repeat_times
@@ -48,18 +48,13 @@ def fill_sparse(arch, repeat, container, dtype, dsize, get_metric):
     return get_metric(repeat, fill_const, x)
 
 
-# use container_tag to get customized implementation
-func_lut = {
-    'field': fill_default,
-    'ndarray': fill_default,
-    'sparse': fill_sparse
-}
-
-
 class FillPlan(BenchmarkPlan):
     def __init__(self, arch: str):
         super().__init__('fill', arch, basic_repeat_times=10)
         fill_container = Container()
         # fill_container.update({'sparse': None})  # None: implement by feature
         self.create_plan(fill_container, DataType(), DataSize(), MetricType())
-        self.set_func(func_lut)
+        # use tag_list to label the customized implementation (funcs).
+        self.add_func(['field'], fill_default)
+        self.add_func(['ndarray'], fill_default)
+        self.add_func(['sparse'], fill_sparse)

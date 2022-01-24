@@ -1,6 +1,6 @@
 from microbenchmarks._items import Container, DataSize, DataType
-from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._metric import MetricType
+from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._utils import dtype_size, scaled_repeat_times
 
 import taichi as ti

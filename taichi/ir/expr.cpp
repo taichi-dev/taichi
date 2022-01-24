@@ -63,25 +63,8 @@ Expr Expr::operator[](const ExprGroup &indices) const {
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
 
-void Expr::set_or_insert_assignment(const Expr &o) {
-  if (get_current_program().current_callable) {
-    // Inside a kernel or a function
-    // Create an assignment in the IR
-    if (expr == nullptr) {
-      set(o);
-    } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(
-          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
-    } else {
-      TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
-    }
-  } else {
-    set(o);  // Literally set this Expr to o
-  }
-}
-
 Expr &Expr::operator=(const Expr &o) {
-  set_or_insert_assignment(o);
+  set(o);
   return *this;
 }
 
@@ -130,34 +113,6 @@ Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
-void Expr::operator+=(const Expr &o) {
-  if (this->atomic) {
-    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, *this, load_if_ptr(o)));
-  } else {
-    this->set_or_insert_assignment(*this + o);
-  }
-}
-
-void Expr::operator-=(const Expr &o) {
-  if (this->atomic) {
-    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
-        AtomicOpType::sub, *this, load_if_ptr(o)));
-  } else {
-    this->set_or_insert_assignment(*this - o);
-  }
-}
-
-void Expr::operator*=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  this->set_or_insert_assignment((*this) * load_if_ptr(o));
-}
-
-void Expr::operator/=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  this->set_or_insert_assignment((*this) / load_if_ptr(o));
-}
-
 Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return Expr::make<GlobalLoadExpression>(ptr);
@@ -176,15 +131,6 @@ Expr load_if_ptr(const Expr &ptr) {
     }
   } else
     return ptr;
-}
-
-Expr Var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
-  var.set_or_insert_assignment(x);
-  return var;
 }
 
 TLANG_NAMESPACE_END

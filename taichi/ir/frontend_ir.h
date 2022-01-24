@@ -883,6 +883,8 @@ class ASTBuilder {
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
+  void insert_assignment(Expr &lhs, const Expr &rhs);
+  Expr make_var(const Expr &x);
 };
 
 ASTBuilder &current_ast_builder();

@@ -783,6 +783,27 @@ void ASTBuilder::stop_gradient(SNode *snode) {
   stack_.back()->stop_gradients.push_back(snode);
 }
 
+void ASTBuilder::insert_assignment(Expr &lhs, const Expr &rhs) {
+  // Inside a kernel or a function
+  // Create an assignment in the IR
+  if (lhs.expr == nullptr) {
+    lhs.set(rhs);
+  } else if (lhs.expr->is_lvalue()) {
+    this->insert(std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
+  } else {
+    TI_ERROR("Cannot assign to non-lvalue: {}", lhs.serialize());
+  }
+}
+
+Expr ASTBuilder::make_var(const Expr &x) {
+  auto var = Expr(std::make_shared<IdExpression>());
+  this->insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id,
+      PrimitiveType::unknown));
+  this->insert_assignment(var, x);
+  return var;
+}
+
 std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);

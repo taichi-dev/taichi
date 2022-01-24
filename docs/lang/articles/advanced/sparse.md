@@ -34,7 +34,7 @@ The key to leverage it is to go home.
 The traditional sparse data stucture are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
 [Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, compared to quadtrees and octrees, it is more performance-friendly to use shallower trees with larger branching factors.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
-In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantage of Taichi sparse data structure are 
+In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantage of Taichi sparse data structure are
 1. The sparse data could be used like a dense data structure (accessing using indices)
 2. The sparse data could be looped in parallel.
 3. Automic memory access optimization.
@@ -53,7 +53,7 @@ Sparse matrices are usually **not** implemented in Taichi via (spatially-) spars
 
 ## Sparse data structures in Taichi
 
-Sparse data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. 
+Sparse data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes.
 
 On a sparse data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
@@ -105,7 +105,7 @@ As the below figure shown, the active blocks and pixels are green. You can write
 </center>
 
 
-In fact, the sparse field is a Snode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` Snodes (green grids). `for i, j in pixel` would loop over all active `dense` Snodes (green grids). 
+In fact, the sparse field is a Snode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` Snodes (green grids). `for i, j in pixel` would loop over all active `dense` Snodes (green grids).
 
 <center>
 
@@ -201,7 +201,7 @@ The Taichi system ensures efficient parallelization.
 
 Taichi also provides APIs that explicitly manipulate data structure sparsity. You could manually **check** the activity, **active** or **deactivate** Snode. Based on the field defined below, we illustrate these functions.
 
-```python 
+```python
 x = ti.field(dtype=ti.i32)
 block1 = ti.root.pointer(ti.ij, (3, 3))
 block2 = block1.pointer(ti.ij, (2, 2))
@@ -212,7 +212,7 @@ pixel.place(x)
 #### 1. Activity checking
 You can use `ti.is_active(snode, [i, j, ...])` to explicitly query if `snode[i, j, ...]` is active or not. As mentioned above, you could also use struct-for loops to loop over all active snode in parallel.
 
-```python 
+```python
 @ti.kernel
 def activity_checking(snode: ti.template(), i: ti.i32, j: ti.i32):
     print(ti.is_active(snode, [i, j]))
@@ -266,7 +266,7 @@ Similarly, `ti.deactivate` ...
 #### 4. Index transformation
 - Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
 
-```python 
+```python
 print(ti.rescale_index(x, block1, ti.Vector([7, 3]))) # output: [1, 0]
 print(ti.rescale_index(x, block2, [7, 3]))            # output: [3, 1]
 print(ti.rescale_index(x, pixel,  [7, 3]))            # output: [7, 3]
@@ -277,7 +277,7 @@ As noticed, the output of `ti.rescale_index(x, block1, ti.Vector([7, 3]))` is `[
 
 ## Further reading
 
-Please read the SIGGRAPH Asia 2019 [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) or watch the associated 
+Please read the SIGGRAPH Asia 2019 [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) or watch the associated
 [introduction video](https://www.youtube.com/watch?v=wKw8LMF3Djo) with [slides](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang-slides.pdf)
 for more details on sparse computation.
 

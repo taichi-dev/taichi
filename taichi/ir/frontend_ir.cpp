@@ -285,51 +285,6 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void ExternalFuncCallExpression::type_check() {
-  for (auto &arg : args) {
-    TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
-  }
-  for (auto &output : outputs) {
-    TI_ASSERT_TYPE_CHECKED(output);
-    // no output type compatibility check for now due to lack of specification
-  }
-  // external func calls have no return type for now
-}
-
-void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT((int)(so_func != nullptr) + (int)(!asm_source.empty()) +
-                (int)(!bc_filename.empty()) ==
-            1)
-  std::vector<Stmt *> arg_statements, output_statements;
-  if (so_func != nullptr || !asm_source.empty()) {
-    for (auto &s : args) {
-      s.set(load_if_ptr(s));
-      s->flatten(ctx);
-      arg_statements.push_back(s->stmt);
-    }
-    for (auto &s : outputs) {
-      output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-    }
-    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        (so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
-                             : ExternalFuncCallStmt::ASSEMBLY,
-        so_func, asm_source, "", "", arg_statements, output_statements));
-    stmt = ctx->back_stmt();
-  } else {
-    for (auto &s : args) {
-      TI_ASSERT_INFO(
-          s.is<IdExpression>(),
-          "external func call via bitcode must pass in local variables.")
-      arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-    }
-    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        ExternalFuncCallStmt::BITCODE, nullptr, "", bc_filename, bc_funcname,
-        arg_statements, output_statements));
-    stmt = ctx->back_stmt();
-  }
-}
-
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
   ctx->push_back(std::move(ptr));

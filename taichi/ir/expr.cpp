@@ -60,7 +60,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
 
 Expr Expr::operator[](const ExprGroup &indices) const {
   TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
+  return Expr::make<GlobalPtrExpression>(*this, indices);
 }
 
 void Expr::set_or_insert_assignment(const Expr &o) {
@@ -71,7 +71,7 @@ void Expr::set_or_insert_assignment(const Expr &o) {
       set(o);
     } else if (expr->is_lvalue()) {
       current_ast_builder().insert(
-          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
+          std::make_unique<FrontendAssignStmt>(*this, o));
     } else {
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
@@ -132,8 +132,8 @@ Expr::Expr(const Identifier &id) : Expr() {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, *this, load_if_ptr(o)));
+    this->set_or_insert_assignment(
+        Expr::make<AtomicOpExpression>(AtomicOpType::add, *this, o));
   } else {
     this->set_or_insert_assignment(*this + o);
   }
@@ -141,8 +141,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
-        AtomicOpType::sub, *this, load_if_ptr(o)));
+    this->set_or_insert_assignment(
+        Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this, o));
   } else {
     this->set_or_insert_assignment(*this - o);
   }
@@ -150,32 +150,12 @@ void Expr::operator-=(const Expr &o) {
 
 void Expr::operator*=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  this->set_or_insert_assignment((*this) * load_if_ptr(o));
+  this->set_or_insert_assignment((*this) * o);
 }
 
 void Expr::operator/=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  this->set_or_insert_assignment((*this) / load_if_ptr(o));
-}
-
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return Expr::make<GlobalLoadExpression>(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return Expr::make<GlobalLoadExpression>(ptr[ExprGroup()]);
-  } else if (ptr.is<TensorElementExpression>()) {
-    auto tensor_ptr = ptr.cast<TensorElementExpression>();
-    if (tensor_ptr->is_global_tensor())
-      return Expr::make<GlobalLoadExpression>(ptr);
-    else if (tensor_ptr->is_local_tensor())
-      return Expr::make<LocalLoadExpression>(ptr);
-    else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else
-    return ptr;
+  this->set_or_insert_assignment((*this) / o);
 }
 
 Expr Var(const Expr &x) {

@@ -73,7 +73,6 @@ class MemoryAccessOptions {
 
 class DecoratorRecorder {
  public:
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   bool strictly_serialized;
@@ -707,10 +706,6 @@ struct LocalAddress {
 };
 
 extern DecoratorRecorder dec;
-
-inline void Vectorize(int v) {
-  dec.vectorize = v;
-}
 
 inline void BitVectorize(int v) {
   dec.bit_vectorize = v;

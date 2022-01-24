@@ -1045,7 +1045,6 @@ void export_lang(py::module &m) {
   });
   // Schedules
   m.def("parallelize", Parallelize);
-  m.def("vectorize", Vectorize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 

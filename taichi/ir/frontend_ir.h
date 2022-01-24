@@ -151,7 +151,6 @@ class FrontendForStmt : public Stmt {
   Expr global_var;
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   bool strictly_serialized;

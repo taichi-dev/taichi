@@ -22,14 +22,6 @@ Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   return primitive_types_[id].get();
 }
 
-Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
-  auto key = std::make_pair(num_elements, element);
-  if (vector_types_.find(key) == vector_types_.end()) {
-    vector_types_[key] = std::make_unique<VectorType>(num_elements, element);
-  }
-  return vector_types_[key].get();
-}
-
 Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   auto encode = [](const std::vector<int> &shape) -> std::string {
     std::string s;
@@ -172,11 +164,6 @@ class TypePromotionMapping {
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();
       TI_WARN("promoted_type got a pointer input.");
-    }
-
-    if (d->is<VectorType>()) {
-      d = d->as<VectorType>()->get_element_type();
-      TI_WARN("promoted_type got a vector input.");
     }
 
     if (d->is<TensorType>()) {

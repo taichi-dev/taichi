@@ -8,7 +8,7 @@ In general, fields are global data containers that can be read and written from 
 
 A field has its own data type and shape and can be considered as a multi-dimensional array of elements.
 An element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
-The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse computation](/lang/articles/advanced/sparse).
+The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse spatial data structures](/lang/articles/advanced/sparse).
 
 :::note
 The term **field** is borrowed from mathematics and physics.

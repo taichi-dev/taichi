@@ -609,7 +609,7 @@ class TaskCodegen : public IRVisitor {
     ir_->register_value(stmt->raw_name(), linear_offset);
 
     if (ctx_attribs_->args()[arg_id].is_array) {
-      ptr_to_buffers_[stmt] = {BufferType::ExtArr, arg_id}; 
+      ptr_to_buffers_[stmt] = {BufferType::ExtArr, arg_id};
     } else {
       ptr_to_buffers_[stmt] = BufferType::Context;
     }
@@ -1624,7 +1624,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer_value = ir_->buffer_argument(
         type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
-    TI_TRACE("buffer name = {}, value = {}, binding = {}", buffer_instance_name(buffer), buffer_value.id,
+    TI_TRACE("buffer name = {}, value = {}, binding = {}",
+             buffer_instance_name(buffer), buffer_value.id,
              buffer_binding_map_[buffer]);
 
     return buffer_value;
@@ -1659,7 +1660,7 @@ class TaskCodegen : public IRVisitor {
 
     if (!ctx_attribs_->empty()) {
       bind_buffer(BufferType::Context);
-    
+
       for (int i = 0; i < ctx_attribs_->args().size(); i++) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {

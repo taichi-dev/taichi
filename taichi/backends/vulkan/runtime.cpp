@@ -81,7 +81,7 @@ class HostDeviceContextBlitter {
         if (arg.is_array) {
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
-              reinterpret_cast<char *>(device_->map(buffer));          
+              reinterpret_cast<char *>(device_->map(buffer));
           const void *host_ptr = host_ctx_->get_arg<void *>(i);
           std::memcpy(device_arr_ptr, host_ptr, arg.stride);
           device_->unmap(buffer);
@@ -467,7 +467,8 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   ti_kernel->generate_command_list(current_cmdlist_.get(),
-                                   ctx_buffer_host.get(), ctx_buffer.get(), ext_arrays);
+                                   ctx_buffer_host.get(), ctx_buffer.get(),
+                                   ext_arrays);
 
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffers_.push_back(std::move(ctx_buffer_host));

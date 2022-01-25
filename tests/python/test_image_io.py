@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 import pytest
+from taichi._testing import make_temp_file
 
 import taichi as ti
-from taichi import make_temp_file
 
 
 # jpg is also supported but hard to test here since it's lossy:

@@ -205,6 +205,5 @@ __all__ = [
     'get_rel_eps',
     'approx',
     'allclose',
-    'make_temp_file',
     'test',
 ]

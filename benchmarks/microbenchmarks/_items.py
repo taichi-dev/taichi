@@ -18,6 +18,13 @@ class BenchmarkItem:
     def impl(self, tag: str):
         return self._items[tag]
 
+    def remove(self, tags: list):
+        for tag in tags:
+            self._items.pop(tag)
+
+    def update(self, adict: dict):
+        self._items.update(adict)
+
 
 class DataType(BenchmarkItem):
     name = 'dtype'
@@ -39,3 +46,10 @@ class DataSize(BenchmarkItem):
         for i in range(1, 10):  # [4KB,16KB...256MB]
             size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
             self._items[size2tag(size_bytes)] = size_bytes
+
+
+class Container(BenchmarkItem):
+    name = 'container'
+
+    def __init__(self):
+        self._items = {'field': ti.field, 'ndarray': ti.ndarray}

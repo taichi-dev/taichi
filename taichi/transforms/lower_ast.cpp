@@ -207,9 +207,8 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
-            stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
-            stmt->strictly_serialized);
+            begin->stmt, end->stmt, std::move(stmt->body), stmt->bit_vectorize,
+            stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
@@ -268,8 +267,7 @@ class LowerAST : public IRVisitor {
     } else if (stmt->mesh_for) {
       auto &&new_for = std::make_unique<MeshForStmt>(
           stmt->mesh, stmt->element_type, std::move(stmt->body),
-          stmt->vectorize, stmt->bit_vectorize, stmt->num_cpu_threads,
-          stmt->block_dim);
+          stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim);
       new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                             0);
       new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
@@ -303,7 +301,7 @@ class LowerAST : public IRVisitor {
         snode = snode->parent;
 
       auto &&new_for = std::make_unique<StructForStmt>(
-          snode, std::move(stmt->body), stmt->vectorize, stmt->bit_vectorize,
+          snode, std::move(stmt->body), stmt->bit_vectorize,
           stmt->num_cpu_threads, stmt->block_dim);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
@@ -343,9 +341,8 @@ class LowerAST : public IRVisitor {
       }
       // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
-          begin, end, std::move(stmt->body), stmt->vectorize,
-          stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
-          stmt->strictly_serialized,
+          begin, end, std::move(stmt->body), stmt->bit_vectorize,
+          stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
           /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
       VecStatement new_statements;
       Stmt *loop_index =

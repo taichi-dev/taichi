@@ -1,4 +1,5 @@
 {
+  "javascript"      : "Taichi in javascript",
   "ci"              : "CI/CD workflow",
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",

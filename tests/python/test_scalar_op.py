@@ -31,8 +31,8 @@ binary_func_table = [
 unary_func_table = [
     (ops.neg, ) * 2,
     (ops.invert, ) * 2,
-    (ti.logical_not, np.logical_not),
-    (ti.abs, np.abs),
+    (ti.lang.ops.logical_not, np.logical_not),
+    (ti.lang.ops.abs, np.abs),
     (ti.exp, np.exp),
     (ti.log, np.log),
     (ti.sin, np.sin),
@@ -64,10 +64,10 @@ def test_python_scope_vector_binary(ti_func, np_func):
 def test_python_scope_vector_unary(ti_func, np_func):
     ti.init()
     x = ti.Vector([2, 3] if ti_func in
-                  [ops.invert, ti.logical_not] else [0.2, 0.3])
+                  [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
-    if ti_func in [ti.logical_not]:
+    if ti_func in [ti.lang.ops.logical_not]:
         result = result.astype(bool)
     expected = np_func(x.to_numpy())
     assert allclose(result, expected)

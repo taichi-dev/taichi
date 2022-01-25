@@ -322,8 +322,8 @@ class ASTTransformer(Builder):
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
-            id(min): ti_ops.ti_min,
-            id(max): ti_ops.ti_max,
+            id(min): ti_ops.min,
+            id(max): ti_ops.max,
             id(int): impl.ti_int,
             id(float): impl.ti_float,
             id(any): ti_ops.ti_any,

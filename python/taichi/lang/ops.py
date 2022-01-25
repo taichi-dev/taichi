@@ -504,7 +504,7 @@ def truediv(a, b):
 
 
 @binary
-def max_impl(a, b):  # pylint: disable=W0622
+def max_impl(a, b):
     """The maxnimum function.
 
     Args:
@@ -518,7 +518,7 @@ def max_impl(a, b):  # pylint: disable=W0622
 
 
 @binary
-def min_impl(a, b):  # pylint: disable=W0622
+def min_impl(a, b):
     """The minimum function.
 
     Args:
@@ -832,7 +832,7 @@ def assign(a, b):
     return a
 
 
-def max(*args):
+def max(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
@@ -842,7 +842,7 @@ def max(*args):
     return max_impl(args[0], max(*args[1:]))
 
 
-def min(*args):
+def min(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:

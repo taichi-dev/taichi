@@ -69,7 +69,7 @@ print(ti.raw_div(5, 2.0))  # 2.5
 :::
 
 
-### Logic operators
+### Comparison operators
 
 | Operation          | Result                                                        |
 | ------------------ | ------------------------------------------------------------- |
@@ -79,10 +79,42 @@ print(ti.raw_div(5, 2.0))  # 2.5
 | `a < b`            | if `a` is strictly less than `b`, then True, else False       |
 | `a >= b`           | if `a` is greater than or equal to `b`, then True, else False |
 | `a <= b`           | if `a` is less than or equal to `b`, then True, else False    |
+
+### Logical operators
+
+| Operation          | Result                                                        |
+| ------------------ | ------------------------------------------------------------- |
 | `not a`            | if `a` is False, then True, else False                        |
 | `a or b`           | if `a` is False, then `b`, else `a`                           |
 | `a and b`          | if `a` is False, then `a`, else `b`                           |
-| `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
+
+### Conditional operations
+
+The result of conditional expression `a if cond else b` is `a` if `cond` is True, or `b` otherwise.
+The conditional expression does short-circuit evaluation, which means the branch not chosen is not evaluated.
+
+```python
+a = ti.field(ti.i32, shape=(10,))
+for i in range(10):
+    a[i] = i
+
+@ti.kernel
+def cond_expr(ind: ti.i32) -> ti.i32:
+    return a[ind] if ind < 10 else 0
+
+cond_expr(3)  # returns 3
+cond_expr(10)  # returns 0, a[10] is not evaluated
+```
+
+
+For element-wise conditional operation on Taichi vectors and matrices,
+Taichi provides `ti.select(cond, a, b)` which **does not** do short-circuit evaluation.
+```python {4}
+cond = ti.Vector([1, 0])
+a = ti.Vector([2, 3])
+b = ti.Vector([4, 5])
+ti.select(cond, a, b)  # ti.Vector([2, 5])
+```
 
 ### Bitwise operators
 
@@ -129,14 +161,14 @@ ti.round(x)
 ti.floor(x)
 ti.ceil(x)
 ti.sum(x)
+ti.max(x, y, ...)
+ti.min(x, y, ...)
 ```
 
 ### Builtin-alike functions
 
 ```python
 abs(x)
-max(x, y, ...)
-min(x, y, ...)
 pow(x, y)  # Same as `x ** y`.
 ```
 

@@ -2,7 +2,6 @@ import copy
 import functools
 import itertools
 import os
-from tempfile import mkstemp
 
 from taichi._lib import core as _ti_core
 from taichi.lang import (cc, cpu, cuda, gpu, is_arch_supported, metal, opengl,

@@ -298,10 +298,6 @@ void export_lang(py::module &m) {
              scope_stack.push_back(
                  self->create_scope(if_stmt->false_statements));
            })
-      .def("make_id_expr",
-           [](ASTBuilder *, const std::string &name) {
-             return Expr::make<IdExpression>(name);
-           })
       .def("insert_deactivate", Deactivate)
       .def("insert_activate", Activate)
       .def("insert_external_func_call",
@@ -387,12 +383,6 @@ void export_lang(py::module &m) {
            })
       .def("end_frontend_mesh_for",
            [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("get_relation_access",
-           [](ASTBuilder *, mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-              mesh::MeshElementType to_type, const Expr &neighbor_idx) {
-             return Expr::make<MeshRelationAccessExpression>(
-                 mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-           })
       .def("begin_frontend_while",
            [&](ASTBuilder *self, const Expr &cond) {
              auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);

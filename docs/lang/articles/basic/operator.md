@@ -91,6 +91,8 @@ print(ti.raw_div(5, 2.0))  # 2.5
 ### Conditional operations
 
 The result of conditional expression `a if cond else b` is `a` if `cond` is True, or `b` otherwise.
+`a` and `b` must have a same type.
+
 The conditional expression does short-circuit evaluation, which means the branch not chosen is not evaluated.
 
 ```python

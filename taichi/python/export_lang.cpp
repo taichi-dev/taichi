@@ -274,7 +274,8 @@ void export_lang(py::module &m) {
            [&](ASTBuilder *self, const ExprGroup &group) {
              self->insert(Stmt::make<FrontendReturnStmt>(group));
            })
-      .def("create_print",
+      .def("create_print",  // This function will call `Expr
+                            // &Expr::operator=(const Expr &o)` implicitly.
            [&](ASTBuilder *self,
                std::vector<std::variant<Expr, std::string>> contents) {
              self->insert(std::make_unique<FrontendPrintStmt>(contents));
@@ -702,17 +703,6 @@ void export_lang(py::module &m) {
           return Append(snode, indices, val);
         });
 
-  m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, std::string filename,
-           std::string funcname, const ExprGroup &args,
-           const ExprGroup &outputs) {
-          auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, source, filename, funcname, args.exprs,
-              outputs.exprs);
-
-          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
-        });
-
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
     return is_active(snode, indices);
   });
@@ -721,85 +711,10 @@ void export_lang(py::module &m) {
     return Length(snode, indices);
   });
 
-  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
-                                  const std::vector<Expr> &args) {
-    auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
-    current_ast_builder().insert(std::move(stmt_unique));
-  });
-
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args) {
           return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
         });
-
-  m.def("begin_frontend_while", [&](const Expr &cond) {
-    auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("begin_frontend_range_for",
-        [&](const Expr &i, const Expr &s, const Expr &e) {
-          auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
-
-  m.def("begin_frontend_struct_for", [&](const ExprGroup &loop_vars,
-                                         const Expr &global) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("begin_frontend_mesh_for",
-        [&](const Expr &i, const mesh::MeshPtr &mesh_ptr,
-            const mesh::MeshElementType &element_type) {
-          auto stmt_unique =
-              std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
-
-  m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
-  m.def("pop_scope", [&]() { scope_stack.pop_back(); });
-
-  m.def("begin_frontend_if", [&](const Expr &cond) {
-    auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
-    current_ast_builder().insert(std::move(stmt_tmp));
-  });
-
-  m.def("begin_frontend_if_true", [&]() {
-    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
-    scope_stack.push_back(
-        current_ast_builder().create_scope(if_stmt->true_statements));
-  });
-
-  m.def("begin_frontend_if_false", [&]() {
-    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
-    scope_stack.push_back(
-        current_ast_builder().create_scope(if_stmt->false_statements));
-  });
-
-  m.def("insert_break_stmt", [&]() {
-    current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
-  });
-
-  m.def("create_kernel_exprgroup_return", [&](const ExprGroup &group) {
-    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(group));
-  });
-
-  m.def("insert_continue_stmt", [&]() {
-    current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
-  });
-
-  m.def("insert_expr_stmt", [&](const Expr &val) {
-    current_ast_builder().insert(Stmt::make<FrontendExprStmt>(val));
-  });
 
   m.def("begin_func", [&](const std::string &funcid) {
     auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
@@ -905,39 +820,6 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(log)
 
   m.def("expr_var", [](const Expr &e) { return Var(e); });
-  m.def("expr_alloca", []() {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id,
-        PrimitiveType::unknown));
-    return var;
-  });
-  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
-                                       const DataType &element_type,
-                                       const ExprGroup &elements) {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-        element_type));
-    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
-    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-      ExprGroup reversed_indices;
-      int linearized_index = i;
-      for (int d = (int)shape.size() - 1; d >= 0; --d) {
-        reversed_indices.push_back(
-            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
-        linearized_index /= shape[d];
-      }
-      ExprGroup indices;
-      for (int d = 0; d < (int)shape.size(); ++d)
-        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape,
-                                              data_type_size(element_type)),
-          load_if_ptr(elements.exprs[i])));
-    }
-    return var;
-  });
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
@@ -1063,13 +945,6 @@ void export_lang(py::module &m) {
   py::class_<FunctionKey>(m, "FunctionKey")
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
-
-  // This function will call `Expr &Expr::operator=(const Expr &o)` implicitly.
-  m.def("create_print",
-        [&](std::vector<std::variant<Expr, std::string>> contents) {
-          current_ast_builder().insert(
-              std::make_unique<FrontendPrintStmt>(contents));
-        });
 
   m.def("decl_arg", [&](const DataType &dt, bool is_array) {
     return get_current_program().current_callable->insert_arg(dt, is_array);

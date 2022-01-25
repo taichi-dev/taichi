@@ -53,7 +53,8 @@ class CompiledTaichiKernel {
 
   void generate_command_list(CommandList *cmdlist,
                              DeviceAllocationGuard *ctx_buffer_host,
-                             DeviceAllocationGuard *ctx_buffer) const;
+                             DeviceAllocationGuard *ctx_buffer,
+                             const std::unordered_map<int, DeviceAllocation> &ext_arrs) const;
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;

@@ -322,6 +322,7 @@ else()
 endif()
 
 if (TI_WITH_OPENGL)
+    set(SPIRV_CROSS_CLI false)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)

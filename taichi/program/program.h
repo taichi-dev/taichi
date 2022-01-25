@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <atomic>
+#include <stack>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"

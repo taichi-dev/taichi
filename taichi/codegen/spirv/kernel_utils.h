@@ -25,11 +25,12 @@ struct TaskAttributes {
     GlobalTmps,
     Context,
     ListGen,
+    ExtArr
   };
 
   struct BufferInfo {
     BufferType type;
-    int root_id{-1};  // only used if type==Root
+    int root_id{-1};  // only used if type==Root or type==ExtArr
 
     BufferInfo() = default;
 

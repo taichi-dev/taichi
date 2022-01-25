@@ -494,7 +494,9 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
+                    entries[k] = int(
+                        v
+                    ) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
         return Struct(entries)

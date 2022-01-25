@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 import pytest
+from taichi.lang.util import to_numpy_type
 
 import taichi as ti
 from taichi import make_temp_file
-from taichi.lang.util import to_numpy_type
 
 
 # jpg is also supported but hard to test here since it's lossy:

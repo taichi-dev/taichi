@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
+from taichi.lang.util import has_pytorch
 
 import taichi as ti
 from taichi import approx
-from taichi.lang.util import has_pytorch
 
 
 @ti.test()

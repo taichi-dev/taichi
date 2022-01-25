@@ -318,7 +318,7 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
-    def build_call_if_is_builtin(node, args, keywords):
+    def build_call_if_is_builtin(ctx, node, args, keywords):
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
@@ -333,6 +333,12 @@ class ASTTransformer(Builder):
         }
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
+            if func is min or func is max:
+                name = "min" if func is min else "max"
+                warnings.warn_explicit(
+                    f'Calling builtin function "{name}" in Taichi scope is deprecated. '
+                    f'Please use "ti.{name}" instead.', UserWarning, ctx.file,
+                    node.lineno + ctx.lineno_offset)
             return True
         return False
 
@@ -383,7 +389,7 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+        if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)

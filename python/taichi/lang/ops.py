@@ -864,5 +864,6 @@ __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
     "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
     "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
-    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh", "max", "min"
+    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
+    "max", "min"
 ]

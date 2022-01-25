@@ -6,9 +6,10 @@ import tempfile
 import pytest
 
 import taichi as ti
+from taichi.lang.util import has_clangpp
 
 
-@pytest.mark.skipif(not ti.has_clangpp(), reason='Clang not installed.')
+@pytest.mark.skipif(not has_clangpp(), reason='Clang not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_source_builder_from_source():
     source_bc = '''
@@ -44,7 +45,7 @@ def test_source_builder_from_source():
     assert func_bc() == 11**8
 
 
-@pytest.mark.skipif(not ti.has_clangpp(), reason='Clang not installed.')
+@pytest.mark.skipif(not has_clangpp(), reason='Clang not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_source_builder_from_file():
     source_code = '''

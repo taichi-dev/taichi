@@ -3,6 +3,7 @@ import pytest
 
 import taichi as ti
 from taichi import approx
+from taichi.lang.util import has_pytorch
 
 
 @ti.test()
@@ -891,7 +892,7 @@ def test_dictcomp_fail():
         foo(5, 3)
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_ndarray():
     n = 4

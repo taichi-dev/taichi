@@ -50,14 +50,6 @@ def allclose(x, y, **kwargs):
     return x == approx(y, **kwargs)
 
 
-def make_temp_file(*args, **kwargs):
-    '''Create a temporary file'''
-
-    fd, name = mkstemp(*args, **kwargs)
-    os.close(fd)
-    return name
-
-
 class TestParam:
     def __init__(self, value, required_extensions):
         self._value = value
@@ -205,6 +197,5 @@ __all__ = [
     'get_rel_eps',
     'approx',
     'allclose',
-    'make_temp_file',
     'test',
 ]

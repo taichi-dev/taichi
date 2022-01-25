@@ -1,8 +1,9 @@
+import tempfile
+
 import numpy as np
 import pytest
 
 import taichi as ti
-from taichi import make_temp_file
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.f32])
@@ -23,9 +24,9 @@ def test_save_image_without_window(dtype):
         else:
             paint(i * 1.0 / n)
         gui.set_image(pixels)
-        image_path = make_temp_file(suffix='.png')
-        gui.show(image_path)
-        image = ti.imread(image_path)
-        delta = (image - i).sum()
-        assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
-            delta)
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_path:
+            gui.show(image_path.name)
+            image = ti.imread(image_path.name)
+            delta = (image - i).sum()
+            assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
+                delta)

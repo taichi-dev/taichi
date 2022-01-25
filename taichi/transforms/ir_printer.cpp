@@ -620,10 +620,6 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name());
   }
 
-  void visit(GlobalThreadIndexStmt *stmt) override {
-    print("{}{} = global thread index", stmt->type_hint(), stmt->name());
-  }
-
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);
@@ -729,6 +725,25 @@ class IRPrinter : public IRVisitor {
 
   void visit(MeshPatchIndexStmt *stmt) override {
     print("{}{} = mesh patch idx", stmt->type_hint(), stmt->name());
+  }
+
+  void visit(FrontendExternalFuncStmt *stmt) override {
+    if (stmt->so_func != nullptr) {
+      print("so {:x}", (uint64)stmt->so_func);
+    } else if (!stmt->asm_source.empty()) {
+      print("asm \"{}\"", stmt->asm_source);
+    } else {
+      print("bc {}:{}", stmt->bc_filename, stmt->bc_funcname);
+    }
+    print(" (inputs=");
+    for (auto &s : stmt->args) {
+      print(s.serialize());
+    }
+    print(", outputs=");
+    for (auto &s : stmt->outputs) {
+      print(s.serialize());
+    }
+    print(")");
   }
 };
 

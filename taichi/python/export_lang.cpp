@@ -265,6 +265,95 @@ void export_lang(py::module &m) {
       .def_readwrite("metric_values",
                      &KernelProfileTracedRecord::metric_values);
 
+  // Export ASTBuilder
+  py::class_<ASTBuilder>(m, "ASTBuilder")
+      .def("create_kernel_return",
+           [&](ASTBuilder *self, const Expr &value) {
+             self->insert(Stmt::make<FrontendReturnStmt>(value));
+           })
+      .def("create_print",
+           [&](ASTBuilder *self,
+               std::vector<std::variant<Expr, std::string>> contents) {
+             self->insert(std::make_unique<FrontendPrintStmt>(contents));
+           })
+      .def("begin_frontend_if",
+           [&](ASTBuilder *self, const Expr &cond) {
+             auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
+             self->insert(std::move(stmt_tmp));
+           })
+      .def(
+          "begin_frontend_if_true",
+          [&](ASTBuilder *self) {
+            auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
+            scope_stack.push_back(self->create_scope(if_stmt->true_statements));
+          })
+      .def("pop_scope", [&](ASTBuilder *) { scope_stack.pop_back(); })
+      .def("begin_frontend_if_false",
+           [&](ASTBuilder *self) {
+             auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
+             scope_stack.push_back(
+                 self->create_scope(if_stmt->false_statements));
+           })
+      .def("make_id_expr",
+           [](ASTBuilder *, const std::string &name) {
+             return Expr::make<IdExpression>(name);
+           })
+      .def("begin_frontend_range_for",
+           [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
+             auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("end_frontend_range_for",
+           [&](ASTBuilder *) { scope_stack.pop_back(); })
+      .def("begin_frontend_struct_for",
+           [&](ASTBuilder *self, const ExprGroup &loop_vars,
+               const Expr &global) {
+             auto stmt_unique =
+                 std::make_unique<FrontendForStmt>(loop_vars, global);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("end_frontend_struct_for",
+           [&](ASTBuilder *) { scope_stack.pop_back(); })
+      .def("begin_frontend_mesh_for",
+           [&](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
+               const mesh::MeshElementType &element_type) {
+             auto stmt_unique =
+                 std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("end_frontend_mesh_for",
+           [&](ASTBuilder *) { scope_stack.pop_back(); })
+      .def("get_relation_access",
+           [](ASTBuilder *, mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+              mesh::MeshElementType to_type, const Expr &neighbor_idx) {
+             return Expr::make<MeshRelationAccessExpression>(
+                 mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+           })
+      .def("begin_frontend_while",
+           [&](ASTBuilder *self, const Expr &cond) {
+             auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("insert_break_stmt",
+           [&](ASTBuilder *self) {
+             self->insert(Stmt::make<FrontendBreakStmt>());
+           })
+      .def("insert_continue_stmt",
+           [&](ASTBuilder *self) {
+             self->insert(Stmt::make<FrontendContinueStmt>());
+           })
+      .def("insert_expr_stmt", [&](ASTBuilder *self, const Expr &val) {
+        self->insert(Stmt::make<FrontendExprStmt>(val));
+      });
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
@@ -314,6 +403,8 @@ void export_lang(py::module &m) {
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
+           py::return_value_policy::reference)
+      .def("current_ast_builder", &Program::current_ast_builder,
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -460,6 +551,12 @@ void export_lang(py::module &m) {
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
       .def("make_launch_context", &Kernel::make_launch_context)
+      .def(
+          "ast_builder",
+          [](Kernel *self) -> ASTBuilder * {
+            return &self->context->builder();
+          },
+          py::return_value_policy::reference)
       .def("__call__",
            [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
              py::gil_scoped_release release;
@@ -480,7 +577,13 @@ void export_lang(py::module &m) {
   py::class_<Function>(m, "Function")
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
-               &Function::set_function_body));
+               &Function::set_function_body))
+      .def(
+          "ast_builder",
+          [](Function *self) -> ASTBuilder * {
+            return &self->context->builder();
+          },
+          py::return_value_policy::reference);
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", [](Expr *expr) { return expr->serialize(); })
@@ -554,11 +657,10 @@ void export_lang(py::module &m) {
         [](std::size_t func_addr, std::string source, std::string filename,
            std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
-          auto expr = Expr::make<ExternalFuncCallExpression>(
+          auto stmt = Stmt::make<FrontendExternalFuncStmt>(
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
-
-          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
+          current_ast_builder().insert(std::move(stmt));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -874,7 +976,7 @@ void export_lang(py::module &m) {
 
   m.def(
       "create_kernel",
-      [&](const std::function<void()> &body, const std::string &name,
+      [&](const std::function<void(Kernel *)> &body, const std::string &name,
           bool grad) -> Kernel * {
         py::gil_scoped_release release;
         return &get_current_program().kernel(body, name, grad);
@@ -896,7 +998,7 @@ void export_lang(py::module &m) {
 
   m.def(
       "create_kernel",
-      [&](const std::function<void()> &body, const std::string &name,
+      [&](const std::function<void(Kernel *)> &body, const std::string &name,
           bool grad) -> Kernel * {
         return &get_current_program().kernel(body, name, grad);
       },
@@ -963,7 +1065,8 @@ void export_lang(py::module &m) {
     }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    return Expr::make<GlobalThreadIndexExpression>();
+    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
+                                                  std::vector<Expr>{});
   });
 
   m.def("insert_patch_idx_expr", [&]() {

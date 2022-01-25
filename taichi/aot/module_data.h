@@ -30,12 +30,13 @@ struct CompiledFieldData {
 
 struct CompiledOffloadedTask {
   std::string type;
+  std::string range_hint;
   std::string name;
   // Do we need to inline the source code?
   std::string source_path;
   int gpu_block_size{0};
 
-  TI_IO_DEF(type, name, source_path, gpu_block_size);
+  TI_IO_DEF(type, range_hint, name, source_path, gpu_block_size);
 };
 
 struct ScalarArg {

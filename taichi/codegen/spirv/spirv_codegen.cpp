@@ -1597,9 +1597,8 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
-    spirv::Value buffer_value =
-        ir_->buffer_argument(type, 0, buffer_binding_map_[buffer]);
-    ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
+    spirv::Value buffer_value = ir_->buffer_argument(
+        type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
@@ -1616,9 +1615,8 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
-    spirv::Value buffer_value =
-        ir_->buffer_argument(type, 0, buffer_binding_map_[buffer]);
-    ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
+    spirv::Value buffer_value = ir_->buffer_argument(
+        type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);

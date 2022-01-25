@@ -129,6 +129,7 @@ class Offloader {
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
+        offloaded->range_hint = s->range_hint;
         root_block->insert(std::move(offloaded));
       } else if (auto st = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();

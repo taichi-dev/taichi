@@ -53,6 +53,12 @@ class AotDataConverter {
     aot::CompiledOffloadedTask res{};
     res.type = offloaded_task_type_name(in.task_type);
     res.name = in.name;
+    // TODO: update range_hint after ndarray is supported on vulkan.
+    if (in.range_for_attribs && in.range_for_attribs->const_begin &&
+        in.range_for_attribs->const_end) {
+      res.range_hint = std::to_string(in.range_for_attribs->end -
+                                      in.range_for_attribs->begin);
+    }
     res.gpu_block_size = in.advisory_num_threads_per_group;
     return res;
   }

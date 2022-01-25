@@ -197,7 +197,8 @@ class KernelGen : public IRVisitor {
     return res;
   }
 
-  void generate_task_bottom(OffloadedTaskType task_type) {
+  void generate_task_bottom(OffloadedTaskType task_type,
+                            std::string range_hint) {
     emit("void main()");
     emit("{{");
     if (used.random)
@@ -299,8 +300,8 @@ class KernelGen : public IRVisitor {
                           ? std::min(workgroup_size_, prescribed_block_dim)
                           : workgroup_size_;
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
-                          task_type, num_workgroups_, workgroup_size_,
-                          &this->extptr_access_);
+                          task_type, range_hint, num_workgroups_,
+                          workgroup_size_, &this->extptr_access_);
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");
@@ -1031,6 +1032,8 @@ class KernelGen : public IRVisitor {
       num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
+      // range_hint is known after compilation, e.g. range of field
+      stmt->range_hint = std::to_string(end_value - begin_value);
       stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
@@ -1171,7 +1174,7 @@ class KernelGen : public IRVisitor {
                stmt->task_name());
     }
     is_top_level_ = true;
-    generate_task_bottom(task_type);
+    generate_task_bottom(task_type, stmt->range_hint);
     loaded_args_.clear();
   }
 

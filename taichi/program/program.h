@@ -183,6 +183,16 @@ class Program {
     return *kernels.back();
   }
 
+  Kernel &kernel(const std::function<void(Kernel *)> &body,
+                 const std::string &name = "",
+                 bool grad = false) {
+    // Expr::set_allow_store(true);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    // Expr::set_allow_store(false);
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
+  }
+
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
@@ -270,6 +280,16 @@ class Program {
   SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
+   * Allocates a SNode tree id for a new SNode tree
+   *
+   * @return The SNode tree id allocated
+   *
+   * Returns and consumes a free SNode tree id if there is any,
+   * Otherwise returns the size of `snode_trees_`
+   */
+  int allocate_snode_tree_id();
+
+  /**
    * Gets the root of a SNode tree.
    *
    * @param tree_id Index of the SNode tree
@@ -303,6 +323,10 @@ class Program {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
 
+  ASTBuilder *current_ast_builder() {
+    return current_callable ? &current_callable->context->builder() : nullptr;
+  }
+
  private:
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
@@ -310,6 +334,7 @@ class Program {
   NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+  std::stack<int> free_snode_tree_ids_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;

@@ -345,7 +345,8 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->vectorize,
           stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
-          stmt->strictly_serialized);
+          stmt->strictly_serialized,
+          /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
@@ -483,6 +484,42 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     stmt->val->flatten(&fctx);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+  }
+
+  void visit(FrontendExternalFuncStmt *stmt) override {
+    auto ctx = make_flatten_ctx();
+    TI_ASSERT((int)(stmt->so_func != nullptr) +
+                  (int)(!stmt->asm_source.empty()) +
+                  (int)(!stmt->bc_filename.empty()) ==
+              1)
+    std::vector<Stmt *> arg_statements, output_statements;
+    if (stmt->so_func != nullptr || !stmt->asm_source.empty()) {
+      for (auto &s : stmt->args) {
+        s.set(load_if_ptr(s));
+        s->flatten(&ctx);
+        arg_statements.push_back(s->stmt);
+      }
+      for (auto &s : stmt->outputs) {
+        output_statements.push_back(
+            s.cast<IdExpression>()->flatten_noload(&ctx));
+      }
+      ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
+          (stmt->so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
+                                     : ExternalFuncCallStmt::ASSEMBLY,
+          stmt->so_func, stmt->asm_source, "", "", arg_statements,
+          output_statements));
+    } else {
+      for (auto &s : stmt->args) {
+        TI_ASSERT_INFO(
+            s.is<IdExpression>(),
+            "external func call via bitcode must pass in local variables.")
+        arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(&ctx));
+      }
+      ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
+          ExternalFuncCallStmt::BITCODE, nullptr, "", stmt->bc_filename,
+          stmt->bc_funcname, arg_statements, output_statements));
+    }
+    stmt->parent->replace_with(stmt, std::move(ctx.stmts));
   }
 
   static void run(IRNode *node) {

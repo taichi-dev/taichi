@@ -1,4 +1,5 @@
 // Frontend statements
+PER_STATEMENT(FrontendExternalFuncStmt)
 PER_STATEMENT(FrontendExprStmt)
 PER_STATEMENT(FrontendIfStmt)
 PER_STATEMENT(FrontendForStmt)

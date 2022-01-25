@@ -500,7 +500,7 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                _ti_core.create_kernel_exprgroup_return(
+                ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group(
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))

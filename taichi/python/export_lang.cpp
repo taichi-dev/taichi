@@ -270,9 +270,9 @@ void export_lang(py::module &m) {
 
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
-      .def("create_kernel_return",
-           [&](ASTBuilder *self, const Expr &value) {
-             self->insert(Stmt::make<FrontendReturnStmt>(value));
+      .def("create_kernel_exprgroup_return",
+           [&](ASTBuilder *self, const ExprGroup &group) {
+             self->insert(Stmt::make<FrontendReturnStmt>(group));
            })
       .def("create_print",
            [&](ASTBuilder *self,

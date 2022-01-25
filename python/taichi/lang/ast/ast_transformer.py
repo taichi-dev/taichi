@@ -337,7 +337,7 @@ class ASTTransformer(Builder):
                 name = "min" if func is min else "max"
                 warnings.warn_explicit(
                     f'Calling builtin function "{name}" in Taichi scope is deprecated. '
-                    f'Please use "ti.{name}" instead.', UserWarning, ctx.file,
+                    f'Please use "ti.{name}" instead.', DeprecationWarning, ctx.file,
                     node.lineno + ctx.lineno_offset)
             return True
         return False

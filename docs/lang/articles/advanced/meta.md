@@ -39,6 +39,10 @@ copy_1D(c, d)
 ```
 
 :::note
+If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel.
+:::
+
+:::note
 The template parameters are inlined into the generated kernel after compilation.
 :::
 

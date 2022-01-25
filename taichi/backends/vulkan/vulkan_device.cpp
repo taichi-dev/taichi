@@ -1919,6 +1919,7 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
+#if !defined(TI_EMSCRIPTENED)
 #ifdef ANDROID
   window_ = (ANativeWindow *)config.window_handle;
 #else
@@ -1964,6 +1965,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
   }
+#endif
 }
 
 void VulkanSurface::create_swap_chain() {
@@ -2019,7 +2021,7 @@ void VulkanSurface::create_swap_chain() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getWidth(window_);
-#else
+#elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
 
@@ -2129,7 +2131,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getWidth(window_);
-#else
+#elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
   return std::make_pair(width, height);

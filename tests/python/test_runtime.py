@@ -126,14 +126,16 @@ def test_init_bad_arg():
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
-@pytest.mark.parametrize('level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @ti.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
 
 
-@pytest.mark.parametrize('level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @ti.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)

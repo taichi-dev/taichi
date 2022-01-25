@@ -33,7 +33,6 @@ void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,
                          bool verbose,
-                         bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool start_from_ast) {
@@ -67,16 +66,6 @@ void compile_to_offloads(IRNode *ir,
     print("Offloaded");
     irpass::analysis::verify(ir);
     return;
-  }
-
-  if (vectorize) {
-    irpass::loop_vectorize(ir, config);
-    print("Loop Vectorized");
-    irpass::analysis::verify(ir);
-
-    irpass::vector_split(ir, config.max_vector_width, config.serial_schedule);
-    print("Loop Split");
-    irpass::analysis::verify(ir);
   }
 
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
@@ -272,7 +261,6 @@ void offload_to_executable(IRNode *ir,
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
-                           bool vectorize,
                            bool grad,
                            bool ad_use_stack,
                            bool verbose,
@@ -282,8 +270,8 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, vectorize, grad,
-                      ad_use_stack, start_from_ast);
+  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack,
+                      start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,
                         /*determine_ad_stack_size=*/grad && ad_use_stack,

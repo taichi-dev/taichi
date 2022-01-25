@@ -304,12 +304,11 @@ void export_lang(py::module &m) {
            [](ASTBuilder *self, std::size_t func_addr, std::string source,
               std::string filename, std::string funcname, const ExprGroup &args,
               const ExprGroup &outputs) {
-             auto expr = Expr::make<ExternalFuncCallExpression>(
+             auto stmt = Stmt::make<FrontendExternalFuncStmt>(
                  (void *)func_addr, source, filename, funcname, args.exprs,
                  outputs.exprs);
-
-             self->insert(Stmt::make<FrontendExprStmt>(expr));
-           })
+             self->insert(std::move(stmt));
+        });
       .def("expr_alloca",
            [](ASTBuilder *self) {
              auto var = Expr(std::make_shared<IdExpression>());
@@ -959,7 +958,6 @@ void export_lang(py::module &m) {
   });
   // Schedules
   m.def("parallelize", Parallelize);
-  m.def("vectorize", Vectorize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 

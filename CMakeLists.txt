@@ -4,6 +4,17 @@
 
 cmake_minimum_required(VERSION 3.12)
 
+if((DEFINED TI_EMSCRIPTENED) AND TI_EMSCRIPTENED)
+  if(DEFINED ENV{EMSCRIPTEN_DIR})
+      set(EMSCRIPTEN_DIR $ENV{EMSCRIPTEN_DIR})
+      # Tool chain file must be specified before the `project()`
+      set(CMAKE_TOOLCHAIN_FILE "${EMSCRIPTEN_DIR}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
+      set(CMAKE_CROSSCOMPILING_EMULATOR "${EMSCRIPTEN_DIR}/node/14.15.5_64bit/bin/node.exe")
+  else()
+      message(FATAL_ERROR "To build taichi with emscripten, Please set EMSCRIPTEN_DIR environment variable.")
+  endif()
+endif()
+
 project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)

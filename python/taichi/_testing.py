@@ -2,6 +2,7 @@ import copy
 import functools
 import itertools
 import os
+from tempfile import mkstemp
 
 from taichi._lib import core as _ti_core
 from taichi.lang import (cc, cpu, cuda, gpu, is_arch_supported, metal, opengl,
@@ -47,6 +48,14 @@ def approx(expected, **kwargs):
 def allclose(x, y, **kwargs):
     '''Same as: x == approx(y, **kwargs)'''
     return x == approx(y, **kwargs)
+
+
+def make_temp_file(*args, **kwargs):
+    '''Create a temporary file'''
+
+    fd, name = mkstemp(*args, **kwargs)
+    os.close(fd)
+    return name
 
 
 class TestParam:

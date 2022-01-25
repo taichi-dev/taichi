@@ -1080,6 +1080,11 @@ class ASTTransformer(Builder):
                 node.body.ptr) or is_taichi_class(node.orelse.ptr):
             node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
                                      node.orelse.ptr)
+            warnings.warn_explicit(
+                f'Using conditional expression for element-wise select operation on '
+                f'Taichi vectors/matrices is deprecated. '
+                f'Please use "ti.select" instead.', DeprecationWarning,
+                ctx.file, node.lineno + ctx.lineno_offset)
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

@@ -318,12 +318,12 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
-    def build_call_if_is_builtin(node, args, keywords):
+    def build_call_if_is_builtin(ctx, node, args, keywords):
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
-            id(min): ti_ops.ti_min,
-            id(max): ti_ops.ti_max,
+            id(min): ti_ops.min,
+            id(max): ti_ops.max,
             id(int): impl.ti_int,
             id(float): impl.ti_float,
             id(any): ti_ops.ti_any,
@@ -333,6 +333,12 @@ class ASTTransformer(Builder):
         }
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
+            if func is min or func is max:
+                name = "min" if func is min else "max"
+                warnings.warn_explicit(
+                    f'Calling builtin function "{name}" in Taichi scope is deprecated. '
+                    f'Please use "ti.{name}" instead.', DeprecationWarning,
+                    ctx.file, node.lineno + ctx.lineno_offset)
             return True
         return False
 
@@ -384,7 +390,7 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+        if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)
@@ -1075,6 +1081,11 @@ class ASTTransformer(Builder):
                 node.body.ptr) or is_taichi_class(node.orelse.ptr):
             node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
                                      node.orelse.ptr)
+            warnings.warn_explicit(
+                'Using conditional expression for element-wise select operation on '
+                'Taichi vectors/matrices is deprecated. '
+                'Please use "ti.select" instead.', DeprecationWarning,
+                ctx.file, node.lineno + ctx.lineno_offset)
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

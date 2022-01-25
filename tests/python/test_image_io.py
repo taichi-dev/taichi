@@ -86,4 +86,4 @@ def test_image_resize_sum(resx, resy, comp, scale):
         new_img = ti.imresize(old_img, resx * scale)
     else:
         new_img = ti.imresize(old_img, resx * scale, resy * scale)
-    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))
+    assert np.sum(old_img) * scale**2 == ti._testing.approx(np.sum(new_img))

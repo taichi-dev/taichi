@@ -202,7 +202,6 @@ def test(arch=None, exclude=None, require=None, **options):
 
 
 __all__ = [
-    'approx',
     'allclose',
     'test',
 ]

@@ -8,7 +8,7 @@ def test_expr_dict_basic():
         x = {'foo': 2 + u, 'bar': 3 + v}
         return x['foo'] * 100 + x['bar']
 
-    assert func(2, 0.1) == ti.approx(403.1)
+    assert func(2, 0.1) == ti._testing.approx(403.1)
 
 
 @ti.test(ti.cpu)
@@ -22,7 +22,7 @@ def test_expr_dict_field():
 
     a[0] = 2
     a[1] = 0.1
-    assert func() == ti.approx(403.1)
+    assert func() == ti._testing.approx(403.1)
 
 
 @ti.test(ti.cpu)

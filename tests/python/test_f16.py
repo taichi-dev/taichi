@@ -2,9 +2,9 @@ import math
 
 import numpy as np
 import pytest
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 

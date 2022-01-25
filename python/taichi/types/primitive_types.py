@@ -90,7 +90,6 @@ __all__ = [
     'u32',
     'uint64',
     'u64',
-    'integer_types',
     'is_signed',
     'is_integral',
 ]

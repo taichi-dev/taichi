@@ -331,6 +331,44 @@ to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assigne
 if you see any silent wrong results.
 :::
 
+### Write differentiable code inside Taichi kernel
+Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. 
+Therefore, you are not able to modify the `grad` of Taichi field in python scope.
+
+Example:
+
+```python
+import taichi as ti
+
+ti.init()
+x = ti.field(dtype=float, shape=(), needs_grad=True)
+loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+
+@ti.kernel
+def differentiable_task():
+    for l in range(3):
+        loss[None] += ti.sin(x[None]) + 1.0
+
+@ti.kernel
+def manipulation_in_kernel():
+    loss[None] += ti.sin(x[None]) + 1.0
+
+
+x[None] = 0.0
+with ti.Tape(loss=loss):
+    # The line below in python scope only contribute to the forward pass
+    # but not the backward pass i.e., `grad` is not recorded
+    loss[None] += ti.sin(x[None]) + 1.0
+
+    # `grad` is recorded in Taichi scope i.e. inside Taichi kernels
+    manipulation_in_kernel()
+    differentiable_task()
+
+# The outputs are 5.0 and 4.0
+print(loss[None], x.grad[None])
+```
+
 
 ## Extending Taichi Autodiff system
 

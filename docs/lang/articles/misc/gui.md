@@ -24,20 +24,19 @@ gui = ti.GUI('Window Title', (640, 360), show_gui=False)
 
 while gui.running:
     ...
-    gui.show(f'{gui.frame:06d}.png')  # save a series of screenshot
+    gui.show(f'{gui.frame:06d}.png')  # save current frame to local file
 ```
 
 :::
 
 ## Display a window
 
-The following code snippet saves frames of the window to `.png`s:
+The following code snippet display frame of the current windows:
 
 ```python
     for frame in range(10000):
-        render(img)
-        gui.set_image(img)
-        gui.show(f'{frame:06d}.png')
+        ...
+        gui.show() # display current frame
 ```
 
 :::note

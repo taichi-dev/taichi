@@ -202,7 +202,6 @@ def test(arch=None, exclude=None, require=None, **options):
 
 
 __all__ = [
-    'get_rel_eps',
     'approx',
     'allclose',
     'test',

@@ -77,7 +77,7 @@ def test_require_extensions_2():
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 @ti.test()
 def test_allclose_rel(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -94,7 +94,7 @@ def test_allclose_rel(x, allclose):
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered1(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -111,7 +111,7 @@ def test_allclose_rel_reordered1(x, allclose):
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered2(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)

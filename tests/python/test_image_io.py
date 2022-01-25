@@ -1,8 +1,8 @@
 import os
-import tempfile
 
 import numpy as np
 import pytest
+from taichi._testing import make_temp_file
 
 import taichi as ti
 
@@ -24,16 +24,17 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
     pixel = np.random.randint(256, size=shape, dtype=ti.to_numpy_type(dt))
     if is_field:
         pixel_t.from_numpy(pixel)
-    with tempfile.NamedTemporaryFile(suffix='.' + ext) as fn:
-        if is_field:
-            ti.imwrite(pixel_t, fn.name)
-        else:
-            ti.imwrite(pixel, fn.name)
-        pixel_r = ti.imread(fn.name)
-        if comp == 1:
-            # from (resx, resy, 1) to (resx, resy)
-            pixel_r = pixel_r.reshape((resx, resy))
-        assert (pixel_r == pixel).all()
+    fn = make_temp_file(suffix='.' + ext)
+    if is_field:
+        ti.imwrite(pixel_t, fn)
+    else:
+        ti.imwrite(pixel, fn)
+    pixel_r = ti.imread(fn)
+    if comp == 1:
+        # from (resx, resy, 1) to (resx, resy)
+        pixel_r = pixel_r.reshape((resx, resy))
+    assert (pixel_r == pixel).all()
+    os.remove(fn)
 
 
 @pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
@@ -45,11 +46,11 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    with tempfile.NamedTemporaryFile(suffix='.' + ext) as fn:
-        ti.imwrite(pixel_t, fn.name)
-        pixel_r = (ti.imread(fn.name).astype(ti.to_numpy_type(dt)) +
-                   0.5) / 256.0
-        assert np.allclose(pixel_r, pixel, atol=2e-2)
+    fn = make_temp_file(suffix='.' + ext)
+    ti.imwrite(pixel_t, fn)
+    pixel_r = (ti.imread(fn).astype(ti.to_numpy_type(dt)) + 0.5) / 256.0
+    assert np.allclose(pixel_r, pixel, atol=2e-2)
+    os.remove(fn)
 
 
 @pytest.mark.parametrize('comp,ext', [(3, 'png')])
@@ -65,10 +66,11 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    with tempfile.NamedTemporaryFile(suffix='.' + ext) as fn:
-        ti.imwrite(pixel_t, fn.name)
-        pixel_r = ti.imread(fn.name).astype(np_type) * np_max
-        assert (pixel_r == pixel).all()
+    fn = make_temp_file(suffix='.' + ext)
+    ti.imwrite(pixel_t, fn)
+    pixel_r = ti.imread(fn).astype(np_type) * np_max
+    assert (pixel_r == pixel).all()
+    os.remove(fn)
 
 
 @pytest.mark.parametrize('comp', [1, 3])

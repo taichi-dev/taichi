@@ -308,7 +308,7 @@ void export_lang(py::module &m) {
                  (void *)func_addr, source, filename, funcname, args.exprs,
                  outputs.exprs);
              self->insert(std::move(stmt));
-        });
+           })
       .def("expr_alloca",
            [](ASTBuilder *self) {
              auto var = Expr(std::make_shared<IdExpression>());

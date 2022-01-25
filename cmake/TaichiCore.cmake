@@ -207,7 +207,9 @@ file(GLOB TAICHI_EMBIND_SOURCE
       "taichi/javascript/*.cpp"
       "taichi/javascript/*.h"
 )
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_EMBIND_SOURCE})
+if (TAICHI_EMBIND_SOURCE)
+  list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_EMBIND_SOURCE})
+endif()
 
 # TODO(#2196): Rename these CMAKE variables:
 # CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME

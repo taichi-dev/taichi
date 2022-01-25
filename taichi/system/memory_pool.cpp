@@ -24,8 +24,8 @@ MemoryPool::MemoryPool(Arch arch, Device *device)
     CUDADriver::get_instance().stream_create(&cuda_stream,
                                              CU_STREAM_NON_BLOCKING);
   }
-#endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
+#endif
 }
 
 void MemoryPool::set_queue(MemRequestQueue *queue) {
@@ -131,7 +131,7 @@ void MemoryPool::terminate() {
 }
 
 MemoryPool::~MemoryPool() {
-  if (!killed) {
+  if (th && !killed) {
     terminate();
   }
 }

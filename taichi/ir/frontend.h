@@ -52,18 +52,18 @@ inline Expr Atomic(Expr dest) {
 }
 
 // expr_group are indices
-inline void Activate(SNode *snode, const ExprGroup &expr_group) {
-  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
-      SNodeOpType::activate, snode, expr_group));
+inline void Activate(ASTBuilder *ast_builder,
+                     SNode *snode,
+                     const ExprGroup &expr_group) {
+  ast_builder->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate,
+                                                      snode, expr_group));
 }
 
-inline void Activate(const Expr &expr, const ExprGroup &expr_group) {
-  return Activate(expr.snode(), expr_group);
-}
-
-inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
-  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
-      SNodeOpType::deactivate, snode, expr_group));
+inline void Deactivate(ASTBuilder *ast_builder,
+                       SNode *snode,
+                       const ExprGroup &expr_group) {
+  ast_builder->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate,
+                                                      snode, expr_group));
 }
 
 inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {

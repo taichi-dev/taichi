@@ -54,11 +54,14 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
+void expr_assign(ASTBuilder *ast_builder,
+                 const Expr &lhs,
+                 const Expr &rhs,
+                 std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
   stmt->set_tb(tb);
-  current_ast_builder().insert(std::move(stmt));
+  ast_builder->insert(std::move(stmt));
 }
 
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
@@ -298,6 +301,60 @@ void export_lang(py::module &m) {
            [](ASTBuilder *, const std::string &name) {
              return Expr::make<IdExpression>(name);
            })
+      .def("insert_deactivate", Deactivate)
+      .def("insert_activate", Activate)
+      .def("insert_external_func_call",
+           [](ASTBuilder *self, std::size_t func_addr, std::string source,
+              std::string filename, std::string funcname, const ExprGroup &args,
+              const ExprGroup &outputs) {
+             auto expr = Expr::make<ExternalFuncCallExpression>(
+                 (void *)func_addr, source, filename, funcname, args.exprs,
+                 outputs.exprs);
+
+             self->insert(Stmt::make<FrontendExprStmt>(expr));
+           })
+      .def("expr_alloca",
+           [](ASTBuilder *self) {
+             auto var = Expr(std::make_shared<IdExpression>());
+             self->insert(std::make_unique<FrontendAllocaStmt>(
+                 std::static_pointer_cast<IdExpression>(var.expr)->id,
+                 PrimitiveType::unknown));
+             return var;
+           })
+      .def("expr_alloca_local_tensor",
+           [](ASTBuilder *self, const std::vector<int> &shape,
+              const DataType &element_type, const ExprGroup &elements) {
+             auto var = Expr(std::make_shared<IdExpression>());
+             self->insert(std::make_unique<FrontendAllocaStmt>(
+                 std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+                 element_type));
+             var->ret_type = self->get_last_stmt()->ret_type;
+             for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+               ExprGroup reversed_indices;
+               int linearized_index = i;
+               for (int d = (int)shape.size() - 1; d >= 0; --d) {
+                 reversed_indices.push_back(Expr::make<ConstExpression, int32>(
+                     linearized_index % shape[d]));
+                 linearized_index /= shape[d];
+               }
+               ExprGroup indices;
+               for (int d = 0; d < (int)shape.size(); ++d)
+                 indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+               self->insert(std::make_unique<FrontendAssignStmt>(
+                   Expr::make<TensorElementExpression>(
+                       var, indices, shape, data_type_size(element_type)),
+                   load_if_ptr(elements.exprs[i])));
+             }
+             return var;
+           })
+      .def("create_assert_stmt",
+           [&](ASTBuilder *self, const Expr &cond, const std::string &msg,
+               const std::vector<Expr> &args) {
+             auto stmt_unique =
+                 std::make_unique<FrontendAssertStmt>(cond, msg, args);
+             self->insert(std::move(stmt_unique));
+           })
+      .def("expr_assign", expr_assign)
       .def("begin_frontend_range_for",
            [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
              auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
@@ -636,14 +693,6 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
 
-  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
-    return Deactivate(snode, indices);
-  });
-
-  m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
-    return Activate(snode, indices);
-  });
-
   m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
   });
@@ -889,7 +938,6 @@ void export_lang(py::module &m) {
     }
     return var;
   });
-  m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);

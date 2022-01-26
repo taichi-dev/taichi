@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from taichi.lang import impl
 from taichi import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
@@ -425,7 +426,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     ti.root.dense(ti.i, 8).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -438,7 +439,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     ti.root.dense(ti.i, 2).pointer(ti.i, 4).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -453,7 +454,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     ti.root.dense(ti.i, 8).place(x, temp)
     ti.root.dense(ti.i, 8).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -469,7 +470,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     ti.root.dense(ti.i, 8).place(temp_a, x)
     ti.root.dense(ti.i, 8).place(y, temp_b)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -484,7 +485,7 @@ def test_matrix_field_dynamic_index_different_stride():
 
     ti.root.dense(ti.i, 8).place(x, y, temp, z)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 

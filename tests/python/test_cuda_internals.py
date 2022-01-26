@@ -1,4 +1,5 @@
 import taichi as ti
+from taichi.lang import impl
 
 # TODO: these are not really tests...
 
@@ -8,7 +9,7 @@ def test_do_nothing():
     @ti.kernel
     def test():
         for i in range(10):
-            ti.call_internal("do_nothing")
+            impl.call_internal("do_nothing")
 
     test()
 
@@ -19,7 +20,7 @@ def test_active_mask():
     def test():
         for i in range(48):
             if i % 2 == 0:
-                ti.call_internal("test_active_mask")
+                impl.call_internal("test_active_mask")
 
     test()
 
@@ -29,6 +30,6 @@ def test_shfl_down():
     @ti.kernel
     def test():
         for i in range(32):
-            ti.call_internal("test_shfl")
+            impl.call_internal("test_shfl")
 
     test()

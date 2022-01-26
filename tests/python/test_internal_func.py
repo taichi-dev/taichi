@@ -1,6 +1,6 @@
 import time
 
-from taichi.lang.impl import call_internal
+from taichi.lang import impl
 
 import taichi as ti
 
@@ -10,7 +10,7 @@ def test_basic():
     @ti.kernel
     def test():
         for _ in range(10):
-            call_internal("do_nothing")
+            impl.call_internal("do_nothing")
 
     test()
 
@@ -21,7 +21,7 @@ def test_host_polling():
 
     @ti.kernel
     def test():
-        call_internal("refresh_counter")
+        impl.call_internal("refresh_counter")
 
     for i in range(10):
         print('updating tail to', i)
@@ -33,7 +33,7 @@ def test_host_polling():
 def test_list_manager():
     @ti.kernel
     def test():
-        call_internal("test_list_manager")
+        impl.call_internal("test_list_manager")
 
     test()
     test()
@@ -43,7 +43,7 @@ def test_list_manager():
 def test_node_manager():
     @ti.kernel
     def test():
-        call_internal("test_node_allocator")
+        impl.call_internal("test_node_allocator")
 
     test()
     test()
@@ -53,7 +53,7 @@ def test_node_manager():
 def test_node_manager_gc():
     @ti.kernel
     def test_cpu():
-        call_internal("test_node_allocator_gc_cpu")
+        impl.call_internal("test_node_allocator_gc_cpu")
 
     test_cpu()
 
@@ -62,7 +62,7 @@ def test_node_manager_gc():
 def test_return():
     @ti.kernel
     def test_cpu():
-        ret = call_internal("test_internal_func_args", 1.0, 2.0, 3)
+        ret = impl.call_internal("test_internal_func_args", 1.0, 2.0, 3)
         assert ret == 9
 
     test_cpu()

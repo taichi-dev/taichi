@@ -1,4 +1,5 @@
 import taichi as ti
+from taichi.lang import impl
 
 ti.init(arch=ti.cuda, async_mode=True)
 
@@ -23,4 +24,4 @@ def foo():
 for i in range(1000):
     foo()
 
-ti.get_runtime().prog.benchmark_rebuild_graph()
+impl.get_runtime().prog.benchmark_rebuild_graph()

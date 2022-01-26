@@ -1,6 +1,7 @@
 import pytest
 
 import taichi as ti
+from taichi.lang import impl
 
 
 @ti.test(require=ti.extension.sparse)
@@ -106,7 +107,7 @@ def test_no_duplicate_eval_func():
         return ti.atomic_add(b[None], n)
 
     def foo(n):
-        return ti.atomic_add(ti.subscript(b, None), n)
+        return ti.atomic_add(impl.subscript(b, None), n)
 
     @ti.kernel
     def func():

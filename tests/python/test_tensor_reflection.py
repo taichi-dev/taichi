@@ -1,7 +1,7 @@
 import pytest
 
 import taichi as ti
-
+from taichi.lang import impl
 
 @ti.test()
 def test_POT():
@@ -59,7 +59,7 @@ def test_unordered():
     assert val.snode in blk3.get_children()
     assert blk3 in blk2.get_children()
     assert blk2 in blk1.get_children()
-    ti.get_runtime().materialize_root_fb(False)
+    impl.get_runtime().materialize_root_fb(False)
     assert blk1 in ti.FieldsBuilder.finalized_roots()[0].get_children()
 
     expected_str = f'ti.root => dense {[n]} => dense {[m, n]}' \

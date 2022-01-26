@@ -304,6 +304,7 @@ assert x.grad[2] == 3.0
 ```
 
 ### Avoid mixed usage of parallel for-loop and non-for statements
+
 Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system.
 Please split the two kinds of statements into different kernels.
 
@@ -332,6 +333,7 @@ if you see any silent wrong results.
 :::
 
 ### Write differentiable code inside Taichi kernel
+
 Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff.
 Therefore, you are not able to modify the `grad` of Taichi field in python scope.
 

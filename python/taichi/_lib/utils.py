@@ -122,22 +122,6 @@ def get_dll_name(name):
 def at_startup():
     ti_core.set_core_state_python_imported(True)
 
-
-def require_version(major, minor=None, patch=None):
-    versions = [
-        int(ti_core.get_version_major()),
-        int(ti_core.get_version_minor()),
-        int(ti_core.get_version_patch()),
-    ]
-    match = major == versions[0] and (
-        minor < versions[1] or minor == versions[1] and patch <= versions[2])
-    if match:
-        return
-    print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
-    print("Installed =", ti_core.get_version_string())
-    raise Exception("Taichi version mismatch")
-
-
 at_startup()
 
 

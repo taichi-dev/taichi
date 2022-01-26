@@ -24,15 +24,12 @@ from taichi.lang.exception import (InvalidOperationError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, begin_frontend_if,
-                              begin_frontend_struct_for, call_internal,
-                              current_cfg, deactivate_all_snodes, expr_init,
-                              expr_init_func, expr_init_list, field,
-                              get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func, ndarray, one, root,
-                              static, static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
+from taichi.lang.impl import (
+    axes, begin_frontend_if, begin_frontend_struct_for, call_internal,
+    current_cfg, deactivate_all_snodes, expr_init, expr_init_func,
+    expr_init_list, field, get_runtime, grouped, insert_expr_stmt_if_ti_func,
+    ndarray, one, root, static, static_assert, static_print, stop_grad,
+    subscript, ti_assert, ti_float, ti_format, ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -537,6 +534,7 @@ def init(arch=None,
          default_ip=None,
          _test_mode=False,
          enable_fallback=True,
+         require_version=None,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -547,6 +545,7 @@ def init(arch=None,
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
         default_ip (Optional[type]): Default integral type.
+        require_version (Optional[string]): A version string.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
             behavior. Below we list some of the most frequently used ones. For a
@@ -565,6 +564,34 @@ def init(arch=None,
         check_version_thread = threading.Thread(target=try_check_version,
                                                 daemon=True)
         check_version_thread.start()
+
+    # Check if installed version meets the requirements.
+    if require_version:
+        # Extract version number part (i.e. toss any revision / hash parts).
+        version_number_str = require_version
+        for i in range(len(require_version)):
+            c = require_version[i]
+            if not (c.isdigit() or c == "."):
+                version_number_str = require_version[:i]
+                break
+        # Get required version.
+        major, minor, patch = tuple(
+            [int(n) for n in version_number_str.split(".")])
+        # Get installed version
+        versions = [
+            int(_ti_core.get_version_major()),
+            int(_ti_core.get_version_minor()),
+            int(_ti_core.get_version_patch()),
+        ]
+        # Match installed version and required version.
+        match = major == versions[0] and (minor < versions[1]
+                                          or minor == versions[1]
+                                          and patch <= versions[2])
+        if not match:
+            print(
+                f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
+            print("Installed =", _ti_core.get_version_string())
+            raise Exception("Taichi version mismatch")
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

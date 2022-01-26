@@ -1,10 +1,21 @@
 #pragma once
 
 #include "taichi/backends/device.h"
+#include "taichi/backends/dx/dx_info_queue.h"
+#include <d3d11.h>
 
 namespace taichi {
 namespace lang {
 namespace directx11 {
+
+// Only enable debug layer when the corresponding testing facility is enabled
+constexpr bool kD3d11DebugEnabled = true;
+constexpr bool kD3d11ForceRef = false;  // Force REF device. May be used to
+                                        // force software rendering.
+
+void debug_enabled(bool);
+void force_ref(bool);
+void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceBinder : public ResourceBinder {
   ~Dx11ResourceBinder() override;
@@ -55,6 +66,25 @@ class Dx11Device : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+
+  int live_dx11_object_count();
+
+ private:
+  void create_dx11_device();
+  void destroy_dx11_device();
+  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
+  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
+  ID3D11Device *device_{};
+  ID3D11DeviceContext *context_{};
+  std::unique_ptr<Dx11InfoQueue> info_queue_{};
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_buffer_;  // binding ID to buffer
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
+  std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
+      alloc_id_to_uav_;  // binding ID to UAV
+  int alloc_serial_;
 };
 
 }  // namespace directx11

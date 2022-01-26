@@ -53,10 +53,8 @@ void type_check(IRNode *root, const CompileConfig &config);
 bool inlining(IRNode *root,
               const CompileConfig &config,
               const InliningPass::Args &args);
-void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
-void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root,
                         const CompileConfig &config,
@@ -149,7 +147,6 @@ void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,
                          bool verbose,
-                         bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool start_from_ast);
@@ -167,7 +164,6 @@ void offload_to_executable(IRNode *ir,
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
-                           bool vectorize,
                            bool grad,
                            bool ad_use_stack,
                            bool verbose,

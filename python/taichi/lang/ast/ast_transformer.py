@@ -137,7 +137,12 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            var.assign(value)
+            try:
+                var.assign(value)
+            except AttributeError:
+                raise TaichiSyntaxError(
+                    f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
+                )
         return var
 
     @staticmethod
@@ -313,12 +318,12 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
-    def build_call_if_is_builtin(node, args, keywords):
+    def build_call_if_is_builtin(ctx, node, args, keywords):
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
-            id(min): ti_ops.ti_min,
-            id(max): ti_ops.ti_max,
+            id(min): ti_ops.min,
+            id(max): ti_ops.max,
             id(int): impl.ti_int,
             id(float): impl.ti_float,
             id(any): ti_ops.ti_any,
@@ -328,6 +333,12 @@ class ASTTransformer(Builder):
         }
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
+            if func is min or func is max:
+                name = "min" if func is min else "max"
+                warnings.warn_explicit(
+                    f'Calling builtin function "{name}" in Taichi scope is deprecated. '
+                    f'Please use "ti.{name}" instead.', DeprecationWarning,
+                    ctx.file, node.lineno + ctx.lineno_offset)
             return True
         return False
 
@@ -366,7 +377,8 @@ class ASTTransformer(Builder):
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                args += arg.ptr
+                for i in arg.ptr:
+                    args.append(i)
             else:
                 args.append(arg.ptr)
         keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))
@@ -378,7 +390,7 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if ASTTransformer.build_call_if_is_builtin(node, args, keywords):
+        if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)
@@ -402,7 +414,7 @@ class ASTTransformer(Builder):
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.argument_annotations[i],
                               annotations.template):
-                    continue
+                    ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
                                 linalg.sparse_matrix_builder):
                     ctx.create_variable(arg.arg,
@@ -416,9 +428,10 @@ class ASTTransformer(Builder):
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.argument_annotations[i], MatrixType):
-                    ctx.global_vars[
-                        arg.arg] = kernel_arguments.decl_matrix_arg(
-                            ctx.func.argument_annotations[i])
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_matrix_arg(
+                            ctx.func.argument_annotations[i]))
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(
@@ -1068,6 +1081,11 @@ class ASTTransformer(Builder):
                 node.body.ptr) or is_taichi_class(node.orelse.ptr):
             node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
                                      node.orelse.ptr)
+            warnings.warn_explicit(
+                'Using conditional expression for element-wise select operation on '
+                'Taichi vectors/matrices is deprecated. '
+                'Please use "ti.select" instead.', DeprecationWarning,
+                ctx.file, node.lineno + ctx.lineno_offset)
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

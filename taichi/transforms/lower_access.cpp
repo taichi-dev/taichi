@@ -269,7 +269,7 @@ Stmt *PtrLowererImpl::handle_snode_at_level(int level,
       if (!diff.linear_related()) {
         on_loop_tree = false;
       } else if (j == (int)indices_.size() - 1) {
-        if (!(0 <= diff.low && diff.high <= current_struct_for->vectorize)) {
+        if (!(0 <= diff.low && diff.high <= 1)) {  // TODO: Vectorize
           on_loop_tree = false;
         }
       } else {

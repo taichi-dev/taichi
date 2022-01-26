@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 import pytest
+from taichi._testing import make_temp_file
 
 import taichi as ti
-from taichi import make_temp_file
 
 
 # jpg is also supported but hard to test here since it's lossy:
@@ -86,4 +86,4 @@ def test_image_resize_sum(resx, resy, comp, scale):
         new_img = ti.imresize(old_img, resx * scale)
     else:
         new_img = ti.imresize(old_img, resx * scale, resy * scale)
-    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))
+    assert np.sum(old_img) * scale**2 == ti._testing.approx(np.sum(new_img))

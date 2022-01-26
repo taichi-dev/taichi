@@ -84,7 +84,7 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, this, grad,
         /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -92,8 +92,7 @@ void Kernel::lower(bool to_executable) {
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*vectorize=*/arch_is_cpu(arch), grad,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
                                 /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }

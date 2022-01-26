@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 from taichi.lang.impl import subscript, ti_float
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 
 @ti.test()

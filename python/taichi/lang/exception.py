@@ -27,4 +27,7 @@ def handle_exception_from_cpp(exc):
     return exc
 
 
-__all__ = ['TaichiSyntaxError','TaichiTypeError','TaichiCompilationError','TaichiNameError']
+__all__ = [
+    'TaichiSyntaxError', 'TaichiTypeError', 'TaichiCompilationError',
+    'TaichiNameError'
+]

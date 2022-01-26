@@ -70,7 +70,7 @@ class SparseSolver:
         Returns:
             numpy.array: The solution of linear systems.
         """
-        if isinstance(b, taichi.lang.Field):
+        if isinstance(b, taichi.lang.field.Field):
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)

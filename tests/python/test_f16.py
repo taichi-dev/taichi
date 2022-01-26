@@ -3,9 +3,9 @@ import math
 import numpy as np
 import pytest
 from taichi.lang.util import has_pytorch
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
@@ -142,7 +142,7 @@ def test_unary_op():
 
     @ti.kernel
     def foo():
-        x[None] = ti.neg(y[None])
+        x[None] = -y[None]
         x[None] = ti.floor(x[None])
         y[None] = ti.ceil(y[None])
 
@@ -160,7 +160,7 @@ def test_extra_unary_promote():
 
     @ti.kernel
     def foo():
-        x[None] = ti.abs(y[None])
+        x[None] = abs(y[None])
 
     y[None] = -0.3
     foo()

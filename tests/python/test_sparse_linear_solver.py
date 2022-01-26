@@ -55,4 +55,4 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
     solver.factorize(A)
     x = solver.solve(b)
     for i in range(n):
-        assert x[i] == ti.approx(res[i])
+        assert x[i] == ti._testing.approx(res[i])

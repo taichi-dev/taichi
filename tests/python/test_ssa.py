@@ -6,9 +6,9 @@ SSA violation edge-case regression test.
 import math
 
 import numpy as np
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 
 @ti.test()

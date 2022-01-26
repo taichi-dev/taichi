@@ -15,19 +15,13 @@ from urllib import request
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
-from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.field import Field
-from taichi.lang.impl import (axes, current_cfg, field, get_runtime, grouped,
-                              ndarray, one)
-from taichi.lang.kernel_impl import func, kernel
-from taichi.lang.ops import *  # pylint: disable=W0622
+from taichi.lang.impl import axes
+from taichi.lang.ops import *  # pylint: disable=W0401
 from taichi.lang.runtime_ops import sync
-from taichi.lang.snode import SNode, append
-from taichi.lang.tape import TapeImpl
-from taichi.profiler import KernelProfiler, get_default_kernel_profiler
-from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
-                                           get_predefined_cupti_metrics)
+from taichi.lang.snode import SNode
+from taichi.profiler import get_default_kernel_profiler
+from taichi.profiler.kernelmetrics import default_cupti_metrics
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.primitive_types import f32, f64, i32, i64

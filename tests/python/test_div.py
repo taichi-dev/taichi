@@ -1,3 +1,5 @@
+from taichi.lang.impl import get_runtime
+
 import taichi as ti
 
 
@@ -58,7 +60,7 @@ def test_true_div():
 
 @ti.test()
 def test_div_default_ip():
-    ti.get_runtime().set_default_ip(ti.i64)
+    get_runtime().set_default_ip(ti.i64)
     z = ti.field(ti.f32, shape=())
 
     @ti.kernel

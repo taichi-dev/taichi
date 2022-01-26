@@ -2,6 +2,7 @@ import copy
 
 import numpy as np
 import pytest
+from taichi.lang.impl import get_runtime
 
 import taichi as ti
 
@@ -109,7 +110,7 @@ def test_default_fp_ndarray_torch(dtype):
 
     x = ti.Vector.ndarray(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
@@ -118,7 +119,7 @@ def test_default_fp_ndarray(dtype):
 
     x = ti.Vector.ndarray(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
@@ -128,7 +129,7 @@ def test_default_ip_ndarray_torch(dtype):
 
     x = ti.Vector.ndarray(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == get_runtime().default_ip
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
@@ -137,7 +138,7 @@ def test_default_ip_ndarray(dtype):
 
     x = ti.Vector.ndarray(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == get_runtime().default_ip
 
 
 # access
@@ -559,17 +560,17 @@ def _test_compiled_functions():
 
     v = ti.Vector.ndarray(10, ti.i32, 5)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert get_runtime().get_num_compiled_functions() == 1
     v = np.zeros((6, 10), dtype=np.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert get_runtime().get_num_compiled_functions() == 1
     import torch
     v = torch.zeros((6, 11), dtype=torch.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 2
+    assert get_runtime().get_num_compiled_functions() == 2
     v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 3
+    assert get_runtime().get_num_compiled_functions() == 3
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from taichi.lang.impl import subscript, ti_float
 
 import taichi as ti
 from taichi import approx
@@ -12,7 +13,7 @@ def test_binop():
         a[0] = x + y
         a[1] = x - y
         a[2] = x * y
-        a[3] = ti.ti_float(x) / y
+        a[3] = ti_float(x) / y
         a[4] = x // y
         a[5] = x % y
         a[6] = x**y
@@ -687,7 +688,7 @@ def test_func_in_python_func():
             return ti.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        return ti.subscript(bar(x), 1, 0)
+        return subscript(bar(x), 1, 0)
 
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
@@ -779,7 +780,7 @@ def test_taichi_other_than_ti():
             return tc.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        return tc.subscript(bar(x), 1, 0)
+        return subscript(bar(x), 1, 0)
 
     @tc.kernel
     def foo(x: tc.template()) -> tc.i32:

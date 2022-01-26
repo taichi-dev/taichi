@@ -76,7 +76,7 @@ void Expr::set_or_insert_assignment(const Expr &o) {
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
-    set(o);  // Literally set this Expr to o
+    set(o);  // Literally set this Exp r to o
   }
 }
 

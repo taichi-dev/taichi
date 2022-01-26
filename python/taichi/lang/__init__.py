@@ -46,7 +46,6 @@ from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
 from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
-from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,

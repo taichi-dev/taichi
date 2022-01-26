@@ -15,6 +15,17 @@
 import taichi as ti
 ```
 
+- [Get Started](#get-started)
+  - [Installation](#installation)
+    - [Official releases](#official-releases)
+  - [Your first Taichi program](#your-first-taichi-program)
+- [Documentation](#documentation)
+- [Contacts](#contacts)
+- [Contributing](#contributing)
+- [Resources](#resources)
+  - [Demos](#demos)
+  - [Lectures & talks](#lectures--talks)
+
 **Taichi (太极)** is an open source parallel programming language for high-performance numerical computation. It is embedded in Python, and uses just-in-time (JIT) compiler frameworks (e.g. LLVM) to offload compute-intensive Python code to native GPU or CPU instructions.
 
 Advantages of using Taichi are:

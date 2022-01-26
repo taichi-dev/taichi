@@ -15,7 +15,6 @@ from urllib import request
 
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
-from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, ndrange
@@ -58,6 +57,7 @@ from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
+from taichi import _snode
 
 runtime = impl.get_runtime()
 
@@ -677,7 +677,7 @@ def init(arch=None,
     _logging.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
-    impl._root_fb = FieldsBuilder()
+    impl._root_fb = _snode.FieldsBuilder()
 
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
@@ -810,7 +810,7 @@ def clear_all_gradients():
                 clear_gradients  # pylint: disable=C0415
             clear_gradients(places)
 
-    for root_fb in FieldsBuilder.finalized_roots():
+    for root_fb in _snode.FieldsBuilder.finalized_roots():
         visit(root_fb)
 
 

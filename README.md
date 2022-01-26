@@ -118,7 +118,7 @@ The Taichi documentations are available at:
 - [Compelete documentation](https://docs.taichi.graphics/)
 - [API reference](https://api-docs.taichi.graphics/)
 
-*Due to the rapid development, both sites are still under construction. We also plan to merge them into a single site in in the future.*
+*Due to the rapid development, both sites are still under construction. We also plan to merge them into a single site in the future.*
 
 # Contacts
 

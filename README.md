@@ -48,7 +48,7 @@ pip install -i https://test.pypi.org/simple/ taichi-nightly
 <!--TODO: Precise OS versions-->
 - Operating systems
   - Windows<sup>[1](#win-note)</sup>
-  - Linux 
+  - Linux
   - macOS
 - Python: 3.6 ~ 3.9 (64-bit only)
 - Compute backends
@@ -82,7 +82,7 @@ def complex_sqr(z):
 
 @ti.kernel
 def paint(t: float):
-    for i, j in pixels: 
+    for i, j in pixels:
         c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0

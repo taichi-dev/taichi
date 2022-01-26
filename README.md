@@ -130,7 +130,7 @@ We use these channels to report bugs, discuss design, show off demos and send an
 - [Taichi 中文论坛](https://forum.taichi.graphics/)
 - Slack & Wechat groups: please send us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, thanks!
 
-If you find any security problem, please do not hesitate to disclose it to <a href = "mailto:security@taichi.graphics?subject = Taichi Security Problem">security@taichi.graphics</a>.
+Should you spot any security issue, do not hesitate to report it by mailing to <a href = "mailto:security@taichi.graphics?subject = Taichi Security Problem">security@taichi.graphics</a>.
 
 # Contributing
 

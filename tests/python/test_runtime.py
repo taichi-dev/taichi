@@ -140,4 +140,4 @@ def test_supported_log_levels(level):
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)
     ti.set_logging_level(level)
-    assert ti.is_logging_effective(level)
+    assert ti._logging.is_logging_effective(level)

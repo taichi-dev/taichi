@@ -224,3 +224,6 @@ def python_scope(func):
         return func(*args, **kwargs)
 
     return wrapped
+
+
+__all__ = []

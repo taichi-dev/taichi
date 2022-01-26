@@ -1065,5 +1065,6 @@ def get_host_arch_list():
 
 __all__ = [
     s for s in dir()
-    if not s.startswith('_') and not inspect.ismodule(globals()[s]) or s in ['tape', 'sort']
+    if not s.startswith('_') and not inspect.ismodule(globals()[s])
+    or s in ['tape', 'sort']
 ]

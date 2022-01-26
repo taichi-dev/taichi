@@ -27,7 +27,7 @@ import taichi as ti
 
 **Taichi (太极)** is an open-source, imperative, parallel programming language for high-performance numerical computation. It is embedded in Python and uses just-in-time (JIT) compiler frameworks (e.g. LLVM) to offload compute-intensive Python code to the native GPU or CPU instructions.
 
-Advantages of using Taichi are:
+Advantages of Taichi:
 
 - Built around Python: Taichi shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, such as NumPy and PyTorch.
 - Flexibility: Taichi provides a set of generic data containers, namely *SNode* (/ˈsnoʊd/). SNode is an effective mechanism for composing hierarchical, multi-dimensional fields, unlocking many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi.graphics/lang/articles/advanced/sparse)).

@@ -14,7 +14,7 @@ from urllib import request
 
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
-from taichi.lang import impl
+from taichi.lang import expr, impl
 from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
@@ -722,8 +722,8 @@ def cache_read_only(*args):
 
 def assume_in_range(val, base, low, high):
     return _ti_core.expr_assume_in_range(
-        Expr(val).ptr,
-        Expr(base).ptr, low, high)
+        expr.Expr(val).ptr,
+        expr.Expr(base).ptr, low, high)
 
 
 def loop_unique(val, covers=None):
@@ -732,7 +732,7 @@ def loop_unique(val, covers=None):
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
     covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
-    return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
+    return _ti_core.expr_loop_unique(expr.Expr(val).ptr, covers)
 
 
 parallelize = _ti_core.parallelize

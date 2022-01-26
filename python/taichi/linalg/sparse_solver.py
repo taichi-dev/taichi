@@ -1,6 +1,7 @@
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang.field import Field
 from taichi.linalg import SparseMatrix
 from taichi.types.primitive_types import f32
 
@@ -70,7 +71,7 @@ class SparseSolver:
         Returns:
             numpy.array: The solution of linear systems.
         """
-        if isinstance(b, taichi.lang.field.Field):
+        if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)

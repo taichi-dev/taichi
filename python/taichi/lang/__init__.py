@@ -731,7 +731,9 @@ def loop_unique(val, covers=None):
         covers = []
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
-    covers = [x.snode.ptr if isinstance(x, impl.Expr) else x.ptr for x in covers]
+    covers = [
+        x.snode.ptr if isinstance(x, impl.Expr) else x.ptr for x in covers
+    ]
     return _ti_core.expr_loop_unique(impl.Expr(val).ptr, covers)
 
 

@@ -134,7 +134,7 @@ void MemoryPool::terminate() {
 }
 
 MemoryPool::~MemoryPool() {
-  if (killed) {
+  if (!killed) {
     terminate();
   }
 }

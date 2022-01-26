@@ -4,7 +4,6 @@ from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._logging import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
-from taichi.main import main
 from taichi.tools import *
 from taichi.tools.patterns import taichi_logo
 from taichi.types.annotations import *
@@ -41,4 +40,4 @@ __version__ = (_ti_core.get_version_major(), _ti_core.get_version_minor(),
 
 del sys
 del _ti_core
-__all__ = ['ad', 'lang', 'tools', 'main', 'ui', 'profiler']
+__all__ = ['ad', 'lang', 'tools', 'ui', 'profiler']

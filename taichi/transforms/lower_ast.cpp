@@ -193,6 +193,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendForStmt *stmt) override {
+    stmt->init_before_visit();
     auto fctx = make_flatten_ctx();
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);

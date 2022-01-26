@@ -121,6 +121,9 @@ class FrontendPrintStmt : public Stmt {
 };
 
 class FrontendForStmt : public Stmt {
+ private:
+  std::function<void()> lazy_init_callback_;
+
  public:
   Expr begin, end;
   Expr global_var;
@@ -155,6 +158,13 @@ class FrontendForStmt : public Stmt {
 
   bool is_container_statement() const override {
     return true;
+  }
+
+  void init_before_visit() {
+    if (lazy_init_callback_) {
+      lazy_init_callback_();
+      lazy_init_callback_ = nullptr;
+    }
   }
 
   TI_DEFINE_ACCEPT

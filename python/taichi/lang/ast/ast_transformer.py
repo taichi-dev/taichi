@@ -377,7 +377,8 @@ class ASTTransformer(Builder):
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                args += arg.ptr
+                for i in arg.ptr:
+                    args.append(i)
             else:
                 args.append(arg.ptr)
         keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))

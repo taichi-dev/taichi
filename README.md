@@ -141,10 +141,10 @@ A huge thanks to all of our amazing contributors!
 
 - [Taichi examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi examples](https://github.com/taichi-dev/advanced_examples)
-- [taichi_elements](https://github.com/taichi-dev/taichi_elements)
-- [difftaichi](https://github.com/taichi-dev/difftaichi)
-- [taichi_houdini](https://github.com/taichi-dev/taichi_houdini)
-- More to come...
+- [DiffTaichi](https://github.com/taichi-dev/difftaichi)
+- [Taichi elements](https://github.com/taichi-dev/taichi_elements)
+- [Taichi houdini](https://github.com/taichi-dev/taichi_houdini)
+- [More...](misc/links.md)
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/mpm128.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/mpm128.gif" height="192px"></a>
 <a href="https://github.com/taichi-dev/quantaichi"> <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/smoke_3d.gif" height="192px"></a>
@@ -160,8 +160,7 @@ A huge thanks to all of our amazing contributors!
 - GAMES 201 高级物理引擎实战指南2020: [课件](https://github.com/taichi-dev/games201)
 - 太极图形课第一季：[课件](https://github.com/taichiCourse01)
 - [TaichiCon](https://github.com/taichi-dev/taichicon): Taichi developer conferences
-- [More...](misc/links.md)
-
+- More to come...
 
 ---
 

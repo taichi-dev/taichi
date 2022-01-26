@@ -122,7 +122,7 @@ The Taichi documentations are available at:
 
 # Contacts
 
-We use these channels to report bugs, discuss design, show off demos and send annoucnements on a daily basis:
+We use these channels to report bugs, discuss design, show off demos and send announcements on a daily basis:
 
 - [GitHub Issues](https://github.com/taichi-dev/taichi/issues)
 - [GitHub Discussions](https://github.com/taichi-dev/taichi/discussions)

@@ -280,6 +280,19 @@ void export_lang(py::module &m) {
                std::vector<std::variant<Expr, std::string>> contents) {
              self->insert(std::make_unique<FrontendPrintStmt>(contents));
            })
+      .def("begin_func",
+           [&](ASTBuilder *self, const std::string &funcid) {
+             auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("end_func",
+           [&](ASTBuilder *, const std::string &funcid) {
+             scope_stack.pop_back();
+           })
+      .def("stop_grad",
+           [](ASTBuilder *self, SNode *snode) { self->stop_gradient(snode); })
       .def("begin_frontend_if",
            [&](ASTBuilder *self, const Expr &cond) {
              auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
@@ -705,15 +718,6 @@ void export_lang(py::module &m) {
           return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
         });
 
-  m.def("begin_func", [&](const std::string &funcid) {
-    auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
-
   m.def("make_func_call_expr",
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
@@ -1013,8 +1017,6 @@ void export_lang(py::module &m) {
     TI_ASSERT(kernel);
     kernel->no_activate.push_back(snode);
   });
-  m.def("stop_grad",
-        [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);

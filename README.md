@@ -51,6 +51,8 @@ If you want to try out the latest features, we also provide a nightly package:
 pip install -i https://test.pypi.org/simple/ taichi-nightly
 ```
 
+*The nightly package can and will break from time to time!*
+
 **Supported environments**
 
 <!--TODO: Precise OS versions-->

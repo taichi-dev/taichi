@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
-
-import taichi as ti
 from taichi._testing import approx
 from taichi.lang import impl
+
+import taichi as ti
+
 
 @ti.test()
 def test_binop():

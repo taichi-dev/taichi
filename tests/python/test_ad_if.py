@@ -1,5 +1,7 @@
-import taichi as ti
 from taichi.lang import impl
+
+import taichi as ti
+
 
 @ti.test(require=ti.extension.adstack)
 def test_ad_if_simple():

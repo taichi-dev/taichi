@@ -1,7 +1,7 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
-from taichi.lang import impl
 
 
 @ti.test(require=ti.extension.sparse)

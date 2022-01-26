@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
-from taichi.lang import impl
 
 if ti.has_pytorch():
     import torch

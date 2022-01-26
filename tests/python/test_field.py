@@ -3,9 +3,9 @@ To test our new `ti.field` API is functional (#1500)
 '''
 
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
-from taichi.lang import impl
 
 data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 field_shapes = [(), 8, (6, 12)]

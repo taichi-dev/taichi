@@ -1,7 +1,8 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
-from taichi.lang import impl
+
 
 @ti.test()
 def test_POT():

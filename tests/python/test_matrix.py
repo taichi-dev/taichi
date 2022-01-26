@@ -3,10 +3,10 @@ import operator
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang import impl
 
 import taichi as ti
-from taichi.lang import impl
-from taichi._testing import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [

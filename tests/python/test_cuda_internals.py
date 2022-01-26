@@ -1,5 +1,6 @@
-import taichi as ti
 from taichi.lang import impl
+
+import taichi as ti
 
 # TODO: these are not really tests...
 

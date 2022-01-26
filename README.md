@@ -107,7 +107,6 @@ gui = ti.GUI("Julia Set", res=(n * 2, n))
 for i in range(1000000):
     paint(i * 0.03)
     gui.set_image(pixels)
-
 ```
 
 If Taichi is properly installed, you should get the animation below 🎉:

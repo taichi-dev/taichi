@@ -55,8 +55,7 @@ from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
-from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
-                                          integer_types, u32, u64)
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
 

@@ -47,52 +47,41 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 
     bool qualified = true;
     bool qualified_atomics = true;
-    bool inner_most = true;
+    bool inner_most_loop = true;
     for (auto const &stmt : block->statements) {
-      std::cout << "do we has inner for " << stmt->type() << std::endl;
+      // check whether it is a inner most loop or not
       if (auto rangefor_stmt = stmt->cast<RangeForStmt>(); rangefor_stmt) {
-        inner_most = false;
+        inner_most_loop = false;
       }
       // atomics here must be ones applied to global variables
       else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
         TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
         for (const auto &node :
              atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-          std::cout << "i am global ptr" << std::endl;
           if (node->has_grad()) {
             qualified_atomics = false;
             break;
-          } else {
-            std::cout << " but i dont need grad " << std::endl;
           }
         }
-      } else if (auto if_stmt = stmt->cast<IfStmt>(); if_stmt) {
+      }
+      // the atomics inside the if stmt should also be checked
+      else if (auto if_stmt = stmt->cast<IfStmt>(); if_stmt) {
         std::vector<Block *> if_condtions_blocks;
-        std::cout << "are we here ?" << std::endl;
         if (if_stmt->true_statements.get())
           if_condtions_blocks.push_back(if_stmt->true_statements.get());
         if (if_stmt->false_statements.get())
           if_condtions_blocks.push_back(if_stmt->false_statements.get());
-        std::cout << "are we here ???" << std::endl;
         for (auto const &cond_block : if_condtions_blocks) {
           irpass::analysis::gather_statements(
               cond_block, [&](Stmt *stmt_to_check) -> bool {
                 if (auto atomics = stmt_to_check->cast<AtomicOpStmt>();
                     atomics) {
-                  std::cout << "are we here ????" << std::endl;
-                  std::cout << "stmt " << atomics->type() << std::endl;
-                  std::cout << "stmt dest " << atomics->dest->type()
-                            << std::endl;
                   TI_ASSERT(atomics->dest->is<GlobalPtrStmt>());
-                  std::cout << "are we here ?????" << std::endl;
                   for (const auto &node :
                        atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-                    std::cout << "i am global ptr" << std::endl;
                     if (node->has_grad()) {
                       qualified_atomics = false;
                       break;
-                    } else {
-                      std::cout << " but i dont need grad " << std::endl;
                     }
                   }
                 }
@@ -105,7 +94,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     std::set<AtomicOpStmt *> touched_global_atomics;
     // TODO: remove this abuse since it *gathers nothing* but only visit
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
-      std::cout << "my type " << stmt->type() << std::endl;
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
         for (auto &lane : local_load->src.data) {
           touched_allocas.insert(lane.var->as<AllocaStmt>());
@@ -113,17 +101,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
         touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
-      // atomics here must be ones applied to global variables
-      // else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
-      //   TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
-      //   for (const auto &node :
-      //        atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      //     if (node->has_grad()) {
-      //       touched_global_atomics.insert(atomics);
-      //       break;
-      //     }
-      //   }
-      // }
       return false;
     });
 
@@ -141,29 +118,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
         break;
       }
     }
-
-    // for (const auto &atomics : touched_global_atomics) {
-    //   // Test if the atomics belongs to the current block
-    //   bool belong_to_this_block = false;
-    //   for (auto b = atomics->parent; b; b = b->parent_block()) {
-    //     if (b == block) {
-    //       belong_to_this_block = true;
-    //       break;
-    //     }
-    //   }
-    //   if (belong_to_this_block) {
-    //     // This block is not an IB since it has atomics operation to global
-    //     // variables
-    //     qualified_atomics = false;
-    //     break;
-    //   }
-    // }
-
-    // return qualified && qualified_atomics;
-    std::cout << " condition "
-              << " local " << qualified << " atomics " << qualified_atomics
-              << " inner " << inner_most << std::endl;
-    return qualified && (qualified_atomics || inner_most);
+    return qualified && (qualified_atomics || inner_most_loop);
   }
 
   void visit_loop_body(Block *block) {
@@ -172,8 +127,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       block->accept(this);
     } else {
       // No need to dive further
-      std::cout << block << " issss not a IB, no need to dive further "
-                << std::endl;
     }
   }
 
@@ -189,7 +142,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    std::cout << "I catched a rangfor stmt " << stmt << std::endl;
     if (depth_ == 0) {
       current_ib_ = stmt->body.get();
     }
@@ -199,7 +151,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     if (depth_ == 0) {
       independent_blocks_.push_back(current_ib_);
     }
-    std::cout << "depth " << depth_ << std::endl;
   }
 
   static std::vector<Block *> run(IRNode *root) {

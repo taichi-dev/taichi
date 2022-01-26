@@ -51,7 +51,7 @@ Sparse matrices are usually **not** implemented in Taichi via (spatially-) spars
 
 ## Sparse spatial data structures in Taichi
 
-Sparse spatial data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure. 
+Sparse spatial data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure.
 
 On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.

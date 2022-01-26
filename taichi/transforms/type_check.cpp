@@ -360,10 +360,8 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
-      TI_ASSERT(stmt->op1->ret_type->vector_width() ==
-                stmt->op2->ret_type->vector_width());
-      TI_ASSERT(stmt->op2->ret_type->vector_width() ==
-                stmt->op3->ret_type->vector_width());
+      TI_ASSERT(stmt->op1->width() == stmt->op2->width());
+      TI_ASSERT(stmt->op2->width() == stmt->op3->width());
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -402,18 +400,17 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(rt->vector_width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
     stmt->ret_type = stmt->values[0]->ret_type;
-    TI_ASSERT(stmt->ret_type->vector_width() == 1);
+    TI_ASSERT(stmt->width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -428,11 +425,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LoopLinearIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
-  }
-
-  void visit(GlobalThreadIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }

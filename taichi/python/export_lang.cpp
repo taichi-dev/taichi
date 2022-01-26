@@ -657,11 +657,10 @@ void export_lang(py::module &m) {
         [](std::size_t func_addr, std::string source, std::string filename,
            std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
-          auto expr = Expr::make<ExternalFuncCallExpression>(
+          auto stmt = Stmt::make<FrontendExternalFuncStmt>(
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
-
-          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
+          current_ast_builder().insert(std::move(stmt));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -1046,7 +1045,6 @@ void export_lang(py::module &m) {
   });
   // Schedules
   m.def("parallelize", Parallelize);
-  m.def("vectorize", Vectorize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 
@@ -1066,7 +1064,8 @@ void export_lang(py::module &m) {
     }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    return Expr::make<GlobalThreadIndexExpression>();
+    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
+                                                  std::vector<Expr>{});
   });
 
   m.def("insert_patch_idx_expr", [&]() {

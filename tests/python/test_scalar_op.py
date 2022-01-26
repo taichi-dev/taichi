@@ -2,9 +2,9 @@ import operator as ops
 
 import numpy as np
 import pytest
+from taichi._testing import allclose
 
 import taichi as ti
-from taichi import allclose
 
 binary_func_table = [
     (ops.add, ) * 2,
@@ -31,8 +31,8 @@ binary_func_table = [
 unary_func_table = [
     (ops.neg, ) * 2,
     (ops.invert, ) * 2,
-    (ti.logical_not, np.logical_not),
-    (ti.abs, np.abs),
+    (ti.lang.ops.logical_not, np.logical_not),
+    (ti.lang.ops.abs, np.abs),
     (ti.exp, np.exp),
     (ti.log, np.log),
     (ti.sin, np.sin),
@@ -64,10 +64,10 @@ def test_python_scope_vector_binary(ti_func, np_func):
 def test_python_scope_vector_unary(ti_func, np_func):
     ti.init()
     x = ti.Vector([2, 3] if ti_func in
-                  [ops.invert, ti.logical_not] else [0.2, 0.3])
+                  [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
-    if ti_func in [ti.logical_not]:
+    if ti_func in [ti.lang.ops.logical_not]:
         result = result.astype(bool)
     expected = np_func(x.to_numpy())
     assert allclose(result, expected)
@@ -172,3 +172,21 @@ def test_64_min_max():
     assert min_i64(a, b) == min(a, b)
     assert max_u64(a, b) == max(a, b)
     assert max_i64(a, b) == max(a, b)
+
+
+@ti.test()
+def test_min_max_vector_starred():
+    @ti.kernel
+    def min_starred() -> ti.i32:
+        a = ti.Vector([1, 2, 3])
+        b = ti.Vector([4, 5, 6])
+        return ti.min(*a, *b)
+
+    @ti.kernel
+    def max_starred() -> ti.i32:
+        a = ti.Vector([1, 2, 3])
+        b = ti.Vector([4, 5, 6])
+        return ti.max(*a, *b)
+
+    assert min_starred() == 1
+    assert max_starred() == 6

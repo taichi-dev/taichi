@@ -614,11 +614,11 @@ class Matrix(TaichiOperations):
 
     def max(self):
         """Return the maximum element value."""
-        return ops_mod.ti_max(*self.entries)
+        return ops_mod.max(*self.entries)
 
     def min(self):
         """Return the minimum element value."""
-        return ops_mod.ti_min(*self.entries)
+        return ops_mod.min(*self.entries)
 
     def any(self):
         """Test whether any element not equal zero.

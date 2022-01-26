@@ -48,9 +48,6 @@ from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
-                              is_taichi_class, python_scope, taichi_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)

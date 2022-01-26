@@ -91,7 +91,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
       }
     }
     std::set<AllocaStmt *> touched_allocas;
-    std::set<AtomicOpStmt *> touched_global_atomics;
     // TODO: remove this abuse since it *gathers nothing* but only visit
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {

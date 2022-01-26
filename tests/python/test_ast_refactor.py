@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
-from taichi import approx
+from taichi._testing import approx
 from taichi.lang import impl
 
 @ti.test()

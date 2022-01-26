@@ -17,7 +17,6 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes
-from taichi.lang.ops import *  # pylint: disable=W0401
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
 from taichi.profiler import get_default_kernel_profiler

@@ -7,5 +7,5 @@
 - [TaichiMD](https://github.com/victoriacity/taichimd): Interactive, GPU-accelerated Molecular (& Macroscopic) Dynamics using Taichi, by [Andrew Sun (victoriacity)](https://github.com/victoriacity).
 - [LBM Taichi](https://github.com/hietwll/LBM_Taichi): A fluid solver based on the Lattice Boltzmann Method (LBM) using Taichi, by [Zhuo Wang (hietwll)](https://github.com/hietwll).
 - [Gitee mirror of Taichi](https://gitee.com/mirrors/Taichi): For the convenience of Chinese contributors, clone from the mirror repo hosted on Gitee (码云).
-- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library that provides a set of GLSL-style helper functions.
+- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library, which provides a set of GLSL-style helper functions.
 - [Shadertoy in Taichi](https://github.com/Phonicavi/Shadertoy-taichi): Some shadertoy examples implemented in Taichi, by [Qiu Feng (Phonicavi)](https://github.com/Phonicavi).

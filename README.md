@@ -15,7 +15,7 @@
 import taichi as ti
 ```
 
-- [Get Started](#get-started)
+- [Getting Started](#getting-started)
   - [Installation](#installation)
   - [Your first Taichi program](#your-first-taichi-program)
 - [Documentation](#documentation)
@@ -35,7 +35,7 @@ Advantages of using Taichi are:
 - Portability: Write your code once and run it everywhere. Currently, Taichi supports most of the mainstream GPU APIs, such as CUDA and Vulkan.
 - ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
-# Get Started
+# Getting Started
 
 ## Installation
 

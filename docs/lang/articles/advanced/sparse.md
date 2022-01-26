@@ -5,7 +5,7 @@ sidebar_position: 3
 # Sparse spatial data structures
 
 :::note
-Pre-request: please read the [SNodes](lang/articles/misc/internal.md#data-structure-organization) first.
+Pre-request: please read the [Fields](lang/articles/basic/field.md), [Fields (advanced)](lang/articles/advanced/layout.md), and [SNodes](lang/articles/misc/internal.md#data-structure-organization) first.
 :::
 
 ## Motivation
@@ -17,11 +17,11 @@ oftentimes, they only care about a small fraction of this dense grid since the r
 
 <center>
 
-![BVH](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bvh_small.png?raw=true)
+![BVH](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bvh_small.png)
 
 </center>
 
-As shown above, the regions of interest in sparse grids may only occupy a small fraction of the whole bounding box.
+For example, the regions of interest in sparse grids shown above may only occupy a small fraction of the whole bounding box.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
 we will significantly save storage and computing power.
 
@@ -29,21 +29,19 @@ we will significantly save storage and computing power.
 The key to leverage spatial sparsity is to replace *dense* grids with *sparse* grids.
 :::
 
-The key to leverage it is to go home.
-
-The traditional sparse data stucture are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
+The traditional sparse spatial data stucture are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
 [Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, compared to quadtrees and octrees, it is more performance-friendly to use shallower trees with larger branching factors.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
-In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantage of Taichi sparse data structure are
+In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantage of Taichi sparse spatial data structure are
 1. The sparse data could be used like a dense data structure (accessing using indices)
 2. The sparse data could be looped in parallel.
-3. Automic memory access optimization.
+3. Automatic memory access optimization.
 
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)
 Figure: A 3D fluid simulation that uses both particles and grids. Left to right: particles, 1x1x1 voxels, 4x4x4 blocks, 16x16x16 blocks.
 
 :::note
-**Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of sparse computation.
+**Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of computation on sparse spatial data structures.
 :::
 
 
@@ -51,17 +49,17 @@ Figure: A 3D fluid simulation that uses both particles and grids. Left to right:
 Sparse matrices are usually **not** implemented in Taichi via (spatially-) sparse data structures. For Sparse matrix in Taichi, please see [sparse matrix](lang/articles/advanced/sparse_matrix.md).
 :::
 
-## Sparse data structures in Taichi
+## Sparse spatial data structures in Taichi
 
-Sparse data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes.
+Sparse spatial data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure. 
 
-On a sparse data structure, we consider a pixel, voxel, or a grid node to be *active*,
+On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
 The rest of the grid is simply *inactive*.
-The *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell on a sparse data structure, Taichi automatically populates the data structure. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
+The *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell on a sparse spatial data structure, Taichi automatically populates the data structure. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
 
 :::note
-Reading an inactive voxel returns zero.
+Reading an inactive pixel returns zero.
 :::
 
 ### Pointer SNode
@@ -96,11 +94,11 @@ def print_active():
 ```
 The code snippet above creates an 8x8 sparse grid, with the top-level being 4x4 pointer arrays (line 2 of `pointer.py`),
 and each pointer points to a 2x2 dense block. The `activate` function could automatically activates `block[1,1]` which includes `x[2,3]` and `block[1,2]` which includes `x[2, 4]`. Other pixels of `block[1,1]` (`x[2,2], x[3, 2], x[3, 3]`) and `block[1,2]` (`x[2, 5], x[3, 4], x[3, 5]`) are also implicitly activated if `pixel` is a dense node. Because all pixels in the dense block share the same activity value.
-As the below figure shown, the active blocks and pixels are green. You can write and read the sparse field like a dense field using indices.
+As the below figure shows, the active blocks and pixels are green. You can write and read the sparse field like a dense field using indices.
 
 <center>
 
-![Pointer](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_small.png?raw=true)
+![Pointer](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/pointer_small.png)
 
 </center>
 
@@ -109,24 +107,24 @@ In fact, the sparse field is a Snode tree shown in the following figure. You cou
 
 <center>
 
-![Pointer Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/pointer_tree_small.png?raw=true)
+![Pointer Snode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/pointer_tree_small.png)
 
 </center>
 
 While a null pointer can effectively represent an empty sub-tree, at the leaf level using 64 bits to represent the activity
-of a single voxel can consume too much space.
-For example, if each voxel contains a single `f32` value (4 bytes),
+of a single pixel can consume too much space.
+For example, if each pixel contains a single `f32` value (4 bytes),
 the 64-bit pointer pointing to the value would take 8 bytes.
 The fact that storage costs of pointers are higher than the space to store the value themselves
-goes against our goal to use sparse data structures to save space.
+goes against our goal to use sparse spatial data structures to save space.
 
-To amortize the storage cost of pointers, programmers usually organize voxels in a *blocked* manner
-and let the pointers directly point to the blocks (instead of voxels).
+To amortize the storage cost of pointers, you could organize pixels in a *blocked* manner
+and let the pointers directly point to the blocks like the data structure defined in `pointer.py`.
 
 ### Bitmasked Snode
-One caveat of this design is that voxels in the same `dense` block can no longer change their activity flexibly.
+One caveat of this design is that pixels in the same `dense` block can no longer change their activity flexibly.
 Instead, they share a single activity flag. To address this issue,
-the `bitmasked` SNode additionally allocates 1-bit per voxel data to represent the voxel activity.
+the `bitmasked` SNode additionally allocates 1-bit per pixel data to represent the pixel activity.
 
 ```python {3} title=bitmasked.py
 x = ti.field(ti.f32)
@@ -147,11 +145,11 @@ def print_active():
         print('field x[{}, {}] = {}'.format(i, j, x[i, j]))
 ```
 
-The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked Snode replaces the dense Snode (line 3). As shown in the figure below, the active blocks are the same. But the bitmasked pixels in the block are not all activated. Because each pixel in the block has an activity value.
+The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked Snode replaces the dense Snode (line 3). As shown in the figure below, the active blocks are the same as the `ponter.py`. But the bitmasked pixels in the block are not all activated. Because each pixel in the block has an activity value.
 
 <center>
 
-![Bitmasked](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_small.png?raw=true)
+![Bitmasked](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bitmasked_small.png)
 
 </center>
 
@@ -159,13 +157,13 @@ The code snippet above also creates an 8x8 sparse grid. The only difference betw
 The bitmasked Snodes are like dense Snodes which have auxiliary activity values.
 <center>
 
-![Bitmasked Snode Tree](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/bitmasked_tree_small.png?raw=true)
+![Bitmasked Snode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bitmasked_tree_small.png)
 
 </center>
 
 ### Dynamic SNode
 
-To support variable-length fields, Taichi provides dynamic Snodes. In the code snippet below create a 5x1 dense block firstly (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you could use `ti.append` to add a value the the end of a dynamic Snode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic Snode.
+To support variable-length fields, Taichi provides dynamic Snodes. In the code snippet below create a 5x1 dense block firstly (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you could use `ti.append` to add a value to the end of a dynamic Snode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic Snode.
 
 ```python {3} title=dynamic.py
 x = ti.field(ti.i32)
@@ -185,16 +183,16 @@ def make_lists():
 
 <center>
 
-![Dynamic](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/dynamic_small.png?raw=true)
+![Dynamic](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/dynamic_small.png)
 
 </center>
 
-## Computation on sparse data structures
+## Computation on sparse spatial data structures
 
 ### Sparse struct-fors
 
 Efficiently looping over sparse grid cells that distribute irregularly can be challenging, especially on parallel devices such as GPUs.
-In Taichi, *struct-for's* natively support sparse data structures and only loops over currently active voxels.
+In Taichi, *struct-for's* natively support sparse spatial data structures and only loops over currently active pixels.
 The Taichi system ensures efficient parallelization.
 
 ### Explicitly manipulating and querying sparsity
@@ -243,7 +241,7 @@ activity_checking(pixel, [7, 3])  # output: 1
 
 <center>
 
-![Activation](https://github.com/FantasyVR/public_files/blob/sparse_computation/taichi/doc/activation_small.png?raw=true)
+![Activation](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/activation_small.png)
 
 </center>
 
@@ -263,7 +261,7 @@ Similarly, `ti.deactivate` ...
 - does **not** trigger deactivation of its parent container, even if all the children of the parent container are deactivated.
 :::
 
-#### 4. Index transformation
+#### 4. Ancestor index query
 - Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
 
 ```python
@@ -279,6 +277,6 @@ As noticed, the output of `ti.rescale_index(x, block1, ti.Vector([7, 3]))` is `[
 
 Please read the SIGGRAPH Asia 2019 [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) or watch the associated
 [introduction video](https://www.youtube.com/watch?v=wKw8LMF3Djo) with [slides](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang-slides.pdf)
-for more details on sparse computation.
+for more details on computation of sparse spatial data structures.
 
 [Taichi elements](https://github.com/taichi-dev/taichi_elements) implement a high-performance MLS-MPM solver on Taichi sparse grids.

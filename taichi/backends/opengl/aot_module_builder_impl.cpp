@@ -63,6 +63,7 @@ class AotDataConverter {
     res.type = offloaded_task_type_name(in.type);
     res.name = in.name;
     res.source_path = in.src;
+    res.range_hint = in.range_hint;
     res.gpu_block_size = in.workgroup_size;
     return res;
   }
@@ -133,16 +134,6 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   aot_data_.kernels.insert(std::make_pair(identifier, std::move(compiled)));
 }
 
-size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
-  if (snode->type == SNodeType::root)
-    return 0;
-  int chid = find_children_id(snode);
-  const auto &parent_meta =
-      compiled_structs_.snode_map.at(snode->parent->node_type_name);
-  auto choff = parent_meta.children_offsets[chid];
-  return choff + get_snode_base_address(snode->parent);
-}
-
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
                                                  const SNode *rep_snode,
                                                  bool is_scalar,
@@ -163,9 +154,11 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   if (!is_scalar) {
     element_shape = {row_num, column_num};
   }
-  aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
-                              get_snode_base_address(rep_snode), shape,
-                              is_scalar, element_shape});
+  aot_data_.fields.push_back(
+      {identifier, gl_dtype_enum, dt.to_string(),
+       compiled_structs_.snode_map.at(rep_snode->node_type_name)
+           .mem_offset_in_root,
+       shape, is_scalar, element_shape});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

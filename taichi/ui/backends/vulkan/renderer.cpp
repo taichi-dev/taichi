@@ -1,6 +1,8 @@
 #include "renderer.h"
 #include "taichi/ui/utils/utils.h"
 
+using taichi::lang::Program;
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -8,8 +10,10 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Renderer::init(TaichiWindow *window, const AppConfig &config) {
-  app_context_.init(window, config);
+void Renderer::init(Program *prog,
+                    TaichiWindow *window,
+                    const AppConfig &config) {
+  app_context_.init(prog, window, config);
   swap_chain_.init(&app_context_);
 }
 

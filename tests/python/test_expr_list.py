@@ -8,7 +8,7 @@ def test_expr_list_basic():
         x = [2 + u, 3 + v]
         return x[0] * 100 + x[1]
 
-    assert func(1, 1.1) == ti.approx(304.1)
+    assert func(1, 1.1) == ti._testing.approx(304.1)
 
 
 @ti.test()

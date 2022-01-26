@@ -71,6 +71,11 @@ class Kernel : public Callable {
          bool grad = false);
 
   Kernel(Program &program,
+         const std::function<void(Kernel *)> &func,
+         const std::string &name = "",
+         bool grad = false);
+
+  Kernel(Program &program,
          std::unique_ptr<IRNode> &&ir,
          const std::string &name = "",
          bool grad = false);
@@ -115,6 +120,11 @@ class Kernel : public Callable {
   static bool supports_lowering(Arch arch);
 
  private:
+  void init(Program &program,
+            const std::function<void()> &func,
+            const std::string &name = "",
+            bool grad = false);
+
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
   // The closure that, if invoked, lauches the backend kernel (shader)

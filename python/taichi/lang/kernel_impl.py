@@ -8,7 +8,7 @@ import textwrap
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, runtime_ops, util
+from taichi.lang import impl, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
@@ -16,14 +16,14 @@ from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import to_taichi_type
+from taichi.lang.util import has_pytorch, to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging
 
-if util.has_pytorch():
+if has_pytorch():
     import torch
 
 
@@ -91,7 +91,8 @@ def _get_tree_and_ctx(self,
                       excluded_parameters=(),
                       is_kernel=True,
                       arg_features=None,
-                      args=None):
+                      args=None,
+                      ast_builder=None):
     file = oinspect.getsourcefile(self.func)
     src, start_lineno = oinspect.getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
@@ -124,7 +125,8 @@ def _get_tree_and_ctx(self,
                                        argument_data=args,
                                        src=src,
                                        start_lineno=start_lineno,
-                                       file=file)
+                                       file=file,
+                                       ast_builder=ast_builder)
 
 
 class Func:
@@ -170,7 +172,11 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
+        tree, ctx = _get_tree_and_ctx(
+            self,
+            is_kernel=False,
+            args=args,
+            ast_builder=impl.get_runtime().prog.current_ast_builder())
         ret = transform_tree(tree, ctx)
         if not impl.get_runtime().experimental_real_function:
             if self.return_type and not ctx.returned:
@@ -193,10 +199,15 @@ class Func:
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        self.compiled[key.instance_id] = lambda: transform_tree(tree, ctx)
-        self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
-        self.taichi_functions[key.instance_id].set_function_body(
-            self.compiled[key.instance_id])
+        fn = _ti_core.create_function(key)
+
+        def func_body():
+            ctx.ast_builder = fn.ast_builder()
+            transform_tree(tree, ctx)
+
+        self.taichi_functions[key.instance_id] = fn
+        self.compiled[key.instance_id] = func_body
+        self.taichi_functions[key.instance_id].set_function_body(func_body)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -449,7 +460,7 @@ class Kernel:
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
-        def taichi_ast_generator():
+        def taichi_ast_generator(kernel_cxx):
             if self.runtime.inside_kernel:
                 raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
@@ -459,6 +470,7 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
+                ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
                 if not impl.get_runtime().experimental_real_function:
                     if self.return_type and not ctx.returned:
@@ -523,7 +535,7 @@ class Kernel:
             tmps = []
             callbacks = []
             has_external_arrays = False
-            has_torch = util.has_pytorch()
+            has_torch = has_pytorch()
             ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
@@ -649,7 +661,7 @@ class Kernel:
     @staticmethod
     def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
-        if not has_array and util.has_pytorch():
+        if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
         return has_array
 

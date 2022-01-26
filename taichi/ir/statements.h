@@ -728,20 +728,20 @@ class RangeForStmt : public Stmt {
   Stmt *begin, *end;
   std::unique_ptr<Block> body;
   bool reversed;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  std::string range_hint;
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
                std::unique_ptr<Block> &&body,
-               int vectorize,
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               std::string range_hint = "");
 
   bool is_container_statement() const override {
     return true;
@@ -756,7 +756,6 @@ class RangeForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(begin,
                      end,
                      reversed,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -775,7 +774,6 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_initialization;
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
@@ -783,7 +781,6 @@ class StructForStmt : public Stmt {
 
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
-                int vectorize,
                 int bit_vectorize,
                 int num_cpu_threads,
                 int block_dim);
@@ -796,7 +793,6 @@ class StructForStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -811,7 +807,6 @@ class MeshForStmt : public Stmt {
  public:
   mesh::Mesh *mesh;
   std::unique_ptr<Block> body;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
@@ -823,7 +818,6 @@ class MeshForStmt : public Stmt {
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
               std::unique_ptr<Block> &&body,
-              int vectorize,
               int bit_vectorize,
               int num_cpu_threads,
               int block_dim);
@@ -835,7 +829,6 @@ class MeshForStmt : public Stmt {
   std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(mesh,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -1116,6 +1109,7 @@ class OffloadedStmt : public Stmt {
   bool reversed{false};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
+  std::string range_hint = "";
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;

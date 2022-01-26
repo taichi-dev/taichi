@@ -57,6 +57,65 @@ def test_opengl_max_block_dim():
 
 
 @ti.test(arch=[ti.opengl, ti.vulkan])
+def test_aot_field_range_hint():
+    density = ti.field(float, shape=(8, 8))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
+                'range_hint']
+            assert range_hint == '64'
+
+
+@ti.test(arch=ti.opengl)
+def test_aot_ndarray_range_hint():
+    density = ti.ndarray(dtype=ti.f32, shape=(8, 8))
+
+    @ti.kernel
+    def init(density: ti.any_arr()):
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_kernel(init, (density, ))
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
+                'range_hint']
+            assert range_hint == 'arg 0'
+
+
+@ti.test(arch=ti.opengl)
+def test_element_size_alignment():
+    a = ti.field(ti.f32, shape=())
+    b = ti.Matrix.field(2, 3, ti.f32, shape=(2, 4))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s = ti.aot.Module(ti.cfg.arch)
+        s.add_field('a', a)
+        s.add_field('b', b)
+        s.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            offsets = (res['aot_data']['fields'][0]['mem_offset_in_parent'],
+                       res['aot_data']['fields'][1]['mem_offset_in_parent'])
+            assert 0 in offsets and 24 in offsets
+            assert res['aot_data']['root_buffer_size'] == 216
+
+
+@ti.test(arch=[ti.opengl, ti.vulkan])
 def test_save():
     density = ti.field(float, shape=(4, 4))
 

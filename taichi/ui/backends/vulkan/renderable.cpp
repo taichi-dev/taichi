@@ -1,4 +1,5 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
+#include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
 
 TI_UI_NAMESPACE_BEGIN
@@ -38,11 +39,11 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
-  Program &program = get_current_program();
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
-  if (current_program) {
-    program.synchronize();
+  Program *prog = app_context_->prog();
+  if (prog) {
+    prog->synchronize();
   }
 
   int num_vertices = info.vbo.shape[0];
@@ -74,7 +75,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   // instead of accessing through the current SNode
   DevicePtr vbo_dev_ptr = info.vbo.dev_alloc.get_ptr();
   if (current_program) {
-    vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
+    vbo_dev_ptr = get_device_ptr(prog, info.vbo.snode);
   }
 
   uint64_t vbo_size = sizeof(Vertex) * num_vertices;
@@ -93,7 +94,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   if (info.indices.valid) {
     indexed_ = true;
-    DevicePtr ibo_dev_ptr = get_device_ptr(&program, info.indices.snode);
+    DevicePtr ibo_dev_ptr = get_device_ptr(prog, info.indices.snode);
     uint64_t ibo_size = num_indices * sizeof(int);
     if (memcpy_cap == Device::MemcpyCapability::Direct) {
       Device::memcpy_direct(index_buffer_.get_ptr(), ibo_dev_ptr, ibo_size);

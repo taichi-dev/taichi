@@ -91,7 +91,7 @@ void autograd() {
     auto *zero = builder.get_int32(0);
     auto *one = builder.get_int32(1);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);
+    auto *loop = builder.create_range_for(zero, n_stmt, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);
@@ -114,7 +114,7 @@ void autograd() {
 
   auto get_kernel_cal = [&](bool grad) -> Kernel * {
     IRBuilder builder;
-    auto *loop = builder.create_struct_for(a, 1, 0, 4);
+    auto *loop = builder.create_struct_for(a, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);
@@ -133,7 +133,7 @@ void autograd() {
 
   {
     IRBuilder builder;
-    auto *loop = builder.create_struct_for(a, 1, 0, 4);
+    auto *loop = builder.create_struct_for(a, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);

@@ -2010,10 +2010,6 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(GlobalThreadIndexStmt *stmt) {
-  llvm_val[stmt] = create_call("linear_thread_idx", {get_context()});
-}
-
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       (stmt->loop->as<OffloadedStmt>()->task_type ==

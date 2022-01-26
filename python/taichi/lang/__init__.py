@@ -48,17 +48,13 @@ from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
-                              is_taichi_class, python_scope, taichi_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
-from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
-                                          integer_types, u32, u64)
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
 
@@ -742,7 +738,6 @@ def loop_unique(val, covers=None):
 
 parallelize = _ti_core.parallelize
 serialize = lambda: parallelize(1)
-vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr

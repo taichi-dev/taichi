@@ -83,6 +83,17 @@ default numerical types.
 | `a << b`                | left-shift `a` by `b` bits          |
 | `a >> b`                | right-shift `a` by `b` bits         |
 
+:::note
+
+The `>>` operation denotes the
+[Shift Arithmetic](https://en.wikipedia.org/wiki/Arithmetic_shift) Right (SAR) operation.
+For the [Shift Logical](https://en.wikipedia.org/wiki/Logical_shift) Right (SHR) operation,
+consider using `ti.bit_shr()`. For left shift operations, SAL and SHL are the
+same.
+
+
+:::
+
 ### Trigonometric functions
 
 ```python
@@ -122,6 +133,14 @@ pow(x, y)  # Same as `x ** y`.
 ```python
 ti.random(dtype=float)
 ```
+
+:::note
+
+The return number has a range that is type dependent. For example, floating
+point type returns a number between 0 and 1, while integer type such as `ti.i32`
+returns a number between -2147483648 and 2147483647.
+
+:::
 
 ### Supported atomic operations
 

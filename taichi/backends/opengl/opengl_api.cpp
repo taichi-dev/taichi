@@ -260,6 +260,7 @@ void CompiledTaichiKernel::add(
     const std::string &name,
     const std::string &source_code,
     OffloadedTaskType type,
+    const std::string &range_hint,
     int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
@@ -278,7 +279,8 @@ void CompiledTaichiKernel::add(
 
   TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", name, num_workgroups,
            workgroup_size, source);
-  tasks.push_back({name, source, type, workgroup_size, num_workgroups});
+  tasks.push_back(
+      {name, source, type, range_hint, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {

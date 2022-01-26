@@ -58,15 +58,6 @@ GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
 
 using irpass::ExternalPtrAccess;
 
-int find_children_id(const SNode *snode) {
-  auto parent = snode->parent;
-  for (int i = 0; i < parent->ch.size(); i++) {
-    if (parent->ch[i].get() == snode)
-      return i;
-  }
-  TI_ERROR("Child not found in parent!");
-}
-
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -119,7 +110,6 @@ class KernelGen : public IRVisitor {
   bool is_top_level_{true};
   CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
-  int arr_bind_idx_ = static_cast<int>(GLBufId::Arr);
 
   // per-offload variables:
   LineAppender line_appender_;
@@ -198,7 +188,8 @@ class KernelGen : public IRVisitor {
     return res;
   }
 
-  void generate_task_bottom(OffloadedTaskType task_type) {
+  void generate_task_bottom(OffloadedTaskType task_type,
+                            std::string range_hint) {
     emit("void main()");
     emit("{{");
     if (used.random)
@@ -300,8 +291,8 @@ class KernelGen : public IRVisitor {
                           ? std::min(workgroup_size_, prescribed_block_dim)
                           : workgroup_size_;
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
-                          task_type, num_workgroups_, workgroup_size_,
-                          &this->extptr_access_);
+                          task_type, range_hint, num_workgroups_,
+                          workgroup_size_, &this->extptr_access_);
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");
@@ -471,7 +462,9 @@ class KernelGen : public IRVisitor {
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
       emit("int _ad_{} = {} + {} * {};", stmt->short_name(),
-           get_snode_base_address(stmt->snode), stmt->short_name(),
+           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
+               .mem_offset_in_root,
+           stmt->short_name(),
            struct_compiled_->snode_map.at(stmt->snode->node_type_name)
                .elem_stride);
       emit("_data_{}_[_ad_{} >> {}] = {};", opengl_data_type_short_name(dt),
@@ -872,7 +865,8 @@ class KernelGen : public IRVisitor {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
       if (!used.arr_arg_to_bind_idx.count(stmt->arg_id)) {
-        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx_++;
+        used.arr_arg_to_bind_idx[stmt->arg_id] =
+            static_cast<int>(GLBufId::Arr) + stmt->arg_id;
       }
     } else {
       used.buf_args = true;
@@ -1037,6 +1031,8 @@ class KernelGen : public IRVisitor {
       num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
+      // range_hint is known after compilation, e.g. range of field
+      stmt->range_hint = std::to_string(end_value - begin_value);
       stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
@@ -1075,18 +1071,9 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
-  size_t get_snode_base_address(const SNode *snode) {
-    if (snode->type == SNodeType::root)
-      return 0;
-    int chid = find_children_id(snode);
-    const auto &parent_meta =
-        struct_compiled_->snode_map.at(snode->parent->node_type_name);
-    auto choff = parent_meta.children_offsets[chid];
-    return choff + get_snode_base_address(snode->parent);
-  }
-
   size_t get_snode_meta_address(const SNode *snode) {
-    auto addr = get_snode_base_address(snode);
+    auto addr = struct_compiled_->snode_map.at(snode->node_type_name)
+                    .mem_offset_in_root;
     addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
     addr -= opengl_get_snode_meta_size(*snode);
     return addr;
@@ -1177,7 +1164,7 @@ class KernelGen : public IRVisitor {
                stmt->task_name());
     }
     is_top_level_ = true;
-    generate_task_bottom(task_type);
+    generate_task_bottom(task_type, stmt->range_hint);
     loaded_args_.clear();
   }
 
@@ -1226,8 +1213,7 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir.get();
   auto &config = kernel_->program->config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(ir, config, kernel_,
-                                /*vectorize=*/false, kernel_->grad,
+  irpass::compile_to_executable(ir, config, kernel_, kernel_->grad,
                                 /*ad_use_stack=*/false, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/config.make_thread_local);

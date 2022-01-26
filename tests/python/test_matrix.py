@@ -1,10 +1,11 @@
+import math
 import operator
 
 import numpy as np
 import pytest
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
@@ -73,7 +74,7 @@ def test_python_scope_matrix_field(ops):
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_constant_matrices():
-    assert ti.cos(ti.math.pi / 3) == approx(0.5)
+    assert ti.cos(math.pi / 3) == approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
     assert ti.cos(ti.Vector([2,
                              3])).to_numpy() == approx(np.cos(np.array([2,

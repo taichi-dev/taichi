@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
+from taichi.lang.util import has_pytorch
 
 import taichi as ti
 
-if ti.has_pytorch():
+if has_pytorch():
     import torch
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_devices():
     n = 32
@@ -44,7 +45,7 @@ def test_io_devices():
             assert y[i] == (11 + i) * 2
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io():
     n = 32
@@ -84,7 +85,7 @@ def test_io():
         assert ret[i] == 4
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_2d():
     n = 32
@@ -108,7 +109,7 @@ def test_io_2d():
     assert val == 2 * 2 * n * n
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_3d():
     n = 16
@@ -134,7 +135,7 @@ def test_io_3d():
     assert val == 2 * 2 * n * n * n
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_simple():
     n = 32
@@ -161,7 +162,7 @@ def test_io_simple():
     assert (t2 == t3).all()
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_zeros():
     mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
@@ -175,7 +176,7 @@ def test_io_zeros():
     assert zeros[1, 2] == 4
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_io_struct():
     n = 16
@@ -195,7 +196,7 @@ def test_io_struct():
         assert (t1[k] == t2[k]).all()
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_fused_kernels():
     n = 12
@@ -207,7 +208,7 @@ def test_fused_kernels():
     assert ti.get_runtime().get_num_compiled_functions() == s + 2
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_device():
     n = 12
@@ -218,7 +219,7 @@ def test_device():
         assert X.to_torch(device='cuda:0').device == torch.device('cuda:0')
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_shape_matrix():
     n = 12
@@ -238,7 +239,7 @@ def test_shape_matrix():
     assert (X == X1).all()
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_shape_vector():
     n = 12
@@ -257,7 +258,7 @@ def test_shape_vector():
     assert (X == X1).all()
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_torch_zero():
     @ti.kernel

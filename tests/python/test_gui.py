@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
+from taichi._testing import make_temp_file
 
 import taichi as ti
-from taichi import make_temp_file
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.f32])

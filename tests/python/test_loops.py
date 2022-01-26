@@ -18,7 +18,7 @@ def test_loops():
     @ti.kernel
     def func():
         for i in range(ti.static(N // 2 + 3), N):
-            x[i] = ti.abs(y[i])
+            x[i] = abs(y[i])
 
     func()
 
@@ -50,7 +50,7 @@ def test_numpy_loops():
     @ti.kernel
     def func():
         for i in range(begin, end):
-            x[i] = ti.abs(y[i])
+            x[i] = abs(y[i])
 
     func()
 

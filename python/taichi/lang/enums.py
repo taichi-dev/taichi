@@ -9,3 +9,6 @@ class Layout(Enum):
     """
     AOS = 1
     SOA = 2
+
+
+__all__ = ['Layout']

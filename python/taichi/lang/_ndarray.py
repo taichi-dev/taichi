@@ -354,3 +354,6 @@ class NdarrayHostAccess:
 
         self.getter = getter
         self.setter = setter
+
+
+__all__ = []

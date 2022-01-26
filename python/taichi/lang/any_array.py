@@ -69,3 +69,6 @@ class AnyArrayAccess:
             indices = self.indices_first + indices_second
         return Expr(_ti_core.subscript(self.arr.ptr,
                                        make_expr_group(*indices)))
+
+
+__all__ = []

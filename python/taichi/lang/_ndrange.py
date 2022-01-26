@@ -49,3 +49,6 @@ class GroupedNDRange:
     def __iter__(self):
         for ind in self.r:
             yield _IntermediateMatrix(len(ind), 1, list(ind))
+
+
+__all__ = ['ndrange']

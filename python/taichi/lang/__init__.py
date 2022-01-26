@@ -15,15 +15,10 @@ from urllib import request
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
-from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, ndrange
-from taichi.lang.any_array import AnyArray, AnyArrayAccess
+from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (InvalidOperationError,
-                                   TaichiCompilationError, TaichiNameError,
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError, TaichiTypeError)
-from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
                               current_cfg, deactivate_all_snodes, expr_init,

@@ -5,6 +5,7 @@ from typing import Iterable
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._logging import warn
+from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
@@ -23,7 +24,6 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
-from taichi._snode.fields_builder import FieldsBuilder
 from taichi.tools.util import get_traceback, warning
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 

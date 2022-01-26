@@ -118,6 +118,9 @@ void MemoryPool::daemon() {
 }
 
 void MemoryPool::terminate() {
+  if (!th) {
+    return;
+  }
   {
     std::lock_guard<std::mutex> _(mut);
     terminating = true;
@@ -131,7 +134,7 @@ void MemoryPool::terminate() {
 }
 
 MemoryPool::~MemoryPool() {
-  if (th && !killed) {
+  if (killed) {
     terminate();
   }
 }

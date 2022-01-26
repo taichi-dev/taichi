@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 import pytest
-from taichi.lang.util import to_numpy_type
 from taichi._testing import make_temp_file
+from taichi.lang.util import to_numpy_type
 
 import taichi as ti
 

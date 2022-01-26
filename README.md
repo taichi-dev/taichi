@@ -17,7 +17,6 @@ import taichi as ti
 
 - [Get Started](#get-started)
   - [Installation](#installation)
-    - [Official releases](#official-releases)
   - [Your first Taichi program](#your-first-taichi-program)
 - [Documentation](#documentation)
 - [Contacts](#contacts)
@@ -47,8 +46,6 @@ pip install taichi
 ```
 
 If you want to try out the latest features, we also provide a nightly package:
-
-### Official releases
 
 ```bash
 pip install -i https://test.pypi.org/simple/ taichi-nightly

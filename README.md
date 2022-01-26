@@ -113,7 +113,7 @@ If Taichi is properly installed, you should get the animation below 🎉:
 
 # Documentation
 
-The Taichi documentation is available at https://docs.taichi.graphics.
+Taichi's documentation is available at https://docs.taichi.graphics.
 
 # Contacts
 

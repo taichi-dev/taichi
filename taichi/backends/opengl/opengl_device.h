@@ -9,6 +9,8 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
+class GLDevice;
+
 void check_opengl_error(const std::string &msg = "OpenGL");
 
 class GLResourceBinder : public ResourceBinder {
@@ -166,6 +168,28 @@ class GLCommandList : public CommandList {
     void execute() override;
   };
 
+  struct CmdImageTransition : public Cmd {
+    void execute() override;
+  };
+
+  struct CmdBufferToImage : public Cmd {
+    BufferImageCopyParams params;
+    GLuint image{0};
+    GLuint buffer{0};
+    size_t offset{0};
+    GLDevice *device{nullptr};
+    void execute() override;
+  };
+
+  struct CmdImageToBuffer : public Cmd {
+    BufferImageCopyParams params;
+    GLuint image{0};
+    GLuint buffer{0};
+    size_t offset{0};
+    GLDevice *device{nullptr};
+    void execute() override;
+  };
+
   std::vector<std::unique_ptr<Cmd>> recorded_commands_;
 };
 
@@ -229,9 +253,19 @@ class GLDevice : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
+  GLuint get_image_gl_dims(GLuint image) const {
+    return image_to_dims_.at(image);
+  }
+
+  GLuint get_image_gl_int_dims(GLuint image) const {
+    return image_to_int_format_.at(image);
+  }
+
  private:
   GLStream stream_;
   std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
+  std::unordered_map<GLuint, GLuint> image_to_dims_;
+  std::unordered_map<GLuint, GLuint> image_to_int_format_;
 };
 
 class GLSurface : public Surface {

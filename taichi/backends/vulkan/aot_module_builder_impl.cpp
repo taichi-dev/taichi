@@ -3,12 +3,76 @@
 #include <fstream>
 #include <type_traits>
 
+#include "taichi/aot/module_data.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
 
 namespace taichi {
 namespace lang {
 namespace vulkan {
 
+namespace {
+class AotDataConverter {
+ public:
+  static aot::ModuleData convert(const TaichiAotData &in) {
+    AotDataConverter c{};
+    return c.visit(in);
+  }
+
+ private:
+  explicit AotDataConverter() = default;
+
+  aot::ModuleData visit(const TaichiAotData &in) const {
+    aot::ModuleData res{};
+    for (const auto &ker : in.kernels) {
+      auto val = visit(ker);
+      res.kernels[ker.name] = val;
+    }
+    res.fields = in.fields;
+    res.root_buffer_size = in.root_buffer_size;
+    return res;
+  }
+
+  aot::CompiledTaichiKernel visit(
+      const spirv::TaichiKernelAttributes &in) const {
+    aot::CompiledTaichiKernel res{};
+    res.tasks.reserve(in.tasks_attribs.size());
+    for (const auto &t : in.tasks_attribs) {
+      res.tasks.push_back(visit(t));
+    }
+    res.args_count = in.ctx_attribs.args().size();
+    res.rets_count = in.ctx_attribs.rets().size();
+    res.args_buffer_size = in.ctx_attribs.args_bytes();
+    res.rets_buffer_size = in.ctx_attribs.rets_bytes();
+    for (const auto &arg : in.ctx_attribs.args()) {
+      res.scalar_args[arg.index] = visit(arg);
+    }
+    return res;
+  }
+
+  aot::CompiledOffloadedTask visit(const TaskAttributes &in) const {
+    aot::CompiledOffloadedTask res{};
+    res.type = offloaded_task_type_name(in.task_type);
+    res.name = in.name;
+    // TODO: update range_hint after ndarray is supported on vulkan.
+    if (in.range_for_attribs && in.range_for_attribs->const_begin &&
+        in.range_for_attribs->const_end) {
+      res.range_hint = std::to_string(in.range_for_attribs->end -
+                                      in.range_for_attribs->begin);
+    }
+    res.gpu_block_size = in.advisory_num_threads_per_group;
+    return res;
+  }
+
+  aot::ScalarArg visit(
+      const spirv::KernelContextAttributes::ArgAttributes &in) const {
+    aot::ScalarArg res{};
+    res.dtype_name = in.dt.to_string();
+    res.offset_in_args_buf = in.offset_in_mem;
+    return res;
+  }
+};
+
+}  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
@@ -44,7 +108,7 @@ uint32_t AotModuleBuilderImpl::to_vk_dtype_enum(DataType dt) {
   }
 }
 
-void AotModuleBuilderImpl::write_spv_file(
+std::string AotModuleBuilderImpl::write_spv_file(
     const std::string &output_dir,
     const TaskAttributes &k,
     const std::vector<uint32_t> &source_code) const {
@@ -52,6 +116,7 @@ void AotModuleBuilderImpl::write_spv_file(
   std::ofstream fs(spv_path, std::ios_base::binary | std::ios::trunc);
   fs.write((char *)source_code.data(), source_code.size() * sizeof(uint32_t));
   fs.close();
+  return spv_path;
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -60,19 +125,19 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
              "Filename prefix is ignored on vulkan backend.");
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(ti_aot_data_, bin_path);
-  // Json format doesn't support multiple line strings.
+
+  auto converted = AotDataConverter::convert(ti_aot_data_);
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
-    auto k = ti_aot_data_.kernels[i];
+    auto &k = ti_aot_data_.kernels[i];
     for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-      write_spv_file(output_dir, k.tasks_attribs[j],
-                     ti_aot_data_.spirv_codes[i][j]);
+      std::string spv_path = write_spv_file(output_dir, k.tasks_attribs[j],
+                                            ti_aot_data_.spirv_codes[i][j]);
+      converted.kernels[k.name].tasks[j].source_path = spv_path;
     }
   }
 
-  const std::string txt_path = fmt::format("{}/metadata.json", output_dir);
-  TextSerializer ts;
-  ts.serialize_to_json("aot_data", ti_aot_data_);
-  ts.write_to_file(txt_path);
+  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
+  converted.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -80,6 +145,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   spirv::lower(kernel);
   auto compiled =
       run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+  compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
@@ -109,8 +175,9 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   field_data.dtype_name = dt.to_string();
   field_data.shape = shape;
   field_data.mem_offset_in_parent = dense_desc.mem_offset_in_parent_cell;
-  field_data.row_num = row_num;
-  field_data.column_num = column_num;
+  if (!is_scalar) {
+    field_data.element_shape = {row_num, column_num};
+  }
   ti_aot_data_.fields.push_back(field_data);
 }
 

@@ -22,40 +22,15 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               bool grad)
-    : grad(grad), lowered_(false) {
-  this->program = &program;
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-#endif
-  is_accessor = false;
-  is_evaluator = false;
-  compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>();
-  ir = context->get_root();
-  ir_is_ast_ = true;
+               bool grad) {
+  this->init(program, func, primal_name, grad);
+}
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-    ir->as<Block>()->kernel = this;
-  }
-
-  arch = program.config.arch;
-
-  if (!grad) {
-    name = primal_name;
-  } else {
-    name = primal_name + "_grad";
-  }
-
-  if (!program.config.lazy_compilation)
-    compile();
+Kernel::Kernel(Program &program,
+               const std::function<void(Kernel *)> &func,
+               const std::string &primal_name,
+               bool grad) {
+  this->init(program, std::bind(func, this), primal_name, grad);
 }
 
 Kernel::Kernel(Program &program,
@@ -109,7 +84,7 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, this, grad,
         /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -117,8 +92,7 @@ void Kernel::lower(bool to_executable) {
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*vectorize=*/arch_is_cpu(arch), grad,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
                                 /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
@@ -405,6 +379,46 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
 
 std::string Kernel::get_name() const {
   return name;
+}
+
+void Kernel::init(Program &program,
+                  const std::function<void()> &func,
+                  const std::string &primal_name,
+                  bool grad) {
+  this->grad = grad;
+  this->lowered_ = false;
+  this->program = &program;
+#ifdef TI_WITH_LLVM
+  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
+    llvm_program_impl->maybe_initialize_cuda_llvm_context();
+  }
+#endif
+  is_accessor = false;
+  is_evaluator = false;
+  compiled_ = nullptr;
+  context = std::make_unique<FrontendContext>();
+  ir = context->get_root();
+  ir_is_ast_ = true;
+
+  this->arch = program.config.arch;
+
+  if (!grad) {
+    this->name = primal_name;
+  } else {
+    this->name = primal_name + "_grad";
+  }
+
+  {
+    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
+    // concurrently, we need to lock this block of code together with
+    // taichi::lang::context with a mutex.
+    CurrentCallableGuard _(this->program, this);
+    func();
+    ir->as<Block>()->kernel = this;
+  }
+
+  if (!program.config.lazy_compilation)
+    compile();
 }
 
 // static

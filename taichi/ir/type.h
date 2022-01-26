@@ -154,28 +154,6 @@ class PointerType : public Type {
   bool is_bit_pointer_{false};
 };
 
-class VectorType : public Type {
- public:
-  VectorType(int num_elements, Type *element)
-      : num_elements_(num_elements), element_(element) {
-    TI_ASSERT(num_elements_ != 1);
-  }
-
-  Type *get_element_type() const {
-    return element_;
-  }
-
-  int get_num_elements() const {
-    return num_elements_;
-  }
-
-  std::string to_string() const override;
-
- private:
-  int num_elements_{0};
-  Type *element_{nullptr};
-};
-
 class TensorType : public Type {
  public:
   TensorType(std::vector<int> shape, Type *element)
@@ -195,6 +173,10 @@ class TensorType : public Type {
 
   std::vector<int> get_shape() const {
     return shape_;
+  }
+
+  Type *get_compute_type() override {
+    return this;
   }
 
   std::string to_string() const override;

@@ -336,18 +336,17 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) (vectorize {}) (bit_vectorize {}) {}{{",
+    print("{} : {}for in range({}, {}) (bit_vectorize {}) {}{{",
           for_stmt->name(), for_stmt->reversed ? "reversed " : "",
-          for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize,
+          for_stmt->begin->name(), for_stmt->end->name(),
           for_stmt->bit_vectorize, block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : struct for in {} (vectorize {}) (bit_vectorize {}) {}{}{{",
-          for_stmt->name(), for_stmt->snode->get_node_type_name_hinted(),
-          for_stmt->vectorize, for_stmt->bit_vectorize,
+    print("{} : struct for in {} (bit_vectorize {}) {}{}{{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->bit_vectorize,
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
@@ -407,13 +406,13 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
-          stmt->value.serialize());
+    print("{}{} : return [{}]", stmt->type_hint(), stmt->name(),
+          stmt->values.serialize());
   }
 
   void visit(ReturnStmt *stmt) override {
     print("{}{} : return {}", stmt->type_hint(), stmt->name(),
-          stmt->value->name());
+          stmt->values_raw_names());
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -620,10 +619,6 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name());
   }
 
-  void visit(GlobalThreadIndexStmt *stmt) override {
-    print("{}{} = global thread index", stmt->type_hint(), stmt->name());
-  }
-
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);
@@ -729,6 +724,25 @@ class IRPrinter : public IRVisitor {
 
   void visit(MeshPatchIndexStmt *stmt) override {
     print("{}{} = mesh patch idx", stmt->type_hint(), stmt->name());
+  }
+
+  void visit(FrontendExternalFuncStmt *stmt) override {
+    if (stmt->so_func != nullptr) {
+      print("so {:x}", (uint64)stmt->so_func);
+    } else if (!stmt->asm_source.empty()) {
+      print("asm \"{}\"", stmt->asm_source);
+    } else {
+      print("bc {}:{}", stmt->bc_filename, stmt->bc_funcname);
+    }
+    print(" (inputs=");
+    for (auto &s : stmt->args) {
+      print(s.serialize());
+    }
+    print(", outputs=");
+    for (auto &s : stmt->outputs) {
+      print(s.serialize());
+    }
+    print(")");
   }
 };
 

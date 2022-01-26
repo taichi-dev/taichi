@@ -50,8 +50,9 @@ class Inliner : public BasicStmtVisitor {
           /*filter=*/[&](Stmt *s) { return s->is<ReturnStmt>(); },
           /*generator=*/
           [&](Stmt *s) {
+            TI_ASSERT(s->as<ReturnStmt>()->values.size() == 1);
             return Stmt::make<LocalStoreStmt>(return_address,
-                                              s->as<ReturnStmt>()->value);
+                                              s->as<ReturnStmt>()->values[0]);
           });
       modifier_.insert_before(stmt,
                               std::move(inlined_ir->as<Block>()->statements));

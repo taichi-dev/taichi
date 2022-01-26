@@ -39,6 +39,10 @@ copy_1D(c, d)
 ```
 
 :::note
+If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel.
+:::
+
+:::note
 The template parameters are inlined into the generated kernel after compilation.
 :::
 
@@ -122,6 +126,12 @@ def foo():
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
 computational overhead at runtime:
 
+### Static Scope
+`ti.static` is a function which receives one argument. It is a hint for the compiler to evaluate the argument at compile time.
+The scope of the argument of `ti.static` is called static-scope.
+
+### Compile-time branching
+
 - Use `ti.static` for compile-time branching (for those who are familiar with
   C++17, this is similar to [if
   constexpr](https://en.cppreference.com/w/cpp/language/if).):
@@ -138,6 +148,8 @@ def static():
 :::note
 One of the two branches of the `static if` will be discarded after compilation.
 :::
+
+### Loop unrolling
 
 - Use `ti.static` for forced loop unrolling:
 

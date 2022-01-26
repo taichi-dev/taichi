@@ -205,10 +205,8 @@ class BasicBlockSimplify : public IRVisitor {
                           ~((1LL << (stmt->bit_begin)) - 1);
             auto load_addr = load.get();
             modifier.insert_before(stmt, std::move(load));
-            if (current_struct_for->vectorize == 1)
-              offset = diff.low;
-            if (stmt->bit_begin == 0 &&
-                current_struct_for->vectorize == bound) {
+            offset = diff.low;                         // TODO: Vectorization
+            if (stmt->bit_begin == 0 && bound == 1) {  // TODO: Vectorization
               // TODO: take care of cases where vectorization width != z
               // dimension of the block
               auto offset_stmt = Stmt::make<IntegerOffsetStmt>(stmt, offset);

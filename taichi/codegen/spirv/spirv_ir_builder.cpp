@@ -354,7 +354,8 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
 
 Value IRBuilder::buffer_argument(const SType &value_type,
                                  uint32_t descriptor_set,
-                                 uint32_t binding) {
+                                 uint32_t binding,
+                                 const std::string &name) {
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;
@@ -365,7 +366,13 @@ Value IRBuilder::buffer_argument(const SType &value_type,
   }
 
   SType sarr_type = get_struct_array_type(value_type, 0);
+
+  this->debug(spv::OpName, sarr_type, name + "_struct_array");
+
   SType ptr_type = get_pointer_type(sarr_type, storage_class);
+
+  this->debug(spv::OpName, sarr_type, name + "_ptr");
+
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, val, storage_class)
@@ -886,7 +893,7 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   debug(spv::OpName, rand_y_, "_rand_y");
   debug(spv::OpName, rand_z_, "_rand_z");
   debug(spv::OpName, rand_w_, "_rand_w");
-  SType gtmp_type = get_pointer_type(t_int32_, spv::StorageClassStorageBuffer);
+  SType gtmp_type = get_pointer_type(t_uint32_, spv::StorageClassStorageBuffer);
   Value rand_gtmp_ = new_value(gtmp_type, ValueKind::kVariablePtr);
   debug(spv::OpName, rand_gtmp_, "rand_gtmp");
 
@@ -915,8 +922,8 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   Value _362436069u = uint_immediate_number(t_uint32_, 362436069u);
   Value _521288629u = uint_immediate_number(t_uint32_, 521288629u);
   Value _88675123u = uint_immediate_number(t_uint32_, 88675123u);
-  Value _1 = int_immediate_number(t_int32_, 1);
-  Value _1024 = int_immediate_number(t_int32_, 1024);
+  Value _1 = int_immediate_number(t_uint32_, 1);
+  Value _1024 = int_immediate_number(t_uint32_, 1024);
 
   // init_rand_ segment (inline to main)
   // ad-hoc: hope no kernel will use more than 1024 gtmp variables...
@@ -932,7 +939,7 @@ void IRBuilder::init_random_function(Value global_tmp_) {
                uint_immediate_number(t_uint32_, 0))
       .commit(&func_header_);
   Value tmp1 = load_var(tmp0, t_uint32_);
-  Value tmp2_ = load_var(rand_gtmp_, t_int32_);
+  Value tmp2_ = load_var(rand_gtmp_, t_uint32_);
   Value tmp2 = new_value(t_uint32_, ValueKind::kNormal);
   ib_.begin(spv::OpBitcast)
       .add_seq(t_uint32_, tmp2, tmp2_)
@@ -970,10 +977,10 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   // us to set different seeds for different threads.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
-  Value tmp9 = load_var(rand_gtmp_, t_int32_);
-  Value tmp10 = new_value(t_int32_, ValueKind::kNormal);
+  Value tmp9 = load_var(rand_gtmp_, t_uint32_);
+  Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
   ib_.begin(spv::OpIAdd)
-      .add_seq(t_int32_, tmp10, tmp9, _1)
+      .add_seq(t_uint32_, tmp10, tmp9, _1)
       .commit(&func_header_);
   store_var(rand_gtmp_, tmp10);
 

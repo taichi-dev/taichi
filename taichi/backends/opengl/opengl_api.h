@@ -45,6 +45,7 @@ struct CompiledOffloadedTask {
   std::string name;
   std::string src;
   OffloadedTaskType type;
+  std::string range_hint;
   int workgroup_size;
   int num_groups;
 
@@ -78,6 +79,7 @@ struct CompiledTaichiKernel {
   void add(const std::string &name,
            const std::string &source_code,
            OffloadedTaskType type,
+           const std::string &range_hint,
            int num_workgrous,
            int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =

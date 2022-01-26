@@ -113,7 +113,7 @@ class TaichiMain:
     def _get_examples_dir() -> Path:
         """Get the path to the examples directory."""
 
-        root_dir = utils.package_root()
+        root_dir = utils.package_root
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -215,7 +215,7 @@ class TaichiMain:
     @register
     def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
-        changelog_md = os.path.join(utils.package_root(), 'CHANGELOG.md')
+        changelog_md = os.path.join(utils.package_root, 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 
@@ -252,7 +252,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         args.output_file = str(Path(args.input_file).with_suffix('.gif'))
-        ti.info(f"Converting {args.input_file} to {args.output_file}")
+        ti._logging.info(f"Converting {args.input_file} to {args.output_file}")
 
         # Short circuit for testing
         if self.test_mode:
@@ -420,8 +420,8 @@ class TaichiMain:
 
         assert 1 <= args.crf <= 51, "The range of the CRF scale is 1-51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
 
-        ti.info(f'Making video using {len(args.inputs)} png files...')
-        ti.info(f'frame_rate = {args.framerate}')
+        ti._logging.info(f'Making video using {len(args.inputs)} png files...')
+        ti._logging.info(f'frame_rate = {args.framerate}')
 
         # Short circuit for testing
         if self.test_mode:
@@ -430,7 +430,7 @@ class TaichiMain:
                          output_path=str(args.output_file),
                          crf=args.crf,
                          frame_rate=args.framerate)
-        ti.info(f'Done! Output video file = {args.output_file}')
+        ti._logging.info(f'Done! Output video file = {args.output_file}')
 
         return None
 

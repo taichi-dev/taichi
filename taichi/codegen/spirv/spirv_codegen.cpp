@@ -528,9 +528,13 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer_val = ir_->struct_array_access(
         ir_->i32_type(),
         get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
-    spirv::Value val = ir_->query_value(stmt->value->raw_name());
-    ir_->store_variable(buffer_val,
-                        ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
+    if (stmt->values.size() == 1) {
+      spirv::Value val = ir_->query_value(stmt->values[0]->raw_name());
+      ir_->store_variable(
+          buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -1593,9 +1597,8 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
-    spirv::Value buffer_value =
-        ir_->buffer_argument(type, 0, buffer_binding_map_[buffer]);
-    ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
+    spirv::Value buffer_value = ir_->buffer_argument(
+        type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
@@ -1612,9 +1615,8 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
-    spirv::Value buffer_value =
-        ir_->buffer_argument(type, 0, buffer_binding_map_[buffer]);
-    ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
+    spirv::Value buffer_value = ir_->buffer_argument(
+        type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
@@ -1800,8 +1802,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 void lower(Kernel *kernel) {
   auto &config = kernel->program->config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                /*vectorize=*/false, kernel->grad,
+  irpass::compile_to_executable(kernel->ir.get(), config, kernel, kernel->grad,
                                 /*ad_use_stack=*/false, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/false);

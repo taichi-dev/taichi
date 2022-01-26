@@ -6,7 +6,7 @@
 
 #ifdef ANDROID
 #include <android/native_window_jni.h>
-#else
+#elif !defined(TI_EMSCRIPTENED)
 #include <GLFW/glfw3.h>
 #endif
 
@@ -387,7 +387,7 @@ class VulkanSurface : public Surface {
   VkSemaphore image_available_;
 #ifdef ANDROID
   ANativeWindow *window_;
-#else
+#elif !defined(TI_EMSCRIPTENED)
   GLFWwindow *window_;
 #endif
   BufferFormat image_format_;

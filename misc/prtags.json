@@ -1,4 +1,5 @@
 {
+  "javascript"      : "Taichi in javascript",
   "ci"              : "CI/CD workflow",
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",
@@ -12,6 +13,8 @@
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
   "vulkan"          : "Vulkan backend",
+  "dx11"            : "DirectX 11 backend",
+  "spirv"           : "SPIR-V common codegen",
   "wasm"            : "WebAssembly backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",

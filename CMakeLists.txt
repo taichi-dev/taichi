@@ -4,7 +4,9 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-if((DEFINED TI_EMSCRIPTENED) AND TI_EMSCRIPTENED)
+option(TI_EMSCRIPTENED "Build using emscripten" OFF)
+
+if(TI_EMSCRIPTENED)
   if(DEFINED ENV{EMSCRIPTEN_DIR})
       set(EMSCRIPTEN_DIR $ENV{EMSCRIPTEN_DIR})
       # Tool chain file must be specified before the `project()`

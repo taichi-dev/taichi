@@ -7,7 +7,6 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
-option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 
 if(TI_EMSCRIPTENED)
     set(TI_WITH_LLVM OFF)

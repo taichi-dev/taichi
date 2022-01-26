@@ -13,6 +13,31 @@
 TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
+class FrontendExternalFuncStmt : public Stmt {
+ public:
+  void *so_func;
+  std::string asm_source;
+  std::string bc_filename;
+  std::string bc_funcname;
+  std::vector<Expr> args;
+  std::vector<Expr> outputs;
+
+  FrontendExternalFuncStmt(void *so_func,
+                           const std::string &asm_source,
+                           const std::string &bc_filename,
+                           const std::string &bc_funcname,
+                           const std::vector<Expr> &args,
+                           const std::vector<Expr> &outputs)
+      : so_func(so_func),
+        asm_source(asm_source),
+        bc_filename(bc_filename),
+        bc_funcname(bc_funcname),
+        args(args),
+        outputs(outputs) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
 
 class FrontendExprStmt : public Stmt {
  public:
@@ -129,7 +154,6 @@ class FrontendForStmt : public Stmt {
   Expr global_var;
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   bool strictly_serialized;
@@ -380,58 +404,7 @@ class InternalFuncCallExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
-class ExternalFuncCallExpression : public Expression {
- public:
-  void *so_func;
-  std::string asm_source;
-  std::string bc_filename;
-  std::string bc_funcname;
-  std::vector<Expr> args;
-  std::vector<Expr> outputs;
-
-  ExternalFuncCallExpression(void *so_func,
-                             const std::string &asm_source,
-                             const std::string &bc_filename,
-                             const std::string &bc_funcname,
-                             const std::vector<Expr> &args,
-                             const std::vector<Expr> &outputs)
-      : so_func(so_func),
-        asm_source(asm_source),
-        bc_filename(bc_filename),
-        bc_funcname(bc_funcname),
-        args(args),
-        outputs(outputs) {
-  }
-
-  void type_check() override;
-
-  void serialize(std::ostream &ss) override {
-    if (so_func != nullptr) {
-      ss << fmt::format("so {:x} (", (uint64)so_func);
-    } else if (!asm_source.empty()) {
-      ss << fmt::format("asm \"{}\" (", asm_source);
-    } else {
-      ss << fmt::format("bc {}:{} (", bc_filename, bc_funcname);
-    }
-
-    ss << "inputs=";
-
-    for (auto &s : args) {
-      s.serialize(ss);
-    }
-
-    ss << ", outputs=";
-
-    for (auto &s : outputs) {
-      s.serialize(ss);
-    }
-
-    ss << ')';
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
+// TODO: Make this a non-expr
 class ExternalTensorExpression : public Expression {
  public:
   DataType dt;
@@ -458,6 +431,7 @@ class ExternalTensorExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+// TODO: Make this a non-expr
 class GlobalVariableExpression : public Expression {
  public:
   Identifier ident;
@@ -686,6 +660,7 @@ class SNodeOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+// TODO: Make this a non-expr
 class LocalLoadExpression : public Expression {
  public:
   Expr ptr;
@@ -705,6 +680,7 @@ class LocalLoadExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+// TODO: make this a non-expr
 class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;

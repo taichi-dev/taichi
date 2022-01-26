@@ -44,14 +44,12 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     // must be postponed. The init_before_visit which calls lazy_init_callback_
     // will be called in LowerAST::visit(FrontendForStmt *stmt) in which
     // this->get_config() can be called successfully.
-    vectorize = dec.vectorize;
     bit_vectorize = dec.bit_vectorize;
     num_cpu_threads = dec.num_cpu_threads;
     strictly_serialized = dec.strictly_serialized;
     block_dim = dec.block_dim;
     auto cfg = this->get_config();
     if (cfg.arch == Arch::cuda) {
-      vectorize = 1;
       num_cpu_threads = 1;
       TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
     } else {
@@ -61,8 +59,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     }
     mem_access_opt = dec.mem_access_opt;
     dec.reset();
-    if (vectorize == -1)
-      vectorize = 1;
   };
 
   loop_var_id.resize(loop_var.size());
@@ -77,13 +73,11 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshElementType &element_type)
     : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
   lazy_init_callback_ = [this]() {
-    vectorize = dec.vectorize;
     bit_vectorize = dec.bit_vectorize;
     num_cpu_threads = dec.num_cpu_threads;
     block_dim = dec.block_dim;
     auto cfg = this->get_config();
     if (cfg.arch == Arch::cuda) {
-      vectorize = 1;
       num_cpu_threads = 1;
       TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
     } else {
@@ -93,8 +87,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     }
     mem_access_opt = dec.mem_access_opt;
     dec.reset();
-    if (vectorize == -1)
-      vectorize = 1;
   };
 
   loop_var_id.resize(loop_var.size());
@@ -115,14 +107,12 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &end)
     : begin(begin), end(end) {
   lazy_init_callback_ = [this]() {
-    vectorize = dec.vectorize;
     bit_vectorize = dec.bit_vectorize;
     num_cpu_threads = dec.num_cpu_threads;
     strictly_serialized = dec.strictly_serialized;
     block_dim = dec.block_dim;
     auto cfg = this->get_config();
     if (cfg.arch == Arch::cuda) {
-      vectorize = 1;
       num_cpu_threads = 1;
     } else {
       if (num_cpu_threads == 0)
@@ -130,8 +120,6 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     }
     mem_access_opt = dec.mem_access_opt;
     dec.reset();
-    if (vectorize == -1)
-      vectorize = 1;
   };
 
   loop_var_id.resize(1);
@@ -295,51 +283,6 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
   stmt = ctx->back_stmt();
-}
-
-void ExternalFuncCallExpression::type_check() {
-  for (auto &arg : args) {
-    TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
-  }
-  for (auto &output : outputs) {
-    TI_ASSERT_TYPE_CHECKED(output);
-    // no output type compatibility check for now due to lack of specification
-  }
-  // external func calls have no return type for now
-}
-
-void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT((int)(so_func != nullptr) + (int)(!asm_source.empty()) +
-                (int)(!bc_filename.empty()) ==
-            1)
-  std::vector<Stmt *> arg_statements, output_statements;
-  if (so_func != nullptr || !asm_source.empty()) {
-    for (auto &s : args) {
-      s.set(load_if_ptr(s));
-      s->flatten(ctx);
-      arg_statements.push_back(s->stmt);
-    }
-    for (auto &s : outputs) {
-      output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-    }
-    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        (so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
-                             : ExternalFuncCallStmt::ASSEMBLY,
-        so_func, asm_source, "", "", arg_statements, output_statements));
-    stmt = ctx->back_stmt();
-  } else {
-    for (auto &s : args) {
-      TI_ASSERT_INFO(
-          s.is<IdExpression>(),
-          "external func call via bitcode must pass in local variables.")
-      arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-    }
-    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        ExternalFuncCallStmt::BITCODE, nullptr, "", bc_filename, bc_funcname,
-        arg_statements, output_statements));
-    stmt = ctx->back_stmt();
-  }
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {

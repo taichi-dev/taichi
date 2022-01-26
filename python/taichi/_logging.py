@@ -89,7 +89,6 @@ error = _get_logging(ERROR)
 critical = _get_logging(CRITICAL)
 
 __all__ = [
-    'DEBUG', 'TRACE', 'INFO', 'WARN', 'ERROR', 'CRITICAL', 'debug', 'trace',
-    'info', 'warn', 'error', 'critical', 'supported_log_levels',
-    'set_logging_level', 'is_logging_effective'
+    'DEBUG', 'TRACE', 'INFO', 'WARN', 'ERROR', 'CRITICAL', 'set_logging_level',
+    'is_logging_effective'
 ]

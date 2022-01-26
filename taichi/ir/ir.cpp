@@ -24,7 +24,6 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
 }
 
 void DecoratorRecorder::reset() {
-  vectorize = -1;
   bit_vectorize = -1;
   num_cpu_threads = 0;
   uniform = false;

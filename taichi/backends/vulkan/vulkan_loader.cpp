@@ -17,7 +17,7 @@ bool VulkanLoader::init() {
     if (initialized) {
       return;
     }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(TI_EMSCRIPTENED)
     initialized = true;
 #else
     VkResult result = volkInitialize();
@@ -29,14 +29,14 @@ bool VulkanLoader::init() {
 
 void VulkanLoader::load_instance(VkInstance instance) {
   vulkan_instance_ = instance;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(TI_EMSCRIPTENED)
 #else
   volkLoadInstance(instance);
 #endif
 }
 void VulkanLoader::load_device(VkDevice device) {
   vulkan_device_ = device;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(TI_EMSCRIPTENED)
 #else
   volkLoadDevice(device);
 #endif

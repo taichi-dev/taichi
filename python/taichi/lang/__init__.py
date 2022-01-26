@@ -24,12 +24,15 @@ from taichi.lang.exception import (InvalidOperationError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (
-    axes, begin_frontend_if, begin_frontend_struct_for, call_internal,
-    current_cfg, deactivate_all_snodes, expr_init, expr_init_func,
-    expr_init_list, field, get_runtime, grouped, insert_expr_stmt_if_ti_func,
-    ndarray, one, root, static, static_assert, static_print, stop_grad,
-    subscript, ti_assert, ti_float, ti_format, ti_int, ti_print, zero)
+from taichi.lang.impl import (axes, begin_frontend_if,
+                              begin_frontend_struct_for, call_internal,
+                              current_cfg, deactivate_all_snodes, expr_init,
+                              expr_init_func, expr_init_list, field,
+                              get_runtime, grouped,
+                              insert_expr_stmt_if_ti_func, ndarray, one, root,
+                              static, static_assert, static_print, stop_grad,
+                              subscript, ti_assert, ti_float, ti_format,
+                              ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -575,8 +578,13 @@ def init(arch=None,
                 version_number_str = require_version[:i]
                 break
         # Get required version.
-        major, minor, patch = tuple(
-            [int(n) for n in version_number_str.split(".")])
+        try:
+            major, minor, patch = tuple(
+                [int(n) for n in version_number_str.split(".")])
+        except:
+            raise Exception("The required_version should be formatted following PEP 440, " \
+                "and inlucdes major, minor, and patch number, " \
+                "e.g., major.minor.patch.") from None
         # Get installed version
         versions = [
             int(_ti_core.get_version_major()),

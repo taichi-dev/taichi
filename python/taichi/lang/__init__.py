@@ -1,6 +1,7 @@
 import atexit
 import datetime
 import functools
+import inspect
 import json
 import os
 import platform
@@ -1066,4 +1067,4 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [s for s in dir() if not s.startswith('_') and not inspect.ismodule(globals()[s])]

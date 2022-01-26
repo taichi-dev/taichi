@@ -332,7 +332,7 @@ if you see any silent wrong results.
 :::
 
 ### Write differentiable code inside Taichi kernel
-Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. 
+Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff.
 Therefore, you are not able to modify the `grad` of Taichi field in python scope.
 
 Example:

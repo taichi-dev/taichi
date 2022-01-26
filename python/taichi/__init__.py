@@ -3,6 +3,7 @@ import sys
 from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._logging import *
+from taichi._snode import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.tools import *
 from taichi.tools.patterns import taichi_logo

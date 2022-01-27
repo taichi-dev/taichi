@@ -18,7 +18,12 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 from taichi import aot  # isort:skip
 from taichi._testing import *  # isort:skip
 
-__deprecated_names__ = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
+__deprecated_names__ = {
+    'SOA': 'Layout.SOA',
+    'AOS': 'Layout.AOS',
+    'print_profile_info': 'profiler.print_scoped_profiler_info',
+    'clear_profile_info': 'profiler.clear_scoped_profiler_info'
+}
 
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():

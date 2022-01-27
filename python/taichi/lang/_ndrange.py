@@ -34,7 +34,7 @@ class _Ndrange:
                 yield prefix
             else:
                 for t in range(self.bounds[d][0], self.bounds[d][1]):
-                    yield from gen(d + 1, prefix + (t,))
+                    yield from gen(d + 1, prefix + (t, ))
 
         yield from gen(0, ())
 

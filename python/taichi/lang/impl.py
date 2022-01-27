@@ -848,8 +848,9 @@ def static(x, *xs):
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
-    if isinstance(x, (bool, int, float, range, list, tuple, enumerate, ndrange,
-                      GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x,
+                  (bool, int, float, range, list, tuple, enumerate, _Ndrange,
+                   GroupedNDRange, zip, filter, map)) or x is None:
         return x
     if isinstance(x, AnyArray):
         return x

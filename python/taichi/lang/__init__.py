@@ -25,11 +25,10 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
                               ndarray, one, root, static, static_assert,
                               static_print, stop_grad, zero)
-from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
-from taichi.lang.matrix import Matrix, MatrixField, Vector
-from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
+from taichi.lang.matrix import *
+from taichi.lang.mesh import *
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync

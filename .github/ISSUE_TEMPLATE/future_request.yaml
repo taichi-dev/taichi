@@ -1,10 +1,10 @@
-name: Bug Report
+name: Feature Request
 description: |
   Report a bug encountered while using Taichi. We've collected some common issue solutions in https://docs.taichi.graphics/lang/articles/misc/install. Make sure you've check them out first. Hopefully they could address your problem.
 labels: 
   - "feature request"
 body:
-  - type: proposed
+  - type: textarea
     id: problem
     attributes:
       label: Concisely describe the proposed feature

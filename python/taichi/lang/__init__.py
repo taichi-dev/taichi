@@ -1,16 +1,4 @@
-import atexit
-import datetime
-import functools
-import json
-import os
-import platform
-import shutil
-import tempfile
-import threading
-import time
-from contextlib import contextmanager
-from copy import deepcopy as _deepcopy
-from urllib import request
+import inspect
 
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
@@ -24,15 +12,9 @@ from taichi.lang.exception import (InvalidOperationError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, begin_frontend_if,
-                              begin_frontend_struct_for, call_internal,
-                              current_cfg, deactivate_all_snodes, expr_init,
-                              expr_init_func, expr_init_list, field,
-                              get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func, ndarray, one, root,
-                              static, static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
+from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
+                              ndarray, one, root, static, static_assert,
+                              static_print, stop_grad, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -59,4 +41,8 @@ from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [
+    s for s in dir()
+    if not s.startswith('_') and not inspect.ismodule(globals()[s])
+    or s in ['tape', 'sort']
+]

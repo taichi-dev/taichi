@@ -27,8 +27,6 @@ from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging
 
-runtime = impl.get_runtime()
-
 i = axes(0)
 j = axes(1)
 k = axes(2)
@@ -755,7 +753,7 @@ def Tape(loss, clear_gradients=True):
     from taichi._kernels import clear_loss  # pylint: disable=C0415
     clear_loss(loss)
 
-    return runtime.get_tape(loss)
+    return impl.get_runtime().get_tape(loss)
 
 
 def clear_all_gradients():

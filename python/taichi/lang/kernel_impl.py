@@ -8,7 +8,7 @@ import textwrap
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, runtime_ops, util
+from taichi.lang import impl, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
@@ -16,14 +16,14 @@ from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import to_taichi_type
+from taichi.lang.util import has_pytorch, to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging
 
-if util.has_pytorch():
+if has_pytorch():
     import torch
 
 
@@ -535,7 +535,7 @@ class Kernel:
             tmps = []
             callbacks = []
             has_external_arrays = False
-            has_torch = util.has_pytorch()
+            has_torch = has_pytorch()
             ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
@@ -654,7 +654,7 @@ class Kernel:
     @staticmethod
     def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
-        if not has_array and util.has_pytorch():
+        if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
         return has_array
 

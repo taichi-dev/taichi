@@ -2,9 +2,9 @@ import operator as ops
 
 import numpy as np
 import pytest
+from taichi._testing import allclose
 
 import taichi as ti
-from taichi import allclose
 
 binary_func_table = [
     (ops.add, ) * 2,
@@ -172,3 +172,21 @@ def test_64_min_max():
     assert min_i64(a, b) == min(a, b)
     assert max_u64(a, b) == max(a, b)
     assert max_i64(a, b) == max(a, b)
+
+
+@ti.test()
+def test_min_max_vector_starred():
+    @ti.kernel
+    def min_starred() -> ti.i32:
+        a = ti.Vector([1, 2, 3])
+        b = ti.Vector([4, 5, 6])
+        return ti.min(*a, *b)
+
+    @ti.kernel
+    def max_starred() -> ti.i32:
+        a = ti.Vector([1, 2, 3])
+        b = ti.Vector([4, 5, 6])
+        return ti.max(*a, *b)
+
+    assert min_starred() == 1
+    assert max_starred() == 6

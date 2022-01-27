@@ -56,7 +56,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
 
 void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
   stmt->set_tb(tb);
   current_ast_builder().insert(std::move(stmt));
 }
@@ -662,11 +662,10 @@ void export_lang(py::module &m) {
         [](std::size_t func_addr, std::string source, std::string filename,
            std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
-          auto expr = Expr::make<ExternalFuncCallExpression>(
+          auto stmt = Stmt::make<FrontendExternalFuncStmt>(
               (void *)func_addr, source, filename, funcname, args.exprs,
               outputs.exprs);
-
-          current_ast_builder().insert(Stmt::make<FrontendExprStmt>(expr));
+          current_ast_builder().insert(std::move(stmt));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -774,34 +773,31 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
   m.def("expr_add", expr_add);
@@ -889,7 +885,7 @@ void export_lang(py::module &m) {
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
           Expr::make<TensorElementExpression>(var, indices, shape,
                                               data_type_size(element_type)),
-          load_if_ptr(elements.exprs[i])));
+          elements.exprs[i]));
     }
     return var;
   });
@@ -961,7 +957,7 @@ void export_lang(py::module &m) {
                    const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
+    return Expr::make<GlobalPtrExpression>(snode, indices);
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
@@ -1050,7 +1046,6 @@ void export_lang(py::module &m) {
   });
   // Schedules
   m.def("parallelize", Parallelize);
-  m.def("vectorize", Vectorize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 

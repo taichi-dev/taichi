@@ -97,6 +97,24 @@ def test_aot_ndarray_range_hint():
             assert range_hint == 'arg 0'
 
 
+@ti.test(arch=ti.opengl)
+def test_element_size_alignment():
+    a = ti.field(ti.f32, shape=())
+    b = ti.Matrix.field(2, 3, ti.f32, shape=(2, 4))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s = ti.aot.Module(ti.cfg.arch)
+        s.add_field('a', a)
+        s.add_field('b', b)
+        s.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            offsets = (res['aot_data']['fields'][0]['mem_offset_in_parent'],
+                       res['aot_data']['fields'][1]['mem_offset_in_parent'])
+            assert 0 in offsets and 24 in offsets
+            assert res['aot_data']['root_buffer_size'] == 216
+
+
 @ti.test(arch=[ti.opengl, ti.vulkan])
 def test_save():
     density = ti.field(float, shape=(4, 4))

@@ -103,19 +103,16 @@ class IRBuilder {
   // Control flows.
   RangeForStmt *create_range_for(Stmt *begin,
                                  Stmt *end,
-                                 int vectorize = -1,
                                  int bit_vectorize = -1,
                                  int num_cpu_threads = 0,
                                  int block_dim = 0,
                                  bool strictly_serialized = false);
   StructForStmt *create_struct_for(SNode *snode,
-                                   int vectorize = -1,
                                    int bit_vectorize = -1,
                                    int num_cpu_threads = 0,
                                    int block_dim = 0);
   MeshForStmt *create_mesh_for(mesh::Mesh *mesh,
                                mesh::MeshElementType element_type,
-                               int vectorize = -1,
                                int bit_vectorize = -1,
                                int num_cpu_threads = 0,
                                int block_dim = 0);

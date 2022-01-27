@@ -528,3 +528,6 @@ class MeshRelationAccessProxy:
         entry_expr.type_check()
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)
+
+
+__all__ = ["Mesh", "TetMesh", "TriMesh"]

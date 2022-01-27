@@ -1,10 +1,12 @@
+import math
 import operator
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang import impl
 
 import taichi as ti
-from taichi import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
@@ -73,7 +75,7 @@ def test_python_scope_matrix_field(ops):
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_constant_matrices():
-    assert ti.cos(ti.math.pi / 3) == approx(0.5)
+    assert ti.cos(math.pi / 3) == approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
     assert ti.cos(ti.Vector([2,
                              3])).to_numpy() == approx(np.cos(np.array([2,
@@ -425,7 +427,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     ti.root.dense(ti.i, 8).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -438,7 +440,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     ti.root.dense(ti.i, 2).pointer(ti.i, 4).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -453,7 +455,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     ti.root.dense(ti.i, 8).place(x, temp)
     ti.root.dense(ti.i, 8).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -469,7 +471,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     ti.root.dense(ti.i, 8).place(temp_a, x)
     ti.root.dense(ti.i, 8).place(y, temp_b)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -484,7 +486,7 @@ def test_matrix_field_dynamic_index_different_stride():
 
     ti.root.dense(ti.i, 8).place(x, y, temp, z)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 

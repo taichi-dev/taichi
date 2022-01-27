@@ -60,7 +60,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
 
 Expr Expr::operator[](const ExprGroup &indices) const {
   TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
+  return Expr::make<GlobalPtrExpression>(*this, indices);
 }
 
 Expr &Expr::operator=(const Expr &o) {
@@ -111,26 +111,6 @@ Expr::Expr(float64 x) : Expr() {
 
 Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
-}
-
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return Expr::make<GlobalLoadExpression>(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return Expr::make<GlobalLoadExpression>(ptr[ExprGroup()]);
-  } else if (ptr.is<TensorElementExpression>()) {
-    auto tensor_ptr = ptr.cast<TensorElementExpression>();
-    if (tensor_ptr->is_global_tensor())
-      return Expr::make<GlobalLoadExpression>(ptr);
-    else if (tensor_ptr->is_local_tensor())
-      return Expr::make<LocalLoadExpression>(ptr);
-    else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else
-    return ptr;
 }
 
 TLANG_NAMESPACE_END

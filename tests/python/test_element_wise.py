@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
+from taichi._testing import allclose
 
 import taichi as ti
-from taichi import allclose
 
 
 def _c_mod(a, b):
@@ -256,10 +256,10 @@ def test_unary():
     def func():
         xi[0] = -yi[None]
         xi[1] = ~yi[None]
-        xi[2] = ti.logical_not(yi[None])
-        xi[3] = ti.abs(yi[None])
+        xi[2] = not yi[None]
+        xi[3] = abs(yi[None])
         xf[0] = -yf[None]
-        xf[1] = ti.abs(yf[None])
+        xf[1] = abs(yf[None])
         xf[2] = ti.sqrt(yf[None])
         xf[3] = ti.sin(yf[None])
         xf[4] = ti.cos(yf[None])

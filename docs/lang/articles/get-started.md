@@ -316,6 +316,20 @@ def foo():
 
 :::
 
+### GUI system
+
+Taichi provides a cpu-based [GUI system](./misc/gui.md) for users to render
+their results on the screen.
+
+```python
+gui = ti.GUI("Julia Set", res=(n * 2, n))
+
+for i in range(1000000):
+  paint(i * 0.03)
+  gui.set_image(pixels)
+  gui.show()
+```
+
 ### Interacting with other Python packages
 
 #### Python-scope data access

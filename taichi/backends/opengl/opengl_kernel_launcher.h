@@ -37,6 +37,7 @@ struct SNodeInfo {
   size_t length;
   std::vector<size_t> children_offsets;
   size_t elem_stride;
+  size_t mem_offset_in_root{0};
 };
 
 struct StructCompiledResult {

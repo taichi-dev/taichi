@@ -1,6 +1,7 @@
 import atexit
 import datetime
 import functools
+import inspect
 import json
 import os
 import platform
@@ -15,29 +16,19 @@ from urllib import request
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
-from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, ndrange
-from taichi.lang.any_array import AnyArray, AnyArrayAccess
+from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (InvalidOperationError,
-                                   TaichiCompilationError, TaichiNameError,
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, begin_frontend_if,
-                              begin_frontend_struct_for, call_internal,
-                              current_cfg, deactivate_all_snodes, expr_init,
-                              expr_init_func, expr_init_list, field,
-                              get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func, ndarray, one, root,
-                              static, static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
-from taichi.lang.kernel_arguments import SparseMatrixProxy
+from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
+                              ndarray, one, root, static, static_assert,
+                              static_print, stop_grad, zero)
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
-from taichi.lang.matrix import Matrix, MatrixField, Vector
-from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
+from taichi.lang.matrix import *
+from taichi.lang.mesh import *
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
@@ -46,23 +37,15 @@ from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
 from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
-from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
-                              is_taichi_class, python_scope, taichi_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
-from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
-from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
-                                          integer_types, u32, u64)
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
-from taichi import _logging
-
-runtime = impl.get_runtime()
+from taichi import _logging, _snode
 
 i = axes(0)
 j = axes(1)
@@ -680,7 +663,7 @@ def init(arch=None,
     _logging.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
-    impl._root_fb = FieldsBuilder()
+    impl._root_fb = _snode.FieldsBuilder()
 
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
@@ -727,8 +710,8 @@ def cache_read_only(*args):
 
 def assume_in_range(val, base, low, high):
     return _ti_core.expr_assume_in_range(
-        Expr(val).ptr,
-        Expr(base).ptr, low, high)
+        impl.Expr(val).ptr,
+        impl.Expr(base).ptr, low, high)
 
 
 def loop_unique(val, covers=None):
@@ -736,13 +719,14 @@ def loop_unique(val, covers=None):
         covers = []
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
-    covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
-    return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
+    covers = [
+        x.snode.ptr if isinstance(x, impl.Expr) else x.ptr for x in covers
+    ]
+    return _ti_core.expr_loop_unique(impl.Expr(val).ptr, covers)
 
 
 parallelize = _ti_core.parallelize
 serialize = lambda: parallelize(1)
-vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
@@ -791,7 +775,7 @@ def Tape(loss, clear_gradients=True):
     from taichi._kernels import clear_loss  # pylint: disable=C0415
     clear_loss(loss)
 
-    return runtime.get_tape(loss)
+    return impl.get_runtime().get_tape(loss)
 
 
 def clear_all_gradients():
@@ -814,7 +798,7 @@ def clear_all_gradients():
                 clear_gradients  # pylint: disable=C0415
             clear_gradients(places)
 
-    for root_fb in FieldsBuilder.finalized_roots():
+    for root_fb in _snode.FieldsBuilder.finalized_roots():
         visit(root_fb)
 
 
@@ -1067,4 +1051,8 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [
+    s for s in dir()
+    if not s.startswith('_') and not inspect.ismodule(globals()[s])
+    or s in ['tape', 'sort']
+]

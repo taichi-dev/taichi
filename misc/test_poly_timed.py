@@ -1,7 +1,7 @@
 from autograd import grad
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 
 # Note: test happens at v = 0.2

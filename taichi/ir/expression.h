@@ -115,8 +115,6 @@ class ExprGroup {
   void serialize(std::ostream &ss) const;
 
   std::string serialize() const;
-
-  ExprGroup loaded() const;
 };
 
 inline ExprGroup operator,(const Expr &a, const Expr &b) {

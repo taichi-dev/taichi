@@ -32,7 +32,7 @@ void aot_save() {
     IRBuilder builder;
     auto *zero = builder.get_int32(0);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);
+    auto *loop = builder.create_range_for(zero, n_stmt, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
@@ -55,7 +55,7 @@ void aot_save() {
     */
     IRBuilder builder;
     auto *sum = builder.create_local_var(PrimitiveType::i32);
-    auto *loop = builder.create_struct_for(pointer, 1, 0, 4);
+    auto *loop = builder.create_struct_for(pointer, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);

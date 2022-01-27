@@ -69,15 +69,16 @@ def test_require_extensions_2():
     assert ti.cfg.arch in [ti.cuda]
 
 
-### `ti.approx` and `ti.allclose`
+### `ti._testing.approx` and `ti._testing.allclose`
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -90,11 +91,12 @@ def test_allclose_rel(x, allclose):
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered1(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -107,11 +109,12 @@ def test_allclose_rel_reordered1(x, allclose):
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered2(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)

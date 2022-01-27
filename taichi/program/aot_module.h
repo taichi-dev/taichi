@@ -77,8 +77,6 @@ class AotModuleBuilder {
                                     Kernel *kernel) = 0;
 
   static bool all_fields_are_dense_in_container(const SNode *container);
-
-  static int find_children_id(const SNode *snode);
 };
 
 // Only responsible for reporting device capabilities

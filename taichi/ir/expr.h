@@ -142,8 +142,6 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
-Expr load_if_ptr(const Expr &ptr);
-
 // Begin: legacy frontend functions
 Expr Var(const Expr &x);
 // End: legacy frontend functions

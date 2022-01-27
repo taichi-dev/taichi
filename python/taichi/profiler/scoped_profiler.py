@@ -31,7 +31,4 @@ def clear_scoped_profiler_info():
     _ti_core.clear_profile_info()
 
 
-__all__ = [
-    'print_scoped_profiler_info',
-    'clear_scoped_profiler_info'
-]
+__all__ = ['print_scoped_profiler_info', 'clear_scoped_profiler_info']

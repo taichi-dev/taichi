@@ -124,7 +124,7 @@ The selection of AoS or SoA layouts largely depends on the access pattern to the
 # AoS:     RGBRGBRGBRGBRGBRGB.............
 # SoA:     RRRRR...RGGGGGGG...GBBBBBBB...B
 ```
-To calculate grey scale of each pixel, we need all color channels but doesn't involve other pixels. Apparently AoS layout has a better access fashion: all color channels are adjacent so they are obtained instantly while the color channels are pretty far away for the SoA layout. However, if we compute the mean value of each color channel, then SoA is the more efficient choice.
+To calculate grey scale of each pixel, we need all color channels but doesn't involve other pixels. Apparently, the AoS layout has a better memory access pattern: color channels are stored continuously, and adjacent channels can be fetched instantly, while the color channels of a pixel are stored far apart in the memory space for the SoA layout.
 
 We describe how to construct AoS and SoA fields with our `ti.root.X` statements. The SoA fields are trivial:
 ```python

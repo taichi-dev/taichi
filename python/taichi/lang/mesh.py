@@ -371,7 +371,7 @@ class MeshMetadata:
 class MeshBuilder:
     def __init__(self, topology):
         if not lang.misc.is_extension_supported(impl.current_cfg().arch,
-                                           lang.extension.mesh):
+                                                lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 

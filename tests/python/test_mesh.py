@@ -1,9 +1,9 @@
 import os
 
 import numpy as np
+from taichi.lang.misc import mesh_patch_idx
 
 import taichi as ti
-from taichi.lang.misc import mesh_patch_idx
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 model_file_path = os.path.join(this_dir, 'ell.json')

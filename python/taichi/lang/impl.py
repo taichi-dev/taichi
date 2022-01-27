@@ -6,7 +6,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._logging import warn
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, ndrange
+from taichi.lang._ndrange import GroupedNDRange, _Ndrange, ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
@@ -51,7 +51,7 @@ def expr_init(rhs):
         return rhs
     if isinstance(rhs, _ti_core.Arch):
         return rhs
-    if isinstance(rhs, ndrange):
+    if isinstance(rhs, _Ndrange):
         return rhs
     if isinstance(rhs, MeshElementFieldProxy):
         return rhs
@@ -874,7 +874,7 @@ def grouped(x):
         >>> for I in ti.grouped(ndrange(8, 16)):
         >>>     print(I[0] + I[1])
     """
-    if isinstance(x, ndrange):
+    if isinstance(x, _Ndrange):
         return x.grouped()
     return x
 

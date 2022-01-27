@@ -1030,10 +1030,11 @@ def get_host_arch_list():
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'cc', 'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan',
-    'extension', 'parallelize', 'block_dim', 'global_thread_idx', 'Tape',
-    'assume_in_range', 'benchmark', 'benchmark_plot', 'block_local',
-    'cache_read_only', 'clear_all_gradients', 'clear_kernel_profile_info',
+    'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
+    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
+    'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
+    'benchmark', 'benchmark_plot', 'block_local', 'cache_read_only',
+    'clear_all_gradients', 'clear_kernel_profile_info',
     'collect_kernel_profile_metrics', 'init', 'kernel_profiler_total_time',
     'mesh_local', 'no_activate', 'print_memory_profile_info',
     'print_kernel_profile_info', 'query_kernel_profile_info', 'reset',

@@ -3,9 +3,9 @@ import operator
 
 import numpy as np
 import pytest
-from taich.lang.misc import get_host_arch_list
 from taichi._testing import approx
 from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 

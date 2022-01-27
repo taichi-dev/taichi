@@ -695,7 +695,7 @@ void ASTBuilder::insert_assignment(Expr &lhs, const Expr &rhs) {
   if (lhs.expr == nullptr) {
     lhs.set(rhs);
   } else if (lhs.expr->is_lvalue()) {
-    this->insert(std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
+    this->insert(std::make_unique<FrontendAssignStmt>(lhs, rhs));
   } else {
     TI_ERROR("Cannot assign to non-lvalue: {}", lhs.serialize());
   }

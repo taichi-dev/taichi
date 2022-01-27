@@ -350,9 +350,14 @@ void export_lang(py::module &m) {
            [&](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendContinueStmt>());
            })
-      .def("insert_expr_stmt", [&](ASTBuilder *self, const Expr &val) {
-        self->insert(Stmt::make<FrontendExprStmt>(val));
-      });
+      .def("insert_expr_stmt",
+           [&](ASTBuilder *self, const Expr &val) {
+             self->insert(Stmt::make<FrontendExprStmt>(val));
+           })
+      .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
+      .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
+      .def("expr_var",
+           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -851,7 +856,6 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(exp)
   DEFINE_EXPRESSION_OP_UNARY(log)
 
-  m.def("expr_var", [](const Expr &e) { return Var(e); });
   m.def("expr_alloca", []() {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
@@ -1126,8 +1130,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
-  m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });

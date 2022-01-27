@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
@@ -31,14 +32,14 @@ def _test_scalar_ndarray(dtype, shape):
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_scalar_ndarray_torch(dtype, shape):
     _test_scalar_ndarray(dtype, shape)
 
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_scalar_ndarray(dtype, shape):
     _test_scalar_ndarray(dtype, shape)
 
@@ -60,7 +61,7 @@ def _test_vector_ndarray(n, dtype, shape):
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_vector_ndarray_torch(n, dtype, shape):
     _test_vector_ndarray(n, dtype, shape)
 
@@ -68,7 +69,7 @@ def test_vector_ndarray_torch(n, dtype, shape):
 @pytest.mark.parametrize('n', vector_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_vector_ndarray(n, dtype, shape):
     _test_vector_ndarray(n, dtype, shape)
 
@@ -91,7 +92,7 @@ def _test_matrix_ndarray(n, m, dtype, shape):
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_matrix_ndarray_torch(n, m, dtype, shape):
     _test_matrix_ndarray(n, m, dtype, shape)
 
@@ -99,7 +100,7 @@ def test_matrix_ndarray_torch(n, m, dtype, shape):
 @pytest.mark.parametrize('n,m', matrix_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_matrix_ndarray(n, m, dtype, shape):
     _test_matrix_ndarray(n, m, dtype, shape)
 
@@ -669,12 +670,12 @@ def _test_arg_not_match():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_arg_not_match_torch():
     _test_arg_not_match()
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_arg_not_match():
     _test_arg_not_match()
 

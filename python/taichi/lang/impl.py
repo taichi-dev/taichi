@@ -59,7 +59,8 @@ def expr_init(rhs):
         return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
-    return Expr(_ti_core.expr_var(Expr(rhs).ptr))
+    return Expr(get_runtime().prog.current_ast_builder().expr_var(
+        Expr(rhs).ptr))
 
 
 @taichi_scope

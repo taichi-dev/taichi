@@ -83,16 +83,16 @@ class ExprGroup {
     exprs.resize(a.size() + 1);
 
     for (int i = 0; i < a.size(); ++i) {
-      exprs[i].set_or_insert_assignment(a.exprs[i]);
+      exprs[i].set(a.exprs[i]);
     }
-    exprs.back().set_or_insert_assignment(b);
+    exprs.back().set(b);
   }
 
   ExprGroup(const Expr &a, const ExprGroup &b) {
     exprs.resize(b.size() + 1);
-    exprs.front().set_or_insert_assignment(a);
+    exprs.front().set(a);
     for (int i = 0; i < b.size(); i++) {
-      exprs[i + 1].set_or_insert_assignment(b.exprs[i]);
+      exprs[i + 1].set(b.exprs[i]);
     }
   }
 

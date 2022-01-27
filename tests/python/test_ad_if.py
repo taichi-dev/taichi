@@ -1,4 +1,5 @@
 from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 
@@ -233,7 +234,7 @@ def test_ad_if_parallel_complex_f64():
     assert x.grad[1] == -0.25
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_stack():
     @ti.kernel
     def func():

@@ -386,9 +386,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(snode_to_glb_var_exprs_.at(snode))[indices].set_or_insert_assignment(
-        Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type()));
+    auto expr = Expr(snode_to_glb_var_exprs_.at(snode))[indices];
+    this->current_ast_builder()->insert_assignment(
+        expr, Expr::make<ArgLoadExpression>(snode->num_active_indices,
+                                            snode->dt->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -426,16 +427,17 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_writer");
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
-  auto &ker = kernel([keys] {
+  auto &ker = kernel([keys, this] {
     ExprGroup indices;
     for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(Expr::make<ExternalTensorExpression>(
+    auto expr = Expr(Expr::make<ExternalTensorExpression>(
         keys.dtype, keys.num_active_indices, keys.num_active_indices + 1,
-        0))[indices]
-        .set_or_insert_assignment(Expr::make<ArgLoadExpression>(
-            keys.num_active_indices, keys.dtype->get_compute_type()));
+        0))[indices];
+    this->current_ast_builder()->insert_assignment(
+        expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
+                                            keys.dtype->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;

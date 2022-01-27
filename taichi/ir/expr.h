@@ -73,14 +73,9 @@ class Expr {
     return cast<T>() != nullptr;
   }
 
-  void set_or_insert_assignment(const Expr &o);
-
   // FIXME: We really should disable it completely,
-  // but we can't. This is because there are too much
-  // unintentional calls. Please mark it as `=delete`
-  // when problems pointed out in #3596 are solved.
-  // For now, please use `set_or_insert_assignment` to
-  // replace it's functionality.
+  // but we can't. This is because the usage of
+  // std::variant<Expr, std::string> in FrontendPrintStmt.
   Expr &operator=(const Expr &o);
 
   Expr operator[](const ExprGroup &indices) const;
@@ -88,10 +83,6 @@ class Expr {
   std::string serialize() const;
   void serialize(std::ostream &ss) const;
 
-  void operator+=(const Expr &o);
-  void operator-=(const Expr &o);
-  void operator*=(const Expr &o);
-  void operator/=(const Expr &o);
   Expr operator!();
 
   Expr eval() const;
@@ -141,9 +132,5 @@ template <typename T>
 Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
-
-// Begin: legacy frontend functions
-Expr Var(const Expr &x);
-// End: legacy frontend functions
 
 TLANG_NAMESPACE_END

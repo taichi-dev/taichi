@@ -6,7 +6,7 @@ on:
     branches: [master]
 
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
+  group: ${{ github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:

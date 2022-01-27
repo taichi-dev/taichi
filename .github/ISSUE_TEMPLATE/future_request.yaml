@@ -1,0 +1,31 @@
+name: Bug Report
+description: |
+  Report a bug encountered while using Taichi. We've collected some common issue solutions in https://docs.taichi.graphics/lang/articles/misc/install. Make sure you've check them out first. Hopefully they could address your problem.
+labels: 
+  - "feature request"
+body:
+  - type: proposed
+    id: problem
+    attributes:
+      label: Concisely describe the proposed feature
+      description: |
+        A clear and concise description of what you want.
+      value: |
+        > I would like to add an Apple Metal backend to the compiler so that my Macbook GPU can be utilized.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the solution you'd like (if any)?
+      description: |
+        A clear and concise description of what you want to achieve and implement.
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional comments?
+      description: |
+        If possible, please also consider attaching the output of command `ti diagnose`. This produces the detailed environment information and hopefully helps us diagnose faster.

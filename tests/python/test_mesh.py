@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 import taichi as ti
+from taichi.lang.misc import mesh_patch_idx
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 model_file_path = os.path.join(this_dir, 'ell.json')
@@ -17,7 +18,7 @@ def test_mesh_patch_idx():
     @ti.kernel
     def foo():
         for v in model.verts:
-            v.idx = ti.mesh_patch_idx()
+            v.idx = mesh_patch_idx()
 
     foo()
     idx = model.verts.idx.to_numpy()

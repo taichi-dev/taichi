@@ -78,13 +78,16 @@ class HostDeviceContextBlitter {
       const auto dt = arg.dt;
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
-        if (arg.is_array && arg.stride) {
-          DeviceAllocation buffer = ext_arrays.at(i);
-          char *const device_arr_ptr =
-              reinterpret_cast<char *>(device_->map(buffer));
-          const void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(device_arr_ptr, host_ptr, arg.stride);
-          device_->unmap(buffer);
+        if (arg.is_array) {
+          if (arg.stride) {
+            DeviceAllocation buffer = ext_arrays.at(i);
+            char *const device_arr_ptr =
+                reinterpret_cast<char *>(device_->map(buffer));
+            const void *host_ptr = host_ctx_->get_arg<void *>(i);
+            std::memcpy(device_arr_ptr, host_ptr, arg.stride);
+            device_->unmap(buffer);
+          }
+          // We should not process the rest
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {

@@ -3,6 +3,7 @@ To test our new `ti.field` API is functional (#1500)
 '''
 
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
 
@@ -121,7 +122,7 @@ def test_default_fp(dtype):
 
     x = ti.Vector.field(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == impl.get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
@@ -130,7 +131,7 @@ def test_default_ip(dtype):
 
     x = ti.Vector.field(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == impl.get_runtime().default_ip
 
 
 @ti.test()

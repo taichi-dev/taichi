@@ -904,3 +904,9 @@ def mesh_relation_access(mesh, from_index, to_element_type):
     if isinstance(mesh, MeshInstance):
         return MeshRelationAccessProxy(mesh, from_index, to_element_type)
     raise RuntimeError("Relation access should be with a mesh instance!")
+
+
+__all__ = [
+    'axes', 'deactivate_all_snodes', 'field', 'grouped', 'ndarray', 'one',
+    'root', 'static', 'static_assert', 'static_print', 'stop_grad', 'zero'
+]

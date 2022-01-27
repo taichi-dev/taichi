@@ -1,3 +1,5 @@
+from taichi.lang import impl
+
 import taichi as ti
 
 
@@ -235,6 +237,6 @@ def test_ad_if_parallel_complex_f64():
 def test_stack():
     @ti.kernel
     def func():
-        ti.call_internal("test_stack")
+        impl.call_internal("test_stack")
 
     func()

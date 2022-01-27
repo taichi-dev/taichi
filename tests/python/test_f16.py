@@ -2,9 +2,10 @@ import math
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang.util import has_pytorch
 
 import taichi as ti
-from taichi import approx
 
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
@@ -61,7 +62,7 @@ def test_from_numpy():
         assert (z[i] == i * 3)
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=archs_support_f16)
 def test_to_torch():
     n = 16
@@ -79,7 +80,7 @@ def test_to_torch():
         assert (y[i] == 2 * i)
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=archs_support_f16)
 def test_from_torch():
     import torch
@@ -141,7 +142,7 @@ def test_unary_op():
 
     @ti.kernel
     def foo():
-        x[None] = ti.neg(y[None])
+        x[None] = -y[None]
         x[None] = ti.floor(x[None])
         y[None] = ti.ceil(y[None])
 
@@ -159,7 +160,7 @@ def test_extra_unary_promote():
 
     @ti.kernel
     def foo():
-        x[None] = ti.abs(y[None])
+        x[None] = abs(y[None])
 
     y[None] = -0.3
     foo()

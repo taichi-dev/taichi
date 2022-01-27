@@ -13,7 +13,7 @@
     (defined(TI_PLATFORM_UNIX) && !defined(TI_PLATFORM_OSX))
 #if defined(TI_PLATFORM_ANDROID)
 #define TI_GUI_ANDROID
-#else
+#elif !defined(TI_EMSCRIPTENED)
 #define TI_GUI_X11
 #endif
 #endif
@@ -445,6 +445,17 @@ class GUIBaseAndroid {
 };
 
 using GUIBase = GUIBaseAndroid;
+
+#endif
+
+#if defined(TI_EMSCRIPTENED)
+
+class GUIBaseJavascript {
+ public:
+  // @TODO
+};
+
+using GUIBase = GUIBaseJavascript;
 
 #endif
 

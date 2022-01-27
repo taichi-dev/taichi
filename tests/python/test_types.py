@@ -1,4 +1,5 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
 
@@ -138,7 +139,7 @@ def test_overflow64(dt, n):
 @ti.test(require=ti.extension.data64)
 def test_uint_max(dt, val):
     # https://github.com/taichi-dev/taichi/issues/2060
-    ti.get_runtime().default_ip = dt
+    impl.get_runtime().default_ip = dt
     N = 16
     f = ti.field(dt, shape=N)
 

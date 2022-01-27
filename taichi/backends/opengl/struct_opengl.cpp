@@ -18,8 +18,8 @@ OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node) {
     generate_types(*n);
   }
   CompiledResult result;
-  result.snode_map = std::move(snode_map_);
   result.root_size = compute_snode_size(node);
+  result.snode_map = std::move(snode_map_);
   result.root_snode_type_name = node.node_type_name;
   return result;
 }
@@ -89,13 +89,28 @@ size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
   if (snode.is_place()) {
     return data_type_size(snode.dt);
   }
+
+  if (snode.type == SNodeType::root) {
+    snode_map_.at(snode.node_type_name).mem_offset_in_root = 0;
+  }
   size_t ch_size = 0;
-  for (const auto &ch : snode.ch) {
-    ch_size += compute_snode_size(*ch);
+  const auto &snode_meta = snode_map_.at(snode.node_type_name);
+  size_t acc_alignment_bytes = 0;
+  for (int i = 0; i < snode.ch.size(); i++) {
+    auto choff = snode_meta.children_offsets[i];
+    auto offset = acc_alignment_bytes + choff + snode_meta.mem_offset_in_root;
+    // Pad so that the base address of snode.ch[i] is multiple of its
+    // elem_stride.
+    auto alignment = snode_map_.at(snode.ch[i]->node_type_name).elem_stride;
+    auto alignment_bytes =
+        alignment ? alignment - 1 - (offset + alignment - 1) % alignment : 0;
+    acc_alignment_bytes += alignment_bytes;
+    snode_map_.at(snode.ch[i]->node_type_name).mem_offset_in_root =
+        offset + alignment_bytes;
+    ch_size += compute_snode_size(*snode.ch[i]);
   }
   int n = snode.num_cells_per_container;
-  return n * ch_size + opengl_get_snode_meta_size(snode);
+  return acc_alignment_bytes + n * ch_size;
 }
-
 }  // namespace opengl
 TLANG_NAMESPACE_END

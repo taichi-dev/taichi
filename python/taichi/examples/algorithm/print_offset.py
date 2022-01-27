@@ -1,3 +1,5 @@
+from taichi.lang import impl
+
 import taichi as ti
 
 ti.init(arch=ti.cpu, print_ir=True)
@@ -19,7 +21,7 @@ def fill():
 fill()
 print(a.to_numpy())
 
-ti.get_runtime().prog.visualize_layout('layout.pdf')
+impl.get_runtime().prog.visualize_layout('layout.pdf')
 
 gui = ti.GUI('layout', res=(256, 512), background_color=0xFFFFFF)
 

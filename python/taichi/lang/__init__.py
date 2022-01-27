@@ -1,6 +1,7 @@
 import atexit
 import datetime
 import functools
+import inspect
 import json
 import os
 import platform
@@ -19,15 +20,11 @@ from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError, TaichiTypeError)
-from taichi.lang.impl import (axes, begin_frontend_if,
-                              begin_frontend_struct_for, call_internal,
-                              current_cfg, deactivate_all_snodes, expr_init,
-                              expr_init_func, expr_init_list, field,
-                              get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func, ndarray, one, root,
-                              static, static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.field import Field, ScalarField
+from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
+                              ndarray, one, root, static, static_assert,
+                              static_print, stop_grad, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -43,21 +40,15 @@ from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
-                              is_taichi_class, python_scope, taichi_scope,
-                              to_numpy_type, to_pytorch_type, to_taichi_type)
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
-from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
-                                          integer_types, u32, u64)
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
-
-runtime = impl.get_runtime()
 
 i = axes(0)
 j = axes(1)
@@ -739,7 +730,6 @@ def loop_unique(val, covers=None):
 
 parallelize = _ti_core.parallelize
 serialize = lambda: parallelize(1)
-vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
@@ -788,7 +778,7 @@ def Tape(loss, clear_gradients=True):
     from taichi._kernels import clear_loss  # pylint: disable=C0415
     clear_loss(loss)
 
-    return runtime.get_tape(loss)
+    return impl.get_runtime().get_tape(loss)
 
 
 def clear_all_gradients():
@@ -1064,4 +1054,8 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [
+    s for s in dir()
+    if not s.startswith('_') and not inspect.ismodule(globals()[s])
+    or s in ['tape', 'sort']
+]

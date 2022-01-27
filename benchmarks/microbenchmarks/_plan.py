@@ -1,9 +1,23 @@
 import itertools
 
-from microbenchmarks._result import ResultType
+from microbenchmarks._metric import MetricType
 from microbenchmarks._utils import get_ti_arch, tags2name
 
 import taichi as ti
+
+
+class Funcs():
+    def __init__(self):
+        self._funcs = {}
+
+    def add_func(self, tag_list: list, func):
+        self._funcs[tags2name(tag_list)] = {'tags': tag_list, 'func': func}
+
+    def get_func(self, tags):
+        for name, item in self._funcs.items():
+            if set(item['tags']).issubset(tags):
+                return item['func']
+        return None
 
 
 class BenchmarkPlan:
@@ -14,7 +28,7 @@ class BenchmarkPlan:
         self.info = {'name': self.name}
         self.plan = {}  # {'tags': [...], 'result': None}
         self.items = []
-        self.func = None
+        self.funcs = Funcs()
 
     def create_plan(self, *items):
         self.items = list(items)
@@ -26,14 +40,16 @@ class BenchmarkPlan:
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
 
-    def set_func(self, func):
-        self.func = func
+    def add_func(self, tag_list, func):
+        self.funcs.add_func(tag_list, func)
 
     def run(self):
         for case, plan in self.plan.items():
             tag_list = plan['tags']
-            self._init_taichi(self.arch, tag_list)
-            _ms = self._run_func(tag_list)
+            MetricType.init_taichi(self.arch, tag_list)
+            _ms = self.funcs.get_func(tag_list)(self.arch,
+                                                self.basic_repeat_times,
+                                                **self._get_kwargs(tag_list))
             plan['result'] = _ms
             print(f'{tag_list}={_ms}')
             ti.reset()
@@ -46,13 +62,3 @@ class BenchmarkPlan:
         for item, tag in zip(self.items, tags):
             kwargs[item.name] = item.impl(tag)
         return kwargs
-
-    def _init_taichi(self, arch, tags):
-        for tag in tags:
-            if ResultType.init_taichi(arch, tag):
-                return True
-        return False
-
-    def _run_func(self, tags: list):
-        return self.func(self.arch, self.basic_repeat_times,
-                         **self._get_kwargs(tags))

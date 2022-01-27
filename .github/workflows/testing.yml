@@ -24,7 +24,7 @@ jobs:
       - name: check modified files
         id: check_files
         run: |
-          echo "Group: ${{ github.event.number || github.run_id }}"
+          echo "Concurrency group: ${{ github.event.number || github.run_id }}"
           echo "=============== list modified files ==============="
           git diff --name-only @^
 

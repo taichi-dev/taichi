@@ -1,5 +1,6 @@
 import itertools
 
+from microbenchmarks._items import AtomicOps, DataType
 from microbenchmarks._metric import MetricType
 from microbenchmarks._utils import get_ti_arch, tags2name
 
@@ -39,6 +40,7 @@ class BenchmarkPlan:
         case_list = list(itertools.product(*items_list))  #items generate cases
         for tags in case_list:
             self.plan[tags2name(tags)] = {'tags': tags, 'result': None}
+        self._remove_comflict_items()
 
     def add_func(self, tag_list, func):
         self.funcs.add_func(tag_list, func)
@@ -62,3 +64,26 @@ class BenchmarkPlan:
         for item, tag in zip(self.items, tags):
             kwargs[item.name] = item.impl(tag)
         return kwargs
+
+    def _get_item(self, name):
+        for item in self.items:
+            if item.name == name:
+                return item
+        return None
+
+    def _remove_comflict_items(self):
+        remove_list = []
+        item_name_list = [item.name for item in self.items]
+        #logical_atomic with float_type
+        if set([AtomicOps.name, DataType.name]).issubset(item_name_list):
+            atomic_item = self._get_item(AtomicOps.name)
+            dytpe_item = self._get_item(DataType.name)
+            for case, plan in self.plan.items():
+                atomic_op_tag = atomic_item.get_intersection(plan['tags'])
+                dtype_tag = dytpe_item.get_intersection(plan['tags'])
+                if AtomicOps.is_supported_type(atomic_op_tag,
+                                               dtype_tag) is False:
+                    remove_list.append(case)
+        #remove
+        for case in remove_list:
+            self.plan.pop(case)

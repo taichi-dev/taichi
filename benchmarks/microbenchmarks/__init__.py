@@ -1,3 +1,4 @@
+from .automic_ops import AtomicOpsPlan
 from .fill import FillPlan
 
-benchmark_plan_list = [FillPlan]
+benchmark_plan_list = [FillPlan, AtomicOpsPlan]

@@ -60,3 +60,28 @@ def scaled_repeat_times(arch: str, datasize, repeat=1):
     if datasize <= 4 * 1024 * 1024:
         repeat *= 10
     return repeat
+
+
+def fill_random(dst, dtype, container):
+    @ti.kernel
+    def fill_template(dst: ti.template()):
+        for I in ti.grouped(dst):
+            dst[I] = ti.random(dtype)
+
+    @ti.kernel
+    def fill_1d_array(dst: ti.any_arr()):
+        for i in dst:
+            dst[i] = ti.random(dtype)
+
+    @ti.kernel
+    def fill_2d_array(dst: ti.any_arr()):
+        for i, j in dst:
+            dst[i, j] = ti.random(dtype)
+
+    if container == ti.ndarray:
+        if len(dst.shape) == 1:
+            fill_1d_array(dst)
+        elif len(dst.shape) == 2:
+            fill_2d_array(dst)
+    else:
+        fill_template(dst)

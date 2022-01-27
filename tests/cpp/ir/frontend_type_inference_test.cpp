@@ -31,7 +31,7 @@ TEST(FrontendTypeInference, Id) {
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
   auto const_i32 = Expr::make<ConstExpression, int32>(-(1 << 20));
   const_i32->type_check();
-  auto id_i32 = Var(const_i32);
+  auto id_i32 = prog->current_ast_builder()->make_var(const_i32);
   EXPECT_EQ(id_i32->ret_type, PrimitiveType::i32);
 }
 

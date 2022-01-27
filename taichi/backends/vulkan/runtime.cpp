@@ -78,7 +78,7 @@ class HostDeviceContextBlitter {
       const auto dt = arg.dt;
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
-        if (arg.is_array) {
+        if (arg.is_array && arg.stride) {
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
               reinterpret_cast<char *>(device_->map(buffer));
@@ -134,7 +134,7 @@ class HostDeviceContextBlitter {
     if (!require_sync) {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
-        if (arg.is_array) {
+        if (arg.is_array && arg.stride) {
           require_sync = true;
         }
       }
@@ -152,7 +152,7 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
-      if (arg.is_array) {
+      if (arg.is_array && arg.stride) {
         DeviceAllocation buffer = ext_arrays.at(i);
         char *const device_arr_ptr =
             reinterpret_cast<char *>(device_->map(buffer));
@@ -450,10 +450,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     int i = 0;
     for (auto &arg : args) {
       if (arg.is_array) {
-        DeviceAllocation extarr_buf = device_->allocate_memory(
-            {arg.stride, /*host_write=*/true, /*host_read=*/true,
-             /*export_sharing=*/false, AllocUsage::Storage});
-        ext_arrays[i] = extarr_buf;
+        if (arg.stride) {
+          DeviceAllocation extarr_buf = device_->allocate_memory(
+              {arg.stride, /*host_write=*/true, /*host_read=*/true,
+              /*export_sharing=*/false, AllocUsage::Storage});
+          ext_arrays[i] = extarr_buf;
+        } else {
+          ext_arrays[i] = kDeviceNullAllocation;
+        }
       }
       i++;
     }
@@ -482,7 +486,9 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   for (auto pair : ext_arrays) {
-    device_->dealloc_memory(pair.second);
+    if (pair.second != kDeviceNullAllocation) {
+      device_->dealloc_memory(pair.second);
+    }
   }
 }
 

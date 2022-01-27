@@ -109,7 +109,7 @@ cond_expr(10)  # returns 0, a[10] is not evaluated
 ```
 
 
-For element-wise conditional operation on Taichi vectors and matrices,
+For element-wise conditional operations on Taichi vectors and matrices,
 Taichi provides `ti.select(cond, a, b)` which **does not** do short-circuit evaluation.
 ```python {4}
 cond = ti.Vector([1, 0])

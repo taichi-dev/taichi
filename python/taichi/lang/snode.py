@@ -418,4 +418,7 @@ def get_addr(f, indices):
         _ti_core.expr_get_addr(f.snode.ptr, expr.make_expr_group(indices)))
 
 
-__all__ = ['activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length', 'rescale_index']
+__all__ = [
+    'activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length',
+    'rescale_index'
+]

@@ -128,8 +128,8 @@ a `3 x 2` matrix, you can define it with `A = ti.Matrix.field(3, 2, dtype=ti.f32
 ### Access elements of matrix fields
 There are **two** indexing operators `[]` when you access a member of a matrix from a matrix field:
 the first is for field indexing, and the second is for matrix indexing.
-- If you want to get the matrix of grid node `i, j`, please use `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
-- To get the element on the first row and second column of that matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
+- If you want to get the element `i, j` of the matrix field, please use `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
+- To get the member on the first row and second column of that element `mat`, use `mat[0, 1]` or `A[i, j][0, 1]`.
 - The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
 - `ti.Vector` is simply an alias of `ti.Matrix`.
 

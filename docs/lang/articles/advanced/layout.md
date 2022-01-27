@@ -70,7 +70,7 @@ In order to traverse the nested statements, we can use `struct-for`:
 for i, j in A:
     A[i, j] += 1
 ```
-The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable to automatically deduce the underlying data layout and apply a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually. 
+The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable to automatically deduce the underlying data layout and apply a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
 
 ### Row-major versus column-major
 

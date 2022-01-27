@@ -5,10 +5,7 @@ sidebar_position: 2
 # Fields (advanced)
 Modern processor cores compute orders of magnitude faster than their equipped memory systems. To shrink this  performance gap, multi-level cache systems and high-bandwidth multi-channel memories are built into computer architectures.
 
-There arises two questions in making performance optimization efforts: 1) how to organize a faster data layout and 2) how to manage memory occupancy. In this article, we discuss in the scope of Taichi field. A better understanding of the mechanism under the hood is essential to write blazing fast Taichi programs.
-
-If you feel confused about the basic concepts of Taichi, please refer to the basic document [Fields (basic)](../basic/field).
-
+After familiar yourself with the basics of Taichi [Fields](../basic/field), this article helps you one step further by explaining the underlying memory layout that is essential to write high-performance Taichi programs. In particular, we present how to organize an efficient data layout and how to manage memory occupancy.
 
 ## How to organize an efficient data layout
 

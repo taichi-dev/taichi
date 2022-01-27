@@ -4,7 +4,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import _IntermediateMatrix
 
 
-class ndrange:
+class _Ndrange:
     def __init__(self, *args):
         args = list(args)
         for i, arg in enumerate(args):
@@ -42,6 +42,10 @@ class ndrange:
         return GroupedNDRange(self)
 
 
+def ndrange(*args):
+    return _Ndrange(*args)
+
+
 class GroupedNDRange:
     def __init__(self, r):
         self.r = r
@@ -49,3 +53,6 @@ class GroupedNDRange:
     def __iter__(self):
         for ind in self.r:
             yield _IntermediateMatrix(len(ind), 1, list(ind))
+
+
+__all__ = ['ndrange']

@@ -18,9 +18,8 @@ from taichi.lang.mesh import *
 from taichi.lang.misc import *  # pylint: disable=W0622
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
-from taichi.lang.runtime_ops import async_flush, sync
-from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
-                               is_active, length, rescale_index)
+from taichi.lang.runtime_ops import *
+from taichi.lang.snode import *
 from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField

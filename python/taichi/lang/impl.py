@@ -6,7 +6,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._logging import warn
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, _Ndrange, ndrange
+from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group

@@ -506,7 +506,8 @@ void VulkanResourceBinder::rw_buffer(uint32_t set,
                                      size_t size) {
   CHECK_SET_BINDINGS;
 
-  if (ptr == kDeviceNullPtr) return;
+  if (ptr == kDeviceNullPtr)
+    return;
 
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -530,7 +531,8 @@ void VulkanResourceBinder::buffer(uint32_t set,
                                   size_t size) {
   CHECK_SET_BINDINGS;
 
-  if (ptr == kDeviceNullPtr) return;
+  if (ptr == kDeviceNullPtr)
+    return;
 
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);

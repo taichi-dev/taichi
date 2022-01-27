@@ -453,7 +453,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         if (arg.stride) {
           DeviceAllocation extarr_buf = device_->allocate_memory(
               {arg.stride, /*host_write=*/true, /*host_read=*/true,
-              /*export_sharing=*/false, AllocUsage::Storage});
+               /*export_sharing=*/false, AllocUsage::Storage});
           ext_arrays[i] = extarr_buf;
         } else {
           ext_arrays[i] = kDeviceNullAllocation;

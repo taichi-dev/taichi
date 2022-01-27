@@ -17,8 +17,14 @@ class TaichiTypeError(TaichiCompilationError, TypeError):
     pass
 
 
-class InvalidOperationError(Exception):
+class TaichiRuntimeError(RuntimeError):
     pass
+
+
+class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
+    def __init__(self, pos, needed, provided):
+        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        super().__init__(message)
 
 
 def handle_exception_from_cpp(exc):
@@ -29,5 +35,5 @@ def handle_exception_from_cpp(exc):
 
 __all__ = [
     'TaichiSyntaxError', 'TaichiTypeError', 'TaichiCompilationError',
-    'TaichiNameError'
+    'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError'
 ]

@@ -18,15 +18,11 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
-                                   TaichiSyntaxError, TaichiTypeError)
+from taichi.lang.exception import *
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
-                              ndarray, one, root, static, static_assert,
-                              static_print, stop_grad, zero)
-from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
-                                     data_oriented, func, kernel, pyfunc)
+from taichi.lang.impl import *
+from taichi.lang.kernel_impl import *
 from taichi.lang.matrix import *
 from taichi.lang.mesh import *
 from taichi.lang.ops import *  # pylint: disable=W0622

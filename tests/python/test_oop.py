@@ -198,7 +198,7 @@ def test_oop_class_must_be_data_oriented():
     ti.root.lazy_grad()
 
     # Array1D is not properly decorated, this will raise an Exception
-    with pytest.raises(ti.KernelDefError):
+    with pytest.raises(ti.TaichiSyntaxError):
         arr.reduce()
 
 

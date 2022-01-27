@@ -165,13 +165,15 @@ ti.ceil(x)
 ti.sum(x)
 ti.max(x, y, ...)
 ti.min(x, y, ...)
+ti.abs(x)  # Same as `abs(x)`
+ti.pow(x, y)  # Same as `pow(x, y)` and `x ** y`
 ```
 
 ### Builtin-alike functions
 
 ```python
-abs(x)
-pow(x, y)  # Same as `x ** y`.
+abs(x)  # Same as `ti.abs(x, y)`
+pow(x, y)  # Same as `ti.pow(x, y)` and `x ** y`.
 ```
 
 ### Random number generator

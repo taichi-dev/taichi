@@ -82,7 +82,14 @@ def main(all=False, diff=None):
 
     if all:
         directories = [
+            'taichi',
+            'tests',
+            'examples',
+            'misc',
+            'python',
             'benchmarks',
+            'docs',
+            'cmake',
         ]
         files = list(Path(repo_dir).glob(
             '*'))  # Include all files under the root folder

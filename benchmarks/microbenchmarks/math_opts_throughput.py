@@ -37,7 +37,7 @@ class ElementNum(BenchmarkItem):
 
     def __init__(self):
         self._items = {
-            'num16384': 16384,
+            'element16384': 16384,
             #enough threads for filling CUDA cores
         }
 
@@ -59,4 +59,4 @@ class MathOpsThroughputPlan(BenchmarkPlan):
         math_dtype.remove_integer()
         self.create_plan(MathOps(), math_dtype, ElementNum(), ForLoopCycle(),
                          MetricType())
-        self.add_func(['num16384'], unary_ops_throughput_default)
+        self.add_func(['element16384'], unary_ops_throughput_default)

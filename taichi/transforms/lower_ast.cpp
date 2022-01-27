@@ -79,7 +79,7 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendIfStmt *stmt) override {
     auto fctx = make_flatten_ctx();
-    stmt->condition->flatten(&fctx);
+    flatten_rvalue(stmt->condition, &fctx);
 
     auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
 
@@ -121,7 +121,7 @@ class LowerAST : public IRVisitor {
     for (auto c : stmt->contents) {
       if (std::holds_alternative<Expr>(c)) {
         auto x = std::get<Expr>(c);
-        x->flatten(&fctx);
+        flatten_rvalue(x, &fctx);
         stmts.push_back(x->stmt);
         new_contents.push_back(x->stmt);
       } else {
@@ -150,7 +150,7 @@ class LowerAST : public IRVisitor {
     // while (1) { cond; if (no active) break; original body...}
     auto cond = stmt->cond;
     auto fctx = make_flatten_ctx();
-    cond->flatten(&fctx);
+    flatten_rvalue(cond, &fctx);
     auto cond_stmt = fctx.back_stmt();
 
     auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
@@ -198,8 +198,8 @@ class LowerAST : public IRVisitor {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
-      begin->flatten(&fctx);
-      end->flatten(&fctx);
+      flatten_rvalue(begin, &fctx);
+      flatten_rvalue(end, &fctx);
       bool is_good_range_for =
           capturing_loop_ == nullptr || detected_fors_with_break_.find(stmt) ==
                                             detected_fors_with_break_.end();
@@ -388,7 +388,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     std::vector<Stmt *> return_ele;
     for (auto &x : expr_group.exprs) {
-      x->flatten(&fctx);
+      flatten_rvalue(x, &fctx);
       return_ele.push_back(fctx.back_stmt());
     }
     fctx.push_back<ReturnStmt>(return_ele);
@@ -396,30 +396,28 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
-    // expand rhs
+    auto dest = assign->lhs;
     auto expr = assign->rhs;
     auto fctx = make_flatten_ctx();
-    expr->flatten(&fctx);
-    if (assign->lhs.is<IdExpression>()) {  // local variable
-      // emit local store stmt
+    flatten_rvalue(expr, &fctx);
+    if (dest.is<IdExpression>()) {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
-    } else if (assign->lhs.is<TensorElementExpression>()) {
-      auto tensor_ptr = assign->lhs.cast<TensorElementExpression>();
-      tensor_ptr->flatten(&fctx);
+    } else if (dest.is<TensorElementExpression>()) {
+      flatten_lvalue(dest, &fctx);
+      auto tensor_ptr = dest.cast<TensorElementExpression>();
       if (tensor_ptr->is_local_tensor()) {
-        fctx.push_back<LocalStoreStmt>(tensor_ptr->stmt, expr->stmt);
+        fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
       } else if (tensor_ptr->is_global_tensor()) {
-        fctx.push_back<GlobalStoreStmt>(tensor_ptr->stmt, expr->stmt);
+        fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else {  // global variable
-      TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
-      auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
-      global_ptr->flatten(&fctx);
-      fctx.push_back<GlobalStoreStmt>(fctx.back_stmt(), expr->stmt);
+      TI_ASSERT(dest.is<GlobalPtrExpression>());
+      flatten_lvalue(dest, &fctx);
+      fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }
     fctx.stmts.back()->set_tb(assign->tb);
     assign->parent->replace_with(assign, std::move(fctx.stmts));
@@ -431,13 +429,13 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     if (stmt->val.expr) {
       auto expr = stmt->val;
-      expr->flatten(&fctx);
+      flatten_rvalue(expr, &fctx);
       val_stmt = expr->stmt;
     }
     std::vector<Stmt *> indices_stmt(stmt->indices.size(), nullptr);
 
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      stmt->indices[i]->flatten(&fctx);
+      flatten_rvalue(stmt->indices[i], &fctx);
       indices_stmt[i] = stmt->indices[i]->stmt;
     }
 
@@ -467,14 +465,14 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     if (stmt->cond.expr) {
       auto expr = stmt->cond;
-      expr->flatten(&fctx);
+      flatten_rvalue(expr, &fctx);
       val_stmt = expr->stmt;
     }
 
     auto &fargs = stmt->args;  // frontend stmt args
     std::vector<Stmt *> args_stmts(fargs.size());
     for (int i = 0; i < (int)fargs.size(); ++i) {
-      fargs[i]->flatten(&fctx);
+      flatten_rvalue(fargs[i], &fctx);
       args_stmts[i] = fargs[i]->stmt;
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
@@ -483,7 +481,7 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
-    stmt->val->flatten(&fctx);
+    flatten_rvalue(stmt->val, &fctx);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
@@ -496,13 +494,12 @@ class LowerAST : public IRVisitor {
     std::vector<Stmt *> arg_statements, output_statements;
     if (stmt->so_func != nullptr || !stmt->asm_source.empty()) {
       for (auto &s : stmt->args) {
-        s.set(load_if_ptr(s));
-        s->flatten(&ctx);
+        flatten_rvalue(s, &ctx);
         arg_statements.push_back(s->stmt);
       }
       for (auto &s : stmt->outputs) {
-        output_statements.push_back(
-            s.cast<IdExpression>()->flatten_noload(&ctx));
+        flatten_lvalue(s, &ctx);
+        output_statements.push_back(s->stmt);
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
           (stmt->so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
@@ -514,7 +511,8 @@ class LowerAST : public IRVisitor {
         TI_ASSERT_INFO(
             s.is<IdExpression>(),
             "external func call via bitcode must pass in local variables.")
-        arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(&ctx));
+        flatten_lvalue(s, &ctx);
+        arg_statements.push_back(s->stmt);
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
           ExternalFuncCallStmt::BITCODE, nullptr, "", stmt->bc_filename,

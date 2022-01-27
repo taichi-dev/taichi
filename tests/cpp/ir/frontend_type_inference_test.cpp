@@ -83,8 +83,7 @@ TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   auto global_ptr =
       Expr::make<GlobalPtrExpression>(global_var, ExprGroup(index));
   global_ptr->type_check();
-  auto load_global_ptr = load_if_ptr(global_ptr);
-  EXPECT_EQ(load_global_ptr->ret_type, PrimitiveType::u8);
+  EXPECT_EQ(global_ptr->ret_type, PrimitiveType::u8);
 }
 
 TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
@@ -113,8 +112,7 @@ TEST(FrontendTypeInference, TensorElement) {
   auto tensor_element =
       Expr::make<TensorElementExpression>(var, ExprGroup(index), shape, 1);
   tensor_element->type_check();
-  auto load_tensor_element = load_if_ptr(tensor_element);
-  EXPECT_EQ(load_tensor_element->ret_type, PrimitiveType::u32);
+  EXPECT_EQ(tensor_element->ret_type, PrimitiveType::u32);
 }
 
 TEST(FrontendTypeInference, AtomicOp) {

@@ -43,7 +43,7 @@ class _Ndrange:
 
 
 def ndrange(*args):
-    return _Ndrange(args)
+    return _Ndrange(*args)
 
 
 class GroupedNDRange:

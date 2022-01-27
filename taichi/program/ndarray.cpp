@@ -17,7 +17,8 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      device_(prog->get_device_shared()) {
+      device_(prog->get_device_shared()),
+      rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
 #ifdef TI_WITH_LLVM
@@ -66,6 +67,26 @@ void Ndarray::fill_int(int32_t val) {
 
 void Ndarray::fill_uint(uint32_t val) {
   buffer_fill(reinterpret_cast<uint32_t &>(val));
+}
+
+int64 Ndarray::read_int(const std::vector<int> &i) {
+  return rw_accessors_bank_->get(this).read_int(i);
+}
+
+uint64 Ndarray::read_uint(const std::vector<int> &i) {
+  return rw_accessors_bank_->get(this).read_uint(i);
+}
+
+float64 Ndarray::read_float(const std::vector<int> &i) {
+  return rw_accessors_bank_->get(this).read_float(i);
+}
+
+void Ndarray::write_int(const std::vector<int> &i, int64 val) {
+  rw_accessors_bank_->get(this).write_int(i, val);
+}
+
+void Ndarray::write_float(const std::vector<int> &i, float64 val) {
+  rw_accessors_bank_->get(this).write_float(i, val);
 }
 
 void Ndarray::buffer_fill(uint32_t val) {

@@ -17,6 +17,7 @@ namespace lang {
 
 class Program;
 class LlvmProgramImpl;
+class NdarrayRwAccessorsBank;
 
 class Ndarray {
  public:
@@ -38,6 +39,11 @@ class Ndarray {
   void fill_float(float val);
   void fill_int(int32_t val);
   void fill_uint(uint32_t val);
+  int64 read_int(const std::vector<int> &i);
+  uint64 read_uint(const std::vector<int> &i);
+  float64 read_float(const std::vector<int> &i);
+  void write_int(const std::vector<int> &i, int64 val);
+  void write_float(const std::vector<int> &i, float64 val);
   ~Ndarray();
 
  private:
@@ -56,6 +62,7 @@ class Ndarray {
   std::shared_ptr<Device> device_{nullptr};
   void buffer_fill(uint32_t val);
   LlvmProgramImpl *prog_impl_{nullptr};
+  NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
 
 }  // namespace lang

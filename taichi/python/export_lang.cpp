@@ -814,43 +814,6 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(exp)
   DEFINE_EXPRESSION_OP_UNARY(log)
 
-
-  m.def("expr_var", [](const Expr &e) { return Var(e); });
-  m.def("expr_alloca", []() {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id,
-        PrimitiveType::unknown));
-    return var;
-  });
-  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
-                                       const DataType &element_type,
-                                       const ExprGroup &elements) {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-        element_type));
-    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
-    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-      ExprGroup reversed_indices;
-      int linearized_index = i;
-      for (int d = (int)shape.size() - 1; d >= 0; --d) {
-        reversed_indices.push_back(
-            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
-        linearized_index /= shape[d];
-      }
-      ExprGroup indices;
-      for (int d = 0; d < (int)shape.size(); ++d)
-        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape,
-                                              data_type_size(element_type)),
-          elements.exprs[i]));
-    }
-    return var;
-  });
-  m.def("expr_assign", expr_assign);
-
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",

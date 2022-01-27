@@ -26,6 +26,7 @@ constexpr char kRootBufferName[] = "root_buffer";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_buffer";
 constexpr char kContextBufferName[] = "context_buffer";
 constexpr char kListgenBufferName[] = "listgen_buffer";
+constexpr char kExtArrBufferName[] = "ext_arr_buffer";
 
 constexpr int kMaxNumThreadsGridStrideLoop = 65536;
 
@@ -45,6 +46,8 @@ std::string buffer_instance_name(BufferInfo b) {
       return kContextBufferName;
     case BufferType::ListGen:
       return kListgenBufferName;
+    case BufferType::ExtArr:
+      return kExtArrBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -567,9 +570,9 @@ class TaskCodegen : public IRVisitor {
     // device.
     TI_ASSERT(stmt->width() == 1);
     spirv::Value linear_offset = ir_->int_immediate_number(ir_->i32_type(), 0);
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
     {
-      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
-      const int arg_id = argload->arg_id;
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
@@ -602,11 +605,14 @@ class TaskCodegen : public IRVisitor {
               ir_->i32_type(),
               ir_->get_primitive_type_size(argload->ret_type.ptr_removed())));
     }
-    spirv::Value val = ir_->add(
-        ir_->query_value(stmt->base_ptrs[0]->raw_name()), linear_offset);
-    ir_->register_value(stmt->raw_name(), val);
 
-    ptr_to_buffers_[stmt] = BufferType::Context;
+    ir_->register_value(stmt->raw_name(), linear_offset);
+
+    if (ctx_attribs_->args()[arg_id].is_array) {
+      ptr_to_buffers_[stmt] = {BufferType::ExtArr, arg_id};
+    } else {
+      ptr_to_buffers_[stmt] = BufferType::Context;
+    }
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -1618,8 +1624,9 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer_value = ir_->buffer_argument(
         type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
-    TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
-             buffer_value.id);
+    TI_TRACE("buffer name = {}, value = {}, binding = {}",
+             buffer_instance_name(buffer), buffer_value.id,
+             buffer_binding_map_[buffer]);
 
     return buffer_value;
   }
@@ -1649,11 +1656,18 @@ class TaskCodegen : public IRVisitor {
 
     bind_buffer(BufferType::GlobalTmps);
 
+    bind_buffer(BufferType::ListGen);
+
     if (!ctx_attribs_->empty()) {
       bind_buffer(BufferType::Context);
-    }
 
-    bind_buffer(BufferType::ListGen);
+      for (int i = 0; i < ctx_attribs_->args().size(); i++) {
+        const auto &arg = ctx_attribs_->args()[i];
+        if (arg.is_array) {
+          bind_buffer({BufferType::ExtArr, i});
+        }
+      }
+    }
 
     return result;
   }

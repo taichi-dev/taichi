@@ -104,8 +104,9 @@ def imshow(img, title='imshow'):
     except:
         if not isinstance(img, np.ndarray):
             img = img.to_numpy()
-            assert len(img.shape) in [2,
-                                      3], "Image must be either RGB/RGBA or greyscale"
+            assert len(
+                img.shape) in [2,
+                               3], "Image must be either RGB/RGBA or greyscale"
 
         with ti.GUI(title, res=img.shape[:2]) as gui:
             img = gui.cook_image(img)

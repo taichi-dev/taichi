@@ -5,13 +5,13 @@ sidebar_position: 3
 # Sparse spatial data structures
 
 :::note
-Pre-request: please read the [Fields](lang/articles/basic/field.md), [Fields (advanced)](lang/articles/advanced/layout.md), and [SNodes](lang/articles/misc/internal.md#data-structure-organization) first.
+Prerequisite: please read the [Fields](lang/articles/basic/field.md), [Fields (advanced)](lang/articles/advanced/layout.md), and [SNodes](lang/articles/misc/internal.md#data-structure-organization) first.
 :::
 
 ## Motivation
 
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, such as physical simulation, rendering, and 3D reconstruction.
-However, these grids tend to consume a huge amount of memory space and computation if we use dense data structure (see [field](lang/articles/basic/field.md) and [field advanced](lang/articles/advanced/layout.md)).
+However, these grids tend to consume a huge amount of memory space and computation if we use dense data structures (see [field](lang/articles/basic/field.md) and [field advanced](lang/articles/advanced/layout.md)).
 While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
 oftentimes, they only care about a small fraction of this dense grid since the rest may be empty space (vacuum or air).
 
@@ -29,11 +29,12 @@ we will significantly save storage and computing power.
 The key to leverage spatial sparsity is to replace *dense* grids with *sparse* grids.
 :::
 
-The traditional sparse spatial data stucture are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
+The traditional sparse spatial data stuctures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
 [Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, compared to quadtrees and octrees, it is more performance-friendly to use shallower trees with larger branching factors.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
-In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantage of Taichi sparse spatial data structure are
-1. The sparse data could be used like a dense data structure (accessing using indices)
+In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi sparse spatial data structures include
+1. Access with indices, which just like accessing a dense data structure.
+2. Automatic parallelization when iterating.
 2. The sparse data could be looped in parallel.
 3. Automatic memory access optimization.
 
@@ -46,17 +47,17 @@ Figure: A 3D fluid simulation that uses both particles and grids. Left to right:
 
 
 :::note
-Sparse matrices are usually **not** implemented in Taichi via (spatially-) sparse data structures. For Sparse matrix in Taichi, please see [sparse matrix](lang/articles/advanced/sparse_matrix.md).
+Sparse matrices are usually **not** implemented in Taichi via sparse spatial data structures. See [sparse matrix](lang/articles/advanced/sparse_matrix.md) instead.
 :::
 
 ## Sparse spatial data structures in Taichi
 
-Sparse spatial data structures in Taichi (SNode Tree) are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure.
+Sparse spatial data structures in Taichi are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure.
 
 On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
 The rest of the grid is simply *inactive*.
-The *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell on a sparse spatial data structure, Taichi automatically populates the data structure. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
+In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell on a sparse spatial data structure, Taichi automatically populates the data structure. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
 
 :::note
 Reading an inactive pixel returns zero.
@@ -92,9 +93,9 @@ def print_active():
     #         field x[3, 4] = 0.000000
     #         field x[3, 5] = 0.000000
 ```
-The code snippet above creates an 8x8 sparse grid, with the top-level being 4x4 pointer arrays (line 2 of `pointer.py`),
+The code snippet above creates an 8x8 sparse grid, with the top-level being a 4x4 pointer array (line 2 of `pointer.py`),
 and each pointer points to a 2x2 dense block. The `activate` function could automatically activates `block[1,1]` which includes `x[2,3]` and `block[1,2]` which includes `x[2, 4]`. Other pixels of `block[1,1]` (`x[2,2], x[3, 2], x[3, 3]`) and `block[1,2]` (`x[2, 5], x[3, 4], x[3, 5]`) are also implicitly activated if `pixel` is a dense node. Because all pixels in the dense block share the same activity value.
-As the below figure shows, the active blocks and pixels are green. You can write and read the sparse field like a dense field using indices.
+You can write and read the sparse field like a dense field using indices. The below figure shows the active blocks and pixels in green.
 
 <center>
 
@@ -103,7 +104,7 @@ As the below figure shows, the active blocks and pixels are green. You can write
 </center>
 
 
-In fact, the sparse field is a Snode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` Snodes (green grids). `for i, j in pixel` would loop over all active `dense` Snodes (green grids).
+In fact, the sparse field is a SNode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active()` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` SNodes. `for i, j in pixel` would loop over all active `dense` SNodes.
 
 <center>
 

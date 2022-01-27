@@ -9,7 +9,7 @@ body:
     attributes:
       label: Concisely describe the proposed feature
       description: |
-        A clear and concise description of what you want.
+        A clear and concise description of what you want and its use cases?
       value: |
         > I would like to add an Apple Metal backend to the compiler so that my Macbook GPU can be utilized.
       render: markdown
@@ -26,4 +26,4 @@ body:
     attributes:
       label: Additional comments?
       description: |
-        If possible, please also consider attaching the output of command `ti diagnose`. This produces the detailed environment information and hopefully helps us diagnose faster.
+        Add any other context or screenshots about the feature request here.

@@ -19,7 +19,6 @@ In this section, we introduce how to organize data layouts in Taichi fields. The
 
 :::note
 
-Brief explanations:
 
 Be aware that data are always fetched from memory in blocks (pages). The hardware has no knowledge about the usefulness of one specific data element in the block. The processor blindly fetch the entire block which _contains_ the requested memory address. Therefore, the memory bandwidth is wasted when data in the block are not well utilized.
 

@@ -185,7 +185,7 @@ ti.random(dtype=float)
 :::note
 
 `ti.random` supports `u32`, `i32`, `u64`, `i64`, and all floating point types.
-The return value has a range that is type dependent.
+The range of the returned value is type-specific.
 
 | Type | Range |
 | --- | --- |

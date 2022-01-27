@@ -25,3 +25,9 @@ def handle_exception_from_cpp(exc):
     if isinstance(exc, core.TaichiTypeError):
         return TaichiTypeError(str(exc))
     return exc
+
+
+__all__ = [
+    'TaichiSyntaxError', 'TaichiTypeError', 'TaichiCompilationError',
+    'TaichiNameError'
+]

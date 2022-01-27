@@ -3,7 +3,7 @@ sidebar_position: 2
 ---
 
 # Fields (advanced)
-Morden processor cores are orders of magnitude faster than their equipped memory systems. In quite a few scenarios, programs are bound by the speed of memory rather than cores. In order to shrink this speed gap, the multi-level cache system and high-bandwidth multi-channel memories are built into computer architectures.
+Modern processor cores compute orders of magnitude faster than their equipped memory systems. To shrink this  performance gap, multi-level cache systems and high-bandwidth multi-channel memories are built into computer architectures.
 
 There arises two questions in making performance optimization efforts: 1) how to organize a faster data layout and 2) how to manage memory occupancy. In this article, we discuss in the scope of Taichi field. A better understanding of the mechanism under the hood is essential to write blazing fast Taichi programs.
 
@@ -20,9 +20,9 @@ In this section, we introduce how to organize data layouts in Taichi fields. The
 :::note
 
 
-Be aware that data are always fetched from memory in blocks (pages). The hardware has no knowledge about the usefulness of one specific data element in the block. The processor blindly fetch the entire block which _contains_ the requested memory address. Therefore, the memory bandwidth is wasted when data in the block are not well utilized.
+Be aware that data are always fetched from memory in blocks (pages). The hardware has no knowledge about how a specific data element is used in the block. The processor blindly fetch the entire block according to the requested memory address. Therefore, the memory bandwidth is wasted when data in the block are not well utilized.
 
-If sparsity is inevitable, refer to [Sparse computation](./sparse.md).
+For sparse fields, refer to [Sparse computation](./sparse.md).
 
 :::
 
@@ -30,7 +30,7 @@ If sparsity is inevitable, refer to [Sparse computation](./sparse.md).
 
 <!-- haidong: what's else optional in ti.root? -->
 In basic usages, we use the `shape` descriptor to construct a field. Taichi provides flexible statements to describe more advanced data organizations, the `ti.root.X`.
-Let's get some formiliarity with examples:
+Let's get some familiarity with examples:
 
 * Declare a 0-D field:
 
@@ -73,15 +73,15 @@ In order to traverse the nested statements, we can use `struct-for`:
 for i, j in A:
     A[i, j] += 1
 ```
-The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. In general programming language, we need to optimize the order manually. The Taichi compiler is capable to deduce underlying data layout and apply proper access order. Therefore, the access order to complex nested structures is implicitly optimized.
+The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable to automatically deduce the underlying data layout and apply a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually. 
 
 ### Row-major versus column-major
 
-Memory address space is linear as you might have learnt from a computer architecture course. Without loss of generality, we ignore the differences in data types and always assume each data element has size 1. Denote the starting memory address of a field as `base`, the indexing formula for 1D Taichi fields is `base + i` for the `i`-th element.
+Memory address space is linear as you might have learnt from a computer architecture course. Without loss of generality, we omit the differences in data types and assume each data element has size 1. Moreover, we denote the starting memory address of a field as `base`, and the indexing formula for 1D Taichi fields is `base + i` for the `i`-th element.
 
 For multi-dimensional fields, however, we have different ways to flatten the high-dimension index into the linear memory adress space. Take a 2D field of shape `(M, N)` as an instance, we can either store `M` rows with `N`-length 1D buffers, say the row-major way, or store `N` columns, say the column-major way. The index flatten formula for the `(i, j)`-th element is `base + i * N + j` for row-major and `base + j * M + i` for column-major, respectively.
 
-We can easily derive that the elements in the same row are closer in memory for row-major fields. The selection of optimal layout is made by how the elements are accessed, namely, the access patterns. A commonly seen bad pattern is to frequently access elements of the same row in a column-major field, or the other way round.
+We can easily derive that elements in the same row are closer in memory for row-major fields. The selection of the optimal layout is based on how the elements are accessed, namely, the access patterns. A commonly seen bad pattern is to frequently access elements of the same row in a column-major field, or the other way around.
 
 The default Taichi field layout is row-major. With the `ti.root` statements, the fields can be defined as follows:
 ```python

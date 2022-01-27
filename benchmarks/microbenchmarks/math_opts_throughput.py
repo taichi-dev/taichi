@@ -9,27 +9,24 @@ import taichi as ti
 def unary_ops_throughput_default(arch, repeat, math_op, dtype, element_num,
                                  thread_for_loop, get_metric):
     local_data_num = 16  #enough data to fill the instruction pipeline
-    global_data = ti.field(dtype, element_num * local_data_num)
+    global_vector = ti.Vector.field(local_data_num, dtype, element_num)
 
     @ti.kernel
     def op_throughput():
-        for i in range(element_num):
-            #prelogue
-            local_vector = ti.Vector.zero(dtype, ti.static(local_data_num))
-            for k in ti.static(range(local_data_num)):
-                local_vector[k] = global_data[i * local_data_num + k]
+        for e in global_vector:
+            local_vector = global_vector[e]
             #loop
             for j in range(thread_for_loop):
                 for k in ti.static(range(local_data_num)):
                     local_vector[k] = math_op(local_vector[k])
             #epilogue
-            for k in ti.static(range(local_data_num)):
-                global_data[i * local_data_num + k] = local_vector[k]
+            global_vector[e] = local_vector
 
     @ti.kernel
     def fill_random():
-        for i in global_data:
-            global_data[i] = ti.random(dtype)
+        for e in global_vector:
+            for i in ti.static(range(local_data_num)):
+                global_vector[e][i] = ti.random()
 
     fill_random()
     return get_metric(repeat, op_throughput)
@@ -41,7 +38,7 @@ class ElementNum(BenchmarkItem):
     def __init__(self):
         self._items = {
             'num16384': 16384,
-            #enough threads to fill CUDA cores
+            #enough threads for filling CUDA cores
         }
 
 

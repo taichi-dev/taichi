@@ -28,7 +28,7 @@ We start introducing fields from this very basic type, the elements of scalar fi
 import taichi as ti
 ti.init(arch=ti.cpu)
 
-gravity          = ti.field(ti.f32, shape=())           # 0-D
+energy           = ti.field(ti.f32, shape=())           # 0-D
 linear_array     = ti.field(ti.i32, shape=128)          # 1-D
 gray_scale_image = ti.field(ti.u8,  shape=(640, 480))   # 2-D
 volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
@@ -36,7 +36,7 @@ volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 
 ### Access elements of scalar fields
 ``` python
-gravity[None]          = 9.8
+energy[None]           = 10.0
 linear_array[0]        = 1
 gray_scale_image[1,2]  = 255
 volumetric_data[3,3,3] = 2.0
@@ -98,7 +98,7 @@ There are **two** indexing operators `[]` when you access a member of a vector f
 This example helps you understand how to access vector fields:
 ``` python
 import taichi as ti
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cpu)
 
 n,w,h = 3,128,64
 vec_field = ti.Vector.field(n, dtype=ti.f32, shape=(w,h))
@@ -132,6 +132,15 @@ the first is for field indexing, and the second is for matrix indexing.
 - To get the element on the first row and second column of that matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
 - The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
 - `ti.Vector` is simply an alias of `ti.Matrix`.
+
+### Example
+This example helps you understand element and member in matrix fields:
+``` python
+X = ti.Matrix.field(n = 2, m = 3, dtype = ti.f32, shape = (2, 2))
+Element = X[0, 0]
+Member = X[0, 1][1,1]
+```
+![matrix_field](./matrix_field.jpg)
 
 ### Matrix size
 For performance reasons, matrix operations will be unrolled during the compile stage.

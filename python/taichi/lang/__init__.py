@@ -25,15 +25,9 @@ from taichi.lang.exception import (InvalidOperationError,
                                    TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.impl import (axes, begin_frontend_if,
-                              begin_frontend_struct_for, call_internal,
-                              current_cfg, deactivate_all_snodes, expr_init,
-                              expr_init_func, expr_init_list, field,
-                              get_runtime, grouped,
-                              insert_expr_stmt_if_ti_func, ndarray, one, root,
-                              static, static_assert, static_print, stop_grad,
-                              subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, zero)
+from taichi.lang.impl import (axes, deactivate_all_snodes, field, grouped,
+                              ndarray, one, root, static, static_assert,
+                              static_print, stop_grad, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -58,8 +52,6 @@ from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 from taichi import _logging
-
-runtime = impl.get_runtime()
 
 i = axes(0)
 j = axes(1)
@@ -787,7 +779,7 @@ def Tape(loss, clear_gradients=True):
     from taichi._kernels import clear_loss  # pylint: disable=C0415
     clear_loss(loss)
 
-    return runtime.get_tape(loss)
+    return impl.get_runtime().get_tape(loss)
 
 
 def clear_all_gradients():

@@ -136,11 +136,11 @@ the first is for field indexing, and the second is for matrix indexing.
 ### Example
 This example helps you understand element and member in matrix fields:
 ``` python
-X = ti.Matrix.field(n = 2, m = 3, dtype = ti.f32, shape = (2, 2))
-Element = X[0, 0]
-Member = X[0, 1][1,1]
+matrix_field = ti.Matrix.field(n = 2, m = 3, dtype = ti.f32, shape = (2, 2))
+Element = matrix_field[0, 0]
+Member = matrix_field[0, 1][1,1]
 ```
-![matrix_field](./matrix_field.jpg)
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/matrix_field.jpg)
 
 ### Matrix size
 For performance reasons, matrix operations will be unrolled during the compile stage.

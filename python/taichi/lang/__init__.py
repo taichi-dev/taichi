@@ -37,7 +37,6 @@ from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
 from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
-from taichi.lang.tape import TapeImpl
 from taichi.lang.type_factory_impl import type_factory
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,

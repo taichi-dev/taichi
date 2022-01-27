@@ -410,9 +410,14 @@ void export_lang(py::module &m) {
            [&](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendContinueStmt>());
            })
-      .def("insert_expr_stmt", [&](ASTBuilder *self, const Expr &val) {
-        self->insert(Stmt::make<FrontendExprStmt>(val));
-      });
+      .def("insert_expr_stmt",
+           [&](ASTBuilder *self, const Expr &val) {
+             self->insert(Stmt::make<FrontendExprStmt>(val));
+           })
+      .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
+      .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
+      .def("expr_var",
+           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -809,7 +814,42 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(exp)
   DEFINE_EXPRESSION_OP_UNARY(log)
 
+
   m.def("expr_var", [](const Expr &e) { return Var(e); });
+  m.def("expr_alloca", []() {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id,
+        PrimitiveType::unknown));
+    return var;
+  });
+  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
+                                       const DataType &element_type,
+                                       const ExprGroup &elements) {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+        element_type));
+    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
+    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+      ExprGroup reversed_indices;
+      int linearized_index = i;
+      for (int d = (int)shape.size() - 1; d >= 0; --d) {
+        reversed_indices.push_back(
+            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+        linearized_index /= shape[d];
+      }
+      ExprGroup indices;
+      for (int d = 0; d < (int)shape.size(); ++d)
+        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+          Expr::make<TensorElementExpression>(var, indices, shape,
+                                              data_type_size(element_type)),
+          elements.exprs[i]));
+    }
+    return var;
+  });
+  m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
@@ -1041,8 +1081,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
-  m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });

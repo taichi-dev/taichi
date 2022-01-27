@@ -21,11 +21,10 @@ from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
 from taichi.profiler import get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import default_cupti_metrics
-from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.primitive_types import f32, f64, i32, i64
 
-from taichi import _logging
+from taichi import _logging, _snode
 
 i = axes(0)
 j = axes(1)
@@ -643,7 +642,7 @@ def init(arch=None,
     _logging.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
-    impl._root_fb = FieldsBuilder()
+    impl._root_fb = _snode.FieldsBuilder()
 
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
@@ -776,7 +775,7 @@ def clear_all_gradients():
                 clear_gradients  # pylint: disable=C0415
             clear_gradients(places)
 
-    for root_fb in FieldsBuilder.finalized_roots():
+    for root_fb in _snode.FieldsBuilder.finalized_roots():
         visit(root_fb)
 
 
@@ -1027,3 +1026,16 @@ def adaptive_arch_select(arch, enable_fallback, use_gles):
 
 def get_host_arch_list():
     return [_ti_core.host_arch()]
+
+
+__all__ = [
+    'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
+    'k', 'kl', 'l', 'cc', 'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan',
+    'extension', 'parallelize', 'block_dim', 'global_thread_idx', 'Tape',
+    'assume_in_range', 'benchmark', 'benchmark_plot', 'block_local',
+    'cache_read_only', 'clear_all_gradients', 'clear_kernel_profile_info',
+    'collect_kernel_profile_metrics', 'init', 'kernel_profiler_total_time',
+    'mesh_local', 'no_activate', 'print_memory_profile_info',
+    'print_kernel_profile_info', 'query_kernel_profile_info', 'reset',
+    'set_kernel_profile_metrics', 'set_kernel_profiler_toolkit'
+]

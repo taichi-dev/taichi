@@ -21,6 +21,4 @@ __all__ = [
     'get_kernel_stats',
     'get_traceback',
     'set_gdb_trigger',
-    'print_profile_info',
-    'clear_profile_info',
 ]

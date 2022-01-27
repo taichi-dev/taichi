@@ -129,36 +129,6 @@ def set_gdb_trigger(on=True):
     _ti_core.set_core_trigger_gdb_when_crash(on)
 
 
-def print_profile_info():
-    """Print time elapsed on the host tasks in a hierarchical format.
-
-    This profiler is automatically on.
-
-    Call function imports from C++ : _ti_core.print_profile_info()
-
-    Example::
-
-            >>> import taichi as ti
-            >>> ti.init(arch=ti.cpu)
-            >>> var = ti.field(ti.f32, shape=1)
-            >>> @ti.kernel
-            >>> def compute():
-            >>>     var[0] = 1.0
-            >>>     print("Setting var[0] =", var[0])
-            >>> compute()
-            >>> ti.print_profile_info()
-    """
-    _ti_core.print_profile_info()
-
-
-def clear_profile_info():
-    """Clear profiler's records about time elapsed on the host tasks.
-
-    Call function imports from C++ : _ti_core.clear_profile_info()
-    """
-    _ti_core.clear_profile_info()
-
-
 def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
     d = _ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:

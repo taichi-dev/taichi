@@ -62,3 +62,12 @@ class BenchmarkPlan:
         for item, tag in zip(self.items, tags):
             kwargs[item.name] = item.impl(tag)
         return kwargs
+
+    def remove_cases_with_tags(self, tags: list):
+        remove_list = []
+        for case, plan in self.plan.items():
+            if set(tags).issubset(plan['tags']):
+                remove_list.append(case)
+        #remove
+        for case in remove_list:
+            self.plan.pop(case)

@@ -6,6 +6,7 @@ import numpy as np
 from colorama import Fore, Style
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
                                           u16, u32, u64)
 
@@ -283,7 +284,7 @@ def obsolete(old, new):
     """
     def wrapped(*args, **kwargs):
         msg = f'{old} is obsolete. Please use {new} instead.'
-        raise SyntaxError(msg)
+        raise TaichiSyntaxError(msg)
 
     return wrapped
 

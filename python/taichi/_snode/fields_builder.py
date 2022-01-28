@@ -4,7 +4,7 @@ from taichi._lib import core as _ti_core
 from taichi._snode.snode_tree import SNodeTree
 from taichi.lang import impl, snode
 from taichi.lang.exception import InvalidOperationError
-from taichi.tools.util import warning
+from taichi.lang.util import warning
 
 _snode_registry = _ti_core.SNodeRegistry()
 

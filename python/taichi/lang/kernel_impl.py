@@ -16,9 +16,8 @@ from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_pytorch, to_taichi_type
+from taichi.lang.util import has_pytorch, to_taichi_type, obsolete
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging

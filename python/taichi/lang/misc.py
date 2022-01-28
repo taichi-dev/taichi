@@ -19,9 +19,10 @@ from taichi.lang.expr import Expr
 from taichi.lang.impl import axes
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
+from taichi.lang.util import warning
 from taichi.profiler import get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import default_cupti_metrics
-from taichi.tools.util import set_gdb_trigger, warning
+from taichi.tools.util import set_gdb_trigger
 from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode

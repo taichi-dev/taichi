@@ -4,6 +4,10 @@
 namespace taichi {
 namespace lang {
 
+Callable::Callable() = default;
+
+Callable::~Callable() = default;
+
 int Callable::insert_arg(const DataType &dt, bool is_array) {
   args.emplace_back(dt->get_compute_type(), is_array);
   return (int)args.size() - 1;

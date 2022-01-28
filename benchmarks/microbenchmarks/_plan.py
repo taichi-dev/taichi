@@ -65,12 +65,6 @@ class BenchmarkPlan:
             kwargs[item.name] = item.impl(tag)
         return kwargs
 
-    def _get_item(self, name):
-        for item in self.items:
-            if item.name == name:
-                return item
-        return None
-
     def _remove_comflict_items(self):
         remove_list = []
         #logical_atomic with float_type

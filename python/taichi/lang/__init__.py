@@ -1,4 +1,3 @@
-import inspect
 import platform
 
 from taichi._lib import core as _ti_core
@@ -36,6 +35,9 @@ from taichi import _logging, _snode
 
 __all__ = [
     s for s in dir()
-    if not s.startswith('_') and not inspect.ismodule(globals()[s])
-    or s in ['tape', 'sort']
+    if not s.startswith('_') and s not in [
+        'any_array', 'ast', 'common_ops', 'enums', 'exception', 'expr', 'impl',
+        'inspect', 'kernel_arguments', 'kernel_impl', 'matrix', 'mesh', 'misc',
+        'ops', 'platform', 'quant_impl', 'runtime_ops', 'shell', 'snode',
+        'source_builder', 'struct', 'type_factory_impl', 'util']
 ]

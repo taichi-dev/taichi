@@ -9,7 +9,7 @@ class Program;
 class IRNode;
 class FrontendContext;
 
-class Callable {
+class TI_DLL_EXPORT Callable {
  public:
   Program *program{nullptr};
   std::unique_ptr<IRNode> ir{nullptr};
@@ -46,7 +46,8 @@ class Callable {
   std::vector<Arg> args;
   std::vector<Ret> rets;
 
-  virtual ~Callable() = default;
+  Callable();
+  virtual ~Callable();
 
   int insert_arg(const DataType &dt, bool is_array);
 

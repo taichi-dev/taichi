@@ -8,7 +8,6 @@ from taichi._kernels import (tensor_to_image, vector_to_fast_image,
                              vector_to_image)
 from taichi._lib import core as _ti_core
 from taichi.lang.field import Field, ScalarField
-from taichi.tools.util import core_vec, core_veci
 
 import taichi as ti
 
@@ -876,6 +875,60 @@ def hex_to_rgb(color):
     """
     r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
     return r / 255, g / 255, b / 255
+
+
+def core_veci(*args):
+    if isinstance(args[0], _ti_core.Vector2i):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3i):
+        return args[0]
+    if isinstance(args[0], tuple):
+        args = tuple(*args)
+    if len(args) == 2:
+        return _ti_core.Vector2i(int(args[0]), int(args[1]))
+    if len(args) == 3:
+        return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
+    if len(args) == 4:
+        return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
+                                 int(args[3]))
+    assert False, type(args[0])
+
+
+def core_vec(*args):
+    if isinstance(args[0], _ti_core.Vector2f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector4f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector2d):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3d):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector4d):
+        return args[0]
+    if isinstance(args[0], tuple):
+        args = tuple(*args)
+    if _ti_core.get_default_float_size() == 4:
+        if len(args) == 2:
+            return _ti_core.Vector2f(float(args[0]), float(args[1]))
+        if len(args) == 3:
+            return _ti_core.Vector3f(float(args[0]), float(args[1]),
+                                     float(args[2]))
+        if len(args) == 4:
+            return _ti_core.Vector4f(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
+        assert False, type(args[0])
+    else:
+        if len(args) == 2:
+            return _ti_core.Vector2d(float(args[0]), float(args[1]))
+        if len(args) == 3:
+            return _ti_core.Vector3d(float(args[0]), float(args[1]),
+                                     float(args[2]))
+        if len(args) == 4:
+            return _ti_core.Vector4d(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
+        assert False, type(args[0])
 
 
 __all__ = [

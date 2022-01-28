@@ -1,6 +1,7 @@
 #include "struct_opengl.h"
 
 #include "taichi/ir/snode.h"
+#include <numeric>
 
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
@@ -85,6 +86,17 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   }
 }
 
+namespace {
+template <typename T>
+std::vector<size_t> sort_index_by(const std::vector<T> &v) {
+  std::vector<size_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+  std::sort(idx.begin(), idx.end(),
+            [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
+  return idx;
+}
+}  // namespace
+
 size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
   if (snode.is_place()) {
     return data_type_size(snode.dt);
@@ -96,9 +108,12 @@ size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
   size_t ch_size = 0;
   const auto &snode_meta = snode_map_.at(snode.node_type_name);
   size_t acc_alignment_bytes = 0;
-  for (int i = 0; i < snode.ch.size(); i++) {
-    auto choff = snode_meta.children_offsets[i];
-    auto offset = acc_alignment_bytes + choff + snode_meta.mem_offset_in_root;
+
+  // Sort snode.ch by snode_meta.children_offsets so that we compute
+  // the mem_offset_in_root in the right order.
+  auto sorted_indices = sort_index_by<size_t>(snode_meta.children_offsets);
+  for (size_t i : sorted_indices) {
+    auto offset = ch_size + snode_meta.mem_offset_in_root;
     // Pad so that the base address of snode.ch[i] is multiple of its
     // elem_stride.
     auto alignment = snode_map_.at(snode.ch[i]->node_type_name).elem_stride;
@@ -109,6 +124,7 @@ size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
         offset + alignment_bytes;
     ch_size += compute_snode_size(*snode.ch[i]);
   }
+
   int n = snode.num_cells_per_container;
   return acc_alignment_bytes + n * ch_size;
 }

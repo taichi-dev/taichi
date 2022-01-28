@@ -61,7 +61,7 @@ x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
 ```
 
-In a nutshell, the `ti.root.X` statements progressively binds a shape to the corresponding axis.
+In a nutshell, the `ti.root.X` statement progressively binds a shape to the corresponding axis.
 By nesting multiple statements, we can construct a field with higher dimensions.
 <!-- haidong: how far can we go? how many default axis exist? -->
 

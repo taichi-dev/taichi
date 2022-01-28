@@ -22,7 +22,7 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
-from taichi.tools.util import set_gdb_trigger, warning
+from taichi.tools.util import set_gdb_trigger
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 

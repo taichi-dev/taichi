@@ -19,7 +19,6 @@ from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging
@@ -776,10 +775,6 @@ def kernel(fn):
         >>>         x[i] = i
     """
     return _kernel_impl(fn, level_of_class_stackframe=3)
-
-
-classfunc = obsolete('@ti.classfunc', '@ti.func directly')
-classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
 class _BoundedDifferentiableMethod:

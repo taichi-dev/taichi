@@ -1,5 +1,5 @@
 import pytest
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import TaichiRuntimeError
 
 import taichi as ti
 
@@ -174,6 +174,6 @@ def test_fields_builder_destroy(test_1d_size, field_type):
         fb.dense(ti.i, test_1d_size).place(a)
         c = fb.finalize()
 
-        with pytest.raises(InvalidOperationError):
+        with pytest.raises(TaichiRuntimeError):
             c.destroy()
             c.destroy()

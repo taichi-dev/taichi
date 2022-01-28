@@ -3,7 +3,7 @@ from typing import Any, Optional, Sequence, Union
 from taichi._lib import core as _ti_core
 from taichi._snode.snode_tree import SNodeTree
 from taichi.lang import impl, snode
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.util import warning
 
 _snode_registry = _ti_core.SNodeRegistry()
@@ -166,4 +166,4 @@ class FieldsBuilder:
 
     def _check_not_finalized(self):
         if self._finalized:
-            raise InvalidOperationError('FieldsBuilder finalized')
+            raise TaichiRuntimeError('FieldsBuilder finalized')

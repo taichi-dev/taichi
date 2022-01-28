@@ -9,11 +9,11 @@ class Program;
 class IRNode;
 class FrontendContext;
 
-class TI_DLL_EXPORT Callable {
+class Callable {
  public:
-  Program *program;
-  std::unique_ptr<IRNode> ir;
-  std::unique_ptr<FrontendContext> context;
+  Program *program{nullptr};
+  std::unique_ptr<IRNode> ir{nullptr};
+  std::unique_ptr<FrontendContext> context{nullptr};
 
   struct Arg {
     DataType dt;

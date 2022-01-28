@@ -117,22 +117,4 @@ void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);
 
 void reset_snode_access_flag();
 
-// Begin: legacy frontend constructs
-
-class For {
- public:
-  For(const Expr &i,
-      const Expr &s,
-      const Expr &e,
-      const std::function<void()> &func);
-
-  For(const ExprGroup &i,
-      const Expr &global,
-      const std::function<void()> &func);
-
-  For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
-};
-
-// End: legacy frontend constructs
-
 TLANG_NAMESPACE_END

@@ -247,48 +247,6 @@ def warning(msg, warning_type=UserWarning, stacklevel=1):
     print(Style.RESET_ALL, end='')
 
 
-def deprecated(old, new, warning_type=DeprecationWarning):
-    """Mark an API as deprecated.
-
-    Args:
-        old (str): old method.
-        new (str): new method.
-        warning_type (builtin warning type): type of warning.
-
-    Example::
-
-        >>> @deprecated('ti.sqr(x)', 'x**2')
-        >>> def sqr(x):
-        >>>     return x**2
-
-    Returns:
-        Decorated fuction with warning message
-    """
-    def decorator(foo):
-        @functools.wraps(foo)
-        def wrapped(*args, **kwargs):
-            msg = f'{old} is deprecated. Please use {new} instead.'
-            warning(msg, warning_type, stacklevel=2)
-            return foo(*args, **kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-def obsolete(old, new):
-    """
-    Mark an API as obsolete. Usage:
-
-    sqr = obsolete('ti.sqr(x)', 'x**2')
-    """
-    def wrapped(*args, **kwargs):
-        msg = f'{old} is obsolete. Please use {new} instead.'
-        raise TaichiSyntaxError(msg)
-
-    return wrapped
-
-
 def get_traceback(stacklevel=1):
     s = traceback.extract_stack()[:-1 - stacklevel]
     return ''.join(traceback.format_list(s))

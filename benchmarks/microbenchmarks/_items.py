@@ -18,12 +18,6 @@ class BenchmarkItem:
     def impl(self, tag: str):
         return self._items[tag]
 
-    def tag(self, impl):
-        for key, value in self._items.items():
-            if value == impl:
-                return key
-        return None
-
     def remove(self, tags: list):
         for tag in tags:
             self._items.pop(tag)

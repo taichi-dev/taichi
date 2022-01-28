@@ -9,7 +9,7 @@ class Program;
 class IRNode;
 class FrontendContext;
 
-class Callable {
+class TI_DLL_EXPORT Callable {
  public:
   Program *program;
   std::unique_ptr<IRNode> ir;

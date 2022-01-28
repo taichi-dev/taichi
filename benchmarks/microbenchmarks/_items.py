@@ -18,18 +18,18 @@ class BenchmarkItem:
     def impl(self, tag: str):
         return self._items[tag]
 
+    def tag(self, impl):
+        for key, value in self._items.items():
+            if value == impl:
+                return key
+        return None
+
     def remove(self, tags: list):
         for tag in tags:
             self._items.pop(tag)
 
     def update(self, adict: dict):
         self._items.update(adict)
-
-    def get_intersection(self, tags: list):
-        intersection = set(self.get_tags()) & set(tags)
-        if len(intersection) > 0:
-            return list(intersection)[0]  #only one
-        return None
 
 
 class DataType(BenchmarkItem):

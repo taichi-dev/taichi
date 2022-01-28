@@ -28,13 +28,13 @@ class BenchmarkPlan:
         self.basic_repeat_times = basic_repeat_times
         self.info = {'name': self.name}
         self.plan = {}  # {'tags': [...], 'result': None}
-        self.items = []
+        self.items = {}
         self.funcs = Funcs()
 
     def create_plan(self, *items):
-        self.items = list(items)
         items_list = [[self.name]]
-        for item in self.items:
+        for item in items:
+            self.items[item.name] = item
             items_list.append(item.get_tags())
             self.info[item.name] = item.get_tags()
         case_list = list(itertools.product(*items_list))  #items generate cases
@@ -61,7 +61,7 @@ class BenchmarkPlan:
     def _get_kwargs(self, tags):
         kwargs = {}
         tags = tags[1:]  # tags = [case_name, item1_tag, item2_tag, ...]
-        for item, tag in zip(self.items, tags):
+        for item, tag in zip(self.items.values(), tags):
             kwargs[item.name] = item.impl(tag)
         return kwargs
 
@@ -73,17 +73,16 @@ class BenchmarkPlan:
 
     def _remove_comflict_items(self):
         remove_list = []
-        item_name_list = [item.name for item in self.items]
         #logical_atomic with float_type
-        if set([AtomicOps.name, DataType.name]).issubset(item_name_list):
-            atomic_item = self._get_item(AtomicOps.name)
-            dytpe_item = self._get_item(DataType.name)
-            for case, plan in self.plan.items():
-                atomic_op_tag = atomic_item.get_intersection(plan['tags'])
-                dtype_tag = dytpe_item.get_intersection(plan['tags'])
-                if AtomicOps.is_supported_type(atomic_op_tag,
-                                               dtype_tag) is False:
-                    remove_list.append(case)
+        if set([AtomicOps.name, DataType.name]).issubset(self.items.keys()):
+            for name, case in self.plan.items():
+                kwargs = self._get_kwargs(case['tags'])
+                atomic_tag = self.items[AtomicOps.name].tag(
+                    kwargs[AtomicOps.name])
+                dtype_tag = self.items[DataType.name].tag(
+                    kwargs[DataType.name])
+                if not AtomicOps.is_supported_type(atomic_tag, dtype_tag):
+                    remove_list.append(name)
         #remove
-        for case in remove_list:
-            self.plan.pop(case)
+        for name in remove_list:
+            self.plan.pop(name)

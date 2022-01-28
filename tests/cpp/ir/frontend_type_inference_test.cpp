@@ -42,7 +42,8 @@ TEST(FrontendTypeInference, BinaryOp) {
   const_i32->type_check();
   auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
   const_f32->type_check();
-  auto truediv_f64 = expr_truediv(const_i32, const_f32);
+  auto truediv_f64 =
+      expr_truediv(const_i32, const_f32, prog->config.default_fp);
   truediv_f64->type_check();
   EXPECT_EQ(truediv_f64->ret_type, PrimitiveType::f64);
 }

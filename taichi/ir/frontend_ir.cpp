@@ -1,6 +1,7 @@
 #include "taichi/ir/frontend_ir.h"
 
 #include "taichi/ir/statements.h"
+#include "taichi/ir/type.h"
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
 
@@ -182,6 +183,23 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void BinaryOpExpression::type_check() {
+  auto [lhs_type, rhs_type] = type_check_init();
+  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
+    return;
+  ret_type = promoted_type(lhs_type, rhs_type);
+}
+
+void BinaryOpExpression::flatten(FlattenContext *ctx) {
+  // if (stmt)
+  //  return;
+  flatten_rvalue(lhs, ctx);
+  flatten_rvalue(rhs, ctx);
+  ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+  ctx->stmts.back()->tb = tb;
+  stmt = ctx->back_stmt();
+}
+
+std::tuple<DataType, DataType> BinaryOpExpression::type_check_init() {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
@@ -199,28 +217,22 @@ void BinaryOpExpression::type_check() {
     error();
   if (is_comparison(type)) {
     ret_type = PrimitiveType::i32;
-    return;
+    return {};
   }
-  if (type == BinaryOpType::truediv) {
-    auto default_fp = get_current_program().config.default_fp;
-    if (!is_real(lhs_type)) {
-      lhs_type = default_fp;
-    }
-    if (!is_real(rhs_type)) {
-      rhs_type = default_fp;
-    }
-  }
-  ret_type = promoted_type(lhs_type, rhs_type);
+  return {lhs_type, rhs_type};
 }
 
-void BinaryOpExpression::flatten(FlattenContext *ctx) {
-  // if (stmt)
-  //  return;
-  flatten_rvalue(lhs, ctx);
-  flatten_rvalue(rhs, ctx);
-  ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-  ctx->stmts.back()->tb = tb;
-  stmt = ctx->back_stmt();
+void TrueDivExpression::type_check() {
+  auto [lhs_type, rhs_type] = type_check_init();
+  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
+    return;
+  if (!is_real(lhs_type)) {
+    lhs_type = default_fp_;
+  }
+  if (!is_real(rhs_type)) {
+    rhs_type = default_fp_;
+  }
+  ret_type = promoted_type(lhs_type, rhs_type);
 }
 
 void TernaryOpExpression::type_check() {

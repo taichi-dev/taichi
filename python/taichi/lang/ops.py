@@ -500,7 +500,11 @@ def truediv(a, b):
     Returns:
         The true value of `a` divided by `b`.
     """
-    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
+    def wrapped_expr_truediv(lhs, rhs):
+        return _ti_core.expr_truediv(lhs, rhs,
+                                     impl.get_runtime().prog.config.default_fp)
+
+    return _binary_operation(wrapped_expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary

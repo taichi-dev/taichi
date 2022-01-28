@@ -36,6 +36,14 @@
     return opname(lhs, rhs);                                               \
   }
 
+#define DEFINE_EXPRESSION_TRUEDIV_FUNC()                                     \
+  Expr truediv(const Expr &lhs, const Expr &rhs, DataType default_fp) {      \
+    return Expr::make<TrueDivExpression>(lhs, rhs, default_fp);              \
+  }                                                                          \
+  Expr expr_truediv(const Expr &lhs, const Expr &rhs, DataType default_fp) { \
+    return truediv(lhs, rhs, default_fp);                                    \
+  }
+
 #else
 
 #define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
@@ -52,6 +60,10 @@
 #define DEFINE_EXPRESSION_FUNC(opname)           \
   Expr opname(const Expr &lhs, const Expr &rhs); \
   Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+
+#define DEFINE_EXPRESSION_TRUEDIV_FUNC()                               \
+  Expr truediv(const Expr &lhs, const Expr &rhs, DataType default_fp); \
+  Expr expr_truediv(const Expr &lhs, const Expr &rhs, DataType default_fp);
 
 #endif
 
@@ -99,7 +111,7 @@ DEFINE_EXPRESSION_FUNC(min);
 DEFINE_EXPRESSION_FUNC(max);
 DEFINE_EXPRESSION_FUNC(atan2);
 DEFINE_EXPRESSION_FUNC(pow);
-DEFINE_EXPRESSION_FUNC(truediv);
+DEFINE_EXPRESSION_TRUEDIV_FUNC();  // truediv
 DEFINE_EXPRESSION_FUNC(floordiv);
 DEFINE_EXPRESSION_FUNC(bit_shr)
 
@@ -107,3 +119,4 @@ DEFINE_EXPRESSION_FUNC(bit_shr)
 #undef DEFINE_EXPRESSION_OP_BINARY
 #undef DEFINE_EXPRESSION_OP_TERNARY
 #undef DEFINE_EXPRESSION_FUNC
+#undef DEFINE_EXPRESSION_TRUEDIV_FUNC

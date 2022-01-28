@@ -1,12 +1,14 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "taichi/ir/snode_types.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/ir/type.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -332,6 +334,22 @@ class BinaryOpExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override;
+
+ protected:
+  std::tuple<DataType, DataType> type_check_init();
+};
+
+class TrueDivExpression : public BinaryOpExpression {
+ private:
+  DataType default_fp_;
+
+ public:
+  TrueDivExpression(const Expr &lhs, const Expr &rhs, DataType default_fp)
+      : BinaryOpExpression(BinaryOpType::truediv, lhs, rhs),
+        default_fp_(default_fp) {
+  }
+
+  void type_check() override;
 };
 
 class TernaryOpExpression : public Expression {

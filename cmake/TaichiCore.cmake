@@ -226,7 +226,6 @@ endif()
 set(CORE_LIBRARY_NAME taichi_isolated_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES CXX_VISIBILITY_PRESET ${_TI_SYMBOL_VISIBILITY})
-target_link_options(${CORE_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior
@@ -419,7 +418,9 @@ if(NOT TI_EMSCRIPTENED)
     endif ()
 
     set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES CXX_VISIBILITY_PRESET ${_TI_SYMBOL_VISIBILITY})
-    target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+    if (LINUX)
+        target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+    endif()
     # It is actually possible to link with an OBJECT library
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})

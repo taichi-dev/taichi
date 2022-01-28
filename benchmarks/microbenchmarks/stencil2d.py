@@ -74,8 +74,13 @@ def stencil_2d_sparse_bls(arch, repeat, scatter, bls, container, dtype,
 
     @ti.kernel
     def stencil_2d(y: ti.template(), x: ti.template()):
-        if ti.static(bls):
+        #reference: tests/python/bls_test_template.py
+        if ti.static(bls and not scatter):
             ti.block_local(x)
+        if ti.static(bls and scatter):
+            ti.block_local(y)
+        ti.block_dim(64)  # 8*8=64
+
         for I in ti.grouped(x):
             if ti.static(scatter):
                 for offset in ti.static(stencil_common):
@@ -122,8 +127,8 @@ class Stencil2DPlan(BenchmarkPlan):
         container.update({'sparse': None})  # None: implement by feature
         self.create_plan(Scatter(), BloclLocalStorage(), container, DataType(),
                          DataSize2D(), MetricType())
-        self.remove_cases_with_tags(['field',
-                                     'bls1'])  # no use for field & ndarray
+        # no use for field & ndarray
+        self.remove_cases_with_tags(['field', 'bls1'])
         self.remove_cases_with_tags(['ndarray', 'bls1'])
         self.add_func(['field'], stencil_2d_default)
         self.add_func(['ndarray'], stencil_2d_default)

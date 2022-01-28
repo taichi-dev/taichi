@@ -11,7 +11,7 @@ def test_taichi_logo():
 
 
 def video_taichi_logo(result_dir):
-    from taichi.examples.rendering.taichi_logo import paint, n, x
+    from taichi.examples.rendering.taichi_logo import n, paint, x
     video_manager = ti.VideoManager(output_dir=result_dir,
                                     framerate=24,
                                     automatic_build=False)

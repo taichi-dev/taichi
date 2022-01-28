@@ -388,10 +388,12 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
-        if (NOT TI_EXPORT_CORE) # expose api for CHI IR Builder
+        if ((NOT TI_EXPORT_CORE) AND (NOT ${_TI_SYMBOL_VISIBILITY} STREQUAL hidden)) # expose api for CHI IR Builder
+            message(WARNING "Using linker.map to hide symbols!")
             target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         endif ()
-        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
+        # Avoid glibc dependencies
+        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
     endif()
 else()
     # windows

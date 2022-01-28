@@ -62,7 +62,3 @@ class BenchmarkPlan:
         for item, tag in zip(self.items, tags):
             kwargs[item.name] = item.impl(tag)
         return kwargs
-
-    def print_plan(self):
-        for name in self.plan:
-            print(name)

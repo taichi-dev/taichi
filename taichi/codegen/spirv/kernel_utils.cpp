@@ -121,7 +121,12 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      TI_TRACE("  at={} array size={}", i, attribs.stride);
+      const size_t dt_bytes = data_type_size(attribs.dt);
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+      attribs.offset_in_mem = bytes;
+      bytes += attribs.stride;
+      TI_TRACE("  at={} array offset_in_mem={} stride={}", i,
+               attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };

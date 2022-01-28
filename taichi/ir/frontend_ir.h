@@ -9,6 +9,7 @@
 #include "taichi/ir/expression.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/ir/operation.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -253,6 +254,31 @@ class FrontendReturnStmt : public Stmt {
 
 // Expressions
 
+class CallExpression : public Expression {
+ public:
+  Operation *operation;
+  std::vector<Expr> args;
+
+  CallExpression(Operation *op, std::vector<Expr> args)
+      : operation(op), args(args) {
+  }
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << operation->name << "(";
+    for (int i = 0; i < args.size(); i++) {
+      if (i != 0) {
+        ss << ", ";
+      }
+      args[i]->serialize(ss);
+    }
+    ss << ")";
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ArgLoadExpression : public Expression {
  public:
   int arg_id;
@@ -358,36 +384,6 @@ class TernaryOpExpression : public Expression {
     op2->serialize(ss);
     ss << ' ';
     op3->serialize(ss);
-    ss << ')';
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-class InternalFuncCallExpression : public Expression {
- public:
-  std::string func_name;
-  std::vector<Expr> args;
-
-  InternalFuncCallExpression(const std::string &func_name,
-                             const std::vector<Expr> &args_)
-      : func_name(func_name) {
-    for (auto &a : args_) {
-      args.push_back(a);
-    }
-  }
-
-  void type_check() override;
-
-  void serialize(std::ostream &ss) override {
-    ss << "internal call " << func_name << '(';
-    std::string args_str;
-    for (int i = 0; i < args.size(); i++) {
-      if (i != 0) {
-        ss << ", ";
-      }
-      args[i]->serialize(ss);
-    }
     ss << ')';
   }
 

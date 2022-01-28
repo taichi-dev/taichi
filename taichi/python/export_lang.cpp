@@ -682,11 +682,6 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
-        });
-
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
     auto stmt = stmt_unique.get();
@@ -1065,8 +1060,8 @@ void export_lang(py::module &m) {
     }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
-                                                  std::vector<Expr>{});
+    return Expr::make<CallExpression>(InternalOps::get().thread_index,
+                                      std::vector<Expr>{});
   });
 
   m.def("insert_patch_idx_expr", [&]() {
@@ -1379,6 +1374,39 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->relations.insert(
               std::pair(type, mesh::MeshLocalRelation(value, offset)));
         });
+
+  auto opClass = py::class_<Operation>(m, "Operation");
+  auto testOpClass = py::class_<TestInternalOps>(m, "TestOperation");
+
+#define DEF_OP(x)                                               \
+  opClass.def_property_readonly_static(                         \
+      #x, [](py::object self) { return InternalOps::get().x; }, \
+      py::return_value_policy::reference);
+
+#define TEST_OP(x)                                                  \
+  testOpClass.def_property_readonly_static(                         \
+      #x, [](py::object self) { return TestInternalOps::get().x; }, \
+      py::return_value_policy::reference);
+
+  DEF_OP(thread_index)
+  DEF_OP(insert_triplet)
+  DEF_OP(do_nothing)
+  DEF_OP(refresh_counter)
+
+  TEST_OP(test_stack)
+  TEST_OP(test_active_mask)
+  TEST_OP(test_shfl)
+  TEST_OP(test_list_manager)
+  TEST_OP(test_node_allocator)
+  TEST_OP(test_node_allocator_gc_cpu)
+  TEST_OP(test_internal_func_args)
+
+#undef TEST_OP
+#undef DEF_OP
+
+  m.def("call_op", [](Operation *op, const ExprGroup &args) {
+    return Expr::make<CallExpression>(op, args.exprs);
+  });
 }
 
 TI_NAMESPACE_END

@@ -172,8 +172,8 @@ TEST(FrontendTypeInference, LoopUnique) {
 }
 
 TEST(FrontendTypeInference, InternalFuncCall) {
-  auto internal_func_call =
-      Expr::make<InternalFuncCallExpression>("do_nothing", std::vector<Expr>{});
+  auto internal_func_call = Expr::make<CallExpression>(
+      InternalOps::get().do_nothing, std::vector<Expr>{});
   internal_func_call->type_check();
   EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }

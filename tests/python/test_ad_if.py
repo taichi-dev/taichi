@@ -238,6 +238,6 @@ def test_ad_if_parallel_complex_f64():
 def test_stack():
     @ti.kernel
     def func():
-        impl.call_internal("test_stack")
+        impl.call_test_internal("test_stack")
 
     func()

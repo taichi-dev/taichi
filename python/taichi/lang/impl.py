@@ -895,7 +895,14 @@ def default_cfg():
 
 def call_internal(name, *args):
     return expr_init(
-        _ti_core.insert_internal_func_call(name, make_expr_group(args)))
+        _ti_core.call_op(getattr(_ti_core.Operation, name),
+                         make_expr_group(args)))
+
+
+def call_test_internal(name, *args):
+    return expr_init(
+        _ti_core.call_op(getattr(_ti_core.TestOperation, name),
+                         make_expr_group(args)))
 
 
 @taichi_scope

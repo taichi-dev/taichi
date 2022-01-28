@@ -33,7 +33,7 @@ def test_host_polling():
 def test_list_manager():
     @ti.kernel
     def test():
-        impl.call_internal("test_list_manager")
+        impl.call_test_internal("test_list_manager")
 
     test()
     test()
@@ -43,7 +43,7 @@ def test_list_manager():
 def test_node_manager():
     @ti.kernel
     def test():
-        impl.call_internal("test_node_allocator")
+        impl.call_test_internal("test_node_allocator")
 
     test()
     test()
@@ -53,7 +53,7 @@ def test_node_manager():
 def test_node_manager_gc():
     @ti.kernel
     def test_cpu():
-        impl.call_internal("test_node_allocator_gc_cpu")
+        impl.call_test_internal("test_node_allocator_gc_cpu")
 
     test_cpu()
 
@@ -62,7 +62,7 @@ def test_node_manager_gc():
 def test_return():
     @ti.kernel
     def test_cpu():
-        ret = impl.call_internal("test_internal_func_args", 1.0, 2.0, 3)
+        ret = impl.call_test_internal("test_internal_func_args", 1.0, 2.0, 3)
         assert ret == 9
 
     test_cpu()

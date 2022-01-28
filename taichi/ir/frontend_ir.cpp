@@ -114,6 +114,14 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
+void CallExpression::type_check() {
+  ret_type = operation->check(args);
+}
+
+void CallExpression::flatten(FlattenContext *ctx) {
+  stmt = operation->lower(ctx, args);
+}
+
 void ArgLoadExpression::type_check() {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
@@ -250,25 +258,6 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   flatten_rvalue(op3, ctx);
   ctx->push_back(
       std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-  stmt = ctx->back_stmt();
-}
-
-void InternalFuncCallExpression::type_check() {
-  for (auto &arg : args) {
-    TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
-  }
-  // internal func calls have default return type
-  ret_type = PrimitiveType::i32;
-}
-
-void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> args_stmts(args.size());
-  for (int i = 0; i < (int)args.size(); ++i) {
-    flatten_rvalue(args[i], ctx);
-    args_stmts[i] = args[i]->stmt;
-  }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
   stmt = ctx->back_stmt();
 }
 

@@ -1,7 +1,6 @@
 import platform
 
 from taichi._lib import core as _ti_core
-from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout

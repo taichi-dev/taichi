@@ -3,6 +3,7 @@ import sys
 from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._logging import *
+from taichi._snode import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.tools import *
 from taichi.tools.patterns import taichi_logo
@@ -17,7 +18,12 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 from taichi import aot  # isort:skip
 from taichi._testing import *  # isort:skip
 
-__deprecated_names__ = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
+__deprecated_names__ = {
+    'SOA': 'Layout.SOA',
+    'AOS': 'Layout.AOS',
+    'print_profile_info': 'profiler.print_scoped_profiler_info',
+    'clear_profile_info': 'profiler.clear_scoped_profiler_info'
+}
 
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():

@@ -1429,3 +1429,6 @@ class VectorNdarray(Ndarray):
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
+
+
+__all__ = ["Matrix", "Vector"]

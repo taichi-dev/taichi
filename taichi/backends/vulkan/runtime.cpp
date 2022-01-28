@@ -57,7 +57,8 @@ class HostDeviceContextBlitter {
         device_(device) {
   }
 
-  void host_to_device() {
+  void host_to_device(
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays) {
     if (ctx_attribs_->empty()) {
       return;
     }
@@ -78,8 +79,15 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          const void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(device_ptr, host_ptr, arg.stride);
+          if (arg.stride) {
+            DeviceAllocation buffer = ext_arrays.at(i);
+            char *const device_arr_ptr =
+                reinterpret_cast<char *>(device_->map(buffer));
+            const void *host_ptr = host_ctx_->get_arg<void *>(i);
+            std::memcpy(device_arr_ptr, host_ptr, arg.stride);
+            device_->unmap(buffer);
+          }
+          // We should not process the rest
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
@@ -118,7 +126,9 @@ class HostDeviceContextBlitter {
 #undef TO_DEVICE
   }
 
-  bool device_to_host(CommandList *cmdlist) {
+  bool device_to_host(
+      CommandList *cmdlist,
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -127,7 +137,7 @@ class HostDeviceContextBlitter {
     if (!require_sync) {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
-        if (arg.is_array) {
+        if (arg.is_array && arg.stride) {
           require_sync = true;
         }
       }
@@ -145,9 +155,13 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
-      if (arg.is_array) {
+      if (arg.is_array && arg.stride) {
+        DeviceAllocation buffer = ext_arrays.at(i);
+        char *const device_arr_ptr =
+            reinterpret_cast<char *>(device_->map(buffer));
         void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, arg.stride);
+        std::memcpy(host_ptr, device_arr_ptr, arg.stride);
+        device_->unmap(buffer);
       }
     }
 
@@ -167,8 +181,8 @@ class HostDeviceContextBlitter {
       const auto dt = ret.dt;
       do {
         if (ret.is_array) {
-          void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(host_ptr, device_ptr, ret.stride);
+          // void *host_ptr = host_ctx_->get_arg<void *>(i);
+          // std::memcpy(host_ptr, device_ptr, ret.stride);
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
@@ -293,7 +307,8 @@ size_t CompiledTaichiKernel::get_ctx_buffer_size() const {
 void CompiledTaichiKernel::generate_command_list(
     CommandList *cmdlist,
     DeviceAllocationGuard *ctx_buffer_host,
-    DeviceAllocationGuard *ctx_buffer) const {
+    DeviceAllocationGuard *ctx_buffer,
+    const std::unordered_map<int, DeviceAllocation> &ext_arrs) const {
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
 
   for (int i = 0; i < task_attribs.size(); ++i) {
@@ -304,7 +319,9 @@ void CompiledTaichiKernel::generate_command_list(
                         attribs.advisory_num_threads_per_group;
     ResourceBinder *binder = vp->resource_binder();
     for (auto &bind : attribs.buffer_binds) {
-      if (bind.buffer.type != BufferType::Context) {
+      if (bind.buffer.type == BufferType::ExtArr) {
+        binder->rw_buffer(0, bind.binding, ext_arrs.at(bind.buffer.root_id));
+      } else if (bind.buffer.type != BufferType::Context) {
         DeviceAllocation *alloc = input_buffers_.at(bind.buffer);
         if (alloc) {
           binder->rw_buffer(0, bind.binding, *alloc);
@@ -427,9 +444,28 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
       host_result_buffer_, ctx_buffer.get(), ctx_buffer_host.get());
 
+  std::unordered_map<int, DeviceAllocation> ext_arrays;
+
   if (ctx_blitter) {
     TI_ASSERT(ti_kernel->get_ctx_buffer_size());
-    ctx_blitter->host_to_device();
+
+    const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
+    int i = 0;
+    for (auto &arg : args) {
+      if (arg.is_array) {
+        if (arg.stride) {
+          DeviceAllocation extarr_buf = device_->allocate_memory(
+              {arg.stride, /*host_write=*/true, /*host_read=*/true,
+               /*export_sharing=*/false, AllocUsage::Storage});
+          ext_arrays[i] = extarr_buf;
+        } else {
+          ext_arrays[i] = kDeviceNullAllocation;
+        }
+      }
+      i++;
+    }
+
+    ctx_blitter->host_to_device(ext_arrays);
   }
 
   if (!current_cmdlist_) {
@@ -438,7 +474,8 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   ti_kernel->generate_command_list(current_cmdlist_.get(),
-                                   ctx_buffer_host.get(), ctx_buffer.get());
+                                   ctx_buffer_host.get(), ctx_buffer.get(),
+                                   ext_arrays);
 
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffers_.push_back(std::move(ctx_buffer_host));
@@ -446,8 +483,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get())) {
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays)) {
       current_cmdlist_ = nullptr;
+    }
+  }
+
+  for (auto pair : ext_arrays) {
+    if (pair.second != kDeviceNullAllocation) {
+      device_->dealloc_memory(pair.second);
     }
   }
 }

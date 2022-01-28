@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from taichi.lang import impl
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
@@ -201,11 +202,11 @@ def test_io_struct():
 def test_fused_kernels():
     n = 12
     X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
-    s = ti.get_runtime().get_num_compiled_functions()
+    s = impl.get_runtime().get_num_compiled_functions()
     t = X.to_torch()
-    assert ti.get_runtime().get_num_compiled_functions() == s + 1
+    assert impl.get_runtime().get_num_compiled_functions() == s + 1
     X.from_torch(t)
-    assert ti.get_runtime().get_num_compiled_functions() == s + 2
+    assert impl.get_runtime().get_num_compiled_functions() == s + 2
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')

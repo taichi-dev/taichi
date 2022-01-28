@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+from taichi.lang.misc import mesh_patch_idx
 
 import taichi as ti
 
@@ -17,7 +18,7 @@ def test_mesh_patch_idx():
     @ti.kernel
     def foo():
         for v in model.verts:
-            v.idx = ti.mesh_patch_idx()
+            v.idx = mesh_patch_idx()
 
     foo()
     idx = model.verts.idx.to_numpy()

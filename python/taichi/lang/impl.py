@@ -5,8 +5,9 @@ from typing import Iterable
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._logging import warn
+from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, ndrange
+from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
@@ -23,7 +24,6 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
-from taichi.snode.fields_builder import FieldsBuilder
 from taichi.tools.util import get_traceback, warning
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
@@ -51,7 +51,7 @@ def expr_init(rhs):
         return rhs
     if isinstance(rhs, _ti_core.Arch):
         return rhs
-    if isinstance(rhs, ndrange):
+    if isinstance(rhs, _Ndrange):
         return rhs
     if isinstance(rhs, MeshElementFieldProxy):
         return rhs
@@ -59,7 +59,8 @@ def expr_init(rhs):
         return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
-    return Expr(_ti_core.expr_var(Expr(rhs).ptr))
+    return Expr(get_runtime().prog.current_ast_builder().expr_var(
+        Expr(rhs).ptr))
 
 
 @taichi_scope
@@ -848,8 +849,9 @@ def static(x, *xs):
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
-    if isinstance(x, (bool, int, float, range, list, tuple, enumerate, ndrange,
-                      GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x,
+                  (bool, int, float, range, list, tuple, enumerate, _Ndrange,
+                   GroupedNDRange, zip, filter, map)) or x is None:
         return x
     if isinstance(x, AnyArray):
         return x
@@ -874,7 +876,7 @@ def grouped(x):
         >>> for I in ti.grouped(ndrange(8, 16)):
         >>>     print(I[0] + I[1])
     """
-    if isinstance(x, ndrange):
+    if isinstance(x, _Ndrange):
         return x.grouped()
     return x
 
@@ -904,3 +906,9 @@ def mesh_relation_access(mesh, from_index, to_element_type):
     if isinstance(mesh, MeshInstance):
         return MeshRelationAccessProxy(mesh, from_index, to_element_type)
     raise RuntimeError("Relation access should be with a mesh instance!")
+
+
+__all__ = [
+    'axes', 'deactivate_all_snodes', 'field', 'grouped', 'ndarray', 'one',
+    'root', 'static', 'static_assert', 'static_print', 'stop_grad', 'zero'
+]

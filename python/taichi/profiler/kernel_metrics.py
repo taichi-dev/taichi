@@ -226,3 +226,5 @@ def get_predefined_cupti_metrics(name=''):
 
 # Default metrics list
 default_cupti_metrics = [dram_bytes_sum]
+
+__all__ = ['CuptiMetric', 'get_predefined_cupti_metrics']

@@ -418,6 +418,7 @@ if(NOT TI_EMSCRIPTENED)
     endif ()
 
     set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES CXX_VISIBILITY_PRESET ${_TI_SYMBOL_VISIBILITY})
+    # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
     endif()

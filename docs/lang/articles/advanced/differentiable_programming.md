@@ -334,8 +334,7 @@ if you see any silent wrong results.
 
 ### Write differentiable code inside Taichi kernel
 
-Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff.
-Therefore, only the code written in Taichi scope is auto-differentiated. Although you can modify the `grad` of a field in python scope manually, the code is not auto-differentiated.
+Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. Therefore, only the code written in Taichi scope is auto-differentiated. Although you can modify the `grad` of a field in python scope manually, the code is not auto-differentiated.
 
 Example:
 

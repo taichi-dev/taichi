@@ -141,3 +141,6 @@ class SourceBuilder:
             return external_func_call_wrapper
 
         raise TaichiSyntaxError('Error occurs when calling external function.')
+
+
+__all__ = []

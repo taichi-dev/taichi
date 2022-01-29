@@ -17,4 +17,4 @@ def test_minimization():
         gradient_descent()
 
     for i in range(n):
-        assert x[i] == ti.approx(y[i], rel=1e-3)
+        assert x[i] == ti._testing.approx(y[i], rel=1e-2)

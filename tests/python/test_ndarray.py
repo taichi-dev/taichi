@@ -2,6 +2,9 @@ import copy
 
 import numpy as np
 import pytest
+from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
+from taichi.lang.util import has_pytorch
 
 import taichi as ti
 
@@ -28,15 +31,15 @@ def _test_scalar_ndarray(dtype, shape):
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_scalar_ndarray_torch(dtype, shape):
     _test_scalar_ndarray(dtype, shape)
 
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_scalar_ndarray(dtype, shape):
     _test_scalar_ndarray(dtype, shape)
 
@@ -57,8 +60,8 @@ def _test_vector_ndarray(n, dtype, shape):
 @pytest.mark.parametrize('n', vector_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_vector_ndarray_torch(n, dtype, shape):
     _test_vector_ndarray(n, dtype, shape)
 
@@ -66,7 +69,7 @@ def test_vector_ndarray_torch(n, dtype, shape):
 @pytest.mark.parametrize('n', vector_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_vector_ndarray(n, dtype, shape):
     _test_vector_ndarray(n, dtype, shape)
 
@@ -88,8 +91,8 @@ def _test_matrix_ndarray(n, m, dtype, shape):
 @pytest.mark.parametrize('n,m', matrix_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_matrix_ndarray_torch(n, m, dtype, shape):
     _test_matrix_ndarray(n, m, dtype, shape)
 
@@ -97,19 +100,19 @@ def test_matrix_ndarray_torch(n, m, dtype, shape):
 @pytest.mark.parametrize('n,m', matrix_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', ndarray_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_matrix_ndarray(n, m, dtype, shape):
     _test_matrix_ndarray(n, m, dtype, shape)
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 def test_default_fp_ndarray_torch(dtype):
     ti.init(default_fp=dtype, ndarray_use_torch=True)
 
     x = ti.Vector.ndarray(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == impl.get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
@@ -118,17 +121,17 @@ def test_default_fp_ndarray(dtype):
 
     x = ti.Vector.ndarray(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == impl.get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 def test_default_ip_ndarray_torch(dtype):
     ti.init(default_ip=dtype, ndarray_use_torch=True)
 
     x = ti.Vector.ndarray(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == impl.get_runtime().default_ip
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
@@ -137,7 +140,7 @@ def test_default_ip_ndarray(dtype):
 
     x = ti.Vector.ndarray(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == impl.get_runtime().default_ip
 
 
 # access
@@ -191,7 +194,7 @@ def _test_ndarray_2d():
             assert b[i, j] == i * j + (i + j + 1) * 2
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_ndarray_2d_torch():
     _test_ndarray_2d()
@@ -241,7 +244,7 @@ def _test_ndarray_copy_from_ndarray():
     assert x[4][1, 0] == 6
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_ndarray_copy_from_ndarray_torch():
     _test_ndarray_copy_from_ndarray()
@@ -349,7 +352,7 @@ def test_ndarray_rw_cache():
         c_a[None] = c_b[10]
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_ndarray_deepcopy_torch():
     _test_ndarray_deepcopy()
@@ -387,7 +390,7 @@ def _test_ndarray_numpy_io():
     assert (x.to_numpy() == y.to_numpy()).all()
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=True)
 def test_ndarray_numpy_io_torch():
     _test_ndarray_numpy_io()
@@ -411,7 +414,7 @@ def _test_matrix_ndarray_python_scope(layout):
 
 
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=True)
 def test_matrix_ndarray_python_scope_torch(layout):
     _test_matrix_ndarray_python_scope(layout)
@@ -440,7 +443,7 @@ def _test_matrix_ndarray_taichi_scope(layout):
 
 
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_matrix_ndarray_taichi_scope_torch(layout):
     _test_matrix_ndarray_taichi_scope(layout)
@@ -469,7 +472,7 @@ def _test_matrix_ndarray_taichi_scope_struct_for(layout):
 
 
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_matrix_ndarray_taichi_scope_struct_for_torch(layout):
     _test_matrix_ndarray_taichi_scope_struct_for(layout)
@@ -482,7 +485,7 @@ def test_matrix_ndarray_taichi_scope_struct_for(layout):
 
 
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_vector_ndarray_python_scope_torch(layout):
     a = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
@@ -511,7 +514,7 @@ def test_vector_ndarray_python_scope(layout):
 
 
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_vector_ndarray_taichi_scope_torch(layout):
     @ti.kernel
@@ -559,20 +562,20 @@ def _test_compiled_functions():
 
     v = ti.Vector.ndarray(10, ti.i32, 5)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert impl.get_runtime().get_num_compiled_functions() == 1
     v = np.zeros((6, 10), dtype=np.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert impl.get_runtime().get_num_compiled_functions() == 1
     import torch
     v = torch.zeros((6, 11), dtype=torch.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 2
+    assert impl.get_runtime().get_num_compiled_functions() == 2
     v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 3
+    assert impl.get_runtime().get_num_compiled_functions() == 3
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_compiled_functions_torch():
     _test_compiled_functions()
@@ -666,13 +669,13 @@ def _test_arg_not_match():
         func7(x)
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=True)
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=get_host_arch_list(), ndarray_use_torch=True)
 def test_arg_not_match_torch():
     _test_arg_not_match()
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_arg_not_match():
     _test_arg_not_match()
 
@@ -687,7 +690,7 @@ def _test_size_in_bytes():
     assert b.get_nelement() == 50
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_size_in_bytes_torch():
     _test_size_in_bytes()

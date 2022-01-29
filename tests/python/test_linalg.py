@@ -2,9 +2,10 @@ import math
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
-from taichi import approx
 
 
 @ti.test()
@@ -309,7 +310,7 @@ def test_init_matrix_from_vectors():
 
 # TODO: Remove this once the APIs are obsolete.
 @pytest.mark.filterwarnings('ignore')
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
@@ -417,7 +418,7 @@ def test_matrix_list_assign():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_vector_xyzw_accessor():
     u = ti.Vector.field(2, dtype=ti.i32, shape=(2, 2, 1))
     v = ti.Vector.field(4, dtype=ti.i32, shape=(2, 2, 1))
@@ -440,7 +441,7 @@ def test_vector_xyzw_accessor():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_diag():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
 

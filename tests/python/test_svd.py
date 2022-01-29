@@ -1,7 +1,7 @@
 import numpy as np
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 
 @ti.test(require=ti.extension.data64, fast_math=False)

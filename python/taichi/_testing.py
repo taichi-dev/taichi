@@ -5,8 +5,8 @@ import os
 from tempfile import mkstemp
 
 from taichi._lib import core as _ti_core
-from taichi.lang import (cc, cpu, cuda, gpu, is_arch_supported, metal, opengl,
-                         vulkan)
+from taichi.lang import cc, cpu, cuda, gpu, metal, opengl, vulkan
+from taichi.lang.misc import is_arch_supported
 
 import taichi as ti
 
@@ -202,9 +202,5 @@ def test(arch=None, exclude=None, require=None, **options):
 
 
 __all__ = [
-    'get_rel_eps',
-    'approx',
-    'allclose',
-    'make_temp_file',
     'test',
 ]

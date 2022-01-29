@@ -63,10 +63,6 @@ integer_type_ids = [id(t) for t in integer_types]
 types = real_types + integer_types
 type_ids = [id(t) for t in types]
 
-is_signed = ti_core.is_signed
-
-is_integral = ti_core.is_integral
-
 __all__ = [
     'float32',
     'f32',
@@ -90,8 +86,4 @@ __all__ = [
     'u32',
     'uint64',
     'u64',
-    'real_types',
-    'integer_types',
-    'is_signed',
-    'is_integral',
 ]

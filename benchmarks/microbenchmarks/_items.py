@@ -28,6 +28,7 @@ class BenchmarkItem:
 
 class DataType(BenchmarkItem):
     name = 'dtype'
+    integer_list = ['i32', 'i64']
 
     def __init__(self):
         self._items = {
@@ -36,6 +37,14 @@ class DataType(BenchmarkItem):
             str(ti.f32): ti.f32,
             str(ti.f64): ti.f64
         }
+
+    def remove_integer(self):
+        self.remove(self.integer_list)
+
+    @staticmethod
+    def is_integer(dtype: str):
+        integer_list = ['i32', 'u32', 'i64', 'u64']
+        return True if dtype in integer_list else False
 
 
 class DataSize(BenchmarkItem):
@@ -53,3 +62,55 @@ class Container(BenchmarkItem):
 
     def __init__(self):
         self._items = {'field': ti.field, 'ndarray': ti.ndarray}
+
+
+class MathOps(BenchmarkItem):
+    name = 'math_op'
+
+    #reference: https://docs.taichi.graphics/lang/articles/basic/operator
+    def __init__(self):
+        self._items = {
+            # Trigonometric
+            'sin': ti.sin,
+            'cos': ti.cos,
+            'tan': ti.tan,
+            'asin': ti.asin,
+            'acos': ti.acos,
+            'tanh': ti.tanh,
+            # Other arithmetic
+            'sqrt': ti.sqrt,
+            'rsqrt': ti.rsqrt,  # A fast version for `1 / ti.sqrt(x)`.
+            'exp': ti.exp,
+            'log': ti.log,
+            'round': ti.round,
+            'floor': ti.floor,
+            'ceil': ti.ceil,
+            'abs': ti.abs,
+        }
+
+
+class AtomicOps(BenchmarkItem):
+    name = 'atomic_op'
+
+    def __init__(self):
+        self._items = {
+            'atomic_add': ti.atomic_add,
+            'atomic_sub': ti.atomic_sub,
+            'atomic_and': ti.atomic_and,
+            'atomic_or': ti.atomic_or,
+            'atomic_xor': ti.atomic_xor,
+            'atomic_max': ti.atomic_max,
+            'atomic_min': ti.atomic_min
+        }
+
+    @staticmethod
+    def is_logical_op(op: str):
+        logical_op_list = ['atomic_and', 'atomic_or', 'atomic_xor']
+        return True if op in logical_op_list else False
+
+    @staticmethod
+    def is_supported_type(op: str, dtype: str):
+        if AtomicOps.is_logical_op(op) and not DataType.is_integer(dtype):
+            return False
+        else:
+            return True

@@ -8,7 +8,7 @@ from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
-from taichi.types import CompoundType, integer_types
+from taichi.types import CompoundType, primitive_types
 
 
 class Struct(TaichiOperations):
@@ -494,7 +494,9 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(v) if dtype in integer_types else float(v)
+                    entries[k] = int(
+                        v
+                    ) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
         return Struct(entries)

@@ -24,14 +24,13 @@ TI_NAMESPACE_BEGIN
 #else
 #define TI_NAMESPACE_BEGIN
 #define TI_NAMESPACE_END
-#define TI_EXPORT
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
 #endif
 
 template <typename T>
-TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
@@ -163,10 +162,11 @@ serialize_kv_impl(SER &ser,
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
                 T>())
 
+#if !defined(TI_ARCH_x86)
 static_assert(
     sizeof(std::size_t) == sizeof(uint64_t),
     "sizeof(std::size_t) should be 8. Try compiling with 64bit mode.");
-
+#endif
 template <typename T, typename S>
 struct IO {
   using implemented = std::false_type;

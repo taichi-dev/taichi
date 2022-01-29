@@ -15,7 +15,6 @@ from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
 from taichi.lang.util import warning
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
-from taichi.tools.util import set_gdb_trigger
 from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
@@ -281,7 +280,7 @@ def init(arch=None,
 
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
-        set_gdb_trigger(spec_cfg.gdb_trigger)
+        _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \

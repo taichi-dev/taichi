@@ -3,10 +3,6 @@ import subprocess
 from taichi._lib import core as _ti_core
 
 
-def set_gdb_trigger(on=True):
-    _ti_core.set_core_trigger_gdb_when_crash(on)
-
-
 def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
     d = _ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:

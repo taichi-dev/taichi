@@ -31,7 +31,8 @@ __deprecated_names__ = {
     'kernel_profiler_total_time': 'profiler.get_kernel_profiler_total_time',
     'set_kernel_profiler_toolkit': 'profiler.set_kernel_profiler_toolkit',
     'set_kernel_profile_metrics': 'profiler.set_kernel_profiler_metrics',
-    'collect_kernel_profile_metrics': 'profiler.collect_kernel_profiler_metrics'
+    'collect_kernel_profile_metrics':
+    'profiler.collect_kernel_profiler_metrics'
 }
 
 if sys.version_info.minor < 7:

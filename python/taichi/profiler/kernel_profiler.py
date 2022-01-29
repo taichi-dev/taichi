@@ -584,4 +584,9 @@ def collect_kernel_profiler_metrics(metric_list=default_cupti_metrics):
     get_default_kernel_profiler().set_metrics()
 
 
-__all__ = ['clear_kernel_profiler_info', 'collect_kernel_profiler_metrics', 'get_kernel_profiler_total_time', 'print_kernel_profiler_info', 'query_kernel_profiler_info', 'set_kernel_profiler_metrics', 'set_kernel_profiler_toolkit']
+__all__ = [
+    'clear_kernel_profiler_info', 'collect_kernel_profiler_metrics',
+    'get_kernel_profiler_total_time', 'print_kernel_profiler_info',
+    'query_kernel_profiler_info', 'set_kernel_profiler_metrics',
+    'set_kernel_profiler_toolkit'
+]

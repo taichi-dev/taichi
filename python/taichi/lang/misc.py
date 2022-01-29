@@ -84,9 +84,6 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
-
-
-
 def print_memory_profile_info():
     """Memory profiling tool for LLVM backends with full sparse support.
 

@@ -29,13 +29,14 @@ from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
-    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+    return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
+        shape, element_type, elements)
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(_ti_core.expr_alloca())
+        return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
@@ -743,7 +744,7 @@ def ti_format(*args, **kwargs):
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    _ti_core.create_assert_stmt(
+    get_runtime().prog.current_ast_builder().create_assert_stmt(
         Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
 
 
@@ -881,7 +882,7 @@ def grouped(x):
 
 
 def stop_grad(x):
-    _ti_core.stop_grad(x.snode.ptr)
+    get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
 
 
 def current_cfg():

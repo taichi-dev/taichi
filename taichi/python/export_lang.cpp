@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include "taichi/ir/snode.h"
 
 #if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -17,8 +18,6 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/program/snode_expr_utils.h"
-#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
@@ -66,10 +65,6 @@ void expr_assign(ASTBuilder *ast_builder,
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 std::string libdevice_path();
-
-SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
-  return get_current_program().get_snode_rw_accessors_bank().get(snode);
-}
 
 TLANG_NAMESPACE_END
 
@@ -508,11 +503,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
-      .def("place",
-           [](SNode *snode, Expr &expr, const std::vector<int> &offset) {
-             place_child(&expr, offset, snode,
-                         get_current_program().get_snode_to_glb_var_exprs());
-           })
+      .def("place", &SNode::place)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("name", [](SNode *snode) { return snode->name; })
       .def("get_num_ch",
@@ -521,39 +512,16 @@ void export_lang(py::module &m) {
           "get_ch",
           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
           py::return_value_policy::reference)
-      .def("lazy_grad",
-           [](SNode *snode) {
-             make_lazy_grad(snode,
-                            get_current_program().get_snode_to_glb_var_exprs());
-           })
-      .def("read_int",
-           [](SNode *snode, const std::vector<int> &I) -> int64 {
-             return get_snode_rw_accessors(snode).read_int(I);
-           })
-      .def("read_uint",
-           [](SNode *snode, const std::vector<int> &I) -> uint64 {
-             return get_snode_rw_accessors(snode).read_uint(I);
-           })
-      .def("read_float",
-           [](SNode *snode, const std::vector<int> &I) -> float64 {
-             return get_snode_rw_accessors(snode).read_float(I);
-           })
+      .def("lazy_grad", &SNode::lazy_grad)
+      .def("read_int", &SNode::read_int)
+      .def("read_uint", &SNode::read_uint)
+      .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
-      .def("get_expr",
-           [](SNode *snode) {
-             return Expr(
-                 get_current_program().get_snode_to_glb_var_exprs()->at(snode));
-           })
-      .def("write_int",
-           [](SNode *snode, const std::vector<int> &I, int64 val) {
-             get_snode_rw_accessors(snode).write_int(I, val);
-           })
-      .def("write_float",
-           [](SNode *snode, const std::vector<int> &I, float64 val) {
-             get_snode_rw_accessors(snode).write_float(I, val);
-           })
+      .def("get_expr", &SNode::get_expr)
+      .def("write_int", &SNode::write_int)
+      .def("write_float", &SNode::write_float)
       .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {

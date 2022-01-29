@@ -34,7 +34,7 @@ class FieldsBuilder:
         fb.finalize()
     """
     def __init__(self):
-        self._ptr = _snode_registry.create_root()
+        self._ptr = _snode_registry.create_root(impl.get_runtime().prog)
         self._root = snode.SNode(self._ptr)
         self._finalized = False
         self._empty = True

@@ -184,14 +184,18 @@ class FrontendForStmt : public Stmt {
     return true;
   }
 
+  void accept(IRVisitor *visitor) override {
+    init_before_visit();
+    visitor->visit(this);
+  }
+
+ private:
   void init_before_visit() {
     if (lazy_init_callback_) {
       lazy_init_callback_();
       lazy_init_callback_ = nullptr;
     }
   }
-
-  TI_DEFINE_ACCEPT
 };
 
 class FrontendFuncDefStmt : public Stmt {

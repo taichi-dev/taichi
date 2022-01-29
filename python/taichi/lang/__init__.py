@@ -18,7 +18,6 @@ from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.type_factory_impl import type_factory
-from taichi.tools.util import set_gdb_trigger
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 

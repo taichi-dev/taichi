@@ -16,5 +16,4 @@ __all__ = [
     'dump_dot',
     'dot_to_pdf',
     'get_kernel_stats',
-    'set_gdb_trigger',
 ]

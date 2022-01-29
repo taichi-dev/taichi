@@ -487,7 +487,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           // Alloc ext arr
           DeviceAllocation extarr_buf = device_->allocate_memory(
               {size, /*host_write=*/true, /*host_read=*/true,
-                /*export_sharing=*/false, AllocUsage::Storage});
+               /*export_sharing=*/false, AllocUsage::Storage});
           ext_arrays[i] = extarr_buf;
         }
       }

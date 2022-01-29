@@ -473,14 +473,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         } else {
           // Compute ext arr sizes
           size_t size = arg.stride;
-          bool non_zero_size = false;
+          bool non_zero_size = true;
 
           for (int ax = 0; ax < 8; ax++) {
             // FIXME: how and when do we determine the size of ext arrs?
             size_t axis_size = host_ctx->extra_args[i][ax];
             if (axis_size) {
               size *= host_ctx->extra_args[i][ax];
-              non_zero_size = true;
+              // non_zero_size = true;
             }
           }
 

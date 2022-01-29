@@ -58,7 +58,8 @@ class HostDeviceContextBlitter {
   }
 
   void host_to_device(
-      const std::unordered_map<int, DeviceAllocation> &ext_arrays) {
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, size_t> &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return;
     }
@@ -79,13 +80,13 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (arg.stride && !host_ctx_->is_device_allocation[i]) {
+          if (!host_ctx_->is_device_allocation[i]) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
                 reinterpret_cast<char *>(device_->map(buffer));
             const void *host_ptr = host_ctx_->get_arg<void *>(i);
-            std::memcpy(device_arr_ptr, host_ptr, arg.stride);
+            std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
             device_->unmap(buffer);
           }
           // We should not process the rest
@@ -119,6 +120,7 @@ class HostDeviceContextBlitter {
         TI_ERROR("Vulkan does not support arg type={}", data_type_name(arg.dt));
       } while (0);
     }
+
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
@@ -129,7 +131,8 @@ class HostDeviceContextBlitter {
 
   bool device_to_host(
       CommandList *cmdlist,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrays) {
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, size_t> &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -156,14 +159,14 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
-      if (arg.is_array && arg.stride) {
+      if (arg.is_array) {
         if (!host_ctx_->is_device_allocation[i]) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
               reinterpret_cast<char *>(device_->map(buffer));
           void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(host_ptr, device_arr_ptr, arg.stride);
+          std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
           device_->unmap(buffer);
         }
       }
@@ -185,8 +188,8 @@ class HostDeviceContextBlitter {
       const auto dt = ret.dt;
       do {
         if (ret.is_array) {
-          // void *host_ptr = host_ctx_->get_arg<void *>(i);
-          // std::memcpy(host_ptr, device_ptr, ret.stride);
+          void *host_ptr = host_ctx_->get_arg<void *>(i);
+          std::memcpy(host_ptr, device_ptr, ret.stride);
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
@@ -444,11 +447,13 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
          /*export_sharing=*/false, AllocUsage::Storage});
   }
 
+  // Create context blitter
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
       host_result_buffer_, ctx_buffer.get(), ctx_buffer_host.get());
 
   std::unordered_map<int, DeviceAllocation> ext_arrays;
+  std::unordered_map<int, size_t> ext_array_size;
 
   // Prepare context buffers & arrays
   const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
@@ -466,20 +471,30 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
             ext_arrays[i] = kDeviceNullAllocation; 
           }
         } else {
-          if (arg.stride) {
-            DeviceAllocation extarr_buf = device_->allocate_memory(
-                {arg.stride, /*host_write=*/true, /*host_read=*/true,
-                 /*export_sharing=*/false, AllocUsage::Storage});
-            ext_arrays[i] = extarr_buf;
-          } else {
-            ext_arrays[i] = kDeviceNullAllocation;
+          // Compute ext arr sizes
+          size_t size = arg.stride;
+
+          for (int ax = 0; ax < 8; ax++) {
+            // FIXME: how and when do we determine the size of ext arrs?
+            size_t axis_size = host_ctx->extra_args[i][ax];
+            if (axis_size) {
+              size *= host_ctx->extra_args[i][ax];
+            }
           }
+
+          ext_array_size[i] = size;
+
+          // Alloc ext arr
+          DeviceAllocation extarr_buf = device_->allocate_memory(
+              {size, /*host_write=*/true, /*host_read=*/true,
+                /*export_sharing=*/false, AllocUsage::Storage});
+          ext_arrays[i] = extarr_buf;
         }
       }
       i++;
     }
 
-    ctx_blitter->host_to_device(ext_arrays);
+    ctx_blitter->host_to_device(ext_arrays, ext_array_size);
   }
 
   // Create new command list if current one is nullptr
@@ -501,7 +516,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // If we need to host sync, sync and remove in-flight references
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays)) {
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays, ext_array_size)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }

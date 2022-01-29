@@ -1245,36 +1245,46 @@ class TaskCodegen : public IRVisitor {
                                               false);  // Named Constant
       task_attribs_.advisory_total_num_threads = num_elems;
     } else {
-      if (!stmt->const_begin) {
-        spirv::Value begin_idx = ir_->make_value(
-            spv::OpShiftRightArithmetic, ir_->i32_type(),
-            ir_->int_immediate_number(ir_->i32_type(), stmt->begin_offset),
-            ir_->int_immediate_number(ir_->i32_type(), 2));
-        begin_expr_value = ir_->load_variable(
-            ir_->struct_array_access(
-                ir_->i32_type(),
-                get_buffer_value(BufferType::GlobalTmps, PrimitiveType::i32),
-                begin_idx),
-            ir_->i32_type());
-      } else {
-        begin_expr_value = ir_->int_immediate_number(
-            ir_->i32_type(), stmt->begin_value, false);  // Named Constant
-      }
       spirv::Value end_expr_value;
-      if (!stmt->const_end) {
-        spirv::Value end_idx = ir_->make_value(
-            spv::OpShiftRightArithmetic, ir_->i32_type(),
-            ir_->int_immediate_number(ir_->i32_type(), stmt->end_offset),
-            ir_->int_immediate_number(ir_->i32_type(), 2));
-        end_expr_value = ir_->load_variable(
-            ir_->struct_array_access(
-                ir_->i32_type(),
-                get_buffer_value(BufferType::GlobalTmps, PrimitiveType::i32),
-                end_idx),
-            ir_->i32_type());
+      if (stmt->end_stmt) {
+        // Range from args
+        stmt->end_stmt->accept(this);
+        TI_ASSERT(stmt->const_begin);
+        begin_expr_value = ir_->int_immediate_number(ir_->i32_type(),
+                                                     stmt->begin_value, false);
+        end_expr_value = ir_->query_value(stmt->end_stmt->raw_name());
       } else {
-        end_expr_value =
-            ir_->int_immediate_number(ir_->i32_type(), stmt->end_value, true);
+        // Range from gtmp / constant
+        if (!stmt->const_begin) {
+          spirv::Value begin_idx = ir_->make_value(
+              spv::OpShiftRightArithmetic, ir_->i32_type(),
+              ir_->int_immediate_number(ir_->i32_type(), stmt->begin_offset),
+              ir_->int_immediate_number(ir_->i32_type(), 2));
+          begin_expr_value = ir_->load_variable(
+              ir_->struct_array_access(
+                  ir_->i32_type(),
+                  get_buffer_value(BufferType::GlobalTmps, PrimitiveType::i32),
+                  begin_idx),
+              ir_->i32_type());
+        } else {
+          begin_expr_value = ir_->int_immediate_number(
+              ir_->i32_type(), stmt->begin_value, false);  // Named Constant
+        }
+        if (!stmt->const_end) {
+          spirv::Value end_idx = ir_->make_value(
+              spv::OpShiftRightArithmetic, ir_->i32_type(),
+              ir_->int_immediate_number(ir_->i32_type(), stmt->end_offset),
+              ir_->int_immediate_number(ir_->i32_type(), 2));
+          end_expr_value = ir_->load_variable(
+              ir_->struct_array_access(
+                  ir_->i32_type(),
+                  get_buffer_value(BufferType::GlobalTmps, PrimitiveType::i32),
+                  end_idx),
+              ir_->i32_type());
+        } else {
+          end_expr_value =
+              ir_->int_immediate_number(ir_->i32_type(), stmt->end_value, true);
+        }      
       }
       total_elems = ir_->sub(end_expr_value, begin_expr_value);
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;

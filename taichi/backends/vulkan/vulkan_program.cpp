@@ -169,6 +169,14 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
   }
 }
 
+DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  return get_compute_device()->allocate_memory(
+      {alloc_size, /*host_write=*/false, /*host_read=*/true,
+       /*export_sharing=*/false});
+}
+
 VulkanProgramImpl::~VulkanProgramImpl() {
   vulkan_runtime_.reset();
   embedded_device_.reset();

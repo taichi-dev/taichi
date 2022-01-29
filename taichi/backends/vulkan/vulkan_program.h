@@ -59,6 +59,9 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override;
+
   Device *get_compute_device() override {
     if (embedded_device_) {
       return embedded_device_->device();

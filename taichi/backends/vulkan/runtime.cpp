@@ -79,7 +79,8 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (arg.stride) {
+          if (arg.stride && !host_ctx_->is_device_allocation[i]) {
+            // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
                 reinterpret_cast<char *>(device_->map(buffer));
@@ -156,12 +157,15 @@ class HostDeviceContextBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
       if (arg.is_array && arg.stride) {
-        DeviceAllocation buffer = ext_arrays.at(i);
-        char *const device_arr_ptr =
-            reinterpret_cast<char *>(device_->map(buffer));
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_arr_ptr, arg.stride);
-        device_->unmap(buffer);
+        if (!host_ctx_->is_device_allocation[i]) {
+          // Only need to blit ext arrs (host array)
+          DeviceAllocation buffer = ext_arrays.at(i);
+          char *const device_arr_ptr =
+              reinterpret_cast<char *>(device_->map(buffer));
+          void *host_ptr = host_ctx_->get_arg<void *>(i);
+          std::memcpy(host_ptr, device_arr_ptr, arg.stride);
+          device_->unmap(buffer);
+        }
       }
     }
 
@@ -446,20 +450,30 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   std::unordered_map<int, DeviceAllocation> ext_arrays;
 
+  // Prepare context buffers & arrays
+  const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
   if (ctx_blitter) {
     TI_ASSERT(ti_kernel->get_ctx_buffer_size());
 
-    const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     int i = 0;
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (arg.stride) {
-          DeviceAllocation extarr_buf = device_->allocate_memory(
-              {arg.stride, /*host_write=*/true, /*host_read=*/true,
-               /*export_sharing=*/false, AllocUsage::Storage});
-          ext_arrays[i] = extarr_buf;
+        if (host_ctx->is_device_allocation[i]) {
+          // NDArray
+          if (host_ctx->args[i]) {
+            ext_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+          } else {
+            ext_arrays[i] = kDeviceNullAllocation; 
+          }
         } else {
-          ext_arrays[i] = kDeviceNullAllocation;
+          if (arg.stride) {
+            DeviceAllocation extarr_buf = device_->allocate_memory(
+                {arg.stride, /*host_write=*/true, /*host_read=*/true,
+                 /*export_sharing=*/false, AllocUsage::Storage});
+            ext_arrays[i] = extarr_buf;
+          } else {
+            ext_arrays[i] = kDeviceNullAllocation;
+          }
         }
       }
       i++;
@@ -468,29 +482,37 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     ctx_blitter->host_to_device(ext_arrays);
   }
 
+  // Create new command list if current one is nullptr
   if (!current_cmdlist_) {
     ctx_buffers_.clear();
     current_cmdlist_ = device_->get_compute_stream()->new_command_list();
   }
 
+  // Record commands
   ti_kernel->generate_command_list(current_cmdlist_.get(),
                                    ctx_buffer_host.get(), ctx_buffer.get(),
                                    ext_arrays);
 
+  // Keep context buffers used in this dispatch
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffers_.push_back(std::move(ctx_buffer_host));
     ctx_buffers_.push_back(std::move(ctx_buffer));
   }
 
+  // If we need to host sync, sync and remove in-flight references
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays)) {
       current_cmdlist_ = nullptr;
+      ctx_buffers_.clear();
     }
   }
 
+  // Dealloc external arrays
   for (auto pair : ext_arrays) {
     if (pair.second != kDeviceNullAllocation) {
-      device_->dealloc_memory(pair.second);
+      if (!host_ctx->is_device_allocation[pair.first]) {
+        device_->dealloc_memory(pair.second);
+      }
     }
   }
 }

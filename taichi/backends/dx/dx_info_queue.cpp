@@ -33,7 +33,7 @@ std::string munch_token(std::string &s) {
 }
 
 std::vector<Dx11InfoQueue::Entry> Dx11InfoQueue::parse_reference_count(
-    const std::vector<std::string> messages) {
+    const std::vector<std::string> &messages) {
   std::vector<Dx11InfoQueue::Entry> ret;
   for (std::string line : messages) {
     Dx11InfoQueue::Entry entry;

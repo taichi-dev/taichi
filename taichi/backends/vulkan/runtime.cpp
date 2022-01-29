@@ -468,7 +468,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           if (host_ctx->args[i]) {
             ext_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
           } else {
-            ext_arrays[i] = kDeviceNullAllocation; 
+            ext_arrays[i] = kDeviceNullAllocation;
           }
         } else {
           // Compute ext arr sizes
@@ -487,7 +487,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           // Alloc ext arr
           DeviceAllocation extarr_buf = device_->allocate_memory(
               {size, /*host_write=*/true, /*host_read=*/true,
-                /*export_sharing=*/false, AllocUsage::Storage});
+               /*export_sharing=*/false, AllocUsage::Storage});
           ext_arrays[i] = extarr_buf;
         }
       }
@@ -516,7 +516,8 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // If we need to host sync, sync and remove in-flight references
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays, ext_array_size)) {
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays,
+                                    ext_array_size)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }

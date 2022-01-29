@@ -1284,7 +1284,7 @@ class TaskCodegen : public IRVisitor {
         } else {
           end_expr_value =
               ir_->int_immediate_number(ir_->i32_type(), stmt->end_value, true);
-        }      
+        }
       }
       total_elems = ir_->sub(end_expr_value, begin_expr_value);
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;

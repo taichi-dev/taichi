@@ -15,8 +15,8 @@ from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import *
 from taichi.lang.snode import *
 from taichi.lang.sort import parallel_sort
-from taichi.lang.source_builder import SourceBuilder
-from taichi.lang.struct import Struct, StructField
+from taichi.lang.source_builder import *
+from taichi.lang.struct import *
 from taichi.lang.type_factory_impl import type_factory
 from taichi.tools.util import set_gdb_trigger
 from taichi.types.annotations import any_arr, ext_arr, template

@@ -402,6 +402,7 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   ib_.begin(spv::OpAccessChain)
       .add_seq(ptr_type, ret, buffer, const_i32_zero_, index)
       .commit(&function_);
+
   return ret;
 }
 

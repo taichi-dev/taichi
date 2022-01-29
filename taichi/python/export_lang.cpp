@@ -20,7 +20,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/ndarray.h"
-#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -56,7 +55,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
 
 void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
   stmt->set_tb(tb);
   current_ast_builder().insert(std::move(stmt));
 }
@@ -67,10 +66,6 @@ std::string libdevice_path();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
-}
-
-NdarrayRwAccessorsBank::Accessors get_ndarray_rw_accessors(Ndarray *ndarray) {
-  return get_current_program().get_ndarray_rw_accessors_bank().get(ndarray);
 }
 
 TLANG_NAMESPACE_END
@@ -350,9 +345,14 @@ void export_lang(py::module &m) {
            [&](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendContinueStmt>());
            })
-      .def("insert_expr_stmt", [&](ASTBuilder *self, const Expr &val) {
-        self->insert(Stmt::make<FrontendExprStmt>(val));
-      });
+      .def("insert_expr_stmt",
+           [&](ASTBuilder *self, const Expr &val) {
+             self->insert(Stmt::make<FrontendExprStmt>(val));
+           })
+      .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
+      .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
+      .def("expr_var",
+           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -524,26 +524,11 @@ void export_lang(py::module &m) {
       .def("fill_float", &Ndarray::fill_float)
       .def("fill_int", &Ndarray::fill_int)
       .def("fill_uint", &Ndarray::fill_uint)
-      .def("read_int",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
-             return get_ndarray_rw_accessors(ndarray).read_int(I);
-           })
-      .def("read_uint",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> uint64 {
-             return get_ndarray_rw_accessors(ndarray).read_uint(I);
-           })
-      .def("read_float",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> float64 {
-             return get_ndarray_rw_accessors(ndarray).read_float(I);
-           })
-      .def("write_int",
-           [](Ndarray *ndarray, const std::vector<int> &I, int64 val) {
-             get_ndarray_rw_accessors(ndarray).write_int(I, val);
-           })
-      .def("write_float",
-           [](Ndarray *ndarray, const std::vector<int> &I, float64 val) {
-             get_ndarray_rw_accessors(ndarray).write_float(I, val);
-           })
+      .def("read_int", &Ndarray::read_int)
+      .def("read_uint", &Ndarray::read_uint)
+      .def("read_float", &Ndarray::read_float)
+      .def("write_int", &Ndarray::write_int)
+      .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
@@ -768,34 +753,31 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
   m.def("expr_add", expr_add);
@@ -854,7 +836,6 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(exp)
   DEFINE_EXPRESSION_OP_UNARY(log)
 
-  m.def("expr_var", [](const Expr &e) { return Var(e); });
   m.def("expr_alloca", []() {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
@@ -884,7 +865,7 @@ void export_lang(py::module &m) {
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
           Expr::make<TensorElementExpression>(var, indices, shape,
                                               data_type_size(element_type)),
-          load_if_ptr(elements.exprs[i])));
+          elements.exprs[i]));
     }
     return var;
   });
@@ -956,7 +937,7 @@ void export_lang(py::module &m) {
                    const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
+    return Expr::make<GlobalPtrExpression>(snode, indices);
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
@@ -1129,8 +1110,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
-  m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });

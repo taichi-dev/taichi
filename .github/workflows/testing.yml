@@ -5,6 +5,10 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: ${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   check_files:
     name: Check files
@@ -20,6 +24,7 @@ jobs:
       - name: check modified files
         id: check_files
         run: |
+          echo "Concurrency group: ${{ github.event.number || github.run_id }}"
           echo "=============== list modified files ==============="
           git diff --name-only @^
 

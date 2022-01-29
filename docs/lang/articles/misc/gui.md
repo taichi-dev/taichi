@@ -5,12 +5,9 @@ sidebar_position: 1
 
 # GUI system
 
-Taichi has a built-in GUI system to help users visualize results.
+Taichi has a built-in cpu-based GUI system to help users visualize results.
 
 ## Create a window
-
-[`ti.GUI(name, res)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=gui%20gui#taichi.misc.gui.GUI)
-creates a window.
 
 The following code show how to create a window of resolution `640x360`:
 
@@ -27,21 +24,25 @@ gui = ti.GUI('Window Title', (640, 360), show_gui=False)
 
 while gui.running:
     ...
-    gui.show(f'{gui.frame:06d}.png')  # save a series of screenshot
+    gui.show(f'{gui.frame:06d}.png')  # save current frame to local file
 ```
 
 :::
 
 ## Display a window
 
-[`gui.show(filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=show#taichi.misc.gui.GUI.show)
-helps display a window. If `filename` is specified, a screenshot will be saved to the path. For example, the following saves frames of the window to `.png`s:
+The following code snippet display frame of the current windows:
 
+```python
     for frame in range(10000):
-        render(img)
-        gui.set_image(img)
-        gui.show(f'{frame:06d}.png')
+        ...
+        gui.show() # display current frame
+```
 
+:::note
+Current FPS will show besides the title of the window. By default, FPS is limited to 60.
+We can change this number by setting `gui.fps_limit = the_number_we_want`.
+:::
 
 
 ## Paint on a window
@@ -53,87 +54,19 @@ The position parameter of every drawing API expects input of 2-element tuples,
 whose values are the relative position of the object range from 0.0 to 1.0.
 (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
-Acceptable input for positions are taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
+Acceptable input for positions are Taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
 
-For simplicity, we use numpy arrays in the examples below.
-
+To convert Taichi field to numpy array, use `to_numpy()` on Taichi fields. By doing this, we can also use data
+from Taichi program in other visualization APIs such as matplotlib.
 :::
 
 :::tip
 
-For detailed API description, please click on the API code. For instance, click on
-`gui.get_image()` to see the description to get a GUI images.
+Here we only list the most commonly-used APIs. For a full list of APIs and the detailed API descriptions, please
+see the [API docs](https://api-docs.taichi.graphics/autoapi/taichi/ui/gui/index.html#module-taichi.ui.gui).
 
 :::
 
-[`gui.set_image(pixels)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=set_image#taichi.misc.gui.GUI.set_image)
-sets an image to display on the window.
-
-The image pixels are set from the values of `img[i, j]`, where `i` indicates the horizontal coordinates (from left to right) and `j` the vertical coordinates (from bottom to top).
-
-If the window size is `(x, y)`, then `img` must be one of:
-
-- `ti.field(shape=(x, y))`, a gray-scale image
-
-- `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
-
-- `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
-
-- `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each component
-
-- `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
-
-- `np.ndarray(shape=(x, y))`
-
-- `np.ndarray(shape=(x, y, 3))`
-
-- `np.ndarray(shape=(x, y, 2))`
-
-The data type of `img` must be one of:
-
-- `uint8`, range `[0, 255]`
-
-- `uint16`, range `[0, 65535]`
-
-- `uint32`, range `[0, 4294967295]`
-
-- `float32`, range `[0, 1]`
-
-- `float64`, range `[0, 1]`
-
-:::note
-
-When using `float32` or `float64` as the data type, `img` entries will be clipped into range [0, 1] for display.
-
-:::
-
-[`gui.get_image()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_image#taichi.misc.gui.GUI.get_image)
-gets the 4-channel (RGBA) image shown in the current GUI system.
-
-[`gui.circle(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circle#taichi.misc.gui.GUI.circle)
-draws one solid circle.
-
-The color and radius of circles can be further specified with additional parameters.
-
-[`gui.circles(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circles#taichi.misc.gui.GUI.circles)
-draws solid circles.
-
-The color and radius of circles can be further specified with additional parameters. For a single color, use the `color` parameter.
-For multiple colors, use `palette` and `palette_indices` instead.
-
-:::note
-
-The unit of raduis in GUI APIs is number of pixels.
-
-:::
-
-For examples:
-```python
-gui.circles(pos, radius=3, color=0x068587)
-```
-draws circles all with radius of 1.5 and blue color positioned at pos array.
-
-![circles](../static/assets/circles.png)
 ```python
 gui.circles(pos, radius=3, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
 ```
@@ -143,19 +76,6 @@ circles are colored separately by the first, second, and third color in `palette
 
 ![circles](../static/assets/colored_circles.png)
 
-[`gui.line(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.line)
-draws one line.
-
-The color and radius of lines can be further specified with additional parameters.
-
-[`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
-draws lines.
-
-`begin` and `end` both require input of positions.
-
-The color and radius of lines can be further specified with additional parameters.
-
-For example:
 ```python
 gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
@@ -163,17 +83,6 @@ draws line segments from X positions to Y positions with width of 2 and color in
 
 ![lines](../static/assets/lines.png)
 
-[`gui.triangle(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangle#taichi.misc.gui.GUI.triangle)
-draws one solid triangle.
-
-The color of triangles can be further specified with additional parameters.
-
-[`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
-draws solid triangles.
-
-The color of triangles can be further specified with additional parameters.
-
-For example:
 ```python
 gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
 ```
@@ -181,86 +90,15 @@ draws triangles with color in red and three points positioned at X, Y, and Z.
 
 ![triangles](../static/assets/triangles.png)
 
-[`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
-draws a hollow rectangle.
-
-The color and radius of the stroke of rectangle can be further specified with additional parameters.
-
-For example:
-```python
-gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
-```
-draws a rectangle of top left corner at [0, 0] and bottom right corner at [0.5, 0.5], with stroke of radius of 1 and color in red.
-
-![rect](../static/assets/rect.png)
-
-[`gui.arrows(origin, direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrows#taichi.misc.gui.GUI.arrows)
-draws arrows.
-
-`origin` and `direction` both require input of positions. `origin` refers to the positions of arrows' origins, `direction`
-refers to the directions where the arrows point to relative to their origins.
-
-The color and radius of arrows can be further specified with additional parameters.
-
-For example:
-```python
-x = numpy.array([[0.1, 0.1], [0.9, 0.1]])
-y = numpy.array([[0.3, 0.3], [-0.3, 0.3]])
-gui.arrows(x, y, radius=1, color=0xFFFFFF)
-```
-draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color in white.
-
-![arrows](../static/assets/arrows.png)
-
-[`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
-draws a field of arrows.
-
-The `direction` requires a field of `shape=(col, row, 2)` where `col` refers to the number of columns of arrow field and `row`
-refers to the number of rows of arrow field.
-
-The color and bound of arrow field can be further specified with additional parameters.
-
-For example:
-```python
-gui.arrow_field(x, bound=0.5, color=0xFFFFFF) # x is a field of shape=(5, 5, 2)
-```
-draws a 5 by 5 arrows pointing to random directions.
-
-![arrow_field](../static/assets/arrow_field.png)
-
-[`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
-draws a field of points.
-
-The `radius` requires a field of `shape=(col, row)` where `col` refers to the number of columns of arrow field and `row`
-refers to the number of rows of arrow field.
-
-The color and bound of point field can be further specified with additional parameters.
-
-For example:
-```python
-x = numpy.array([[3, 5, 7, 9], [9, 7, 5, 3], [6, 6, 6, 6]])
-gui.point_field(radius=x, bound=0.5, color=0xED553B)
-```
-draws a 3 by 4 point field of radius stored in the array.
-
-![point_field](../static/assets/point_field.png)
-
-[`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
-draws a line of text on screen.
-
-The font size and color of text can be further specified with additional parameters.
-
 ## RGB & Hex conversion.
 
-[`ti.hex_to_rgb(hex)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=hex_to_rgb#taichi.misc.gui.hex_to_rgb)
-can convert a single integer value to a (R, G, B) tuple of floats.
-
-[`ti.rgb_to_hex(rgb)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rgb#taichi.misc.gui.rgb_to_hex)
-can convert a (R, G, B) tuple of floats into a single integer value, e.g.,
+A handy tool for converting colors from RGB to hex and vice versa.
 
 ```python
 rgb = (0.4, 0.8, 1.0)
 hex = ti.rgb_to_hex(rgb)  # 0x66ccff
+
+rgb = ti.hex_to_rgb(0x007fff) # (0.0, 0.5, 1.0)
 
 rgb = np.array([[0.4, 0.8, 1.0], [0.0, 0.5, 1.0]])
 hex = ti.rgb_to_hex(rgb)  # np.array([0x66ccff, 0x007fff])
@@ -308,9 +146,9 @@ gui.get_event(ti.GUI.PRESS)
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-[`gui.running`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=running#taichi.misc.gui.GUI.running)
-can help check the state of the window. `ti.GUI.EXIT` occurs when you click on the close (X) button of a window.
- `gui.running` will obtain `False` when the GUI is being closed.
+`gui.running` checks the state of the window. `ti.GUI.EXIT` occurs when
+you click on the close (X) button of a window. `gui.running` will obtain
+`False` when the GUI is being closed.
 
 For example, loop until the close button is clicked:
 
@@ -329,8 +167,7 @@ You can also close the window by manually setting `gui.running` to`False`:
         gui.set_image(pixels)
         gui.show()
 
-[`gui.get_event(a, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_event#taichi.misc.gui.GUI.get_event)
-tries to pop an event from the queue, and stores it into `gui.event`.
+`gui.get_event(a, ...)` tries to pop an event from the queue, and stores it into `gui.event`.
 
 For example:
 
@@ -344,20 +181,8 @@ For example, loop until ESC is pressed:
         gui.set_image(img)
         gui.show()
 
-[`gui.get_events(a, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_event#taichi.misc.gui.GUI.get_events)
-is basically the same as `gui.get_event`, except that it returns a generator of events instead of storing into `gui.event`:
-
-    for e in gui.get_events():
-        if e.key == ti.GUI.ESCAPE:
-            exit()
-        elif e.key == ti.GUI.SPACE:
-            do_something()
-        elif e.key in ['a', ti.GUI.LEFT]:
-            ...
-
-[`gui.is_pressed(key, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=is_pressed#taichi.misc.gui.GUI.is_pressed)
-can detect the keys you pressed. It must be used together with `gui.get_event`, or it won't be updated! For
-example:
+`gui.is_pressed(key, ...)` detects the keys you pressed. You must use it
+together with `gui.get_event`. Otherwise, it is not updated. For example:
 
     while True:
         gui.get_event()  # must be called before is_pressed
@@ -383,30 +208,15 @@ while True:
         print('Go right!')
 ```
 
-[`gui.get_cursor_pos()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_cursor#taichi.misc.gui.GUI.get_cursor_pos)
-can return current cursor position within the window. For example:
+`gui.get_cursor_pos()` retrieves the current cursor position on the window. For example:
 
     mouse_x, mouse_y = gui.get_cursor_pos()
-
-[`gui.fps_limit`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=fps#taichi.misc.gui.GUI.fps_limit)
-sets the FPS limit for a window. For example, to cap FPS at 24, simply use `gui.fps_limit = 24`. This helps reduce the overload on your hardware especially when you're using OpenGL on your integrated GPU which could make desktop slow to response.
-
 
 
 ## GUI Widgets
 
 Sometimes it's more intuitive to use widgets like slider or button to control the program variables instead of using chaotic keyboard bindings. Taichi GUI provides a set of widgets for that reason:
 
-[`gui.slider(text, min, max)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=slider#taichi.misc.gui.GUI.slider)
-creates a slider following the text `{text}: {value:.3f}`.
-
-[`gui.label(text)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=label#taichi.misc.gui.GUI.label)
-displays the label as: `{text}: {value:.3f}`.
-
-[`gui.button(text)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=button#taichi.misc.gui.GUI.button)
-creates a button with text on it.
-
-For example:
 ```python
 import taichi as ti
 
@@ -442,8 +252,8 @@ while gui.running:
 
 ## Image I/O
 
-[`ti.imwrite(img, filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imwrite#taichi.misc.image.imwrite)
-can export a `np.ndarray` or Taichi field (`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a specified location `filename`.
+`ti.imwrite(img, filename)` exports an `np.ndarray` or a Taichi field
+(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a file with a specified `filename`.
 
 Same as `ti.GUI.show(filename)`, the format of the exported image is determined by **the suffix of** `filename` as well. Now `ti.imwrite` supports exporting images to `png`, `img` and `jpg` and we recommend using `png`.
 
@@ -497,16 +307,6 @@ draw()
 
 ti.imwrite(pixels, f"export_f32.png")
 ```
-
-[`ti.imread(filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imread#taichi.misc.image.imread)
-loads an image from the target filename and returns it as a `np.ndarray(dtype=np.uint8)`.
-Each value in this returned field is an integer in [0, 255].
-
-[`ti.imshow(img, windname)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imshow#taichi.misc.image.imshow)
-creates an instance of ti.GUI and show the input image on the screen. It has the same logic as `ti.imwrite` for different data types.
-
-[`ti.imresize(img, w)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imresize#taichi.misc.image.imresize)
-resizes the img specified.
 
 ## Zero-copying frame buffer
 When the GUI resolution (window size) is large, it sometimes becomes difficult to achieve 60 FPS even without any kernel

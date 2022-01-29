@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <atomic>
+#include <stack>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
@@ -97,7 +98,7 @@ class AsyncEngine;
  * LlvmProgramImpl, MetalProgramImpl..
  */
 
-class Program {
+class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};

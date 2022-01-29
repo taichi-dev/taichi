@@ -1,9 +1,9 @@
 import os
 
 import pytest
+from taichi._testing import approx
 
 import taichi as ti
-from taichi import approx
 
 
 def run_mpm88_test():
@@ -77,9 +77,6 @@ def run_mpm88_test():
             x[p] += dt * v[p]
             J[p] *= 1 + dt * new_C.trace()
             C[p] = new_C
-
-    # gui = ti._lib.core.GUI("MPM88", ti.core_veci(512, 512))
-    # canvas = gui.get_canvas()
 
     for i in range(n_particles):
         x[i] = [i % N / N * 0.4 + 0.2, i / N / N * 0.4 + 0.05]

@@ -11,7 +11,7 @@ TLANG_NAMESPACE_BEGIN
 
 class Program;
 
-class Kernel : public Callable {
+class TI_DLL_EXPORT Kernel : public Callable {
  public:
   std::string name;
   std::vector<SNode *> no_activate;

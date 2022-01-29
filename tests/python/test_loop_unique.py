@@ -1,3 +1,5 @@
+from taichi.lang.misc import loop_unique
+
 import taichi as ti
 
 
@@ -12,7 +14,7 @@ def test_loop_unique_simple_1d():
     @ti.kernel
     def inc_y():
         for i in x:
-            a = ti.loop_unique(x[i])
+            a = loop_unique(x[i])
             y[a] += 1
 
     x[1] = 2
@@ -37,7 +39,7 @@ def test_loop_unique_binary_op_1d():
     @ti.kernel
     def inc_y():
         for i in x:
-            a = ti.loop_unique(x[i])
+            a = loop_unique(x[i])
             y[a + 1] += 1
 
     x[1] = 2
@@ -63,7 +65,7 @@ def test_loop_unique_nested_1d():
     def inc_y():
         for i in x:
             for j in range(i):
-                a = ti.loop_unique(x[i])
+                a = loop_unique(x[i])
                 y[a] += 1
 
     x[1] = 2
@@ -89,7 +91,7 @@ def test_loop_unique_2d():
     @ti.kernel
     def inc_y_z():
         for i, j in x:
-            a = ti.loop_unique(x[i, j])
+            a = loop_unique(x[i, j])
             y[a, j] += 1
             z[i, i] += 1  # cannot demote this
 
@@ -144,7 +146,7 @@ def test_loop_unique_ndrange():
     @ti.kernel
     def inc_y_z():
         for i, j in ti.ndrange(a, b):
-            u = ti.loop_unique(x[i, j])
+            u = loop_unique(x[i, j])
             y[u] += i
             z[i, j + 1] += 10  # TODO: demote this
 

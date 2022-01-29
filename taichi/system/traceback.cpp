@@ -197,7 +197,7 @@ inline std::vector<StackFrame> stack_trace() {
 
 TI_NAMESPACE_BEGIN
 
-TI_EXPORT void print_traceback() {
+void print_traceback() {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
   // Modified based on

@@ -28,6 +28,7 @@ class BenchmarkItem:
 
 class DataType(BenchmarkItem):
     name = 'dtype'
+    integer_list = ['i32', 'i64']
 
     def __init__(self):
         self._items = {
@@ -36,6 +37,9 @@ class DataType(BenchmarkItem):
             str(ti.f32): ti.f32,
             str(ti.f64): ti.f64
         }
+
+    def remove_integer(self):
+        self.remove(self.integer_list)
 
     @staticmethod
     def is_integer(dtype: str):
@@ -58,6 +62,31 @@ class Container(BenchmarkItem):
 
     def __init__(self):
         self._items = {'field': ti.field, 'ndarray': ti.ndarray}
+
+
+class MathOps(BenchmarkItem):
+    name = 'math_op'
+
+    #reference: https://docs.taichi.graphics/lang/articles/basic/operator
+    def __init__(self):
+        self._items = {
+            # Trigonometric
+            'sin': ti.sin,
+            'cos': ti.cos,
+            'tan': ti.tan,
+            'asin': ti.asin,
+            'acos': ti.acos,
+            'tanh': ti.tanh,
+            # Other arithmetic
+            'sqrt': ti.sqrt,
+            'rsqrt': ti.rsqrt,  # A fast version for `1 / ti.sqrt(x)`.
+            'exp': ti.exp,
+            'log': ti.log,
+            'round': ti.round,
+            'floor': ti.floor,
+            'ceil': ti.ceil,
+            'abs': ti.abs,
+        }
 
 
 class AtomicOps(BenchmarkItem):

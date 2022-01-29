@@ -8,7 +8,6 @@ import shutil
 import tempfile
 import threading
 import time
-from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
 
@@ -19,8 +18,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.impl import axes
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
-from taichi.profiler import get_default_kernel_profiler
-from taichi.profiler.kernel_metrics import default_cupti_metrics
+from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -90,233 +88,7 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
-def print_kernel_profile_info(mode='count'):
-    """Print the profiling results of Taichi kernels.
 
-    To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    ``'count'`` mode: print the statistics (min,max,avg time) of launched kernels,
-    ``'trace'`` mode: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.),
-    and defaults to ``'count'``.
-
-    Args:
-        mode (str): the way to print profiling results.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> var = ti.field(ti.f32, shape=1)
-
-        >>> @ti.kernel
-        >>> def compute():
-        >>>     var[0] = 1.0
-
-        >>> compute()
-        >>> ti.print_kernel_profile_info()
-        >>> # equivalent calls :
-        >>> # ti.print_kernel_profile_info('count')
-
-        >>> ti.print_kernel_profile_info('trace')
-
-    Note:
-        Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-
-        For advanced mode of `KernelProfiler`, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    """
-    get_default_kernel_profiler().print_info(mode)
-
-
-def query_kernel_profile_info(name):
-    """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
-
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-
-    Args:
-        name (str): kernel name.
-
-    Returns:
-        KernelProfilerQueryResult (class): with member variables(counter, min, max, avg)
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> n = 1024*1024
-        >>> var = ti.field(ti.f32, shape=n)
-
-        >>> @ti.kernel
-        >>> def fill():
-        >>>     for i in range(n):
-        >>>         var[i] = 0.1
-
-        >>> fill()
-        >>> ti.clear_kernel_profile_info() #[1]
-        >>> for i in range(100):
-        >>>     fill()
-        >>> query_result = ti.query_kernel_profile_info(fill.__name__) #[2]
-        >>> print("kernel excuted times =",query_result.counter)
-        >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
-        >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
-        >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
-
-    Note:
-        [1] To get the correct result, query_kernel_profile_info() must be used in conjunction with
-        clear_kernel_profile_info().
-
-        [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-    """
-    return get_default_kernel_profiler().query_info(name)
-
-
-def clear_kernel_profile_info():
-    """Clear all KernelProfiler records."""
-    get_default_kernel_profiler().clear_info()
-
-
-def kernel_profiler_total_time():
-    """Get elapsed time of all kernels recorded in KernelProfiler.
-
-    Returns:
-        time (float): total time in second.
-    """
-    return get_default_kernel_profiler().get_total_time()
-
-
-def set_kernel_profiler_toolkit(toolkit_name='default'):
-    """Set the toolkit used by KernelProfiler.
-
-    Currently, we only support toolkits: ``'default'`` and ``'cupti'``.
-
-    Args:
-        toolkit_name (str): string of toolkit name.
-
-    Returns:
-        status (bool): whether the setting is successful or not.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(arch=ti.cuda, kernel_profiler=True)
-        >>> x = ti.field(ti.f32, shape=1024*1024)
-
-        >>> @ti.kernel
-        >>> def fill():
-        >>>     for i in x:
-        >>>         x[i] = i
-
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> for i in range(100):
-        >>>     fill()
-        >>> ti.print_kernel_profile_info()
-
-        >>> ti.set_kernel_profiler_toolkit('default')
-        >>> for i in range(100):
-        >>>     fill()
-        >>> ti.print_kernel_profile_info()
-    """
-    return get_default_kernel_profiler().set_toolkit(toolkit_name)
-
-
-def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set metrics that will be collected by the CUPTI toolkit.
-
-    Args:
-        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
-        >>> ti.get_predefined_cupti_metrics()
-        >>> # get Taichi pre-defined metrics
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('shared_access')
-
-        >>> global_op_atom = ti.CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> # add user defined metrics
-        >>> profiling_metrics += [global_op_atom]
-
-        >>> # metrics setting will be retained until the next configuration
-        >>> ti.set_kernel_profile_metrics(profiling_metrics)
-        >>> for i in range(16):
-        >>>     reduction()
-        >>> ti.print_kernel_profile_info('trace')
-
-    Note:
-        Metrics setting will be retained until the next configuration.
-    """
-    get_default_kernel_profiler().set_metrics(metric_list)
-
-
-@contextmanager
-def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
-
-    Args:
-        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
-        >>> ti.get_predefined_cupti_metrics()
-        >>> # get Taichi pre-defined metrics
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('device_utilization')
-
-        >>> global_op_atom = ti.CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> # add user defined metrics
-        >>> profiling_metrics += [global_op_atom]
-
-        >>> # metrics setting is temporary, and will be clear when exit from this context.
-        >>> with ti.collect_kernel_profile_metrics(profiling_metrics):
-        >>>     for i in range(16):
-        >>>         reduction()
-        >>>     ti.print_kernel_profile_info('trace')
-
-    Note:
-        The configuration of the ``metric_list`` will be clear when exit from this context.
-    """
-    get_default_kernel_profiler().set_metrics(metric_list)
-    yield get_default_kernel_profiler()
-    get_default_kernel_profiler().set_metrics()
 
 
 def print_memory_profile_info():
@@ -1034,9 +806,6 @@ __all__ = [
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
     'benchmark', 'benchmark_plot', 'block_local', 'cache_read_only',
-    'clear_all_gradients', 'clear_kernel_profile_info',
-    'collect_kernel_profile_metrics', 'init', 'kernel_profiler_total_time',
-    'mesh_local', 'no_activate', 'print_memory_profile_info',
-    'print_kernel_profile_info', 'query_kernel_profile_info', 'reset',
-    'set_kernel_profile_metrics', 'set_kernel_profiler_toolkit'
+    'clear_all_gradients', 'init', 'mesh_local', 'no_activate',
+    'print_memory_profile_info', 'reset'
 ]

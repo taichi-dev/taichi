@@ -2,17 +2,17 @@ from taichi._lib import core as _ti_core
 
 
 class CuptiMetric:
-    """A class to add CUPTI metric for :class:`~taichi.lang.KernelProfiler`.
+    """A class to add CUPTI metric for :class:`~taichi.profiler.kernel_profiler.KernelProfiler`.
 
     This class is designed to add user selected CUPTI metrics.
     Only available for the CUDA backend now, i.e. you need ``ti.init(kernel_profiler=True, arch=ti.cuda)``.
-    For usage of this class, see examples in func :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics`.
+    For usage of this class, see examples in func :func:`~taichi.profiler.set_kernel_profiler_metrics` and :func:`~taichi.profiler.collect_kernel_profiler_metrics`.
 
     Args:
-        name (str): name of metric that collected by CUPTI toolkit. used by :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics`.
-        header (str): column header of this metric, used by :func:`~taichi.lang.print_kernel_profile_info`.
-        val_format (str): format for print metric value (and unit of this value), used by :func:`~taichi.lang.print_kernel_profile_info`.
-        scale (float): scale of metric value, used by :func:`~taichi.lang.print_kernel_profile_info`.
+        name (str): name of metric that collected by CUPTI toolkit. used by :func:`~taichi.profiler.set_kernel_profiler_metrics` and :func:`~taichi.profiler.collect_kernel_profiler_metrics`.
+        header (str): column header of this metric, used by :func:`~taichi.profiler.print_kernel_profiler_info`.
+        val_format (str): format for print metric value (and unit of this value), used by :func:`~taichi.profiler.print_kernel_profiler_info`.
+        scale (float): scale of metric value, used by :func:`~taichi.profiler.print_kernel_profiler_info`.
 
     Example::
 
@@ -30,18 +30,18 @@ class CuptiMetric:
         >>>     for i in x:
         >>>         y[None] += x[i]
 
-        >>> global_op_atom = ti.CuptiMetric(
+        >>> global_op_atom = ti.profiler.CuptiMetric(
         >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
         >>>     header=' global.atom ',
         >>>     val_format='    {:8.0f} ')
 
         >>> # add and set user defined metrics
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('global_access') + [global_op_atom]
-        >>> ti.set_kernel_profile_metrics(profiling_metrics)
+        >>> profiling_metrics = ti.profiler.get_predefined_cupti_metrics('global_access') + [global_op_atom]
+        >>> ti.profiler.set_kernel_profile_metrics(profiling_metrics)
 
         >>> for i in range(16):
         >>>     reduction()
-        >>> ti.print_kernel_profile_info('trace')
+        >>> ti.profiler.print_kernel_profiler_info('trace')
 
     Note:
         For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.

@@ -41,7 +41,7 @@ else:
 
     def __getattr__(attr):
         if attr in __deprecated_names__:
-            warning(
+            lang.util.warning(
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
                 DeprecationWarning,
                 stacklevel=2)

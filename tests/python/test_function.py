@@ -128,7 +128,7 @@ def test_python_function():
             self.count = ti.field(ti.i32, shape=())
             self.count[None] = 0
 
-        @ti.pyfunc
+        @ti.lang.kernel_impl.pyfunc
         def dec(self, val: ti.i32) -> ti.i32:
             self.count[None] += 1
             x[None] -= val
@@ -265,7 +265,7 @@ def test_experimental_templates():
 
 @ti.test(experimental_real_function=True)
 def test_missing_arg_annotation():
-    with pytest.raises(ti.KernelDefError, match='must be type annotated'):
+    with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
 
         @ti.func
         def add(a, b: ti.i32) -> ti.i32:

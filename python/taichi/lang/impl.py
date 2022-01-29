@@ -9,7 +9,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError, TaichiTypeError
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -22,9 +22,8 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
-                              taichi_scope)
-from taichi.tools.util import get_traceback, warning
+from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
+                              python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 
@@ -471,7 +470,7 @@ class _UninitializedRootFieldsBuilder:
         if item == '__qualname__':
             # For sphinx docstring extraction.
             return '_UninitializedRootFieldsBuilder'
-        raise InvalidOperationError('Please call init() first')
+        raise TaichiRuntimeError('Please call init() first')
 
 
 # `root` initialization must be delayed until after the program is

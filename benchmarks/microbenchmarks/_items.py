@@ -37,6 +37,11 @@ class DataType(BenchmarkItem):
             str(ti.f64): ti.f64
         }
 
+    @staticmethod
+    def is_integer(dtype: str):
+        integer_list = ['i32', 'u32', 'i64', 'u64']
+        return True if dtype in integer_list else False
+
 
 class DataSize(BenchmarkItem):
     name = 'dsize'
@@ -53,3 +58,30 @@ class Container(BenchmarkItem):
 
     def __init__(self):
         self._items = {'field': ti.field, 'ndarray': ti.ndarray}
+
+
+class AtomicOps(BenchmarkItem):
+    name = 'atomic_op'
+
+    def __init__(self):
+        self._items = {
+            'atomic_add': ti.atomic_add,
+            'atomic_sub': ti.atomic_sub,
+            'atomic_and': ti.atomic_and,
+            'atomic_or': ti.atomic_or,
+            'atomic_xor': ti.atomic_xor,
+            'atomic_max': ti.atomic_max,
+            'atomic_min': ti.atomic_min
+        }
+
+    @staticmethod
+    def is_logical_op(op: str):
+        logical_op_list = ['atomic_and', 'atomic_or', 'atomic_xor']
+        return True if op in logical_op_list else False
+
+    @staticmethod
+    def is_supported_type(op: str, dtype: str):
+        if AtomicOps.is_logical_op(op) and not DataType.is_integer(dtype):
+            return False
+        else:
+            return True

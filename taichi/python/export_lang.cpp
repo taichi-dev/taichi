@@ -20,7 +20,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/ndarray.h"
-#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -67,10 +66,6 @@ std::string libdevice_path();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
-}
-
-NdarrayRwAccessorsBank::Accessors get_ndarray_rw_accessors(Ndarray *ndarray) {
-  return get_current_program().get_ndarray_rw_accessors_bank().get(ndarray);
 }
 
 TLANG_NAMESPACE_END
@@ -529,26 +524,11 @@ void export_lang(py::module &m) {
       .def("fill_float", &Ndarray::fill_float)
       .def("fill_int", &Ndarray::fill_int)
       .def("fill_uint", &Ndarray::fill_uint)
-      .def("read_int",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
-             return get_ndarray_rw_accessors(ndarray).read_int(I);
-           })
-      .def("read_uint",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> uint64 {
-             return get_ndarray_rw_accessors(ndarray).read_uint(I);
-           })
-      .def("read_float",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> float64 {
-             return get_ndarray_rw_accessors(ndarray).read_float(I);
-           })
-      .def("write_int",
-           [](Ndarray *ndarray, const std::vector<int> &I, int64 val) {
-             get_ndarray_rw_accessors(ndarray).write_int(I, val);
-           })
-      .def("write_float",
-           [](Ndarray *ndarray, const std::vector<int> &I, float64 val) {
-             get_ndarray_rw_accessors(ndarray).write_float(I, val);
-           })
+      .def("read_int", &Ndarray::read_int)
+      .def("read_uint", &Ndarray::read_uint)
+      .def("read_float", &Ndarray::read_float)
+      .def("write_int", &Ndarray::write_int)
+      .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 

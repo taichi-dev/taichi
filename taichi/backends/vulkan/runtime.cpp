@@ -473,30 +473,22 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         } else {
           // Compute ext arr sizes
           size_t size = arg.stride;
-          bool non_zero_size = true;
 
           for (int ax = 0; ax < 8; ax++) {
             // FIXME: how and when do we determine the size of ext arrs?
             size_t axis_size = host_ctx->extra_args[i][ax];
             if (axis_size) {
               size *= host_ctx->extra_args[i][ax];
-              // non_zero_size = true;
             }
           }
 
-          if (non_zero_size) {
-            ext_array_size[i] = size;
+          ext_array_size[i] = size;
 
-            // Alloc ext arr
-            DeviceAllocation extarr_buf = device_->allocate_memory(
-                {size, /*host_write=*/true, /*host_read=*/true,
-                 /*export_sharing=*/false, AllocUsage::Storage});
-            ext_arrays[i] = extarr_buf;
-
-          } else {
-            ext_array_size[i] = 0;
-            ext_arrays[i] = kDeviceNullAllocation;
-          }
+          // Alloc ext arr
+          DeviceAllocation extarr_buf = device_->allocate_memory(
+              {size, /*host_write=*/true, /*host_read=*/true,
+                /*export_sharing=*/false, AllocUsage::Storage});
+          ext_arrays[i] = extarr_buf;
         }
       }
       i++;

@@ -12,8 +12,9 @@ def test_unary_op():
         a = 1
         b = ti.floor(a)
 
-    with pytest.raises(ti.TaichiTypeError,
-                       match="'floor' takes real inputs only"):
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match="`@operandType` needs to be Real, but i32 is not"):
         floor()
 
 
@@ -26,7 +27,7 @@ def test_binary_op():
         c = a & b
 
     with pytest.raises(ti.TaichiTypeError,
-                       match=r"unsupported operand type\(s\) for '&'"):
+                       match=r"`@RHS` needs to be Integral, but f32 is not"):
         bitwise_float()
 
 

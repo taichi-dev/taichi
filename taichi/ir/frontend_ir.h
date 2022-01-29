@@ -259,7 +259,7 @@ class CallExpression : public Expression {
   Operation *operation;
   std::vector<Expr> args;
 
-  CallExpression(Operation *op, std::vector<Expr> args)
+  CallExpression(Operation *op, const std::vector<Expr> &args)
       : operation(op), args(args) {
   }
 
@@ -312,80 +312,19 @@ class RandExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
-class UnaryOpExpression : public Expression {
+class CastExpression : public Expression {
  public:
   UnaryOpType type;
   Expr operand;
   DataType cast_type;
 
-  UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(operand) {
-    cast_type = PrimitiveType::unknown;
-  }
-
-  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
+  CastExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
       : type(type), operand(operand), cast_type(cast_type) {
   }
 
   void type_check() override;
 
-  bool is_cast() const;
-
   void serialize(std::ostream &ss) override;
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-class BinaryOpExpression : public Expression {
- public:
-  BinaryOpType type;
-  Expr lhs, rhs;
-
-  BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
-      : type(type), lhs(lhs), rhs(rhs) {
-  }
-
-  void type_check() override;
-
-  void serialize(std::ostream &ss) override {
-    ss << '(';
-    lhs->serialize(ss);
-    ss << ' ';
-    ss << binary_op_type_symbol(type);
-    ss << ' ';
-    rhs->serialize(ss);
-    ss << ')';
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-class TernaryOpExpression : public Expression {
- public:
-  TernaryOpType type;
-  Expr op1, op2, op3;
-
-  TernaryOpExpression(TernaryOpType type,
-                      const Expr &op1,
-                      const Expr &op2,
-                      const Expr &op3)
-      : type(type) {
-    this->op1.set(op1);
-    this->op2.set(op2);
-    this->op3.set(op3);
-  }
-
-  void type_check() override;
-
-  void serialize(std::ostream &ss) override {
-    ss << ternary_type_name(type) << '(';
-    op1->serialize(ss);
-    ss << ' ';
-    op2->serialize(ss);
-    ss << ' ';
-    op3->serialize(ss);
-    ss << ')';
-  }
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -596,23 +535,6 @@ class IdExpression : public Expression {
   bool is_lvalue() const override {
     return true;
   }
-};
-
-// ti.atomic_*() is an expression with side effect.
-class AtomicOpExpression : public Expression {
- public:
-  AtomicOpType op_type;
-  Expr dest, val;
-
-  AtomicOpExpression(AtomicOpType op_type, const Expr &dest, const Expr &val)
-      : op_type(op_type), dest(dest), val(val) {
-  }
-
-  void type_check() override;
-
-  void serialize(std::ostream &ss) override;
-
-  void flatten(FlattenContext *ctx) override;
 };
 
 class SNodeOpExpression : public Expression {
@@ -830,9 +752,5 @@ class FrontendContext {
     return std::move(root_node_);
   }
 };
-
-void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
-
-void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
 TLANG_NAMESPACE_END

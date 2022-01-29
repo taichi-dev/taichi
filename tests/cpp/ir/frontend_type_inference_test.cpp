@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/operation_impl.h"
 #include "taichi/program/program.h"
 
 namespace taichi {
@@ -37,10 +38,9 @@ TEST(FrontendTypeInference, Id) {
 
 TEST(FrontendTypeInference, BinaryOp) {
   auto prog = std::make_unique<Program>(Arch::x64);
-  prog->config.default_fp = PrimitiveType::f64;
   auto const_i32 = Expr::make<ConstExpression, int32>(-(1 << 20));
   const_i32->type_check();
-  auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
+  auto const_f32 = Expr::make<ConstExpression, float64>(5.0);
   const_f32->type_check();
   auto truediv_f64 = expr_truediv(const_i32, const_f32);
   truediv_f64->type_check();
@@ -60,18 +60,18 @@ TEST(FrontendTypeInference, UnaryOp) {
 }
 
 TEST(FrontendTypeInference, TernaryOp) {
-  auto const_i16 = Expr::make<ConstExpression, int16>(-(1 << 10));
-  const_i16->type_check();
-  EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
-  auto cast_i8 = cast(const_i16, PrimitiveType::i8);
+  auto const_i32 = Expr::make<ConstExpression, int32>(-(1 << 10));
+  const_i32->type_check();
+  EXPECT_EQ(const_i32->ret_type, PrimitiveType::i32);
+  auto cast_i8 = cast(const_i32, PrimitiveType::i8);
   cast_i8->type_check();
   EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
-  auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
-  const_f32->type_check();
-  EXPECT_EQ(const_f32->ret_type, PrimitiveType::f32);
-  auto ternary_f32 = expr_select(const_i16, cast_i8, const_f32);
-  ternary_f32->type_check();
-  EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
+  auto const_i8 = Expr::make<ConstExpression, int8>(5);
+  const_i8->type_check();
+  EXPECT_EQ(const_i8->ret_type, PrimitiveType::i8);
+  auto ternary_i8 = expr_select(const_i32, cast_i8, const_i8);
+  ternary_i8->type_check();
+  EXPECT_EQ(ternary_i8->ret_type, PrimitiveType::i8);
 }
 
 TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
@@ -121,7 +121,7 @@ TEST(FrontendTypeInference, AtomicOp) {
   auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
   const_f32->type_check();
   auto atomic_add_i32 =
-      Expr::make<AtomicOpExpression>(AtomicOpType::add, const_i32, const_f32);
+      InternalOps::get().atomic_add->call(const_i32, const_f32);
   atomic_add_i32->type_check();
   EXPECT_EQ(atomic_add_i32->ret_type, PrimitiveType::i32);
 }
@@ -172,8 +172,7 @@ TEST(FrontendTypeInference, LoopUnique) {
 }
 
 TEST(FrontendTypeInference, InternalFuncCall) {
-  auto internal_func_call = Expr::make<CallExpression>(
-      InternalOps::get().do_nothing, std::vector<Expr>{});
+  auto internal_func_call = InternalOps::get().do_nothing->call();
   internal_func_call->type_check();
   EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }

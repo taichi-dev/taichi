@@ -2,6 +2,7 @@
 
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/operation_impl.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -38,24 +39,23 @@ void Expr::type_check() {
 }
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
-                                         false_val);
+  return InternalOps::get().select->call(cond, true_val, false_val);
 }
 
 Expr operator-(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
+  return InternalOps::get().neg->call(expr);
 }
 
 Expr operator~(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
+  return InternalOps::get().bit_not->call(expr);
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
+  return Expr::make<CastExpression>(UnaryOpType::cast_value, input, dt);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
+  return Expr::make<CastExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
@@ -82,7 +82,7 @@ SNode *Expr::snode() const {
 }
 
 Expr Expr::operator!() {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
+  return InternalOps::get().logic_not->call(expr);
 }
 
 void Expr::declare(DataType dt) {

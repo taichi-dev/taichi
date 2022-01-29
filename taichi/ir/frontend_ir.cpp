@@ -119,7 +119,8 @@ void CallExpression::type_check() {
 }
 
 void CallExpression::flatten(FlattenContext *ctx) {
-  stmt = operation->lower(ctx, args);
+  stmt = operation->flatten(ctx, args);
+  stmt->tb = tb;
 }
 
 void ArgLoadExpression::type_check() {
@@ -146,119 +147,31 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void UnaryOpExpression::serialize(std::ostream &ss) {
+void CastExpression::serialize(std::ostream &ss) {
   ss << '(';
-  if (is_cast()) {
-    ss << (type == UnaryOpType::cast_value ? "" : "reinterpret_");
-    ss << unary_op_type_name(type);
-    ss << '<' << data_type_name(cast_type) << "> ";
-  } else {
-    ss << unary_op_type_name(type) << ' ';
-  }
+  ss << (type == UnaryOpType::cast_value ? "" : "reinterpret_");
+  ss << unary_op_type_name(type);
+  ss << '<' << data_type_name(cast_type) << "> ";
   operand->serialize(ss);
   ss << ')';
 }
 
-void UnaryOpExpression::type_check() {
+void CastExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}'",
                     unary_op_type_name(type), operand->ret_type->to_string()));
-  if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
-       type == UnaryOpType::ceil || is_trigonometric(type)) &&
-      !is_real(operand->ret_type))
-    throw TaichiTypeError(
-        fmt::format("'{}' takes real inputs only, however '{}' is provided",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
-  ret_type = is_cast() ? cast_type : operand->ret_type;
+  ret_type = cast_type;
 }
 
-bool UnaryOpExpression::is_cast() const {
-  return unary_op_is_cast(type);
-}
-
-void UnaryOpExpression::flatten(FlattenContext *ctx) {
+void CastExpression::flatten(FlattenContext *ctx) {
   flatten_rvalue(operand, ctx);
   auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
-  if (is_cast()) {
-    unary->cast_type = cast_type;
-  }
+  unary->cast_type = cast_type;
   stmt = unary.get();
   stmt->tb = tb;
   ctx->push_back(std::move(unary));
-}
-
-void BinaryOpExpression::type_check() {
-  TI_ASSERT_TYPE_CHECKED(lhs);
-  TI_ASSERT_TYPE_CHECKED(rhs);
-  auto lhs_type = lhs->ret_type;
-  auto rhs_type = rhs->ret_type;
-  auto error = [&]() {
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
-                    binary_op_type_symbol(type), lhs->ret_type->to_string(),
-                    rhs->ret_type->to_string()));
-  };
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
-    error();
-  if (binary_is_bitwise(type) &&
-      (!is_integral(lhs_type) || !is_integral(rhs_type)))
-    error();
-  if (is_comparison(type)) {
-    ret_type = PrimitiveType::i32;
-    return;
-  }
-  if (type == BinaryOpType::truediv) {
-    auto default_fp = get_current_program().config.default_fp;
-    if (!is_real(lhs_type)) {
-      lhs_type = default_fp;
-    }
-    if (!is_real(rhs_type)) {
-      rhs_type = default_fp;
-    }
-  }
-  ret_type = promoted_type(lhs_type, rhs_type);
-}
-
-void BinaryOpExpression::flatten(FlattenContext *ctx) {
-  // if (stmt)
-  //  return;
-  flatten_rvalue(lhs, ctx);
-  flatten_rvalue(rhs, ctx);
-  ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-  ctx->stmts.back()->tb = tb;
-  stmt = ctx->back_stmt();
-}
-
-void TernaryOpExpression::type_check() {
-  TI_ASSERT_TYPE_CHECKED(op1);
-  TI_ASSERT_TYPE_CHECKED(op2);
-  TI_ASSERT_TYPE_CHECKED(op3);
-  auto op1_type = op1->ret_type;
-  auto op2_type = op2->ret_type;
-  auto op3_type = op3->ret_type;
-  auto error = [&]() {
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
-                    ternary_type_name(type), op1->ret_type->to_string(),
-                    op2->ret_type->to_string(), op3->ret_type->to_string()));
-  };
-  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
-      !op3_type->is<PrimitiveType>())
-    error();
-  ret_type = promoted_type(op2_type, op3_type);
-}
-
-void TernaryOpExpression::flatten(FlattenContext *ctx) {
-  // if (stmt)
-  //  return;
-  flatten_rvalue(op1, ctx);
-  flatten_rvalue(op2, ctx);
-  flatten_rvalue(op3, ctx);
-  ctx->push_back(
-      std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-  stmt = ctx->back_stmt();
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
@@ -442,75 +355,6 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
-}
-
-void AtomicOpExpression::type_check() {
-  TI_ASSERT_TYPE_CHECKED(dest);
-  TI_ASSERT_TYPE_CHECKED(val);
-  auto error = [&]() {
-    throw TaichiTypeError(fmt::format(
-        "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
-        atomic_op_type_name(op_type), dest->ret_type->to_string(),
-        val->ret_type->to_string()));
-  };
-  if (!val->ret_type->is<PrimitiveType>())
-    error();
-  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
-    ret_type = cit->get_compute_type();
-  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
-    ret_type = cft->get_compute_type();
-  } else if (dest->ret_type->is<PrimitiveType>()) {
-    ret_type = dest->ret_type;
-  } else {
-    error();
-  }
-}
-
-void AtomicOpExpression::serialize(std::ostream &ss) {
-  if (op_type == AtomicOpType::add) {
-    ss << "atomic_add(";
-  } else if (op_type == AtomicOpType::sub) {
-    ss << "atomic_sub(";
-  } else if (op_type == AtomicOpType::min) {
-    ss << "atomic_min(";
-  } else if (op_type == AtomicOpType::max) {
-    ss << "atomic_max(";
-  } else if (op_type == AtomicOpType::bit_and) {
-    ss << "atomic_bit_and(";
-  } else if (op_type == AtomicOpType::bit_or) {
-    ss << "atomic_bit_or(";
-  } else if (op_type == AtomicOpType::bit_xor) {
-    ss << "atomic_bit_xor(";
-  } else {
-    // min/max not supported in the LLVM backend yet.
-    TI_NOT_IMPLEMENTED;
-  }
-  dest.serialize(ss);
-  ss << ", ";
-  val.serialize(ss);
-  ss << ")";
-}
-
-void AtomicOpExpression::flatten(FlattenContext *ctx) {
-  // replace atomic sub with negative atomic add
-  if (op_type == AtomicOpType::sub) {
-    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val));
-    op_type = AtomicOpType::add;
-  }
-  // expand rhs
-  auto expr = val;
-  flatten_rvalue(expr, ctx);
-  if (dest.is<IdExpression>()) {  // local variable
-    // emit local store stmt
-    auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
-    ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
-  } else {
-    TI_ASSERT(dest.is<GlobalPtrExpression>() ||
-              dest.is<TensorElementExpression>());
-    flatten_lvalue(dest, ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
-  }
-  stmt = ctx->back_stmt();
 }
 
 void SNodeOpExpression::type_check() {
@@ -713,8 +557,9 @@ ASTBuilder &current_ast_builder() {
   return get_current_program().current_callable->context->builder();
 }
 
-void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
+Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
   expr->flatten(ctx);
+  return expr->stmt;
 }
 
 void flatten_global_load(Expr ptr, Expression::FlattenContext *ctx) {
@@ -727,7 +572,7 @@ void flatten_local_load(Expr ptr, Expression::FlattenContext *ctx) {
   ptr->stmt = ctx->back_stmt();
 }
 
-void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
+Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   ptr->flatten(ctx);
   if (ptr.is<IdExpression>()) {
     if (ptr->stmt->is<AllocaStmt>()) {
@@ -749,6 +594,7 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
       TI_NOT_IMPLEMENTED
     }
   }
+  return ptr->stmt;
 }
 
 TLANG_NAMESPACE_END

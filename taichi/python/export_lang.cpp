@@ -15,6 +15,7 @@
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/operation_impl.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
@@ -767,89 +768,11 @@ void export_lang(py::module &m) {
   m.def("bits_cast",
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
-  m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
-  });
-
-  m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
-  });
-
-  m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
-  });
-
-  m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
-  });
-
-  m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
-  });
-
-  m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
-  });
-
-  m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
-  });
-
-  m.def("expr_add", expr_add);
-  m.def("expr_sub", expr_sub);
-  m.def("expr_mul", expr_mul);
-  m.def("expr_div", expr_div);
-  m.def("expr_truediv", expr_truediv);
-  m.def("expr_floordiv", expr_floordiv);
-  m.def("expr_mod", expr_mod);
-  m.def("expr_max", expr_max);
-  m.def("expr_min", expr_min);
-  m.def("expr_atan2", expr_atan2);
-  m.def("expr_pow", expr_pow);
-
-  m.def("expr_bit_and", expr_bit_and);
-  m.def("expr_bit_or", expr_bit_or);
-  m.def("expr_bit_xor", expr_bit_xor);
-  m.def("expr_bit_shl", expr_bit_shl);
-  m.def("expr_bit_shr", expr_bit_shr);
-  m.def("expr_bit_sar", expr_bit_sar);
-  m.def("expr_bit_not", expr_bit_not);
-  m.def("expr_logic_not", expr_logic_not);
-
-  m.def("expr_cmp_le", expr_cmp_le);
-  m.def("expr_cmp_lt", expr_cmp_lt);
-  m.def("expr_cmp_ge", expr_cmp_ge);
-  m.def("expr_cmp_gt", expr_cmp_gt);
-  m.def("expr_cmp_ne", expr_cmp_ne);
-  m.def("expr_cmp_eq", expr_cmp_eq);
-
   m.def("expr_index", expr_index);
 
   m.def("expr_assume_in_range", AssumeInRange);
 
   m.def("expr_loop_unique", LoopUnique);
-
-  m.def("expr_select", expr_select);
-
-#define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
-
-  m.def("expr_neg", [&](const Expr &e) { return -e; });
-  DEFINE_EXPRESSION_OP_UNARY(sqrt)
-  DEFINE_EXPRESSION_OP_UNARY(round)
-  DEFINE_EXPRESSION_OP_UNARY(floor)
-  DEFINE_EXPRESSION_OP_UNARY(ceil)
-  DEFINE_EXPRESSION_OP_UNARY(abs)
-  DEFINE_EXPRESSION_OP_UNARY(sin)
-  DEFINE_EXPRESSION_OP_UNARY(asin)
-  DEFINE_EXPRESSION_OP_UNARY(cos)
-  DEFINE_EXPRESSION_OP_UNARY(acos)
-  DEFINE_EXPRESSION_OP_UNARY(tan)
-  DEFINE_EXPRESSION_OP_UNARY(tanh)
-  DEFINE_EXPRESSION_OP_UNARY(inv)
-  DEFINE_EXPRESSION_OP_UNARY(rcp)
-  DEFINE_EXPRESSION_OP_UNARY(rsqrt)
-  DEFINE_EXPRESSION_OP_UNARY(exp)
-  DEFINE_EXPRESSION_OP_UNARY(log)
 
   m.def("expr_alloca", []() {
     auto var = Expr(std::make_shared<IdExpression>());
@@ -909,20 +832,6 @@ void export_lang(py::module &m) {
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
 
-  auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
-  for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
-    bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
-  bin.export_values();
-  m.def("make_binary_op_expr",
-        Expr::make<BinaryOpExpression, const BinaryOpType &, const Expr &,
-                   const Expr &>);
-
-  auto &&unary = py::enum_<UnaryOpType>(m, "UnaryOpType", py::arithmetic());
-  for (int t = 0; t <= (int)UnaryOpType::undefined; t++)
-    unary.value(unary_op_type_name(UnaryOpType(t)).c_str(), UnaryOpType(t));
-  unary.export_values();
-  m.def("make_unary_op_expr",
-        Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
 #define PER_TYPE(x)                                                  \
   m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = \
       PrimitiveType::x;
@@ -1392,6 +1301,55 @@ void export_lang(py::module &m) {
   DEF_OP(insert_triplet)
   DEF_OP(do_nothing)
   DEF_OP(refresh_counter)
+  DEF_OP(max)
+  DEF_OP(min)
+  DEF_OP(add)
+  DEF_OP(sub)
+  DEF_OP(mul)
+  DEF_OP(div)
+  DEF_OP(pow)
+  DEF_OP(bit_and)
+  DEF_OP(bit_or)
+  DEF_OP(bit_xor)
+  DEF_OP(bit_shl)
+  DEF_OP(bit_shr)
+  DEF_OP(bit_sar)
+  DEF_OP(cmp_lt)
+  DEF_OP(cmp_le)
+  DEF_OP(cmp_gt)
+  DEF_OP(cmp_ge)
+  DEF_OP(cmp_eq)
+  DEF_OP(cmp_ne)
+  DEF_OP(atan2)
+  DEF_OP(truediv)
+  DEF_OP(floordiv)
+  DEF_OP(mod)
+  DEF_OP(floor)
+  DEF_OP(ceil)
+  DEF_OP(round)
+  DEF_OP(sin)
+  DEF_OP(asin)
+  DEF_OP(cos)
+  DEF_OP(acos)
+  DEF_OP(tan)
+  DEF_OP(tanh)
+  DEF_OP(exp)
+  DEF_OP(log)
+  DEF_OP(sqrt)
+  DEF_OP(rsqrt)
+  DEF_OP(sgn)
+  DEF_OP(neg)
+  DEF_OP(abs)
+  DEF_OP(bit_not)
+  DEF_OP(logic_not)
+  DEF_OP(atomic_add)
+  DEF_OP(atomic_max)
+  DEF_OP(atomic_min)
+  DEF_OP(atomic_sub)
+  DEF_OP(atomic_bit_and)
+  DEF_OP(atomic_bit_or)
+  DEF_OP(atomic_bit_xor)
+  DEF_OP(select)
 
   TEST_OP(test_stack)
   TEST_OP(test_active_mask)

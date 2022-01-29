@@ -139,21 +139,30 @@ def bit_cast(obj, dtype):
 
 def _unary_operation(taichi_op, python_op, a):
     if is_taichi_expr(a):
-        return expr.Expr(taichi_op(a.ptr), tb=stack_info())
+        return expr.Expr(impl.call_internal(taichi_op, a.ptr), tb=stack_info())
     return python_op(a)
 
 
-def _binary_operation(taichi_op, python_op, a, b):
+def _binary_operation_fun(taichi_op, python_op, a, b):
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
     return python_op(a, b)
 
 
+def _binary_operation(taichi_op, python_op, a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
+        return expr.Expr(impl.call_internal(taichi_op, a.ptr, b.ptr),
+                         tb=stack_info())
+    return python_op(a, b)
+
+
 def _ternary_operation(taichi_op, python_op, a, b, c):
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
-        return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
+        return expr.Expr(impl.call_internal(taichi_op, a.ptr, b.ptr, c.ptr),
+                         tb=stack_info())
     return python_op(a, b, c)
 
 
@@ -167,7 +176,7 @@ def neg(a):
     Returns:
         The negative value of `a`.
     """
-    return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
+    return _unary_operation("neg", _bt_ops_mod.neg, a)
 
 
 @unary
@@ -180,7 +189,7 @@ def sin(a):
     Returns:
         Sine of `a`.
     """
-    return _unary_operation(_ti_core.expr_sin, math.sin, a)
+    return _unary_operation("sin", math.sin, a)
 
 
 @unary
@@ -193,7 +202,7 @@ def cos(a):
     Returns:
         Cosine of `a`.
     """
-    return _unary_operation(_ti_core.expr_cos, math.cos, a)
+    return _unary_operation("cos", math.cos, a)
 
 
 @unary
@@ -206,7 +215,7 @@ def asin(a):
     Returns:
         The inverses function of sine of `a`.
     """
-    return _unary_operation(_ti_core.expr_asin, math.asin, a)
+    return _unary_operation("asin", math.asin, a)
 
 
 @unary
@@ -219,7 +228,7 @@ def acos(a):
     Returns:
         The inverses function of cosine of `a`.
     """
-    return _unary_operation(_ti_core.expr_acos, math.acos, a)
+    return _unary_operation("acos", math.acos, a)
 
 
 @unary
@@ -232,7 +241,7 @@ def sqrt(a):
     Returns:
         `x` such that `x>=0` and `x^2=a`.
     """
-    return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
+    return _unary_operation("sqrt", math.sqrt, a)
 
 
 @unary
@@ -248,7 +257,7 @@ def rsqrt(a):
     def _rsqrt(a):
         return 1 / math.sqrt(a)
 
-    return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, a)
+    return _unary_operation("rsqrt", _rsqrt, a)
 
 
 @unary
@@ -261,7 +270,7 @@ def round(a):  # pylint: disable=redefined-builtin
     Returns:
         The nearest integer of `a`.
     """
-    return _unary_operation(_ti_core.expr_round, builtins.round, a)
+    return _unary_operation("round", builtins.round, a)
 
 
 @unary
@@ -274,7 +283,7 @@ def floor(a):
     Returns:
         The greatest integer less than or equal to `a`.
     """
-    return _unary_operation(_ti_core.expr_floor, math.floor, a)
+    return _unary_operation("floor", math.floor, a)
 
 
 @unary
@@ -287,7 +296,7 @@ def ceil(a):
     Returns:
         The least integer greater than or equal to `a`.
     """
-    return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
+    return _unary_operation("ceil", math.ceil, a)
 
 
 @unary
@@ -300,7 +309,7 @@ def tan(a):
     Returns:
         Tangent of `a`.
     """
-    return _unary_operation(_ti_core.expr_tan, math.tan, a)
+    return _unary_operation("tan", math.tan, a)
 
 
 @unary
@@ -313,7 +322,7 @@ def tanh(a):
     Returns:
         `(e**x - e**(-x)) / (e**x + e**(-x))`.
     """
-    return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
+    return _unary_operation("tanh", math.tanh, a)
 
 
 @unary
@@ -326,7 +335,7 @@ def exp(a):
     Returns:
         `e` to the `a`.
     """
-    return _unary_operation(_ti_core.expr_exp, math.exp, a)
+    return _unary_operation("exp", math.exp, a)
 
 
 @unary
@@ -339,7 +348,7 @@ def log(a):
     Returns:
         The natural logarithm of `a`.
     """
-    return _unary_operation(_ti_core.expr_log, math.log, a)
+    return _unary_operation("log", math.log, a)
 
 
 @unary
@@ -352,7 +361,7 @@ def abs(a):  # pylint: disable=W0622
     Returns:
         The absolute value of `a`.
     """
-    return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
+    return _unary_operation("abs", builtins.abs, a)
 
 
 @unary
@@ -365,7 +374,7 @@ def bit_not(a):
     Returns:
         Bitwise not of `a`.
     """
-    return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
+    return _unary_operation("bit_not", _bt_ops_mod.invert, a)
 
 
 @unary
@@ -378,7 +387,7 @@ def logical_not(a):
     Returns:
         `1` iff `a=0`, otherwise `0`.
     """
-    return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
+    return _unary_operation("logic_not", lambda x: int(not x), a)
 
 
 def random(dtype=float):
@@ -409,7 +418,7 @@ def add(a, b):
     Returns:
         sum of `a` and `b`.
     """
-    return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
+    return _binary_operation("add", _bt_ops_mod.add, a, b)
 
 
 @binary
@@ -423,7 +432,7 @@ def sub(a, b):
     Returns:
         `a` subtract `b`.
     """
-    return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
+    return _binary_operation("sub", _bt_ops_mod.sub, a, b)
 
 
 @binary
@@ -437,7 +446,7 @@ def mul(a, b):
     Returns:
         `a` multiplied by `b`.
     """
-    return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
+    return _binary_operation("mul", _bt_ops_mod.mul, a, b)
 
 
 @binary
@@ -453,11 +462,11 @@ def mod(a, b):
     """
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
-        quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
-        multiply = expr.Expr(_ti_core.expr_mul(b, quotient.ptr))
-        return _ti_core.expr_sub(a, multiply.ptr)
+        quotient = impl.call_internal("floordiv", a, b)
+        multiply = impl.call_internal("mul", b, quotient.ptr)
+        return impl.call_internal("sub", a, multiply.ptr)
 
-    return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
+    return _binary_operation_fun(expr_python_mod, _bt_ops_mod.mod, a, b)
 
 
 @binary
@@ -471,7 +480,7 @@ def pow(a, b):  # pylint: disable=W0622
     Returns:
         `a` to the `b`.
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
+    return _binary_operation("pow", _bt_ops_mod.pow, a, b)
 
 
 @binary
@@ -485,8 +494,7 @@ def floordiv(a, b):
     Returns:
         The floor function of `a` divided by `b`.
     """
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
-                             b)
+    return _binary_operation("floordiv", _bt_ops_mod.floordiv, a, b)
 
 
 @binary
@@ -500,7 +508,7 @@ def truediv(a, b):
     Returns:
         The true value of `a` divided by `b`.
     """
-    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
+    return _binary_operation("truediv", _bt_ops_mod.truediv, a, b)
 
 
 @binary
@@ -514,7 +522,7 @@ def max_impl(a, b):
     Returns:
         The maxnimum of `a` and `b`.
     """
-    return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
+    return _binary_operation("max", builtins.max, a, b)
 
 
 @binary
@@ -528,7 +536,7 @@ def min_impl(a, b):
     Returns:
         The minimum of `a` and `b`.
     """
-    return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
+    return _binary_operation("min", builtins.min, a, b)
 
 
 @binary
@@ -542,7 +550,7 @@ def atan2(a, b):
     Returns:
         The inverses function of tangent of `b/a`.
     """
-    return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
+    return _binary_operation("atan2", math.atan2, a, b)
 
 
 @binary
@@ -561,7 +569,7 @@ def raw_div(a, b):
             return a // b
         return a / b
 
-    return _binary_operation(_ti_core.expr_div, c_div, a, b)
+    return _binary_operation("div", c_div, a, b)
 
 
 @binary
@@ -578,7 +586,7 @@ def raw_mod(a, b):
     def c_mod(a, b):
         return a - b * int(float(a) / b)
 
-    return _binary_operation(_ti_core.expr_mod, c_mod, a, b)
+    return _binary_operation("mod", c_mod, a, b)
 
 
 @binary
@@ -593,8 +601,7 @@ def cmp_lt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
-                             b)
+    return _binary_operation("cmp_lt", lambda a, b: -int(a < b), a, b)
 
 
 @binary
@@ -609,8 +616,7 @@ def cmp_le(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
-                             a, b)
+    return _binary_operation("cmp_le", lambda a, b: -int(a <= b), a, b)
 
 
 @binary
@@ -625,8 +631,7 @@ def cmp_gt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
-                             b)
+    return _binary_operation("cmp_gt", lambda a, b: -int(a > b), a, b)
 
 
 @binary
@@ -641,8 +646,7 @@ def cmp_ge(a, b):
         bool: True if LHS is greater than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
-                             a, b)
+    return _binary_operation("cmp_ge", lambda a, b: -int(a >= b), a, b)
 
 
 @binary
@@ -657,8 +661,7 @@ def cmp_eq(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
-    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
-                             a, b)
+    return _binary_operation("cmp_eq", lambda a, b: -int(a == b), a, b)
 
 
 @binary
@@ -673,8 +676,7 @@ def cmp_ne(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
-                             a, b)
+    return _binary_operation("cmp_ne", lambda a, b: -int(a != b), a, b)
 
 
 @binary
@@ -689,7 +691,7 @@ def bit_or(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-or with RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
+    return _binary_operation("bit_or", _bt_ops_mod.or_, a, b)
 
 
 @binary
@@ -704,7 +706,7 @@ def bit_and(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-and with RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
+    return _binary_operation("bit_and", _bt_ops_mod.and_, a, b)
 
 
 @binary
@@ -719,7 +721,7 @@ def bit_xor(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-xor with RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
+    return _binary_operation("bit_xor", _bt_ops_mod.xor, a, b)
 
 
 @binary
@@ -734,7 +736,7 @@ def bit_shl(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, int]: LHS << RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
+    return _binary_operation("bit_shl", _bt_ops_mod.lshift, a, b)
 
 
 @binary
@@ -749,7 +751,7 @@ def bit_sar(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, int]: LHS >> RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
+    return _binary_operation("bit_sar", _bt_ops_mod.rshift, a, b)
 
 
 @taichi_scope
@@ -765,7 +767,7 @@ def bit_shr(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, int]: LHS >> RHS
 
     """
-    return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
+    return _binary_operation("bit_shr", _bt_ops_mod.rshift, a, b)
 
 
 # We don't have logic_and/or instructions yet:
@@ -781,49 +783,56 @@ def select(cond, a, b):
     def py_select(cond, a, b):
         return a * cond + b * (1 - cond)
 
-    return _ternary_operation(_ti_core.expr_select, py_select, cond, a, b)
+    return _ternary_operation("select", py_select, cond, a, b)
 
 
 @writeback_binary
 def atomic_add(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_add", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_sub(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_sub", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_min(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_min", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_max(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_max", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_and(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_bit_and", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_bit_or", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(impl.call_internal("atomic_bit_xor", a.ptr, b.ptr),
+                  tb=stack_info()))
 
 
 @writeback_binary

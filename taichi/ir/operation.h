@@ -1,11 +1,8 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
+#include "taichi/ir/ir.h"
 #include "taichi/ir/type.h"
 #include "taichi/ir/expression.h"
-#include "taichi/ir/statements.h"
 
 namespace taichi {
 namespace lang {
@@ -16,6 +13,11 @@ class TypeExpression {
   // A Solution is a mapping of all tyvars in a type expression to concrete
   // datatypes.
   using Solutions = std::map<Identifier, DataType>;
+
+  class UnifyFailure {
+   public:
+    virtual std::string to_string() const = 0;
+  };
 
   // Equates the type expr and the given datatype, and solve the concrete type
   // of tyvars along the way.
@@ -31,6 +33,13 @@ using TypeExpr = std::shared_ptr<TypeExpression>;
 
 // Any datatype is trivially a type expression.
 class DataTypeExpression : public TypeExpression {
+  class DatatypeMismatch : public UnifyFailure {
+   public:
+    const DataType expected, actual;
+    std::string to_string() const override;
+    DatatypeMismatch(DataType expected, DataType actual);
+  };
+
  public:
   const DataType type;
   DataTypeExpression(DataType ty);
@@ -40,8 +49,18 @@ class DataTypeExpression : public TypeExpression {
   std::string to_string() const override;
 };
 
+class TyvarTypeExpression;
+using Tyvar = std::shared_ptr<TyvarTypeExpression>;
+
 // The class of tyvars.
 class TyvarTypeExpression : public TypeExpression {
+  class TyvarUnsolvable : public UnifyFailure {
+   public:
+    const std::string name;
+    std::string to_string() const override;
+    TyvarUnsolvable(const std::string &name);
+  };
+
  public:
   const Identifier id;
   TyvarTypeExpression(const Identifier &id);
@@ -50,8 +69,6 @@ class TyvarTypeExpression : public TypeExpression {
   DataType resolve(const Solutions &solutions) const override;
   std::string to_string() const override;
 };
-
-using Tyvar = std::shared_ptr<TyvarTypeExpression>;
 
 // A type-level function that returns the std::common_type of two primitive
 // datatypes.
@@ -66,6 +83,17 @@ class CommonTypeExpression : public TypeExpression {
   std::string to_string() const override;
 };
 
+// A type-level function that returns the compute type of a custom scalar type.
+class ComputeTypeExpression : public TypeExpression {
+ public:
+  const TypeExpr ty;
+  ComputeTypeExpression(TypeExpr ty);
+
+  void unify(Solutions &solutions, DataType ty) const override;
+  DataType resolve(const Solutions &solutions) const override;
+  std::string to_string() const override;
+};
+
 // A convenient builder class for type expressions. Preferably use this instead
 // of std::make_shared for TypeExpressions.
 class TypeSpec {
@@ -74,6 +102,7 @@ class TypeSpec {
   static Tyvar var(const Identifier &id);
   static Tyvar var(const std::string &name);
   static std::shared_ptr<CommonTypeExpression> lub(TypeExpr lhs, TypeExpr rhs);
+  static std::shared_ptr<ComputeTypeExpression> comp(TypeExpr ty);
 };
 
 // A trait is a predicate on types.
@@ -98,16 +127,14 @@ class DynamicTrait : public Trait {
   bool has_type(DataType ty) const override;
 };
 
-void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
-void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
-std::vector<Stmt *> get_all_stmts(const std::vector<Expr> &exprs);
+std::vector<Stmt *> get_all_stmts(const std::vector<Expr> &exprs,
+                                  Expression::FlattenContext *ctx);
 
 class Operation {
-  virtual Stmt *flatten(Expression::FlattenContext *ctx,
-                        std::vector<Expr> &args) const = 0;
-
  public:
   // A Constraint describes one tyvar involved in the param and return types
   // and also defines what traits should the tyvar satisfy.
@@ -121,118 +148,48 @@ class Operation {
     Constraint(Tyvar tyvar, const std::vector<Trait *> &traits);
   };
 
-  enum ValueType {
-    LValue,
-    RValue,
-  };
-
-  // A Param can be either an lvalue or an rvalue.
-  class Param {
-   public:
-    const ValueType value_type = RValue;
-    const TypeExpr type_expr;
-
-    Param(TypeExpr ty);
-    Param(ValueType vt, TypeExpr ty);
-  };
-
   const std::string name;
   const std::vector<Constraint> constraints;
-  const std::vector<Param> params;
+  const std::vector<TypeExpr> params;
   const TypeExpr result;
 
   Operation(const std::string &name,
             const std::vector<Constraint> &constraints,
-            const std::vector<Param> &params,
+            const std::vector<TypeExpr> &params,
             TypeExpr result);
 
-  Stmt *lower(Expression::FlattenContext *ctx, std::vector<Expr> &args) const;
   DataType check(const std::vector<Expr> &args) const;
+  std::string signature_string() const;
+
+  virtual Stmt *flatten(Expression::FlattenContext *ctx,
+                        std::vector<Expr> &args) const = 0;
+
+  Expr call(const std::vector<Expr> &args);
+  template <typename... Args>
+  Expr call(const Args &... args) {
+    return call({args...});
+  }
 };
 
-// This class corresponds to InternalFuncStmt.
-class InternalCallOperation : public Operation {
-  const std::string internal_call_name_;
+class DynamicOperation : public Operation {
+ public:
+  using DynOp = Stmt *(Expression::FlattenContext *ctx,
+                       std::vector<Expr> &args);
+
+  DynamicOperation(const std::string &name,
+                   const std::vector<Constraint> &tyvars,
+                   const std::vector<TypeExpr> &params,
+                   TypeExpr result,
+                   const std::function<DynOp> &func);
+  DynamicOperation(const std::string &name,
+                   Operation *temp,
+                   const std::function<DynOp> &func);
 
   Stmt *flatten(Expression::FlattenContext *ctx,
                 std::vector<Expr> &args) const override;
 
- public:
-  InternalCallOperation(const std::string &name,
-                        const std::string &internal_name,
-                        const std::vector<DataType> &params,
-                        DataType result);
-};
-
-class DynamicOperation : public Operation {
-  using DynOp = Stmt *(Expression::FlattenContext *ctx,
-                       const std::vector<Expr> &stmts);
+ private:
   const std::function<DynOp> func_;
-
-  Stmt *flatten(Expression::FlattenContext *ctx,
-                std::vector<Expr> &stmts) const override;
-
- public:
-  DynamicOperation(const std::string &name,
-                   const std::vector<Constraint> &tyVars,
-                   const std::vector<Param> &params,
-                   TypeExpr result,
-                   const std::function<DynOp> &func);
-};
-
-class StaticTraits {
-  StaticTraits();
-  static inline std::unique_ptr<StaticTraits> instance_;
-
- public:
-  Trait *primitive;
-  Trait *custom;
-  Trait *scalar;
-  Trait *real;
-  Trait *integral;
-
-  static const StaticTraits &get() {
-    if (!instance_)
-      instance_ = std::make_unique<StaticTraits>(StaticTraits());
-    return *instance_;
-  }
-};
-
-class InternalOps {
-  InternalOps();
-  static inline std::unique_ptr<InternalOps> instance_;
-
- public:
-  Operation *thread_index;
-  Operation *insert_triplet;
-  Operation *do_nothing;
-  Operation *refresh_counter;
-
-  static const InternalOps &get() {
-    if (!instance_)
-      instance_ = std::make_unique<InternalOps>(InternalOps());
-    return *instance_;
-  }
-};
-
-class TestInternalOps {
-  TestInternalOps();
-  static inline std::unique_ptr<TestInternalOps> instance_;
-
- public:
-  Operation *test_stack;
-  Operation *test_active_mask;
-  Operation *test_shfl;
-  Operation *test_list_manager;
-  Operation *test_node_allocator;
-  Operation *test_node_allocator_gc_cpu;
-  Operation *test_internal_func_args;
-
-  static const TestInternalOps &get() {
-    if (!instance_)
-      instance_ = std::make_unique<TestInternalOps>(TestInternalOps());
-    return *instance_;
-  }
 };
 
 }  // namespace lang

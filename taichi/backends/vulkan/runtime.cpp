@@ -80,7 +80,7 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i]) {
+          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
@@ -141,7 +141,7 @@ class HostDeviceContextBlitter {
     if (!require_sync) {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
-        if (arg.is_array && arg.stride) {
+        if (arg.is_array) {
           require_sync = true;
         }
       }
@@ -160,7 +160,7 @@ class HostDeviceContextBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
       if (arg.is_array) {
-        if (!host_ctx_->is_device_allocation[i]) {
+        if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
@@ -473,22 +473,30 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         } else {
           // Compute ext arr sizes
           size_t size = arg.stride;
+          bool non_zero_size = false;
 
           for (int ax = 0; ax < 8; ax++) {
             // FIXME: how and when do we determine the size of ext arrs?
             size_t axis_size = host_ctx->extra_args[i][ax];
             if (axis_size) {
               size *= host_ctx->extra_args[i][ax];
+              non_zero_size = true;
             }
           }
 
-          ext_array_size[i] = size;
+          if (non_zero_size) {
+            ext_array_size[i] = size;
 
-          // Alloc ext arr
-          DeviceAllocation extarr_buf = device_->allocate_memory(
-              {size, /*host_write=*/true, /*host_read=*/true,
-               /*export_sharing=*/false, AllocUsage::Storage});
-          ext_arrays[i] = extarr_buf;
+            // Alloc ext arr
+            DeviceAllocation extarr_buf = device_->allocate_memory(
+                {size, /*host_write=*/true, /*host_read=*/true,
+                 /*export_sharing=*/false, AllocUsage::Storage});
+            ext_arrays[i] = extarr_buf;
+          
+          } else {
+            ext_array_size[i] = 0;
+            ext_arrays[i] = kDeviceNullAllocation;          
+          }
         }
       }
       i++;

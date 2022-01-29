@@ -492,10 +492,10 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
                 {size, /*host_write=*/true, /*host_read=*/true,
                  /*export_sharing=*/false, AllocUsage::Storage});
             ext_arrays[i] = extarr_buf;
-          
+
           } else {
             ext_array_size[i] = 0;
-            ext_arrays[i] = kDeviceNullAllocation;          
+            ext_arrays[i] = kDeviceNullAllocation;
           }
         }
       }

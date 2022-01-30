@@ -7,7 +7,8 @@ from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
-                             copy_vertices_to_vbo, get_vbo_field)
+                             copy_vertices_to_vbo, get_vbo_field,
+                             copy_texcoords_to_vbo)
 from .utils import get_field_info
 
 normals_field_cache = {}
@@ -113,7 +114,8 @@ class Scene(_ti_core.PyScene):
                   centers,
                   radius,
                   color=(0.5, 0.5, 0.5),
-                  per_vertex_color=None):
+                  per_vertex_color=None,
+                  per_vertex_radius=None):
         """Declare a set of particles within the scene.
 
         Args:
@@ -125,10 +127,13 @@ class Scene(_ti_core.PyScene):
         vbo = get_vbo_field(centers)
         copy_vertices_to_vbo(vbo, centers)
         has_per_vertex_color = per_vertex_color is not None
+        has_per_vertex_radius = per_vertex_radius is not None
         if has_per_vertex_color:
             copy_colors_to_vbo(vbo, per_vertex_color)
+        if has_per_vertex_radius:
+            copy_texcoords_to_vbo(vbo, per_vertex_radius)
         vbo_info = get_field_info(vbo)
-        super().particles(vbo_info, has_per_vertex_color, color, radius)
+        super().particles(vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         super().point_light(pos, color)

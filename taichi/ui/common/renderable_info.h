@@ -8,6 +8,7 @@ struct RenderableInfo {
   FieldInfo vbo;
   FieldInfo indices;
   bool has_per_vertex_color;
+  bool has_per_vertex_radius;
 };
 
 TI_UI_NAMESPACE_END

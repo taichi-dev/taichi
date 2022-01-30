@@ -17,6 +17,7 @@ layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;
   int use_per_vertex_color;
+  int has_per_vertex_radius;
   float radius;
   float window_width;
   float window_height;
@@ -26,6 +27,7 @@ ubo;
 
 layout(location = 0) out vec4 pos_camera_space;
 layout(location = 1) out vec4 selected_color;
+layout(location = 2) out vec2 selected_radius;
 
 void main() {
   float distance = length(in_position - ubo.scene.camera_pos);
@@ -41,5 +43,11 @@ void main() {
     selected_color = vec4(ubo.color, 1.0);
   } else {
     selected_color = in_color;
+  }
+
+  if (ubo.has_per_vertex_radius == 0) {
+    selected_radius = vec2(ubo.radius, 0);
+  } else {
+    selected_radius = in_texcoord;
   }
 }

@@ -9,6 +9,17 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+// https://gcc.gnu.org/wiki/Visibility
+#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
+#ifdef __GNUC__
+#define TI_DLL_EXPORT __attribute__((dllexport))
+#else
+#define TI_DLL_EXPORT __declspec(dllexport)
+#endif  //  __GNUC__
+#else
+#define TI_DLL_EXPORT __attribute__((visibility("default")))
+#endif  // defined _WIN32 || defined _WIN64 || defined __CYGWIN__
+
 // Windows
 #if defined(_WIN64)
 #define TI_PLATFORM_WINDOWS

@@ -21,7 +21,7 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-class Gui final : public GuiBase {
+class TI_DLL_EXPORT Gui final : public GuiBase {
  public:
   Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
   void cleanup();

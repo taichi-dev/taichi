@@ -118,13 +118,13 @@ The accessors of `x` and `y` are in reverse order between row-major arrays and c
 
 AoS means _array of structures_ and SoA means _structure of arrays_. Consider an RGB image with 4 pixels and 3 color channels, an AoS layout stores `RGBRGBRGBRGB` while an SoA layout stores `RRRRGGGGBBBB`.
 
-The selection of AoS or SoA layouts largely depends on the access pattern to the field. Let's discuss the scenario to process large RGB images. The two layouts has the following arrangement in memory:
+The selection of AoS or SoA layout largely depends on the access pattern to the field. Let's discuss a scenario to process large RGB images. The two layouts have the following arrangements in memory:
 ```
 # address: low ...................... high
 # AoS:     RGBRGBRGBRGBRGBRGB.............
 # SoA:     RRRRR...RGGGGGGG...GBBBBBBB...B
 ```
-To calculate grey scale of each pixel, we need all color channels but doesn't involve other pixels. Apparently, the AoS layout has a better memory access pattern: color channels are stored continuously, and adjacent channels can be fetched instantly, while the color channels of a pixel are stored far apart in the memory space for the SoA layout.
+To calculate grey scale of each pixel, we need all color channels but do not require the value of other pixels. In this case, the AoS layout has a better memory access pattern: Since color channels are stored continuously, and adjacent channels can be fetched instantly. The SoA layout is not a good option because the color channels of a pixel are stored far apart in the memory space.
 
 We describe how to construct AoS and SoA fields with our `ti.root.X` statements. The SoA fields are trivial:
 ```python
@@ -134,7 +134,7 @@ ti.root.dense(ti.i, M).place(x)
 ti.root.dense(ti.i, M).place(y)
 ```
 where M is the length of `x` and `y`.
-The data elements in `x` and `y` are naturally continuous in memory:
+The data elements in `x` and `y` are continuous in memory:
 ```
 #  address: low ................................. high
 #           x[0]  x[1]  x[2] ... y[0]  y[1]  y[2] ...
@@ -154,10 +154,10 @@ The memroy layout then becomes
 ```
 Here, `place` interleaves the elements of Taichi fields `x` and `y`.
 
-The access methods to `x` and `y`, however, remain the same for AoS and SoA. We can change the data layout without revising the application logics.
+As previously introduced, the access methods to `x` and `y` remain the same for both  AoS and SoA. Therefore, the data layout can be changed flexibly without revising the application logic.
 
-<!-- haiong: I hope this part is 1) revised to a runnable and complete example 2) provides performane constrast-->
-To be more clear, let's see a specific example, 1D wave equation solver:
+<!-- haidong: I hope this part is 1) revised to a runnable and complete example 2) provides performane constrast-->
+For better illustration, let's see an example of an 1D wave equation solver:
 ```python
 N = 200000
 pos = ti.field(ti.f32)
@@ -173,9 +173,9 @@ def step():
 
 ...
 ```
-The above code snippet defines SoA fields and sequentially access each element in the subsequent `step` kernel.
+The above code snippet defines SoA fields and a `step` kernel that sequentially accesses each element.
 The kernel fetches an element from `pos` and `vel` for every iteration, respectively.
-For SoA fields, the closest distance of the two elements in memory is `N`, which is unlikely to be efficient for large `N`.
+For SoA fields, the closest distance of any two elements in memory is `N`, which is unlikely to be efficient for large `N`.
 
 We hereby switch the layout to AoS as follows:
 
@@ -191,7 +191,7 @@ def step():
     pos[i] += vel[i] * dt
     vel[i] += -k * pos[i] * dt
 ```
-Merely revising the place statement is sufficient to change the layout. With this regard, the instant elements `pos[i]` and `vel[i]` are now adjecent in memory, which appears to be more efficient.
+Merely revising the place statement is sufficient to change the layout. With this optimization, the instant elements `pos[i]` and `vel[i]` are now adjacent in memory, which is more efficient.
 
 <!-- ```python
 # SoA version
@@ -260,7 +260,7 @@ relatively close addresses.**  -->
 
 ### AoS extension: hierarchical fields
 <!-- haidong: I hope to remove this subsection. This content just repeats the AoS topic -->
-Sometimes we want to access memory in a complex but fixed pattern, like traversing an image in 8x8 blocks. The apparent best practice is to flatten each 8x8 block and concatenate them together. From a Taichi user's view, however, the field is no longer a flat buffer. It now has a hierarchy with two levels: the image level and the block level. Equivalently, the field is an array of implicit 8x8 block strucutrues.
+Sometimes we want to access memory in a complex but fixed pattern, like traversing an image in 8x8 blocks. The apparent best practice is to flatten each 8x8 block and concatenate them together. From a Taichi user's perspective, however, the field is no longer a flat buffer. It now has a hierarchy with two levels: The image level and the block level. Equivalently, the field is an array of implicit 8x8 block structures.
 
 We demonstrate the statements as follows:
 
@@ -275,15 +275,15 @@ ti.root.dense(ti.ij, (M, N)).place(val)
 val = ti.field(ti.f32)
 ti.root.dense(ti.ij, (M // 8, N // 8)).dense(ti.ij, (8, 8)).place(val)
 ```
-where `M` and `N` are multiples of 8. We hope the readers try on their own compute machines. The performance difference can be amazing.
+where `M` and `N` are multiples of 8. We encourage you to try this out! The performance difference can be significant!
 
 ## How to manage memory occupancy
 
 ### Manual field allocation and destruction
 
-Generally Taichi manages memory allocation and destruction without disturbing the users. However, there are sometimes that users want delicate controll over memory allocations.
+Generally Taichi manages memory allocation and destruction without disturbing the users. However, there are times that users want explicit control over their memory allocations.
 
-In this scenario, Taichi provides the `FieldsBuilder` for manual field memory allocation and destruction. `FieldsBuilder` features identical declaration APIs as `ti.root`. The extra step is to invoke `finalize()` at the end of all delarations. The `finalize()` returns an `SNodeTree` object to handle subsequent destructions.
+In this scenario, Taichi provides the `FieldsBuilder` for manual field memory allocation and destruction. `FieldsBuilder` features identical declaration APIs as `ti.root`. The extra step is to invoke `finalize()` at the end of all declarations. The `finalize()` returns an `SNodeTree` object to handle subsequent destructions.
 
 Let's see a simple example:
 

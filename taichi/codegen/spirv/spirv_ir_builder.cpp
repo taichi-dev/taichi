@@ -329,9 +329,7 @@ SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
   return get_pointer_type(value_type, storage_class);
 }
 
-
-SType IRBuilder::get_array_type(const SType &value_type,
-                                       uint32_t num_elems) {
+SType IRBuilder::get_array_type(const SType &value_type, uint32_t num_elems) {
   SType arr_type;
   arr_type.id = id_counter_++;
   arr_type.flag = TypeKind::kPtr;
@@ -402,13 +400,14 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
   return struct_type;
 }
 
-SType IRBuilder::create_struct_type(std::vector<std::tuple<SType, std::string, size_t>> &components) {
+SType IRBuilder::create_struct_type(
+    std::vector<std::tuple<SType, std::string, size_t>> &components) {
   SType struct_type;
   struct_type.id = id_counter_++;
   struct_type.flag = TypeKind::kStruct;
 
   auto &builder = ib_.begin(spv::OpTypeStruct).add_seq(struct_type);
-  
+
   for (auto &[type, name, offset] : components) {
     builder.add_seq(type);
   }
@@ -417,7 +416,8 @@ SType IRBuilder::create_struct_type(std::vector<std::tuple<SType, std::string, s
 
   int i = 0;
   for (auto &[type, name, offset] : components) {
-    this->decorate(spv::OpMemberDecorate, struct_type, i, spv::DecorationOffset, offset);
+    this->decorate(spv::OpMemberDecorate, struct_type, i, spv::DecorationOffset,
+                   offset);
     this->debug(spv::OpMemberName, struct_type, i, name);
     i++;
   }
@@ -426,9 +426,9 @@ SType IRBuilder::create_struct_type(std::vector<std::tuple<SType, std::string, s
 }
 
 Value IRBuilder::buffer_struct_argument(const SType &struct_type,
-                                 uint32_t descriptor_set,
-                                 uint32_t binding,
-                                 const std::string &name) {
+                                        uint32_t descriptor_set,
+                                        uint32_t binding,
+                                        const std::string &name) {
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;

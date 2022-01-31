@@ -92,7 +92,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
-      TI_TRACE("  at={} {} offset_in_mem={} stride={}", (*vec)[i].is_array ? "vector ptr" : "scalar", i,
+      TI_TRACE("  at={} {} offset_in_mem={} stride={}",
+               (*vec)[i].is_array ? "vector ptr" : "scalar", i,
                attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;

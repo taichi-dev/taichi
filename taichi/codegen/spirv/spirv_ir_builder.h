@@ -328,7 +328,8 @@ class IRBuilder {
   // Get a struct{ value_type[num_elems] } type
   SType get_struct_array_type(const SType &value_type, uint32_t num_elems);
   // Construct a struct type
-  SType create_struct_type(std::vector<std::tuple<SType, std::string, size_t>> &components);
+  SType create_struct_type(
+      std::vector<std::tuple<SType, std::string, size_t>> &components);
 
   // Declare buffer argument of function
   Value buffer_struct_argument(const SType &struct_type,

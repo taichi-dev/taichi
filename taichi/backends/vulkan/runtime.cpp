@@ -487,7 +487,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
                 // e.g. shape [1, 0, 1]
                 size = 0;
               } else {
-                size *= host_ctx->extra_args[i][ax]; 
+                size *= host_ctx->extra_args[i][ax];
               }
             } else {
               has_zero_axis = true;
@@ -501,9 +501,9 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
             DeviceAllocation extarr_buf = device_->allocate_memory(
                 {size, /*host_write=*/true, /*host_read=*/true,
                  /*export_sharing=*/false, AllocUsage::Storage});
-            any_arrays[i] = extarr_buf;          
+            any_arrays[i] = extarr_buf;
           } else {
-            any_arrays[i] = kDeviceNullAllocation; 
+            any_arrays[i] = kDeviceNullAllocation;
           }
         }
       }

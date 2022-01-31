@@ -311,6 +311,10 @@ class IRBuilder {
   SType get_primitive_type(const DataType &dt) const;
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
+  // Get the spirv uint type with the same size of a given Taichi data type
+  SType get_primitive_uint_type(const DataType &dt) const;
+  // Get the Taichi uint type with the same size of a given Taichi data type
+  DataType get_taichi_uint_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);

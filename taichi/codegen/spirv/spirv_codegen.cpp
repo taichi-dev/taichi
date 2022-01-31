@@ -469,15 +469,9 @@ class TaskCodegen : public IRVisitor {
     const auto dt = stmt->val->element_type();
     const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
-    spirv::Value buffer_ptr = at_buffer(stmt->dest, dt);
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 
-    auto buffer_typed_value =
-        primitive_buffer_type.id == val.stype.id
-            ? val
-            : ir_->make_value(spv::OpBitcast, primitive_buffer_type, val);
-
-    ir_->store_variable(buffer_ptr, buffer_typed_value);
+    store_buffer(stmt->dest, val);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -485,16 +479,7 @@ class TaskCodegen : public IRVisitor {
     auto dt = stmt->element_type();
     const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
-    spirv::Value buffer_ptr = at_buffer(stmt->src, dt);
-    spirv::Value buffer_typed_value =
-        ir_->load_variable(buffer_ptr, primitive_buffer_type);
-
-    auto value_type = ir_->get_primitive_type(dt);
-
-    auto val =
-        value_type.id == buffer_typed_value.stype.id
-            ? buffer_typed_value
-            : ir_->make_value(spv::OpBitcast, value_type, buffer_typed_value);
+    auto val = load_buffer(stmt->src, dt);
 
     ir_->register_value(stmt->raw_name(), val);
   }
@@ -917,17 +902,17 @@ class TaskCodegen : public IRVisitor {
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = at_buffer(stmt->dest, PrimitiveType::i64);
+        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = at_buffer(stmt->dest, PrimitiveType::i32);
+        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
+      addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
     }
 
     auto ret_type = ir_->get_primitive_type(dt);
@@ -987,16 +972,19 @@ class TaskCodegen : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
 
-      /*
-      if (data.stype.element_type_id != ret_type.id) {
-        data = ir_->cast(ret_type, data);
-      }
-      */
+      auto uint_type = ir_->get_primitive_uint_type(dt);
 
-      auto ptr_elem_type = ir_->get_primitive_type(dt);
-      val = ir_->make_value(op, ptr_elem_type, addr_ptr,
+      if (data.stype.id != addr_ptr.stype.element_type_id) {
+        data = ir_->make_value(spv::OpBitcast, uint_type, data);
+      }
+
+      val = ir_->make_value(op, uint_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
+
+      if (val.stype.id != ret_type.id) {
+        val = ir_->make_value(spv::OpBitcast, ret_type, val);
+      }
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -1592,16 +1580,26 @@ class TaskCodegen : public IRVisitor {
     return ret;
   }
 
-  spirv::Value at_buffer_alias(const Stmt *ptr, DataType dt) {
-    size_t width = ir_->get_primitive_type_size(dt);
-    spirv::Value buffer = get_buffer_value_alias(ptr_to_buffers_.at(ptr), dt);
-    spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
-    spirv::Value idx_val =
-        ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
-                        make_pointer(size_t(std::log2(width))));
-    spirv::Value ret =
-        ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
+  spirv::Value load_buffer(const Stmt *ptr, DataType dt) {
+    auto ti_uint_type = ir_->get_taichi_uint_type(dt);
+    auto buf_ptr = at_buffer(ptr, ti_uint_type);
+    auto val_bits =
+        ir_->load_variable(buf_ptr, ir_->get_primitive_uint_type(dt));
+    auto ret = ti_uint_type == dt
+                   ? val_bits
+                   : ir_->make_value(spv::OpBitcast,
+                                     ir_->get_primitive_type(dt), val_bits);
     return ret;
+  }
+
+  void store_buffer(const Stmt *ptr, spirv::Value val) {
+    auto ti_uint_type = ir_->get_taichi_uint_type(val.stype.dt);
+    auto buf_ptr = at_buffer(ptr, ti_uint_type);
+    auto val_bits = val.stype.dt == ti_uint_type
+            ? val
+            : ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(ti_uint_type),
+                              val);
+    ir_->store_variable(buf_ptr, val_bits);
   }
 
   spirv::Value get_buffer_value(BufferInfo buffer, DataType dt) {
@@ -1618,25 +1616,6 @@ class TaskCodegen : public IRVisitor {
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
-
-    return buffer_value;
-  }
-
-  spirv::Value get_buffer_value_alias(BufferInfo buffer, DataType dt) {
-    auto type = ir_->get_primitive_type(dt);
-    auto key = std::make_pair(buffer, type.id);
-
-    const auto it = buffer_value_map_.find(key);
-    if (it != buffer_value_map_.end()) {
-      return it->second;
-    }
-
-    spirv::Value buffer_value = ir_->buffer_argument(
-        type, 0, buffer_binding_map_[buffer], buffer_instance_name(buffer));
-    buffer_value_map_[key] = buffer_value;
-    TI_TRACE("buffer name = {}, value = {}, binding = {}",
-             buffer_instance_name(buffer), buffer_value.id,
-             buffer_binding_map_[buffer]);
 
     return buffer_value;
   }

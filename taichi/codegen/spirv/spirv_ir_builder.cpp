@@ -269,6 +269,36 @@ size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
   }
 }
 
+SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
+  if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
+      dt == PrimitiveType::f64) {
+    return t_uint64_;
+  } else if (dt == PrimitiveType::i32 || dt == PrimitiveType::u32 ||
+             dt == PrimitiveType::f32) {
+    return t_uint32_;
+  } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
+             dt == PrimitiveType::f16) {
+    return t_uint16_;
+  } else {
+    return t_uint8_;
+  }
+}
+
+DataType IRBuilder::get_taichi_uint_type(const DataType &dt) const {
+  if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
+      dt == PrimitiveType::f64) {
+    return PrimitiveType::u64;
+  } else if (dt == PrimitiveType::i32 || dt == PrimitiveType::u32 ||
+             dt == PrimitiveType::f32) {
+    return PrimitiveType::u32;
+  } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
+             dt == PrimitiveType::f16) {
+    return PrimitiveType::u16;
+  } else {
+    return PrimitiveType::u8;
+  }
+}
+
 SType IRBuilder::get_pointer_type(const SType &value_type,
                                   spv::StorageClass storage_class) {
   auto key = std::make_pair(value_type.id, storage_class);
@@ -682,7 +712,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
                               Value addr_ptr,
                               Value data) {
   auto atomic_func_ = [&](std::function<Value(Value, Value)> atomic_op) {
-    Value ret_val_int = alloca_variable(t_int32_);
+    Value ret_val_int = alloca_variable(t_uint32_);
 
     // do-while
     Label head = new_label();
@@ -700,13 +730,13 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
     // while (true)
     {
       // int old = addr_ptr[0];
-      Value old_val = load_variable(addr_ptr, t_int32_);
+      Value old_val = load_variable(addr_ptr, t_uint32_);
       // int new = floatBitsToInt(atomic_op(intBitsToFloat(old), data));
       Value old_float = make_value(spv::OpBitcast, t_fp32_, old_val);
       Value new_float = atomic_op(old_float, data);
-      Value new_val = make_value(spv::OpBitcast, t_int32_, new_float);
+      Value new_val = make_value(spv::OpBitcast, t_uint32_, new_float);
       // int loaded = atomicCompSwap(vals[0], old, new);
-      Value loaded = make_value(spv::OpAtomicCompareExchange, t_int32_,
+      Value loaded = make_value(spv::OpAtomicCompareExchange, t_uint32_,
                                 addr_ptr, const_i32_one_, const_i32_zero_,
                                 const_i32_zero_, new_val, old_val);
       // bool ok = (loaded == old);
@@ -732,7 +762,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
     make_inst(spv::OpLabel, exit);
 
     return make_value(spv::OpBitcast, t_fp32_,
-                      load_variable(ret_val_int, t_int32_));
+                      load_variable(ret_val_int, t_uint32_));
   };
 
   if (op_type == AtomicOpType::add) {

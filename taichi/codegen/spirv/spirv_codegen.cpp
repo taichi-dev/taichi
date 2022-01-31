@@ -500,9 +500,14 @@ class TaskCodegen : public IRVisitor {
       spirv::Value buffer_val = ir_->struct_array_access(
           ir_->i32_type(),
           get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
-      spirv::Value val =
-          ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt),
-                          ir_->load_variable(buffer_val, ir_->i32_type()));
+      spirv::Value val = ir_->load_variable(buffer_val, ir_->i32_type());
+      const auto uint_type = ir_->get_primitive_uint_type(dt);
+      if (ir_->get_primitive_type_size(dt) == 4) {
+        val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
+      } else {
+        val = ir_->make_value(spv::OpBitcast, uint_type, val);
+        val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
+      }
       ir_->register_value(stmt->raw_name(), val);
     }
   }
@@ -518,6 +523,8 @@ class TaskCodegen : public IRVisitor {
         get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
     if (stmt->values.size() == 1) {
       spirv::Value val = ir_->query_value(stmt->values[0]->raw_name());
+      const auto uint_type = ir_->get_primitive_uint_type(val.stype.dt);
+      val = ir_->make_value(spv::OpBitcast, uint_type, val);
       ir_->store_variable(
           buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
     } else {
@@ -1782,7 +1789,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,

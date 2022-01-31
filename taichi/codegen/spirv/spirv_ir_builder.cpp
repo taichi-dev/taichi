@@ -600,24 +600,25 @@ DEFINE_BUILDER_BINARY_SIGN_OP(div, Div);
 Value IRBuilder::mod(Value a, Value b) {
   TI_ASSERT(a.stype.id == b.stype.id);
   if (is_integral(a.stype.dt) && is_signed(a.stype.dt)) {
-    // a - b * int(float(a) / float(b))
-    Value tmp1 = cast(t_fp32_, a);
-    Value tmp2 = cast(t_fp32_, b);
-    Value tmp3 = make_value(spv::OpFDiv, t_fp32_, tmp1, tmp2);
-    // Float division may lose precision
-    // FIXME: Could we have a better way to do this?
-    Value eps_p = float_immediate_number(t_fp32_, /*+eps=*/1e-5f, false);
-    Value eps_n = float_immediate_number(t_fp32_, /*-eps=*/-1e-5f, false);
-    Value eps = select(ge(tmp3, eps_p), eps_p, eps_n);
-    Value tmp3_float_fixed = make_value(spv::OpFAdd, t_fp32_, tmp3, eps);
-    Value tmp4 = cast(a.stype, tmp3_float_fixed);
-    Value tmp5 = make_value(spv::OpIMul, a.stype, b, tmp4);
-    return make_value(spv::OpISub, a.stype, a, tmp5);
+    // // a - b * int(float(a) / float(b))
+    // Value tmp1 = cast(t_fp32_, a);
+    // Value tmp2 = cast(t_fp32_, b);
+    // Value tmp3 = make_value(spv::OpFDiv, t_fp32_, tmp1, tmp2);
+    // // Float division may lose precision
+    // // FIXME: Could we have a better way to do this?
+    // Value eps_p = float_immediate_number(t_fp32_, /*+eps=*/1e-5f, false);
+    // Value eps_n = float_immediate_number(t_fp32_, /*-eps=*/-1e-5f, false);
+    // Value eps = select(ge(tmp3, eps_p), eps_p, eps_n);
+    // Value tmp3_float_fixed = make_value(spv::OpFAdd, t_fp32_, tmp3, eps);
+    // Value tmp4 = cast(a.stype, tmp3_float_fixed);
+    // Value tmp5 = make_value(spv::OpIMul, a.stype, b, tmp4);
+    // return make_value(spv::OpISub, a.stype, a, tmp5);
+    return make_value(spv::OpSMod, a.stype, a, cast(a.stype, b));
   } else if (is_integral(a.stype.dt)) {
-    return make_value(spv::OpUMod, a.stype, a, b);
+    return make_value(spv::OpUMod, a.stype, a, cast(a.stype, b));
   } else {
     TI_ASSERT(is_real(a.stype.dt));
-    return make_value(spv::OpFRem, a.stype, a, b);
+    return make_value(spv::OpFRem, a.stype, a, cast(a.stype, b));
   }
 }
 

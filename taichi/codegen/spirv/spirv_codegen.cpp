@@ -536,16 +536,18 @@ class TaskCodegen : public IRVisitor {
     const auto name = stmt->raw_name();
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
-    const auto extra_args_index_base =
-        (extra_args_mem_offset / sizeof(int32_t));
-    spirv::Value index = ir_->int_immediate_number(
-        ir_->i32_type(),
-        extra_args_index_base + arg_id * taichi_max_num_indices + axis);
-    spirv::Value var_ptr = ir_->struct_array_access(
-        ir_->i32_type(),
-        get_buffer_value(BufferType::Context, PrimitiveType::i32), index);
+
+    const auto extra_args_member_index =
+    ctx_attribs_->args().size() + ctx_attribs_->rets().size();
+
+    const auto extra_arg_index = (arg_id * taichi_max_num_indices) + axis;
+    spirv::Value var_ptr = ir_->make_value(
+        spv::OpAccessChain, ir_->get_storage_pointer_type(ir_->i32_type()),
+        get_buffer_value(BufferType::Context, PrimitiveType::i32),
+        ir_->int_immediate_number(ir_->i32_type(), extra_args_member_index),
+        ir_->int_immediate_number(ir_->i32_type(), extra_arg_index));
     spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
+
     ir_->register_value(name, var);
   }
 
@@ -1688,7 +1690,7 @@ class TaskCodegen : public IRVisitor {
                                       ret.offset_in_mem);
     }
     struct_components_.emplace_back(
-        ir_->get_array_type(ir_->u32_type(),
+        ir_->get_array_type(ir_->i32_type(),
                             ctx_attribs_->extra_args_bytes() / 4),
         "extra_args", ctx_attribs_->extra_args_mem_offset());
     args_struct_type_ = ir_->create_struct_type(struct_components_);

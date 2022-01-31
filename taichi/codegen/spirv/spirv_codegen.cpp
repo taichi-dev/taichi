@@ -219,7 +219,7 @@ class TaskCodegen : public IRVisitor {
   void visit(GetRootStmt *stmt) override {
     const int root_id = snode_to_root_.at(stmt->root()->id);
     root_stmts_[root_id] = stmt;
-    get_buffer_value({BufferType::Root, root_id}, PrimitiveType::i32);
+    // get_buffer_value({BufferType::Root, root_id}, PrimitiveType::u32);
     spirv::Value root_val = make_pointer(0);
     ir_->register_value(stmt->raw_name(), root_val);
   }
@@ -1595,10 +1595,11 @@ class TaskCodegen : public IRVisitor {
   void store_buffer(const Stmt *ptr, spirv::Value val) {
     auto ti_uint_type = ir_->get_taichi_uint_type(val.stype.dt);
     auto buf_ptr = at_buffer(ptr, ti_uint_type);
-    auto val_bits = val.stype.dt == ti_uint_type
+    auto val_bits =
+        val.stype.dt == ti_uint_type
             ? val
-            : ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(ti_uint_type),
-                              val);
+            : ir_->make_value(spv::OpBitcast,
+                              ir_->get_primitive_type(ti_uint_type), val);
     ir_->store_variable(buf_ptr, val_bits);
   }
 

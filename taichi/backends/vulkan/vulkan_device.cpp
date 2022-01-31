@@ -1281,9 +1281,15 @@ void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {
   TI_ASSERT_INFO(alloc_int.mapped == nullptr,
                  "Memory can not be mapped multiple times");
 
-  vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-              alloc_int.alloc_info.offset + ptr.offset, size, 0,
-              &alloc_int.mapped);
+  if (alloc_int.buffer->allocator) {
+    vmaMapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation,
+                 &alloc_int.mapped);
+    alloc_int.mapped = (uint8_t *)(alloc_int.mapped) + ptr.offset;
+  } else {
+    vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
+                alloc_int.alloc_info.offset + ptr.offset, size, 0,
+                &alloc_int.mapped);
+  }
 
   return alloc_int.mapped;
 }
@@ -1294,9 +1300,14 @@ void *VulkanDevice::map(DeviceAllocation alloc) {
   TI_ASSERT_INFO(alloc_int.mapped == nullptr,
                  "Memory can not be mapped multiple times");
 
-  vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-              alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
-              &alloc_int.mapped);
+  if (alloc_int.buffer->allocator) {
+    vmaMapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation,
+                 &alloc_int.mapped);
+  } else {
+    vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
+                alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
+                &alloc_int.mapped);
+  }
 
   return alloc_int.mapped;
 }
@@ -1306,7 +1317,12 @@ void VulkanDevice::unmap(DevicePtr ptr) {
 
   TI_ASSERT_INFO(alloc_int.mapped, "Memory is not mapped");
 
-  vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  if (alloc_int.buffer->allocator) {
+    vmaUnmapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation);
+  } else {
+    vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  }
+
   alloc_int.mapped = nullptr;
 }
 
@@ -1315,7 +1331,12 @@ void VulkanDevice::unmap(DeviceAllocation alloc) {
 
   TI_ASSERT_INFO(alloc_int.mapped, "Memory is not mapped");
 
-  vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  if (alloc_int.buffer->allocator) {
+    vmaUnmapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation);
+  } else {
+    vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  }
+
   alloc_int.mapped = nullptr;
 }
 

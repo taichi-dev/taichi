@@ -397,16 +397,20 @@ Value IRBuilder::buffer_argument(const SType &value_type,
 
   SType sarr_type = get_struct_array_type(value_type, 0);
 
-  this->debug(spv::OpName, sarr_type, name + "_struct_array");
+  auto typed_name = name + "_" + value_type.dt.to_string();
+
+  this->debug(spv::OpName, sarr_type, typed_name + "_struct_array");
 
   SType ptr_type = get_pointer_type(sarr_type, storage_class);
 
-  this->debug(spv::OpName, sarr_type, name + "_ptr");
+  this->debug(spv::OpName, sarr_type, typed_name + "_ptr");
 
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, val, storage_class)
       .commit(&global_);
+
+  this->debug(spv::OpName, val, typed_name);
 
   this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
                  descriptor_set);

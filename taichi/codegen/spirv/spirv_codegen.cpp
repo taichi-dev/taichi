@@ -538,7 +538,7 @@ class TaskCodegen : public IRVisitor {
     const auto axis = stmt->axis;
 
     const auto extra_args_member_index =
-    ctx_attribs_->args().size() + ctx_attribs_->rets().size();
+        ctx_attribs_->args().size() + ctx_attribs_->rets().size();
 
     const auto extra_arg_index = (arg_id * taichi_max_num_indices) + axis;
     spirv::Value var_ptr = ir_->make_value(

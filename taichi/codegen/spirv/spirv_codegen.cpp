@@ -1187,7 +1187,7 @@ class TaskCodegen : public IRVisitor {
   void generate_serial_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::serial;
-    //task_attribs_.buffer_binds = get_common_buffer_binds();
+    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 1;
 
@@ -1221,7 +1221,7 @@ class TaskCodegen : public IRVisitor {
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::range_for;
-    //task_attribs_.buffer_binds = get_common_buffer_binds();
+    // task_attribs_.buffer_binds = get_common_buffer_binds();
 
     task_attribs_.range_for_attribs = TaskAttributes::RangeForAttributes();
     auto &range_for_attribs = task_attribs_.range_for_attribs.value();
@@ -1249,12 +1249,14 @@ class TaskCodegen : public IRVisitor {
             spv::OpShiftRightArithmetic, ir_->i32_type(),
             ir_->int_immediate_number(ir_->i32_type(), stmt->begin_offset),
             ir_->int_immediate_number(ir_->i32_type(), 2));
-        begin_expr_value = ir_->cast(ir_->i32_type(), ir_->load_variable(
-            ir_->struct_array_access(
-                ir_->u32_type(),
-                get_buffer_value(BufferType::GlobalTmps, PrimitiveType::u32),
-                begin_idx),
-            ir_->u32_type()));
+        begin_expr_value = ir_->cast(
+            ir_->i32_type(),
+            ir_->load_variable(ir_->struct_array_access(
+                                   ir_->u32_type(),
+                                   get_buffer_value(BufferType::GlobalTmps,
+                                                    PrimitiveType::u32),
+                                   begin_idx),
+                               ir_->u32_type()));
       } else {
         begin_expr_value = ir_->int_immediate_number(
             ir_->i32_type(), stmt->begin_value, false);  // Named Constant
@@ -1265,12 +1267,14 @@ class TaskCodegen : public IRVisitor {
             spv::OpShiftRightArithmetic, ir_->i32_type(),
             ir_->int_immediate_number(ir_->i32_type(), stmt->end_offset),
             ir_->int_immediate_number(ir_->i32_type(), 2));
-        end_expr_value = ir_->cast(ir_->i32_type(), ir_->load_variable(
-            ir_->struct_array_access(
-                ir_->u32_type(),
-                get_buffer_value(BufferType::GlobalTmps, PrimitiveType::u32),
-                end_idx),
-            ir_->u32_type()));
+        end_expr_value = ir_->cast(
+            ir_->i32_type(),
+            ir_->load_variable(ir_->struct_array_access(
+                                   ir_->u32_type(),
+                                   get_buffer_value(BufferType::GlobalTmps,
+                                                    PrimitiveType::u32),
+                                   end_idx),
+                               ir_->u32_type()));
       } else {
         // Range from gtmp / constant
         if (!stmt->const_begin) {
@@ -1386,7 +1390,7 @@ class TaskCodegen : public IRVisitor {
   void generate_listgen_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::listgen;
-    //task_attribs_.buffer_binds = get_common_buffer_binds();
+    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 32;
 
@@ -1540,7 +1544,7 @@ class TaskCodegen : public IRVisitor {
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::struct_for;
-    //task_attribs_.buffer_binds = get_common_buffer_binds();
+    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 65536;
     task_attribs_.advisory_num_threads_per_group = 128;
 
@@ -1651,8 +1655,8 @@ class TaskCodegen : public IRVisitor {
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
 
-    spirv::Value buffer_value = ir_->buffer_argument(
-        type, 0, binding, buffer_instance_name(buffer));
+    spirv::Value buffer_value =
+        ir_->buffer_argument(type, 0, binding, buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
@@ -1749,7 +1753,7 @@ class TaskCodegen : public IRVisitor {
       buffer_value_map_;
   std::unordered_map<std::pair<BufferInfo, int>,
                      uint32_t,
-                    BufferInfoTypeTupleHasher>
+                     BufferInfoTypeTupleHasher>
       buffer_binding_map_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;

@@ -28,7 +28,7 @@ def write_temp_image(window):
         pass
 
 
-def verify_image(window, image_name, tolerence = 0.1):
+def verify_image(window, image_name, tolerence=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         window.write_image(ground_truth_name)

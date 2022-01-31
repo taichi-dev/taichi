@@ -318,7 +318,19 @@ SType IRBuilder::get_pointer_type(const SType &value_type,
   return t;
 }
 
-SType IRBuilder::get_struct_array_type(const SType &value_type,
+SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
+  spv::StorageClass storage_class;
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+    storage_class = spv::StorageClassUniform;
+  } else {
+    storage_class = spv::StorageClassStorageBuffer;
+  }
+
+  return get_pointer_type(value_type, storage_class);
+}
+
+
+SType IRBuilder::get_array_type(const SType &value_type,
                                        uint32_t num_elems) {
   SType arr_type;
   arr_type.id = id_counter_++;
@@ -357,6 +369,14 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
 
   // decorate the array type
   this->decorate(spv::OpDecorate, arr_type, spv::DecorationArrayStride, nbytes);
+
+  return arr_type;
+}
+
+SType IRBuilder::get_struct_array_type(const SType &value_type,
+                                       uint32_t num_elems) {
+  SType arr_type = get_array_type(value_type, num_elems);
+
   // declare struct of array
   SType struct_type;
   struct_type.id = id_counter_++;
@@ -380,6 +400,61 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
   }
 
   return struct_type;
+}
+
+SType IRBuilder::create_struct_type(std::vector<std::tuple<SType, std::string, size_t>> &components) {
+  SType struct_type;
+  struct_type.id = id_counter_++;
+  struct_type.flag = TypeKind::kStruct;
+
+  auto &builder = ib_.begin(spv::OpTypeStruct).add_seq(struct_type);
+  
+  for (auto &[type, name, offset] : components) {
+    builder.add_seq(type);
+  }
+
+  builder.commit(&global_);
+
+  int i = 0;
+  for (auto &[type, name, offset] : components) {
+    this->decorate(spv::OpMemberDecorate, struct_type, i, spv::DecorationOffset, offset);
+    this->debug(spv::OpMemberName, struct_type, i, name);
+    i++;
+  }
+
+  return struct_type;
+}
+
+Value IRBuilder::buffer_struct_argument(const SType &struct_type,
+                                 uint32_t descriptor_set,
+                                 uint32_t binding,
+                                 const std::string &name) {
+  // NOTE: BufferBlock was deprecated in SPIRV 1.3
+  // use StorageClassStorageBuffer instead.
+  spv::StorageClass storage_class;
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+    storage_class = spv::StorageClassUniform;
+  } else {
+    storage_class = spv::StorageClassStorageBuffer;
+  }
+
+  this->debug(spv::OpName, struct_type, name + "_t");
+
+  SType ptr_type = get_pointer_type(struct_type, storage_class);
+
+  this->debug(spv::OpName, ptr_type, name + "_ptr");
+
+  Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(ptr_type, val, storage_class)
+      .commit(&global_);
+
+  this->debug(spv::OpName, val, name);
+
+  this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
+                 descriptor_set);
+  this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
+  return val;
 }
 
 Value IRBuilder::buffer_argument(const SType &value_type,

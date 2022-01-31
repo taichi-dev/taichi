@@ -54,10 +54,12 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ArgAttributes aa;
     aa.dt = ka.dt;
     const size_t dt_bytes = data_type_size(aa.dt);
+    /*
     if (dt_bytes > 4) {
       TI_ERROR("SPIRV kernel only supports less than 32-bit arguments, got {}",
                data_type_name(aa.dt));
     }
+    */
     aa.is_array = ka.is_array;
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
@@ -113,6 +115,11 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   args_bytes_ = arrange_scalar_before_array(&arg_attribs_vec_, 0);
   TI_TRACE("rets:");
   rets_bytes_ = arrange_scalar_before_array(&ret_attribs_vec_, args_bytes_);
+
+  for (auto &ret : ret_attribs_vec_) {
+    ret.offset_in_mem += args_bytes_;
+  }
+
   TI_TRACE("sizes: args={} rets={} ctx={} total={}", args_bytes(), rets_bytes(),
            ctx_bytes(), total_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

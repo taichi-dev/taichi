@@ -101,6 +101,8 @@ class TaskCodegen : public IRVisitor {
     kernel_function_ = ir_->new_function();  // void main();
     ir_->debug(spv::OpName, kernel_function_, "main");
 
+    compile_args_struct();
+
     if (task_ir_->task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(task_ir_);
     } else if (task_ir_->task_type == OffloadedTaskType::range_for) {
@@ -495,40 +497,33 @@ class TaskCodegen : public IRVisitor {
       ir_->register_value(stmt->raw_name(), val);
     } else {
       const auto dt = arg_attribs.dt;
-      spirv::Value idx_val = ir_->int_immediate_number(
-          ir_->i32_type(), (offset_in_mem / sizeof(int32_t)));
-      spirv::Value buffer_val = ir_->struct_array_access(
-          ir_->i32_type(),
-          get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
+      spirv::Value buffer_val = ir_->make_value(spv::OpAccessChain,
+          ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
+          get_buffer_value(BufferType::Context, PrimitiveType::i32), ir_->int_immediate_number(ir_->i32_type(), arg_id));
+      buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->load_variable(buffer_val, ir_->i32_type());
-      const auto uint_type = ir_->get_primitive_uint_type(dt);
-      if (ir_->get_primitive_type_size(dt) == 4) {
-        val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
-      } else {
-        val = ir_->make_value(spv::OpBitcast, uint_type, val);
-        val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
-      }
+      // const auto uint_type = ir_->get_primitive_uint_type(dt);
+      // if (ir_->get_primitive_type_size(dt) == 4) {
+      //   val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
+      // } else {
+      //   val = ir_->make_value(spv::OpBitcast, uint_type, val);
+      //   val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
+      // }
       ir_->register_value(stmt->raw_name(), val);
     }
   }
 
   void visit(ReturnStmt *stmt) override {
-    // TODO: use stmt->ret_id instead of 0 as index
-    const auto &ret_attribs = ctx_attribs_->rets()[0];
-    const int index_in_buffer = ret_attribs.offset_in_mem / sizeof(int32_t);
-    spirv::Value idx_val =
-        ir_->int_immediate_number(ir_->i32_type(), index_in_buffer);
-    spirv::Value buffer_val = ir_->struct_array_access(
-        ir_->i32_type(),
-        get_buffer_value(BufferType::Context, PrimitiveType::i32), idx_val);
-    if (stmt->values.size() == 1) {
-      spirv::Value val = ir_->query_value(stmt->values[0]->raw_name());
-      const auto uint_type = ir_->get_primitive_uint_type(val.stype.dt);
-      val = ir_->make_value(spv::OpBitcast, uint_type, val);
-      ir_->store_variable(
-          buffer_val, ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
-    } else {
-      TI_NOT_IMPLEMENTED;
+    for (int i = 0; i < stmt->values.size(); i++) {
+      const auto &ret_attribs = ctx_attribs_->rets()[i];
+      const auto dt = ret_attribs.dt;
+      spirv::Value buffer_val = ir_->make_value(spv::OpAccessChain, 
+          ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
+          get_buffer_value(BufferType::Context, PrimitiveType::i32),
+          ir_->int_immediate_number(ir_->i32_type(), i + ctx_attribs_->args().size()));
+      buffer_val.flag = ValueKind::kVariablePtr;
+      spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
+      ir_->store_variable(buffer_val, val);
     }
   }
 
@@ -567,19 +562,16 @@ class TaskCodegen : public IRVisitor {
     {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
-      const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
-      const auto extra_args_index_base =
-          (extra_args_mem_offset / sizeof(int32_t));
+      const auto extra_args_member_index = ctx_attribs_->args().size() + ctx_attribs_->rets().size();
       for (int i = 0; i < num_indices; i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        const auto extra_arg_linear_index_offset =
+        const auto extra_arg_index =
             (arg_id * taichi_max_num_indices) + i;
-        const auto extra_arg_linear_index =
-            extra_args_index_base + extra_arg_linear_index_offset;
-        spirv::Value var_ptr = ir_->struct_array_access(
-            ir_->i32_type(),
+        spirv::Value var_ptr = ir_->make_value(spv::OpAccessChain,
+            ir_->get_storage_pointer_type(ir_->i32_type()),
             get_buffer_value(BufferType::Context, PrimitiveType::i32),
-            ir_->int_immediate_number(ir_->i32_type(), extra_arg_linear_index));
+            ir_->int_immediate_number(ir_->i32_type(), extra_args_member_index),
+            ir_->int_immediate_number(ir_->i32_type(), extra_arg_index));
         spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
@@ -1328,20 +1320,20 @@ class TaskCodegen : public IRVisitor {
     // https://www.khronos.org/opengl/wiki/Compute_Shader#Inputs
 
     // HLSL & WGSL cross compilers do not support this builtin
-    /*
     spirv::Value total_invocs = ir_->cast(
         ir_->i32_type(),
         ir_->mul(ir_->get_num_work_groups(0),
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
                      task_attribs_.advisory_num_threads_per_group, true)));
-                     */
+    /*
     const int group_x = (task_attribs_.advisory_total_num_threads +
                          task_attribs_.advisory_num_threads_per_group - 1) /
                         task_attribs_.advisory_num_threads_per_group;
     spirv::Value total_invocs = ir_->uint_immediate_number(
         ir_->i32_type(), group_x * task_attribs_.advisory_num_threads_per_group,
         false);
+        */
 
     ir_->debug(spv::OpName, total_invocs, total_invocs_name);
 
@@ -1594,10 +1586,13 @@ class TaskCodegen : public IRVisitor {
       stmt->body->accept(this);
 
       // continue
-      auto next_index = ir_->add(
-          loop_index,
-          ir_->uint_immediate_number(ir_->u32_type(),
-                                     task_attribs_.advisory_total_num_threads));
+      spirv::Value total_invocs = ir_->cast(
+        ir_->i32_type(),
+        ir_->mul(ir_->get_num_work_groups(0),
+                 ir_->uint_immediate_number(
+                     ir_->u32_type(),
+                     task_attribs_.advisory_num_threads_per_group, true)));
+      auto next_index = ir_->add(loop_index, total_invocs);
       ir_->store_variable(loop_index_var, next_index);
       ir_->make_inst(spv::OpBranch, loop_head);
     }
@@ -1653,11 +1648,17 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
+    if (buffer.type == BufferType::Context) {
+      buffer_binding_map_[key] = 0;
+      buffer_value_map_[key] = args_buffer_value_;
+      return args_buffer_value_;
+    }
+
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
 
     spirv::Value buffer_value =
-        ir_->buffer_argument(type, 0, binding, buffer_instance_name(buffer));
+      ir_->buffer_argument(type, 0, binding, buffer_instance_name(buffer));
     buffer_value_map_[key] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
              buffer_value.id);
@@ -1675,38 +1676,22 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
-  /*
-  std::vector<BufferBind> get_common_buffer_binds() {
-    std::vector<BufferBind> result;
-    int binding = 0;
-
-    auto bind_buffer = [&](BufferInfo buffer) {
-      result.push_back({buffer, binding});
-      buffer_binding_map_[buffer] = binding++;
-    };
-
-    for (int root = 0; root < compiled_structs_.size(); ++root) {
-      bind_buffer({BufferType::Root, root});
+  void compile_args_struct() {
+    std::vector<std::tuple<spirv::SType, std::string, size_t>> struct_components_;
+    for (auto &arg : ctx_attribs_->args()) {
+      struct_components_.emplace_back(ir_->get_primitive_type(arg.dt), "arg" + std::to_string(arg.index), arg.offset_in_mem);
     }
-
-    bind_buffer(BufferType::GlobalTmps);
-
-    bind_buffer(BufferType::ListGen);
-
-    if (!ctx_attribs_->empty()) {
-      bind_buffer(BufferType::Context);
-
-      for (int i = 0; i < ctx_attribs_->args().size(); i++) {
-        const auto &arg = ctx_attribs_->args()[i];
-        if (arg.is_array) {
-          bind_buffer({BufferType::ExtArr, i});
-        }
-      }
+    size_t args_size = ctx_attribs_->args_bytes();
+    for (auto &ret : ctx_attribs_->rets()) {
+      struct_components_.emplace_back(ir_->get_primitive_type(ret.dt), "ret" + std::to_string(ret.index), ret.offset_in_mem);
     }
-
-    return result;
+    struct_components_.emplace_back(
+      ir_->get_array_type(ir_->u32_type(), ctx_attribs_->extra_args_bytes() / 4),
+      "extra_args",
+      ctx_attribs_->extra_args_mem_offset());
+    args_struct_type_ = ir_->create_struct_type(struct_components_);
+    args_buffer_value_ = ir_->buffer_struct_argument(args_struct_type_, 0, 0, "args");
   }
-  */
 
   std::vector<BufferBind> get_buffer_binds() {
     std::vector<BufferBind> result;
@@ -1747,6 +1732,9 @@ class TaskCodegen : public IRVisitor {
     }
   };
 
+  spirv::SType args_struct_type_;
+  spirv::Value args_buffer_value_;
+
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<std::pair<BufferInfo, int>,
                      spirv::Value,
@@ -1760,7 +1748,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
 
-  int binding_head_{0};
+  int binding_head_{1};
 
   /*
   std::unordered_map<int, spirv::CompiledSpirvSNode>
@@ -1840,7 +1828,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,

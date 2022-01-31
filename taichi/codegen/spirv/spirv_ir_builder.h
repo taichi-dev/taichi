@@ -269,6 +269,9 @@ class IRBuilder {
   Value make_value(spv::Op op, const SType &out_type, Args &&... args) {
     Value val = new_value(out_type, ValueKind::kNormal);
     make_inst(op, out_type, val, std::forward<Args>(args)...);
+    if (out_type.flag == TypeKind::kPtr) {
+      val.flag = ValueKind::kVariablePtr;
+    }
     return val;
   }
 
@@ -316,12 +319,22 @@ class IRBuilder {
   // Get the Taichi uint type with the same size of a given Taichi data type
   DataType get_taichi_uint_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
+  SType get_storage_pointer_type(const SType &value_type);
+  // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
+  // Get a value_type[num_elems] type
+  SType get_array_type(const SType &value_type, uint32_t num_elems);
   // Get a struct{ value_type[num_elems] } type
   SType get_struct_array_type(const SType &value_type, uint32_t num_elems);
+  // Construct a struct type
+  SType create_struct_type(std::vector<std::tuple<SType, std::string, size_t>> &components);
 
   // Declare buffer argument of function
+  Value buffer_struct_argument(const SType &struct_type,
+                               uint32_t descriptor_set,
+                               uint32_t binding,
+                               const std::string &name);
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
                         uint32_t binding,

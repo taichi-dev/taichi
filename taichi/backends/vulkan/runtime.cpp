@@ -452,7 +452,11 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
       host_result_buffer_, ctx_buffer.get(), ctx_buffer_host.get());
 
-  std::unordered_map<int, DeviceAllocation> ext_arrays;
+  // `any_arrays` contain both external arrays and NDArrays
+  std::unordered_map<int, DeviceAllocation> any_arrays;
+  // `ext_array_size` only holds the size of external arrays (host arrays)
+  // As buffer size information is only needed when it needs to be allocated
+  // and transferred by the host
   std::unordered_map<int, size_t> ext_array_size;
 
   // Prepare context buffers & arrays
@@ -466,35 +470,47 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         if (host_ctx->is_device_allocation[i]) {
           // NDArray
           if (host_ctx->args[i]) {
-            ext_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+            any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
           } else {
-            ext_arrays[i] = kDeviceNullAllocation;
+            any_arrays[i] = kDeviceNullAllocation;
           }
         } else {
           // Compute ext arr sizes
           size_t size = arg.stride;
+          bool has_zero_axis = false;
 
           for (int ax = 0; ax < 8; ax++) {
             // FIXME: how and when do we determine the size of ext arrs?
             size_t axis_size = host_ctx->extra_args[i][ax];
             if (axis_size) {
-              size *= host_ctx->extra_args[i][ax];
+              if (has_zero_axis) {
+                // e.g. shape [1, 0, 1]
+                size = 0;
+              } else {
+                size *= host_ctx->extra_args[i][ax]; 
+              }
+            } else {
+              has_zero_axis = true;
             }
           }
 
           ext_array_size[i] = size;
 
           // Alloc ext arr
-          DeviceAllocation extarr_buf = device_->allocate_memory(
-              {size, /*host_write=*/true, /*host_read=*/true,
-               /*export_sharing=*/false, AllocUsage::Storage});
-          ext_arrays[i] = extarr_buf;
+          if (size) {
+            DeviceAllocation extarr_buf = device_->allocate_memory(
+                {size, /*host_write=*/true, /*host_read=*/true,
+                 /*export_sharing=*/false, AllocUsage::Storage});
+            any_arrays[i] = extarr_buf;          
+          } else {
+            any_arrays[i] = kDeviceNullAllocation; 
+          }
         }
       }
       i++;
     }
 
-    ctx_blitter->host_to_device(ext_arrays, ext_array_size);
+    ctx_blitter->host_to_device(any_arrays, ext_array_size);
   }
 
   // Create new command list if current one is nullptr
@@ -506,7 +522,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Record commands
   ti_kernel->generate_command_list(current_cmdlist_.get(),
                                    ctx_buffer_host.get(), ctx_buffer.get(),
-                                   ext_arrays);
+                                   any_arrays);
 
   // Keep context buffers used in this dispatch
   if (ti_kernel->get_ctx_buffer_size()) {
@@ -516,7 +532,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // If we need to host sync, sync and remove in-flight references
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get(), ext_arrays,
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
                                     ext_array_size)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
@@ -524,7 +540,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // Dealloc external arrays
-  for (auto pair : ext_arrays) {
+  for (auto pair : any_arrays) {
     if (pair.second != kDeviceNullAllocation) {
       if (!host_ctx->is_device_allocation[pair.first]) {
         device_->dealloc_memory(pair.second);

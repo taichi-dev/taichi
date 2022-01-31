@@ -23,6 +23,7 @@ namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/backends/metal/shaders/ad_stack.metal.h"
 #include "taichi/backends/metal/shaders/helpers.metal.h"
+#include "taichi/backends/metal/shaders/init_randseeds.metal.h"
 #include "taichi/backends/metal/shaders/print.metal.h"
 #include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
@@ -81,6 +82,17 @@ bool is_ret_type_bit_pointer(Stmt *s) {
   return false;
 }
 
+bool is_full_bits(int bits) { return bits == (sizeof(uint32_t) * 8); }
+
+void validate_cft_for_metal(CustomFloatType *cft) {
+  if (cft->get_exponent_type() != nullptr) {
+    TI_NOT_IMPLEMENTED;
+  }
+  if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
+    TI_ERROR("Metal only supports 32-bit float");
+  }
+}
+
 class RootIdsExtractor : public BasicStmtVisitor {
  public:
   static std::unordered_set<int> run(Stmt *s) {
@@ -101,13 +113,31 @@ class RootIdsExtractor : public BasicStmtVisitor {
     BasicStmtVisitor::visit(stmt);
   }
 
-  void visit(GetRootStmt *stmt) override {
-    roots_.insert(stmt->root()->id);
-  }
+  void visit(GetRootStmt *stmt) override { roots_.insert(stmt->root()->id); }
 
  private:
   using BasicStmtVisitor::visit;
   std::unordered_set<int> roots_;
+};
+
+class TaskPreprocessor final : public BasicStmtVisitor {
+ public:
+  struct Result {
+    bool should_init_randseeds{false};
+  };
+
+  static Result run(Stmt *s) {
+    TaskPreprocessor tp;
+    s->accept(&tp);
+    return tp.res_;
+  }
+
+ protected:
+  void visit(RandStmt *) override { res_.should_init_randseeds = true; }
+  using BasicStmtVisitor::visit;
+
+  TaskPreprocessor() = default;
+  Result res_;
 };
 
 class KernelCodegenImpl : public IRVisitor {
@@ -131,12 +161,10 @@ class KernelCodegenImpl : public IRVisitor {
     bool allow_simdgroup = true;
   };
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegenImpl(const std::string &taichi_kernel_name,
-                    Kernel *kernel,
+  KernelCodegenImpl(const std::string &taichi_kernel_name, Kernel *kernel,
                     const CompiledRuntimeModule *compiled_runtime_module,
                     const std::vector<CompiledStructs> &compiled_snode_trees,
-                    PrintStringTable *print_strtab,
-                    const Config &config,
+                    PrintStringTable *print_strtab, const Config &config,
                     OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         kernel_(kernel),
@@ -647,14 +675,18 @@ class KernelCodegenImpl : public IRVisitor {
       used_root_descs.insert(BufferDescriptor::root(rid));
     }
     root_id_to_stmts_.clear();
+    auto preproc_res = TaskPreprocessor::run(stmt);
 
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
-      generate_serial_kernel(stmt, used_root_descs);
+      // For serial tasks, there is only one thread, so different calls to
+      // random() is guaranteed to produce different results.
+      preproc_res.should_init_randseeds = false;
+      generate_serial_kernel(stmt, used_root_descs, preproc_res);
     } else if (stmt->task_type == Type::range_for) {
-      generate_range_for_kernel(stmt, used_root_descs);
+      generate_range_for_kernel(stmt, used_root_descs, preproc_res);
     } else if (stmt->task_type == Type::struct_for) {
-      generate_struct_for_kernel(stmt, used_root_descs);
+      generate_struct_for_kernel(stmt, used_root_descs, preproc_res);
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt);
     } else if (stmt->task_type == Type::gc) {
@@ -880,6 +912,9 @@ class KernelCodegenImpl : public IRVisitor {
     current_appender().append_raw(shaders::kMetalPrintSourceCode);
     emit("");
     emit_kernel_args_struct();
+    emit("");
+    current_appender().append_raw(shaders::kMetalInitRandseedsSourceCode);
+    emit("");
   }
 
   void handle_bit_pointer_global_store(GlobalStoreStmt *stmt) {
@@ -966,9 +1001,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   // Returns the expression of `int(val_stmt * (1.0f / scale) + 0.5f)`
   std::string construct_float_to_custom_int_expr(
-      const Stmt *val_stmt,
-      float64 scale,
-      CustomIntType *digits_cit) const {
+      const Stmt *val_stmt, float64 scale, CustomIntType *digits_cit) const {
     DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
     // This implicitly casts double to float on the host.
     const float inv_scale = 1.0 / scale;
@@ -994,19 +1027,6 @@ class KernelCodegenImpl : public IRVisitor {
     return fmt::format("mtl_get_partial_bits<{}>({}, {})",
                        metal_data_type_name(compute_dt),
                        bit_ptr_stmt->raw_name(), num_bits);
-  }
-
-  void validate_cft_for_metal(CustomFloatType *cft) const {
-    if (cft->get_exponent_type() != nullptr) {
-      TI_NOT_IMPLEMENTED;
-    }
-    if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
-      TI_ERROR("Metal only supports 32-bit float");
-    }
-  }
-
-  static bool is_full_bits(int bits) {
-    return bits == (sizeof(uint32_t) * 8);
   }
 
   void emit_kernel_args_struct() {
@@ -1088,7 +1108,8 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt,
-                              const BufferDescSet &root_buffer_descs) {
+                              const BufferDescSet &root_buffer_descs,
+                              const TaskPreprocessor::Result &preproc_res) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
     const std::string mtl_kernel_name = make_kernel_name();
     KernelAttributes ka;
@@ -1106,7 +1127,8 @@ class KernelCodegenImpl : public IRVisitor {
 
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
-      emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, stmt->body.get());
+      emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, preproc_res,
+                               stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
                                 /*loop_index_expr=*/"0");
     }
@@ -1118,7 +1140,8 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt,
-                                 const BufferDescSet &root_buffer_descs) {
+                                 const BufferDescSet &root_buffer_descs,
+                                 const TaskPreprocessor::Result &preproc_res) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string mtl_kernel_name = make_kernel_name();
     KernelAttributes ka;
@@ -1195,7 +1218,7 @@ class KernelCodegenImpl : public IRVisitor {
         extra_args.push_back(kTlsBufferName);
       }
       emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, extra_func_params,
-                               stmt->body.get());
+                               preproc_res, stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers, extra_args,
                                 /*loop_index_expr=*/"ii");
     }
@@ -1214,7 +1237,8 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt,
-                                  const BufferDescSet &root_buffer_descs) {
+                                  const BufferDescSet &root_buffer_descs,
+                                  const TaskPreprocessor::Result &preproc_res) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
     const std::string mtl_kernel_name = make_kernel_name();
 
@@ -1293,7 +1317,7 @@ class KernelCodegenImpl : public IRVisitor {
         extra_args.push_back(kTlsBufferName);
       }
       emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, extra_func_params,
-                               stmt->body.get());
+                               preproc_res, stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers, extra_args,
                                 /*loop_index_expr=*/"ii");
     }
@@ -1413,7 +1437,7 @@ class KernelCodegenImpl : public IRVisitor {
       const std::string &kernel_func_name,
       const std::vector<BufferDescriptor> &buffers,
       const std::vector<FuncParamLiteral> &extra_params,
-      Block *func_ir) {
+      const TaskPreprocessor::Result &preproc_res, Block *func_ir) {
     SectionGuard sg(this, Section::KernelFuncs);
 
     emit("void {}(", kernel_func_name);
@@ -1440,6 +1464,10 @@ class KernelCodegenImpl : public IRVisitor {
           fmt::arg("rtm", kRuntimeVarName),
           fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
+      if (preproc_res.should_init_randseeds) {
+        emit("mtl_init_random_seeds(({}->rand_seeds), {}, {});",
+             kRuntimeVarName, kLinearLoopIndexName, kNumRandSeeds);
+      }
       // Init AssertRecorder.
       emit("AssertRecorder {}({});", kAssertRecorderVarName,
            kPrintAssertBufferName);
@@ -1462,9 +1490,9 @@ class KernelCodegenImpl : public IRVisitor {
   inline void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
       const std::vector<BufferDescriptor> &buffers,
-      Block *func_ir) {
+      const TaskPreprocessor::Result &preproc_res, Block *func_ir) {
     emit_mtl_kernel_func_def(kernel_func_name, buffers, /*extra_params=*/{},
-                             func_ir);
+                             preproc_res, func_ir);
   }
 
   void emit_call_mtl_kernel_func(const std::string &kernel_func_name,
@@ -1493,8 +1521,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   struct KernelSigExtensions {
     // https://stackoverflow.com/a/44693603/12003165
-    KernelSigExtensions() noexcept {
-    }
+    KernelSigExtensions() noexcept {}
 
     bool use_simdgroup = false;
   };
@@ -1544,9 +1571,7 @@ class KernelCodegenImpl : public IRVisitor {
       kg->code_section_ = new_sec;
     }
 
-    ~SectionGuard() {
-      kg_->code_section_ = saved_;
-    }
+    ~SectionGuard() { kg_->code_section_ = saved_; }
 
    private:
     KernelCodegenImpl *const kg_;
@@ -1558,9 +1583,7 @@ class KernelCodegenImpl : public IRVisitor {
   const LineAppender &current_appender() const {
     return section_appenders_.find(code_section_)->second;
   }
-  LineAppender &current_appender() {
-    return section_appenders_[code_section_];
-  }
+  LineAppender &current_appender() { return section_appenders_[code_section_]; }
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -1605,10 +1628,8 @@ class KernelCodegenImpl : public IRVisitor {
 
 CompiledKernelData run_codegen(
     const CompiledRuntimeModule *compiled_runtime_module,
-    const std::vector<CompiledStructs> &compiled_snode_trees,
-    Kernel *kernel,
-    PrintStringTable *strtab,
-    OffloadedStmt *offloaded) {
+    const std::vector<CompiledStructs> &compiled_snode_trees, Kernel *kernel,
+    PrintStringTable *strtab, OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
       fmt::format("mtl_k{:04d}_{}", id, kernel->name));
@@ -1624,8 +1645,7 @@ CompiledKernelData run_codegen(
 }
 
 FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
+    Kernel *kernel, KernelManager *kernel_mgr,
     const CompiledRuntimeModule *compiled_runtime_module,
     const std::vector<CompiledStructs> &compiled_snode_trees,
     OffloadedStmt *offloaded) {

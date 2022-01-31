@@ -497,18 +497,12 @@ class TaskCodegen : public IRVisitor {
       ir_->register_value(stmt->raw_name(), val);
     } else {
       const auto dt = arg_attribs.dt;
+      const auto val_type = ir_->get_primitive_type(dt);
       spirv::Value buffer_val = ir_->make_value(spv::OpAccessChain,
-          ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
+          ir_->get_storage_pointer_type(val_type),
           get_buffer_value(BufferType::Context, PrimitiveType::i32), ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
-      spirv::Value val = ir_->load_variable(buffer_val, ir_->i32_type());
-      // const auto uint_type = ir_->get_primitive_uint_type(dt);
-      // if (ir_->get_primitive_type_size(dt) == 4) {
-      //   val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
-      // } else {
-      //   val = ir_->make_value(spv::OpBitcast, uint_type, val);
-      //   val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt), val);
-      // }
+      spirv::Value val = ir_->load_variable(buffer_val, val_type);
       ir_->register_value(stmt->raw_name(), val);
     }
   }
@@ -1828,7 +1822,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 1
+#if 0
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,

@@ -986,7 +986,8 @@ class TaskCodegen : public IRVisitor {
       }
 
       // AcquireRelease
-      ir_->make_inst(spv::OpMemoryBarrier, ir_->const_i32_one_, ir_->uint_immediate_number(ir_->u32_type(), 0x8));
+      ir_->make_inst(spv::OpMemoryBarrier, ir_->const_i32_one_,
+                     ir_->uint_immediate_number(ir_->u32_type(), 0x8));
       val = ir_->make_value(op, ret_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);

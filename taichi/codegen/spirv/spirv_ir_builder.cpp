@@ -742,9 +742,10 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
       // int loaded = atomicCompSwap(vals[0], old, new);
       auto acquire_release = uint_immediate_number(t_uint32_, 0x8);
       make_inst(spv::OpMemoryBarrier, const_i32_one_, acquire_release);
-      Value loaded = make_value(spv::OpAtomicCompareExchange, t_uint32_,
-                                addr_ptr, /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,
-                                /*semantics if unequal=*/const_i32_zero_, new_val, old_val);
+      Value loaded = make_value(
+          spv::OpAtomicCompareExchange, t_uint32_, addr_ptr,
+          /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,
+          /*semantics if unequal=*/const_i32_zero_, new_val, old_val);
       // bool ok = (loaded == old);
       Value ok = make_value(spv::OpIEqual, t_bool_, loaded, old_val);
       // int ret_val_int = loaded;

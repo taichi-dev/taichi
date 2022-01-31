@@ -837,8 +837,11 @@ class TaskCodegen : public IRVisitor {
             "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
             #instruction, instruction_id, max_bits);                           \
       }                                                                        \
+      lhs_value = ir_->cast(ir_->f32_type(), lhs_value);                       \
+      rhs_value = ir_->cast(ir_->f32_type(), rhs_value);                       \
       bin_value =                                                              \
           ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);      \
+      bin_value = ir_->cast(dst_type, bin_value);                              \
     } else {                                                                   \
       TI_NOT_IMPLEMENTED                                                       \
     }                                                                          \

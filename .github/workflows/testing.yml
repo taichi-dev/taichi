@@ -457,4 +457,4 @@ jobs:
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,cpu"
+          TI_WANTED_ARCHS: "metal,vulkan,cpu"

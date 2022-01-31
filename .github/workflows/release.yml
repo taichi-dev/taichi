@@ -159,10 +159,11 @@ jobs:
 
       - name: Create Python Wheel
         run: |
+          brew install molten-vk
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -209,13 +210,14 @@ jobs:
 
       - name: Build
         run: |
+          brew install molten-vk
           # We hacked here because conda activate in CI won't update python PATH
           # automatically. So we don't activate and use desired python version
           # directly.
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -232,7 +234,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,cpu"
+          TI_WANTED_ARCHS: "metal,vulkan,cpu"
           PYTHON: ${{ matrix.python }}
 
       - name: Upload PyPI
@@ -265,6 +267,7 @@ jobs:
 
       - name: Build
         run: |
+          brew install molten-vk
           # We hacked here because conda activate in CI won't update python PATH
           # automatically. So we don't activate and use desired python version
           # directly.
@@ -273,7 +276,7 @@ jobs:
           export PATH=$LLVM_DIR/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++

@@ -29,22 +29,22 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // MakeAdjoint anyway
     // 2. If the range for-loop is not innermost, they will be processed by
     // another IndependentBlocksJudger
-    if (is_inside_loop)
+    if (is_inside_loop_)
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
     for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
       if (node->has_grad()) {
-        qualified_atomics = false;
+        qualified_atomics_ = false;
         break;
       }
     }
   }
 
   void visit(RangeForStmt *stmt) override {
-    inner_most_loop = false;
-    is_inside_loop = true;
+    inner_most_loop_ = false;
+    is_inside_loop_ = true;
     stmt->body->accept(this);
-    is_inside_loop = false;
+    is_inside_loop_ = false;
   }
 
   static bool run(IRNode *root) {
@@ -61,7 +61,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       }
       if (!belong_to_this_block) {
         // This block is not an IB since it loads/modifies outside variables
-        Judger.qualified_local = false;
+        Judger.qualified_local_ = false;
         break;
       }
     }
@@ -71,16 +71,16 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // enforced
     // 2. If the #1 is satisfied, either an inner most loop or a block without
     // global atomics is an IB
-    return Judger.qualified_local &&
-           (Judger.qualified_atomics || Judger.inner_most_loop);
+    return Judger.qualified_local_ &&
+           (Judger.qualified_atomics_ || Judger.inner_most_loop_);
   }
 
  private:
   std::set<AllocaStmt *> touched_allocas;
-  bool qualified_local = true;
-  bool qualified_atomics = true;
-  bool inner_most_loop = true;
-  bool is_inside_loop = false;
+  bool qualified_local_ = true;
+  bool qualified_atomics_ = true;
+  bool inner_most_loop_ = true;
+  bool is_inside_loop_ = false;
 };
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)

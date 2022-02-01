@@ -8,6 +8,68 @@
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
+class IndependentBlocksJudger : public BasicStmtVisitor{
+   public:
+    using BasicStmtVisitor::visit;
+
+    void visit(LocalLoadStmt *stmt) override{
+      for (auto &lane : stmt->src.data) {
+        touched_allocas.insert(lane.var->as<AllocaStmt>());
+      }
+    }
+
+    void visit(LocalStoreStmt *stmt) override{
+      touched_allocas.insert(stmt->dest->as<AllocaStmt>());
+    }
+
+    void visit(AtomicOpStmt *stmt) override{
+      if(is_inside_loop) return;
+      TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+      for (const auto &node :
+            stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
+        if (node->has_grad()) {
+          qualified_atomics = false;
+          break;
+        }
+      }
+    }
+
+    void visit(RangeForStmt *stmt) override {
+      inner_most_loop = false;
+      is_inside_loop = true;
+      stmt->body->accept(this);
+      is_inside_loop = false;
+    }
+
+    static bool run(IRNode *root) {
+    IndependentBlocksJudger Judger;
+    Block *block = root->as<Block>();
+    root->accept(&Judger);
+    for (const auto &alloca : Judger.touched_allocas) {
+      // Test if the alloca belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = alloca->parent; b; b = b->parent_block()) {
+        if (b == block) {
+          belong_to_this_block = true;
+        }
+      }
+      if (!belong_to_this_block) {
+        // This block is not an IB since it loads/modifies outside variables
+        Judger.qualified_local = false;
+        break;
+      }
+    }
+    std::cout << Judger.qualified_local << Judger.qualified_atomics << Judger.inner_most_loop << std::endl;
+    return Judger.qualified_local && (Judger.qualified_atomics || Judger.inner_most_loop);
+   }
+
+   private:
+    std::set<AllocaStmt *> touched_allocas;
+    bool qualified_local = true;
+    bool qualified_atomics = true;
+    bool inner_most_loop = true;
+    bool is_inside_loop = false;
+};
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
@@ -44,80 +106,8 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
     //  - No atomics operations to the global variables which require gradient
-
-    bool qualified = true;
-    bool qualified_atomics = true;
-    bool inner_most_loop = true;
-    for (auto const &stmt : block->statements) {
-      // check whether it is a inner most loop or not
-      if (auto rangefor_stmt = stmt->cast<RangeForStmt>(); rangefor_stmt) {
-        inner_most_loop = false;
-      }
-      // atomics here must be ones applied to global variables
-      else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
-        TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
-        for (const auto &node :
-             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-          if (node->has_grad()) {
-            qualified_atomics = false;
-            break;
-          }
-        }
-      }
-      // the atomics inside the if stmt should also be checked
-      else if (auto if_stmt = stmt->cast<IfStmt>(); if_stmt) {
-        std::vector<Block *> if_condtions_blocks;
-        if (if_stmt->true_statements.get())
-          if_condtions_blocks.push_back(if_stmt->true_statements.get());
-        if (if_stmt->false_statements.get())
-          if_condtions_blocks.push_back(if_stmt->false_statements.get());
-        for (auto const &cond_block : if_condtions_blocks) {
-          irpass::analysis::gather_statements(
-              cond_block, [&](Stmt *stmt_to_check) -> bool {
-                if (auto atomics = stmt_to_check->cast<AtomicOpStmt>();
-                    atomics) {
-                  TI_ASSERT(atomics->dest->is<GlobalPtrStmt>());
-                  for (const auto &node :
-                       atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-                    if (node->has_grad()) {
-                      qualified_atomics = false;
-                      break;
-                    }
-                  }
-                }
-                return false;
-              });
-        }
-      }
-    }
-    std::set<AllocaStmt *> touched_allocas;
-    // TODO: remove this abuse since it *gathers nothing* but only visit
-    irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
-      if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
-        for (auto &lane : local_load->src.data) {
-          touched_allocas.insert(lane.var->as<AllocaStmt>());
-        }
-      } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
-        touched_allocas.insert(local_store->dest->as<AllocaStmt>());
-      }
-      return false;
-    });
-
-    for (const auto &alloca : touched_allocas) {
-      // Test if the alloca belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
-        }
-      }
-      if (!belong_to_this_block) {
-        // This block is not an IB since it loads/modifies outside variables
-        qualified = false;
-        break;
-      }
-    }
-    return qualified && (qualified_atomics || inner_most_loop);
+    
+    return IndependentBlocksJudger::run(block);
   }
 
   void visit_loop_body(Block *block) {

@@ -532,6 +532,48 @@ def try_check_version():
         pass
 
 
+def check_require_version(require_version):
+    '''
+    Check if installed version meets the requirements.
+    Allow to specify <major>.<minor>.<patch>.<hash>.
+    <patch>.<hash> is optional. If not match, raise an exception.
+    '''
+    # Extract version number part (i.e. toss any revision / hash parts).
+    version_number_str = require_version
+    for i in range(len(require_version)):
+        c = require_version[i]
+        if not (c.isdigit() or c == "."):
+            version_number_str = require_version[:i]
+            break
+    # Get required version.
+    try:
+        version_number_tuple = tuple(
+            [int(n) for n in version_number_str.split(".")])
+        major = version_number_tuple[0]
+        minor = version_number_tuple[1]
+        patch = 0
+        if len(version_number_tuple) > 2:
+            patch = version_number_tuple[2]
+    except:
+        raise Exception("The require_version should be formatted following PEP 440, " \
+            "and inlucdes major, minor, and patch number, " \
+            "e.g., major.minor.patch.") from None
+    # Get installed version
+    versions = [
+        int(_ti_core.get_version_major()),
+        int(_ti_core.get_version_minor()),
+        int(_ti_core.get_version_patch()),
+    ]
+    # Match installed version and required version.
+    match = major == versions[0] and (
+        minor < versions[1] or minor == versions[1] and patch <= versions[2])
+
+    if not match:
+        print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
+        print("Installed =", _ti_core.get_version_string())
+        raise Exception("Taichi version mismatch")
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -569,37 +611,8 @@ def init(arch=None,
         check_version_thread.start()
 
     # Check if installed version meets the requirements.
-    if require_version:
-        # Extract version number part (i.e. toss any revision / hash parts).
-        version_number_str = require_version
-        for i in range(len(require_version)):
-            c = require_version[i]
-            if not (c.isdigit() or c == "."):
-                version_number_str = require_version[:i]
-                break
-        # Get required version.
-        try:
-            major, minor, patch = tuple(
-                [int(n) for n in version_number_str.split(".")])
-        except:
-            raise Exception("The required_version should be formatted following PEP 440, " \
-                "and inlucdes major, minor, and patch number, " \
-                "e.g., major.minor.patch.") from None
-        # Get installed version
-        versions = [
-            int(_ti_core.get_version_major()),
-            int(_ti_core.get_version_minor()),
-            int(_ti_core.get_version_patch()),
-        ]
-        # Match installed version and required version.
-        match = major == versions[0] and (minor < versions[1]
-                                          or minor == versions[1]
-                                          and patch <= versions[2])
-        if not match:
-            print(
-                f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
-            print("Installed =", _ti_core.get_version_string())
-            raise Exception("Taichi version mismatch")
+    if not (require_version is None):
+        check_require_version(require_version)
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

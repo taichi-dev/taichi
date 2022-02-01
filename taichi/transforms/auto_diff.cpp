@@ -23,6 +23,12 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
+    // We don't need to check the global atomics inisde the range for-loops
+    // because
+    // 1. If the range for-loop is innermost, they will be captured by
+    // MakeAdjoint anyway
+    // 2. If the range for-loop is not innermost, they will be processed by
+    // another IndependentBlocksJudger
     if (is_inside_loop)
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
@@ -59,6 +65,12 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
         break;
       }
     }
+
+    // To judge whether a block is an IB
+    // 1. No local load/store to allocas *outside* itself has been strictly
+    // enforced
+    // 2. If the #1 is satisfied, either an inner most loop or a block without
+    // global atomics is an IB
     return Judger.qualified_local &&
            (Judger.qualified_atomics || Judger.inner_most_loop);
   }

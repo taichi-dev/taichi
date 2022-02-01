@@ -8,40 +8,40 @@
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
-class IndependentBlocksJudger : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
+class IndependentBlocksJudger : public BasicStmtVisitor{
+   public:
+    using BasicStmtVisitor::visit;
 
-  void visit(LocalLoadStmt *stmt) override {
-    for (auto &lane : stmt->src.data) {
-      touched_allocas.insert(lane.var->as<AllocaStmt>());
-    }
-  }
-
-  void visit(LocalStoreStmt *stmt) override {
-    touched_allocas.insert(stmt->dest->as<AllocaStmt>());
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    if (is_inside_loop)
-      return;
-    TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-    for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      if (node->has_grad()) {
-        qualified_atomics = false;
-        break;
+    void visit(LocalLoadStmt *stmt) override{
+      for (auto &lane : stmt->src.data) {
+        touched_allocas.insert(lane.var->as<AllocaStmt>());
       }
     }
-  }
 
-  void visit(RangeForStmt *stmt) override {
-    inner_most_loop = false;
-    is_inside_loop = true;
-    stmt->body->accept(this);
-    is_inside_loop = false;
-  }
+    void visit(LocalStoreStmt *stmt) override{
+      touched_allocas.insert(stmt->dest->as<AllocaStmt>());
+    }
 
-  static bool run(IRNode *root) {
+    void visit(AtomicOpStmt *stmt) override{
+      if(is_inside_loop) return;
+      TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+      for (const auto &node :
+            stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
+        if (node->has_grad()) {
+          qualified_atomics = false;
+          break;
+        }
+      }
+    }
+
+    void visit(RangeForStmt *stmt) override {
+      inner_most_loop = false;
+      is_inside_loop = true;
+      stmt->body->accept(this);
+      is_inside_loop = false;
+    }
+
+    static bool run(IRNode *root) {
     IndependentBlocksJudger Judger;
     Block *block = root->as<Block>();
     root->accept(&Judger);
@@ -59,18 +59,15 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
         break;
       }
     }
-    std::cout << Judger.qualified_local << Judger.qualified_atomics
-              << Judger.inner_most_loop << std::endl;
-    return Judger.qualified_local &&
-           (Judger.qualified_atomics || Judger.inner_most_loop);
-  }
+    return Judger.qualified_local && (Judger.qualified_atomics || Judger.inner_most_loop);
+   }
 
- private:
-  std::set<AllocaStmt *> touched_allocas;
-  bool qualified_local = true;
-  bool qualified_atomics = true;
-  bool inner_most_loop = true;
-  bool is_inside_loop = false;
+   private:
+    std::set<AllocaStmt *> touched_allocas;
+    bool qualified_local = true;
+    bool qualified_atomics = true;
+    bool inner_most_loop = true;
+    bool is_inside_loop = false;
 };
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)

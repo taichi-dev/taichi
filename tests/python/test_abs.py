@@ -15,7 +15,7 @@ def test_abs():
     @ti.kernel
     def func():
         for i in range(N):
-            x[i] = ti.abs(y[i])
+            x[i] = abs(y[i])
 
     for i in range(N):
         y[i] = i - 10

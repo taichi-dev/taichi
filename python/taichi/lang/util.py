@@ -1,7 +1,9 @@
 import functools
 import os
+import traceback
 
 import numpy as np
+from colorama import Fore, Style
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
@@ -224,3 +226,26 @@ def python_scope(func):
         return func(*args, **kwargs)
 
     return wrapped
+
+
+def warning(msg, warning_type=UserWarning, stacklevel=1):
+    """Print a warning message. Note that the builtin `warnings` module is
+    unreliable since it may be suppressed by other packages such as IPython.
+
+    Args:
+        msg (str): message to print.
+        warning_type (Warning): type of warning.
+        stacklevel (int): warning stack level from the caller.
+    """
+    print(Fore.YELLOW + Style.BRIGHT, end='')
+    print(f'{warning_type.__name__}: {msg}')
+    print(f'\n{get_traceback(stacklevel)}')
+    print(Style.RESET_ALL, end='')
+
+
+def get_traceback(stacklevel=1):
+    s = traceback.extract_stack()[:-1 - stacklevel]
+    return ''.join(traceback.format_list(s))
+
+
+__all__ = []

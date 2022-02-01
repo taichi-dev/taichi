@@ -1,10 +1,13 @@
+import math
 import operator
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
-from taichi import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
@@ -21,7 +24,7 @@ test_vector_arrays = [
 ]
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_python_scope_vector_operations():
     for ops in vector_operation_types:
         a, b = test_vector_arrays[:2]
@@ -30,7 +33,7 @@ def test_python_scope_vector_operations():
         assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_python_scope_matrix_operations():
     for ops in operation_types:
         a, b = test_matrix_arrays[:2]
@@ -45,7 +48,7 @@ def test_python_scope_matrix_operations():
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_python_scope_vector_field(ops):
     t1 = ti.Vector.field(2, dtype=ti.i32, shape=())
     t2 = ti.Vector.field(2, dtype=ti.i32, shape=())
@@ -57,7 +60,7 @@ def test_python_scope_vector_field(ops):
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_python_scope_matrix_field(ops):
     t1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     t2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
@@ -71,9 +74,9 @@ def test_python_scope_matrix_field(ops):
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_constant_matrices():
-    assert ti.cos(ti.math.pi / 3) == approx(0.5)
+    assert ti.cos(math.pi / 3) == approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
     assert ti.cos(ti.Vector([2,
                              3])).to_numpy() == approx(np.cos(np.array([2,
@@ -120,7 +123,7 @@ def test_constant_matrices():
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_taichi_scope_vector_operations_with_global_vectors(ops):
     a, b, c = test_vector_arrays[:3]
     m1, m2 = ti.Vector(a), ti.Vector(b)
@@ -141,7 +144,7 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
@@ -425,7 +428,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     ti.root.dense(ti.i, 8).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -438,7 +441,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     ti.root.dense(ti.i, 2).pointer(ti.i, 4).place(x)
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -453,7 +456,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     ti.root.dense(ti.i, 8).place(x, temp)
     ti.root.dense(ti.i, 8).place(y)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -469,7 +472,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     ti.root.dense(ti.i, 8).place(temp_a, x)
     ti.root.dense(ti.i, 8).place(y, temp_b)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 
@@ -484,7 +487,7 @@ def test_matrix_field_dynamic_index_different_stride():
 
     ti.root.dense(ti.i, 8).place(x, y, temp, z)
 
-    ti.get_runtime().materialize()
+    impl.get_runtime().materialize()
     assert v.dynamic_index_stride is None
 
 

@@ -774,7 +774,7 @@ class KernelGen : public IRVisitor {
   bool maybe_generate_fatomics_using_nv_ext(AtomicOpStmt *stmt,
                                             DataType dt,
                                             const std::string &val_name) {
-    if (!allows_nv_shader_ext_ and !dt->is_primitive(PrimitiveTypeID::i32)) {
+    if (!allows_nv_shader_ext_ && !dt->is_primitive(PrimitiveTypeID::i32)) {
       return false;
     }
     const bool check_int =

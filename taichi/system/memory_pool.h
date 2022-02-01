@@ -13,7 +13,7 @@ TLANG_NAMESPACE_BEGIN
 
 // A memory pool that runs on the host
 
-class MemoryPool {
+class TI_DLL_EXPORT MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
   static constexpr std::size_t default_allocator_size =

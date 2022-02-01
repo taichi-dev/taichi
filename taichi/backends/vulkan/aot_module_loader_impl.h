@@ -13,7 +13,7 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-class AotModuleLoaderImpl : public AotModuleLoader {
+class TI_DLL_EXPORT AotModuleLoaderImpl : public AotModuleLoader {
  public:
   explicit AotModuleLoaderImpl(const std::string &output_dir);
 

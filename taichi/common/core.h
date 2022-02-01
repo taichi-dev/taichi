@@ -90,10 +90,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #include "taichi/platform/windows/windows.h"
 #pragma warning(pop)
 #include <intrin.h>
-#define TI_EXPORT __declspec(dllexport)
-#else
-#define TI_EXPORT
-#endif
+#endif  // _WIN64
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -125,7 +122,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
   }                         \
   }
 
-TI_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
+void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TI_NAMESPACE_BEGIN
 
@@ -219,8 +216,6 @@ float64 constexpr operator"" _fd(long double v) {
 float64 constexpr operator"" _fd(unsigned long long v) {
   return float64(v);
 }
-
-TI_EXPORT void print_traceback();
 
 TI_NAMESPACE_END
 //******************************************************************************

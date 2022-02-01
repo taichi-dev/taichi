@@ -1,8 +1,7 @@
 import math
 
-from taichi._lib import core as _ti_core
 from taichi.lang import impl, matrix, ops
-from taichi.lang.impl import expr_init, static
+from taichi.lang.impl import expr_init, get_runtime, static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
@@ -189,9 +188,11 @@ def svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == f32:
-        rets = _ti_core.sifakis_svd_f32(*inputs, iters)
+        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f32(
+            *inputs, iters)
     else:
-        rets = _ti_core.sifakis_svd_f64(*inputs, iters)
+        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f64(
+            *inputs, iters)
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]

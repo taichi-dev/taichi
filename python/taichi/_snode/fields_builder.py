@@ -1,10 +1,10 @@
 from typing import Any, Optional, Sequence, Union
 
 from taichi._lib import core as _ti_core
+from taichi._snode.snode_tree import SNodeTree
 from taichi.lang import impl, snode
-from taichi.lang.exception import InvalidOperationError
-from taichi.snode.snode_tree import SNodeTree
-from taichi.tools.util import warning
+from taichi.lang.exception import TaichiRuntimeError
+from taichi.lang.util import warning
 
 _snode_registry = _ti_core.SNodeRegistry()
 
@@ -34,7 +34,7 @@ class FieldsBuilder:
         fb.finalize()
     """
     def __init__(self):
-        self._ptr = _snode_registry.create_root()
+        self._ptr = _snode_registry.create_root(impl.get_runtime().prog)
         self._root = snode.SNode(self._ptr)
         self._finalized = False
         self._empty = True
@@ -166,4 +166,4 @@ class FieldsBuilder:
 
     def _check_not_finalized(self):
         if self._finalized:
-            raise InvalidOperationError('FieldsBuilder finalized')
+            raise TaichiRuntimeError('FieldsBuilder finalized')

@@ -69,7 +69,7 @@ class CompiledTaichiKernel {
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
 };
 
-class VkRuntime {
+class TI_DLL_EXPORT VkRuntime {
  public:
   struct Params {
     uint64_t *host_result_buffer{nullptr};

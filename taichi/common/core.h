@@ -92,17 +92,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #include <intrin.h>
 #endif  // _WIN64
 
-// https://gcc.gnu.org/wiki/Visibility
-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
-#ifdef __GNUC__
-#define TI_DLL_EXPORT __attribute__((dllexport))
-#else
-#define TI_DLL_EXPORT __declspec(dllexport)
-#endif  //  __GNUC__
-#else
-#define TI_DLL_EXPORT __attribute__((visibility("default")))
-#endif  // defined _WIN32 || defined _WIN64 || defined __CYGWIN__
-
 #ifndef _WIN64
 #define sscanf_s sscanf
 #define sprintf_s sprintf

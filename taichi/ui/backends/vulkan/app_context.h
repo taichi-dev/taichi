@@ -25,7 +25,7 @@ using TaichiWindow = GLFWwindow;
 
 namespace vulkan {
 
-class AppContext {
+class TI_DLL_EXPORT AppContext {
  public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();

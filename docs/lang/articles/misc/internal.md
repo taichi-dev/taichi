@@ -330,7 +330,7 @@ a = ti.field(ti.f32, shape=(128, 32, 8))
 b = ti.field(ti.f32)
 ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
 
-ti.get_runtime().materialize()
+ti.lang.impl.get_runtime().materialize() # This is an internal api for dev, we don't make sure it is stable for user.
 
 mapping_a = a.snode().physical_index_position()
 

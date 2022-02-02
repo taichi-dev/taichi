@@ -1,3 +1,5 @@
+from taichi.lang import impl
+
 import taichi as ti
 
 
@@ -23,7 +25,7 @@ def test_clear_all_gradients():
             w.grad[i, j] = 6
 
     ti.clear_all_gradients()
-    assert ti.get_runtime().get_num_compiled_functions() == 3
+    assert impl.get_runtime().get_num_compiled_functions() == 3
 
     assert x.grad[None] == 0
     for i in range(n):
@@ -34,4 +36,4 @@ def test_clear_all_gradients():
 
     ti.clear_all_gradients()
     # No more kernel compilation
-    assert ti.get_runtime().get_num_compiled_functions() == 3
+    assert impl.get_runtime().get_num_compiled_functions() == 3

@@ -120,7 +120,7 @@ class logger;
 
 namespace taichi {
 
-class Logger {
+class TI_DLL_EXPORT Logger {
  private:
   std::shared_ptr<spdlog::logger> console_;
   int level_;

@@ -314,3 +314,6 @@ class SNodeHostAccess:
     def __init__(self, accessor, key):
         self.accessor = accessor
         self.key = key
+
+
+__all__ = []

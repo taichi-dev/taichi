@@ -53,8 +53,7 @@ class Expr(TaichiOperations):
 def make_var_list(size):
     exprs = []
     for _ in range(size):
-        exprs.append(
-            impl.get_runtime().prog.current_ast_builder().make_id_expr(''))
+        exprs.append(_ti_core.make_id_expr(''))
     return exprs
 
 
@@ -75,3 +74,6 @@ def make_expr_group(*exprs):
         else:
             expr_group.push_back(Expr(i).ptr)
     return expr_group
+
+
+__all__ = []

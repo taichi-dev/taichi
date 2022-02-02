@@ -14,9 +14,14 @@ def paint():
         x[i // 4, j // 4] += ret / 16
 
 
-paint()
+def main():
+    paint()
 
-gui = ti.GUI('Logo', (n, n))
-while gui.running:
-    gui.set_image(x)
-    gui.show()
+    gui = ti.GUI('Logo', (n, n))
+    while gui.running:
+        gui.set_image(x)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

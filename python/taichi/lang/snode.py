@@ -1,9 +1,5 @@
 import numbers
 
-# The reason we import just the taichi.core.util module, instead of the ti_core
-# object within it, is that ti_core is stateful. While in practice ti_core is
-# loaded during the import procedure, it's probably still good to delay the
-# access to it.
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import Field
@@ -393,11 +389,13 @@ def is_active(l, indices):
 
 
 def activate(l, indices):
-    _ti_core.insert_activate(l.snode.ptr, expr.make_expr_group(indices))
+    impl.get_runtime().prog.current_ast_builder().insert_activate(
+        l.snode.ptr, expr.make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    _ti_core.insert_deactivate(l.snode.ptr, expr.make_expr_group(indices))
+    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+        l.snode.ptr, expr.make_expr_group(indices))
 
 
 def length(l, indices):
@@ -420,3 +418,9 @@ def get_addr(f, indices):
     """
     return expr.Expr(
         _ti_core.expr_get_addr(f.snode.ptr, expr.make_expr_group(indices)))
+
+
+__all__ = [
+    'activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length',
+    'rescale_index'
+]

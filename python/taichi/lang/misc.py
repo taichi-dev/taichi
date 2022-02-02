@@ -179,11 +179,54 @@ def prepare_sandbox():
     return tmp_dir
 
 
+def check_require_version(require_version):
+    '''
+    Check if installed version meets the requirements.
+    Allow to specify <major>.<minor>.<patch>.<hash>.
+    <patch>.<hash> is optional. If not match, raise an exception.
+    '''
+    # Extract version number part (i.e. toss any revision / hash parts).
+    version_number_str = require_version
+    for i in range(len(require_version)):
+        c = require_version[i]
+        if not (c.isdigit() or c == "."):
+            version_number_str = require_version[:i]
+            break
+    # Get required version.
+    try:
+        version_number_tuple = tuple(
+            [int(n) for n in version_number_str.split(".")])
+        major = version_number_tuple[0]
+        minor = version_number_tuple[1]
+        patch = 0
+        if len(version_number_tuple) > 2:
+            patch = version_number_tuple[2]
+    except:
+        raise Exception("The require_version should be formatted following PEP 440, " \
+            "and inlucdes major, minor, and patch number, " \
+            "e.g., major.minor.patch.") from None
+    # Get installed version
+    versions = [
+        int(_ti_core.get_version_major()),
+        int(_ti_core.get_version_minor()),
+        int(_ti_core.get_version_patch()),
+    ]
+    # Match installed version and required version.
+    match = major == versions[0] and (
+        minor < versions[1] or minor == versions[1] and patch <= versions[2])
+
+    if not match:
+        print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
+        print("Installed =", _ti_core.get_version_string())
+        raise Exception("Taichi version mismatch")
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
          _test_mode=False,
          enable_fallback=True,
+         require_version=None,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -194,6 +237,7 @@ def init(arch=None,
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
         default_ip (Optional[type]): Default integral type.
+        require_version (Optional[string]): A version string.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
             behavior. Below we list some of the most frequently used ones. For a
@@ -207,6 +251,10 @@ def init(arch=None,
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
+
+    # Check if installed version meets the requirements.
+    if not require_version is None:
+        check_require_version(require_version)
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

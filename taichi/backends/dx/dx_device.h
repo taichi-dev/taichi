@@ -93,6 +93,24 @@ class Dx11CommandList : public CommandList {
   void run_commands();
 
  private:
+  struct Cmd {
+    explicit Cmd(Dx11CommandList *cmdlist) : cmdlist_(cmdlist) {
+    }
+    virtual void execute() {
+    }
+    Dx11CommandList *cmdlist_;
+  };
+
+  struct CmdBufferFill : public Cmd {
+    explicit CmdBufferFill(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
+    }
+    ID3D11UnorderedAccessView *uav{nullptr};
+    size_t offset{0}, size{0};
+    uint32_t data{0};
+    void execute() override;
+  };
+
+  std::vector<std::unique_ptr<Cmd>> recorded_commands_;
   Dx11Device *device_;
 };
 
@@ -136,13 +154,17 @@ class Dx11Device : public GraphicsDevice {
                        const BufferImageCopyParams &params) override;
 
   int live_dx11_object_count();
+  ID3D11DeviceContext *d3d11_context() {
+    return context_;
+  }
+
+  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
+  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
 
  private:
   void create_dx11_device();
   void destroy_dx11_device();
-  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
-  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
-  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
   ID3D11Device *device_{};
   ID3D11DeviceContext *context_{};
   std::unique_ptr<Dx11InfoQueue> info_queue_{};

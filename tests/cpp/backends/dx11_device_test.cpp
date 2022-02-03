@@ -116,9 +116,9 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
         - Dx11Stream::buffer_fill
         - Dx11Stream::submit_synced
   */
-  // Will be enabled when the above Stream functions are implemented.
-  // uint64_t* result_buffer;
-  // program->materialize_runtime(pool.get(), nullptr, &result_buffer);
+
+  uint64_t *result_buffer;
+  program->materialize_runtime(pool.get(), nullptr, &result_buffer);
 }
 
 }  // namespace directx11

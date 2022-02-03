@@ -39,12 +39,12 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder) {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11CommandList::bind_resources(ResourceBinder *binder, ResourceBinder::Bindings* bindings) {
+void Dx11CommandList::bind_resources(ResourceBinder *binder,
+                                     ResourceBinder::Bindings *bindings) {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11CommandList::buffer_barrier(DevicePtr ptr,
-                                     size_t size) {
+void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -60,8 +60,22 @@ void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11CommandList::buffer_fill(DevicePtr dst, size_t size, uint32_t data) {
-  TI_NOT_IMPLEMENTED;
+void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+  std::unique_ptr<Dx11CommandList::CmdBufferFill> cmd =
+      std::make_unique<CmdBufferFill>(this);
+  ID3D11Buffer *buf = device_->alloc_id_to_buffer(ptr.alloc_id);
+  ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(ptr.alloc_id);
+  cmd->uav = uav;
+  D3D11_BUFFER_DESC desc;
+  buf->GetDesc(&desc);
+  cmd->size = desc.ByteWidth;
+  recorded_commands_.push_back(std::move(cmd));
+}
+
+void Dx11CommandList::CmdBufferFill::execute() {
+  ID3D11DeviceContext *context = cmdlist_->device_->d3d11_context();
+  const UINT values[4] = {data, data, data, data};
+  context->ClearUnorderedAccessViewUint(uav, values);
 }
 
 void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
@@ -124,7 +138,9 @@ void Dx11CommandList::image_to_buffer(DevicePtr dst_buf,
 }
 
 void Dx11CommandList::run_commands() {
-  TI_NOT_IMPLEMENTED;
+  for (const auto &cmd : recorded_commands_) {
+    cmd->execute();
+  }
 }
 
 namespace {
@@ -399,12 +415,23 @@ void Dx11Device::image_to_buffer(DevicePtr dst_buf,
   TI_NOT_IMPLEMENTED;
 }
 
+ID3D11Buffer *Dx11Device::alloc_id_to_buffer(uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id);
+}
+
+ID3D11Buffer *Dx11Device::alloc_id_to_buffer_cpu_copy(uint32_t alloc_id) {
+  return alloc_id_to_cpucopy_.at(alloc_id);
+}
+
+ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(uint32_t alloc_id) {
+  return alloc_id_to_uav_.at(alloc_id);
+}
+
 Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
 }
 
 Dx11Stream::~Dx11Stream() {
 }
-
 
 std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
   return std::make_unique<Dx11CommandList>(device_);
@@ -416,7 +443,8 @@ void Dx11Stream::submit(CommandList *cmdlist) {
 
 // No difference for DX11
 void Dx11Stream::submit_synced(CommandList *cmdlist) {
-  TI_NOT_IMPLEMENTED;
+  Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
+  dx_cmd_list->run_commands();
 }
 
 void Dx11Stream::command_sync() {

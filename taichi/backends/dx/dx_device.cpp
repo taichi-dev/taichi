@@ -25,6 +25,108 @@ ResourceBinder *Dx11Pipeline::resource_binder() {
   return nullptr;
 }
 
+Dx11CommandList::Dx11CommandList(Dx11Device *ti_device) : device_(ti_device) {
+}
+
+Dx11CommandList::~Dx11CommandList() {
+}
+
+void Dx11CommandList::bind_pipeline(Pipeline *p) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::bind_resources(ResourceBinder *binder) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::bind_resources(ResourceBinder *binder, ResourceBinder::Bindings* bindings) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::buffer_barrier(DevicePtr ptr,
+                                     size_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::buffer_barrier(DeviceAllocation alloc) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::memory_barrier() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::buffer_fill(DevicePtr dst, size_t size, uint32_t data) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::begin_renderpass(int x0,
+                                       int y0,
+                                       int x1,
+                                       int y1,
+                                       uint32_t num_color_attachments,
+                                       DeviceAllocation *color_attachments,
+                                       bool *color_clear,
+                                       std::vector<float> *clear_colors,
+                                       DeviceAllocation *depth_attachment,
+                                       bool depth_clear) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::end_renderpass() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::clear_color(float r, float g, float b, float a) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::set_line_width(float width) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::draw_indexed(uint32_t num_indicies,
+                                   uint32_t start_vertex,
+                                   uint32_t start_index) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::image_transition(DeviceAllocation img,
+                                       ImageLayout old_layout,
+                                       ImageLayout new_layout) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::buffer_to_image(DeviceAllocation dst_img,
+                                      DevicePtr src_buf,
+                                      ImageLayout img_layout,
+                                      const BufferImageCopyParams &params) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::image_to_buffer(DevicePtr dst_buf,
+                                      DeviceAllocation src_img,
+                                      ImageLayout img_layout,
+                                      const BufferImageCopyParams &params) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11CommandList::run_commands() {
+  TI_NOT_IMPLEMENTED;
+}
+
 namespace {
 HRESULT create_compute_device(ID3D11Device **out_device,
                               ID3D11DeviceContext **out_context,
@@ -146,6 +248,8 @@ Dx11Device::Dx11Device() {
     info_queue_ = std::make_unique<Dx11InfoQueue>(device_);
   }
   set_cap(DeviceCapability::spirv_version, 0x10300);
+
+  stream_ = new Dx11Stream(this);
 }
 
 Dx11Device::~Dx11Device() {
@@ -247,7 +351,7 @@ void Dx11Device::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
 }
 
 Stream *Dx11Device::get_compute_stream() {
-  TI_NOT_IMPLEMENTED;
+  return stream_;
 }
 
 std::unique_ptr<Pipeline> Dx11Device::create_raster_pipeline(
@@ -293,6 +397,30 @@ void Dx11Device::image_to_buffer(DevicePtr dst_buf,
                                  ImageLayout img_layout,
                                  const BufferImageCopyParams &params) {
   TI_NOT_IMPLEMENTED;
+}
+
+Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
+}
+
+Dx11Stream::~Dx11Stream() {
+}
+
+
+std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
+  return std::make_unique<Dx11CommandList>(device_);
+}
+
+void Dx11Stream::submit(CommandList *cmdlist) {
+  TI_NOT_IMPLEMENTED;
+}
+
+// No difference for DX11
+void Dx11Stream::submit_synced(CommandList *cmdlist) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11Stream::command_sync() {
+  // Not needed for DX11
 }
 
 }  // namespace directx11

@@ -15,7 +15,15 @@ FunctionType Dx11ProgramImpl::compile(Kernel *kernel,
 void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {
-  TI_NOT_IMPLEMENTED;
+  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+      sizeof(uint64) * taichi_result_buffer_entries, 8);
+
+  device_ = std::make_unique<directx11::Dx11Device>();
+
+  vulkan::VkRuntime::Params params;
+  params.host_result_buffer = *result_buffer_ptr;
+  params.device = device_.get();
+  runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 }
 
 void Dx11ProgramImpl::synchronize() {

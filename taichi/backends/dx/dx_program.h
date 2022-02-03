@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/program/program_impl.h"
 
 namespace taichi {
@@ -25,6 +26,10 @@ class Dx11ProgramImpl : public ProgramImpl {
       uint64 *result_buffer_ptr) override;
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override;
   void synchronize() override;
+
+ private:
+  std::unique_ptr<Device> device_;
+  std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
 
 }  // namespace lang

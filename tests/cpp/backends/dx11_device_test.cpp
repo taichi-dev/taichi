@@ -4,6 +4,8 @@
 
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
+#include "taichi/backends/dx/dx_program.h"
+#include "taichi/system/memory_pool.h"
 
 namespace taichi {
 namespace lang {
@@ -85,6 +87,38 @@ TEST(Dx11InfoQueueTest, ParseReferenceCount) {
   std::vector<directx11::Dx11InfoQueue::Entry> entries =
       directx11::Dx11InfoQueue::parse_reference_count(messages);
   EXPECT_EQ(entries.size(), 8);
+}
+
+TEST(Dx11StreamTest, CommandListTest) {
+  std::unique_ptr<directx11::Dx11Device> device =
+      std::make_unique<directx11::Dx11Device>();
+  std::unique_ptr<Dx11Stream> stream =
+      std::make_unique<Dx11Stream>(device.get());
+  stream->new_command_list();
+}
+
+TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
+  std::unique_ptr<directx11::Dx11Device> device =
+      std::make_unique<directx11::Dx11Device>();
+  std::unique_ptr<MemoryPool> pool =
+      std::make_unique<MemoryPool>(Arch::dx11, device.get());
+  std::unique_ptr<Dx11ProgramImpl> program =
+      std::make_unique<Dx11ProgramImpl>(default_compile_config);
+
+  /*
+  This test needs allocate_memory because of the call stack here:
+  Dx11ProgramImpl::materialize_runtime
+  - VkRuntime::VkRuntime
+     - VkRuntime::init_buffers
+        - Dx11Device::allocate_memory_unique
+        - Dx11Device::get_compute_stream
+        - Dx11Stream::new_command_list
+        - Dx11Stream::buffer_fill
+        - Dx11Stream::submit_synced
+  */
+  // Will be enabled when the above Stream functions are implemented.
+  // uint64_t* result_buffer;
+  // program->materialize_runtime(pool.get(), nullptr, &result_buffer);
 }
 
 }  // namespace directx11

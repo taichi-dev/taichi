@@ -6,8 +6,6 @@ import taichi as ti
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_minimal():
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         assert 0

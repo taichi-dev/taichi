@@ -1,4 +1,6 @@
 #include "taichi/program/snode_expr_utils.h"
+#include "taichi/ir/snode.h"
+#include "taichi/ir/frontend_ir.h"
 
 namespace taichi {
 namespace lang {

@@ -136,7 +136,7 @@ def test_func_def_in_func():
 
 @ti.test(arch=ti.cpu)
 def test_kernel_bad_argument_annotation():
-    with pytest.raises(ti.KernelDefError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
 
         @ti.kernel
         def kernel(x: 'bar'):
@@ -145,7 +145,7 @@ def test_kernel_bad_argument_annotation():
 
 @ti.test(arch=ti.cpu)
 def test_func_bad_argument_annotation():
-    with pytest.raises(ti.KernelDefError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
 
         @ti.func
         def func(x: 'foo'):

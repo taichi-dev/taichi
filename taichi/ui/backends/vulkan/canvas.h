@@ -35,7 +35,7 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-class Canvas final : public CanvasBase {
+class TI_DLL_EXPORT Canvas final : public CanvasBase {
  public:
   Canvas(Renderer *renderer);
 

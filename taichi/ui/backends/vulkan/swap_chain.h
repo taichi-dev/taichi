@@ -5,7 +5,7 @@
 TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
-class SwapChain {
+class TI_DLL_EXPORT SwapChain {
  public:
   void init(class AppContext *app_context);
   uint32_t width();

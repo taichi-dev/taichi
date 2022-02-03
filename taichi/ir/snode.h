@@ -6,9 +6,12 @@
 #include "taichi/ir/expr.h"
 #include "taichi/ir/snode_types.h"
 #include "taichi/ir/type.h"
+#include "taichi/program/snode_expr_utils.h"
 
 namespace taichi {
 namespace lang {
+class Program;
+class SNodeRwAccessorsBank;
 
 /**
  * Dimension (or axis) of a tensor.
@@ -147,9 +150,13 @@ class SNode {
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{true};
 
-  SNode();
+  SNode(SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+        SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
-  SNode(int depth, SNodeType t);
+  SNode(int depth,
+        SNodeType t,
+        SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+        SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(const SNode &);
 
@@ -316,6 +323,22 @@ class SNode {
 
   int shape_along_axis(int i) const;
 
+  void place(Expr &expr, const std::vector<int> &offset) {
+    place_child(&expr, offset, this, snode_to_glb_var_exprs_);
+  }
+
+  void lazy_grad() {
+    make_lazy_grad(this, snode_to_glb_var_exprs_);
+  }
+
+  int64 read_int(const std::vector<int> &i);
+  uint64 read_uint(const std::vector<int> &i);
+  float64 read_float(const std::vector<int> &i);
+  void write_int(const std::vector<int> &i, int64 val);
+  void write_float(const std::vector<int> &i, float64 val);
+
+  Expr get_expr() const;
+
   uint64 fetch_reader_result();  // TODO: refactor
 
   void begin_shared_exp_placement();
@@ -330,6 +353,8 @@ class SNode {
 
  private:
   int snode_tree_id_{0};
+  SNodeGlobalVarExprMap *snode_to_glb_var_exprs_{nullptr};
+  SNodeRwAccessorsBank *snode_rw_accessors_bank_{nullptr};
 };
 
 }  // namespace lang

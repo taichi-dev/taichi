@@ -369,6 +369,12 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
   > On Ubuntu, check if a JSON file with a name corresponding to your GPU vendor is in: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d/`.
 
 4. Check if the SDK is properly installed: `vulkaninfo`.
+  
+5. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disbaled by default when compling from source.)
+
+  ```shell
+  export TAICHI_CMAKE_ARGS=$TAICHI_CMAKE_ARGS:" -DTI_WITH_VULKAN:BOOL=ON"
+  ```
 
 </TabItem>
 

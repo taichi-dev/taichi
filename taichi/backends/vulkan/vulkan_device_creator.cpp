@@ -228,7 +228,7 @@ void VulkanDeviceCreator::create_instance() {
     app_info.apiVersion = params_.api_version.value();
   } else {
     // The highest version designed to use
-    app_info.apiVersion = VK_API_VERSION_1_2;
+    app_info.apiVersion = VK_API_VERSION_1_3;
   }
 
   VkInstanceCreateInfo create_info{};
@@ -372,8 +372,15 @@ void VulkanDeviceCreator::create_logical_device() {
   create_info.queueCreateInfoCount = queue_create_infos.size();
 
   // Get device properties
-  VkPhysicalDeviceProperties physical_device_properties;
+  VkPhysicalDeviceProperties physical_device_properties{};
   vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
+  TI_INFO("Vulkan Device \"{}\" supports Vulkan {} version {}.{}.{}", physical_device_properties.deviceName,
+    VK_API_VERSION_VARIANT(physical_device_properties.apiVersion),
+    VK_API_VERSION_MAJOR(physical_device_properties.apiVersion),
+    VK_API_VERSION_MINOR(physical_device_properties.apiVersion),
+    VK_API_VERSION_PATCH(physical_device_properties.apiVersion)
+  );
+
   ti_device_->set_cap(DeviceCapability::vk_api_version,
                       physical_device_properties.apiVersion);
   ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
@@ -392,7 +399,7 @@ void VulkanDeviceCreator::create_logical_device() {
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
 
-  bool has_surface = false, has_swapchain = false;
+  bool has_swapchain = false;
 
   bool portability_subset_enabled = false;
 
@@ -429,6 +436,12 @@ void VulkanDeviceCreator::create_logical_device() {
     } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_BIND_MEMORY_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),

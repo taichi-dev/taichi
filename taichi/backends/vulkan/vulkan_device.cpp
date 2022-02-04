@@ -1811,9 +1811,8 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.device = device_;
   allocatorInfo.instance = instance_;
 
-#ifndef __APPLE__
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions;
+  VmaVulkanFunctions vk_vma_functions{0};
 
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
@@ -1851,7 +1850,6 @@ void VulkanDevice::create_vma_allocator() {
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
-#endif
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 

@@ -385,7 +385,11 @@ void VulkanDeviceCreator::create_logical_device() {
                       physical_device_properties.apiVersion);
   ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
 
-  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_3) {
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10600);
+  } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_2) {
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
+  } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10300);
   }
 
@@ -427,8 +431,10 @@ void VulkanDeviceCreator::create_logical_device() {
     } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
-      ti_device_->set_cap(DeviceCapability::spirv_version, 0x10400);
-      enabled_extensions.push_back(ext.extensionName);
+      if (ti_device_->get_cap(DeviceCapability::spirv_version) < 0x10400) {
+        ti_device_->set_cap(DeviceCapability::spirv_version, 0x10400);
+        enabled_extensions.push_back(ext.extensionName);
+      }
     } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME ||
                name == VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) {
       ti_device_->set_cap(DeviceCapability::vk_has_external_memory, true);

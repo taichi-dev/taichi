@@ -374,12 +374,12 @@ void VulkanDeviceCreator::create_logical_device() {
   // Get device properties
   VkPhysicalDeviceProperties physical_device_properties{};
   vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
-  TI_INFO("Vulkan Device \"{}\" supports Vulkan {} version {}.{}.{}", physical_device_properties.deviceName,
-    VK_API_VERSION_VARIANT(physical_device_properties.apiVersion),
-    VK_API_VERSION_MAJOR(physical_device_properties.apiVersion),
-    VK_API_VERSION_MINOR(physical_device_properties.apiVersion),
-    VK_API_VERSION_PATCH(physical_device_properties.apiVersion)
-  );
+  TI_INFO("Vulkan Device \"{}\" supports Vulkan {} version {}.{}.{}",
+          physical_device_properties.deviceName,
+          VK_API_VERSION_VARIANT(physical_device_properties.apiVersion),
+          VK_API_VERSION_MAJOR(physical_device_properties.apiVersion),
+          VK_API_VERSION_MINOR(physical_device_properties.apiVersion),
+          VK_API_VERSION_PATCH(physical_device_properties.apiVersion));
 
   ti_device_->set_cap(DeviceCapability::vk_api_version,
                       physical_device_properties.apiVersion);

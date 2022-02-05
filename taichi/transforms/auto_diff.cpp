@@ -14,12 +14,12 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     for (auto &lane : stmt->src.data) {
-      touched_allocas.insert(lane.var->as<AllocaStmt>());
+      touched_allocas_.insert(lane.var->as<AllocaStmt>());
     }
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    touched_allocas.insert(stmt->dest->as<AllocaStmt>());
+    touched_allocas_.insert(stmt->dest->as<AllocaStmt>());
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -51,7 +51,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     IndependentBlocksJudger Judger;
     Block *block = root->as<Block>();
     root->accept(&Judger);
-    for (const auto &alloca : Judger.touched_allocas) {
+    for (const auto &alloca : Judger.touched_allocas_) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
       for (auto b = alloca->parent; b; b = b->parent_block()) {
@@ -76,7 +76,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   }
 
  private:
-  std::set<AllocaStmt *> touched_allocas;
+  std::set<AllocaStmt *> touched_allocas_;
   bool qualified_local_ = true;
   bool qualified_atomics_ = true;
   bool inner_most_loop_ = true;

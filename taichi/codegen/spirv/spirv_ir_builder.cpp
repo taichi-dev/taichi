@@ -69,6 +69,11 @@ void IRBuilder::init_header() {
   if (device_->get_cap(cap::spirv_has_float64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
   }
+  if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityPhysicalStorageBufferAddressesEXT)
+        .commit(&header_);
+  }
 
   ib_.begin(spv::OpExtension)
       .add("SPV_KHR_storage_buffer_storage_class")
@@ -89,6 +94,12 @@ void IRBuilder::init_header() {
   if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_shader_atomic_float_min_max")
+        .commit(&header_);
+  }
+
+  if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_EXT_physical_storage_buffer")
         .commit(&header_);
   }
 
@@ -440,6 +451,44 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
 
   this->debug(spv::OpName, struct_type, name + "_t");
 
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+    // NOTE: BufferBlock was deprecated in SPIRV 1.3
+    // use StorageClassStorageBuffer instead.
+    // runtime array are always decorated as BufferBlock(shader storage buffer)
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
+  } else {
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+  }
+
+  SType ptr_type = get_pointer_type(struct_type, storage_class);
+
+  this->debug(spv::OpName, ptr_type, name + "_ptr");
+
+  Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(ptr_type, val, storage_class)
+      .commit(&global_);
+
+  this->debug(spv::OpName, val, name);
+
+  this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
+                 descriptor_set);
+  this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
+  return val;
+}
+
+Value IRBuilder::uniform_struct_argument(const SType &struct_type,
+                                        uint32_t descriptor_set,
+                                        uint32_t binding,
+                                        const std::string &name) {
+  // NOTE: BufferBlock was deprecated in SPIRV 1.3
+  // use StorageClassStorageBuffer instead.
+  spv::StorageClass storage_class = spv::StorageClassUniform;
+
+  this->debug(spv::OpName, struct_type, name + "_t");
+
+  this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+
   SType ptr_type = get_pointer_type(struct_type, storage_class);
 
   this->debug(spv::OpName, ptr_type, name + "_ptr");
@@ -774,6 +823,10 @@ Value IRBuilder::query_value(std::string name) const {
     return it->second;
   }
   TI_ERROR("Value \"{}\" does not yet exist.", name);
+}
+
+bool IRBuilder::check_value_existence(const std::string &name) const {
+  return value_name_tbl_.find(name) != value_name_tbl_.end();
 }
 
 Value IRBuilder::float_atomic(AtomicOpType op_type,

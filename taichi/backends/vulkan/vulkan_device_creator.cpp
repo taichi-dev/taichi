@@ -449,6 +449,9 @@ void VulkanDeviceCreator::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BIND_MEMORY_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME ||
+               name == VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
                          name) != params_.additional_device_extensions.end()) {
@@ -504,6 +507,10 @@ void VulkanDeviceCreator::create_logical_device() {
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+  VkPhysicalDeviceBufferDeviceAddressFeaturesKHR
+      buffer_device_address_feature{};
+  buffer_device_address_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
 
   if (ti_device_->get_cap(DeviceCapability::vk_has_physical_features2)) {
     VkPhysicalDeviceFeatures2KHR features2{};
@@ -586,6 +593,19 @@ void VulkanDeviceCreator::create_logical_device() {
       }
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
+    }
+
+    // Buffer Device Address
+    {
+      features2.pNext = &buffer_device_address_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (buffer_device_address_feature.bufferDeviceAddress) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_physical_storage_buffer,
+                            true);
+      }
+      *pNextEnd = &buffer_device_address_feature;
+      pNextEnd = &buffer_device_address_feature.pNext;
     }
 
     // TODO: add atomic min/max feature

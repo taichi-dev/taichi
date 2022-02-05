@@ -124,6 +124,8 @@ void Device::print_all_cap() const {
       {DeviceCapability::spirv_has_atomic_float64_minmax,
        "spirv_has_atomic_float64_minmax"},
       {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::spirv_has_physical_storage_buffer,
+       "spirv_has_physical_storage_buffer"},
       {DeviceCapability::wide_lines, "wide_lines"},
   };
   for (auto &pair : caps_) {

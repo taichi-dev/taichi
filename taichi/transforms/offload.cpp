@@ -112,7 +112,7 @@ class Offloader {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
-          if (arch == Arch::opengl && demotable_axis_load(s->end)) {
+          if ((arch == Arch::opengl || arch == Arch::vulkan) && demotable_axis_load(s->end)) {
             // TODO: We need to update codegen for each backend gradually so
             // let's limit it to opengl backend for now.
             auto end_copy = s->end->clone();
@@ -384,7 +384,8 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
         (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
-    if (config_.arch == Arch::opengl && demotable_axis_load(stmt))
+    if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan) &&
+        demotable_axis_load(stmt))
       return;
     // Not yet allocated
     if (local_to_global_.find(top_level_ptr) == local_to_global_.end()) {

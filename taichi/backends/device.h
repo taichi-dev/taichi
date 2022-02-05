@@ -37,7 +37,7 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_add,
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
-  spirv_has_ptr_cast,
+  spirv_has_physical_storage_buffer,
   // Graphics Caps,
   wide_lines
 };
@@ -408,6 +408,10 @@ class Device {
 
   uint64_t *allocate_llvm_runtime_memory_jit(
       const LlvmRuntimeAllocParams &params);
+
+  virtual uint64_t get_memory_physical_pointer(DeviceAllocation handle) {
+    TI_NOT_IMPLEMENTED
+  }
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

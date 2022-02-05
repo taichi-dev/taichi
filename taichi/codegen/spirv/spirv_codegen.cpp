@@ -24,7 +24,8 @@ namespace {
 
 constexpr char kRootBufferName[] = "root_buffer";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_buffer";
-constexpr char kContextBufferName[] = "context_buffer";
+constexpr char kArgsBufferName[] = "args_buffer";
+constexpr char kRetBufferName[] = "ret_buffer";
 constexpr char kListgenBufferName[] = "listgen_buffer";
 constexpr char kExtArrBufferName[] = "ext_arr_buffer";
 
@@ -42,8 +43,10 @@ std::string buffer_instance_name(BufferInfo b) {
       return std::string(kRootBufferName) + "_" + std::to_string(b.root_id);
     case BufferType::GlobalTmps:
       return kGlobalTmpsBufferName;
-    case BufferType::Context:
-      return kContextBufferName;
+    case BufferType::Args:
+      return kArgsBufferName;
+    case BufferType::Rets:
+      return kRetBufferName;
     case BufferType::ListGen:
       return kListgenBufferName;
     case BufferType::ExtArr:
@@ -102,6 +105,7 @@ class TaskCodegen : public IRVisitor {
     ir_->debug(spv::OpName, kernel_function_, "main");
 
     compile_args_struct();
+    compile_ret_struct();
 
     if (task_ir_->task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(task_ir_);
@@ -133,7 +137,9 @@ class TaskCodegen : public IRVisitor {
 
   void visit(Block *stmt) override {
     for (auto &s : stmt->statements) {
-      s->accept(this);
+      if (offload_loop_motion_.find(s.get()) == offload_loop_motion_.end()) {
+        s->accept(this);
+      }
     }
   }
 
@@ -492,15 +498,15 @@ class TaskCodegen : public IRVisitor {
     const auto offset_in_mem = arg_attribs.offset_in_mem;
     if (stmt->is_ptr) {
       // Do not shift! We are indexing the buffers at byte granularity.
-      spirv::Value val =
-          ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
-      ir_->register_value(stmt->raw_name(), val);
+      //spirv::Value val =
+      //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
+      //ir_->register_value(stmt->raw_name(), val);
     } else {
       const auto dt = arg_attribs.dt;
       const auto val_type = ir_->get_primitive_type(dt);
       spirv::Value buffer_val = ir_->make_value(
-          spv::OpAccessChain, ir_->get_storage_pointer_type(val_type),
-          get_buffer_value(BufferType::Context, PrimitiveType::i32),
+          spv::OpAccessChain, ir_->get_pointer_type(val_type, spv::StorageClassUniform),
+          get_buffer_value(BufferType::Args, PrimitiveType::i32),
           ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->load_variable(buffer_val, val_type);
@@ -515,9 +521,8 @@ class TaskCodegen : public IRVisitor {
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
-          get_buffer_value(BufferType::Context, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(),
-                                    i + ctx_attribs_->args().size()));
+          get_buffer_value(BufferType::Rets, PrimitiveType::i32),
+          ir_->int_immediate_number(ir_->i32_type(), i));
       buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
       ir_->store_variable(buffer_val, val);
@@ -537,15 +542,15 @@ class TaskCodegen : public IRVisitor {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
 
-    const auto extra_args_member_index =
-        ctx_attribs_->args().size() + ctx_attribs_->rets().size();
+    const auto extra_args_member_index = ctx_attribs_->args().size();
 
     const auto extra_arg_index = (arg_id * taichi_max_num_indices) + axis;
     spirv::Value var_ptr = ir_->make_value(
-        spv::OpAccessChain, ir_->get_storage_pointer_type(ir_->i32_type()),
-        get_buffer_value(BufferType::Context, PrimitiveType::i32),
-        ir_->int_immediate_number(ir_->i32_type(), extra_args_member_index),
-        ir_->int_immediate_number(ir_->i32_type(), extra_arg_index));
+        spv::OpAccessChain,
+        ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
+        get_buffer_value(BufferType::Args, PrimitiveType::i32),
+        ir_->int_immediate_number(ir_->i32_type(),
+                                  extra_args_member_index + extra_arg_index));
     spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
 
     ir_->register_value(name, var);
@@ -561,16 +566,16 @@ class TaskCodegen : public IRVisitor {
     {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
-      const auto extra_args_member_index =
-          ctx_attribs_->args().size() + ctx_attribs_->rets().size();
+      const auto extra_args_member_index = ctx_attribs_->args().size();
       for (int i = 0; i < num_indices; i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
         const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
         spirv::Value var_ptr = ir_->make_value(
-            spv::OpAccessChain, ir_->get_storage_pointer_type(ir_->i32_type()),
-            get_buffer_value(BufferType::Context, PrimitiveType::i32),
-            ir_->int_immediate_number(ir_->i32_type(), extra_args_member_index),
-            ir_->int_immediate_number(ir_->i32_type(), extra_arg_index));
+            spv::OpAccessChain,
+            ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
+            get_buffer_value(BufferType::Args, PrimitiveType::i32),
+            ir_->int_immediate_number(ir_->i32_type(),
+                                      extra_args_member_index + extra_arg_index));
         spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
@@ -578,7 +583,6 @@ class TaskCodegen : public IRVisitor {
       for (int i = 0; i < num_indices; i++) {
         spirv::Value size_var = ir_->query_value(size_var_names[i]);
         spirv::Value indices = ir_->query_value(stmt->indices[i]->raw_name());
-        spirv::Value tmp;
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }
@@ -589,12 +593,24 @@ class TaskCodegen : public IRVisitor {
               ir_->get_primitive_type_size(argload->ret_type.ptr_removed())));
     }
 
-    ir_->register_value(stmt->raw_name(), linear_offset);
+    if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+      spirv::Value addr_ptr = ir_->make_value(
+          spv::OpAccessChain,
+          ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
+          get_buffer_value(BufferType::Args, PrimitiveType::i32),
+          ir_->int_immediate_number(ir_->i32_type(), arg_id));
+      spirv::Value addr = ir_->load_variable(addr_ptr, ir_->u64_type());
+      addr = ir_->add(addr, ir_->make_value(spv::OpSConvert, ir_->u64_type(),
+                                            linear_offset));
+      ir_->register_value(stmt->raw_name(), addr);
+    } else {
+      ir_->register_value(stmt->raw_name(), linear_offset);
+    }
 
     if (ctx_attribs_->args()[arg_id].is_array) {
       ptr_to_buffers_[stmt] = {BufferType::ExtArr, arg_id};
     } else {
-      ptr_to_buffers_[stmt] = BufferType::Context;
+      ptr_to_buffers_[stmt] = BufferType::Args;
     }
   }
 
@@ -738,6 +754,11 @@ class TaskCodegen : public IRVisitor {
     spirv::Value lhs_value = ir_->query_value(lhs_name);
     spirv::Value rhs_value = ir_->query_value(rhs_name);
     spirv::Value bin_value = spirv::Value();
+
+    TI_WARN_IF(lhs_value.stype.id != rhs_value.stype.id,
+               "${} type {} != ${} type {}", lhs_name,
+               lhs_value.stype.dt->to_string(), rhs_name,
+               rhs_value.stype.dt->to_string());
 
     if (false) {
     }
@@ -1210,6 +1231,15 @@ class TaskCodegen : public IRVisitor {
     task_attribs_.buffer_binds = get_buffer_binds();
   }
 
+  void gen_array_range(Stmt *stmt) {
+    int num_operands = stmt->num_operands();
+    for (int i = 0; i < num_operands; i++) {
+      gen_array_range(stmt->operand(i));
+    }
+    offload_loop_motion_.insert(stmt);
+    stmt->accept(this);
+  }
+
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::range_for;
@@ -1236,37 +1266,14 @@ class TaskCodegen : public IRVisitor {
                                               false);  // Named Constant
       task_attribs_.advisory_total_num_threads = num_elems;
     } else {
-      if (!stmt->const_begin) {
-        spirv::Value begin_idx = ir_->make_value(
-            spv::OpShiftRightArithmetic, ir_->i32_type(),
-            ir_->int_immediate_number(ir_->i32_type(), stmt->begin_offset),
-            ir_->int_immediate_number(ir_->i32_type(), 2));
-        begin_expr_value = ir_->cast(
-            ir_->i32_type(),
-            ir_->load_variable(ir_->struct_array_access(
-                                   ir_->u32_type(),
-                                   get_buffer_value(BufferType::GlobalTmps,
-                                                    PrimitiveType::u32),
-                                   begin_idx),
-                               ir_->u32_type()));
-      } else {
-        begin_expr_value = ir_->int_immediate_number(
-            ir_->i32_type(), stmt->begin_value, false);  // Named Constant
-      }
       spirv::Value end_expr_value;
-      if (!stmt->const_end) {
-        spirv::Value end_idx = ir_->make_value(
-            spv::OpShiftRightArithmetic, ir_->i32_type(),
-            ir_->int_immediate_number(ir_->i32_type(), stmt->end_offset),
-            ir_->int_immediate_number(ir_->i32_type(), 2));
-        end_expr_value = ir_->cast(
-            ir_->i32_type(),
-            ir_->load_variable(ir_->struct_array_access(
-                                   ir_->u32_type(),
-                                   get_buffer_value(BufferType::GlobalTmps,
-                                                    PrimitiveType::u32),
-                                   end_idx),
-                               ir_->u32_type()));
+      if (stmt->end_stmt) {
+        // Range from args
+        TI_ASSERT(stmt->const_begin);
+        begin_expr_value = ir_->int_immediate_number(ir_->i32_type(),
+                                                     stmt->begin_value, false);
+        gen_array_range(stmt->end_stmt);
+        end_expr_value = ir_->query_value(stmt->end_stmt->raw_name());
       } else {
         // Range from gtmp / constant
         if (!stmt->const_begin) {
@@ -1604,9 +1611,17 @@ class TaskCodegen : public IRVisitor {
   }
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
-    size_t width = ir_->get_primitive_type_size(dt);
-    spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+
+    if (ptr_val.stype.dt == PrimitiveType::u64) {
+      spirv::Value paddr_ptr =
+          ir_->make_value(spv::OpConvertUToPtr, ir_->get_pointer_type(ir_->get_primitive_type(dt), spv::StorageClassPhysicalStorageBufferEXT), ptr_val);
+      paddr_ptr.flag = ValueKind::kVariablePtr;
+      return paddr_ptr;
+    }
+
+    spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
+    size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value idx_val =
         ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
                         make_pointer(size_t(std::log2(width))));
@@ -1647,10 +1662,16 @@ class TaskCodegen : public IRVisitor {
       return it->second;
     }
 
-    if (buffer.type == BufferType::Context) {
+    if (buffer.type == BufferType::Args) {
       buffer_binding_map_[key] = 0;
       buffer_value_map_[key] = args_buffer_value_;
       return args_buffer_value_;
+    }
+
+    if (buffer.type == BufferType::Rets) {
+      buffer_binding_map_[key] = 1;
+      buffer_value_map_[key] = ret_buffer_value_;
+      return ret_buffer_value_;
     }
 
     int binding = binding_head_++;
@@ -1676,26 +1697,51 @@ class TaskCodegen : public IRVisitor {
   }
 
   void compile_args_struct() {
+    if (!ctx_attribs_->has_args())
+      return;
+
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
     for (auto &arg : ctx_attribs_->args()) {
-      struct_components_.emplace_back(ir_->get_primitive_type(arg.dt),
-                                      "arg" + std::to_string(arg.index),
-                                      arg.offset_in_mem);
+      if (arg.is_array && device_->get_cap(
+              DeviceCapability::spirv_has_physical_storage_buffer)) {
+        struct_components_.emplace_back(ir_->u64_type(),
+                                        "arg_ptr" + std::to_string(arg.index),
+                                        arg.offset_in_mem);
+      } else {
+        struct_components_.emplace_back(ir_->get_primitive_type(arg.dt),
+                                        "arg" + std::to_string(arg.index),
+                                        arg.offset_in_mem);
+      }
     }
-    size_t args_size = ctx_attribs_->args_bytes();
+    // A compromise for use in constants buffer
+    // where scalar arrays follow very weird packing rules
+    for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
+      struct_components_.emplace_back(ir_->i32_type(),
+                                      "extra_args" + std::to_string(i),
+                                      ctx_attribs_->extra_args_mem_offset() + i * 4);    
+    }
+    args_struct_type_ = ir_->create_struct_type(struct_components_);
+
+    args_buffer_value_ =
+        ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
+  }
+
+  void compile_ret_struct() {
+    if (!ctx_attribs_->has_rets())
+      return;
+
+    std::vector<std::tuple<spirv::SType, std::string, size_t>>
+        struct_components_;
     for (auto &ret : ctx_attribs_->rets()) {
       struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
                                       "ret" + std::to_string(ret.index),
                                       ret.offset_in_mem);
     }
-    struct_components_.emplace_back(
-        ir_->get_array_type(ir_->i32_type(),
-                            ctx_attribs_->extra_args_bytes() / 4),
-        "extra_args", ctx_attribs_->extra_args_mem_offset());
-    args_struct_type_ = ir_->create_struct_type(struct_components_);
-    args_buffer_value_ =
-        ir_->buffer_struct_argument(args_struct_type_, 0, 0, "args");
+    ret_struct_type_ = ir_->create_struct_type(struct_components_);
+
+    ret_buffer_value_ =
+        ir_->buffer_struct_argument(ret_struct_type_, 0, 1, "rets");
   }
 
   std::vector<BufferBind> get_buffer_binds() {
@@ -1703,7 +1749,7 @@ class TaskCodegen : public IRVisitor {
     for (auto &[key, val] : buffer_binding_map_) {
       result.push_back(BufferBind{key.first, int(val)});
     }
-    return result;
+    return std::move(result);
   }
 
   void push_loop_control_labels(spirv::Label continue_label,
@@ -1740,6 +1786,9 @@ class TaskCodegen : public IRVisitor {
   spirv::SType args_struct_type_;
   spirv::Value args_buffer_value_;
 
+  spirv::SType ret_struct_type_;
+  spirv::Value ret_buffer_value_;
+
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<std::pair<BufferInfo, int>,
                      spirv::Value,
@@ -1753,7 +1802,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
 
-  int binding_head_{1};
+  int binding_head_{2}; // Args:0, Ret:1
 
   /*
   std::unordered_map<int, spirv::CompiledSpirvSNode>
@@ -1767,6 +1816,8 @@ class TaskCodegen : public IRVisitor {
   const std::string task_name_;
   std::vector<spirv::Label> continue_label_stack_;
   std::vector<spirv::Label> merge_label_stack_;
+
+  std::unordered_set<const Stmt *> offload_loop_motion_;
 
   TaskAttributes task_attribs_;
   std::unordered_map<int, GetRootStmt *>
@@ -1847,7 +1898,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,

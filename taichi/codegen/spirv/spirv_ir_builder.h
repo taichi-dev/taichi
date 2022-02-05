@@ -336,6 +336,10 @@ class IRBuilder {
                                uint32_t descriptor_set,
                                uint32_t binding,
                                const std::string &name);
+  Value uniform_struct_argument(const SType &struct_type,
+                               uint32_t descriptor_set,
+                               uint32_t binding,
+                               const std::string &name);
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
                         uint32_t binding,
@@ -433,6 +437,8 @@ class IRBuilder {
   void register_value(std::string name, Value value);
   // Query Value/VariablePointer by name
   Value query_value(std::string name) const;
+  // Check whether a value has been evaluated
+  bool check_value_existence(const std::string &name) const;
 
   // Support easy access to trivial data types
   SType i64_type() const {

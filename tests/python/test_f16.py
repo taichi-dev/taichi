@@ -167,7 +167,7 @@ def test_extra_unary_promote():
     assert (x[None] == approx(0.3, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@ti.test(arch=archs_support_f16, exclude=ti.vulkan)
 def test_binary_extra_promote():
     x = ti.field(dtype=ti.f16, shape=())
     y = ti.field(dtype=ti.f16, shape=())

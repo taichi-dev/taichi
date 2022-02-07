@@ -136,6 +136,10 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
+        if emscriptened:
+            cmake_args += ['-DTI_EMSCRIPTENED=ON']
+
         if shutil.which('ninja'):
             cmake_args += ['-GNinja']
 

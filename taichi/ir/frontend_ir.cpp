@@ -710,6 +710,17 @@ Expr ASTBuilder::make_var(const Expr &x) {
   return var;
 }
 
+void ASTBuilder::insert_for(const Expr &s,
+                            const Expr &e,
+                            const std::function<void(Expr)> &func) {
+  auto i = Expr(std::make_shared<IdExpression>());
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  auto _ = this->create_scope(stmt->body);
+  func(i);
+}
+
 std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);

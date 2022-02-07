@@ -4,7 +4,7 @@
 # access to it.
 
 from taichi.lang import impl
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import TaichiRuntimeError
 
 
 class SNodeTree:
@@ -14,12 +14,12 @@ class SNodeTree:
 
     def destroy(self):
         if self.destroyed:
-            raise InvalidOperationError('SNode tree has been destroyed')
+            raise TaichiRuntimeError('SNode tree has been destroyed')
         self.ptr.destroy_snode_tree(impl.get_runtime().prog)
         self.destroyed = True
 
     @property
     def id(self):
         if self.destroyed:
-            raise InvalidOperationError('SNode tree has been destroyed')
+            raise TaichiRuntimeError('SNode tree has been destroyed')
         return self.ptr.id()

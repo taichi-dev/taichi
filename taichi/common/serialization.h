@@ -24,14 +24,13 @@ TI_NAMESPACE_BEGIN
 #else
 #define TI_NAMESPACE_BEGIN
 #define TI_NAMESPACE_END
-#define TI_EXPORT
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
 #endif
 
 template <typename T>
-TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //

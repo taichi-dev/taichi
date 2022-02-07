@@ -9,7 +9,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError, TaichiTypeError
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -22,21 +22,21 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
-                              taichi_scope)
-from taichi.tools.util import get_traceback, warning
+from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
+                              python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
-    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+    return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
+        shape, element_type, elements)
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(_ti_core.expr_alloca())
+        return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
@@ -471,7 +471,7 @@ class _UninitializedRootFieldsBuilder:
         if item == '__qualname__':
             # For sphinx docstring extraction.
             return '_UninitializedRootFieldsBuilder'
-        raise InvalidOperationError('Please call init() first')
+        raise TaichiRuntimeError('Please call init() first')
 
 
 # `root` initialization must be delayed until after the program is
@@ -744,7 +744,7 @@ def ti_format(*args, **kwargs):
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    _ti_core.create_assert_stmt(
+    get_runtime().prog.current_ast_builder().create_assert_stmt(
         Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
 
 
@@ -882,7 +882,7 @@ def grouped(x):
 
 
 def stop_grad(x):
-    _ti_core.stop_grad(x.snode.ptr)
+    get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
 
 
 def current_cfg():

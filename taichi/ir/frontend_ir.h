@@ -812,6 +812,9 @@ class ASTBuilder {
   void stop_gradient(SNode *);
   void insert_assignment(Expr &lhs, const Expr &rhs);
   Expr make_var(const Expr &x);
+  void insert_for(const Expr &s,
+                  const Expr &e,
+                  const std::function<void(Expr)> &func);
 };
 
 ASTBuilder &current_ast_builder();

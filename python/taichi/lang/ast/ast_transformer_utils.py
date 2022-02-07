@@ -215,7 +215,7 @@ class ASTTransformerContext:
             raise TaichiNameError(f'Name "{name}" is not defined')
 
     def get_pos_info(self, node):
-        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
+        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}", in {self.func.func.__name__}:\n'
         if version_info < (3, 8):
             msg += self.src[node.lineno - 1] + "\n"
             return msg

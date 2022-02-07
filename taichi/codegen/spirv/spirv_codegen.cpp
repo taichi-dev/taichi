@@ -1797,13 +1797,27 @@ static void spriv_message_consumer(spv_message_level_t level,
 
 KernelCodegen::KernelCodegen(const Params &params)
     : params_(params), ctx_attribs_(*params.kernel) {
-  spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+  spv_target_env target_env = SPV_ENV_VULKAN_1_0;
+  uint32_t spirv_version =
+      params.device->get_cap(DeviceCapability::spirv_version);
+
+  if (spirv_version >= 0x10600) {
+    target_env = SPV_ENV_VULKAN_1_3;
+  } else if (spirv_version >= 0x10500) {
+    target_env = SPV_ENV_VULKAN_1_2;
+  } else if (spirv_version >= 0x10400) {
+    target_env = SPV_ENV_VULKAN_1_1_SPIRV_1_4;
+  } else if (spirv_version >= 0x10300) {
+    target_env = SPV_ENV_VULKAN_1_1;
+  }
+
+  spirv_opt_ = std::make_unique<spvtools::Optimizer>(target_env);
   spirv_opt_->SetMessageConsumer(spriv_message_consumer);
   if (params.enable_spv_opt)
     spirv_opt_->RegisterPerformancePasses();
   spirv_opt_options_.set_run_validator(false);
 
-  spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+  spirv_tools_ = std::make_unique<spvtools::SpirvTools>(target_env);
 }
 
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,

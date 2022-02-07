@@ -586,11 +586,13 @@ class TaskCodegen : public IRVisitor {
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }
-      linear_offset = ir_->mul(
+      linear_offset = ir_->make_value(
+          spv::OpShiftLeftLogical,
+          ir_->i32_type(),
           linear_offset,
           ir_->int_immediate_number(
               ir_->i32_type(),
-              ir_->get_primitive_type_size(argload->ret_type.ptr_removed())));
+              log2int(ir_->get_primitive_type_size(argload->ret_type.ptr_removed()))));
     }
 
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
@@ -1624,7 +1626,7 @@ class TaskCodegen : public IRVisitor {
     size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value idx_val =
         ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
-                        make_pointer(size_t(std::log2(width))));
+                        ir_->int_immediate_number(ptr_val.stype, size_t(std::log2(width))));
     spirv::Value ret =
         ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
     return ret;
@@ -1864,8 +1866,33 @@ KernelCodegen::KernelCodegen(const Params &params)
 
   spirv_opt_ = std::make_unique<spvtools::Optimizer>(target_env);
   spirv_opt_->SetMessageConsumer(spriv_message_consumer);
-  if (params.enable_spv_opt)
-    spirv_opt_->RegisterPerformancePasses();
+  if (params.enable_spv_opt) {
+    // From: SPIRV-Tools/source/opt/optimizer.cpp
+    spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
+      .RegisterPass(spvtools::CreateDeadBranchElimPass())
+      .RegisterPass(spvtools::CreateMergeReturnPass())
+      .RegisterPass(spvtools::CreateInlineExhaustivePass())
+      .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+      .RegisterPass(spvtools::CreateAggressiveDCEPass())
+      .RegisterPass(spvtools::CreatePrivateToLocalPass())
+      .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+      .RegisterPass(spvtools::CreateScalarReplacementPass())
+      .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+      .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
+      .RegisterPass(spvtools::CreateCCPPass())
+      .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+      .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+      .RegisterPass(spvtools::CreateCombineAccessChainsPass())
+      .RegisterPass(spvtools::CreateSimplificationPass())
+      .RegisterPass(spvtools::CreateSSARewritePass())
+      .RegisterPass(spvtools::CreateVectorDCEPass())
+      .RegisterPass(spvtools::CreateDeadInsertElimPass())
+      .RegisterPass(spvtools::CreateIfConversionPass())
+      .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+      .RegisterPass(spvtools::CreateReduceLoadSizePass())
+      .RegisterPass(spvtools::CreateBlockMergePass());
+  }
   spirv_opt_options_.set_run_validator(false);
 
   spirv_tools_ = std::make_unique<spvtools::SpirvTools>(target_env);
@@ -1887,25 +1914,31 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     TaskCodegen cgen(tp);
     auto task_res = cgen.run();
 
-    std::vector<uint32_t> optimized_spv;
+    std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
-    TI_WARN_IF(
-        !spirv_opt_->Run(task_res.spirv_code.data(), task_res.spirv_code.size(),
-                         &optimized_spv, spirv_opt_options_),
+    size_t last_size;
+    do {
+      last_size = optimized_spv.size();
+      bool result = false;
+      TI_WARN_IF(
+        (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
+                         &optimized_spv, spirv_opt_options_)),
         "SPIRV optimization failed");
+      if (result) break;
+    } while (last_size != optimized_spv.size());
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 1
+#if 0
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,
+    auto kernel_name = fmt::format("{}_{}_.spv", params_.ti_kernel_name, i);
+    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name,
             spirv_asm);
 
-    std::ofstream fout((params_.ti_kernel_name).c_str(),
-                        std::ios::binary | std::ios::out);
+    std::ofstream fout(kernel_name, std::ios::binary | std::ios::out);
     fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
                 optimized_spv.size() * sizeof(uint32_t));
     fout.close();

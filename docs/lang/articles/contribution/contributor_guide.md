@@ -110,7 +110,7 @@ We highly recommend that you complete code style checks and integration tests on
 python misc/code_format.py
 ```
 <details>
-<summary><font color="#006284"> How to install `clang-format-10` on M1 Mac </font></summary>
+<summary><font color="#006284"> How to install clang-format-10 on M1 Mac </font></summary>
 
 1. Download and extract [Clang + LLVM 10.0.0 pre-built binary for macOS](https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-apple-darwin.tar.xz)
 

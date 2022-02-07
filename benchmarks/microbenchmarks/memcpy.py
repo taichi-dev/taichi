@@ -5,6 +5,7 @@ from microbenchmarks._utils import dtype_size, scaled_repeat_times
 
 import taichi as ti
 
+
 def memcpy_default(arch, repeat, container, dtype, dsize, get_metric):
     @ti.kernel
     def memcpy_field(dst: ti.template(), src: ti.template()):

@@ -109,6 +109,23 @@ We highly recommend that you complete code style checks and integration tests on
 ```
 python misc/code_format.py
 ```
+<details>
+<summary><font color="#006284"> How to install `clang-format-10` on M1 Mac </font></summary>
+
+1. Download and extract [Clang + LLVM 10.0.0 pre-built binary for macOS](https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-apple-darwin.tar.xz)
+
+2. Copy the `clang-format` binary to `~/.local/bin` and add `~/.local/bin` to `PATH`
+
+```zsh
+mkdir -p ~/.local/bin
+cp clang+llvm-10.0.0-x86_64-apple-darwin/bin/clang-format ~/.local/bin/clang-format-10
+echo "export PATH=$HOME/.local/bin:\$PATH" >> ~/.zshrc
+source ~/.zshrc
+```
+
+Please refer to [this](./dev_install#llvm-as-cannot-be-opened-on-macos) if you get an error message like `clang-format-10 can’t be opened because Apple cannot check it for malicious software on macOS`.
+
+</details>
 
 <details>
 <summary><font color="#006284"> What if I didn't format my code style locally? </font></summary>

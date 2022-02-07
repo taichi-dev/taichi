@@ -93,6 +93,9 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 
   TI_TRACE("args:");
   args_bytes_ = arange_args(&arg_attribs_vec_, 0);
+  // Align to extra args
+  args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
+
   TI_TRACE("rets:");
   rets_bytes_ = arange_args(&ret_attribs_vec_, 0);
 

@@ -33,7 +33,7 @@ class ConstantFold : public BasicStmtVisitor {
       return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
-    auto func = [&id]() {
+    auto func = [&id, this]() {
       auto lhstmt =
           Stmt::make<ArgLoadStmt>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
       auto rhstmt =
@@ -49,11 +49,11 @@ class ConstantFold : public BasicStmtVisitor {
         }
       }
       auto ret = Stmt::make<ReturnStmt>(oper.get());
-      current_ast_builder().insert(std::move(lhstmt));
+      program->current_ast_builder()->insert(std::move(lhstmt));
       if (id.is_binary)
-        current_ast_builder().insert(std::move(rhstmt));
-      current_ast_builder().insert(std::move(oper));
-      current_ast_builder().insert(std::move(ret));
+        program->current_ast_builder()->insert(std::move(rhstmt));
+      program->current_ast_builder()->insert(std::move(oper));
+      program->current_ast_builder()->insert(std::move(ret));
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
@@ -144,7 +144,7 @@ class ConstantFold : public BasicStmtVisitor {
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
-      stmt->replace_with(evaluated.get());
+      stmt->replace_usages_with(evaluated.get());
       modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
@@ -152,7 +152,7 @@ class ConstantFold : public BasicStmtVisitor {
 
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->is_cast() && stmt->cast_type == stmt->operand->ret_type) {
-      stmt->replace_with(stmt->operand);
+      stmt->replace_usages_with(stmt->operand);
       modifier.erase(stmt);
       return;
     }
@@ -180,7 +180,7 @@ class ConstantFold : public BasicStmtVisitor {
       if (cast_available) {
         auto evaluated =
             Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
-        stmt->replace_with(evaluated.get());
+        stmt->replace_usages_with(evaluated.get());
         modifier.insert_before(stmt, std::move(evaluated));
         modifier.erase(stmt);
         return;
@@ -191,7 +191,7 @@ class ConstantFold : public BasicStmtVisitor {
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
-      stmt->replace_with(evaluated.get());
+      stmt->replace_usages_with(evaluated.get());
       modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
@@ -215,7 +215,7 @@ class ConstantFold : public BasicStmtVisitor {
       result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
           TypedConstant(input->val[0].dt, result)));
     }
-    stmt->replace_with(result_stmt.get());
+    stmt->replace_usages_with(result_stmt.get());
     modifier.insert_before(stmt, std::move(result_stmt));
     modifier.erase(stmt);
   }

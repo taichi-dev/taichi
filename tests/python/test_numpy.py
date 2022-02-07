@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 
@@ -134,7 +135,6 @@ def test_numpy_3d():
 
 
 @ti.test()
-@ti.must_throw(IndexError)
 def test_numpy_3d_error():
     val = ti.field(ti.i32)
 
@@ -153,7 +153,8 @@ def test_numpy_3d_error():
 
     a = np.empty(shape=(n, m, p), dtype=np.int32)
 
-    test_numpy(a)
+    with pytest.raises(ti.TaichiCompilationError):
+        test_numpy(a)
 
 
 @ti.test()
@@ -179,10 +180,10 @@ def test_numpy_multiple_external_arrays():
 
 
 @ti.test()
-@ti.must_throw(AssertionError)
 def test_index_mismatch():
-    val = ti.field(ti.i32, shape=(1, 2, 3))
-    val[0, 0] = 1
+    with pytest.raises(AssertionError):
+        val = ti.field(ti.i32, shape=(1, 2, 3))
+        val[0, 0] = 1
 
 
 @ti.test()

@@ -1,6 +1,9 @@
 #include "set_image.h"
 
+#include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
+
+using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -25,8 +28,8 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
-  Program &program = get_current_program();
-  program.synchronize();
+  Program *prog = app_context_->prog();
+  prog->synchronize();
 
   const FieldInfo &img = info.img;
 
@@ -46,7 +49,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
+  DevicePtr img_dev_ptr = get_device_ptr(prog, img.snode);
   uint64_t img_size = pixels * 4;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
@@ -84,6 +87,8 @@ void SetImage::init_set_image(AppContext *app_context,
                               int img_width,
                               int img_height) {
   RenderableConfig config = {
+      6,
+      6,
       6,
       6,
       sizeof(UniformBufferObject),
@@ -126,8 +131,9 @@ void SetImage::create_texture() {
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
-  Device::AllocParams gpu_staging_buffer_params{image_size, false, false, true,
-                                                AllocUsage::Uniform};
+  Device::AllocParams gpu_staging_buffer_params{
+      image_size, false, false, app_context_->requires_export_sharing(),
+      AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);
 }

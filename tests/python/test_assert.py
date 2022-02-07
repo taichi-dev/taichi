@@ -1,12 +1,11 @@
 import pytest
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_minimal():
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         assert 0
@@ -80,7 +79,7 @@ def test_assert_ok():
     func()
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_static_assert_is_static():
     @ti.kernel
     def func():
@@ -90,8 +89,7 @@ def test_static_assert_is_static():
     func()
 
 
-@ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(AssertionError)
+@ti.test(arch=get_host_arch_list())
 def test_static_assert_message():
     x = 3
 
@@ -99,10 +97,11 @@ def test_static_assert_message():
     def func():
         ti.static_assert(x == 4, "Oh, no!")
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_static_assert_vector_n_ok():
     x = ti.Vector.field(4, ti.f32, ())
 
@@ -113,7 +112,7 @@ def test_static_assert_vector_n_ok():
     func()
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_static_assert_data_type_ok():
     x = ti.field(ti.f32, ())
 

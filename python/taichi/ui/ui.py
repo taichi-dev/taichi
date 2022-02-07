@@ -1,19 +1,15 @@
-import pathlib
+from taichi._lib import core as _ti_core
 
-from taichi.core import ti_core as _ti_core
-from taichi.lang.impl import default_cfg, field
-from taichi.lang.kernel_impl import kernel
-from taichi.lang.ops import get_addr
-from taichi.type.annotations import ext_arr, template
+GGUI_AVAILABLE = _ti_core.GGUI_AVAILABLE
 
-if _ti_core.GGUI_AVAILABLE:
+if GGUI_AVAILABLE:
 
-    from .camera import Camera
-    from .canvas import Canvas
-    from .constants import *
-    from .gui import Gui
-    from .scene import Scene
-    from .window import Window
+    from .camera import Camera  # pylint: disable=unused-import
+    from .canvas import Canvas  # pylint: disable=unused-import
+    from .constants import *  # pylint: disable=unused-import,wildcard-import
+    from .imgui import Gui  # pylint: disable=unused-import
+    from .scene import Scene  # pylint: disable=unused-import
+    from .window import Window  # pylint: disable=unused-import
 
     def make_camera():
         return Camera(_ti_core.PyCamera())

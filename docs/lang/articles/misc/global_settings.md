@@ -20,10 +20,6 @@ sidebar_position: 7
   errors: `ti.init(advanced_optimization=False)`.
 - Disable fast math to prevent possible undefined math behavior:
   `ti.init(fast_math=False)`.
-- To print preprocessed Python code:
-  `ti.init(print_preprocessed=True)`.
-- To show pretty Taichi-scope stack traceback:
-  `ti.init(excepthook=True)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`.
 
 ## Runtime
@@ -46,7 +42,7 @@ sidebar_position: 7
 - Cache compiled runtime bitcode in **dev mode** to save start up
   time: `export TI_CACHE_RUNTIME_BITCODE=1`.
 - To specify how many threads to run test: `export TI_TEST_THREADS=4`
-  or `ti test -t4`.
+  or `python tests/run_tests.py -t4`.
 
 ## Specifying `ti.init` arguments from environment variables
 

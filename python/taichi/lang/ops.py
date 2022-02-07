@@ -1,16 +1,12 @@
 import builtins
-import ctypes
 import functools
 import math
 import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
-from taichi.core.util import ti_core as _ti_core
-from taichi.lang import impl, matrix
+from taichi._lib import core as _ti_core
+from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.field import Field
-from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
@@ -28,27 +24,23 @@ def stack_info():
 
 
 def is_taichi_expr(a):
-    return isinstance(a, Expr)
+    return isinstance(a, expr.Expr)
 
 
 def wrap_if_not_expr(a):
-    _taichi_skip_traceback = 1
-    return Expr(a) if not is_taichi_expr(a) else a
+    return expr.Expr(a) if not is_taichi_expr(a) else a
 
 
 def unary(foo):
     @functools.wraps(foo)
     def imp_foo(x):
-        _taichi_skip_traceback = 2
         return foo(x)
 
     @functools.wraps(foo)
     def wrapped(a):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_unary(imp_foo)
-        else:
-            return imp_foo(a)
+        return imp_foo(a)
 
     return wrapped
 
@@ -59,23 +51,19 @@ binary_ops = []
 def binary(foo):
     @functools.wraps(foo)
     def imp_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(x, y)
 
     @functools.wraps(foo)
     def rev_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(y, x)
 
     @functools.wraps(foo)
     def wrapped(a, b):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
-        else:
-            return imp_foo(a, b)
+        return imp_foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
@@ -87,30 +75,25 @@ ternary_ops = []
 def ternary(foo):
     @functools.wraps(foo)
     def abc_foo(a, b, c):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def bac_foo(b, a, c):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def cab_foo(c, a, b):
-        _taichi_skip_traceback = 2
         return foo(a, b, c)
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_ternary(abc_foo, b, c)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             return b.element_wise_ternary(bac_foo, a, c)
-        elif is_taichi_class(c):
+        if is_taichi_class(c):
             return c.element_wise_ternary(cab_foo, a, b)
-        else:
-            return abc_foo(a, b, c)
+        return abc_foo(a, b, c)
 
     ternary_ops.append(wrapped)
     return wrapped
@@ -122,15 +105,13 @@ writeback_binary_ops = []
 def writeback_binary(foo):
     @functools.wraps(foo)
     def imp_foo(x, y):
-        _taichi_skip_traceback = 2
         return foo(x, wrap_if_not_expr(y))
 
     @functools.wraps(foo)
     def wrapped(a, b):
-        _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_writeback_binary(imp_foo, b)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
@@ -141,48 +122,39 @@ def writeback_binary(foo):
 
 
 def cast(obj, dtype):
-    _taichi_skip_traceback = 1
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         # TODO: unify with element_wise_unary
         return obj.cast(dtype)
-    else:
-        return Expr(_ti_core.value_cast(Expr(obj).ptr, dtype))
+    return expr.Expr(_ti_core.value_cast(expr.Expr(obj).ptr, dtype))
 
 
 def bit_cast(obj, dtype):
-    _taichi_skip_traceback = 1
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:
-        return Expr(_ti_core.bits_cast(Expr(obj).ptr, dtype))
+        return expr.Expr(_ti_core.bits_cast(expr.Expr(obj).ptr, dtype))
 
 
 def _unary_operation(taichi_op, python_op, a):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a):
-        return Expr(taichi_op(a.ptr), tb=stack_info())
-    else:
-        return python_op(a)
+        return expr.Expr(taichi_op(a.ptr), tb=stack_info())
+    return python_op(a)
 
 
 def _binary_operation(taichi_op, python_op, a, b):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
-        return Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
-    else:
-        return python_op(a, b)
+        return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
+    return python_op(a, b)
 
 
 def _ternary_operation(taichi_op, python_op, a, b, c):
-    _taichi_skip_traceback = 1
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
-        return Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
-    else:
-        return python_op(a, b, c)
+        return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
+    return python_op(a, b, c)
 
 
 @unary
@@ -280,6 +252,19 @@ def rsqrt(a):
 
 
 @unary
+def round(a):  # pylint: disable=redefined-builtin
+    """The round function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        The nearest integer of `a`.
+    """
+    return _unary_operation(_ti_core.expr_round, builtins.round, a)
+
+
+@unary
 def floor(a):
     """The floor function.
 
@@ -358,7 +343,7 @@ def log(a):
 
 
 @unary
-def abs(a):
+def abs(a):  # pylint: disable=W0622
     """The absolute value function.
 
     Args:
@@ -406,7 +391,7 @@ def random(dtype=float):
         A random variable whose type is `dtype`.
     """
     dtype = cook_dtype(dtype)
-    x = Expr(_ti_core.make_rand_expr(dtype))
+    x = expr.Expr(_ti_core.make_rand_expr(dtype))
     return impl.expr_init(x)
 
 
@@ -468,15 +453,15 @@ def mod(a, b):
     """
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
-        quotient = Expr(_ti_core.expr_floordiv(a, b))
-        multiply = Expr(_ti_core.expr_mul(b, quotient.ptr))
+        quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
+        multiply = expr.Expr(_ti_core.expr_mul(b, quotient.ptr))
         return _ti_core.expr_sub(a, multiply.ptr)
 
     return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
 
 
 @binary
-def pow(a, b):
+def pow(a, b):  # pylint: disable=W0622
     """The power function.
 
     Args:
@@ -519,7 +504,7 @@ def truediv(a, b):
 
 
 @binary
-def max(a, b):
+def max_impl(a, b):
     """The maxnimum function.
 
     Args:
@@ -533,7 +518,7 @@ def max(a, b):
 
 
 @binary
-def min(a, b):
+def min_impl(a, b):
     """The minimum function.
 
     Args:
@@ -574,8 +559,7 @@ def raw_div(a, b):
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
-        else:
-            return a / b
+        return a / b
 
     return _binary_operation(_ti_core.expr_div, c_div, a, b)
 
@@ -803,71 +787,70 @@ def select(cond, a, b):
 @writeback_binary
 def atomic_add(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_sub(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_min(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_max(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_and(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
     return impl.expr_init(
-        Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def assign(a, b):
-    _ti_core.expr_assign(a.ptr, b.ptr, stack_info())
+    impl.get_runtime().prog.current_ast_builder().expr_assign(
+        a.ptr, b.ptr, stack_info())
     return a
 
 
-def ti_max(*args):
+def max(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
         return args[0]
-    elif num_args == 2:
-        return max(args[0], args[1])
-    else:
-        return max(args[0], ti_max(*args[1:]))
+    if num_args == 2:
+        return max_impl(args[0], args[1])
+    return max_impl(args[0], max(*args[1:]))
 
 
-def ti_min(*args):
+def min(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
         return args[0]
-    elif num_args == 2:
-        return min(args[0], args[1])
-    else:
-        return min(args[0], ti_min(*args[1:]))
+    if num_args == 2:
+        return min_impl(args[0], args[1])
+    return min_impl(args[0], min(*args[1:]))
 
 
 def ti_any(a):
@@ -878,89 +861,10 @@ def ti_all(a):
     return a.all()
 
 
-def append(l, indices, val):
-    a = impl.expr_init(
-        _ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
-                               Expr(val).ptr))
-    return a
-
-
-def external_func_call(func, args=[], outputs=[]):
-    func_addr = ctypes.cast(func, ctypes.c_void_p).value
-    _ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
-                                       make_expr_group(outputs))
-
-
-def asm(source, inputs=[], outputs=[]):
-    _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
-                                       make_expr_group(outputs))
-
-
-def is_active(l, indices):
-    return Expr(
-        _ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))
-
-
-def activate(l, indices):
-    _ti_core.insert_activate(l.snode.ptr, make_expr_group(indices))
-
-
-def deactivate(l, indices):
-    _ti_core.insert_deactivate(l.snode.ptr, make_expr_group(indices))
-
-
-def length(l, indices):
-    return Expr(_ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))
-
-
-def rescale_index(a, b, I):
-    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'
-
-    Parameters
-    ----------
-    a: ti.field(), ti.Vector.field, ti.Matrix.field()
-        input taichi field or snode
-    b: ti.field(), ti.Vector.field, ti.Matrix.field()
-        output taichi field or snode
-    I: ti.Vector()
-        grouped loop index
-
-    Returns
-    -------
-    Ib: ti.Vector()
-        rescaled grouped loop index
-
-    """
-    assert isinstance(
-        a, (Field, SNode)), "The first argument must be a field or an SNode"
-    assert isinstance(
-        b, (Field, SNode)), "The second argument must be a field or an SNode"
-    if isinstance(I, list):
-        I = matrix.Vector(I)
-    else:
-        assert isinstance(
-            I, matrix.Matrix
-        ), f"The third argument must be an index (list or ti.Vector)"
-    Ib = I.copy()
-    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
-        if a.shape[n] > b.shape[n]:
-            Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
-        if a.shape[n] < b.shape[n]:
-            Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
-    return Ib
-
-
-def get_addr(f, indices):
-    """Query the memory address (on CUDA/x64) of field `f` at index `indices`.
-
-    Currently, this function can only be called inside a taichi kernel.
-
-    Args:
-        f (Union[ti.field, ti.Vector.field, ti.Matrix.field]): Input taichi field for memory address query.
-        indices (Union[int, ti.Vector()]): The specified field indices of the query.
-
-    Returns:
-        ti.u64:  The memory address of `f[indices]`.
-
-    """
-    return Expr(_ti_core.expr_get_addr(f.snode.ptr, make_expr_group(indices)))
+__all__ = [
+    "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
+    "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
+    "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
+    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
+    "max", "min", "select", "abs", "pow"
+]

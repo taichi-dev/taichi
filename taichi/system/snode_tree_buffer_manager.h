@@ -10,11 +10,11 @@ using Ptr = uint8_t *;
 
 TLANG_NAMESPACE_BEGIN
 
-class LlvmProgramImpl;
+class ProgramImpl;
 
 class SNodeTreeBufferManager {
  public:
-  SNodeTreeBufferManager(LlvmProgramImpl *prog);
+  SNodeTreeBufferManager(ProgramImpl *prog);
 
   void merge_and_insert(Ptr ptr, std::size_t size);
 
@@ -30,7 +30,7 @@ class SNodeTreeBufferManager {
  private:
   std::set<std::pair<std::size_t, Ptr>> size_set_;
   std::map<Ptr, std::size_t> ptr_map_;
-  LlvmProgramImpl *prog_;
+  ProgramImpl *prog_;
   Ptr roots_[kMaxNumSnodeTreesLlvm];
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };

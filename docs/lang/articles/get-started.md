@@ -25,18 +25,15 @@ import TabItem from '@theme/TabItem';
 There are a few of extra requirements depend on which operating system you are using:
 
 <Tabs
-  defaultValue="ubuntu"
+  defaultValue="arch-linux"
   values={[
-    {label: 'Ubuntu', value: 'ubuntu'},
     {label: 'Arch Linux', value: 'arch-linux'},
     {label: 'Windows', value: 'windows'},
   ]}>
 
   <TabItem value="arch-linux">
 
-  On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository:
-
-  ```yaourt -S ncurses5-compat-libs```
+  On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository: `yaourt -S ncurses5-compat-libs`
 
   </TabItem>
   <TabItem value="windows">
@@ -318,6 +315,20 @@ def foo():
 ```
 
 :::
+
+### GUI system
+
+Taichi provides a cpu-based [GUI system](./misc/gui.md) for users to render
+their results on the screen.
+
+```python
+gui = ti.GUI("Julia Set", res=(n * 2, n))
+
+for i in range(1000000):
+  paint(i * 0.03)
+  gui.set_image(pixels)
+  gui.show()
+```
 
 ### Interacting with other Python packages
 

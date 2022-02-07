@@ -26,7 +26,7 @@ def membound_benchmark(func, num_elements, repeat):
 def fill(arch, dtype, dsize, repeat=10):
 
     repeat = scaled_repeat_times(arch, dsize, repeat)
-    num_elements = dsize // dtype_size[dtype]
+    num_elements = dsize // dtype_size(dtype)
 
     x = ti.field(dtype, shape=num_elements)
 
@@ -41,7 +41,7 @@ def fill(arch, dtype, dsize, repeat=10):
 def saxpy(arch, dtype, dsize, repeat=10):
 
     repeat = scaled_repeat_times(arch, dsize, repeat)
-    num_elements = dsize // dtype_size[dtype] // 3  #z=x+y
+    num_elements = dsize // dtype_size(dtype) // 3  #z=x+y
 
     x = ti.field(dtype, shape=num_elements)
     y = ti.field(dtype, shape=num_elements)
@@ -61,7 +61,7 @@ def saxpy(arch, dtype, dsize, repeat=10):
 def reduction(arch, dtype, dsize, repeat=10):
 
     repeat = scaled_repeat_times(arch, dsize, repeat)
-    num_elements = dsize // dtype_size[dtype]
+    num_elements = dsize // dtype_size(dtype)
 
     x = ti.field(dtype, shape=num_elements)
     y = ti.field(dtype, shape=())

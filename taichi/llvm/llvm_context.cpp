@@ -12,6 +12,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #include "llvm/IR/LLVMContext.h"
@@ -57,10 +58,11 @@ namespace lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
+TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
+    : arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
-  main_thread_id = std::this_thread::get_id();
-  main_thread_data = get_this_thread_data();
+  main_thread_id_ = std::this_thread::get_id();
+  main_thread_data_ = get_this_thread_data();
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
       [](void *user_data, const std::string &reason, bool gen_crash_diag) {
@@ -91,7 +93,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(arch);
+  jit = JITSession::create(llvm_prog, arch);
   TI_TRACE("Taichi llvm context created.");
 }
 
@@ -120,6 +122,8 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getInt32Ty(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return llvm::Type::getInt64Ty(*ctx);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::Type::getHalfTy(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED
@@ -158,7 +162,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module_to_context(
   std::string bitcode;
 
   {
-    std::lock_guard<std::mutex> _(mut);
+    std::lock_guard<std::mutex> _(mut_);
     llvm::raw_string_ostream sos(bitcode);
     // Use a scope to make sure sos flushes on destruction
     llvm::WriteBitcodeToFile(*module, sos);
@@ -261,10 +265,10 @@ void TaichiLLVMContext::init_runtime_jit_module() {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
-  TI_ASSERT(std::this_thread::get_id() == main_thread_id);
+  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto data = get_this_thread_data();
   if (!data->runtime_module) {
-    data->runtime_module = clone_module(get_runtime_fn(arch));
+    data->runtime_module = clone_module(get_runtime_fn(arch_));
   }
 
   std::unique_ptr<llvm::Module> cloned;
@@ -283,7 +287,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
   auto ctx = get_this_thread_context();
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
-  if (arch == Arch::cuda) {
+  if (arch_ == Arch::cuda) {
     module->setTargetTriple("nvptx64-nvidia-cuda");
 
 #if defined(TI_WITH_CUDA)
@@ -405,7 +409,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
 void TaichiLLVMContext::link_module_with_cuda_libdevice(
     std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
-  TI_ASSERT(arch == Arch::cuda);
+  TI_ASSERT(arch_ == Arch::cuda);
 
   auto libdevice_module =
       module_from_bitcode_file(libdevice_path(), get_this_thread_context());
@@ -432,7 +436,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
     if (!func) {
       TI_INFO("Function {} not found", func_name);
     } else
-      func->setLinkage(Function::InternalLinkage);
+      func->setLinkage(llvm::Function::InternalLinkage);
   }
 }
 
@@ -460,6 +464,8 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   auto ctx = get_this_thread_context();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::ConstantFP::get(llvm::Type::getHalfTy(*ctx), (float32)t);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
   } else if (is_integral(dt)) {
@@ -513,7 +519,12 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
 }
 
 std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
-  return jit->get_type_size(type);
+  return get_data_layout().getTypeAllocSize(type);
+}
+
+std::size_t TaichiLLVMContext::get_struct_element_offset(llvm::StructType *type,
+                                                         int idx) {
+  return get_data_layout().getStructLayout(type)->getElementOffset(idx);
 }
 
 void TaichiLLVMContext::mark_inline(llvm::Function *f) {
@@ -630,15 +641,15 @@ void TaichiLLVMContext::eliminate_unused_functions(
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
-  std::lock_guard<std::mutex> _(thread_map_mut);
+  std::lock_guard<std::mutex> _(thread_map_mut_);
   auto tid = std::this_thread::get_id();
-  if (per_thread_data.find(tid) == per_thread_data.end()) {
+  if (per_thread_data_.find(tid) == per_thread_data_.end()) {
     std::stringstream ss;
     ss << tid;
     TI_TRACE("Creating thread local data for thread {}", ss.str());
-    per_thread_data[tid] = std::make_unique<ThreadLocalData>();
+    per_thread_data_[tid] = std::make_unique<ThreadLocalData>();
   }
-  return per_thread_data[tid].get();
+  return per_thread_data_[tid].get();
 }
 
 llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
@@ -663,7 +674,7 @@ llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   ThreadLocalData *data = get_this_thread_data();
   if (!data->struct_module) {
     data->struct_module = clone_module_to_this_thread_context(
-        main_thread_data->struct_module.get());
+        main_thread_data_->struct_module.get());
   }
   return data->struct_module.get();
 }
@@ -702,7 +713,7 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
 
 void TaichiLLVMContext::update_runtime_jit_module(
     std::unique_ptr<llvm::Module> module) {
-  if (arch == Arch::cuda) {
+  if (arch_ == Arch::cuda) {
     for (auto &f : *module) {
       bool is_kernel = false;
       const std::string func_name = f.getName();

@@ -31,8 +31,11 @@
 #ifdef _WIN64
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
-#include <volk.h>
+
+#include "taichi/backends/vulkan/vulkan_common.h"
+#if !defined(ANDROID)
 #include <GLFW/glfw3.h>
+#endif
 
 #include <stdarg.h>
 
@@ -51,6 +54,7 @@
 
 TI_UI_NAMESPACE_BEGIN
 
+#if !defined(ANDROID)
 inline void initGLFW() {
   if (!glfwInit()) {
     printf("cannot initialize GLFW\n");
@@ -174,6 +178,7 @@ inline std::string button_id_to_name(int id) {
                              std::to_string(id));
   }
 }
+#endif
 
 inline int next_power_of_2(int n) {
   int count = 0;

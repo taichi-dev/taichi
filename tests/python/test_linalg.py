@@ -2,9 +2,10 @@ import math
 
 import numpy as np
 import pytest
+from taichi._testing import approx
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
-from taichi import approx
 
 
 @ti.test()
@@ -42,7 +43,7 @@ def test_basic_utils():
 
     @ti.kernel
     def init():
-        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        a[None] = ti.Vector([1.0, 2.0, -3.0])
         b[None] = ti.Vector([4.0, 5.0])
         abT[None] = a[None].outer_product(b[None])
 
@@ -65,7 +66,7 @@ def test_basic_utils():
     assert normA[None] == approx(sqrt14)
     assert aNormalized[None][0] == approx(1.0 * invSqrt14)
     assert aNormalized[None][1] == approx(2.0 * invSqrt14)
-    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(-3.0 * invSqrt14)
 
 
 @ti.test()
@@ -309,7 +310,7 @@ def test_init_matrix_from_vectors():
 
 # TODO: Remove this once the APIs are obsolete.
 @pytest.mark.filterwarnings('ignore')
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
@@ -337,16 +338,6 @@ def test_init_matrix_from_vectors_deprecated():
             assert m2[0][j, i] == int(i + 3 * j + 1)
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
-
-
-@pytest.mark.filterwarnings('ignore')
-@ti.test(arch=ti.get_host_arch_list())
-def test_to_numpy_as_vector_deprecated():
-    v = ti.Vector.field(3, dtype=ti.f32, shape=(2))
-    u = np.array([[2, 3, 4], [5, 6, 7]])
-    v.from_numpy(u)
-    assert v.to_numpy(as_vector=True) == approx(u)
-    assert v.to_numpy() == approx(u)
 
 
 @ti.test()
@@ -427,7 +418,7 @@ def test_matrix_list_assign():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_vector_xyzw_accessor():
     u = ti.Vector.field(2, dtype=ti.i32, shape=(2, 2, 1))
     v = ti.Vector.field(4, dtype=ti.i32, shape=(2, 2, 1))
@@ -450,7 +441,7 @@ def test_vector_xyzw_accessor():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=get_host_arch_list())
 def test_diag():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
 

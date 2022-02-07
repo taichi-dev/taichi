@@ -2,17 +2,21 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
+#include "taichi/common/exceptions.h"
 
 TLANG_NAMESPACE_BEGIN
+
+#define TI_ASSERT_TYPE_CHECKED(x)                       \
+  TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
+                 "[{}] was not type-checked", x.serialize())
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
                                          const Expr &val)
-    : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
+    : op_type(op_type), snode(snode), indices(indices), val(val) {
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
-    this->val.set(load_if_ptr(val));
   } else {
     TI_ASSERT(op_type != SNodeOpType::append);
   }
@@ -21,23 +25,24 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
+  if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
+    lhs.expr->ret_type = rhs->ret_type;
+  }
 }
 
 IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
+  return static_cast<IRNode *>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
-  vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
-    vectorize = 1;
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -47,8 +52,32 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
-  if (vectorize == -1)
-    vectorize = 1;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var[i].expr->ret_type = PrimitiveType::i32;
+  }
+}
+
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const mesh::MeshPtr &mesh,
+                                 const mesh::MeshElementType &element_type)
+    : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
+  bit_vectorize = dec.bit_vectorize;
+  num_cpu_threads = dec.num_cpu_threads;
+  block_dim = dec.block_dim;
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
+    num_cpu_threads = 1;
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+  } else {
+    // cpu
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
+  }
+  mem_access_opt = dec.mem_access_opt;
+  dec.reset();
 
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
@@ -59,22 +88,20 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<ASTBuilder>(root_node.get());
+  root_node_ = std::make_unique<Block>();
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end)
     : begin(begin), end(end) {
-  vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
-    vectorize = 1;
     num_cpu_threads = 1;
   } else {
     if (num_cpu_threads == 0)
@@ -82,16 +109,27 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
-  if (vectorize == -1)
-    vectorize = 1;
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var.expr->ret_type = PrimitiveType::i32;
+}
+
+void ArgLoadExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
+  ret_type = dt;
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
   auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
+}
+
+void RandExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for RandExpression", dt->to_string());
+  ret_type = dt;
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
@@ -113,12 +151,27 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+void UnaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(operand);
+  if (!operand->ret_type->is<PrimitiveType>())
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}'",
+                    unary_op_type_name(type), operand->ret_type->to_string()));
+  if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
+       type == UnaryOpType::ceil || is_trigonometric(type)) &&
+      !is_real(operand->ret_type))
+    throw TaichiTypeError(
+        fmt::format("'{}' takes real inputs only, however '{}' is provided",
+                    unary_op_type_name(type), operand->ret_type->to_string()));
+  ret_type = is_cast() ? cast_type : operand->ret_type;
+}
+
 bool UnaryOpExpression::is_cast() const {
   return unary_op_is_cast(type);
 }
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
-  operand->flatten(ctx);
+  flatten_rvalue(operand, ctx);
   auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
   if (is_cast()) {
     unary->cast_type = cast_type;
@@ -128,49 +181,94 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
+void BinaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(lhs);
+  TI_ASSERT_TYPE_CHECKED(rhs);
+  auto lhs_type = lhs->ret_type;
+  auto rhs_type = rhs->ret_type;
+  auto error = [&]() {
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
+                    binary_op_type_symbol(type), lhs->ret_type->to_string(),
+                    rhs->ret_type->to_string()));
+  };
+  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+    error();
+  if (binary_is_bitwise(type) &&
+      (!is_integral(lhs_type) || !is_integral(rhs_type)))
+    error();
+  if (is_comparison(type)) {
+    ret_type = PrimitiveType::i32;
+    return;
+  }
+  if (type == BinaryOpType::truediv) {
+    auto default_fp = get_current_program().config.default_fp;
+    if (!is_real(lhs_type)) {
+      lhs_type = default_fp;
+    }
+    if (!is_real(rhs_type)) {
+      rhs_type = default_fp;
+    }
+  }
+  ret_type = promoted_type(lhs_type, rhs_type);
+}
+
 void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
-  lhs->flatten(ctx);
-  rhs->flatten(ctx);
+  flatten_rvalue(lhs, ctx);
+  flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();
 }
 
+void TernaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(op1);
+  TI_ASSERT_TYPE_CHECKED(op2);
+  TI_ASSERT_TYPE_CHECKED(op3);
+  auto op1_type = op1->ret_type;
+  auto op2_type = op2->ret_type;
+  auto op3_type = op3->ret_type;
+  auto error = [&]() {
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+                    ternary_type_name(type), op1->ret_type->to_string(),
+                    op2->ret_type->to_string(), op3->ret_type->to_string()));
+  };
+  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
+      !op3_type->is<PrimitiveType>())
+    error();
+  ret_type = promoted_type(op2_type, op3_type);
+}
+
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
-  op1->flatten(ctx);
-  op2->flatten(ctx);
-  op3->flatten(ctx);
+  flatten_rvalue(op1, ctx);
+  flatten_rvalue(op2, ctx);
+  flatten_rvalue(op3, ctx);
   ctx->push_back(
       std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  // internal func calls have default return type
+  ret_type = PrimitiveType::i32;
+}
+
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> args_stmts(args.size());
   for (int i = 0; i < (int)args.size(); ++i) {
-    args[i]->flatten(ctx);
+    flatten_rvalue(args[i], ctx);
     args_stmts[i] = args[i]->stmt;
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
-  stmt = ctx->back_stmt();
-}
-
-void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> arg_statements, output_statements;
-  for (auto &s : args) {
-    s.set(load_if_ptr(s));
-    s->flatten(ctx);
-    arg_statements.push_back(s->stmt);
-  }
-  for (auto &s : outputs) {
-    output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-  }
-  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-      func, source, arg_statements, output_statements));
   stmt = ctx->back_stmt();
 }
 
@@ -185,6 +283,29 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                        std::vector<Stmt *>());
   ctx->push_back(std::move(ptr));
+}
+
+void GlobalPtrExpression::type_check() {
+  // Currently, dimension compatibility check happens in Python
+  if (snode != nullptr) {
+    ret_type = snode->dt;
+  } else if (var.is<GlobalVariableExpression>()) {
+    ret_type =
+        var.cast<GlobalVariableExpression>()->snode->dt->get_compute_type();
+  } else if (var.is<ExternalTensorExpression>()) {
+    for (int i = 0; i < indices.exprs.size(); i++) {
+      auto &expr = indices.exprs[i];
+      TI_ASSERT_TYPE_CHECKED(expr);
+      if (!is_integral(expr->ret_type))
+        throw TaichiTypeError(
+            fmt::format("indices must be integers, however '{}' is "
+                        "provided as index {}",
+                        expr->ret_type->to_string(), i));
+    }
+    ret_type = var.cast<ExternalTensorExpression>()->dt;
+  } else {
+    TI_ERROR("Invalid GlobalPtrExpression");
+  }
 }
 
 void GlobalPtrExpression::serialize(std::ostream &ss) {
@@ -214,7 +335,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
     offsets = snode->index_offsets;
   }
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices.exprs[i]->flatten(ctx);
+    flatten_rvalue(indices.exprs[i], ctx);
     Stmt *ind = indices.exprs[i]->stmt;
     if (!offsets.empty()) {
       // Subtract offsets from indices so that new indices are
@@ -228,11 +349,31 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
     ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
-    var->flatten(ctx);
+    flatten_lvalue(var, ctx);
     ctx->push_back(std::make_unique<ExternalPtrStmt>(
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
   stmt = ctx->back_stmt();
+}
+
+void TensorElementExpression::type_check() {
+  std::string invalid_msg{
+      "Invalid TensorElementExpression: the source is neither a local tensor "
+      "nor a global tensor field"};
+  if (is_local_tensor()) {
+    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else if (is_global_tensor()) {
+    TI_ASSERT_INFO(
+        var.is<GlobalPtrExpression>() &&
+            var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(),
+        invalid_msg);
+    ret_type = var.cast<GlobalPtrExpression>()
+                   ->var.cast<GlobalVariableExpression>()
+                   ->snode->dt;
+  } else {
+    TI_ERROR(invalid_msg);
+  }
 }
 
 bool TensorElementExpression::is_local_tensor() const {
@@ -244,64 +385,49 @@ bool TensorElementExpression::is_global_tensor() const {
 }
 
 void TensorElementExpression::flatten(FlattenContext *ctx) {
-  var->flatten(ctx);
-  Stmt *var_stmt = var->stmt;
-  DataType element_type;
-  if (var.is<IdExpression>()) {
-    // Local tensor subscripting
-    TI_ASSERT(layout_stride == 1);
-    TI_ASSERT(var_stmt->ret_type->is<TensorType>());
-    auto tensor_type = var_stmt->ret_type->cast<TensorType>();
-    element_type = tensor_type->get_element_type();
-  } else {
-    TI_ASSERT(var.is<GlobalPtrExpression>());
-    // Global tensor subscripting
-    SNode *snode = var.cast<GlobalPtrExpression>()
-                       ->var.cast<GlobalVariableExpression>()
-                       ->snode;
-    // layout_stride != 1 is satisfied if and only if subscripting on SOA
-    // global tensor.
-    TI_ASSERT(layout_stride == 1 || snode->is_path_all_dense);
-    element_type = snode->dt;
+  flatten_lvalue(var, ctx);
+  Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
+  for (int i = 0; i < (int)shape.size(); ++i) {
+    flatten_rvalue(indices[i], ctx);
+    Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
+    Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
+                                                  offset_stmt, shape_stmt);
+    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                               indices[i]->stmt);
   }
-  // Compute exact offset
-  // Type A[x, y, ...]
-  //        ^^^^^^^^^
-  indices[0].set(load_if_ptr(indices[0]));
-  indices[0]->flatten(ctx);
-  Stmt *offset_stmt = indices[0]->stmt;
-  for (int i = 1; i < (int)shape.size(); ++i) {
-    Stmt *shape_on_i =
-        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
-    Stmt *mul_stmt = ctx->push_back(
-        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, shape_on_i));
-    indices[i].set(load_if_ptr(indices[i]));
-    indices[i]->flatten(ctx);
-    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
-                                            indices[i]->stmt));
-    offset_stmt = ctx->back_stmt();
-  }
-  // Type A[x, y, ...]
-  // ^^^^
-  Stmt *dt_size_stmt = ctx->push_back(
-      Stmt::make<ConstStmt>(TypedConstant(data_type_size(element_type))));
-  ctx->push_back(
-      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
-  offset_stmt = ctx->back_stmt();
-  Stmt *layout_stride_stmt =
-      ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(layout_stride)));
-  ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
-                                          layout_stride_stmt));
-  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
-  stmt = ctx->back_stmt();
+  Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
+  offset_stmt =
+      ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, stride_stmt);
+  stmt = ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
+}
+
+void RangeAssumptionExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(input);
+  TI_ASSERT_TYPE_CHECKED(base);
+  if (!input->ret_type->is<PrimitiveType>() ||
+      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for "
+                    "'range_assumption': '{}' and '{}'",
+                    input->ret_type->to_string(), base->ret_type->to_string()));
+  ret_type = input->ret_type;
 }
 
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
-  input->flatten(ctx);
-  base->flatten(ctx);
+  flatten_rvalue(input, ctx);
+  flatten_rvalue(base, ctx);
   ctx->push_back(
       Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
   stmt = ctx->back_stmt();
+}
+
+void LoopUniqueExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(input);
+  if (!input->ret_type->is<PrimitiveType>())
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for 'loop_unique': '{}'",
+                    input->ret_type->to_string()));
+  ret_type = input->ret_type;
 }
 
 void LoopUniqueExpression::serialize(std::ostream &ss) {
@@ -320,27 +446,34 @@ void LoopUniqueExpression::serialize(std::ostream &ss) {
 }
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
-  input->flatten(ctx);
+  flatten_rvalue(input, ctx);
   ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt, covers));
   stmt = ctx->back_stmt();
 }
 
 void IdExpression::flatten(FlattenContext *ctx) {
-  auto var_stmt = ctx->current_block->lookup_var(id);
-  if (var_stmt->is<AllocaStmt>()) {
-    if (var_stmt->ret_type->is<TensorType>()) {
-      // For TensorType alloca, directly return the first element's address
-      stmt = var_stmt;
-    } else {
-      // For other alloca, load the value and then return
-      ctx->push_back(
-          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
-      stmt = ctx->back_stmt();
-    }
+  stmt = ctx->current_block->lookup_var(id);
+}
+
+void AtomicOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(dest);
+  TI_ASSERT_TYPE_CHECKED(val);
+  auto error = [&]() {
+    throw TaichiTypeError(fmt::format(
+        "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+        atomic_op_type_name(op_type), dest->ret_type->to_string(),
+        val->ret_type->to_string()));
+  };
+  if (!val->ret_type->is<PrimitiveType>())
+    error();
+  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
+    ret_type = cit->get_compute_type();
+  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
+    ret_type = cft->get_compute_type();
+  } else if (dest->ret_type->is<PrimitiveType>()) {
+    ret_type = dest->ret_type;
   } else {
-    // The loop index may have a coordinate offset.
-    TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
-    stmt = var_stmt;
+    error();
   }
 }
 
@@ -377,22 +510,26 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   }
   // expand rhs
   auto expr = val;
-  expr->flatten(ctx);
+  flatten_rvalue(expr, ctx);
   if (dest.is<IdExpression>()) {  // local variable
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
-  } else if (dest.is<TensorElementExpression>()) {
-    auto tensor_ptr = dest.cast<TensorElementExpression>();
-    tensor_ptr->flatten(ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, tensor_ptr->stmt, expr->stmt);
-  } else {  // global variable
-    TI_ASSERT(dest.is<GlobalPtrExpression>());
-    auto global_ptr = dest.cast<GlobalPtrExpression>();
-    global_ptr->flatten(ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
+  } else {
+    TI_ASSERT(dest.is<GlobalPtrExpression>() ||
+              dest.is<TensorElementExpression>());
+    flatten_lvalue(dest, ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
   }
   stmt = ctx->back_stmt();
+}
+
+void SNodeOpExpression::type_check() {
+  if (op_type == SNodeOpType::get_addr) {
+    ret_type = PrimitiveType::u64;
+  } else {
+    ret_type = PrimitiveType::i32;
+  }
 }
 
 void SNodeOpExpression::serialize(std::ostream &ss) {
@@ -411,7 +548,7 @@ void SNodeOpExpression::serialize(std::ostream &ss) {
 void SNodeOpExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> indices_stmt;
   for (int i = 0; i < (int)indices.size(); i++) {
-    indices[i]->flatten(ctx);
+    flatten_rvalue(indices[i], ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
   auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
@@ -426,7 +563,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    value->flatten(ctx);
+    flatten_rvalue(value, ctx);
     ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,
                 "ti.append only works on dynamic nodes.");
@@ -438,26 +575,23 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void LocalLoadExpression::flatten(FlattenContext *ctx) {
-  ptr->flatten(ctx);
-  auto ptr_offset_stmt = ctx->back_stmt();
-  TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>());
-  auto local_addr =
-      LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
-  auto local_load_stmt =
-      ctx->push_back<LocalLoadStmt>(LaneAttribute<LocalAddress>(local_addr));
-  stmt = local_load_stmt;
-}
-
-void GlobalLoadExpression::flatten(FlattenContext *ctx) {
-  ptr->flatten(ctx);
-  ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
-  stmt = ctx->back_stmt();
+void ConstExpression::type_check() {
+  TI_ASSERT_INFO(
+      val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
+      "Invalid dt [{}] for ConstExpression", val.dt->to_string());
+  ret_type = val.dt;
 }
 
 void ConstExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(Stmt::make<ConstStmt>(val));
   stmt = ctx->back_stmt();
+}
+
+void ExternalTensorShapeAlongAxisExpression::type_check() {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+                 ptr.serialize());
+  ret_type = PrimitiveType::i32;
 }
 
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
@@ -467,10 +601,22 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void FuncCallExpression::type_check() {
+  for (auto &arg : args.exprs) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  TI_ASSERT_INFO(func->rets.size() <= 1,
+                 "Too many (> 1) return values for FuncCallExpression");
+  if (func->rets.size() == 1) {
+    ret_type = func->rets[0].dt;
+  }
+}
+
 void FuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> stmt_args;
   for (auto &arg : args.exprs) {
-    arg->flatten(ctx);
+    flatten_rvalue(arg, ctx);
     stmt_args.push_back(arg->stmt);
   }
   ctx->push_back<FuncCallStmt>(func, stmt_args);
@@ -483,33 +629,103 @@ void FuncCallExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+// Mesh related.
+
+void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  ctx->push_back(std::move(pid_stmt));
+  stmt = ctx->back_stmt();
+}
+
+void MeshPatchIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
+  flatten_rvalue(mesh_idx, ctx);
+  if (neighbor_idx) {
+    flatten_rvalue(neighbor_idx, ctx);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
+                                           neighbor_idx->stmt);
+  } else {
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type);
+  }
+  stmt = ctx->back_stmt();
+}
+
+void MeshIndexConversionExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
+  flatten_rvalue(idx, ctx);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx->stmt, conv_type);
+  stmt = ctx->back_stmt();
+}
+
 Block *ASTBuilder::current_block() {
-  if (stack.empty())
+  if (stack_.empty())
     return nullptr;
   else
-    return stack.back();
+    return stack_.back();
 }
 
 Stmt *ASTBuilder::get_last_stmt() {
-  TI_ASSERT(!stack.empty());
-  return stack.back()->back();
+  TI_ASSERT(!stack_.empty());
+  return stack_.back()->back();
 }
 
 void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->insert(std::move(stmt), location);
 }
 
 void ASTBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->stop_gradients.push_back(snode);
+}
+
+void ASTBuilder::insert_assignment(Expr &lhs, const Expr &rhs) {
+  // Inside a kernel or a function
+  // Create an assignment in the IR
+  if (lhs.expr == nullptr) {
+    lhs.set(rhs);
+  } else if (lhs.expr->is_lvalue()) {
+    this->insert(std::make_unique<FrontendAssignStmt>(lhs, rhs));
+  } else {
+    TI_ERROR("Cannot assign to non-lvalue: {}", lhs.serialize());
+  }
+}
+
+Expr ASTBuilder::make_var(const Expr &x) {
+  auto var = Expr(std::make_shared<IdExpression>());
+  this->insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id,
+      PrimitiveType::unknown));
+  this->insert_assignment(var, x);
+  return var;
+}
+
+void ASTBuilder::insert_for(const Expr &s,
+                            const Expr &e,
+                            const std::function<void(Expr)> &func) {
+  auto i = Expr(std::make_shared<IdExpression>());
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  auto _ = this->create_scope(stmt->body);
+  func(i);
 }
 
 std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
-  if (!stack.empty()) {
+  if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
   return std::make_unique<ScopeGuard>(this, list.get());
@@ -517,6 +733,44 @@ std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
 
 ASTBuilder &current_ast_builder() {
   return get_current_program().current_callable->context->builder();
+}
+
+void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
+  expr->flatten(ctx);
+}
+
+void flatten_global_load(Expr ptr, Expression::FlattenContext *ctx) {
+  ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
+  ptr->stmt = ctx->back_stmt();
+}
+
+void flatten_local_load(Expr ptr, Expression::FlattenContext *ctx) {
+  ctx->push_back<LocalLoadStmt>(LocalAddress(ptr->stmt, 0));
+  ptr->stmt = ctx->back_stmt();
+}
+
+void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
+  ptr->flatten(ctx);
+  if (ptr.is<IdExpression>()) {
+    if (ptr->stmt->is<AllocaStmt>()) {
+      flatten_local_load(ptr, ctx);
+    }
+  } else if (ptr.is<GlobalPtrExpression>()) {
+    flatten_global_load(ptr, ctx);
+  } else if (ptr.is<GlobalVariableExpression>()) {
+    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
+              0);
+    flatten_global_load(ptr[ExprGroup()], ctx);
+  } else if (ptr.is<TensorElementExpression>()) {
+    auto tensor_ptr = ptr.cast<TensorElementExpression>();
+    if (tensor_ptr->is_global_tensor())
+      flatten_global_load(ptr, ctx);
+    else if (tensor_ptr->is_local_tensor())
+      flatten_local_load(ptr, ctx);
+    else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
 }
 
 TLANG_NAMESPACE_END

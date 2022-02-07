@@ -1,0 +1,22 @@
+name: Presubmit Title Checks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  title_format:
+    name: Check PR Title
+    if: ${{ github.event.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Run PR Title Checker
+        run: |
+          pip install semver GitPython
+          python misc/ci_check_pr_title.py "$PR_TITLE"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}

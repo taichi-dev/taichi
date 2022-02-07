@@ -29,9 +29,11 @@ res = np.array([
 ])
 
 
+@pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
+@pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @ti.test(arch=ti.cpu)
-def test_sparse_LLT_solver(solver_type):
+def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 4
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
     b = ti.field(ti.f32, shape=n)
@@ -46,9 +48,11 @@ def test_sparse_LLT_solver(solver_type):
 
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
-    solver = ti.linalg.SparseSolver(solver_type=solver_type)
+    solver = ti.linalg.SparseSolver(dtype=dtype,
+                                    solver_type=solver_type,
+                                    ordering=ordering)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)
     for i in range(n):
-        assert x[i] == ti.approx(res[i])
+        assert x[i] == ti._testing.approx(res[i])

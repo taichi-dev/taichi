@@ -1,88 +1,175 @@
 #include "taichi/backends/opengl/aot_module_builder_impl.h"
-#include "glad/glad.h"
+
+#include "taichi/aot/module_data.h"
+#include "taichi/backends/opengl/opengl_utils.h"
+
+#if !defined(TI_PLATFORM_WINDOWS)
+#include <stdio.h>
+#endif
 
 namespace taichi {
 namespace lang {
 namespace opengl {
+namespace {
+
+class AotDataConverter {
+ public:
+  static aot::ModuleData convert(const opengl::AotData &in) {
+    AotDataConverter c{};
+    return c.visit(in);
+  }
+
+ private:
+  explicit AotDataConverter() = default;
+
+  aot::ModuleData visit(const opengl::AotData &in) const {
+    aot::ModuleData res{};
+    for (const auto &[key, val] : in.kernels) {
+      res.kernels[key] = visit(val);
+    }
+    for (const auto &[key, val] : in.kernel_tmpls) {
+      res.kernel_tmpls[key] = visit(val);
+    }
+    res.fields = in.fields;
+    res.root_buffer_size = in.root_buffer_size;
+    return res;
+  }
+
+  aot::CompiledTaichiKernel visit(
+      const opengl::CompiledTaichiKernel &in) const {
+    aot::CompiledTaichiKernel res{};
+    res.tasks.reserve(in.tasks.size());
+    for (const auto &t : in.tasks) {
+      res.tasks.push_back(visit(t));
+    }
+    res.args_count = in.arg_count;
+    res.rets_count = in.ret_count;
+    res.args_buffer_size = in.args_buf_size;
+    res.rets_buffer_size = in.ret_buf_size;
+    for (const auto &[arg_id, val] : in.scalar_args) {
+      res.scalar_args[arg_id] = visit(val);
+    }
+    for (const auto &[arg_id, val] : in.arr_args) {
+      aot::ArrayArg out_arr = visit(val);
+      out_arr.bind_index = in.used.arr_arg_to_bind_idx.at(arg_id);
+      res.arr_args[arg_id] = out_arr;
+    }
+    return res;
+  }
+
+  aot::CompiledOffloadedTask visit(
+      const opengl::CompiledOffloadedTask &in) const {
+    aot::CompiledOffloadedTask res{};
+    res.type = offloaded_task_type_name(in.type);
+    res.name = in.name;
+    res.source_path = in.src;
+    res.range_hint = in.range_hint;
+    res.gpu_block_size = in.workgroup_size;
+    return res;
+  }
+
+  aot::ScalarArg visit(const opengl::ScalarArg &in) const {
+    aot::ScalarArg res{};
+    res.dtype_name = in.dtype_name;
+    res.offset_in_args_buf = in.offset_in_bytes_in_args_buf;
+    return res;
+  }
+
+  aot::ArrayArg visit(const opengl::CompiledArrayArg &in) const {
+    aot::ArrayArg res{};
+    res.dtype_name = in.dtype_name;
+    res.field_dim = in.field_dim;
+    res.element_shape = in.element_shape;
+    res.shape_offset_in_args_buf = in.shape_offset_in_bytes_in_args_buf;
+    return res;
+  }
+};
+
+void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
+  const std::string glsl_path = fmt::format("{}/{}.glsl", output_dir, t.name);
+  std::ofstream fs{glsl_path};
+  fs << t.src;
+  t.src = glsl_path;
+  fs.close();
+}
+
+}  // namespace
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    StructCompiledResult &compiled_structs)
-    : compiled_structs_(compiled_structs) {
+    StructCompiledResult &compiled_structs,
+    bool allow_nv_shader_extension)
+    : compiled_structs_(compiled_structs),
+      allow_nv_shader_extension_(allow_nv_shader_extension) {
   aot_data_.root_buffer_size = compiled_structs_.root_size;
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const std::string bin_path =
-      fmt::format("{}/{}_metadata.tcb", output_dir, filename);
+  TI_WARN_IF(!filename.empty(),
+             "Filename prefix is ignored on opengl backend.");
+  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(aot_data_, bin_path);
-  // The txt file is mostly for debugging purpose.
-  const std::string txt_path =
-      fmt::format("{}/{}_metadata.txt", output_dir, filename);
-  TextSerializer ts;
-  ts("taichi aot data", aot_data_);
-  ts.write_to_file(txt_path);
+  // Json format doesn't support multiple line strings.
+  AotData aot_data_copy = aot_data_;
+  for (auto &k : aot_data_copy.kernels) {
+    for (auto &t : k.second.tasks) {
+      write_glsl_file(output_dir, t);
+    }
+  }
+  for (auto &k : aot_data_copy.kernel_tmpls) {
+    for (auto &t : k.second.tasks) {
+      write_glsl_file(output_dir, t);
+    }
+  }
+  auto aot_module_data = AotDataConverter::convert(aot_data_copy);
+  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
+  aot_module_data.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
+                                allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
-  aot_data_.kernels.push_back({compiled, identifier});
+  aot_data_.kernels.insert(std::make_pair(identifier, std::move(compiled)));
 }
 
-void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
+                                                 const SNode *rep_snode,
                                                  bool is_scalar,
                                                  DataType dt,
                                                  std::vector<int> shape,
                                                  int row_num,
                                                  int column_num) {
-  uint32_t gl_dtype_enum;
+  uint32_t gl_dtype_enum = to_gl_dtype_enum(dt);
 
-  if (dt == PrimitiveType::u64) {
-    gl_dtype_enum = GL_UNSIGNED_INT64_ARB;
-  } else if (dt == PrimitiveType::i64) {
-    gl_dtype_enum = GL_INT64_ARB;
-  } else if (dt == PrimitiveType::u32) {
-    gl_dtype_enum = GL_UNSIGNED_INT;
-  } else if (dt == PrimitiveType::i32) {
-    gl_dtype_enum = GL_INT;
-  } else if (dt == PrimitiveType::u16) {
-    gl_dtype_enum = GL_UNSIGNED_SHORT;
-  } else if (dt == PrimitiveType::i16) {
-    gl_dtype_enum = GL_SHORT;
-  } else if (dt == PrimitiveType::u8) {
-    gl_dtype_enum = GL_UNSIGNED_BYTE;
-  } else if (dt == PrimitiveType::i8) {
-    gl_dtype_enum = GL_BYTE;
-  } else if (dt == PrimitiveType::f64) {
-    gl_dtype_enum = GL_DOUBLE;
-  } else if (dt == PrimitiveType::f32) {
-    gl_dtype_enum = GL_FLOAT;
+  // Note that currently we only support adding dense fields in AOT for all
+  // backends. In opengl backend we only error out when a non dense field is
+  // added to the aot module, but in metal backend we error out earlier when
+  // constructing aot module. Ideally we will unify this behavior but it doesn't
+  // matter too much for now.
+  TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
+              "AOT: only supports dense field");
+  std::vector<int> element_shape;
+  if (!is_scalar) {
+    element_shape = {row_num, column_num};
   }
-
-  aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(), shape,
-                              is_scalar, row_num, column_num});
+  aot_data_.fields.push_back(
+      {identifier, gl_dtype_enum, dt.to_string(),
+       compiled_structs_.snode_map.at(rep_snode->node_type_name)
+           .mem_offset_in_root,
+       shape, is_scalar, element_shape});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
+                                allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
 
-  for (auto &k : aot_data_.kernel_tmpls) {
-    if (k.identifier == identifier) {
-      k.program.insert(std::make_pair(key, compiled));
-      return;
-    }
-  }
-
-  AotCompiledKernelTmpl tmpldata;
-  tmpldata.identifier = identifier;
-  tmpldata.program.insert(std::make_pair(key, compiled));
-
-  aot_data_.kernel_tmpls.push_back(std::move(tmpldata));
+  aot_data_.kernel_tmpls.insert(
+      std::make_pair(identifier + "|" + key, std::move(compiled)));
 }
 
 }  // namespace opengl

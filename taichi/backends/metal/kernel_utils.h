@@ -45,23 +45,23 @@ struct BufferDescriptor {
 
   BufferDescriptor() = default;
 
-  static BufferDescriptor Root(int root_id) {
+  static BufferDescriptor root(int root_id) {
     return BufferDescriptor{Type::Root, root_id};
   }
 
-  static BufferDescriptor GlobalTmps() {
+  static BufferDescriptor global_tmps() {
     return BufferDescriptor{Type::GlobalTmps};
   }
 
-  static BufferDescriptor Context() {
+  static BufferDescriptor context() {
     return BufferDescriptor{Type::Context};
   }
 
-  static BufferDescriptor Runtime() {
+  static BufferDescriptor runtime() {
     return BufferDescriptor{Type::Runtime};
   }
 
-  static BufferDescriptor Print() {
+  static BufferDescriptor print() {
     return BufferDescriptor{Type::Print};
   }
 
@@ -280,6 +280,7 @@ struct CompiledFieldData {
   MetalDataType dtype;
   std::string dtype_name;
   std::vector<int> shape;
+  int mem_offset_in_parent{0};
   bool is_scalar{false};
   int row_num{0};
   int column_num{0};
@@ -288,6 +289,7 @@ struct CompiledFieldData {
             dtype,
             dtype_name,
             shape,
+            mem_offset_in_parent,
             is_scalar,
             row_num,
             column_num);

@@ -51,7 +51,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
 
       modifier.insert_before(stmt, std::move(bin_op));
       // Replace stmt now to avoid being "simplified" again
-      stmt->replace_with(new_stmt.get());
+      stmt->replace_usages_with(new_stmt.get());
       modifier.insert_before(stmt, std::move(new_stmt));
       modifier.erase(stmt);
       return true;
@@ -72,7 +72,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
 
       modifier.insert_before(stmt, std::move(mask_stmt));
       // Replace stmt now to avoid being "simplified" again
-      stmt->replace_with(new_stmt.get());
+      stmt->replace_usages_with(new_stmt.get());
       modifier.insert_before(stmt, std::move(new_stmt));
       modifier.erase(stmt);
       return true;
@@ -117,7 +117,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
 
       modifier.insert_before(stmt, std::move(mask_stmt));
       // Replace stmt now to avoid being "simplified" again
-      stmt->replace_with(new_stmt.get());
+      stmt->replace_usages_with(new_stmt.get());
       modifier.insert_before(stmt, std::move(new_stmt));
       modifier.erase(stmt);
       return;

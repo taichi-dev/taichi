@@ -3,6 +3,7 @@ This file tests if Taichi's testing utilities are functional.
 
 TODO: Skips these tests after all tests are using @ti.test
 '''
+import os
 
 import pytest
 
@@ -13,7 +14,7 @@ import taichi as ti
 
 @ti.test()
 def test_all_archs():
-    assert ti.cfg.arch in ti.supported_archs()
+    assert ti.cfg.arch in ti._testing.expected_archs()
 
 
 @ti.test(arch=ti.cpu)
@@ -68,15 +69,16 @@ def test_require_extensions_2():
     assert ti.cfg.arch in [ti.cuda]
 
 
-### `ti.approx` and `ti.allclose`
+### `ti._testing.approx` and `ti._testing.allclose`
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -89,11 +91,12 @@ def test_allclose_rel(x, allclose):
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered1(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -106,11 +109,12 @@ def test_allclose_rel_reordered1(x, allclose):
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@pytest.mark.parametrize('allclose',
-                         [ti.allclose, lambda x, y: x == ti.approx(y)])
+@pytest.mark.parametrize(
+    'allclose',
+    [ti._testing.allclose, lambda x, y: x == ti._testing.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered2(x, allclose):
-    rel = ti.get_rel_eps()
+    rel = ti._testing.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -120,3 +124,20 @@ def test_allclose_rel_reordered2(x, allclose):
     assert allclose(x - x * rel * 0.9, x)
     assert not allclose(x - x * rel * 1.2, x)
     assert not allclose(x - x * rel * 3.0, x)
+
+
+@pytest.mark.skipif(ti._lib.core.with_metal(),
+                    reason="Skip metal because metal is used as the example")
+def test_disable_fallback():
+    old_environ = os.environ.get('TI_WANTED_ARCHS', '')
+    os.environ['TI_WANTED_ARCHS'] = "metal"
+
+    with pytest.raises(RuntimeError):
+
+        @ti.test(ti.metal)
+        def test():
+            pass
+
+        test()
+        os.environ['TI_WANTED_ARCHS'] = old_environ
+    os.environ['TI_WANTED_ARCHS'] = old_environ

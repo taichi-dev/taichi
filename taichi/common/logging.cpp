@@ -8,6 +8,9 @@
 #include "spdlog/common.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#ifdef ANDROID
+#include "spdlog/sinks/android_sink.h"
+#endif
 #include "taichi/common/core.h"
 
 namespace taichi {
@@ -16,12 +19,12 @@ const auto default_logging_level = "info";
 
 void Logger::set_level(const std::string &level_name) {
   auto new_level = level_enum_from_string(level_name);
-  level = new_level;
-  spdlog::set_level((spdlog::level::level_enum)level);
+  level_ = new_level;
+  spdlog::set_level((spdlog::level::level_enum)level_);
 }
 
 int Logger::get_level() {
-  return level;
+  return level_;
 }
 
 bool Logger::is_level_effective(const std::string &level_name) {
@@ -52,8 +55,13 @@ int Logger::level_enum_from_string(const std::string &level_name) {
 }
 
 Logger::Logger() {
-  console = spdlog::stdout_color_mt("console");
-  console->flush_on(spdlog::level::trace);
+#ifdef ANDROID
+  console_ = spdlog::android_logger_mt("android", "taichi");
+  console_->flush_on(spdlog::level::trace);
+#else
+  console_ = spdlog::stdout_color_mt("console");
+  console_->flush_on(spdlog::level::trace);
+#endif
   TI_LOG_SET_PATTERN("%^[%L %D %X.%e %t] %v%$");
 
   set_level_default();
@@ -64,23 +72,23 @@ void Logger::set_level_default() {
 }
 
 void Logger::trace(const std::string &s) {
-  console->trace(s);
+  console_->trace(s);
 }
 
 void Logger::debug(const std::string &s) {
-  console->debug(s);
+  console_->debug(s);
 }
 
 void Logger::info(const std::string &s) {
-  console->info(s);
+  console_->info(s);
 }
 
 void Logger::warn(const std::string &s) {
-  console->warn(s);
+  console_->warn(s);
 }
 
 void Logger::error(const std::string &s, bool raise_exception) {
-  console->error(s);
+  console_->error(s);
   fmt::print("\n\n");
   if (print_stacktrace_fn_) {
     print_stacktrace_fn_();
@@ -100,7 +108,7 @@ void Logger::critical(const std::string &s) {
 }
 
 void Logger::flush() {
-  console->flush();
+  console_->flush();
 }
 
 void Logger::set_print_stacktrace_func(std::function<void()> print_fn) {

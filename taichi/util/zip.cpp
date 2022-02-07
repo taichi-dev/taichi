@@ -5,7 +5,8 @@
 #ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
-#ifndef _LARGEFILE64_SOURCE
+#if !defined(_LARGEFILE64_SOURCE) && defined(TI_PLATFORM_LINUX)
+// Only Linux has large file extension
 #define _LARGEFILE64_SOURCE 1
 #endif
 #endif

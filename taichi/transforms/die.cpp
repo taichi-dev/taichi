@@ -52,7 +52,7 @@ class DIE : public IRVisitor {
     }
   }
 
-  void visit(Stmt *stmt) {
+  void visit(Stmt *stmt) override {
     TI_ASSERT(!stmt->erased);
     if (phase == 0) {
       register_usage(stmt);
@@ -64,13 +64,13 @@ class DIE : public IRVisitor {
     }
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(IfStmt *if_stmt) override {
     register_usage(if_stmt);
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -79,23 +79,34 @@ class DIE : public IRVisitor {
     }
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     register_usage(stmt);
     stmt->body->accept(this);
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     register_usage(for_stmt);
     for_stmt->body->accept(this);
   }
 
-  void visit(StructForStmt *for_stmt) {
+  void visit(StructForStmt *for_stmt) override {
     register_usage(for_stmt);
     for_stmt->body->accept(this);
   }
 
-  void visit(OffloadedStmt *stmt) {
-    stmt->all_blocks_accept(this);
+  void visit(MeshForStmt *for_stmt) override {
+    register_usage(for_stmt);
+    for_stmt->body->accept(this);
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    // TODO: A hack to make sure end_stmt is registered.
+    // Ideally end_stmt should be its own Block instead.
+    if (stmt->end_stmt &&
+        used.find(stmt->end_stmt->instance_id) == used.end()) {
+      used.insert(stmt->end_stmt->instance_id);
+    }
+    stmt->all_blocks_accept(this, true);
   }
 };
 

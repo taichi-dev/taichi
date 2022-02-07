@@ -63,14 +63,14 @@ class IRHandle {
 // Records the necessary data for launching an offloaded task.
 class TaskLaunchRecord {
  public:
-  Context context;
+  RuntimeContext context;
   Kernel *kernel;  // TODO: remove this
   IRHandle ir_handle;
   int id;
 
   TaskLaunchRecord();
 
-  TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
+  TaskLaunchRecord(RuntimeContext context, Kernel *kernel, IRHandle ir_handle);
 
   OffloadedStmt *stmt() const;
 

@@ -12,7 +12,7 @@ def test_argument_error():
         @ti.kernel
         def set_i32_notype(v):
             pass
-    except ti.KernelDefError:
+    except ti.TaichiSyntaxError:
         pass
 
     try:
@@ -20,7 +20,7 @@ def test_argument_error():
         @ti.kernel
         def set_i32_args(*args):
             pass
-    except ti.KernelDefError:
+    except ti.TaichiSyntaxError:
         pass
 
     try:
@@ -28,7 +28,7 @@ def test_argument_error():
         @ti.kernel
         def set_i32_kwargs(**kwargs):
             pass
-    except ti.KernelDefError:
+    except ti.TaichiSyntaxError:
         pass
 
     @ti.kernel

@@ -26,10 +26,10 @@ TI_NAMESPACE_BEGIN
 
 class Dict {
  private:
-  std::map<std::string, std::string> data;
+  std::map<std::string, std::string> data_;
 
  public:
-  TI_IO_DEF(data);
+  TI_IO_DEF(data_);
 
   Dict() = default;
 
@@ -40,14 +40,14 @@ class Dict {
 
   std::vector<std::string> get_keys() const {
     std::vector<std::string> keys;
-    for (auto it = data.begin(); it != data.end(); ++it) {
+    for (auto it = data_.begin(); it != data_.end(); ++it) {
       keys.push_back(it->first);
     }
     return keys;
   }
 
   void clear() {
-    data.clear();
+    data_.clear();
   }
 
   template <typename V>
@@ -156,7 +156,7 @@ class Dict {
   T get(std::string key, const T &default_val) const;
 
   bool has_key(std::string key) const {
-    return data.find(key) != data.end();
+    return data_.find(key) != data_.end();
   }
 
   std::vector<std::string> get_string_arr(std::string key) const {
@@ -206,56 +206,56 @@ class Dict {
   Dict &set(std::string name, T val) {
     std::stringstream ss;
     ss << val;
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const char *val) {
     std::stringstream ss;
     ss << val;
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector2 &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector3 &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << "," << val.z << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector4 &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << "," << val.z << "," << val.w << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector2i &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector3i &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << "," << val.z << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
   Dict &set(std::string name, const Vector4i &val) {
     std::stringstream ss;
     ss << "(" << val.x << "," << val.y << "," << val.z << "," << val.w << ")";
-    data[name] = ss.str();
+    data_[name] = ss.str();
     return *this;
   }
 
@@ -268,15 +268,15 @@ class Dict {
 
   template <typename T>
   Dict &set(std::string name, T *const ptr) {
-    data[name] = get_ptr_string(ptr);
+    data_[name] = get_ptr_string(ptr);
     return *this;
   }
 
   std::string get_string(std::string key) const {
-    if (data.find(key) == data.end()) {
+    if (data_.find(key) == data_.end()) {
       TI_ERROR("No key named '{}' found.", key);
     }
-    return data.find(key)->second;
+    return data_.find(key)->second;
   }
 
   template <typename T>
@@ -293,14 +293,14 @@ inline std::string Dict::get<std::string>(std::string key) const {
 
 template <typename T>
 inline T Dict::get(std::string key, const T &default_val) const {
-  if (data.find(key) == data.end()) {
+  if (data_.find(key) == data_.end()) {
     return default_val;
   } else
     return get<T>(key);
 }
 
 inline std::string Dict::get(std::string key, const char *default_val) const {
-  if (data.find(key) == data.end()) {
+  if (data_.find(key) == data_.end()) {
     return default_val;
   } else
     return get<std::string>(key);

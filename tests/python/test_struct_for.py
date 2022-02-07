@@ -279,3 +279,36 @@ def test_struct_for_quant():
         return tot
 
     assert count() == 28
+
+
+@ti.test(require=ti.extension.sparse)
+def test_struct_for_continue():
+    # Related issue: https://github.com/taichi-dev/taichi/issues/3272
+    x = ti.field(dtype=ti.i32)
+    n = 4
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
+
+    @ti.kernel
+    def init():
+        for i in range(n):
+            x[i * n + i] = 1
+
+    @ti.kernel
+    def struct_for_continue() -> ti.i32:
+        cnt = 0
+        for i in x:
+            if x[i]: continue
+            cnt += 1
+        return cnt
+
+    @ti.kernel
+    def range_for_continue() -> ti.i32:
+        cnt = 0
+        for i in range(n * n):
+            if x[i]: continue
+            cnt += 1
+        return cnt
+
+    init()
+    assert struct_for_continue() == n * (n - 1)
+    assert range_for_continue() == n * (n - 1)

@@ -8,7 +8,7 @@ def test_expr_dict_basic():
         x = {'foo': 2 + u, 'bar': 3 + v}
         return x['foo'] * 100 + x['bar']
 
-    assert func(2, 0.1) == ti.approx(403.1)
+    assert func(2, 0.1) == ti._testing.approx(403.1)
 
 
 @ti.test(ti.cpu)
@@ -22,7 +22,7 @@ def test_expr_dict_field():
 
     a[0] = 2
     a[1] = 0.1
-    assert func() == ti.approx(403.1)
+    assert func() == ti._testing.approx(403.1)
 
 
 @ti.test(ti.cpu)
@@ -35,7 +35,7 @@ def test_dictcomp_multiple_ifs():
         # Taichi doesn't support global fields appearing anywhere after "for"
         # here.
         a = {x[j]: x[j] + j for j in range(100) if j > 2 if j < 5}
-        return sum(a)
+        return sum(a.values())
 
     for i in range(n):
         x[i] = i * 2

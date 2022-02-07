@@ -14,7 +14,7 @@ You also need to install the Vulkan environment: [https://vulkan.lunarg.com/sdk/
 
 A new UI system has been added to Taichi in version `v0.8.0`. The new GUI system uses GPU for rendering, enabling it to be much faster and to render 3d scenes. For these reasons, this new system is sometimes referred to as GGUI. This doc describes the APIs provided.
 
-Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the examples provided in  [`examples/ggui_examples`](https://github.com/taichi-dev/taichi/tree/master/examples/ggui_examples).
+Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the examples provided in  [`examples/ggui_examples`](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples/ggui_examples).
 
 ## Creating a window
 
@@ -42,7 +42,7 @@ this retrieves a `Canvas` object that covers the entire window.
 ### Drawing on the canvas
 
 ```python
-canvas.set_back_ground_color(color)
+canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
 canvas.circles(vertices, radius, color, per_vertex_color)
 canvas.lines(vertices, width, indices, color, per_vertex_color)
@@ -114,7 +114,7 @@ window.GUI.begin(name, x, y, width, height)
 window.GUI.text(text)
 is_clicked = window.GUI.button(name)
 new_value = window.GUI.slider_float(name, old_value, min_value, max_value)
-new_color = window.GUI.slider_float(name, old_color)
+new_color = window.GUI.color_edit_3(name, old_color)
 window.GUI.end()
 ```
 
@@ -145,7 +145,7 @@ To check if a specific key is currently pressed:
 
 
 
-Here is an input processing example in GGUI version [`mpm128`](https://github.com/taichi-dev/taichi/blob/master/examples/ggui_examples/mpm128_ggui.py):
+Here is an input processing example in GGUI version [`mpm128`](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/ggui_examples/mpm128_ggui.py):
 
 ```python
 while window.running:
@@ -167,3 +167,24 @@ while window.running:
     if window.is_pressed(ti.ui.RMB):
         attractor_strength[None] = -1
 ```
+
+
+## Image I/O
+
+To write the current screen content into an image file:
+
+```python
+window.write_image(filename)
+```
+
+Notice that, when the window is showing, you have to call `window.write_image()` before the `window.show()` call.
+
+
+## Off-screen rendering
+
+GGUI supports rendering contents off-screen, that is, writing the results into image files without showing the window at all. This is sometimes referred to as "headless" rendering. To enable this mode, initialize the window with the argument `show_window=False`:
+
+```python
+window = ti.ui.Window('Window Title', (640, 360), show_window = False)
+```
+Then, you can use `window.write_image()` as normal, and remove the `window.show()` call at the end.

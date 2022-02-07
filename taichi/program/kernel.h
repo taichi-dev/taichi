@@ -5,12 +5,13 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/arch.h"
 #include "taichi/program/callable.h"
+#include "taichi/program/ndarray.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class Program;
 
-class Kernel : public Callable {
+class TI_DLL_EXPORT Kernel : public Callable {
  public:
   std::string name;
   std::vector<SNode *> no_activate;
@@ -20,10 +21,9 @@ class Kernel : public Callable {
   bool is_evaluator{false};
   bool grad{false};
 
-  // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
    public:
-    LaunchContextBuilder(Kernel *kernel, Context *ctx);
+    LaunchContextBuilder(Kernel *kernel, RuntimeContext *ctx);
     explicit LaunchContextBuilder(Kernel *kernel);
 
     LaunchContextBuilder(LaunchContextBuilder &&) = default;
@@ -37,26 +37,41 @@ class Kernel : public Callable {
 
     void set_extra_arg_int(int i, int j, int32 d);
 
-    void set_arg_external_array(int arg_id, uint64 ptr, uint64 size);
+    void set_arg_external_array(int arg_id,
+                                uintptr_t ptr,
+                                uint64 size,
+                                bool is_device_allocation);
+
+    void set_arg_external_array_with_shape(int arg_id,
+                                           uintptr_t ptr,
+                                           uint64 size,
+                                           const std::vector<int64> &shape);
+
+    void set_arg_ndarray(int arg_id, const Ndarray &arr);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.
     void set_arg_raw(int arg_id, uint64 d);
 
-    Context &get_context();
+    RuntimeContext &get_context();
 
    private:
     Kernel *kernel_;
-    std::unique_ptr<Context> owned_ctx_;
+    std::unique_ptr<RuntimeContext> owned_ctx_;
     // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
-    // that the caller passes a Context pointer externally. In that case,
+    // that the caller passes a RuntimeContext pointer externally. In that case,
     // |owned_ctx_| will be nullptr.
     // Invariant: |ctx_| will never be nullptr.
-    Context *ctx_;
+    RuntimeContext *ctx_;
   };
 
   Kernel(Program &program,
          const std::function<void()> &func,
+         const std::string &name = "",
+         bool grad = false);
+
+  Kernel(Program &program,
+         const std::function<void(Kernel *)> &func,
          const std::string &name = "",
          bool grad = false);
 
@@ -101,6 +116,11 @@ class Kernel : public Callable {
   static bool supports_lowering(Arch arch);
 
  private:
+  void init(Program &program,
+            const std::function<void()> &func,
+            const std::string &name = "",
+            bool grad = false);
+
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
   // The closure that, if invoked, lauches the backend kernel (shader)

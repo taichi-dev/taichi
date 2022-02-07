@@ -2,10 +2,11 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "taichi/backends/metal/aot_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 
 namespace taichi {
 namespace lang {
@@ -16,14 +17,17 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   explicit AotModuleBuilderImpl(
       const CompiledRuntimeModule *compiled_runtime_module,
       const std::vector<CompiledStructs> &compiled_snode_trees,
-      const BufferMetaData &buffer_meta_data);
+      const std::unordered_set<const SNode *> &fields,
+      BufferMetaData buffer_meta_data);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
-  void add_per_backend_field(const std::string &identifier,
+
+  void add_field_per_backend(const std::string &identifier,
+                             const SNode *rep_snode,
                              bool is_scalar,
                              DataType dt,
                              std::vector<int> shape,
@@ -34,15 +38,15 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
+  void write_metal_file(const std::string &dir,
+                        const std::string &filename,
+                        const CompiledKernelData &k) const;
+
   const CompiledRuntimeModule *compiled_runtime_module_;
   const std::vector<CompiledStructs> &compiled_snode_trees_;
-  BufferMetaData buffer_meta_data_;
+  const std::unordered_set<const SNode *> fields_;
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
-
-  void metalgen(const std::string &dir,
-                const std::string &filename,
-                const CompiledKernelData &k) const;
 };
 
 }  // namespace metal

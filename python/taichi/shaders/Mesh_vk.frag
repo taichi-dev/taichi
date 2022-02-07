@@ -32,10 +32,10 @@ layout(binding = 1, std430) buffer SSBO {
 }
 ssbo;
 
-layout(location = 3) in vec3 selected_color;
+layout(location = 3) in vec4 selected_color;
 
 vec3 lambertian() {
-  vec3 ambient = ubo.scene.ambient_light * selected_color;
+  vec3 ambient = ubo.scene.ambient_light * selected_color.rgb;
   vec3 result = ambient;
 
   for (int i = 0; i < ubo.scene.point_light_count; ++i) {
@@ -50,7 +50,7 @@ vec3 lambertian() {
     else{
       factor = max(dot(light_dir, normal), 0);
     }
-    vec3 diffuse = factor * selected_color * light_color;
+    vec3 diffuse = factor * selected_color.rgb * light_color;
     result += diffuse;
   }
 
@@ -58,5 +58,5 @@ vec3 lambertian() {
 }
 
 void main() {
-  out_color = vec4(lambertian(), 1);
+  out_color = vec4(lambertian(), selected_color.a);
 }

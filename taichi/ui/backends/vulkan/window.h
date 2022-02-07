@@ -22,17 +22,25 @@
 #include "taichi/ui/common/window_base.h"
 #include "taichi/ui/backends/vulkan/gui.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
 class Window final : public WindowBase {
  public:
-  Window(const AppConfig &config);
+  Window(lang::Program *prog, const AppConfig &config);
 
   virtual void show() override;
   virtual CanvasBase *get_canvas() override;
   virtual GuiBase *GUI() override;
+
+  void write_image(const std::string &filename) override;
 
   ~Window();
 
@@ -40,9 +48,10 @@ class Window final : public WindowBase {
   std::unique_ptr<Canvas> canvas_;
   std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
+  bool drawn_frame_{false};
 
  private:
-  void init(const AppConfig &config);
+  void init(lang::Program *prog, const AppConfig &config);
 
   void prepare_for_next_frame();
 

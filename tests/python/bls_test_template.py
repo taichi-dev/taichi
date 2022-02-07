@@ -15,7 +15,7 @@ def bls_test_template(dim,
                       dense=False):
     x, y, y2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
-    index = ti.indices(*range(dim))
+    index = ti.axes(*range(dim))
     mismatch = ti.field(ti.i32, shape=())
 
     if not isinstance(bs, (tuple, list)):
@@ -177,8 +177,7 @@ def bls_particle_grid(N,
             base = ti.Vector([
                 int(ti.floor(x[i][0] * N) - grid_offset[0]),
                 int(ti.floor(x[i][1] * N) - grid_offset[1])
-            ],
-                             dt=ti.i32)
+            ])
             base_p = ti.rescale_index(m1, pid, base)
             ti.append(pid.parent(), base_p, i)
 
@@ -197,7 +196,7 @@ def bls_particle_grid(N,
             u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
             u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
-            u = ti.Vector([u0, u1], dt=ti.i32)
+            u = ti.Vector([u0, u1])
 
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
                 m[u + offset] += scatter_weight
@@ -230,7 +229,7 @@ def bls_particle_grid(N,
             u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
             u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
-            u = ti.Vector([u0, u1], dt=ti.i32)
+            u = ti.Vector([u0, u1])
 
             tot = 0.0
 

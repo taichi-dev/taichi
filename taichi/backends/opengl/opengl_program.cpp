@@ -8,14 +8,15 @@ namespace lang {
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
 #ifdef TI_WITH_OPENGL
-  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value());
+  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
+                                config->allow_nv_shader_extension);
   auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
 
-  return [ptr, runtime = opengl_runtime_.get()](Context &ctx) {
-    ptr->launch(ctx, runtime);
+  return [ptr, kernel, runtime = opengl_runtime_.get()](RuntimeContext &ctx) {
+    ptr->launch(ctx, kernel, runtime);
   };
 #else
-  return [](Context &ctx) {};
+  return [](RuntimeContext &ctx) {};
 #endif
 }
 
@@ -26,9 +27,21 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
   opengl_runtime_ = std::make_unique<opengl::OpenGlRuntime>();
+  opengl_runtime_->result_buffer = *result_buffer_ptr;
 #else
   TI_NOT_IMPLEMENTED;
 #endif
+}
+DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  return opengl_runtime_->device->allocate_memory(
+      {alloc_size, /*host_write=*/true, /*host_read=*/true,
+       /*export_sharing=*/false});
+}
+
+std::shared_ptr<Device> OpenglProgramImpl::get_device_shared() {
+  return opengl_runtime_->device;
 }
 
 void OpenglProgramImpl::compile_snode_tree_types(
@@ -47,7 +60,6 @@ void OpenglProgramImpl::materialize_snode_tree(
 #ifdef TI_WITH_OPENGL
   compile_snode_tree_types(tree, snode_trees_);
   opengl_runtime_->add_snode_tree(opengl_struct_compiled_->root_size);
-  opengl_runtime_->result_buffer = result_buffer;
 #else
   TI_NOT_IMPLEMENTED;
 #endif
@@ -58,7 +70,7 @@ std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder() {
   // fine to JIT to GLSL on systems without the OpenGL runtime.
 #ifdef TI_WITH_OPENGL
   return std::make_unique<AotModuleBuilderImpl>(
-      opengl_struct_compiled_.value());
+      opengl_struct_compiled_.value(), config->allow_nv_shader_extension);
 #else
   TI_NOT_IMPLEMENTED;
   return nullptr;

@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
+  opt_level = 1;
   external_optimization_level = 3;
   packed = false;
   print_ir = false;
@@ -43,7 +44,7 @@ CompileConfig::CompileConfig() {
   make_thread_local = true;
   make_block_local = true;
   detect_read_only = true;
-  ndarray_use_torch = true;
+  ndarray_use_cached_allocator = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

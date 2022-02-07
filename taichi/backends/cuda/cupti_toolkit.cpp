@@ -22,7 +22,7 @@ enum class CuptiMetricsDefault : uint {
   CUPTI_METRIC_DEFAULT_TOTAL = 2
 };
 
-constexpr char *MetricListDeafult[] = {
+constexpr const char *MetricListDefault[] = {
     "smsp__cycles_elapsed.avg",  // CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
     "smsp__cycles_elapsed.avg.per_second",  // CUPTI_METRIC_CORE_FREQUENCY_HZS
 };
@@ -798,13 +798,20 @@ CuptiToolkit::CuptiToolkit() {
   uint metric_list_size =
       static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
   for (uint idx = 0; idx < metric_list_size; idx++) {
-    cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
+    cupti_config_.metric_list.push_back(MetricListDefault[idx]);
   }
+  set_status(true);
 }
 
 CuptiToolkit::~CuptiToolkit() {
-  end_profiling();
-  deinit_cupti();
+  if (enabled_) {
+    end_profiling();
+    deinit_cupti();
+  }
+}
+
+void CuptiToolkit::set_status(bool enable) {
+  enabled_ = enable;
 }
 
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
@@ -812,7 +819,7 @@ void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
   uint metric_list_size =
       static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
   for (uint idx = 0; idx < metric_list_size; idx++) {
-    cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
+    cupti_config_.metric_list.push_back(MetricListDefault[idx]);
   }
   // user selected metrics
   for (auto metric : metrics)
@@ -1097,6 +1104,9 @@ CuptiToolkit::CuptiToolkit() {
   TI_NOT_IMPLEMENTED;
 }
 CuptiToolkit::~CuptiToolkit() {
+  TI_NOT_IMPLEMENTED;
+}
+void CuptiToolkit::set_status(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {

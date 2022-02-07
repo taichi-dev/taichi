@@ -1,23 +1,25 @@
-//#define _GLSL_DEBUG 1
 #include "opengl_api.h"
 
+#include <list>
+
 #include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/ir/transforms.h"
 
 #ifdef TI_WITH_OPENGL
-#include "glad/glad.h"
+#include "glad/gl.h"
+#include "glad/egl.h"
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
-#endif
+#endif  // TI_WITH_OPENGL
 
-#include <list>
-
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace opengl {
 
 #define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
@@ -29,22 +31,12 @@ namespace opengl {
 int opengl_max_block_dim = 1024;
 int opengl_max_grid_dim = 1024;
 
-#ifdef TI_WITH_OPENGL
+// kUseGles is set at most once in initialize_opengl below.
+// TODO: Properly support setting GLES/GLSL in opengl backend
+// without this global static boolean.
+static bool kUseGles = false;
 
-static std::string add_line_markers(std::string x) {
-  std::string marker;
-  size_t pos = 0, npos;
-  int line = 0;
-  while (1) {
-    npos = x.find_first_of('\n', pos);
-    marker = fmt::format("{:3d} ", ++line);
-    if (npos == std::string::npos)
-      break;
-    x.insert(pos, marker);
-    pos = npos + 1 + marker.size();
-  }
-  return x;
-}
+#ifdef TI_WITH_OPENGL
 
 struct OpenGlRuntimeImpl {
   struct {
@@ -57,13 +49,15 @@ struct OpenGlRuntimeImpl {
   }
 
   std::unique_ptr<GLSLRuntime> runtime{nullptr};
-  std::vector<std::unique_ptr<DeviceCompiledProgram>> programs;
+  std::vector<std::unique_ptr<DeviceCompiledTaichiKernel>> programs;
 };
 
-bool initialize_opengl(bool error_tolerance) {
+// TODO: Move this into ProgramImpl class so that it naturally
+// gets access to config->use_gles.
+bool initialize_opengl(bool use_gles, bool error_tolerance) {
   static std::optional<bool> supported;  // std::nullopt
 
-  TI_TRACE("initialize_opengl({}) called", error_tolerance);
+  TI_TRACE("initialize_opengl({}, {}) called", use_gles, error_tolerance);
 
   if (supported.has_value()) {  // this function has been called before
     if (supported.value()) {    // detected to be true in last call
@@ -75,45 +69,137 @@ bool initialize_opengl(bool error_tolerance) {
     }
   }
 
-  glfwInit();
-  // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
-  // GL context needs a window (There's no true headless GL)
-  GLFWwindow *window =
-      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
-  if (!window) {
-    const char *desc = nullptr;
-    int status = glfwGetError(&desc);
-    if (!desc)
-      desc = "Unknown Error";
-    if (error_tolerance) {
-      // error tolerated, returning false
-      TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-      supported = std::make_optional<bool>(false);
-      return false;
-    }
-    TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-  }
-  glfwMakeContextCurrent(window);
+  // Code below is guaranteed to be called at most once.
+  int opengl_version = 0;
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (glfwInit()) {
+    // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
+    if (use_gles) {
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    } else {
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    }
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+    // GL context needs a window (when using GLFW)
+    GLFWwindow *window =
+        glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+    if (!window) {
+      const char *desc = nullptr;
+      int status = glfwGetError(&desc);
+      if (!desc)
+        desc = "Unknown Error";
+      TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+    } else {
+      glfwMakeContextCurrent(window);
+      if (use_gles) {
+        opengl_version = gladLoadGLES2(glfwGetProcAddress);
+      } else {
+        opengl_version = gladLoadGL(glfwGetProcAddress);
+      }
+      TI_DEBUG("OpenGL context loaded through GLFW");
+    }
+  }
+
+  if (!opengl_version) {
+    TI_TRACE("Attempting to load with EGL");
+
+    // Try EGL instead
+    int egl_version = gladLoaderLoadEGL(nullptr);
+
+    if (!egl_version) {
+      TI_DEBUG("Failed to load EGL");
+    } else {
+      static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
+                                             EGL_PBUFFER_BIT,
+                                             EGL_BLUE_SIZE,
+                                             8,
+                                             EGL_GREEN_SIZE,
+                                             8,
+                                             EGL_RED_SIZE,
+                                             8,
+                                             EGL_DEPTH_SIZE,
+                                             8,
+                                             EGL_RENDERABLE_TYPE,
+                                             EGL_OPENGL_BIT,
+                                             EGL_NONE};
+
+      // Initialize EGL
+      EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+      EGLint major, minor;
+      eglInitialize(egl_display, &major, &minor);
+
+      egl_version = gladLoaderLoadEGL(egl_display);
+
+      TI_DEBUG("Loaded EGL {}.{} on display {}",
+               GLAD_VERSION_MAJOR(egl_version), GLAD_VERSION_MINOR(egl_version),
+               egl_display);
+
+      // Select an appropriate configuration
+      EGLint num_configs;
+      EGLConfig egl_config;
+
+      eglChooseConfig(egl_display, configAttribs, &egl_config, 1, &num_configs);
+
+      // Bind the API (EGL >= 1.2)
+      if (egl_version >= GLAD_MAKE_VERSION(1, 2)) {
+        eglBindAPI(use_gles ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
+      }
+
+      // Create a context and make it current
+      EGLContext egl_context = EGL_NO_CONTEXT;
+      if (use_gles) {
+        static const EGLint gl_attribs[] = {
+            EGL_CONTEXT_MAJOR_VERSION,
+            3,
+            EGL_CONTEXT_MINOR_VERSION,
+            1,
+            EGL_NONE,
+        };
+
+        egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT,
+                                       gl_attribs);
+      } else {
+        egl_context =
+            eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, nullptr);
+      }
+
+      eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
+
+      if (use_gles) {
+        opengl_version = gladLoadGLES2(glad_eglGetProcAddress);
+      } else {
+        opengl_version = gladLoadGL(glad_eglGetProcAddress);
+      }
+    }
+  }
+
+  // Load OpenGL API
+  if (!opengl_version) {
     if (error_tolerance) {
-      TI_WARN("[glsl] cannot initialize GLAD");
+      TI_WARN("Can not create OpenGL context");
       supported = std::make_optional<bool>(false);
       return false;
     }
-    TI_ERROR("[glsl] cannot initialize GLAD");
+    TI_ERROR("Can not create OpenGL context");
   }
+
+  TI_DEBUG("{} version {}.{}", use_gles ? "GLES" : "OpenGL",
+           GLAD_VERSION_MAJOR(opengl_version),
+           GLAD_VERSION_MINOR(opengl_version));
+
 #define PER_OPENGL_EXTENSION(x)          \
   if ((opengl_extension_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_extension_GL_ARB_compute_shader) {
+
+  if (!use_gles && !opengl_extension_GL_ARB_compute_shader) {
     if (error_tolerance) {
       TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
       supported = std::make_optional<bool>(false);
@@ -130,51 +216,65 @@ bool initialize_opengl(bool error_tolerance) {
   TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_SIZE: {}", opengl_max_grid_dim);
 
   supported = std::make_optional<bool>(true);
+  kUseGles = use_gles;
   return true;
 }
 
-void CompiledProgram::init_args(Kernel *kernel) {
+void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
-    if (kernel->args[i].is_external_array) {
-      ext_arr_map[i] = kernel->args[i].size;
+    const auto dtype_name = kernel->args[i].dt.to_string();
+    if (kernel->args[i].is_array) {
+      arr_args[i] = CompiledArrayArg(
+          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
+           /*field_dim=*/kernel->args[i].total_dim -
+               kernel->args[i].element_shape.size(),
+           /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
+           /*element_shape=*/kernel->args[i].element_shape,
+           /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
+               i * taichi_max_num_indices * sizeof(int),
+           /*total_size=*/kernel->args[i].size});
+    } else {
+      scalar_args[i] = ScalarArg(
+          {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
     }
   }
 
-  for (const auto &[i, size] : ext_arr_map) {
-    total_ext_arr_size += size;
-  }
-
   args_buf_size = arg_count * sizeof(uint64_t);
-  if (ext_arr_map.size()) {
-    args_buf_size = taichi_opengl_earg_base +
+  if (arr_args.size()) {
+    args_buf_size = taichi_opengl_extra_args_base +
                     arg_count * taichi_max_num_indices * sizeof(int);
   }
 
   ret_buf_size = ret_count * sizeof(uint64_t);
 }
 
-void CompiledProgram::add(
-    const std::string &kernel_name,
-    const std::string &kernel_source_code,
-    int num_workgrpus,
+void CompiledTaichiKernel::add(
+    const std::string &name,
+    const std::string &source_code,
+    OffloadedTaskType type,
+    const std::string &range_hint,
+    int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-  num_workgrpus = std::min(num_workgrpus, opengl_max_grid_dim);
+  num_workgroups = std::min(num_workgroups, opengl_max_grid_dim);
   workgroup_size = std::min(workgroup_size, opengl_max_block_dim);
 
-  size_t layout_pos = kernel_source_code.find("precision highp float;\n");
+  size_t layout_pos = source_code.find("precision highp float;\n");
   TI_ASSERT(layout_pos != std::string::npos);
   std::string source =
-      kernel_source_code.substr(0, layout_pos) +
+      source_code.substr(0, layout_pos) +
       fmt::format(
           "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
           "1) in;\n",
           workgroup_size) +
-      kernel_source_code.substr(layout_pos);
+      source_code.substr(layout_pos);
 
-  kernels.push_back({kernel_name, source, workgroup_size, num_workgrpus});
+  TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", name, num_workgroups,
+           workgroup_size, source);
+  tasks.push_back(
+      {name, source, type, range_hint, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {
@@ -187,7 +287,7 @@ void CompiledProgram::add(
   }
 }
 
-int CompiledProgram::lookup_or_add_string(const std::string &str) {
+int CompiledTaichiKernel::lookup_or_add_string(const std::string &str) {
   int i;
   for (i = 0; i < str_table.size(); i++) {
     if (str_table[i] == str) {
@@ -238,7 +338,7 @@ void dump_message_buffer(Device *device,
   device->unmap(runtime_buf);
 }
 
-bool CompiledProgram::check_ext_arr_read(int i) const {
+bool CompiledTaichiKernel::check_ext_arr_read(int i) const {
   auto iter = ext_arr_access.find(i);
   if (iter == ext_arr_access.end())
     return false;
@@ -247,7 +347,7 @@ bool CompiledProgram::check_ext_arr_read(int i) const {
          irpass::ExternalPtrAccess::NONE;
 }
 
-bool CompiledProgram::check_ext_arr_write(int i) const {
+bool CompiledTaichiKernel::check_ext_arr_write(int i) const {
   auto iter = ext_arr_access.find(i);
   if (iter == ext_arr_access.end())
     return false;
@@ -256,46 +356,84 @@ bool CompiledProgram::check_ext_arr_write(int i) const {
          irpass::ExternalPtrAccess::NONE;
 }
 
-void CompiledProgram::set_used(const UsedFeature &used) {
+void CompiledTaichiKernel::set_used(const UsedFeature &used) {
   this->used = used;
 }
 
-OpenGlRuntime::~OpenGlRuntime() = default;
+OpenGlRuntime::~OpenGlRuntime() {
+  saved_arg_bufs.clear();
+  impl.reset(nullptr);
+  device.reset();
+}
 
-void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
-  std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
-
+void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
+                                        Kernel *kernel,
+                                        OpenGlRuntime *runtime) const {
   uint8_t *args_buf_mapped = nullptr;
+  auto args = kernel->args;
+  // If we have external array args we'll have to do host-device memcpy.
+  // Whether we get external array arg is runtime information.
+  bool has_ext_arr = false;
+  bool synced = false;
 
-  // Prepare external array
-  if (program_.total_ext_arr_size) {
-    void *baseptr = device_->map(ext_arr_buf_);
-
-    size_t accum_size = 0;
-    for (const auto &[i, size] : program_.ext_arr_map) {
-      auto ptr = (void *)ctx.args[i];
-      ctx.args[i] = accum_size;
-      ext_arr_host_ptrs[i] = ptr;
-      if (program_.check_ext_arr_read(i)) {
-        std::memcpy((char *)baseptr + accum_size, ptr, size);
-      }
-      accum_size += size;
-    }
-
-    device_->unmap(ext_arr_buf_);
+  if (program_.args_buf_size || program_.ret_buf_size) {
+    args_buf_ =
+        device_->allocate_memory_unique({taichi_opengl_external_arr_base,
+                                         /*host_write=*/true,
+                                         /*host_read=*/true,
+                                         /*export_sharing=*/false});
   }
 
+  // Prepare external arrays/ndarrays
+  // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
+  // DeviceAllocation*
+  // - For raw ptrs, its content will be synced to device through
+  // ext_arr_bufs_[i] which is its corresponding DeviceAllocation on device.
+  // Note shapes of these external arrays still reside in argument buffer,
+  // see more details below.
+  for (auto &item : program_.arr_args) {
+    int i = item.first;
+    TI_ASSERT(args[i].is_array);
+    if (args[i].size == 0 || ctx.is_device_allocation[i])
+      continue;
+    has_ext_arr = true;
+    if (args[i].size != item.second.total_size ||
+        ext_arr_bufs_[i] == kDeviceNullAllocation) {
+      if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
+        device_->dealloc_memory(ext_arr_bufs_[i]);
+      }
+      ext_arr_bufs_[i] = device_->allocate_memory(
+          {args[i].size, /*host_write=*/true, /*host_read=*/true,
+           /*export_sharing=*/false});
+      item.second.total_size = args[i].size;
+    }
+    void *host_ptr = (void *)ctx.args[i];
+    void *baseptr = device_->map(ext_arr_bufs_[i]);
+    if (program_.check_ext_arr_read(i)) {
+      std::memcpy((char *)baseptr, host_ptr, args[i].size);
+    }
+    device_->unmap(ext_arr_bufs_[i]);
+  }
+  // clang-format off
   // Prepare argument buffer
+  // Layout:
+  // |              args               |  shape of ext arr  |  ret |
+  // baseptr
+  // |..taichi_opengl_extra_args_base..|
+  // |...............taichi_opengl_ret_base.................|
+  // |................taichi_opengl_external_arr_base..............|
+  // clang-format on
   if (program_.args_buf_size) {
-    args_buf_mapped = (uint8_t *)device_->map(args_buf_);
+    args_buf_mapped = (uint8_t *)device_->map(*args_buf_);
     std::memcpy(args_buf_mapped, ctx.args,
                 program_.arg_count * sizeof(uint64_t));
-    if (program_.ext_arr_map.size()) {
+    if (program_.arr_args.size()) {
       std::memcpy(
-          args_buf_mapped + size_t(taichi_opengl_earg_base), ctx.extra_args,
+          args_buf_mapped + size_t(taichi_opengl_extra_args_base),
+          ctx.extra_args,
           size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
     }
-    device_->unmap(args_buf_);
+    device_->unmap(*args_buf_);
   }
 
   // Prepare runtime
@@ -311,29 +449,41 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
 
   // Kernel dispatch
   int i = 0;
-  for (const auto &kernel : program_.kernels) {
+  for (const auto &task : program_.tasks) {
     auto binder = compiled_pipeline_[i]->resource_binder();
     auto &core_bufs = runtime->impl->core_bufs;
-    binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
-    binder->buffer(0, int(GLBufId::Root), core_bufs.root);
-    binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
-    if (program_.args_buf_size)
-      binder->buffer(0, int(GLBufId::Args), args_buf_);
-    if (program_.ret_buf_size)
-      binder->buffer(0, int(GLBufId::Retr), ret_buf_);
-    if (program_.total_ext_arr_size)
-      binder->buffer(0, int(GLBufId::Extr), ext_arr_buf_);
+    binder->buffer(0, static_cast<int>(GLBufId::Runtime), core_bufs.runtime);
+    if (program_.used.buf_data)
+      binder->buffer(0, static_cast<int>(GLBufId::Root), core_bufs.root);
+    binder->buffer(0, static_cast<int>(GLBufId::Gtmp), core_bufs.gtmp);
+    if (program_.args_buf_size || program_.ret_buf_size)
+      binder->buffer(0, static_cast<int>(GLBufId::Args), *args_buf_);
+    // TODO: properly assert and throw if we bind more than allowed SSBOs.
+    //       On most devices this number is 8. But I need to look up how
+    //       to query this information so currently this is thrown from OpenGl.
+    for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
+      if (ctx.is_device_allocation[arg_id]) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
+
+        binder->buffer(0, bind_id, *ptr);
+      } else {
+        binder->buffer(0, bind_id, ext_arr_bufs_[arg_id]);
+      }
+    }
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
-    cmdlist->bind_resources(binder);
-    cmdlist->dispatch(kernel.num_groups, 1, 1);
+    if (i == 0)
+      cmdlist->bind_resources(binder);
+    cmdlist->dispatch(task.num_groups, 1, 1);
     cmdlist->memory_barrier();
     i++;
   }
 
-  if (program_.used.print || program_.total_ext_arr_size ||
-      program_.ret_buf_size) {
+  if (program_.used.print || has_ext_arr || program_.ret_buf_size) {
+    // We'll do device->host memcpy later so sync is required.
     device_->get_compute_stream()->submit_synced(cmdlist.get());
+    synced = true;
   } else {
     device_->get_compute_stream()->submit(cmdlist.get());
   }
@@ -344,58 +494,46 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
                         program_.str_table);
   }
 
-  if (program_.total_ext_arr_size) {
-    uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_buf_);
-    for (const auto &[i, size] : program_.ext_arr_map) {
-      memcpy(ext_arr_host_ptrs[i], baseptr + size_t(ctx.args[i]), size);
+  if (has_ext_arr) {
+    for (auto &item : program_.arr_args) {
+      int i = item.first;
+      if (args[i].size != 0 && !ctx.is_device_allocation[i]) {
+        uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
+        memcpy((void *)ctx.args[i], baseptr, args[i].size);
+        device_->unmap(ext_arr_bufs_[i]);
+      }
     }
-    device_->unmap(ext_arr_buf_);
   }
 
   if (program_.ret_buf_size) {
-    memcpy(runtime->result_buffer, device_->map(ret_buf_),
+    uint8_t *baseptr = (uint8_t *)device_->map(*args_buf_);
+    memcpy(runtime->result_buffer, baseptr + taichi_opengl_ret_base,
            program_.ret_buf_size);
-    device_->unmap(ret_buf_);
+    device_->unmap(*args_buf_);
+  }
+  if (program_.args_buf_size || program_.ret_buf_size) {
+    runtime->saved_arg_bufs.push_back(std::move(args_buf_));
+  }
+
+  if (synced) {
+    runtime->saved_arg_bufs.clear();
   }
 }
 
-DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
-                                             Device *device)
-    : program_(std::move(program)), device_(device) {
-  if (program_.args_buf_size) {
-    args_buf_ =
-        device->allocate_memory({program_.args_buf_size, /*host_write=*/true,
-                                 /*host_read=*/false,
-                                 /*export_sharing=*/false});
-  }
-
-  if (program_.total_ext_arr_size) {
-    // Set both host write & host read for now
-    ext_arr_buf_ = device->allocate_memory({program_.total_ext_arr_size,
-                                            /*host_write=*/true,
-                                            /*host_read=*/true,
-                                            /*export_sharing=*/false});
-  }
-
-  if (program_.ret_buf_size) {
-    ret_buf_ =
-        device->allocate_memory({program_.ret_buf_size, /*host_write=*/false,
-                                 /*host_read=*/true,
-                                 /*export_sharing=*/false});
-  }
-
-  for (auto &k : program_.kernels) {
-    compiled_pipeline_.push_back(
-        device->create_pipeline({PipelineSourceType::glsl_src,
-                                 k.kernel_src.data(), k.kernel_src.size()},
-                                k.kernel_name));
+DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
+    CompiledTaichiKernel &&program,
+    Device *device)
+    : device_(device), program_(std::move(program)) {
+  for (auto &t : program_.tasks) {
+    compiled_pipeline_.push_back(device->create_pipeline(
+        {PipelineSourceType::glsl_src, t.src.data(), t.src.size()}, t.name));
   }
 }
 
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
-  device = std::make_unique<GLDevice>();
+  device = std::make_shared<GLDevice>();
 
   impl = std::make_unique<OpenGlRuntimeImpl>();
 
@@ -414,9 +552,10 @@ OpenGlRuntime::OpenGlRuntime() {
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
-  auto p =
-      std::make_unique<DeviceCompiledProgram>(std::move(program), device.get());
+DeviceCompiledTaichiKernel *OpenGlRuntime::keep(
+    CompiledTaichiKernel &&program) {
+  auto p = std::make_unique<DeviceCompiledTaichiKernel>(std::move(program),
+                                                        device.get());
   auto ptr = p.get();
   impl->programs.push_back(std::move(p));
   return ptr;
@@ -430,10 +569,10 @@ void OpenGlRuntime::add_snode_tree(size_t size) {
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-bool is_opengl_api_available() {
+bool is_opengl_api_available(bool use_gles) {
   if (get_environ_config("TI_ENABLE_OPENGL", 1) == 0)
     return false;
-  return initialize_opengl(true);
+  return initialize_opengl(use_gles, true);
 }
 
 #else
@@ -448,7 +587,8 @@ OpenGlRuntime::~OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 
-DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+DeviceCompiledTaichiKernel *OpenGlRuntime::keep(
+    CompiledTaichiKernel &&program) {
   TI_NOT_IMPLEMENTED;
   return nullptr;
 }
@@ -457,15 +597,20 @@ void OpenGlRuntime::add_snode_tree(size_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
-bool is_opengl_api_available() {
+bool is_opengl_api_available(bool use_gles) {
   return false;
 }
 
-bool initialize_opengl(bool error_tolerance) {
+bool initialize_opengl(bool use_gles, bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 
 #endif  // TI_WITH_OPENGL
 
+bool is_gles() {
+  return kUseGles;
+}
+
 }  // namespace opengl
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

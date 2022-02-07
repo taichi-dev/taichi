@@ -26,7 +26,7 @@
 #include "taichi/inc/cuda_kernel_utils.inc.h"
 #include "taichi/math/arithmetic.h"
 
-struct Context;
+struct RuntimeContext;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
 using host_vsnprintf_type = int (*)(char *,
@@ -34,7 +34,8 @@ using host_vsnprintf_type = int (*)(char *,
                                     const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(Context *, const char *tls, int i);
+using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
+using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -105,7 +106,7 @@ using f64 = float64;
 using uint8 = uint8_t;
 using Ptr = uint8 *;
 
-using ContextArgType = long long;
+using RuntimeContextArgType = long long;
 
 #if ARCH_cuda
 extern "C" {
@@ -214,27 +215,51 @@ i64 floordiv_i64(i64 a, i64 b) {
   return ifloordiv(a, b);
 }
 
-int min_i32(i32 a, i32 b) {
+u16 min_u16(u16 a, u16 b) {
   return a < b ? a : b;
 }
 
-int min_i64(i64 a, i64 b) {
+i16 min_i16(i16 a, i16 b) {
   return a < b ? a : b;
-}
-
-int max_i32(i32 a, i32 b) {
-  return a > b ? a : b;
 }
 
 u32 min_u32(u32 a, u32 b) {
   return a < b ? a : b;
 }
 
+int min_i32(i32 a, i32 b) {
+  return a < b ? a : b;
+}
+
+u64 min_u64(u64 a, u64 b) {
+  return a < b ? a : b;
+}
+
+i64 min_i64(i64 a, i64 b) {
+  return a < b ? a : b;
+}
+
+u16 max_u16(u16 a, u16 b) {
+  return a > b ? a : b;
+}
+
+i16 max_i16(i16 a, i16 b) {
+  return a > b ? a : b;
+}
+
 u32 max_u32(u32 a, u32 b) {
   return a > b ? a : b;
 }
 
-int max_i64(i64 a, i64 b) {
+int max_i32(i32 a, i32 b) {
+  return a > b ? a : b;
+}
+
+u64 max_u64(u64 a, u64 b) {
+  return a > b ? a : b;
+}
+
+i64 max_i64(i64 a, i64 b) {
   return a > b ? a : b;
 }
 
@@ -321,10 +346,10 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 #include "taichi/program/context.h"
 #include "taichi/runtime/llvm/mem_request.h"
 
-STRUCT_FIELD_ARRAY(Context, args);
-STRUCT_FIELD(Context, runtime);
+STRUCT_FIELD_ARRAY(RuntimeContext, args);
+STRUCT_FIELD(RuntimeContext, runtime);
 
-int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
+int32 RuntimeContext_get_extra_args(RuntimeContext *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];
 }
 
@@ -353,7 +378,7 @@ struct StructMeta {
                              PhysicalCoordinates *refined_coord,
                              int index);
 
-  Context *context;
+  RuntimeContext *context;
 };
 
 STRUCT_FIELD(StructMeta, snode_id)
@@ -370,7 +395,7 @@ struct LLVMRuntime;
 
 constexpr bool enable_assert = true;
 
-void taichi_assert(Context *context, i32 test, const char *msg);
+void taichi_assert(RuntimeContext *context, i32 test, const char *msg);
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 #define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
@@ -722,7 +747,7 @@ RUNTIME_STRUCT_FIELD(ListManager, num_elements);
 RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
 RUNTIME_STRUCT_FIELD(ListManager, element_size);
 
-void taichi_assert(Context *context, i32 test, const char *msg) {
+void taichi_assert(RuntimeContext *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
@@ -1223,10 +1248,10 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   }
 }
 
-using BlockTask = void(Context *, char *, Element *, int, int);
+using BlockTask = void(RuntimeContext *, char *, Element *, int, int);
 
 struct cpu_block_task_helper_context {
-  Context *context;
+  RuntimeContext *context;
   BlockTask *task;
   ListManager *list;
   int element_size;
@@ -1252,7 +1277,7 @@ void cpu_struct_for_block_helper(void *ctx_, int thread_id, int i) {
   upper = std::min(upper, e.loop_bounds[1]);
   alignas(8) char tls_buffer[ctx->tls_buffer_size];
 
-  Context this_thread_context = *ctx->context;
+  RuntimeContext this_thread_context = *ctx->context;
   this_thread_context.cpu_thread_id = thread_id;
   if (lower < upper) {
     (*ctx->task)(&this_thread_context, tls_buffer,
@@ -1260,7 +1285,7 @@ void cpu_struct_for_block_helper(void *ctx_, int thread_id, int i) {
   }
 }
 
-void parallel_struct_for(Context *context,
+void parallel_struct_for(RuntimeContext *context,
                          int snode_id,
                          int element_size,
                          int element_split,
@@ -1304,10 +1329,13 @@ void parallel_struct_for(Context *context,
 #endif
 }
 
-using range_for_xlogue = void (*)(Context *, /*TLS*/ char *tls_base);
+using range_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base);
+using mesh_for_xlogue = void (*)(RuntimeContext *,
+                                 /*TLS*/ char *tls_base,
+                                 uint32_t patch_idx);
 
 struct range_task_helper_context {
-  Context *context;
+  RuntimeContext *context;
   range_for_xlogue prologue{nullptr};
   RangeForTaskFunc *body{nullptr};
   range_for_xlogue epilogue{nullptr};
@@ -1327,7 +1355,7 @@ void cpu_parallel_range_for_task(void *range_context,
   if (ctx.prologue)
     ctx.prologue(ctx.context, tls_ptr);
 
-  Context this_thread_context = *ctx.context;
+  RuntimeContext this_thread_context = *ctx.context;
   this_thread_context.cpu_thread_id = thread_id;
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
@@ -1346,7 +1374,7 @@ void cpu_parallel_range_for_task(void *range_context,
     ctx.epilogue(ctx.context, tls_ptr);
 }
 
-void cpu_parallel_range_for(Context *context,
+void cpu_parallel_range_for(RuntimeContext *context,
                             int num_threads,
                             int begin,
                             int end,
@@ -1383,7 +1411,7 @@ void cpu_parallel_range_for(Context *context,
                         &ctx, cpu_parallel_range_for_task);
 }
 
-void gpu_parallel_range_for(Context *context,
+void gpu_parallel_range_for(RuntimeContext *context,
                             int begin,
                             int end,
                             range_for_xlogue prologue,
@@ -1403,7 +1431,84 @@ void gpu_parallel_range_for(Context *context,
     epilogue(context, tls_ptr);
 }
 
-i32 linear_thread_idx(Context *context) {
+struct mesh_task_helper_context {
+  RuntimeContext *context;
+  mesh_for_xlogue prologue{nullptr};
+  RangeForTaskFunc *body{nullptr};
+  mesh_for_xlogue epilogue{nullptr};
+  std::size_t tls_size{1};
+  int num_patches;
+  int block_size;
+};
+
+void cpu_parallel_mesh_for_task(void *range_context,
+                                int thread_id,
+                                int task_id) {
+  auto ctx = *(mesh_task_helper_context *)range_context;
+  alignas(8) char tls_buffer[ctx.tls_size];
+  auto tls_ptr = &tls_buffer[0];
+
+  RuntimeContext this_thread_context = *ctx.context;
+  this_thread_context.cpu_thread_id = thread_id;
+
+  int block_start = task_id * ctx.block_size;
+  int block_end = std::min(block_start + ctx.block_size, ctx.num_patches);
+
+  for (int idx = block_start; idx < block_end; idx++) {
+    if (ctx.prologue)
+      ctx.prologue(ctx.context, tls_ptr, idx);
+    ctx.body(&this_thread_context, tls_ptr, idx);
+    if (ctx.epilogue)
+      ctx.epilogue(ctx.context, tls_ptr, idx);
+  }
+}
+
+void cpu_parallel_mesh_for(RuntimeContext *context,
+                           int num_threads,
+                           int num_patches,
+                           int block_dim,
+                           mesh_for_xlogue prologue,
+                           RangeForTaskFunc *body,
+                           mesh_for_xlogue epilogue,
+                           std::size_t tls_size) {
+  mesh_task_helper_context ctx;
+  ctx.context = context;
+  ctx.prologue = prologue;
+  ctx.tls_size = tls_size;
+  ctx.body = body;
+  ctx.epilogue = epilogue;
+  ctx.num_patches = num_patches;
+  if (block_dim == 0) {
+    // adaptive block dim
+    // ensure each thread has at least ~32 tasks for load balancing
+    // and each task has at least 512 items to amortize scheduler overhead
+    block_dim = std::min(512, std::max(1, num_patches / (num_threads * 32)));
+  }
+  ctx.block_size = block_dim;
+  auto runtime = context->runtime;
+  runtime->parallel_for(runtime->thread_pool,
+                        (num_patches + block_dim - 1) / block_dim, num_threads,
+                        &ctx, cpu_parallel_mesh_for_task);
+}
+
+void gpu_parallel_mesh_for(RuntimeContext *context,
+                           int num_patches,
+                           mesh_for_xlogue prologue,
+                           MeshForTaskFunc *func,
+                           mesh_for_xlogue epilogue,
+                           const std::size_t tls_size) {
+  alignas(8) char tls_buffer[tls_size];
+  auto tls_ptr = &tls_buffer[0];
+  for (int idx = block_idx(); idx < num_patches; idx += grid_dim()) {
+    if (prologue)
+      prologue(context, tls_ptr, idx);
+    func(context, tls_ptr, idx);
+    if (epilogue)
+      epilogue(context, tls_ptr, idx);
+  }
+}
+
+i32 linear_thread_idx(RuntimeContext *context) {
 #if ARCH_cuda
   return block_idx() * block_dim() + thread_idx();
 #else
@@ -1447,7 +1552,7 @@ void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void gc_parallel_0(Context *context, int snode_id) {
+void gc_parallel_0(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
@@ -1475,7 +1580,7 @@ void gc_parallel_0(Context *context, int snode_id) {
   }
 }
 
-void gc_parallel_1(Context *context, int snode_id) {
+void gc_parallel_1(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
@@ -1489,7 +1594,7 @@ void gc_parallel_1(Context *context, int snode_id) {
   allocator->recycled_list->clear();
 }
 
-void gc_parallel_2(Context *context, int snode_id) {
+void gc_parallel_2(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto elements = allocator->recycle_list_size_backup;
@@ -1533,7 +1638,7 @@ void gc_parallel_2(Context *context, int snode_id) {
 
 extern "C" {
 
-u32 rand_u32(Context *context) {
+u32 rand_u32(RuntimeContext *context) {
   auto state = &((LLVMRuntime *)context->runtime)
                     ->rand_states[linear_thread_idx(context)];
 
@@ -1552,23 +1657,23 @@ u32 rand_u32(Context *context) {
                           // it decorrelates streams of PRNGs.
 }
 
-uint64 rand_u64(Context *context) {
+uint64 rand_u64(RuntimeContext *context) {
   return ((u64)rand_u32(context) << 32) + rand_u32(context);
 }
 
-f32 rand_f32(Context *context) {
+f32 rand_f32(RuntimeContext *context) {
   return rand_u32(context) * (1.0f / 4294967296.0f);
 }
 
-f64 rand_f64(Context *context) {
+f64 rand_f64(RuntimeContext *context) {
   return rand_u64(context) * (1.0 / 18446744073709551616.0);
 }
 
-i32 rand_i32(Context *context) {
+i32 rand_i32(RuntimeContext *context) {
   return rand_u32(context);
 }
 
-i64 rand_i64(Context *context) {
+i64 rand_i64(RuntimeContext *context) {
   return rand_u64(context);
 }
 };
@@ -1730,18 +1835,20 @@ i32 kWasmPrintBufferSize = 1024 * 1024;
 }
 
 extern "C" {
-// The input means starting address of Context, which should be set to
+// The input means starting address of RuntimeContext, which should be set to
 // '__heap_base' to avoid conflicts with C++ stack data which is stored in
 // memory. The function returns starting address of root buffer. The print
-// buffer locates just before Context (8MB). Here is an illustration for
+// buffer locates just before RuntimeContext (8MB). Here is an illustration for
 // proper memory layout in WASM:
-// ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//  Print ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
-// ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
-//         └─────────┘  │         └──┘              │
-//                      └───────────────────────────┘
-i32 wasm_materialize(Context *context) {
-  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(Context));
+// clang-format off
+// ━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
+//  Print ┃▄ RuntimeContext ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+// ━━━━━━━┻│━━━━━━━━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
+//         └────────────────┘  │         └──┘              │
+//                             └───────────────────────────┘
+// clang-format on
+i32 wasm_materialize(RuntimeContext *context) {
+  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(RuntimeContext));
   context->runtime->rand_states =
       (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
   // set random seed to (1, 0, 0, 0)
@@ -1762,11 +1869,11 @@ i32 wasm_materialize(Context *context) {
 //      char c[4];
 //    } data;
 //} wasm_buffer_buffer[kWasmPrintBufferSize];
-void wasm_set_print_buffer(Context *context, Ptr buffer) {
+void wasm_set_print_buffer(RuntimeContext *context, Ptr buffer) {
   context->runtime->wasm_print_buffer = buffer;
 }
 
-void wasm_print_i32(Context *context, i32 value) {
+void wasm_print_i32(RuntimeContext *context, i32 value) {
   Ptr buffer = context->runtime->wasm_print_buffer;
   if (buffer == nullptr)
     return;
@@ -1776,7 +1883,7 @@ void wasm_print_i32(Context *context, i32 value) {
   ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
-void wasm_print_f32(Context *context, f32 value) {
+void wasm_print_f32(RuntimeContext *context, f32 value) {
   Ptr buffer = context->runtime->wasm_print_buffer;
   if (buffer == nullptr)
     return;
@@ -1786,7 +1893,7 @@ void wasm_print_f32(Context *context, f32 value) {
   ((f32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
-void wasm_print_char(Context *context,
+void wasm_print_char(RuntimeContext *context,
                      i8 value0,
                      i8 value1,
                      i8 value2,
@@ -1803,11 +1910,15 @@ void wasm_print_char(Context *context,
   ((i8 *)buffer)[print_pos * 8 + 11] = value3;
 }
 
-void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {
+void wasm_set_kernel_parameter_i32(RuntimeContext *context,
+                                   int index,
+                                   i32 value) {
   *(i32 *)(&context->args[index]) = value;
 }
 
-void wasm_set_kernel_parameter_f32(Context *context, int index, f32 value) {
+void wasm_set_kernel_parameter_f32(RuntimeContext *context,
+                                   int index,
+                                   f32 value) {
   *(f32 *)(&context->args[index]) = value;
 }
 }

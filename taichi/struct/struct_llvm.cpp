@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/struct/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
@@ -55,6 +56,13 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
 
   snode.cell_size_bytes = tlctx_->get_type_size(ch_type);
+
+  for (int i = 0; i < snode.ch.size(); i++) {
+    if (!snode.ch[i]->is_bit_level) {
+      snode.ch[i]->offset_bytes_in_parent_cell =
+          tlctx_->get_struct_element_offset(ch_type, i);
+    }
+  }
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
@@ -306,7 +314,7 @@ void StructCompilerLLVM::run(SNode &root) {
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   auto node_type = get_llvm_node_type(module.get(), &root);
-  root_size = tlctx_->get_data_layout().getTypeAllocSize(node_type);
+  root_size = tlctx_->get_type_size(node_type);
 
   tlctx_->set_struct_module(module);
 }
@@ -347,3 +355,5 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif  //#ifdef TI_WITH_LLVM

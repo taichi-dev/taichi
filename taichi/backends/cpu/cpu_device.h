@@ -80,18 +80,23 @@ class CpuDevice : public Device {
   struct AllocInfo {
     void *ptr{nullptr};
     size_t size{0};
+    bool use_cached{false};
   };
 
-  AllocInfo get_alloc_info(DeviceAllocation handle);
+  AllocInfo get_alloc_info(const DeviceAllocation handle);
 
   ~CpuDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
+  DeviceAllocation allocate_memory_runtime(
+      const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
+
+  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
   void *map(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
@@ -111,7 +116,7 @@ class CpuDevice : public Device {
   std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
       virtual_memories_;
 
-  void validate_device_alloc(DeviceAllocation alloc) {
+  void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");
     }

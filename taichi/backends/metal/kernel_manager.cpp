@@ -406,7 +406,7 @@ class CompiledTaichiKernel {
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
-                      Context *host_ctx,
+                      RuntimeContext *host_ctx,
                       uint64_t *host_result_buffer,
                       const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
@@ -538,7 +538,7 @@ class HostMetalCtxBlitter {
 
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
-      Context *ctx,
+      RuntimeContext *ctx,
       uint64_t *host_result_buffer,
       std::string name) {
     if (kernel.ctx_attribs.empty()) {
@@ -551,7 +551,7 @@ class HostMetalCtxBlitter {
  private:
   const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
@@ -620,13 +620,13 @@ class KernelManager::Impl {
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
-    init_runtime_buffer(compiled_runtime_module_);
+    init_runtime_buffer(compiled_runtime_module_, params.config->random_seed);
     clear_print_assert_buffer();
   }
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
-    rtbuf.desc = BufferDescriptor::Root(compiled_tree.root_id);
+    rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
       rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
                                                      mem_pool_);
@@ -676,7 +676,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     mac::ScopedAutoreleasePool pool;
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
@@ -689,13 +689,13 @@ class KernelManager::Impl {
     for (auto &rb : root_buffers_) {
       input_buffers[rb.desc] = rb.buffer.get();
     }
-    input_buffers[BufferDescriptor::GlobalTmps()] = global_tmps_buffer_.get();
-    input_buffers[BufferDescriptor::Runtime()] = runtime_buffer_.get();
-    input_buffers[BufferDescriptor::Print()] = print_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
+    input_buffers[BufferDescriptor::print()] = print_buffer_.get();
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::Context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
     }
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {
@@ -756,14 +756,11 @@ class KernelManager::Impl {
   }
 
  private:
-  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
+                           int random_seed) {
     char *addr = runtime_mem_->ptr();
     // init rand_seeds
-    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
-    std::mt19937 generator(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    std::default_random_engine generator((unsigned int)random_seed);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {
@@ -997,11 +994,13 @@ class KernelManager::Impl {
       end_encoding(encoder.get());
     }
     // Sync
-    profiler_->start("metal_synchronize");
+    if (profiler_)
+      profiler_->start("metal_synchronize");
     commit_command_buffer(cur_command_buffer_.get());
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
-    profiler_->stop();
+    if (profiler_)
+      profiler_->stop();
 
     // print_runtime_debug();
   }
@@ -1179,7 +1178,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1221,7 +1220,7 @@ void KernelManager::register_taichi_kernel(
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
-                                         Context *ctx) {
+                                         RuntimeContext *ctx) {
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 

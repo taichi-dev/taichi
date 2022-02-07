@@ -1,4 +1,5 @@
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/program/program.h"
 
 #include <chrono>
 #include <array>
@@ -8,6 +9,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "fp16.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -23,7 +26,7 @@ class StopWatch {
   StopWatch() : begin_(std::chrono::system_clock::now()) {
   }
 
-  int GetMicros() {
+  int get_micros() {
     typedef std::chrono::duration<float> fsec;
 
     auto now = std::chrono::system_clock::now();
@@ -41,20 +44,22 @@ class StopWatch {
 class HostDeviceContextBlitter {
  public:
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
-                           Context *host_ctx,
+                           RuntimeContext *host_ctx,
                            Device *device,
                            uint64_t *host_result_buffer,
                            DeviceAllocation *device_buffer,
                            DeviceAllocation *host_shadow_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
-        device_(device),
         host_result_buffer_(host_result_buffer),
         device_buffer_(device_buffer),
-        host_shadow_buffer_(host_shadow_buffer) {
+        host_shadow_buffer_(host_shadow_buffer),
+        device_(device) {
   }
 
-  void host_to_device() {
+  void host_to_device(
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, size_t> &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return;
     }
@@ -75,8 +80,16 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          const void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(device_ptr, host_ptr, arg.stride);
+          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+            // Only need to blit ext arrs (host array)
+            DeviceAllocation buffer = ext_arrays.at(i);
+            char *const device_arr_ptr =
+                reinterpret_cast<char *>(device_->map(buffer));
+            const void *host_ptr = host_ctx_->get_arg<void *>(i);
+            std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
+            device_->unmap(buffer);
+          }
+          // We should not process the rest
           break;
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
@@ -97,9 +110,17 @@ class HostDeviceContextBlitter {
         if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
           TO_DEVICE(f64, float64)
         }
+        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
+          if (dt->is_primitive(PrimitiveTypeID::f16)) {
+            auto d = fp16_ieee_from_fp32_value(host_ctx_->get_arg<float>(i));
+            reinterpret_cast<uint16 *>(device_ptr)[0] = d;
+            break;
+          }
+        }
         TI_ERROR("Vulkan does not support arg type={}", data_type_name(arg.dt));
       } while (0);
     }
+
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
@@ -108,9 +129,12 @@ class HostDeviceContextBlitter {
 #undef TO_DEVICE
   }
 
-  void device_to_host() {
+  bool device_to_host(
+      CommandList *cmdlist,
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, size_t> &ext_arr_size) {
     if (ctx_attribs_->empty()) {
-      return;
+      return false;
     }
 
     bool require_sync = ctx_attribs_->rets().size() > 0;
@@ -124,9 +148,9 @@ class HostDeviceContextBlitter {
     }
 
     if (require_sync) {
-      device_->get_compute_stream()->command_sync();
+      device_->get_compute_stream()->submit_synced(cmdlist);
     } else {
-      return;
+      return false;
     }
 
     char *const device_base =
@@ -136,8 +160,15 @@ class HostDeviceContextBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
       if (arg.is_array) {
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, arg.stride);
+        if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+          // Only need to blit ext arrs (host array)
+          DeviceAllocation buffer = ext_arrays.at(i);
+          char *const device_arr_ptr =
+              reinterpret_cast<char *>(device_->map(buffer));
+          void *host_ptr = host_ctx_->get_arg<void *>(i);
+          std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
+          device_->unmap(buffer);
+        }
       }
     }
 
@@ -179,6 +210,15 @@ class HostDeviceContextBlitter {
         if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
           TO_HOST(f64, float64)
         }
+        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
+          if (dt->is_primitive(PrimitiveTypeID::f16)) {
+            const float d = fp16_ieee_to_fp32_value(
+                *reinterpret_cast<uint16 *>(device_ptr));
+            host_result_buffer_[i] =
+                taichi_union_cast_with_different_sizes<uint64>(d);
+            break;
+          }
+        }
         TI_ERROR("Vulkan does not support return value type={}",
                  data_type_name(ret.dt));
       } while (0);
@@ -186,11 +226,13 @@ class HostDeviceContextBlitter {
 #undef TO_HOST
 
     device_->unmap(*host_shadow_buffer_);
+
+    return true;
   }
 
   static std::unique_ptr<HostDeviceContextBlitter> maybe_make(
       const KernelContextAttributes *ctx_attribs,
-      Context *host_ctx,
+      RuntimeContext *host_ctx,
       Device *device,
       uint64_t *host_result_buffer,
       DeviceAllocation *device_buffer,
@@ -205,7 +247,7 @@ class HostDeviceContextBlitter {
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_buffer_;
   DeviceAllocation *const host_shadow_buffer_;
@@ -214,6 +256,9 @@ class HostDeviceContextBlitter {
 
 }  // namespace
 
+constexpr size_t kGtmpBufferSize = 1024 * 1024;
+constexpr size_t kListGenBufferSize = 32 << 20;
+
 // Info for launching a compiled Taichi kernel, which consists of a series of
 // Vulkan pipelines.
 
@@ -221,23 +266,24 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
       device_(ti_params.device) {
   input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
-  for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
-    BufferInfo buffer = {BufferType::Root, root};
-    input_buffers_[buffer] = ti_params.root_buffers[root];
+  input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
+
+  // Compiled_structs can be empty if loading a kernel from an AOT module as
+  // the SNode are not re-compiled/structured. In thise case, we assume a
+  // single root buffer size configured from the AOT module.
+  if (ti_params.compiled_structs.empty() &&
+      (ti_params.root_buffers.size() == 1)) {
+    BufferInfo buffer = {BufferType::Root, 0};
+    input_buffers_[buffer] = ti_params.root_buffers[0];
+  } else {
+    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
+      BufferInfo buffer = {BufferType::Root, root};
+      input_buffers_[buffer] = ti_params.root_buffers[root];
+    }
   }
   const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
-  if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-    Device::AllocParams params;
-    ctx_buffer_ = ti_params.device->allocate_memory_unique(
-        {size_t(ctx_sz),
-         /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
-    ctx_buffer_host_ = ti_params.device->allocate_memory_unique(
-        {size_t(ctx_sz),
-         /*host_write=*/false, /*host_read=*/true,
-         /*export_sharing=*/false, AllocUsage::Storage});
-    input_buffers_[BufferType::Context] = ctx_buffer_.get();
-  }
+
+  ctx_buffer_size_ = ctx_sz;
 
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
   const auto &spirv_bins = ti_params.spirv_bins;
@@ -261,15 +307,15 @@ size_t CompiledTaichiKernel::num_pipelines() const {
   return pipelines_.size();
 }
 
-DeviceAllocation *CompiledTaichiKernel::ctx_buffer() const {
-  return ctx_buffer_.get();
+size_t CompiledTaichiKernel::get_ctx_buffer_size() const {
+  return ctx_buffer_size_;
 }
 
-DeviceAllocation *CompiledTaichiKernel::ctx_buffer_host() const {
-  return ctx_buffer_host_.get();
-}
-
-void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
+void CompiledTaichiKernel::generate_command_list(
+    CommandList *cmdlist,
+    DeviceAllocationGuard *ctx_buffer_host,
+    DeviceAllocationGuard *ctx_buffer,
+    const std::unordered_map<int, DeviceAllocation> &ext_arrs) const {
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
 
   for (int i = 0; i < task_attribs.size(); ++i) {
@@ -280,7 +326,28 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
                         attribs.advisory_num_threads_per_group;
     ResourceBinder *binder = vp->resource_binder();
     for (auto &bind : attribs.buffer_binds) {
-      binder->rw_buffer(0, bind.binding, *input_buffers_.at(bind.buffer));
+      if (bind.buffer.type == BufferType::ExtArr) {
+        binder->rw_buffer(0, bind.binding, ext_arrs.at(bind.buffer.root_id));
+      } else if (bind.buffer.type != BufferType::Context) {
+        DeviceAllocation *alloc = input_buffers_.at(bind.buffer);
+        if (alloc) {
+          binder->rw_buffer(0, bind.binding, *alloc);
+        }
+      } else if (ctx_buffer) {
+        binder->rw_buffer(0, bind.binding, *ctx_buffer);
+      }
+    }
+
+    if (attribs.task_type == OffloadedTaskType::listgen) {
+      for (auto &bind : attribs.buffer_binds) {
+        if (bind.buffer.type == BufferType::ListGen) {
+          // FIXME: properlly support multiple list
+          cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
+                               kListGenBufferSize,
+                               /*data=*/0);
+          cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
+        }
+      }
     }
 
     cmdlist->bind_pipeline(vp);
@@ -291,19 +358,20 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
 
   const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
   if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-    cmdlist->buffer_copy(ctx_buffer_host_->get_ptr(0), ctx_buffer_->get_ptr(0),
+    cmdlist->buffer_copy(ctx_buffer_host->get_ptr(0), ctx_buffer->get_ptr(0),
                          ctx_sz);
-    cmdlist->buffer_barrier(*ctx_buffer_host_);
+    cmdlist->buffer_barrier(*ctx_buffer_host);
   }
 }
 
 VkRuntime::VkRuntime(const Params &params)
-    : host_result_buffer_(params.host_result_buffer), device_(params.device) {
+    : device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   init_buffers();
 }
 
 VkRuntime::~VkRuntime() {
+  synchronize();
   {
     decltype(ti_kernels_) tmp;
     tmp.swap(ti_kernels_);
@@ -347,11 +415,10 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
     params.root_buffers.push_back(root_buffers_[root].get());
   }
   params.global_tmps_buffer = global_tmps_buffer_.get();
+  params.listgen_buffer = listgen_buffer_.get();
 
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
-    const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
     const auto &spirv_src = reg_params.task_spirv_source_codes[i];
-    const auto &task_name = attribs.name;
 
     // If we can reach here, we have succeeded. Otherwise
     // std::optional::value() would have killed us.
@@ -363,28 +430,122 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   return res;
 }
 
-void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
+void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
-  auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
-      &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
-      host_result_buffer_, ti_kernel->ctx_buffer(),
-      ti_kernel->ctx_buffer_host());
-  if (ctx_blitter) {
-    TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);
-    ctx_blitter->host_to_device();
+
+  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host{nullptr},
+      ctx_buffer{nullptr};
+
+  if (ti_kernel->get_ctx_buffer_size()) {
+    ctx_buffer = device_->allocate_memory_unique(
+        {ti_kernel->get_ctx_buffer_size(),
+         /*host_write=*/true, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
+    ctx_buffer_host = device_->allocate_memory_unique(
+        {ti_kernel->get_ctx_buffer_size(),
+         /*host_write=*/false, /*host_read=*/true,
+         /*export_sharing=*/false, AllocUsage::Storage});
   }
 
+  // Create context blitter
+  auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
+      &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
+      host_result_buffer_, ctx_buffer.get(), ctx_buffer_host.get());
+
+  // `any_arrays` contain both external arrays and NDArrays
+  std::unordered_map<int, DeviceAllocation> any_arrays;
+  // `ext_array_size` only holds the size of external arrays (host arrays)
+  // As buffer size information is only needed when it needs to be allocated
+  // and transferred by the host
+  std::unordered_map<int, size_t> ext_array_size;
+
+  // Prepare context buffers & arrays
+  const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
+  if (ctx_blitter) {
+    TI_ASSERT(ti_kernel->get_ctx_buffer_size());
+
+    int i = 0;
+    for (auto &arg : args) {
+      if (arg.is_array) {
+        if (host_ctx->is_device_allocation[i]) {
+          // NDArray
+          if (host_ctx->args[i]) {
+            any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+          } else {
+            any_arrays[i] = kDeviceNullAllocation;
+          }
+        } else {
+          // Compute ext arr sizes
+          size_t size = arg.stride;
+          bool has_zero_axis = false;
+
+          for (int ax = 0; ax < 8; ax++) {
+            // FIXME: how and when do we determine the size of ext arrs?
+            size_t axis_size = host_ctx->extra_args[i][ax];
+            if (axis_size) {
+              if (has_zero_axis) {
+                // e.g. shape [1, 0, 1]
+                size = 0;
+              } else {
+                size *= host_ctx->extra_args[i][ax];
+              }
+            } else {
+              has_zero_axis = true;
+            }
+          }
+
+          ext_array_size[i] = size;
+
+          // Alloc ext arr
+          if (size) {
+            DeviceAllocation extarr_buf = device_->allocate_memory(
+                {size, /*host_write=*/true, /*host_read=*/true,
+                 /*export_sharing=*/false, AllocUsage::Storage});
+            any_arrays[i] = extarr_buf;
+          } else {
+            any_arrays[i] = kDeviceNullAllocation;
+          }
+        }
+      }
+      i++;
+    }
+
+    ctx_blitter->host_to_device(any_arrays, ext_array_size);
+  }
+
+  // Create new command list if current one is nullptr
   if (!current_cmdlist_) {
+    ctx_buffers_.clear();
     current_cmdlist_ = device_->get_compute_stream()->new_command_list();
   }
 
-  ti_kernel->command_list(current_cmdlist_.get());
+  // Record commands
+  ti_kernel->generate_command_list(current_cmdlist_.get(),
+                                   ctx_buffer_host.get(), ctx_buffer.get(),
+                                   any_arrays);
 
+  // Keep context buffers used in this dispatch
+  if (ti_kernel->get_ctx_buffer_size()) {
+    ctx_buffers_.push_back(std::move(ctx_buffer_host));
+    ctx_buffers_.push_back(std::move(ctx_buffer));
+  }
+
+  // If we need to host sync, sync and remove in-flight references
   if (ctx_blitter) {
-    device_->get_compute_stream()->submit(current_cmdlist_.get());
-    ctx_blitter->device_to_host();
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
+                                    ext_array_size)) {
+      current_cmdlist_ = nullptr;
+      ctx_buffers_.clear();
+    }
+  }
 
-    current_cmdlist_ = nullptr;
+  // Dealloc external arrays
+  for (auto pair : any_arrays) {
+    if (pair.second != kDeviceNullAllocation) {
+      if (!host_ctx->is_device_allocation[pair.first]) {
+        device_->dealloc_memory(pair.second);
+      }
+    }
   }
 }
 
@@ -394,6 +555,7 @@ void VkRuntime::synchronize() {
     current_cmdlist_ = nullptr;
   }
   device_->get_compute_stream()->command_sync();
+  ctx_buffers_.clear();
 }
 
 Device *VkRuntime::get_ti_device() const {
@@ -401,10 +563,13 @@ Device *VkRuntime::get_ti_device() const {
 }
 
 void VkRuntime::init_buffers() {
-  size_t gtmp_buffer_size = 1024 * 1024;
-
   global_tmps_buffer_ = device_->allocate_memory_unique(
-      {gtmp_buffer_size,
+      {kGtmpBufferSize,
+       /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Storage});
+
+  listgen_buffer_ = device_->allocate_memory_unique(
+      {kListGenBufferSize,
        /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false, AllocUsage::Storage});
 
@@ -412,7 +577,9 @@ void VkRuntime::init_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
+  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kGtmpBufferSize,
+                       /*data=*/0);
+  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kListGenBufferSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());
 }
@@ -435,6 +602,26 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
 
 DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
+}
+
+VkRuntime::RegisterParams run_codegen(
+    Kernel *kernel,
+    Device *device,
+    const std::vector<CompiledSNodeStructs> &compiled_structs) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
+  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
+  spirv::KernelCodegen::Params params;
+  params.ti_kernel_name = taichi_kernel_name;
+  params.kernel = kernel;
+  params.compiled_structs = compiled_structs;
+  params.device = device;
+  params.enable_spv_opt =
+      kernel->program->config.external_optimization_level > 0;
+  spirv::KernelCodegen codegen(params);
+  VkRuntime::RegisterParams res;
+  codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
+  return std::move(res);
 }
 
 }  // namespace vulkan

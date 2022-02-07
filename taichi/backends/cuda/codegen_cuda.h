@@ -12,7 +12,7 @@ class CodeGenCUDA : public KernelCodeGen {
       : KernelCodeGen(kernel, ir) {
   }
 
-  virtual FunctionType codegen() override;
+  FunctionType codegen() override;
 };
 
 TLANG_NAMESPACE_END

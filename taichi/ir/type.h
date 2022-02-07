@@ -11,7 +11,7 @@ enum class PrimitiveTypeID : int {
 #undef PER_TYPE
 };
 
-class Type {
+class TI_DLL_EXPORT Type {
  public:
   virtual std::string to_string() const = 0;
 
@@ -51,7 +51,7 @@ class Type {
 };
 
 // A "Type" handle. This should be removed later.
-class DataType {
+class TI_DLL_EXPORT DataType {
  public:
   DataType();
 
@@ -107,7 +107,7 @@ class DataType {
 
 // Note that all types are immutable once created.
 
-class PrimitiveType : public Type {
+class TI_DLL_EXPORT PrimitiveType : public Type {
  public:
 #define PER_TYPE(x) static DataType x;
 #include "taichi/inc/data_type.inc.h"
@@ -121,7 +121,7 @@ class PrimitiveType : public Type {
 
   std::string to_string() const override;
 
-  virtual Type *get_compute_type() override {
+  Type *get_compute_type() override {
     return this;
   }
 
@@ -154,28 +154,6 @@ class PointerType : public Type {
   bool is_bit_pointer_{false};
 };
 
-class VectorType : public Type {
- public:
-  VectorType(int num_elements, Type *element)
-      : num_elements_(num_elements), element_(element) {
-    TI_ASSERT(num_elements_ != 1);
-  }
-
-  Type *get_element_type() const {
-    return element_;
-  }
-
-  int get_num_elements() const {
-    return num_elements_;
-  }
-
-  std::string to_string() const override;
-
- private:
-  int num_elements_{0};
-  Type *element_{nullptr};
-};
-
 class TensorType : public Type {
  public:
   TensorType(std::vector<int> shape, Type *element)
@@ -195,6 +173,10 @@ class TensorType : public Type {
 
   std::vector<int> get_shape() const {
     return shape_;
+  }
+
+  Type *get_compute_type() override {
+    return this;
   }
 
   std::string to_string() const override;
@@ -383,6 +365,24 @@ class TypedConstant {
   }
 
   TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
+  }
+
+  TypedConstant(int8 x) : dt(PrimitiveType::i8), val_i8(x) {
+  }
+
+  TypedConstant(int16 x) : dt(PrimitiveType::i16), val_i16(x) {
+  }
+
+  TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
+  }
+
+  TypedConstant(uint16 x) : dt(PrimitiveType::u16), val_u16(x) {
+  }
+
+  TypedConstant(uint32 x) : dt(PrimitiveType::u32), val_u32(x) {
+  }
+
+  TypedConstant(uint64 x) : dt(PrimitiveType::u64), val_u64(x) {
   }
 
   template <typename T>

@@ -2,6 +2,6 @@
 
 namespace taichi {
 
-TI_EXPORT void print_traceback();
+void print_traceback();
 
 }  // namespace taichi

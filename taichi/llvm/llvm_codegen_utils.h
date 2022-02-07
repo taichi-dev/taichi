@@ -46,11 +46,6 @@ std::string type_name(llvm::Type *type);
 void check_func_call_signature(llvm::Value *func,
                                std::vector<llvm::Value *> arglist);
 
-template <typename... Args>
-inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
-  return check_func_call_signature(func, {args...});
-}
-
 class LLVMModuleBuilder {
  public:
   std::unique_ptr<llvm::Module> module{nullptr};

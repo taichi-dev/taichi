@@ -11,7 +11,7 @@ class CodeGenCPU : public KernelCodeGen {
   CodeGenCPU(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
   }
 
-  virtual FunctionType codegen() override;
+  FunctionType codegen() override;
 };
 
 TLANG_NAMESPACE_END

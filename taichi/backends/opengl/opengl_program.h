@@ -45,13 +45,18 @@ class OpenglProgramImpl : public ProgramImpl {
   void synchronize() override {
   }
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override;
+
+  std::shared_ptr<Device> get_device_shared() override;
+
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
-  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_NOT_IMPLEMENTED
   }
 
-  ~OpenglProgramImpl() {
+  ~OpenglProgramImpl() override {
   }
 
  private:

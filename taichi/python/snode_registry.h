@@ -7,6 +7,7 @@ namespace taichi {
 namespace lang {
 
 class SNode;
+class Program;
 
 /**
  * A helper class to keep the root SNodes that aren't materialized yet.
@@ -25,7 +26,7 @@ class SNodeRegistry {
    *
    * @return Pointer to the created SNode.
    */
-  SNode *create_root();
+  SNode *create_root(Program *prog);
 
   /**
    * Transfers the ownership of @param snode to the caller.

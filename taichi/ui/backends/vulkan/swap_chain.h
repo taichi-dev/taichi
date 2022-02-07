@@ -5,7 +5,7 @@
 TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
-class SwapChain {
+class TI_DLL_EXPORT SwapChain {
  public:
   void init(class AppContext *app_context);
   uint32_t width();
@@ -15,6 +15,8 @@ class SwapChain {
   taichi::lang::DeviceAllocation depth_allocation();
 
   void resize(uint32_t width, uint32_t height);
+
+  void write_image(const std::string &filename);
 
   void cleanup();
 

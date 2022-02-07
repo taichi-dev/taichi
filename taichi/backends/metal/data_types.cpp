@@ -93,6 +93,8 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
       return "-";
     case UnaryOpType::sqrt:
       return "sqrt";
+    case UnaryOpType::round:
+      return "round";
     case UnaryOpType::floor:
       return "floor";
     case UnaryOpType::ceil:

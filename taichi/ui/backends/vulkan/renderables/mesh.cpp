@@ -26,6 +26,8 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
 }
 
 void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
+  Renderable::update_data(info.renderable_info);
+
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
@@ -37,8 +39,6 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
     app_context_->device().unmap(storage_buffer_);
   }
 
-  Renderable::update_data(info.renderable_info);
-
   update_ubo(info, scene);
 }
 
@@ -46,6 +46,8 @@ void Mesh::init_mesh(AppContext *app_context,
                      int vertices_count,
                      int indices_count) {
   RenderableConfig config = {
+      vertices_count,
+      indices_count,
       vertices_count,
       indices_count,
       sizeof(UniformBufferObject),

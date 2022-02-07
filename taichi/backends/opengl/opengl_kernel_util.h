@@ -13,7 +13,13 @@ class SNode;
 
 namespace opengl {
 
-constexpr int taichi_opengl_earg_base = taichi_max_num_args * sizeof(uint64_t);
+constexpr int taichi_opengl_extra_args_base =
+    taichi_max_num_args * sizeof(uint64_t);
+constexpr int taichi_opengl_ret_base =
+    taichi_opengl_extra_args_base +
+    taichi_max_num_args * taichi_max_num_indices * sizeof(int);
+constexpr int taichi_opengl_external_arr_base =
+    taichi_opengl_ret_base + sizeof(uint64_t);
 
 struct UsedFeature {
   // types:
@@ -26,11 +32,10 @@ struct UsedFeature {
   bool float64{false};
 
   // buffers:
+  bool buf_data{false};
   bool buf_args{false};
-  bool buf_earg{false};
-  bool buf_extr{false};
   bool buf_gtmp{false};
-  bool buf_retr{false};
+  std::unordered_map<int, int> arr_arg_to_bind_idx;
 
   // utilties:
   bool fast_pow{false};
@@ -48,9 +53,9 @@ enum class GLBufId {
   Root = 0,
   Gtmp = 1,
   Args = 2,
-  Retr = 3,
-  Extr = 4,
-  Runtime = 5,
+  Runtime = 3,
+  // This is indeed the beginning id for |Arr|s so |Arr| MUST be the last item.
+  Arr = 4,
 };
 
 struct IOV {

@@ -1,4 +1,5 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
 
@@ -103,7 +104,7 @@ def _test_overflow(dt, n):
     assert a[None] == 2**n // 3
     assert b[None] == 2**n // 3
 
-    if ti.core.is_signed(dt):
+    if ti.types.is_signed(dt):
         assert c[None] == 2**n // 3 * 2 - (2**n)  # overflows
     else:
         assert c[None] == 2**n // 3 * 2  # does not overflow
@@ -138,7 +139,7 @@ def test_overflow64(dt, n):
 @ti.test(require=ti.extension.data64)
 def test_uint_max(dt, val):
     # https://github.com/taichi-dev/taichi/issues/2060
-    ti.get_runtime().default_ip = dt
+    impl.get_runtime().default_ip = dt
     N = 16
     f = ti.field(dt, shape=N)
 

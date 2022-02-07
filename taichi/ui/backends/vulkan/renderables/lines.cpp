@@ -25,6 +25,8 @@ void Lines::init_lines(AppContext *app_context,
   RenderableConfig config = {
       vertices_count,
       indices_count,
+      vertices_count,
+      indices_count,
       sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/Lines_vk_vert.spv",

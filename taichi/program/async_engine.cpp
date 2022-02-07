@@ -19,17 +19,17 @@ TLANG_NAMESPACE_BEGIN
 
 ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
     : name_(name),
-      num_threads(num_threads),
-      status(ExecutorStatus::uninitialized),
-      running_threads(0) {
+      num_threads_(num_threads),
+      status_(ExecutorStatus::uninitialized),
+      running_threads_(0) {
   {
-    auto _ = std::lock_guard<std::mutex>(mut);
+    auto _ = std::lock_guard<std::mutex>(mut_);
 
     for (int i = 0; i < num_threads; i++) {
-      threads.emplace_back([this]() { this->worker_loop(); });
+      threads_.emplace_back([this]() { this->worker_loop(); });
     }
 
-    status = ExecutorStatus::initialized;
+    status_ = ExecutorStatus::initialized;
   }
   init_cv_.notify_all();
 }
@@ -39,47 +39,47 @@ ParallelExecutor::~ParallelExecutor() {
   // new tasks from being enqueued during shut down.
   flush();
   {
-    auto _ = std::lock_guard<std::mutex>(mut);
-    status = ExecutorStatus::finalized;
+    auto _ = std::lock_guard<std::mutex>(mut_);
+    status_ = ExecutorStatus::finalized;
   }
   // Signal the workers that they need to shutdown.
   worker_cv_.notify_all();
-  for (auto &th : threads) {
+  for (auto &th : threads_) {
     th.join();
   }
 }
 
 void ParallelExecutor::enqueue(const TaskType &func) {
   {
-    std::lock_guard<std::mutex> _(mut);
-    task_queue.push_back(func);
+    std::lock_guard<std::mutex> _(mut_);
+    task_queue_.push_back(func);
   }
   worker_cv_.notify_all();
 }
 
 void ParallelExecutor::flush() {
-  std::unique_lock<std::mutex> lock(mut);
+  std::unique_lock<std::mutex> lock(mut_);
   while (!flush_cv_cond()) {
     flush_cv_.wait(lock);
   }
 }
 
 bool ParallelExecutor::flush_cv_cond() {
-  return (task_queue.empty() && running_threads == 0);
+  return (task_queue_.empty() && running_threads_ == 0);
 }
 
 void ParallelExecutor::worker_loop() {
   TI_DEBUG("Starting worker thread.");
-  auto thread_id = thread_counter++;
+  auto thread_id = thread_counter_++;
 
   std::string thread_name = name_;
-  if (num_threads != 1)
+  if (num_threads_ != 1)
     thread_name += fmt::format("_{}", thread_id);
   Timeline::get_this_thread_instance().set_name(thread_name);
 
   {
-    std::unique_lock<std::mutex> lock(mut);
-    while (status == ExecutorStatus::uninitialized) {
+    std::unique_lock<std::mutex> lock(mut_);
+    while (status_ == ExecutorStatus::uninitialized) {
       init_cv_.wait(lock);
     }
   }
@@ -89,25 +89,25 @@ void ParallelExecutor::worker_loop() {
   while (!done) {
     bool notify_flush_cv = false;
     {
-      std::unique_lock<std::mutex> lock(mut);
-      while (task_queue.empty() && status == ExecutorStatus::initialized) {
+      std::unique_lock<std::mutex> lock(mut_);
+      while (task_queue_.empty() && status_ == ExecutorStatus::initialized) {
         worker_cv_.wait(lock);
       }
       // So long as |task_queue| is not empty, we keep running.
-      if (!task_queue.empty()) {
-        auto task = task_queue.front();
-        running_threads++;
-        task_queue.pop_front();
+      if (!task_queue_.empty()) {
+        auto task = task_queue_.front();
+        running_threads_++;
+        task_queue_.pop_front();
         lock.unlock();
 
         // Run the task
         task();
 
         lock.lock();
-        running_threads--;
+        running_threads_--;
       }
       notify_flush_cv = flush_cv_cond();
-      if (status == ExecutorStatus::finalized && task_queue.empty()) {
+      if (status_ == ExecutorStatus::finalized && task_queue_.empty()) {
         done = true;
       }
     }
@@ -196,7 +196,7 @@ AsyncEngine::AsyncEngine(const CompileConfig *const config,
   ir_bank_.set_sfg(sfg.get());
 }
 
-void AsyncEngine::launch(Kernel *kernel, Context &context) {
+void AsyncEngine::launch(Kernel *kernel, RuntimeContext &context) {
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }

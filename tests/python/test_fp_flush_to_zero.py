@@ -8,9 +8,7 @@ def test_ftz_f32():
     @ti.kernel
     def foo():
         a[0] = 1e-45
-        x = 1e-10
-        y = 1e-35
-        a[1] = x * y
+        a[1] = 1e-10 * 1e-35
 
     foo()
     assert a[0] == 0

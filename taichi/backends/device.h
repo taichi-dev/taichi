@@ -1,6 +1,7 @@
 #pragma once
 #include "taichi/lang_util.h"
 
+#include "taichi/jit/jit_module.h"
 #include "taichi/program/compile_config.h"
 #include <string>
 #include <vector>
@@ -26,6 +27,9 @@ enum class DeviceCapability : uint32_t {
   spirv_has_float16,
   spirv_has_float64,
   spirv_has_atomic_i64,
+  spirv_has_atomic_float16,  // load, store, exchange
+  spirv_has_atomic_float16_add,
+  spirv_has_atomic_float16_minmax,
   spirv_has_atomic_float,  // load, store, exchange
   spirv_has_atomic_float_add,
   spirv_has_atomic_float_minmax,
@@ -33,11 +37,15 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_add,
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
+  spirv_has_ptr_cast,
+  // Graphics Caps,
+  wide_lines
 };
 
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
+struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
@@ -219,7 +227,8 @@ enum class ImageLayout {
   depth_attachment,
   depth_attachment_read,
   transfer_dst,
-  transfer_src
+  transfer_src,
+  present_src
 };
 
 struct BufferImageCopyParams {
@@ -238,6 +247,12 @@ struct BufferImageCopyParams {
   } image_extent;
   uint32_t image_base_layer{0};
   uint32_t image_layer_count{1};
+};
+
+struct ImageCopyParams {
+  uint32_t width{1};
+  uint32_t height{1};
+  uint32_t depth{1};
 };
 
 class CommandList {
@@ -303,6 +318,20 @@ class CommandList {
                                const BufferImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
+  virtual void copy_image(DeviceAllocation dst_img,
+                          DeviceAllocation src_img,
+                          ImageLayout dst_img_layout,
+                          ImageLayout src_img_layout,
+                          const ImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void blit_image(DeviceAllocation dst_img,
+                          DeviceAllocation src_img,
+                          ImageLayout dst_img_layout,
+                          ImageLayout src_img_layout,
+                          const ImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 struct PipelineSourceDesc {
@@ -341,15 +370,17 @@ class Device {
  public:
   virtual ~Device(){};
 
-  virtual uint32_t get_cap(DeviceCapability capability_id) const {
+  uint32_t get_cap(DeviceCapability capability_id) const {
     if (caps_.find(capability_id) == caps_.end())
       return 0;
     return caps_.at(capability_id);
   }
 
-  virtual void set_cap(DeviceCapability capability_id, uint32_t val) {
+  void set_cap(DeviceCapability capability_id, uint32_t val) {
     caps_[capability_id] = val;
   }
+
+  void print_all_cap() const;
 
   struct AllocParams {
     uint64_t size{0};
@@ -359,8 +390,24 @@ class Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
+  struct LlvmRuntimeAllocParams : AllocParams {
+    bool use_cached{true};
+    JITModule *runtime_jit{nullptr};
+    LLVMRuntime *runtime{nullptr};
+    uint64 *result_buffer{nullptr};
+  };
+
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
+
+  virtual DeviceAllocation allocate_memory_runtime(
+      const LlvmRuntimeAllocParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
+
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -370,6 +417,10 @@ class Device {
       const AllocParams &params) {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
+  }
+
+  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
   }
 
   // Mapping can fail and will return nullptr
@@ -419,8 +470,12 @@ class Surface {
   virtual DeviceAllocation get_target_image() = 0;
   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
+  virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
   virtual void resize(uint32_t width, uint32_t height) = 0;
+  virtual DeviceAllocation get_image_data() {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 struct VertexInputBinding {
@@ -444,6 +499,8 @@ struct SurfaceConfig {
   bool vsync{false};
   bool adaptive{true};
   void *window_handle{nullptr};
+  uint32_t width{1};
+  uint32_t height{1};
 };
 
 struct ImageParams {

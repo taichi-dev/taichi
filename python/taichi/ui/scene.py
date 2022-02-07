@@ -1,14 +1,11 @@
-import pathlib
-
-from taichi.core import ti_core as _ti_core
-from taichi.lang.impl import default_cfg, field
+from taichi._lib import core as _ti_core
+from taichi.lang.impl import field
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang.ops import atomic_add, get_addr
-from taichi.type.annotations import ext_arr, template
-from taichi.type.primitive_types import f32
+from taichi.lang.ops import atomic_add
+from taichi.types.annotations import template
+from taichi.types.primitive_types import f32
 
-from .camera import Camera
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
                              copy_vertices_to_vbo, get_vbo_field)
 from .utils import get_field_info
@@ -23,8 +20,7 @@ def get_normals_field(vertices):
         normal_weights = field(f32, shape=(N, ))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
-    else:
-        return normals_field_cache[vertices]
+    return normals_field_cache[vertices]
 
 
 @kernel
@@ -79,9 +75,6 @@ def gen_normals(vertices, indices):
 class Scene(_ti_core.PyScene):
     """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
     """
-    def __init__(self):
-        super().__init__()
-
     def set_camera(self, camera):
         super().set_camera(camera.ptr)
 
@@ -137,8 +130,5 @@ class Scene(_ti_core.PyScene):
         vbo_info = get_field_info(vbo)
         super().particles(vbo_info, has_per_vertex_color, color, radius)
 
-    def point_light(self, pos, color):
+    def point_light(self, pos, color):  # pylint: disable=W0235
         super().point_light(pos, color)
-
-    def ambient_light(self, color):
-        super().ambient_light(color)

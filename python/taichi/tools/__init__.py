@@ -1,5 +1,16 @@
+from .async_utils import *
+from .image import imdisplay, imread, imresize, imshow, imwrite
 from .np2ply import PLYWriter
-from .patterns import taichi_logo
+# Don't import taichi_logo here which will cause circular import.
+# If you need it, just import from taichi.tools.patterns
 from .video import VideoManager
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [
+    'PLYWriter',
+    'VideoManager',
+    'imdisplay',
+    'imread',
+    'imresize',
+    'imshow',
+    'imwrite',
+]

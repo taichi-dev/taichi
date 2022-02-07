@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 
@@ -112,8 +113,7 @@ def test_local_atomics():
         assert val[i] == i + 45
 
 
-@ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(UnboundLocalError)
+@ti.test(arch=get_host_arch_list())
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -121,11 +121,11 @@ def test_loop_var_life():
             pass
         print(i)
 
-    test()
+    with pytest.raises(Exception):
+        test()
 
 
-@ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(UnboundLocalError)
+@ti.test(arch=get_host_arch_list())
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():
@@ -133,7 +133,8 @@ def test_loop_var_life_double_iters():
             pass
         print(i)
 
-    test()
+    with pytest.raises(Exception):
+        test()
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])
@@ -153,7 +154,7 @@ def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
         y[None] = ti_zero(x[None])
 
     for a in [-1, -2.3, -1, -0.3, 0, 1, 1.9, 2, 3]:
-        if ti.core.is_integral(dtype):
+        if ti.types.is_integral(dtype):
             a = int(a)
         x.fill(a)
         func()

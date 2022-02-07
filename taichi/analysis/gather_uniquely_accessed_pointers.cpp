@@ -118,6 +118,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   // one GlobalPtrStmt (or by definitely-same-address GlobalPtrStmts),
   // and that GlobalPtrStmt's address is loop-unique.
   std::unordered_map<const SNode *, GlobalPtrStmt *> accessed_pointer_;
+  std::unordered_map<const SNode *, GlobalPtrStmt *> rel_access_pointer_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -128,6 +129,32 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    // mesh-for loop unique
+    if (stmt->indices.size() == 1 &&
+        stmt->indices[0]->is<MeshIndexConversionStmt>()) {
+      auto idx = stmt->indices[0]->as<MeshIndexConversionStmt>()->idx;
+      while (idx->is<MeshIndexConversionStmt>()) {  // special case: l2g +
+                                                    // g2r
+        idx = idx->as<MeshIndexConversionStmt>()->idx;
+      }
+      if (idx->is<LoopIndexStmt>() &&
+          idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
+        for (auto &snode : stmt->snodes.data) {
+          if (rel_access_pointer_.find(snode) ==
+              rel_access_pointer_.end()) {  // not accessed by neibhours yet
+            accessed_pointer_[snode] = stmt;
+          } else {  // accessed by neibhours, so it's not unique
+            accessed_pointer_[snode] = nullptr;
+          }
+        }
+      } else {  // to-end access
+        for (auto &snode : stmt->snodes.data) {
+          rel_access_pointer_[snode] = stmt;
+          accessed_pointer_[snode] =
+              nullptr;  // from-end access should not be unique
+        }
+      }
+    }
     for (auto &snode : stmt->snodes.data) {
       auto accessed_ptr = accessed_pointer_.find(snode);
       if (accessed_ptr == accessed_pointer_.end()) {
@@ -149,7 +176,8 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
     UniquelyAccessedSNodeSearcher searcher;
-    if (offload->task_type == OffloadedTaskType::range_for) {
+    if (offload->task_type == OffloadedTaskType::range_for ||
+        offload->task_type == OffloadedTaskType::mesh_for) {
       searcher.loop_unique_stmt_searcher_.num_different_loop_indices = 1;
     } else if (offload->task_type == OffloadedTaskType::struct_for) {
       searcher.loop_unique_stmt_searcher_.num_different_loop_indices =
@@ -180,6 +208,7 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
       auto &loop_unique_bit_struct = result_[stmt];
       auto loop_unique_ptr =
@@ -187,6 +216,10 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
       for (auto &it : loop_unique_ptr) {
         auto *snode = it.first;
         auto *ptr1 = it.second;
+        if (ptr1 != nullptr && ptr1->indices.size() > 0 &&
+            ptr1->indices[0]->is<MeshIndexConversionStmt>()) {
+          continue;
+        }
         if (snode->is_bit_level) {
           // Find the nearest non-bit-level ancestor
           while (snode->is_bit_level) {

@@ -1,6 +1,8 @@
 #include "renderer.h"
 #include "taichi/ui/utils/utils.h"
 
+using taichi::lang::Program;
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -8,8 +10,10 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Renderer::init(GLFWwindow *window, const AppConfig &config) {
-  app_context_.init(window, config);
+void Renderer::init(Program *prog,
+                    TaichiWindow *window,
+                    const AppConfig &config) {
+  app_context_.init(prog, window, config);
   swap_chain_.init(&app_context_);
 }
 
@@ -80,12 +84,23 @@ void Renderer::scene(Scene *scene) {
   }
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
-  for (int i = 0; i < scene->mesh_infos_.size(); ++i) {
-    mesh(scene->mesh_infos_[i], scene);
+
+  int object_count = scene->mesh_infos_.size() + scene->particles_infos_.size();
+  int mesh_id = 0;
+  int particles_id = 0;
+  for (int i = 0; i < object_count; ++i) {
+    if (mesh_id < scene->mesh_infos_.size() &&
+        scene->mesh_infos_[mesh_id].object_id == i) {
+      mesh(scene->mesh_infos_[mesh_id], scene);
+      ++mesh_id;
+    }
+    if (particles_id < scene->particles_infos_.size() &&
+        scene->particles_infos_[particles_id].object_id == i) {
+      particles(scene->particles_infos_[particles_id], scene);
+      ++particles_id;
+    }
   }
-  for (int i = 0; i < scene->particles_infos_.size(); ++i) {
-    particles(scene->particles_infos_[i], scene);
-  }
+  scene->next_object_id_ = 0;
   scene->mesh_infos_.clear();
   scene->particles_infos_.clear();
   scene->point_lights_.clear();

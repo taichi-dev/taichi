@@ -142,3 +142,16 @@ def test_print_string_format():
 
     func(233.3)
     ti.sync()
+
+
+@ti.test(arch=ti.cpu)
+def test_print_fstring():
+    def foo1(x):
+        return x + 1
+
+    @ti.kernel
+    def func(i: ti.i32, f: ti.f32):
+        print(f'qwe {foo1(1)} {foo1(2) * 2 - 1} {i} {f} {4} {True} {1.23}')
+
+    func(123, 4.56)
+    ti.sync()

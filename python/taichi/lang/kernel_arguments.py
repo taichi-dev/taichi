@@ -1,11 +1,11 @@
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
+from taichi.lang.matrix import Matrix
 from taichi.lang.util import cook_dtype
-from taichi.linalg import SparseMatrixBuilder
-from taichi.type.primitive_types import u64
+from taichi.types.primitive_types import u64
 
 
 class SparseMatrixEntry:
@@ -24,7 +24,7 @@ class SparseMatrixEntry:
                                            self.j,
                                            -taichi.lang.impl.ti_float(value))
         else:
-            assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
+            assert False, "Only operations '+=' and '-=' are supported on sparse matrices."
 
 
 class SparseMatrixProxy:
@@ -41,6 +41,12 @@ def decl_scalar_arg(dtype):
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype))
 
 
+def decl_matrix_arg(matrixtype):
+    return Matrix(
+        [[decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.m)]
+         for _ in range(matrixtype.n)])
+
+
 def decl_sparse_matrix():
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
@@ -50,8 +56,8 @@ def decl_sparse_matrix():
 
 def decl_any_arr_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
-    arg_id = _ti_core.decl_arg(dtype, True)
     element_dim = len(element_shape)
+    arg_id = _ti_core.decl_arr_arg(dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(
@@ -59,6 +65,6 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
         element_shape, layout)
 
 
-def decl_scalar_ret(dtype):
+def decl_ret(dtype):
     dtype = cook_dtype(dtype)
     return _ti_core.decl_ret(dtype)

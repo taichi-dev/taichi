@@ -51,38 +51,25 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         sys.stdout.write(str(sys.version_info[1]))"
         OUTPUT_VARIABLE PYTHON_MINOR_VERSION)
 
+
 if (WIN32)
-  link_directories(${PYTHON_LIBRARY_DIR}/../../libs)
-  set(PYTHON_LIBRARIES ${PYTHON_LIBRARY_DIR}/../../libs/python3.lib)
-  set(PYTHON_LIBRARIES ${PYTHON_LIBRARY_DIR}/../../libs/python3${PYTHON_MINOR_VERSION}.lib)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+          "import sys;sys.stdout.write(sys.base_prefix.replace('\\\\', '/'))"
+          OUTPUT_VARIABLE PYTHON_BASE_PREFIX)
+  link_directories(${PYTHON_BASE_PREFIX}/libs)
+  set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3.lib)
+  set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3${PYTHON_MINOR_VERSION}.lib)
 else()
   find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}
           NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)
   set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 endif()
 
-# Creating python enters
-file(MAKE_DIRECTORY bin)
-file(WRITE ${CMAKE_SOURCE_DIR}/bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\nexit(taichi.main())")
-execute_process(COMMAND chmod +x ${CMAKE_SOURCE_DIR}/bin/ti)
-execute_process(COMMAND cp ${CMAKE_SOURCE_DIR}/bin/ti ${CMAKE_SOURCE_DIR}/bin/taichi)
-
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 message("    version: ${PYTHON_VERSION}")
 message("    include: ${PYTHON_INCLUDE_DIRS}")
 message("    library: ${PYTHON_LIBRARIES}")
-
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import git; from git import Repo; import sys;\
-        sys.stdout.write(git.__version__)"
-	OUTPUT_VARIABLE GITPYTHON_VERSION
-	RESULT_VARIABLE GITPYTHON_IMPORT_RET)
-if (NOT GITPYTHON_IMPORT_RET)
-    message("    gitpython version: ${GITPYTHON_VERSION}")
-else ()
-    message(FATAL_ERROR "Cannot import git. Please install. ([sudo] pip3 install --user gitpython)")
-endif ()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import numpy.distutils, sys;\

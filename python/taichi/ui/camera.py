@@ -3,7 +3,6 @@ from math import pi
 from taichi.lang.matrix import Vector
 
 from .utils import euler_to_vec, vec_to_euler
-from .window import Window
 
 
 class Camera:
@@ -51,7 +50,7 @@ class Camera:
     def z_near(self, z_near):
         self.ptr.z_near(z_near)
 
-    def z_near(self, z_far):
+    def z_far(self, z_far):
         self.ptr.z_far(z_far)
 
     # move the camera according to user inputs, FPS game style.

@@ -73,6 +73,9 @@ class Expr {
     return cast<T>() != nullptr;
   }
 
+  // FIXME: We really should disable it completely,
+  // but we can't. This is because the usage of
+  // std::variant<Expr, std::string> in FrontendPrintStmt.
   Expr &operator=(const Expr &o);
 
   Expr operator[](const ExprGroup &indices) const;
@@ -80,10 +83,6 @@ class Expr {
   std::string serialize() const;
   void serialize(std::ostream &ss) const;
 
-  void operator+=(const Expr &o);
-  void operator-=(const Expr &o);
-  void operator*=(const Expr &o);
-  void operator/=(const Expr &o);
   Expr operator!();
 
   Expr eval() const;
@@ -107,6 +106,10 @@ class Expr {
   void set_attribute(const std::string &key, const std::string &value);
 
   std::string get_attribute(const std::string &key) const;
+
+  DataType get_ret_type() const;
+
+  void type_check();
 };
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
@@ -129,11 +132,5 @@ template <typename T>
 Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
-
-Expr load_if_ptr(const Expr &ptr);
-
-// Begin: legacy frontend functions
-Expr Var(const Expr &x);
-// End: legacy frontend functions
 
 TLANG_NAMESPACE_END

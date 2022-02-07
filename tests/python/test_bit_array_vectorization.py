@@ -29,7 +29,7 @@ def test_vectorized_struct_for():
 
     @ti.kernel
     def assign_vectorized():
-        ti.bit_vectorize(32)
+        ti._lib.core.bit_vectorize(32)
         for i, j in x:
             y[i, j] = x[i, j]
 
@@ -74,7 +74,7 @@ def test_offset_load():
 
     @ti.kernel
     def assign_vectorized(dx: ti.template(), dy: ti.template()):
-        ti.bit_vectorize(32)
+        ti._lib.core.bit_vectorize(32)
         for i, j in x:
             y[i, j] = x[i + dx, j + dy]
             z[i, j] = x[i + dx, j + dy]
@@ -134,7 +134,7 @@ def test_evolve():
 
     @ti.kernel
     def evolve_vectorized(x: ti.template(), y: ti.template()):
-        ti.bit_vectorize(32)
+        ti._lib.core.bit_vectorize(32)
         for i, j in x:
             num_active_neighbors = 0
             num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)
@@ -145,8 +145,8 @@ def test_evolve():
             num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
-            y[i, j] = (num_active_neighbors == 3) or (num_active_neighbors == 2
-                                                      and x[i, j] == 1)
+            y[i, j] = (num_active_neighbors == 3) | \
+                      ((num_active_neighbors == 2) & (x[i, j] == 1))
 
     @ti.kernel
     def evolve_naive(x: ti.template(), y: ti.template()):

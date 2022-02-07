@@ -20,7 +20,11 @@ std::string data_type_name(DataType t) {
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
+  if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return "%hd";
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return "%hu";
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return "%u";
@@ -36,6 +40,11 @@ std::string data_type_format(DataType dt) {
     return "%.12f";
   } else if (dt->is<CustomIntType>()) {
     return "%d";
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // f16 (and f32) is converted to f64 before printing, see
+    // CodeGenLLVM::visit(PrintStmt *stmt) and
+    // CodeGenLLVMCUDA::visit(PrintStmt *stmt) for more details.
+    return "%f";
   } else {
     TI_NOT_IMPLEMENTED
   }

@@ -1,8 +1,9 @@
 import numpy as np
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
+from taichi.lang.field import Field
 from taichi.linalg import SparseMatrix
-from taichi.type.primitive_types import f32
+from taichi.types.primitive_types import f32
 
 
 class SparseSolver:
@@ -20,7 +21,8 @@ class SparseSolver:
         if solver_type in solver_type_list and ordering in solver_ordering:
             taichi_arch = taichi.lang.impl.get_runtime().prog.config.arch
             assert taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64, "SparseSolver only supports CPU for now."
-            self.solver = _ti_core.make_sparse_solver(solver_type, ordering)
+            self.solver = _ti_core.make_sparse_solver(dtype, solver_type,
+                                                      ordering)
         else:
             assert False, f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
 
@@ -69,12 +71,11 @@ class SparseSolver:
         Returns:
             numpy.array: The solution of linear systems.
         """
-        if isinstance(b, taichi.lang.Field):
+        if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
-        elif isinstance(b, np.ndarray):
+        if isinstance(b, np.ndarray):
             return self.solver.solve(b)
-        else:
-            assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
+        assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
 
     def info(self):
         """Check if the linear systems are solved successfully.

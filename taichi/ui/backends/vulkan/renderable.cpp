@@ -1,4 +1,5 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
+#include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
 
 TI_UI_NAMESPACE_BEGIN
@@ -38,8 +39,12 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
-  Program &program = get_current_program();
-  program.synchronize();
+  // We might not have a current program if GGUI is used in external apps to
+  // load AOT modules
+  Program *prog = app_context_->prog();
+  if (prog) {
+    prog->synchronize();
+  }
 
   int num_vertices = info.vbo.shape[0];
   int num_indices;
@@ -54,15 +59,25 @@ void Renderable::update_data(const RenderableInfo &info) {
   } else {
     num_indices = 1;
   }
-  if (num_vertices > config_.vertices_count ||
-      num_indices > config_.indices_count) {
+
+  config_.vertices_count = num_vertices;
+  config_.indices_count = num_indices;
+
+  if (num_vertices > config_.max_vertices_count ||
+      num_indices > config_.max_indices_count) {
     free_buffers();
-    config_.vertices_count = num_vertices;
-    config_.indices_count = num_indices;
+    config_.max_vertices_count = num_vertices;
+    config_.max_indices_count = num_indices;
     init_buffers();
   }
 
-  DevicePtr vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
+  // If there is no current program, VBO information should be provided directly
+  // instead of accessing through the current SNode
+  DevicePtr vbo_dev_ptr = info.vbo.dev_alloc.get_ptr();
+  if (current_program) {
+    vbo_dev_ptr = get_device_ptr(prog, info.vbo.snode);
+  }
+
   uint64_t vbo_size = sizeof(Vertex) * num_vertices;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
@@ -79,7 +94,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   if (info.indices.valid) {
     indexed_ = true;
-    DevicePtr ibo_dev_ptr = get_device_ptr(&program, info.indices.snode);
+    DevicePtr ibo_dev_ptr = get_device_ptr(prog, info.indices.snode);
     uint64_t ibo_size = num_indices * sizeof(int);
     if (memcpy_cap == Device::MemcpyCapability::Direct) {
       Device::memcpy_direct(index_buffer_.get_ptr(), ibo_dev_ptr, ibo_size);
@@ -131,16 +146,17 @@ void Renderable::create_graphics_pipeline() {
       {0, 0, BufferFormat::rgb32f, offsetof(Vertex, pos)},
       {1, 0, BufferFormat::rgb32f, offsetof(Vertex, normal)},
       {2, 0, BufferFormat::rg32f, offsetof(Vertex, texCoord)},
-      {3, 0, BufferFormat::rgb32f, offsetof(Vertex, color)}};
+      {3, 0, BufferFormat::rgba32f, offsetof(Vertex, color)}};
 
   pipeline_ = app_context_->device().create_raster_pipeline(
       source, raster_params, vertex_inputs, vertex_attribs);
 }
 
 void Renderable::create_vertex_buffer() {
-  size_t buffer_size = sizeof(Vertex) * config_.vertices_count;
+  size_t buffer_size = sizeof(Vertex) * config_.max_vertices_count;
 
-  Device::AllocParams vb_params{buffer_size, false, false, true,
+  Device::AllocParams vb_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
@@ -151,9 +167,10 @@ void Renderable::create_vertex_buffer() {
 }
 
 void Renderable::create_index_buffer() {
-  size_t buffer_size = sizeof(int) * config_.indices_count;
+  size_t buffer_size = sizeof(int) * config_.max_indices_count;
 
-  Device::AllocParams ib_params{buffer_size, false, false, true,
+  Device::AllocParams ib_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 

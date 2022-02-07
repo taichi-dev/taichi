@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import taichi as ti
 
@@ -26,7 +25,7 @@ def test_remove_clear_list_from_fused_serial():
     init_xy()
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     @ti.kernel
@@ -86,7 +85,7 @@ def test_sfg_dead_store_elimination():
     x.from_numpy(xnp)
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     for _ in range(5):
@@ -102,7 +101,7 @@ def test_sfg_dead_store_elimination():
 
     x_grad = x.grad.to_numpy()
     for i in range(n):
-        assert ti.approx(x_grad[i]) == 2.0 * i
+        assert ti._testing.approx(x_grad[i]) == 2.0 * i
 
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)
@@ -121,4 +120,4 @@ def test_global_tmp_value_state():
 
     x.from_numpy(np.arange(0, n, dtype=np.float32))
     mean = compute_mean_of_boundary_edges()
-    assert ti.approx(mean) == 33
+    assert ti._testing.approx(mean) == 33

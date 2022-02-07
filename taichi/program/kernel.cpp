@@ -10,7 +10,10 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/statistics.h"
+
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,38 +22,15 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               bool grad)
-    : grad(grad), lowered_(false) {
-  this->program = &program;
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-  is_accessor = false;
-  is_evaluator = false;
-  compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>();
-  ir = context->get_root();
-  ir_is_ast_ = true;
+               bool grad) {
+  this->init(program, func, primal_name, grad);
+}
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-    ir->as<Block>()->kernel = this;
-  }
-
-  arch = program.config.arch;
-
-  if (!grad) {
-    name = primal_name;
-  } else {
-    name = primal_name + "_grad";
-  }
-
-  if (!program.config.lazy_compilation)
-    compile();
+Kernel::Kernel(Program &program,
+               const std::function<void(Kernel *)> &func,
+               const std::string &primal_name,
+               bool grad) {
+  this->init(program, std::bind(func, this), primal_name, grad);
 }
 
 Kernel::Kernel(Program &program,
@@ -104,7 +84,7 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, this, grad,
         /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -112,8 +92,7 @@ void Kernel::lower(bool to_executable) {
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*vectorize=*/arch_is_cpu(arch), grad,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
                                 /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
@@ -154,18 +133,19 @@ Kernel::LaunchContextBuilder Kernel::make_launch_context() {
   return LaunchContextBuilder(this);
 }
 
-Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, Context *ctx)
+Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
+                                                   RuntimeContext *ctx)
     : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
 }
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
-      owned_ctx_(std::make_unique<Context>()),
+      owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -195,13 +175,16 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
     ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(arg_id, (uint64)d);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    ctx_->set_arg(arg_id, (float32)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
 void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -227,10 +210,6 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(arg_id, (uint64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    ctx_->set_arg(arg_id, (float32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    ctx_->set_arg(arg_id, (float64)d);
   } else {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
@@ -241,11 +220,13 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_external_array(int arg_id,
-                                                          uint64 ptr,
-                                                          uint64 size) {
+void Kernel::LaunchContextBuilder::set_arg_external_array(
+    int arg_id,
+    uintptr_t ptr,
+    uint64 size,
+    bool is_device_allocation) {
   TI_ASSERT_INFO(
-      kernel_->args[arg_id].is_external_array,
+      kernel_->args[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
@@ -256,10 +237,36 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(int arg_id,
 
   kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
+  ctx_->set_device_allocation(arg_id, is_device_allocation);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
+    int arg_id,
+    uintptr_t ptr,
+    uint64 size,
+    const std::vector<int64> &shape) {
+  this->set_arg_external_array(arg_id, ptr, size, false);
+  TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, shape[i]);
+  }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
+                                                   const Ndarray &arr) {
+  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
+  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
+  this->set_arg_external_array(arg_id, ptr, arr_size, true);
+  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < arr.shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
+  }
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -272,10 +279,12 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   ctx_->set_arg<uint64>(arg_id, d);
 }
 
-Context &Kernel::LaunchContextBuilder::get_context() {
+RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
+#ifdef TI_WITH_LLVM
   if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
+#endif
   return *ctx_;
 }
 
@@ -301,6 +310,9 @@ float64 Kernel::get_ret_float(int i) {
     return (float64)program->fetch_result<uint32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return (float64)program->fetch_result<uint64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    return (float64)program->fetch_result<float32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -357,6 +369,9 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   } else if (task_type == OffloadedStmt::TaskType::struct_for) {
     stat.add("launched_tasks_compute", 1.0);
     stat.add("launched_tasks_struct_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::mesh_for) {
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_mesh_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::gc) {
     stat.add("launched_tasks_garbage_collect", 1.0);
   }
@@ -364,6 +379,46 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
 
 std::string Kernel::get_name() const {
   return name;
+}
+
+void Kernel::init(Program &program,
+                  const std::function<void()> &func,
+                  const std::string &primal_name,
+                  bool grad) {
+  this->grad = grad;
+  this->lowered_ = false;
+  this->program = &program;
+#ifdef TI_WITH_LLVM
+  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
+    llvm_program_impl->maybe_initialize_cuda_llvm_context();
+  }
+#endif
+  is_accessor = false;
+  is_evaluator = false;
+  compiled_ = nullptr;
+  context = std::make_unique<FrontendContext>();
+  ir = context->get_root();
+  ir_is_ast_ = true;
+
+  this->arch = program.config.arch;
+
+  if (!grad) {
+    this->name = primal_name;
+  } else {
+    this->name = primal_name + "_grad";
+  }
+
+  {
+    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
+    // concurrently, we need to lock this block of code together with
+    // taichi::lang::context with a mutex.
+    CurrentCallableGuard _(this->program, this);
+    func();
+    ir->as<Block>()->kernel = this;
+  }
+
+  if (!program.config.lazy_compilation)
+    compile();
 }
 
 // static

@@ -17,8 +17,6 @@ class TypeFactory {
 
   PrimitiveType *get_primitive_int_type(int bits, bool is_signed = true);
 
-  Type *get_vector_type(int num_elements, Type *element);
-
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
@@ -60,11 +58,11 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>
-      custom_int_types;
+      custom_int_types_;
 
   // TODO: use unordered map
   std::map<std::tuple<Type *, Type *, Type *, float64>, std::unique_ptr<Type>>
-      custom_float_types;
+      custom_float_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

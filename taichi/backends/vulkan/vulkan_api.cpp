@@ -1,4 +1,7 @@
+#define VOLK_IMPLEMENTATION
+
 #include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 
 namespace vkapi {
 
@@ -74,7 +77,12 @@ DeviceObjVkBufferView::~DeviceObjVkBufferView() {
 }
 
 DeviceObjVkAccelerationStructureKHR::~DeviceObjVkAccelerationStructureKHR() {
-  vkDestroyAccelerationStructureKHR(device, accel, nullptr);
+  PFN_vkDestroyAccelerationStructureKHR destroy_raytracing_pipeline_khr =
+      PFN_vkDestroyAccelerationStructureKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkDestroyAccelerationStructureKHR"));
+
+  destroy_raytracing_pipeline_khr(device, accel, nullptr);
 }
 
 IDeviceObj create_device_obj(VkDevice device) {
@@ -341,7 +349,12 @@ IVkPipeline create_raytracing_pipeline(
     create_info->basePipelineIndex = 0;
   }
 
-  vkCreateRayTracingPipelinesKHR(device, deferredOperation,
+  PFN_vkCreateRayTracingPipelinesKHR create_raytracing_pipeline_khr =
+      PFN_vkCreateRayTracingPipelinesKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkCreateRayTracingPipelinesKHR"));
+
+  create_raytracing_pipeline_khr(device, deferredOperation,
                                  cache ? cache->cache : VK_NULL_HANDLE, 1,
                                  create_info, nullptr, &obj->pipeline);
 
@@ -499,7 +512,13 @@ IVkAccelerationStructureKHR create_acceleration_structure(
   info.type = type;
   info.deviceAddress = 0;
 
-  vkCreateAccelerationStructureKHR(buffer->device, &info, nullptr, &obj->accel);
+  PFN_vkCreateAccelerationStructureKHR create_acceleration_structure_khr =
+      PFN_vkCreateAccelerationStructureKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkCreateAccelerationStructureKHR"));
+
+  create_acceleration_structure_khr(buffer->device, &info, nullptr,
+                                    &obj->accel);
 
   return obj;
 }

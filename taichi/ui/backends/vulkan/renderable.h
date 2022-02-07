@@ -25,6 +25,8 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 struct RenderableConfig {
+  int max_vertices_count;
+  int max_indices_count;
   int vertices_count;
   int indices_count;
   size_t ubo_size;

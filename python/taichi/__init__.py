@@ -5,12 +5,11 @@ from taichi._lib import core as _ti_core
 from taichi._logging import *
 from taichi._snode import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
-from taichi.tools import *
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
-from taichi import ad
+from taichi import ad, tools
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
@@ -31,7 +30,14 @@ __deprecated_names__ = {
     'set_kernel_profiler_toolkit': 'profiler.set_kernel_profiler_toolkit',
     'set_kernel_profile_metrics': 'profiler.set_kernel_profiler_metrics',
     'collect_kernel_profile_metrics':
-    'profiler.collect_kernel_profiler_metrics'
+    'profiler.collect_kernel_profiler_metrics',
+    'VideoManager': 'tools.VideoManager',
+    'PLYWriter': 'tools.PLYWriter',
+    'imdisplay': 'tools.imdisplay',
+    'imread': 'tools.imread',
+    'imresize': 'tools.imresize',
+    'imshow': 'tools.imshow',
+    'imwrite': 'tools.imwrite'
 }
 
 if sys.version_info.minor < 7:

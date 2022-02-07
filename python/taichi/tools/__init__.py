@@ -1,14 +1,6 @@
-from .async_utils import *
-from .image import imdisplay, imread, imresize, imshow, imwrite
-from .np2ply import PLYWriter
-from .video import VideoManager
-
-__all__ = [
-    'PLYWriter',
-    'VideoManager',
-    'imdisplay',
-    'imread',
-    'imresize',
-    'imshow',
-    'imwrite',
-]
+from taichi.tools.async_utils import *
+from taichi.tools.cc_compose import *
+from taichi.tools.diagnose import *
+from taichi.tools.image import *
+from taichi.tools.np2ply import *
+from taichi.tools.video import *

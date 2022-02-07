@@ -59,8 +59,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
                data_type_name(aa.dt));
     }
     aa.is_array = ka.is_array;
-    // For array, |ka.size| is #elements * elements_size
-    aa.stride = aa.is_array ? ka.size : dt_bytes;
+    aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(aa);
   }
@@ -105,7 +104,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      TI_TRACE("  at={} array size={}", i, attribs.stride);
+      TI_TRACE("  at={} runtime array", i);
     }
     return bytes - offset;
   };

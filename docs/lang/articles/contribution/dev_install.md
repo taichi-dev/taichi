@@ -370,7 +370,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
 4. Check if the SDK is properly installed: `vulkaninfo`.
 
-5. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disbaled by default when compling from source.)
+5. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disabled by default when compiling from source.)
 
   ```shell
   export TAICHI_CMAKE_ARGS=$TAICHI_CMAKE_ARGS:" -DTI_WITH_VULKAN:BOOL=ON"

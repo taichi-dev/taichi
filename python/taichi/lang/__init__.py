@@ -14,7 +14,6 @@ from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import *
 from taichi.lang.snode import *
-from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import *
 from taichi.lang.struct import *
 from taichi.lang.type_factory_impl import type_factory

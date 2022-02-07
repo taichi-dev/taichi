@@ -116,7 +116,7 @@ python misc/code_format.py
 
 2. Copy the `clang-format` binary to `~/.local/bin` and add `~/.local/bin` to `PATH`
 
-```zsh
+```shell
 mkdir -p ~/.local/bin
 cp clang+llvm-10.0.0-x86_64-apple-darwin/bin/clang-format ~/.local/bin/clang-format-10
 echo "export PATH=$HOME/.local/bin:\$PATH" >> ~/.zshrc

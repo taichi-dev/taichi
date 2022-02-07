@@ -3,7 +3,6 @@ import functools
 import os
 import shutil
 import tempfile
-import time
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
@@ -11,9 +10,7 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes
-from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
-from taichi.lang.util import warning
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 

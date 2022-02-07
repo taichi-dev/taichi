@@ -23,7 +23,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    // We don't need to check the global atomics inisde the range for-loops
+    // We don't need to check the global atomics inside the range for-loops
     // because
     // 1. If the range for-loop is innermost, they will be captured by
     // MakeAdjoint anyway
@@ -51,15 +51,16 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     IndependentBlocksJudger Judger;
     Block *block = root->as<Block>();
     root->accept(&Judger);
+    std::set<Block *> outside_blocks;
+    // Collect all parent blocks (i.e. outside blocks) of the current block for
+    // local load/store stmt checks
+    for (auto b = block->parent_block(); b; b = b->parent_block()) {
+      if (b)
+        outside_blocks.insert(b);
+    }
     for (const auto &alloca : Judger.touched_allocas_) {
       // Test if the alloca belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
-        }
-      }
-      if (!belong_to_this_block) {
+      if (outside_blocks.find(alloca->parent) != outside_blocks.end()) {
         // This block is not an IB since it loads/modifies outside variables
         Judger.qualified_local_ = false;
         break;

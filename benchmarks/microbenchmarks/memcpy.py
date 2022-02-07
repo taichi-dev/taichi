@@ -24,7 +24,7 @@ def memcpy_default(arch, repeat, container, dtype, dsize, get_metric):
     y = container(dtype, num_elements)
 
     func = memcpy_field if container == ti.field else memcpy_array
-
+    fill_random(x, dtype, container)
     return get_metric(repeat, func, y, x)
 
 

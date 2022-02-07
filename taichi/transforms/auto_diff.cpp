@@ -62,8 +62,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       // Test if the alloca belongs to the current block
       if (outside_blocks.find(alloca->parent) != outside_blocks.end()) {
         // This block is not an IB since it loads/modifies outside variables
-        Judger.qualified_local_ = false;
-        break;
+        return false;
       }
     }
 
@@ -72,13 +71,11 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // enforced
     // 2. If the #1 is satisfied, either an inner most loop or a block without
     // global atomics is an IB
-    return Judger.qualified_local_ &&
-           (Judger.qualified_atomics_ || Judger.inner_most_loop_);
+    return Judger.qualified_atomics_ || Judger.inner_most_loop_;
   }
 
  private:
   std::set<AllocaStmt *> touched_allocas_;
-  bool qualified_local_ = true;
   bool qualified_atomics_ = true;
   bool inner_most_loop_ = true;
   bool is_inside_loop_ = false;

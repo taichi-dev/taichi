@@ -92,7 +92,8 @@ class HostDeviceContextBlitter {
           // Substitue in the device address if supported
           if (device_->get_cap(
                   DeviceCapability::spirv_has_physical_storage_buffer)) {
-            uint64_t addr = device_->get_memory_physical_pointer(ext_arrays.at(i));
+            uint64_t addr =
+                device_->get_memory_physical_pointer(ext_arrays.at(i));
             reinterpret_cast<uint64 *>(device_ptr)[0] = addr;
           }
           // We should not process the rest
@@ -480,7 +481,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Prepare context buffers & arrays
   if (ctx_blitter) {
     TI_ASSERT(ti_kernel->get_args_buffer_size() ||
-      ti_kernel->get_ret_buffer_size());
+              ti_kernel->get_ret_buffer_size());
 
     int i = 0;
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();

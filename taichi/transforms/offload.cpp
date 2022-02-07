@@ -112,7 +112,8 @@ class Offloader {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
-          if ((arch == Arch::opengl || arch == Arch::vulkan) && demotable_axis_load(s->end)) {
+          if ((arch == Arch::opengl || arch == Arch::vulkan) &&
+              demotable_axis_load(s->end)) {
             // TODO: We need to update codegen for each backend gradually so
             // let's limit it to opengl backend for now.
             auto end_copy = s->end->clone();

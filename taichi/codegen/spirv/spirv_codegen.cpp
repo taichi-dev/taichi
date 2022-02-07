@@ -498,14 +498,15 @@ class TaskCodegen : public IRVisitor {
     const auto offset_in_mem = arg_attribs.offset_in_mem;
     if (stmt->is_ptr) {
       // Do not shift! We are indexing the buffers at byte granularity.
-      //spirv::Value val =
+      // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
-      //ir_->register_value(stmt->raw_name(), val);
+      // ir_->register_value(stmt->raw_name(), val);
     } else {
       const auto dt = arg_attribs.dt;
       const auto val_type = ir_->get_primitive_type(dt);
       spirv::Value buffer_val = ir_->make_value(
-          spv::OpAccessChain, ir_->get_pointer_type(val_type, spv::StorageClassUniform),
+          spv::OpAccessChain,
+          ir_->get_pointer_type(val_type, spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
           ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
@@ -574,8 +575,8 @@ class TaskCodegen : public IRVisitor {
             spv::OpAccessChain,
             ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
             get_buffer_value(BufferType::Args, PrimitiveType::i32),
-            ir_->int_immediate_number(ir_->i32_type(),
-                                      extra_args_member_index + extra_arg_index));
+            ir_->int_immediate_number(
+                ir_->i32_type(), extra_args_member_index + extra_arg_index));
         spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
@@ -587,13 +588,12 @@ class TaskCodegen : public IRVisitor {
         linear_offset = ir_->add(linear_offset, indices);
       }
       linear_offset = ir_->make_value(
-          spv::OpShiftLeftLogical,
-          ir_->i32_type(),
-          linear_offset,
-          ir_->int_immediate_number(
-              ir_->i32_type(),
-              log2int(ir_->get_primitive_type_size(argload->ret_type.ptr_removed()))));
-      ir_->decorate(spv::OpDecorate, linear_offset, spv::DecorationNoSignedWrap);
+          spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
+          ir_->int_immediate_number(ir_->i32_type(),
+                                    log2int(ir_->get_primitive_type_size(
+                                        argload->ret_type.ptr_removed()))));
+      ir_->decorate(spv::OpDecorate, linear_offset,
+                    spv::DecorationNoSignedWrap);
     }
 
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
@@ -1617,17 +1617,20 @@ class TaskCodegen : public IRVisitor {
     spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
 
     if (ptr_val.stype.dt == PrimitiveType::u64) {
-      spirv::Value paddr_ptr =
-          ir_->make_value(spv::OpConvertUToPtr, ir_->get_pointer_type(ir_->get_primitive_type(dt), spv::StorageClassPhysicalStorageBufferEXT), ptr_val);
+      spirv::Value paddr_ptr = ir_->make_value(
+          spv::OpConvertUToPtr,
+          ir_->get_pointer_type(ir_->get_primitive_type(dt),
+                                spv::StorageClassPhysicalStorageBufferEXT),
+          ptr_val);
       paddr_ptr.flag = ValueKind::kVariablePtr;
       return paddr_ptr;
     }
 
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     size_t width = ir_->get_primitive_type_size(dt);
-    spirv::Value idx_val =
-        ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
-                        ir_->int_immediate_number(ptr_val.stype, size_t(std::log2(width))));
+    spirv::Value idx_val = ir_->make_value(
+        spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
+        ir_->int_immediate_number(ptr_val.stype, size_t(std::log2(width))));
     spirv::Value ret =
         ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
     return ret;
@@ -1720,7 +1723,8 @@ class TaskCodegen : public IRVisitor {
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
     for (auto &arg : ctx_attribs_->args()) {
-      if (arg.is_array && device_->get_cap(
+      if (arg.is_array &&
+          device_->get_cap(
               DeviceCapability::spirv_has_physical_storage_buffer)) {
         struct_components_.emplace_back(ir_->u64_type(),
                                         "arg_ptr" + std::to_string(arg.index),
@@ -1734,9 +1738,9 @@ class TaskCodegen : public IRVisitor {
     // A compromise for use in constants buffer
     // where scalar arrays follow very weird packing rules
     for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
-      struct_components_.emplace_back(ir_->i32_type(),
-                                      "extra_args" + std::to_string(i),
-                                      ctx_attribs_->extra_args_mem_offset() + i * 4);    
+      struct_components_.emplace_back(
+          ir_->i32_type(), "extra_args" + std::to_string(i),
+          ctx_attribs_->extra_args_mem_offset() + i * 4);
     }
     args_struct_type_ = ir_->create_struct_type(struct_components_);
 
@@ -1819,7 +1823,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
 
-  int binding_head_{2}; // Args:0, Ret:1
+  int binding_head_{2};  // Args:0, Ret:1
 
   /*
   std::unordered_map<int, spirv::CompiledSpirvSNode>
@@ -1884,29 +1888,29 @@ KernelCodegen::KernelCodegen(const Params &params)
   if (params.enable_spv_opt) {
     // From: SPIRV-Tools/source/opt/optimizer.cpp
     spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
-      .RegisterPass(spvtools::CreateDeadBranchElimPass())
-      .RegisterPass(spvtools::CreateMergeReturnPass())
-      .RegisterPass(spvtools::CreateInlineExhaustivePass())
-      .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
-      .RegisterPass(spvtools::CreateAggressiveDCEPass())
-      .RegisterPass(spvtools::CreatePrivateToLocalPass())
-      .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-      .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-      .RegisterPass(spvtools::CreateScalarReplacementPass())
-      .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-      .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
-      .RegisterPass(spvtools::CreateCCPPass())
-      .RegisterPass(spvtools::CreateLoopUnrollPass(true))
-      .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-      .RegisterPass(spvtools::CreateCombineAccessChainsPass())
-      .RegisterPass(spvtools::CreateSimplificationPass())
-      .RegisterPass(spvtools::CreateSSARewritePass())
-      .RegisterPass(spvtools::CreateVectorDCEPass())
-      .RegisterPass(spvtools::CreateDeadInsertElimPass())
-      .RegisterPass(spvtools::CreateIfConversionPass())
-      .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
-      .RegisterPass(spvtools::CreateReduceLoadSizePass())
-      .RegisterPass(spvtools::CreateBlockMergePass());
+        .RegisterPass(spvtools::CreateDeadBranchElimPass())
+        .RegisterPass(spvtools::CreateMergeReturnPass())
+        .RegisterPass(spvtools::CreateInlineExhaustivePass())
+        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+        .RegisterPass(spvtools::CreateAggressiveDCEPass())
+        .RegisterPass(spvtools::CreatePrivateToLocalPass())
+        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+        .RegisterPass(spvtools::CreateScalarReplacementPass())
+        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
+        .RegisterPass(spvtools::CreateCCPPass())
+        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+        .RegisterPass(spvtools::CreateCombineAccessChainsPass())
+        .RegisterPass(spvtools::CreateSimplificationPass())
+        .RegisterPass(spvtools::CreateSSARewritePass())
+        .RegisterPass(spvtools::CreateVectorDCEPass())
+        .RegisterPass(spvtools::CreateDeadInsertElimPass())
+        .RegisterPass(spvtools::CreateIfConversionPass())
+        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+        .RegisterPass(spvtools::CreateReduceLoadSizePass())
+        .RegisterPass(spvtools::CreateBlockMergePass());
   }
   spirv_opt_options_.set_run_validator(false);
 
@@ -1936,10 +1940,11 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
       last_size = optimized_spv.size();
       bool result = false;
       TI_WARN_IF(
-        (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
-                         &optimized_spv, spirv_opt_options_)),
-        "SPIRV optimization failed");
-      if (result) break;
+          (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
+                                     &optimized_spv, spirv_opt_options_)),
+          "SPIRV optimization failed");
+      if (result)
+        break;
     } while (last_size != optimized_spv.size());
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
@@ -1950,12 +1955,11 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = fmt::format("{}_{}.spv", params_.ti_kernel_name, i);
-    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name,
-            spirv_asm);
+    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
 
     std::ofstream fout(kernel_name, std::ios::binary | std::ios::out);
     fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-                optimized_spv.size() * sizeof(uint32_t));
+               optimized_spv.size() * sizeof(uint32_t));
     fout.close();
 #endif
 

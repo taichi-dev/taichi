@@ -478,9 +478,9 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
 }
 
 Value IRBuilder::uniform_struct_argument(const SType &struct_type,
-                                        uint32_t descriptor_set,
-                                        uint32_t binding,
-                                        const std::string &name) {
+                                         uint32_t descriptor_set,
+                                         uint32_t binding,
+                                         const std::string &name) {
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class = spv::StorageClassUniform;

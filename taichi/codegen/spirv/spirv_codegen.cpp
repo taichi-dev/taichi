@@ -1653,13 +1653,20 @@ class TaskCodegen : public IRVisitor {
   }
 
   void store_buffer(const Stmt *ptr, spirv::Value val) {
-    auto ti_uint_type = ir_->get_taichi_uint_type(val.stype.dt);
-    auto buf_ptr = at_buffer(ptr, ti_uint_type);
+    spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+
+    DataType ti_buffer_type = ir_->get_taichi_uint_type(val.stype.dt);
+
+    if (ptr_val.stype.dt == PrimitiveType::u64) {
+      ti_buffer_type = val.stype.dt;
+    }
+
+    auto buf_ptr = at_buffer(ptr, ti_buffer_type);
     auto val_bits =
-        val.stype.dt == ti_uint_type
+        val.stype.dt == ti_buffer_type
             ? val
             : ir_->make_value(spv::OpBitcast,
-                              ir_->get_primitive_type(ti_uint_type), val);
+                              ir_->get_primitive_type(ti_buffer_type), val);
     ir_->store_variable(buf_ptr, val_bits);
   }
 

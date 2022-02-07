@@ -593,6 +593,7 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(
               ir_->i32_type(),
               log2int(ir_->get_primitive_type_size(argload->ret_type.ptr_removed()))));
+      ir_->decorate(spv::OpDecorate, linear_offset, spv::DecorationNoSignedWrap);
     }
 
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
@@ -1633,11 +1634,18 @@ class TaskCodegen : public IRVisitor {
   }
 
   spirv::Value load_buffer(const Stmt *ptr, DataType dt) {
-    auto ti_uint_type = ir_->get_taichi_uint_type(dt);
-    auto buf_ptr = at_buffer(ptr, ti_uint_type);
+    spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+
+    DataType ti_buffer_type = ir_->get_taichi_uint_type(dt);
+
+    if (ptr_val.stype.dt == PrimitiveType::u64) {
+      ti_buffer_type = dt;
+    }
+
+    auto buf_ptr = at_buffer(ptr, ti_buffer_type);
     auto val_bits =
-        ir_->load_variable(buf_ptr, ir_->get_primitive_uint_type(dt));
-    auto ret = ti_uint_type == dt
+        ir_->load_variable(buf_ptr, ir_->get_primitive_type(ti_buffer_type));
+    auto ret = ti_buffer_type == dt
                    ? val_bits
                    : ir_->make_value(spv::OpBitcast,
                                      ir_->get_primitive_type(dt), val_bits);
@@ -1931,10 +1939,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-    auto kernel_name = fmt::format("{}_{}_.spv", params_.ti_kernel_name, i);
+    auto kernel_name = fmt::format("{}_{}.spv", params_.ti_kernel_name, i);
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name,
             spirv_asm);
 

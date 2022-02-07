@@ -1,4 +1,5 @@
 import taichi as ti
+from taichi.examples.patterns import taichi_logo
 
 ti.init()
 
@@ -10,7 +11,7 @@ x = ti.field(dtype=ti.f32, shape=(n, n))
 def paint():
     for i, j in ti.ndrange(n * 4, n * 4):
         # 4x4 super sampling:
-        ret = ti.taichi_logo(ti.Vector([i, j]) / (n * 4))
+        ret = taichi_logo(ti.Vector([i, j]) / (n * 4))
         x[i // 4, j // 4] += ret / 16
 
 

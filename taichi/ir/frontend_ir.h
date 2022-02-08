@@ -7,6 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -169,13 +170,17 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var, Arch arch);
 
   FrontendForStmt(const ExprGroup &loop_var,
                   const mesh::MeshPtr &mesh,
-                  const mesh::MeshElementType &element_type);
+                  const mesh::MeshElementType &element_type,
+                  Arch arch);
 
-  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
+  FrontendForStmt(const Expr &loop_var,
+                  const Expr &begin,
+                  const Expr &end,
+                  Arch arch);
 
   bool is_container_statement() const override {
     return true;
@@ -785,9 +790,10 @@ class MeshIndexConversionExpression : public Expression {
 class ASTBuilder {
  private:
   std::vector<Block *> stack_;
+  Arch arch_;
 
  public:
-  ASTBuilder(Block *initial) {
+  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
   }
 
@@ -805,6 +811,11 @@ class ASTBuilder {
       builder->stack_.pop_back();
     }
   };
+
+  // The function will be removed soon
+  Arch arch() const {
+    return arch_;
+  }
 
   std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
@@ -825,7 +836,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext();
+  FrontendContext(Arch arch);
 
   ASTBuilder &builder() {
     return *current_builder_;

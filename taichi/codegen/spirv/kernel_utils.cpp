@@ -110,7 +110,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   auto arange_rets = [](auto *vec, size_t offset) -> size_t {
     std::vector<int> scalar_indices;
     std::vector<int> array_indices;
-    for (int i = 0; i < vec->size(); ++i){
+    for (int i = 0; i < vec->size(); ++i) {
       if ((*vec)[i].is_array) {
         array_indices.push_back(i);
       } else {

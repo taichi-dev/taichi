@@ -418,17 +418,17 @@ class TaskCodegen : public IRVisitor {
 
   void visit(BitExtractStmt *stmt) override {
     spirv::Value input_val = ir_->query_value(stmt->input->raw_name());
-    spirv::Value tmp0 =
-        ir_->int_immediate_number(ir_->i32_type(), stmt->bit_begin);
-    spirv::Value tmp1 = ir_->int_immediate_number(
-        ir_->i32_type(), stmt->bit_end - stmt->bit_begin);
-    spirv::Value tmp2 = ir_->make_value(spv::OpShiftRightArithmetic,
-                                        ir_->i32_type(), input_val, tmp0);
-    spirv::Value tmp3 = ir_->make_value(
-        spv::OpShiftLeftLogical, ir_->i32_type(), ir_->const_i32_one_, tmp1);
-    spirv::Value tmp4 = ir_->sub(tmp3, ir_->const_i32_one_);
-    spirv::Value val =
-        ir_->make_value(spv::OpBitwiseAnd, ir_->i32_type(), tmp2, tmp4);
+    auto stype = input_val.stype;
+    spirv::Value tmp0 = ir_->int_immediate_number(stype, stmt->bit_begin);
+    spirv::Value tmp1 =
+        ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
+    spirv::Value tmp2 =
+        ir_->make_value(spv::OpShiftRightArithmetic, stype, input_val, tmp0);
+    spirv::Value tmp3 =
+        ir_->make_value(spv::OpShiftLeftLogical, stype,
+                        ir_->int_immediate_number(stype, 1), tmp1);
+    spirv::Value tmp4 = ir_->sub(tmp3, ir_->int_immediate_number(stype, 1));
+    spirv::Value val = ir_->make_value(spv::OpBitwiseAnd, stype, tmp2, tmp4);
     ir_->register_value(stmt->raw_name(), val);
   }
 
@@ -439,8 +439,8 @@ class TaskCodegen : public IRVisitor {
       if (type == OffloadedTaskType::range_for) {
         TI_ASSERT(stmt->index == 0);
         spirv::Value loop_var = ir_->query_value("ii");
-        spirv::Value val = ir_->add(loop_var, ir_->const_i32_zero_);
-        ir_->register_value(stmt_name, val);
+        // spirv::Value val = ir_->add(loop_var, ir_->const_i32_zero_);
+        ir_->register_value(stmt_name, loop_var);
       } else if (type == OffloadedTaskType::struct_for) {
         SNode *snode = stmt->loop->as<OffloadedStmt>()->snode;
         spirv::Value val = ir_->query_value("ii");
@@ -1060,9 +1060,12 @@ class TaskCodegen : public IRVisitor {
         data = ir_->make_value(spv::OpBitcast, ret_type, data);
       }
 
-      // AcquireRelease
-      ir_->make_inst(spv::OpMemoryBarrier, ir_->const_i32_one_,
-                     ir_->uint_immediate_number(ir_->u32_type(), 0x8));
+      // Semantics = (UniformMemory 0x40) | (AcquireRelease 0x8)
+      ir_->make_inst(
+          spv::OpMemoryBarrier, ir_->const_i32_one_,
+          ir_->uint_immediate_number(
+              ir_->u32_type(), spv::MemorySemanticsAcquireReleaseMask |
+                                   spv::MemorySemanticsUniformMemoryMask));
       val = ir_->make_value(op, ret_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
@@ -1695,8 +1698,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value idx_val = ir_->make_value(
-        spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
-        ir_->int_immediate_number(ptr_val.stype, size_t(std::log2(width))));
+        spv::OpShiftRightLogical, ptr_val.stype, ptr_val,
+        ir_->uint_immediate_number(ptr_val.stype, size_t(std::log2(width))));
     spirv::Value ret =
         ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
     return ret;
@@ -1760,6 +1763,7 @@ class TaskCodegen : public IRVisitor {
       return ret_buffer_value_;
     }
 
+    // Binding head starts at 2, so we don't break args and rets
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
 
@@ -1993,7 +1997,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     tp.task_id_in_kernel = i;
     tp.compiled_structs = params_.compiled_structs;
     tp.ctx_attribs = &ctx_attribs_;
-    tp.ti_kernel_name = params_.ti_kernel_name;
+    tp.ti_kernel_name = fmt::format("{}_{}", params_.ti_kernel_name, i);
     tp.device = params_.device;
 
     TaskCodegen cgen(tp);
@@ -2020,10 +2024,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 #if 0
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-    auto kernel_name = fmt::format("{}_{}.spv", params_.ti_kernel_name, i);
+    auto kernel_name = tp.ti_kernel_name;
     TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
 
-    std::ofstream fout(kernel_name, std::ios::binary | std::ios::out);
+    std::ofstream fout(kernel_name + ".spv", std::ios::binary | std::ios::out);
     fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
                optimized_spv.size() * sizeof(uint32_t));
     fout.close();

@@ -311,7 +311,7 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
                                    (void *)spirv_bins[i].data(),
                                    spirv_bins[i].size() * sizeof(uint32_t)};
     auto vp =
-        ti_params.device->create_pipeline(source_desc, ti_kernel_attribs_.name);
+        ti_params.device->create_pipeline(source_desc, task_attribs[i].name);
     pipelines_.push_back(std::move(vp));
   }
 }

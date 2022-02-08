@@ -286,6 +286,7 @@ void VulkanPipeline::create_pipeline_layout() {
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
+  TI_TRACE("Compiling Vulkan pipeline {}", params.name);
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
                                              pipeline_layout_);
 }

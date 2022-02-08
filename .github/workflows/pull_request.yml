@@ -1,0 +1,30 @@
+name: Presubmit Tasks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  pre_submit:
+    name: Presubmit Tasks
+    if: ${{ github.event.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Dependencies
+        run: pip install semver GitPython PyGithub
+
+      - name: Run PR Title Checker
+        run: |
+          python misc/ci_check_pr_title.py "$PR_TITLE"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+
+      - name: PR Project Card Creation
+        if: github.event.action == "opened" || github.event.action == "edited"
+        run: python misc/ci_create_pr_card.py
+        env:
+          GH_EVENT: ${{ toJson(github.event) }}
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

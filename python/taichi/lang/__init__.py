@@ -11,12 +11,10 @@ from taichi.lang.matrix import *
 from taichi.lang.mesh import *
 from taichi.lang.misc import *  # pylint: disable=W0622
 from taichi.lang.ops import *  # pylint: disable=W0622
-from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import *
 from taichi.lang.snode import *
 from taichi.lang.source_builder import *
 from taichi.lang.struct import *
-from taichi.lang.type_factory_impl import type_factory
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
@@ -26,7 +24,7 @@ __all__ = [
     s for s in dir() if not s.startswith('_') and s not in [
         'any_array', 'ast', 'common_ops', 'enums', 'exception', 'expr', 'impl',
         'inspect', 'kernel_arguments', 'kernel_impl', 'matrix', 'mesh', 'misc',
-        'ops', 'platform', 'quant_impl', 'runtime_ops', 'shell', 'snode',
-        'source_builder', 'struct', 'type_factory_impl', 'util'
+        'ops', 'platform', 'runtime_ops', 'shell', 'snode', 'source_builder',
+        'struct', 'util'
     ]
 ]

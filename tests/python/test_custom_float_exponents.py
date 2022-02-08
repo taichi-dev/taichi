@@ -7,11 +7,11 @@ import taichi as ti
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_unsigned():
-    cu13 = ti.quant.int(13, False)
-    exp = ti.quant.int(6, False)
-    cft = ti.type_factory.custom_float(significand_type=cu13,
-                                       exponent_type=exp,
-                                       scale=1)
+    cu13 = ti.types.quantized_types.quant.int(13, False)
+    exp = ti.types.quantized_types.quant.int(6, False)
+    cft = ti.types.quantized_types.type_factory.custom_float(significand_type=cu13,
+                                                             exponent_type=exp,
+                                                             scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -30,11 +30,11 @@ def test_custom_float_unsigned():
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_signed():
-    cu13 = ti.quant.int(13, True)
-    exp = ti.quant.int(6, False)
-    cft = ti.type_factory.custom_float(significand_type=cu13,
-                                       exponent_type=exp,
-                                       scale=1)
+    cu13 = ti.types.quantized_types.quant.int(13, True)
+    exp = ti.types.quantized_types.quant.int(6, False)
+    cft = ti.types.quantized_types.type_factory.custom_float(significand_type=cu13,
+                                                             exponent_type=exp,
+                                                             scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -62,11 +62,11 @@ def test_custom_float_signed():
 @pytest.mark.parametrize('digits_bits', [23, 24])
 @ti.test(require=ti.extension.quant)
 def test_custom_float_precision(digits_bits):
-    cu24 = ti.quant.int(digits_bits, True)
-    exp = ti.quant.int(8, False)
-    cft = ti.type_factory.custom_float(significand_type=cu24,
-                                       exponent_type=exp,
-                                       scale=1)
+    cu24 = ti.types.quantized_types.quant.int(digits_bits, True)
+    exp = ti.types.quantized_types.quant.int(8, False)
+    cft = ti.types.quantized_types.type_factory.custom_float(significand_type=cu24,
+                                                             exponent_type=exp,
+                                                             scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -87,11 +87,11 @@ def test_custom_float_precision(digits_bits):
 @pytest.mark.parametrize('signed', [True, False])
 @ti.test(require=ti.extension.quant)
 def test_custom_float_truncation(signed):
-    cit = ti.quant.int(2, signed)
-    exp = ti.quant.int(5, False)
-    cft = ti.type_factory.custom_float(significand_type=cit,
-                                       exponent_type=exp,
-                                       scale=1)
+    cit = ti.types.quantized_types.quant.int(2, signed)
+    exp = ti.types.quantized_types.quant.int(5, False)
+    cft = ti.types.quantized_types.type_factory.custom_float(significand_type=cit,
+                                                             exponent_type=exp,
+                                                             scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -119,11 +119,11 @@ def test_custom_float_truncation(signed):
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_atomic_demotion():
-    cit = ti.quant.int(2, True)
-    exp = ti.quant.int(5, False)
-    cft = ti.type_factory.custom_float(significand_type=cit,
-                                       exponent_type=exp,
-                                       scale=1)
+    cit = ti.types.quantized_types.quant.int(2, True)
+    exp = ti.types.quantized_types.quant.int(5, False)
+    cft = ti.types.quantized_types.type_factory.custom_float(significand_type=cit,
+                                                             exponent_type=exp,
+                                                             scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)

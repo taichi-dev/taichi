@@ -34,7 +34,6 @@ __deprecated_names__ = {
     'profiler.collect_kernel_profiler_metrics',
     'VideoManager': 'tools.VideoManager',
     'PLYWriter': 'tools.PLYWriter',
-    'imdisplay': 'tools.imdisplay',
     'imread': 'tools.imread',
     'imresize': 'tools.imresize',
     'imshow': 'tools.imshow',

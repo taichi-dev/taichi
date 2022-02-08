@@ -516,8 +516,12 @@ void VulkanDeviceCreator::create_logical_device() {
     VkPhysicalDeviceFeatures2KHR features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
+    #define CHECK_EXTENSION(ext) \
+  std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
+      enabled_extensions.end()
+
     // Variable ptr
-    {
+    if (CHECK_EXTENSION(VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME)) {
       features2.pNext = &variable_ptr_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -530,7 +534,7 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Atomic float
-    {
+    if (CHECK_EXTENSION(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME)) {
       features2.pNext = &shader_atomic_float_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
@@ -551,7 +555,7 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Atomic float 2
-    {
+    if (CHECK_EXTENSION(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME)) {
       features2.pNext = &shader_atomic_float_2_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       if (shader_atomic_float_2_feature.shaderBufferFloat16AtomicAdd) {
@@ -577,7 +581,7 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // F16 / I8
-    {
+    if (CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -596,7 +600,8 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Buffer Device Address
-    {
+    if (CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) ||
+        CHECK_EXTENSION(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
       features2.pNext = &buffer_device_address_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 

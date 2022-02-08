@@ -523,6 +523,6 @@ __all__ = [
     'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
-    'block_local', 'cache_read_only','clear_all_gradients', 'init', 'mesh_local',
-    'no_activate', 'reset'
+    'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
+    'mesh_local', 'no_activate', 'reset'
 ]

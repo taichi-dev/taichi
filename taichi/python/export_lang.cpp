@@ -62,8 +62,6 @@ void expr_assign(ASTBuilder *ast_builder,
   ast_builder->insert(std::move(stmt));
 }
 
-std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
-
 std::string libdevice_path();
 
 TLANG_NAMESPACE_END
@@ -261,45 +259,41 @@ void export_lang(py::module &m) {
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
       .def("create_kernel_exprgroup_return",
-           [&](ASTBuilder *self, const ExprGroup &group) {
+           [](ASTBuilder *self, const ExprGroup &group) {
              self->insert(Stmt::make<FrontendReturnStmt>(group));
            })
       .def("create_print",  // This function will call `Expr
                             // &Expr::operator=(const Expr &o)` implicitly.
-           [&](ASTBuilder *self,
-               std::vector<std::variant<Expr, std::string>> contents) {
+           [](ASTBuilder *self,
+              std::vector<std::variant<Expr, std::string>> contents) {
              self->insert(std::make_unique<FrontendPrintStmt>(contents));
            })
       .def("begin_func",
-           [&](ASTBuilder *self, const std::string &funcid) {
+           [](ASTBuilder *self, const std::string &funcid) {
              auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
+             self->create_scope(stmt->body);
            })
-      .def("end_func",
-           [&](ASTBuilder *, const std::string &funcid) {
-             scope_stack.pop_back();
-           })
+      .def("end_func", [](ASTBuilder *self,
+                          const std::string &funcid) { self->pop_scope(); })
       .def("stop_grad",
            [](ASTBuilder *self, SNode *snode) { self->stop_gradient(snode); })
       .def("begin_frontend_if",
-           [&](ASTBuilder *self, const Expr &cond) {
+           [](ASTBuilder *self, const Expr &cond) {
              auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
              self->insert(std::move(stmt_tmp));
            })
-      .def(
-          "begin_frontend_if_true",
-          [&](ASTBuilder *self) {
-            auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
-            scope_stack.push_back(self->create_scope(if_stmt->true_statements));
-          })
-      .def("pop_scope", [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_if_false",
-           [&](ASTBuilder *self) {
+      .def("begin_frontend_if_true",
+           [](ASTBuilder *self) {
              auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
-             scope_stack.push_back(
-                 self->create_scope(if_stmt->false_statements));
+             self->create_scope(if_stmt->true_statements);
+           })
+      .def("pop_scope", [](ASTBuilder *self) { self->pop_scope(); })
+      .def("begin_frontend_if_false",
+           [](ASTBuilder *self) {
+             auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
+             self->create_scope(if_stmt->false_statements);
            })
       .def("insert_deactivate", Deactivate)
       .def("insert_activate", Activate)
@@ -347,68 +341,68 @@ void export_lang(py::module &m) {
              return var;
            })
       .def("create_assert_stmt",
-           [&](ASTBuilder *self, const Expr &cond, const std::string &msg,
-               const std::vector<Expr> &args) {
+           [](ASTBuilder *self, const Expr &cond, const std::string &msg,
+              const std::vector<Expr> &args) {
              auto stmt_unique =
                  std::make_unique<FrontendAssertStmt>(cond, msg, args);
              self->insert(std::move(stmt_unique));
            })
       .def("expr_assign", expr_assign)
       .def("begin_frontend_range_for",
-           [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
+           [](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
              auto stmt_unique =
                  std::make_unique<FrontendForStmt>(i, s, e, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
+             self->create_scope(stmt->body);
            })
       .def("end_frontend_range_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_struct_for",
-           [&](ASTBuilder *self, const ExprGroup &loop_vars,
-               const Expr &global) {
-             auto stmt_unique = std::make_unique<FrontendForStmt>(
-                 loop_vars, global, self->arch());
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
+           [](ASTBuilder *self) { self->pop_scope(); })
+      .def(
+          "begin_frontend_struct_for",
+          [](ASTBuilder *self, const ExprGroup &loop_vars, const Expr &global) {
+            auto stmt_unique = std::make_unique<FrontendForStmt>(
+                loop_vars, global, self->arch());
+            auto stmt = stmt_unique.get();
+            self->insert(std::move(stmt_unique));
+            self->create_scope(stmt->body);
+          })
       .def("end_frontend_struct_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
+           [](ASTBuilder *self) { self->pop_scope(); })
       .def("begin_frontend_mesh_for",
-           [&](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
-               const mesh::MeshElementType &element_type) {
+           [](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
+              const mesh::MeshElementType &element_type) {
              auto stmt_unique = std::make_unique<FrontendForStmt>(
                  i, mesh_ptr, element_type, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
+             self->create_scope(stmt->body);
            })
-      .def("end_frontend_mesh_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
+      .def("end_frontend_mesh_for", [](ASTBuilder *self) { self->pop_scope(); })
       .def("begin_frontend_while",
-           [&](ASTBuilder *self, const Expr &cond) {
+           [](ASTBuilder *self, const Expr &cond) {
              auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
+             self->create_scope(stmt->body);
            })
       .def("insert_break_stmt",
-           [&](ASTBuilder *self) {
+           [](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendBreakStmt>());
            })
       .def("insert_continue_stmt",
-           [&](ASTBuilder *self) {
+           [](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendContinueStmt>());
            })
       .def("insert_expr_stmt",
-           [&](ASTBuilder *self, const Expr &val) {
+           [](ASTBuilder *self, const Expr &val) {
              self->insert(Stmt::make<FrontendExprStmt>(val));
            })
+      .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
+      .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
-      .def("expr_var",
-           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
+      .def("expr_var", &ASTBuilder::make_var);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -913,43 +907,6 @@ void export_lang(py::module &m) {
   m.def("parallelize", Parallelize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
-
-  m.def("insert_thread_idx_expr", [&]() {
-    auto arch = get_current_program().config.arch;
-    auto loop =
-        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
-    TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
-                "ti.thread_idx() is only available in cuda or cpu context.");
-    if (loop != nullptr) {
-      auto i = scope_stack.size() - 1;
-      while (!(loop->is<FrontendForStmt>())) {
-        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
-        if (loop == nullptr)
-          break;
-      }
-    }
-    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
-                "ti.thread_idx() is only valid within loops.");
-    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
-                                                  std::vector<Expr>{});
-  });
-
-  m.def("insert_patch_idx_expr", [&]() {
-    auto loop =
-        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
-    if (loop != nullptr) {
-      auto i = scope_stack.size() - 1;
-      while (!(loop->is<FrontendForStmt>())) {
-        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
-        if (loop == nullptr)
-          break;
-      }
-    }
-    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
-                  loop->as<FrontendForStmt>()->mesh_for),
-                "ti.mesh_patch_idx() is only valid within mesh-for loops.");
-    return Expr::make<MeshPatchIndexExpression>();
-  });
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)

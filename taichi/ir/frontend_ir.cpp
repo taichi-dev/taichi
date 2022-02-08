@@ -717,18 +717,56 @@ void ASTBuilder::insert_for(const Expr &s,
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  auto _ = this->create_scope(stmt->body);
+  this->create_scope(stmt->body);
   func(i);
+  this->pop_scope();
 }
 
-std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
+Expr ASTBuilder::insert_thread_idx_expr() {
+  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  TI_ERROR_IF(arch_ != Arch::cuda && !arch_is_cpu(arch_),
+              "ti.thread_idx() is only available in cuda or cpu context.");
+  if (loop != nullptr) {
+    auto i = stack_.size() - 1;
+    while (!(loop->is<FrontendForStmt>())) {
+      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      if (loop == nullptr)
+        break;
+    }
+  }
+  TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
+              "ti.thread_idx() is only valid within loops.");
+  return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
+                                                std::vector<Expr>{});
+}
+
+Expr ASTBuilder::insert_patch_idx_expr() {
+  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  if (loop != nullptr) {
+    auto i = stack_.size() - 1;
+    while (!(loop->is<FrontendForStmt>())) {
+      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      if (loop == nullptr)
+        break;
+    }
+  }
+  TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
+                loop->as<FrontendForStmt>()->mesh_for),
+              "ti.mesh_patch_idx() is only valid within mesh-for loops.");
+  return Expr::make<MeshPatchIndexExpression>();
+}
+
+void ASTBuilder::create_scope(std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
-  return std::make_unique<ScopeGuard>(this, list.get());
+  stack_.push_back(list.get());
+}
+
+void ASTBuilder::pop_scope() {
+  stack_.pop_back();
 }
 
 ASTBuilder &current_ast_builder() {

@@ -799,25 +799,11 @@ class ASTBuilder {
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
-  struct ScopeGuard {
-    ASTBuilder *builder;
-    Block *list;
-    ScopeGuard(ASTBuilder *builder, Block *list)
-        : builder(builder), list(list) {
-      builder->stack_.push_back(list);
-    }
-
-    ~ScopeGuard() {
-      builder->stack_.pop_back();
-    }
-  };
-
   // The function will be removed soon
   Arch arch() const {
     return arch_;
   }
 
-  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
@@ -826,6 +812,13 @@ class ASTBuilder {
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
+
+  Expr insert_thread_idx_expr();
+  Expr insert_patch_idx_expr();
+
+ public:  // FIXME:-> private
+  void create_scope(std::unique_ptr<Block> &list);
+  void pop_scope();
 };
 
 ASTBuilder &current_ast_builder();

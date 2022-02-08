@@ -187,10 +187,9 @@ def check_require_version(require_version):
     '''
     # Extract version number part (i.e. toss any revision / hash parts).
     version_number_str = require_version
-    for i in range(len(require_version)):
-        c = require_version[i]
+    for c_idx, c in enumerate(require_version):
         if not (c.isdigit() or c == "."):
-            version_number_str = require_version[:i]
+            version_number_str = require_version[:c_idx]
             break
     # Get required version.
     try:
@@ -216,9 +215,9 @@ def check_require_version(require_version):
         minor < versions[1] or minor == versions[1] and patch <= versions[2])
 
     if not match:
-        print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
-        print("Installed =", _ti_core.get_version_string())
-        raise Exception("Taichi version mismatch")
+        raise Exception(
+            f"Taichi version mismatch. Required version >= {major}.{minor}.{patch}, installed version = {_ti_core.get_version_string()}."
+        )
 
 
 def init(arch=None,
@@ -253,7 +252,7 @@ def init(arch=None,
     _version_check.start_version_check_thread()
 
     # Check if installed version meets the requirements.
-    if not require_version is None:
+    if require_version is not None:
         check_require_version(require_version)
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are

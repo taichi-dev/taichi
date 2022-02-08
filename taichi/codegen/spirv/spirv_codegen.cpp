@@ -1694,6 +1694,7 @@ class TaskCodegen : public IRVisitor {
       return ret_buffer_value_;
     }
 
+    // Binding head starts at 2, so we don't break args and rets
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
 
@@ -1823,7 +1824,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
 
-  int binding_head_{2};  // Args:0, Ret:1
+  int binding_head_{2}; // Args:0, Ret:1
 
   /*
   std::unordered_map<int, spirv::CompiledSpirvSNode>

@@ -269,3 +269,19 @@ def test_torch_zero():
     test_torch(torch.zeros((0), dtype=torch.int32))
     test_torch(torch.zeros((0, 5), dtype=torch.int32))
     test_torch(torch.zeros((5, 0, 5), dtype=torch.int32))
+
+
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=[ti.opengl, ti.vulkan])
+def test_torch_view():
+    @ti.kernel
+    def copy(x: ti.any_arr(), y: ti.any_arr()):
+        for i, j in x:
+            y[i, j] = x[i, j]
+
+    x = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).T
+    y = ti.ndarray(int, (3, 3))
+
+    with pytest.raises(ValueError,
+                       match=r'Torch view tensors are not supported'):
+        copy(x, y)

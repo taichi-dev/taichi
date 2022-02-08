@@ -1,7 +1,7 @@
 from taichi.lang.impl import get_runtime
 
 
-def print_memory_profile_info():
+def print_memory_profiler_info():
     """Memory profiling tool for LLVM backends with full sparse support.
 
     This profiler is automatically on.
@@ -10,4 +10,4 @@ def print_memory_profile_info():
     get_runtime().prog.print_memory_profiler_info()
 
 
-__all__ = ['print_memory_profile_info']
+__all__ = ['print_memory_profiler_info']

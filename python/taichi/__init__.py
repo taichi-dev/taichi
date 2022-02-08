@@ -21,6 +21,7 @@ __deprecated_names__ = {
     'AOS': 'Layout.AOS',
     'print_profile_info': 'profiler.print_scoped_profiler_info',
     'clear_profile_info': 'profiler.clear_scoped_profiler_info',
+    'print_memory_profile_info': 'profiler.print_memory_profiler_info',
     'CuptiMetric': 'profiler.CuptiMetric',
     'get_predefined_cupti_metrics': 'profiler.get_predefined_cupti_metrics',
     'print_kernel_profile_info': 'profiler.print_kernel_profiler_info',
@@ -29,7 +30,6 @@ __deprecated_names__ = {
     'kernel_profiler_total_time': 'profiler.get_kernel_profiler_total_time',
     'set_kernel_profiler_toolkit': 'profiler.set_kernel_profiler_toolkit',
     'set_kernel_profile_metrics': 'profiler.set_kernel_profiler_metrics',
-    'print_memory_profile_info': 'profiler.print_memory_profile_info',
     'collect_kernel_profile_metrics':
     'profiler.collect_kernel_profiler_metrics',
     'VideoManager': 'tools.VideoManager',

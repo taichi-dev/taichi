@@ -38,6 +38,10 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
   spirv_has_physical_storage_buffer,
+  spirv_has_subgroup_basic,
+  spirv_has_subgroup_vote,
+  spirv_has_subgroup_arithmetic,
+  spirv_has_subgroup_ballot,
   // Graphics Caps,
   wide_lines
 };

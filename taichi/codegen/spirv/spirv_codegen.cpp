@@ -917,6 +917,68 @@ class TaskCodegen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->dest->element_type().ptr_removed();
 
+    spirv::Value data = ir_->query_value(stmt->val->raw_name());
+    spirv::Value val;
+    bool use_subgroup_reduction = false;
+
+    if (stmt->is_reduction && device_->get_cap(DeviceCapability::spirv_has_subgroup_arithmetic)) {
+      spv::Op atomic_op = spv::OpNop;
+      bool negation = false;
+      if (is_integral(dt)) {
+        if (stmt->op_type == AtomicOpType::add) {
+          atomic_op = spv::OpGroupIAdd;
+        } else if (stmt->op_type == AtomicOpType::sub) {
+          atomic_op = spv::OpGroupIAdd;
+          negation = true;
+        } else if (stmt->op_type == AtomicOpType::min) {
+          atomic_op = is_signed(dt) ? spv::OpGroupSMin : spv::OpGroupUMin;
+        } else if (stmt->op_type == AtomicOpType::max) {
+          atomic_op = is_signed(dt) ? spv::OpGroupSMax : spv::OpGroupUMax;
+        }
+      } else if (is_real(dt)) {
+        if (stmt->op_type == AtomicOpType::add) {
+          atomic_op = spv::OpGroupFAdd;
+        } else if (stmt->op_type == AtomicOpType::sub) {
+          atomic_op = spv::OpGroupFAdd;
+          negation = true;
+        } else if (stmt->op_type == AtomicOpType::min) {
+          atomic_op = spv::OpGroupFMin;
+        } else if (stmt->op_type == AtomicOpType::max) {
+          atomic_op = spv::OpGroupFMax;
+        }
+      }
+
+      if (atomic_op != spv::OpNop) {
+        spirv::Value scope_subgroup = ir_->int_immediate_number(ir_->i32_type(), 3);
+        spirv::Value operation_reduce = ir_->const_i32_zero_;
+        if (negation) {
+          if (is_integral(dt)) {
+            data = ir_->make_value(spv::OpSNegate, data.stype, data);
+          } else {
+            data = ir_->make_value(spv::OpFNegate, data.stype, data);
+          }
+        }
+        data = ir_->make_value(atomic_op, ir_->get_primitive_type(dt), scope_subgroup, operation_reduce, data);
+        val = data;
+        use_subgroup_reduction = true;
+      }
+    }
+
+    spirv::Label then_label;
+    spirv::Label merge_label;
+
+    if (use_subgroup_reduction) {
+      spirv::Value subgroup_id = ir_->get_subgroup_invocation_id();
+      spirv::Value cond = ir_->make_value(spv::OpIEqual, ir_->bool_type(), subgroup_id, ir_->const_i32_zero_);
+      
+      then_label = ir_->new_label();
+      merge_label = ir_->new_label();
+      ir_->make_inst(spv::OpSelectionMerge, merge_label,
+                    spv::SelectionControlMaskNone);
+      ir_->make_inst(spv::OpBranchConditional, cond, then_label, merge_label);
+      ir_->start_label(then_label);
+    }
+
     spirv::Value addr_ptr;
 
     if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -938,9 +1000,7 @@ class TaskCodegen : public IRVisitor {
     }
 
     auto ret_type = ir_->get_primitive_type(dt);
-    spirv::Value data = ir_->query_value(stmt->val->raw_name());
 
-    spirv::Value val;
     if (is_real(dt)) {
       spv::Op atomic_fp_op;
       if (stmt->op_type == AtomicOpType::add) {
@@ -1013,6 +1073,12 @@ class TaskCodegen : public IRVisitor {
     } else {
       TI_NOT_IMPLEMENTED
     }
+
+    if (use_subgroup_reduction) {
+      ir_->make_inst(spv::OpBranch, merge_label);
+      ir_->start_label(merge_label);
+    }
+
     ir_->register_value(stmt->raw_name(), val);
   }
 

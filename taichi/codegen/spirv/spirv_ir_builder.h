@@ -399,6 +399,7 @@ class IRBuilder {
   Value get_work_group_size(uint32_t dim_index);
   Value get_num_work_groups(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
+  Value get_subgroup_invocation_id();
 
   // Expressions
   Value add(Value a, Value b);
@@ -537,6 +538,7 @@ class IRBuilder {
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
+  Value subgroup_local_invocation_id_;
 
   // Random function and variables
   bool init_rand_{false};

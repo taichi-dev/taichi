@@ -126,6 +126,12 @@ void Device::print_all_cap() const {
       {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
       {DeviceCapability::spirv_has_physical_storage_buffer,
        "spirv_has_physical_storage_buffer"},
+      {DeviceCapability::spirv_has_subgroup_basic, "spirv_has_subgroup_basic"},
+      {DeviceCapability::spirv_has_subgroup_vote, "spirv_has_subgroup_vote"},
+      {DeviceCapability::spirv_has_subgroup_arithmetic,
+       "spirv_has_subgroup_arithmetic"},
+      {DeviceCapability::spirv_has_subgroup_ballot,
+       "spirv_has_subgroup_ballot"},
       {DeviceCapability::wide_lines, "wide_lines"},
   };
   for (auto &pair : caps_) {

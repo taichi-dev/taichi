@@ -488,6 +488,31 @@ void VulkanDeviceCreator::create_logical_device() {
                "Taichi GPU GUI requires wide lines support");
   }
 
+  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+    VkPhysicalDeviceSubgroupProperties subgroup_properties{};
+    subgroup_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+    subgroup_properties.pNext = NULL;
+
+    VkPhysicalDeviceProperties2 physical_device_properties{};
+    physical_device_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physical_device_properties.pNext = &subgroup_properties;
+
+    vkGetPhysicalDeviceProperties2(physical_device_, &physical_device_properties);
+
+    if (subgroup_properties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_basic, true);
+    }
+    if (subgroup_properties.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_vote, true);
+    }
+    if (subgroup_properties.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_arithmetic, true);
+    }
+    if (subgroup_properties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_ballot, true);
+    }
+  }
+
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();

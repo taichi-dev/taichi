@@ -136,6 +136,10 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
+        if emscriptened:
+            cmake_args += ['-DTI_EMSCRIPTENED=ON']
+
         if shutil.which('ninja'):
             cmake_args += ['-GNinja']
 
@@ -157,6 +161,7 @@ class CMakeBuild(build_ext):
         os.makedirs(self.build_temp, exist_ok=True)
 
         print('-' * 10, 'Running CMake prepare', '-' * 40)
+        print(' '.join(['cmake', cmake_list_dir] + cmake_args))
         subprocess.check_call(['cmake', cmake_list_dir] + cmake_args,
                               cwd=self.build_temp,
                               env=env)

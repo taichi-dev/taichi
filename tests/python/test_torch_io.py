@@ -10,7 +10,7 @@ if has_pytorch():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_devices():
     n = 32
     x = ti.field(dtype=ti.i32, shape=n)
@@ -47,7 +47,7 @@ def test_io_devices():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io():
     n = 32
 
@@ -87,7 +87,7 @@ def test_io():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_2d():
     n = 32
 
@@ -111,7 +111,7 @@ def test_io_2d():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_3d():
     n = 16
 
@@ -137,7 +137,7 @@ def test_io_3d():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_simple():
     n = 32
 
@@ -164,7 +164,7 @@ def test_io_simple():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_zeros():
     mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
     zeros = torch.zeros((2, 6))
@@ -178,7 +178,7 @@ def test_io_zeros():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_io_struct():
     n = 16
     x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
@@ -198,7 +198,7 @@ def test_io_struct():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_fused_kernels():
     n = 12
     X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
@@ -210,7 +210,7 @@ def test_fused_kernels():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_device():
     n = 12
     X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
@@ -221,7 +221,7 @@ def test_device():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_shape_matrix():
     n = 12
     x = ti.Matrix.field(3, 2, ti.f32, shape=(n, n))
@@ -241,7 +241,7 @@ def test_shape_matrix():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_shape_vector():
     n = 12
     x = ti.Vector.field(3, ti.f32, shape=(n, n))
@@ -260,7 +260,7 @@ def test_shape_vector():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_torch_zero():
     @ti.kernel
     def test_torch(arr: ti.ext_arr()):
@@ -269,3 +269,19 @@ def test_torch_zero():
     test_torch(torch.zeros((0), dtype=torch.int32))
     test_torch(torch.zeros((0, 5), dtype=torch.int32))
     test_torch(torch.zeros((5, 0, 5), dtype=torch.int32))
+
+
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=[ti.opengl, ti.vulkan])
+def test_torch_view():
+    @ti.kernel
+    def copy(x: ti.any_arr(), y: ti.any_arr()):
+        for i, j in x:
+            y[i, j] = x[i, j]
+
+    x = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).T
+    y = ti.ndarray(int, (3, 3))
+
+    with pytest.raises(ValueError,
+                       match=r'Torch view tensors are not supported'):
+        copy(x, y)

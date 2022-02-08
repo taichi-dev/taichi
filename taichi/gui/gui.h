@@ -47,7 +47,7 @@ constexpr uint32 slider_bar_color = 0x333333;
 constexpr uint32 slider_circle_color = 0x555555;
 #endif
 
-class Canvas {
+class TI_DLL_EXPORT Canvas {
   struct Context {
     Vector4 _color;
     real _radius;
@@ -509,7 +509,7 @@ class GUIBaseCocoa {
 using GUIBase = GUIBaseCocoa;
 #endif
 
-class GUI : public GUIBase {
+class TI_DLL_EXPORT GUI : public GUIBase {
  public:
   std::string window_name;
   int width, height;

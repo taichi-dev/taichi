@@ -4,12 +4,12 @@ from typing import Iterable
 
 import numpy as np
 from taichi._lib import core as _ti_core
-from taichi._logging import warn
+from taichi._logging import error
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError, TaichiTypeError
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -22,21 +22,22 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
-                              taichi_scope)
-from taichi.tools.util import get_traceback, warning
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
+from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_taichi_type, warning)
+from taichi.types.primitive_types import f16, f32, f64, i32, i64
 
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
-    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+    return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
+        shape, element_type, elements)
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(_ti_core.expr_alloca())
+        return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
@@ -381,58 +382,45 @@ def get_runtime():
     return pytaichi
 
 
+def _check_in_range(npty, val):
+    iif = np.iinfo(npty)
+    if not iif.min <= val <= iif.max:
+        # This isn't the case we want to deal with: |val| does't fall into the valid range of either
+        # the signed or the unsigned type.
+        error(
+            f'Constant {val} has exceeded the range of {to_taichi_type(npty)}: [{iif.min}, {iif.max}]'
+        )
+
+
 def _clamp_unsigned_to_range(npty, val):
     # npty: np.int32 or np.int64
     iif = np.iinfo(npty)
     if iif.min <= val <= iif.max:
         return val
     cap = (1 << iif.bits)
-    if not 0 <= val < cap:
-        # We let pybind11 fail intentionally, because this isn't the case we want
-        # to deal with: |val| does't fall into the valid range of either
-        # the signed or the unsigned type.
-        return val
+    assert 0 <= val < cap
     new_val = val - cap
-    warn(
-        f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
-    )
     return new_val
 
 
 @taichi_scope
 def make_constant_expr_i32(val):
     assert isinstance(val, (int, np.integer))
-    return Expr(
-        _ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
+    return Expr(_ti_core.make_const_expr_int(i32, val))
 
 
 @taichi_scope
-def make_constant_expr(val):
+def make_constant_expr(val, dtype):
     if isinstance(val, (int, np.integer)):
-        if pytaichi.default_ip in {i32, u32}:
-            # It is not always correct to do such clamp without the type info on
-            # the LHS, but at least this makes assigning constant to unsigned
-            # int work. See https://github.com/taichi-dev/taichi/issues/2060
-            return Expr(
-                _ti_core.make_const_expr_i32(
-                    _clamp_unsigned_to_range(np.int32, val)))
-        if pytaichi.default_ip in {i64, u64}:
-            return Expr(
-                _ti_core.make_const_expr_i64(
-                    _clamp_unsigned_to_range(np.int64, val)))
-        assert False
-    elif isinstance(val, (float, np.floating, np.ndarray)):
-        if pytaichi.default_fp == f32:
-            return Expr(_ti_core.make_const_expr_f32(val))
-        if pytaichi.default_fp == f64:
-            return Expr(_ti_core.make_const_expr_f64(val))
-        if pytaichi.default_fp == f16:
-            # Use f32 to interact with python
-            return Expr(_ti_core.make_const_expr_f32(val))
-        assert False
-    else:
-        raise TaichiTypeError(
-            f'Invalid constant scalar data type: {type(val)}')
+        constant_dtype = pytaichi.default_ip if dtype is None else dtype
+        _check_in_range(to_numpy_type(constant_dtype), val)
+        return Expr(
+            _ti_core.make_const_expr_int(
+                constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
+    if isinstance(val, (float, np.floating)):
+        constant_dtype = pytaichi.default_fp if dtype is None else dtype
+        return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
+    raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 
 
 def reset():
@@ -471,7 +459,7 @@ class _UninitializedRootFieldsBuilder:
         if item == '__qualname__':
             # For sphinx docstring extraction.
             return '_UninitializedRootFieldsBuilder'
-        raise InvalidOperationError('Please call init() first')
+        raise TaichiRuntimeError('Please call init() first')
 
 
 # `root` initialization must be delayed until after the program is
@@ -744,7 +732,7 @@ def ti_format(*args, **kwargs):
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    _ti_core.create_assert_stmt(
+    get_runtime().prog.current_ast_builder().create_assert_stmt(
         Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
 
 
@@ -882,7 +870,7 @@ def grouped(x):
 
 
 def stop_grad(x):
-    _ti_core.stop_grad(x.snode.ptr)
+    get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
 
 
 def current_cfg():

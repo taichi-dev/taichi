@@ -1,3 +1,4 @@
-from taichi.profiler.kernelprofiler import \
-    KernelProfiler  # import for docstring-gen
-from taichi.profiler.kernelprofiler import get_default_kernel_profiler
+from taichi.profiler.kernel_metrics import *
+from taichi.profiler.kernel_profiler import *
+from taichi.profiler.memory_profiler import *
+from taichi.profiler.scoped_profiler import *

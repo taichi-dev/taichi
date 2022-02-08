@@ -9,6 +9,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 #include "taichi/ir/type.h"
+#include "taichi/program/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -171,13 +172,17 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var, Arch arch);
 
   FrontendForStmt(const ExprGroup &loop_var,
                   const mesh::MeshPtr &mesh,
-                  const mesh::MeshElementType &element_type);
+                  const mesh::MeshElementType &element_type,
+                  Arch arch);
 
-  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
+  FrontendForStmt(const Expr &loop_var,
+                  const Expr &begin,
+                  const Expr &end,
+                  Arch arch);
 
   bool is_container_statement() const override {
     return true;
@@ -670,6 +675,10 @@ class ConstExpression : public Expression {
   ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
+  template <typename T>
+  ConstExpression(const DataType &dt, const T &x) : val({dt, x}) {
+    ret_type = dt;
+  }
 
   void type_check() override;
 
@@ -803,9 +812,10 @@ class MeshIndexConversionExpression : public Expression {
 class ASTBuilder {
  private:
   std::vector<Block *> stack_;
+  Arch arch_;
 
  public:
-  ASTBuilder(Block *initial) {
+  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
   }
 
@@ -824,12 +834,20 @@ class ASTBuilder {
     }
   };
 
+  // The function will be removed soon
+  Arch arch() const {
+    return arch_;
+  }
+
   std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
   void insert_assignment(Expr &lhs, const Expr &rhs);
   Expr make_var(const Expr &x);
+  void insert_for(const Expr &s,
+                  const Expr &e,
+                  const std::function<void(Expr)> &func);
 };
 
 ASTBuilder &current_ast_builder();
@@ -840,7 +858,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext();
+  FrontendContext(Arch arch);
 
   ASTBuilder &builder() {
     return *current_builder_;

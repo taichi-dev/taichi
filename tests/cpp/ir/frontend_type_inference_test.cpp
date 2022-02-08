@@ -104,10 +104,10 @@ TEST(FrontendTypeInference, TensorElement) {
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
   const std::vector<int> shape{3};
   auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+  prog->current_ast_builder()->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       PrimitiveType::u32));
-  var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
+  var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;
   auto index = Expr::make<ConstExpression, int32>(2);
   index->type_check();
   auto tensor_element =

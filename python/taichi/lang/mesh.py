@@ -370,8 +370,8 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
-        if not lang.is_extension_supported(impl.current_cfg().arch,
-                                           lang.extension.mesh):
+        if not lang.misc.is_extension_supported(impl.current_cfg().arch,
+                                                lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 

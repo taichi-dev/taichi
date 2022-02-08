@@ -8,10 +8,8 @@
 #define VK_USE_PLATFORM_ANDROID_KHR
 #endif
 
-#ifndef __APPLE__
 #include <volk.h>
 #define VK_NO_PROTOTYPES
-#endif
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>

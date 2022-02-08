@@ -26,5 +26,5 @@ jobs:
         if: github.event.action == 'opened' || github.event.action == 'edited'
         run: python misc/ci_create_pr_card.py
         env:
-          GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
           GH_EVENT: ${{ toJson(github.event) }}

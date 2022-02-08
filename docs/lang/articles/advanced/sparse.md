@@ -8,6 +8,9 @@ sidebar_position: 3
 Prerequisite: please read the [Fields](lang/articles/basic/field.md), [Fields (advanced)](lang/articles/advanced/layout.md), and [SNodes](lang/articles/misc/internal.md#data-structure-organization) first.
 :::
 
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)
+Figure: A 3D fluid simulation that uses both particles and grids. Left to right: particles, 1x1x1 voxels, 4x4x4 blocks, 16x16x16 blocks.
+
 ## Motivation
 
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, such as physical simulation, rendering, and 3D reconstruction.
@@ -38,8 +41,7 @@ In Taichi, programmers can compose data structures similar to VDB and SPGrid wit
 2. The sparse data could be looped in parallel.
 3. Automatic memory access optimization.
 
-![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)
-Figure: A 3D fluid simulation that uses both particles and grids. Left to right: particles, 1x1x1 voxels, 4x4x4 blocks, 16x16x16 blocks.
+
 
 :::note
 **Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of computation on sparse spatial data structures.
@@ -57,7 +59,7 @@ Sparse spatial data structures in Taichi are usually composed of `pointer`, `bit
 On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
 The rest of the grid is simply *inactive*.
-In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell on a sparse spatial data structure, Taichi automatically populates the data structure. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
+In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
 
 :::note
 Reading an inactive pixel returns zero.
@@ -94,7 +96,7 @@ def print_active():
     #         field x[3, 5] = 0.000000
 ```
 The code snippet above creates an 8x8 sparse grid, with the top-level being a 4x4 pointer array (line 2 of `pointer.py`),
-and each pointer points to a 2x2 dense block. The `activate` function could automatically activates `block[1,1]` which includes `x[2,3]` and `block[1,2]` which includes `x[2, 4]`. Other pixels of `block[1,1]` (`x[2,2], x[3, 2], x[3, 3]`) and `block[1,2]` (`x[2, 5], x[3, 4], x[3, 5]`) are also implicitly activated if `pixel` is a dense node. Because all pixels in the dense block share the same activity value.
+and each pointer pointing to a 2x2 dense block.
 You can write and read the sparse field like a dense field using indices. The below figure shows the active blocks and pixels in green.
 
 <center>
@@ -103,14 +105,19 @@ You can write and read the sparse field like a dense field using indices. The be
 
 </center>
 
+Executing the `activate()` function automatically activates `block[1,1]`, which includes `x[2,3]`, and `block[1,2]`, which includes `x[2,4]`. Other pixels of `block[1,1]` (`x[2,2], x[3,2], x[3,3]`) and `block[1,2]` (`x[2,5], x[3,4], x[3,5]`) are also implicitly activated because all pixels in the dense block share the same activity value.
 
 In fact, the sparse field is a SNode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active()` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` SNodes. `for i, j in pixel` would loop over all active `dense` SNodes.
 
 <center>
 
-![Pointer Snode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/pointer_tree_small.png)
+![Pointer SNode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/pointer_tree_small.png)
 
 </center>
+
+
+
+### Bitmasked SNode
 
 While a null pointer can effectively represent an empty sub-tree, at the leaf level using 64 bits to represent the activity
 of a single pixel can consume too much space.
@@ -122,7 +129,6 @@ goes against our goal to use sparse spatial data structures to save space.
 To amortize the storage cost of pointers, you could organize pixels in a *blocked* manner
 and let the pointers directly point to the blocks like the data structure defined in `pointer.py`.
 
-### Bitmasked Snode
 One caveat of this design is that pixels in the same `dense` block can no longer change their activity flexibly.
 Instead, they share a single activity flag. To address this issue,
 the `bitmasked` SNode additionally allocates 1-bit per pixel data to represent the pixel activity.
@@ -146,7 +152,7 @@ def print_active():
         print('field x[{}, {}] = {}'.format(i, j, x[i, j]))
 ```
 
-The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked Snode replaces the dense Snode (line 3). As shown in the figure below, the active blocks are the same as the `ponter.py`. But the bitmasked pixels in the block are not all activated. Because each pixel in the block has an activity value.
+The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked SNode replaces the dense SNode (line 3). As shown in the figure below, the active blocks are the same as the `ponter.py`. But the bitmasked pixels in the block are not all activated. Because each pixel in the block has an activity value.
 
 <center>
 
@@ -155,16 +161,16 @@ The code snippet above also creates an 8x8 sparse grid. The only difference betw
 </center>
 
 
-The bitmasked Snodes are like dense Snodes which have auxiliary activity values.
+The bitmasked SNodes are like dense SNodes which have auxiliary activity values.
 <center>
 
-![Bitmasked Snode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bitmasked_tree_small.png)
+![Bitmasked SNode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bitmasked_tree_small.png)
 
 </center>
 
 ### Dynamic SNode
 
-To support variable-length fields, Taichi provides dynamic Snodes. In the code snippet below create a 5x1 dense block firstly (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you could use `ti.append` to add a value to the end of a dynamic Snode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic Snode.
+To support variable-length fields, Taichi provides dynamic SNodes. In the code snippet below create a 5x1 dense block firstly (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you could use `ti.append` to add a value to the end of a dynamic SNode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic SNode.
 
 ```python {3} title=dynamic.py
 x = ti.field(ti.i32)
@@ -198,7 +204,7 @@ The Taichi system ensures efficient parallelization.
 
 ### Explicitly manipulating and querying sparsity
 
-Taichi also provides APIs that explicitly manipulate data structure sparsity. You could manually **check** the activity, **active** or **deactivate** Snode. Based on the field defined below, we illustrate these functions.
+Taichi also provides APIs that explicitly manipulate data structure sparsity. You could manually **check** the activity, **active** or **deactivate** SNode. Based on the field defined below, we illustrate these functions.
 
 ```python
 x = ti.field(dtype=ti.i32)

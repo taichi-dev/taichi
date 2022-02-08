@@ -1,0 +1,9 @@
+{
+  "lang": "Language Features & Embedding in Python",
+  "gui": "GGUI",
+  "doc": "Docs",
+  "docs": "Docs",
+  "benchmark": "Backend Performance",
+  "aot": "AOT",
+  "ir": "Compiler Frontend & Middle-end"
+}

@@ -382,11 +382,16 @@ parallelize = _ti_core.parallelize
 serialize = lambda: parallelize(1)
 block_dim = _ti_core.block_dim
 
+
 def global_thread_idx():
-    return impl.get_runtime().prog.current_ast_builder().insert_thread_idx_expr()
+    return impl.get_runtime().prog.current_ast_builder(
+    ).insert_thread_idx_expr()
+
 
 def mesh_patch_idx():
-    return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr()
+    return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
+    )
+
 
 def Tape(loss, clear_gradients=True):
     """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The

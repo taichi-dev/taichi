@@ -3,9 +3,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
-permissions:
-  repository-projects: write
-
 jobs:
   pre_submit:
     name: Presubmit Tasks
@@ -30,4 +27,4 @@ jobs:
         run: python misc/ci_create_pr_card.py
         env:
           GH_EVENT: ${{ toJson(github.event) }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

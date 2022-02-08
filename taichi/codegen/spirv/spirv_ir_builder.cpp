@@ -621,15 +621,19 @@ Value IRBuilder::get_global_invocation_id(uint32_t dim_index) {
 Value IRBuilder::get_subgroup_invocation_id() {
   if (subgroup_local_invocation_id_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
-    subgroup_local_invocation_id_ = new_value(ptr_type, ValueKind::kVariablePtr);
+    subgroup_local_invocation_id_ =
+        new_value(ptr_type, ValueKind::kVariablePtr);
     ib_.begin(spv::OpVariable)
-        .add_seq(ptr_type, subgroup_local_invocation_id_, spv::StorageClassInput)
+        .add_seq(ptr_type, subgroup_local_invocation_id_,
+                 spv::StorageClassInput)
         .commit(&global_);
     this->decorate(spv::OpDecorate, subgroup_local_invocation_id_,
-                    spv::DecorationBuiltIn, spv::BuiltInSubgroupLocalInvocationId);
+                   spv::DecorationBuiltIn,
+                   spv::BuiltInSubgroupLocalInvocationId);
   }
 
-  return this->make_value(spv::OpLoad, t_uint32_, subgroup_local_invocation_id_);
+  return this->make_value(spv::OpLoad, t_uint32_,
+                          subgroup_local_invocation_id_);
 }
 
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \

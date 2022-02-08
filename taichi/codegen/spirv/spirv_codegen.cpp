@@ -921,7 +921,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value val;
     bool use_subgroup_reduction = false;
 
-    if (stmt->is_reduction && device_->get_cap(DeviceCapability::spirv_has_subgroup_arithmetic)) {
+    if (stmt->is_reduction &&
+        device_->get_cap(DeviceCapability::spirv_has_subgroup_arithmetic)) {
       spv::Op atomic_op = spv::OpNop;
       bool negation = false;
       if (is_integral(dt)) {
@@ -949,7 +950,8 @@ class TaskCodegen : public IRVisitor {
       }
 
       if (atomic_op != spv::OpNop) {
-        spirv::Value scope_subgroup = ir_->int_immediate_number(ir_->i32_type(), 3);
+        spirv::Value scope_subgroup =
+            ir_->int_immediate_number(ir_->i32_type(), 3);
         spirv::Value operation_reduce = ir_->const_i32_zero_;
         if (negation) {
           if (is_integral(dt)) {
@@ -958,7 +960,8 @@ class TaskCodegen : public IRVisitor {
             data = ir_->make_value(spv::OpFNegate, data.stype, data);
           }
         }
-        data = ir_->make_value(atomic_op, ir_->get_primitive_type(dt), scope_subgroup, operation_reduce, data);
+        data = ir_->make_value(atomic_op, ir_->get_primitive_type(dt),
+                               scope_subgroup, operation_reduce, data);
         val = data;
         use_subgroup_reduction = true;
       }
@@ -969,12 +972,13 @@ class TaskCodegen : public IRVisitor {
 
     if (use_subgroup_reduction) {
       spirv::Value subgroup_id = ir_->get_subgroup_invocation_id();
-      spirv::Value cond = ir_->make_value(spv::OpIEqual, ir_->bool_type(), subgroup_id, ir_->const_i32_zero_);
-      
+      spirv::Value cond = ir_->make_value(spv::OpIEqual, ir_->bool_type(),
+                                          subgroup_id, ir_->const_i32_zero_);
+
       then_label = ir_->new_label();
       merge_label = ir_->new_label();
       ir_->make_inst(spv::OpSelectionMerge, merge_label,
-                    spv::SelectionControlMaskNone);
+                     spv::SelectionControlMaskNone);
       ir_->make_inst(spv::OpBranchConditional, cond, then_label, merge_label);
       ir_->start_label(then_label);
     }

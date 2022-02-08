@@ -1,4 +1,4 @@
-from .image import imdisplay, imread, imresize, imshow, imwrite
+from .image import imread, imresize, imshow, imwrite
 from .np2ply import PLYWriter
 from .util import *
 # Don't import taichi_logo here which will cause circular import.
@@ -8,7 +8,6 @@ from .video import VideoManager
 __all__ = [
     'PLYWriter',
     'VideoManager',
-    'imdisplay',
     'imread',
     'imresize',
     'imshow',

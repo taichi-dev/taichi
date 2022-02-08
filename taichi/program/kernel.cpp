@@ -396,7 +396,7 @@ void Kernel::init(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>();
+  context = std::make_unique<FrontendContext>(program.config.arch);
   ir = context->get_root();
   ir_is_ast_ = true;
 

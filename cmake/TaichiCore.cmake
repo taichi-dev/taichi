@@ -8,6 +8,7 @@ option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
 option(TI_EMSCRIPTENED "Build using emscripten" OFF)
+set(_TI_SYMBOL_VISIBILITY default)
 
 if(TI_EMSCRIPTENED)
     set(TI_WITH_LLVM OFF)
@@ -224,6 +225,7 @@ endif()
 # everywhere in python.
 set(CORE_LIBRARY_NAME taichi_isolated_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
+set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES CXX_VISIBILITY_PRESET ${_TI_SYMBOL_VISIBILITY})
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior
@@ -324,6 +326,7 @@ else()
 endif()
 
 if (TI_WITH_OPENGL)
+    set(SPIRV_CROSS_CLI false)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
@@ -340,9 +343,7 @@ target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 if (TI_WITH_VULKAN)
     include_directories(SYSTEM external/Vulkan-Headers/include)
 
-    if (NOT APPLE)
-        include_directories(SYSTEM external/volk)
-    endif()
+    include_directories(SYSTEM external/volk)
 
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
@@ -358,8 +359,6 @@ if (TI_WITH_VULKAN)
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
-        target_link_directories(${CORE_LIBRARY_NAME} PUBLIC ${CMAKE_BINARY_DIR})
-        target_link_libraries(${CORE_LIBRARY_NAME} MoltenVK)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
     endif()
 endif ()
@@ -385,10 +384,12 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
-        if (NOT TI_EXPORT_CORE) # expose api for CHI IR Builder
+        if ((NOT TI_EXPORT_CORE) AND (NOT ${_TI_SYMBOL_VISIBILITY} STREQUAL hidden)) # expose api for CHI IR Builder
+            message(WARNING "Using linker.map to hide symbols!")
             target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         endif ()
-        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
+        # Avoid glibc dependencies
+        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
     endif()
 else()
     # windows
@@ -413,6 +414,12 @@ if(NOT TI_EMSCRIPTENED)
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()
+
+    set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES CXX_VISIBILITY_PRESET ${_TI_SYMBOL_VISIBILITY})
+    # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
+    if (LINUX)
+        target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+    endif()
     # It is actually possible to link with an OBJECT library
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})

@@ -169,6 +169,10 @@ for examples on using autodiff-based force evaluation MPM and FEM.
 As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
 If there're multiple output variables that you want to back-propagate
 gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`.
+Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually
+before calling the `kernel.grad()`. The reason is that the `grad` of the output variables themselves
+will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation.
+If using `ti.Tape()`, the program will help you do this under the hood.
 
 ```python {13-14}
 import taichi as ti
@@ -188,6 +192,8 @@ def func():
 
 for i in range(N):
     x[i] = i
+
+# Set the `grad` of the output variables to `1` before calling `func.grad()`.
 loss.grad[None] = 1
 loss2.grad[None] = 1
 
@@ -296,41 +302,22 @@ func_break_rule_2.grad()
 assert x.grad[1] == 4.0
 assert x.grad[2] == 3.0
 ```
-### Kernel Simplicity Rule
 
-:::note Kernel Simplicity Rule
-Kernel body must consist of multiple simply nested for-loops. For example, each for-loop can either contain exactly one (nested) for-loop (and no other statements), or a group of statements without loops.
+### Avoid mixed usage of parallel for-loop and non-for statements
+
+Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system.
+Please split the two kinds of statements into different kernels.
+
+:::note
+Kernel body must only consist of either multiple for-loops or non-for statements.
 :::
 
 Example:
 
 ```python
 @ti.kernel
-def differentiable_task1():
-    # Good: simple for loop
-    for i in x:
-        x[i] = y[i]
-
-@ti.kernel
-def differentiable_task2():
-    # Good: one nested for loop
-    for i in range(10):
-        for j in range(20):
-            for k in range(300):
-                ... do whatever you want, as long as there are no loops
-
-@ti.kernel
-def differentiable_task3():
-    # Bad: the outer for loop contains two for loops.
-    for i in range(10):
-        for j in range(20):
-            ...
-        for j in range(20):
-            ...
-
-@ti.kernel
-def differentiable_task4():
-    # Bad: mixed usage of for-loop and a statement without looping. Please split them into two kernels.
+def differentiable_task():
+    # Bad: mixed usage of a parallel for-loop and a statement without looping. Please split them into two kernels.
     loss[None] += x[0]
     for i in range(10):
         ...
@@ -345,26 +332,49 @@ to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assigne
 if you see any silent wrong results.
 :::
 
-### Workaround kernel simplicity rule
+### Write differentiable code inside Taichi kernel
 
-:::tip
-**static for-loops** (e.g. `for i in ti.static(range(4))`) will get
-unrolled by the Python frontend preprocessor and therefore does not
-count as a level of loop.
-:::
+Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. Therefore, only the code written in Taichi scope is auto-differentiated. Although you can modify the `grad` of a field in python scope manually, the code is not auto-differentiated.
 
-For instance, we can rewrite `differentiable_task3` listed above using `ti.static`:
+Example:
 
-``` python
+```python
+import taichi as ti
+
+ti.init()
+x = ti.field(dtype=float, shape=(), needs_grad=True)
+loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+
 @ti.kernel
-def differentiable_task3():
-    # Good: ti.static unrolls the inner loops so that it now only has one simple for loop.
-    for i in range(10):
-        for j in ti.static(range(20)):
-            ...
-        for j in ti.static(range(20)):
-            ...
+def differentiable_task():
+    for l in range(3):
+        loss[None] += ti.sin(x[None]) + 1.0
+
+@ti.kernel
+def manipulation_in_kernel():
+    loss[None] += ti.sin(x[None]) + 1.0
+
+
+x[None] = 0.0
+with ti.Tape(loss=loss):
+    # The line below in python scope only contribute to the forward pass
+    # but not the backward pass i.e., not auto-differentiated.
+    loss[None] += ti.sin(x[None]) + 1.0
+
+    # Code in Taichi scope i.e. inside Taichi kernels, is auto-differentiated.
+    manipulation_in_kernel()
+    differentiable_task()
+
+# The outputs are 5.0 and 4.0
+print(loss[None], x.grad[None])
+
+# You can modify the grad of a field manually in python scope, e.g., clear the grad.
+x.grad[None] = 0.0
+# The output is 0.0
+print(x.grad[None])
 ```
+
 
 ## Extending Taichi Autodiff system
 

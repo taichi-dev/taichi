@@ -7,6 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -97,7 +98,7 @@ class FrontendAssertStmt : public Stmt {
                      const std::vector<Expr> &args_)
       : text(text), cond(cond) {
     for (auto &a : args_) {
-      args.push_back(load_if_ptr(a));
+      args.push_back(a);
     }
   }
 
@@ -118,7 +119,7 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(const Expr &condition) : condition(load_if_ptr(condition)) {
+  FrontendIfStmt(const Expr &condition) : condition(condition) {
   }
 
   bool is_container_statement() const override {
@@ -136,7 +137,7 @@ class FrontendPrintStmt : public Stmt {
   FrontendPrintStmt(const std::vector<EntryType> &contents_) {
     for (const auto &c : contents_) {
       if (std::holds_alternative<Expr>(c))
-        contents.push_back(load_if_ptr(std::get<Expr>(c)));
+        contents.push_back(std::get<Expr>(c));
       else
         contents.push_back(c);
     }
@@ -169,13 +170,17 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var, Arch arch);
 
   FrontendForStmt(const ExprGroup &loop_var,
                   const mesh::MeshPtr &mesh,
-                  const mesh::MeshElementType &element_type);
+                  const mesh::MeshElementType &element_type,
+                  Arch arch);
 
-  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
+  FrontendForStmt(const Expr &loop_var,
+                  const Expr &begin,
+                  const Expr &end,
+                  Arch arch);
 
   bool is_container_statement() const override {
     return true;
@@ -227,7 +232,7 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(const Expr &cond) : cond(load_if_ptr(cond)) {
+  FrontendWhileStmt(const Expr &cond) : cond(cond) {
   }
 
   bool is_container_statement() const override {
@@ -293,12 +298,12 @@ class UnaryOpExpression : public Expression {
   DataType cast_type;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(load_if_ptr(operand)) {
+      : type(type), operand(operand) {
     cast_type = PrimitiveType::unknown;
   }
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
-      : type(type), operand(load_if_ptr(operand)), cast_type(cast_type) {
+      : type(type), operand(operand), cast_type(cast_type) {
   }
 
   void type_check() override;
@@ -316,7 +321,7 @@ class BinaryOpExpression : public Expression {
   Expr lhs, rhs;
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
-      : type(type), lhs(load_if_ptr(lhs)), rhs(load_if_ptr(rhs)) {
+      : type(type), lhs(lhs), rhs(rhs) {
   }
 
   void type_check() override;
@@ -344,9 +349,9 @@ class TernaryOpExpression : public Expression {
                       const Expr &op2,
                       const Expr &op3)
       : type(type) {
-    this->op1.set(load_if_ptr(op1));
-    this->op2.set(load_if_ptr(op2));
-    this->op3.set(load_if_ptr(op3));
+    this->op1.set(op1);
+    this->op2.set(op2);
+    this->op3.set(op3);
   }
 
   void type_check() override;
@@ -373,7 +378,7 @@ class InternalFuncCallExpression : public Expression {
                              const std::vector<Expr> &args_)
       : func_name(func_name) {
     for (auto &a : args_) {
-      args.push_back(load_if_ptr(a));
+      args.push_back(a);
     }
   }
 
@@ -497,7 +502,7 @@ class TensorElementExpression : public Expression {
                           const ExprGroup &indices,
                           const std::vector<int> &shape,
                           int stride)
-      : var(var), indices(indices.loaded()), shape(shape), stride(stride) {
+      : var(var), indices(indices), shape(shape), stride(stride) {
     // TODO: shape & indices check
   }
 
@@ -541,10 +546,7 @@ class RangeAssumptionExpression : public Expression {
                             const Expr &base,
                             int low,
                             int high)
-      : input(load_if_ptr(input)),
-        base(load_if_ptr(base)),
-        low(low),
-        high(high) {
+      : input(input), base(base), low(low), high(high) {
   }
 
   void type_check() override;
@@ -630,62 +632,19 @@ class SNodeOpExpression : public Expression {
   Expr value;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices.loaded()) {
+      : snode(snode), op_type(op_type), indices(indices) {
   }
 
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const Expr &value)
-      : snode(snode),
-        op_type(op_type),
-        indices(indices.loaded()),
-        value(value) {
+      : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
   void type_check() override;
 
   void serialize(std::ostream &ss) override;
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-// TODO: Make this a non-expr
-class LocalLoadExpression : public Expression {
- public:
-  Expr ptr;
-  LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
-    // Now it is only constructed by load_if_ptr. No type_check will be called.
-    ret_type = ptr->ret_type;
-  }
-
-  void type_check() override {
-  }
-
-  void serialize(std::ostream &ss) override {
-    ss << "lcl load ";
-    ptr.serialize(ss);
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-// TODO: make this a non-expr
-class GlobalLoadExpression : public Expression {
- public:
-  Expr ptr;
-  GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
-    // Now it is only constructed by load_if_ptr. No type_check will be called.
-    ret_type = ptr->ret_type;
-  }
-
-  void type_check() override {
-  }
-
-  void serialize(std::ostream &ss) override {
-    ss << "gbl load ";
-    ptr.serialize(ss);
-  }
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -786,7 +745,7 @@ class MeshRelationAccessExpression : public Expression {
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
                                mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(load_if_ptr(mesh_idx)), to_type(to_type) {
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
@@ -794,9 +753,9 @@ class MeshRelationAccessExpression : public Expression {
                                mesh::MeshElementType to_type,
                                const Expr neighbor_idx)
       : mesh(mesh),
-        mesh_idx(load_if_ptr(mesh_idx)),
+        mesh_idx(mesh_idx),
         to_type(to_type),
-        neighbor_idx(load_if_ptr(neighbor_idx)) {
+        neighbor_idx(neighbor_idx) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -822,10 +781,7 @@ class MeshIndexConversionExpression : public Expression {
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type)
-      : mesh(mesh),
-        idx_type(idx_type),
-        idx(load_if_ptr(idx)),
-        conv_type(conv_type) {
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -834,9 +790,10 @@ class MeshIndexConversionExpression : public Expression {
 class ASTBuilder {
  private:
   std::vector<Block *> stack_;
+  Arch arch_;
 
  public:
-  ASTBuilder(Block *initial) {
+  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
   }
 
@@ -855,10 +812,20 @@ class ASTBuilder {
     }
   };
 
+  // The function will be removed soon
+  Arch arch() const {
+    return arch_;
+  }
+
   std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
+  void insert_assignment(Expr &lhs, const Expr &rhs);
+  Expr make_var(const Expr &x);
+  void insert_for(const Expr &s,
+                  const Expr &e,
+                  const std::function<void(Expr)> &func);
 };
 
 ASTBuilder &current_ast_builder();
@@ -869,7 +836,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext();
+  FrontendContext(Arch arch);
 
   ASTBuilder &builder() {
     return *current_builder_;
@@ -881,5 +848,9 @@ class FrontendContext {
     return std::move(root_node_);
   }
 };
+
+void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
+
+void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
 TLANG_NAMESPACE_END

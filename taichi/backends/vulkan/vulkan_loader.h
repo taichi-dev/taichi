@@ -4,6 +4,7 @@
 #include <mutex>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/system/dynamic_loader.h"
 
 namespace taichi {
 namespace lang {
@@ -33,6 +34,10 @@ class VulkanLoader {
   bool initialized{false};
 
   VulkanLoader();
+
+#if defined(__APPLE__)
+  std::unique_ptr<DynamicLoader> vulkan_rt_{nullptr};
+#endif
 
   VkInstance vulkan_instance_{VK_NULL_HANDLE};
   VkDevice vulkan_device_{VK_NULL_HANDLE};

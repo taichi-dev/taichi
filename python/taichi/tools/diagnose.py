@@ -47,7 +47,7 @@ def main():
     try_print('import', 'ti')
     print('')
     for arch in ['cc', 'cpu', 'metal', 'opengl', 'cuda', 'vulkan']:
-        try_print(arch, f'ti.is_arch_supported(ti.{arch})')
+        try_print(arch, f'ti.lang.misc.is_arch_supported(ti.{arch})')
     print('')
 
     try:
@@ -123,3 +123,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+__all__ = []

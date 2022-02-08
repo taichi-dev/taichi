@@ -11,13 +11,6 @@ std::string Expression::get_attribute(const std::string &key) const {
   }
 }
 
-ExprGroup ExprGroup::loaded() const {
-  auto indices_loaded = *this;
-  for (int i = 0; i < (int)this->size(); i++)
-    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
-  return indices_loaded;
-}
-
 void ExprGroup::serialize(std::ostream &ss) const {
   for (int i = 0; i < (int)exprs.size(); i++) {
     exprs[i].serialize(ss);

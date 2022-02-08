@@ -121,3 +121,6 @@ def imshow(img, title='imshow'):
         import PIL.Image  # pylint: disable=C0415
         img = cook_image_to_bytes(img)
         IPython.display.display(PIL.Image.fromarray(img))
+
+
+__all__ = ['imdisplay', 'imread', 'imresize', 'imshow', 'imwrite']

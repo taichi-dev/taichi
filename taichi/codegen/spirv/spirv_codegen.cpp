@@ -420,10 +420,13 @@ class TaskCodegen : public IRVisitor {
     spirv::Value input_val = ir_->query_value(stmt->input->raw_name());
     auto stype = input_val.stype;
     spirv::Value tmp0 = ir_->int_immediate_number(stype, stmt->bit_begin);
-    spirv::Value tmp1 = ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
-    spirv::Value tmp2 = ir_->make_value(spv::OpShiftRightArithmetic, stype, input_val, tmp0);
-    spirv::Value tmp3 = ir_->make_value(spv::OpShiftLeftLogical, stype,
-                          ir_->int_immediate_number(stype, 1), tmp1);
+    spirv::Value tmp1 =
+        ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
+    spirv::Value tmp2 =
+        ir_->make_value(spv::OpShiftRightArithmetic, stype, input_val, tmp0);
+    spirv::Value tmp3 =
+        ir_->make_value(spv::OpShiftLeftLogical, stype,
+                        ir_->int_immediate_number(stype, 1), tmp1);
     spirv::Value tmp4 = ir_->sub(tmp3, ir_->int_immediate_number(stype, 1));
     spirv::Value val = ir_->make_value(spv::OpBitwiseAnd, stype, tmp2, tmp4);
     ir_->register_value(stmt->raw_name(), val);
@@ -998,7 +1001,8 @@ class TaskCodegen : public IRVisitor {
       }
 
       // Semantics = (UniformMemory 0x40) | (AcquireRelease 0x8)
-      ir_->make_inst(spv::OpMemoryBarrier, ir_->const_i32_one_,
+      ir_->make_inst(
+          spv::OpMemoryBarrier, ir_->const_i32_one_,
           ir_->uint_immediate_number(
               ir_->u32_type(), spv::MemorySemanticsAcquireReleaseMask |
                                    spv::MemorySemanticsUniformMemoryMask));

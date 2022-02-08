@@ -813,7 +813,9 @@ void IRBuilder::register_value(std::string name, Value value) {
   if (it != value_name_tbl_.end()) {
     TI_ERROR("{} is existed.", name);
   }
-  this->debug(spv::OpName, value, fmt::format("{}_{}", name, value.stype.dt.to_string()));  // Debug info
+  this->debug(
+      spv::OpName, value,
+      fmt::format("{}_{}", name, value.stype.dt.to_string()));  // Debug info
   value_name_tbl_[name] = value;
 }
 
@@ -857,9 +859,9 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
       Value new_float = atomic_op(old_float, data);
       Value new_val = make_value(spv::OpBitcast, t_uint32_, new_float);
       // int loaded = atomicCompSwap(vals[0], old, new);
-      auto semantics = uint_immediate_number(t_uint32_,
-        spv::MemorySemanticsAcquireReleaseMask |
-        spv::MemorySemanticsUniformMemoryMask);
+      auto semantics = uint_immediate_number(
+          t_uint32_, spv::MemorySemanticsAcquireReleaseMask |
+                         spv::MemorySemanticsUniformMemoryMask);
       make_inst(spv::OpMemoryBarrier, const_i32_one_, semantics);
       Value loaded = make_value(
           spv::OpAtomicCompareExchange, t_uint32_, addr_ptr,

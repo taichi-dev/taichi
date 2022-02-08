@@ -3,7 +3,6 @@ import functools
 import os
 import shutil
 import tempfile
-import time
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
@@ -11,9 +10,7 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes
-from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import SNode
-from taichi.lang.util import warning
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -81,16 +78,6 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
-
-
-def print_memory_profile_info():
-    """Memory profiling tool for LLVM backends with full sparse support.
-
-    This profiler is automatically on.
-    """
-    impl.get_runtime().materialize()
-    impl.get_runtime().prog.print_memory_profiler_info()
-
 
 extension = _ti_core.Extension
 
@@ -462,178 +449,6 @@ def clear_all_gradients():
         visit(root_fb)
 
 
-def benchmark(_func, repeat=300, args=()):
-    def run_benchmark():
-        compile_time = time.time()
-        _func(*args)  # compile the kernel first
-        sync()
-        compile_time = time.time() - compile_time
-        stat_write('compilation_time', compile_time)
-        codegen_stat = _ti_core.stat()
-        for line in codegen_stat.split('\n'):
-            try:
-                a, b = line.strip().split(':')
-            except:
-                continue
-            a = a.strip()
-            b = int(float(b))
-            if a == 'codegen_kernel_statements':
-                stat_write('compiled_inst', b)
-            if a == 'codegen_offloaded_tasks':
-                stat_write('compiled_tasks', b)
-            elif a == 'launched_tasks':
-                stat_write('launched_tasks', b)
-
-        # Use 3 initial iterations to warm up
-        # instruction/data caches. Discussion:
-        # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for _ in range(3):
-            _func(*args)
-            sync()
-        clear_kernel_profile_info()
-        t = time.time()
-        for _ in range(repeat):
-            _func(*args)
-            sync()
-        elapsed = time.time() - t
-        avg = elapsed / repeat
-        stat_write('wall_clk_t', avg)
-        device_time = kernel_profiler_total_time()
-        avg_device_time = device_time / repeat
-        stat_write('exec_t', avg_device_time)
-
-    run_benchmark()
-
-
-def benchmark_plot(fn=None,
-                   cases=None,
-                   columns=None,
-                   column_titles=None,
-                   archs=None,
-                   title=None,
-                   bars='sync_vs_async',
-                   bar_width=0.4,
-                   bar_distance=0,
-                   left_margin=0,
-                   size=(12, 8)):
-    import matplotlib.pyplot as plt  # pylint: disable=C0415
-    import yaml  # pylint: disable=C0415
-    if fn is None:
-        fn = os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output',
-                          'benchmark.yml')
-
-    with open(fn, 'r') as f:
-        data = yaml.load(f, Loader=yaml.SafeLoader)
-    if bars != 'sync_vs_async':  # need baseline
-        baseline_dir = os.path.join(_ti_core.get_repo_dir(), 'benchmarks',
-                                    'baseline')
-        baseline_file = f'{baseline_dir}/benchmark.yml'
-        with open(baseline_file, 'r') as f:
-            baseline_data = yaml.load(f, Loader=yaml.SafeLoader)
-    if cases is None:
-        cases = list(data.keys())
-
-    assert len(cases) >= 1
-    if len(cases) == 1:
-        cases = [cases[0], cases[0]]
-        warning(
-            'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
-        )
-
-    if columns is None:
-        columns = list(data[cases[0]].keys())
-    if column_titles is None:
-        column_titles = columns
-    normalize_to_lowest = lambda x: True
-    figure, subfigures = plt.subplots(len(cases), len(columns))
-    if title is None:
-        title = 'Taichi Performance Benchmarks (Higher means more)'
-    figure.suptitle(title, fontweight="bold")
-    for col_id in range(len(columns)):
-        subfigures[0][col_id].set_title(column_titles[col_id])
-    for case_id, case in enumerate(cases):
-        subfigures[case_id][0].annotate(
-            case,
-            xy=(0, 0.5),
-            xytext=(-subfigures[case_id][0].yaxis.labelpad - 5, 0),
-            xycoords=subfigures[case_id][0].yaxis.label,
-            textcoords='offset points',
-            size='large',
-            ha='right',
-            va='center')
-        for col_id, col in enumerate(columns):
-            if archs is None:
-                current_archs = data[case][col].keys()
-            else:
-                current_archs = [
-                    x for x in archs if x in data[case][col].keys()
-                ]
-            if bars == 'sync_vs_async':
-                y_left = [
-                    data[case][col][arch]['sync'] for arch in current_archs
-                ]
-                label_left = 'sync'
-                y_right = [
-                    data[case][col][arch]['async'] for arch in current_archs
-                ]
-                label_right = 'async'
-            elif bars == 'sync_regression':
-                y_left = [
-                    baseline_data[case][col][arch]['sync']
-                    for arch in current_archs
-                ]
-                label_left = 'before'
-                y_right = [
-                    data[case][col][arch]['sync'] for arch in current_archs
-                ]
-                label_right = 'after'
-            elif bars == 'async_regression':
-                y_left = [
-                    baseline_data[case][col][arch]['async']
-                    for arch in current_archs
-                ]
-                label_left = 'before'
-                y_right = [
-                    data[case][col][arch]['async'] for arch in current_archs
-                ]
-                label_right = 'after'
-            else:
-                raise RuntimeError('Unknown bars type')
-            if normalize_to_lowest(col):
-                for _i in range(len(current_archs)):
-                    maximum = max(y_left[_i], y_right[_i])
-                    y_left[_i] = y_left[_i] / maximum if y_left[_i] != 0 else 1
-                    y_right[
-                        _i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
-            ax = subfigures[case_id][col_id]
-            bar_left = ax.bar(x=[
-                i - bar_width / 2 - bar_distance / 2
-                for i in range(len(current_archs))
-            ],
-                              height=y_left,
-                              width=bar_width,
-                              label=label_left,
-                              color=(0.47, 0.69, 0.89, 1.0))
-            bar_right = ax.bar(x=[
-                i + bar_width / 2 + bar_distance / 2
-                for i in range(len(current_archs))
-            ],
-                               height=y_right,
-                               width=bar_width,
-                               label=label_right,
-                               color=(0.68, 0.26, 0.31, 1.0))
-            ax.set_xticks(range(len(current_archs)))
-            ax.set_xticklabels(current_archs)
-            figure.legend((bar_left, bar_right), (label_left, label_right),
-                          loc='lower center')
-    figure.subplots_adjust(left=left_margin)
-
-    fig = plt.gcf()
-    fig.set_size_inches(size)
-
-    plt.show()
-
-
 def stat_write(key, value):
     import yaml  # pylint: disable=C0415
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
@@ -716,7 +531,6 @@ __all__ = [
     'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
-    'benchmark', 'benchmark_plot', 'block_local', 'cache_read_only',
-    'clear_all_gradients', 'init', 'mesh_local', 'no_activate',
-    'print_memory_profile_info', 'reset'
+    'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
+    'mesh_local', 'no_activate', 'reset'
 ]

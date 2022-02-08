@@ -649,10 +649,11 @@ void export_lang(py::module &m) {
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
-  m.def("make_const_expr_i32", Expr::make<ConstExpression, int32>);
-  m.def("make_const_expr_i64", Expr::make<ConstExpression, int64>);
-  m.def("make_const_expr_f32", Expr::make<ConstExpression, float32>);
-  m.def("make_const_expr_f64", Expr::make<ConstExpression, float64>);
+  m.def("make_const_expr_int",
+        Expr::make<ConstExpression, const DataType &, int64>);
+
+  m.def("make_const_expr_fp",
+        Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);

@@ -8,7 +8,7 @@ def cook_image_to_bytes(img):
     """
     Takes a NumPy array or Taichi field of any type.
     Returns a NumPy array of uint8.
-    This is used by ti.imwrite and ti.imdisplay.
+    This is used by ti.imwrite.
     """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()

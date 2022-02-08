@@ -123,4 +123,4 @@ def imshow(img, title='imshow'):
         IPython.display.display(PIL.Image.fromarray(img))
 
 
-__all__ = ['imdisplay', 'imread', 'imresize', 'imshow', 'imwrite']
+__all__ = ['imread', 'imresize', 'imshow', 'imwrite']

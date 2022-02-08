@@ -657,6 +657,10 @@ class ConstExpression : public Expression {
   ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
+  template <typename T>
+  ConstExpression(const DataType &dt, const T &x) : val({dt, x}) {
+    ret_type = dt;
+  }
 
   void type_check() override;
 

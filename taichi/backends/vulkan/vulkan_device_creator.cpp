@@ -618,8 +618,12 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // F16 / I8
-    if (CHECK_VERSION(1, 2) || CHECK_EXTENSION(
-            VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
+#ifdef __APPLE__
+    {
+#else
+    if (CHECK_VERSION(1, 2) ||
+        CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
+#endif
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 

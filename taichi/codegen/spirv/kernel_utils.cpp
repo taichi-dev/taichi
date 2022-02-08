@@ -92,8 +92,6 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   }
 
   auto arange_args = [](auto *vec, size_t offset) -> size_t {
-    std::vector<int> scalar_indices;
-    std::vector<int> array_indices;
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
@@ -104,16 +102,6 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       bytes += attribs.stride;
       TI_TRACE("  at={} {} offset_in_mem={} stride={}",
                (*vec)[i].is_array ? "vector ptr" : "scalar", i,
-               attribs.offset_in_mem, attribs.stride);
-    }
-    // Then the array args
-    for (int i : array_indices) {
-      auto &attribs = (*vec)[i];
-      const size_t dt_bytes = data_type_size(attribs.dt);
-      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
-      attribs.offset_in_mem = bytes;
-      bytes += attribs.stride;
-      TI_TRACE("  at={} array offset_in_mem={} stride={}", i,
                attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;

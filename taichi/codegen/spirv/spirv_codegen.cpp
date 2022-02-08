@@ -1844,7 +1844,7 @@ class TaskCodegen : public IRVisitor {
     for (auto &[key, val] : buffer_binding_map_) {
       result.push_back(BufferBind{key.first, int(val)});
     }
-    return std::move(result);
+    return result;
   }
 
   void push_loop_control_labels(spirv::Label continue_label,

@@ -553,8 +553,12 @@ void VulkanDeviceCreator::create_logical_device() {
   std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
       enabled_extensions.end()
 
+#define CHECK_VERSION(major, minor) \
+  physical_device_properties.apiVersion >= VK_MAKE_API_VERSION(0, major, minor, 0)
+
     // Variable ptr
-    if (CHECK_EXTENSION(VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME)) {
+    if (CHECK_VERSION(1, 1) ||
+        CHECK_EXTENSION(VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME)) {
       features2.pNext = &variable_ptr_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -614,7 +618,8 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // F16 / I8
-    if (CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
+    if (CHECK_VERSION(1, 2) || CHECK_EXTENSION(
+            VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -633,7 +638,8 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Buffer Device Address
-    if (CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) ||
+    if (CHECK_VERSION(1, 2) ||
+        CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) ||
         CHECK_EXTENSION(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
       features2.pNext = &buffer_device_address_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);

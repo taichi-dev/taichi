@@ -356,7 +356,8 @@ void export_lang(py::module &m) {
       .def("expr_assign", expr_assign)
       .def("begin_frontend_range_for",
            [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
-             auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+             auto stmt_unique =
+                 std::make_unique<FrontendForStmt>(i, s, e, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));
@@ -366,8 +367,8 @@ void export_lang(py::module &m) {
       .def("begin_frontend_struct_for",
            [&](ASTBuilder *self, const ExprGroup &loop_vars,
                const Expr &global) {
-             auto stmt_unique =
-                 std::make_unique<FrontendForStmt>(loop_vars, global);
+             auto stmt_unique = std::make_unique<FrontendForStmt>(
+                 loop_vars, global, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));
@@ -377,8 +378,8 @@ void export_lang(py::module &m) {
       .def("begin_frontend_mesh_for",
            [&](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
                const mesh::MeshElementType &element_type) {
-             auto stmt_unique =
-                 std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
+             auto stmt_unique = std::make_unique<FrontendForStmt>(
+                 i, mesh_ptr, element_type, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));

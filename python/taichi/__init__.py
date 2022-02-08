@@ -38,7 +38,9 @@ __deprecated_names__ = {
     'imread': 'tools.imread',
     'imresize': 'tools.imresize',
     'imshow': 'tools.imshow',
-    'imwrite': 'tools.imwrite'
+    'imwrite': 'tools.imwrite',
+    'quant': 'types.quantized_types.quant',
+    'type_factory': 'types.quantized_types.type_factory'
 }
 
 if sys.version_info.minor < 7:

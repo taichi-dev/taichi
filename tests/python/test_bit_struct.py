@@ -96,9 +96,12 @@ def test_bit_struct():
                                test_case):
         ti.init(arch=ti.cpu, debug=True)
 
-        cit1 = ti.types.quantized_types.quant.int(custom_bits[0], True, compute_type)
-        cit2 = ti.types.quantized_types.quant.int(custom_bits[1], False, compute_type)
-        cit3 = ti.types.quantized_types.quant.int(custom_bits[2], True, compute_type)
+        cit1 = ti.types.quantized_types.quant.int(custom_bits[0], True,
+                                                  compute_type)
+        cit2 = ti.types.quantized_types.quant.int(custom_bits[1], False,
+                                                  compute_type)
+        cit3 = ti.types.quantized_types.quant.int(custom_bits[2], True,
+                                                  compute_type)
 
         a = ti.field(dtype=cit1)
         b = ti.field(dtype=cit2)

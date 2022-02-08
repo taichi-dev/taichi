@@ -1,11 +1,11 @@
-name: Presubmit Tasks
+name: Presubmit Title Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
 jobs:
   pre_submit:
-    name: Presubmit Tasks
+    name: Presubmit Title Checks
     if: ${{ github.event.pull_request }}
     runs-on: ubuntu-latest
     steps:
@@ -26,5 +26,5 @@ jobs:
         if: github.event.action == 'opened' || github.event.action == 'edited'
         run: python misc/ci_create_pr_card.py
         env:
+          GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
           GH_EVENT: ${{ toJson(github.event) }}
-          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

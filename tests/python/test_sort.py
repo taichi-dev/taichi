@@ -14,7 +14,7 @@ def test_sort():
                 values[i] = keys[i]
 
         fill()
-        ti.parallel_sort(keys, values)
+        ti._kernels.parallel_sort(keys, values)
 
         keys_host = keys.to_numpy()
         values_host = values.to_numpy()

@@ -722,3 +722,43 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_s
 
     assert loss[None] == 54.0
     assert x.grad[None] == 56.0
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+def test_large_for_loops_adaptive_stack_size():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_large_loop():
+        for i in range(5):
+            for j in range(2000):
+                for k in range(1000):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    with ti.Tape(loss=loss):
+        test_large_loop()
+
+    assert loss[None] == 1e7
+    assert x.grad[None] == 1e7
+
+
+@ti.test(require=ti.extension.adstack, ad_stack_size=1, arch=[ti.cpu, ti.gpu])
+def test_large_for_loops_fixed_stack_size():
+    x = ti.field(dtype=float, shape=(), needs_grad=True)
+    arr = ti.field(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.field(dtype=float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test_large_loop():
+        for i in range(5):
+            for j in range(2000):
+                for k in range(1000):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    with ti.Tape(loss=loss):
+        test_large_loop()
+
+    assert loss[None] == 1e7
+    assert x.grad[None] == 1e7

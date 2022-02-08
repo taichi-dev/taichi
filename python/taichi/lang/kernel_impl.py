@@ -487,6 +487,10 @@ class Kernel:
 
         assert has_torch
         assert isinstance(v, torch.Tensor)
+        if v._is_view():
+            raise ValueError(
+                "Torch view tensors are not supported, please call tensor.clone() before passing it into taichi kernel."
+            )
         tmp = v
         taichi_arch = self.runtime.prog.config.arch
         # Ndarray means its memory is allocated on the specified taichi arch.

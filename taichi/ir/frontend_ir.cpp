@@ -35,14 +35,14 @@ IRNode *FrontendContext::root() {
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
-                                 const Expr &global_var)
+                                 const Expr &global_var,
+                                 Arch arch)
     : global_var(global_var) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -62,13 +62,13 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshPtr &mesh,
-                                 const mesh::MeshElementType &element_type)
+                                 const mesh::MeshElementType &element_type,
+                                 Arch arch)
     : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -87,21 +87,21 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 
 DecoratorRecorder dec;
 
-FrontendContext::FrontendContext() {
+FrontendContext::FrontendContext(Arch arch) {
   root_node_ = std::make_unique<Block>();
-  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
-                                 const Expr &end)
+                                 const Expr &end,
+                                 Arch arch)
     : begin(begin), end(end) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
   } else {
     if (num_cpu_threads == 0)
@@ -714,7 +714,7 @@ void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
-  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   auto _ = this->create_scope(stmt->body);

@@ -19,6 +19,8 @@ env:
 jobs:
   add_version_to_database:
     name: Add version to database
+    # Skip running release workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -44,15 +46,18 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          # For nightly release, we only run on python 3.8
-          [ -z "${{ github.event.action }}" ] && matrix="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\",\"conda_python\":\"py38\"}]"
-          # For production release, we run on four python versions.
-          [ -z "${{ github.event.action }}" ] || matrix="[{\"name\":\"taichi\",\"python\":\"3.6\",\"conda_python\":\"py36\"},{\"name\":\"taichi\",\"python\":\"3.7\",\"conda_python\":\"py37\"},{\"name\":\"taichi\",\"python\":\"3.8\",\"conda_python\":\"py38\"},{\"name\":\"taichi\",\"python\":\"3.9\",\"conda_python\":\"py39\"}]"
-          echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
-          # M1 only supports py38 and py39(conda), so change matrix.
-          [ -z "${{ github.event.action }}" ] && matrix_osx="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\"}]"
-          [ -z "${{ github.event.action }}" ] || matrix_osx="[{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
-          echo ::set-output name=matrix_osx::{\"include\":$(echo $matrix_osx)}\"
+          if [ -z "${{ github.event.action }}" ]; then
+            # For nightly release, we only run on python 3.8
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"}]}"'
+
+            # M1 only supports py38 and py39(conda), so change matrix.
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"}]}"'
+          else
+            # For production release, we run on four python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
+
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
+          fi
 
   build_and_upload_linux:
     name: Build and Upload (linux only)

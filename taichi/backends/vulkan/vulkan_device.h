@@ -559,6 +559,7 @@ class VulkanDevice : public GraphicsDevice {
     VmaAllocationInfo alloc_info;
     vkapi::IVkBuffer buffer;
     void *mapped{nullptr};
+    VkDeviceAddress addr{0};
   };
 
   unordered_map<uint32_t, AllocationInternal> allocations_;

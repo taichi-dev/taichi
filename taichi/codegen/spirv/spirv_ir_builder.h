@@ -72,6 +72,7 @@ enum class ValueKind {
   kVectorPtr,
   kStructArrayPtr,
   kVariablePtr,
+  kPhysicalPtr,
   kFunction,
   kExtInst
 };

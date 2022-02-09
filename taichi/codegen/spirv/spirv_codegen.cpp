@@ -1693,9 +1693,9 @@ class TaskCodegen : public IRVisitor {
       spirv::Value paddr_ptr = ir_->make_value(
           spv::OpConvertUToPtr,
           ir_->get_pointer_type(ir_->get_primitive_type(dt),
-                                spv::StorageClassPhysicalStorageBufferEXT),
+                                spv::StorageClassPhysicalStorageBuffer),
           ptr_val);
-      paddr_ptr.flag = ValueKind::kVariablePtr;
+      paddr_ptr.flag = ValueKind::kPhysicalPtr;
       return paddr_ptr;
     }
 

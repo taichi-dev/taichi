@@ -18,7 +18,7 @@ namespace vulkan {
 namespace {
 
 // FIXME: NDEBUG is broken, so just manually enable this if necessary.
-constexpr bool kEnableValidationLayers = false;
+constexpr bool kEnableValidationLayers = true;
 
 const std::vector<const char *> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -647,7 +647,8 @@ void VulkanDeviceCreator::create_logical_device() {
       features2.pNext = &buffer_device_address_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
-      if (buffer_device_address_feature.bufferDeviceAddress) {
+      if (CHECK_VERSION(1, 3) ||
+              buffer_device_address_feature.bufferDeviceAddress) {
         if (device_supported_features.shaderInt64) {
           ti_device_->set_cap(
               DeviceCapability::spirv_has_physical_storage_buffer, true);

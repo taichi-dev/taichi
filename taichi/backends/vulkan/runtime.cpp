@@ -456,7 +456,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     args_buffer = device_->allocate_memory_unique(
         {ti_kernel->get_args_buffer_size(),
          /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
+         /*export_sharing=*/false, AllocUsage::Uniform});
   }
 
   if (ti_kernel->get_ret_buffer_size()) {

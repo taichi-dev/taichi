@@ -449,8 +449,7 @@ void VulkanDeviceCreator::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BIND_MEMORY_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME ||
-               name == VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
+    } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
@@ -644,14 +643,16 @@ void VulkanDeviceCreator::create_logical_device() {
 
     // Buffer Device Address
     if (CHECK_VERSION(1, 2) ||
-        CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) ||
-        CHECK_EXTENSION(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
+        CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
       features2.pNext = &buffer_device_address_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
-      if (buffer_device_address_feature.bufferDeviceAddress) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_physical_storage_buffer,
-                            true);
+      if (CHECK_VERSION(1, 3) ||
+          buffer_device_address_feature.bufferDeviceAddress) {
+        if (device_supported_features.shaderInt64) {
+          ti_device_->set_cap(
+              DeviceCapability::spirv_has_physical_storage_buffer, true);
+        }
       }
       *pNextEnd = &buffer_device_address_feature;
       pNextEnd = &buffer_device_address_feature.pNext;

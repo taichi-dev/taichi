@@ -1247,7 +1247,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   }
 
   if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
-    buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
   }
 
   alloc.buffer = vkapi::create_buffer(
@@ -1260,6 +1260,14 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
            handle.alloc_id);
 #endif
+
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    VkBufferDeviceAddressInfoKHR info{};
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+    info.buffer = alloc.buffer->buffer;
+    info.pNext = nullptr;
+    alloc.addr = vkGetBufferDeviceAddressKHR(device_, &info);
+  }
 
   return handle;
 }
@@ -1282,12 +1290,7 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
   const auto &alloc_int = allocations_.at(handle.alloc_id);
-  VkBufferDeviceAddressInfoEXT info{};
-  info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT;
-  info.buffer = alloc_int.buffer->buffer;
-  info.pNext = nullptr;
-  VkDeviceAddress addr = vkGetBufferDeviceAddressEXT(device_, &info);
-  return uint64_t(addr);
+  return uint64_t(alloc_int.addr);
 }
 
 void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {

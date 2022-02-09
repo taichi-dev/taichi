@@ -71,7 +71,7 @@ void IRBuilder::init_header() {
   }
   if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
     ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityPhysicalStorageBufferAddressesEXT)
+        .add(spv::CapabilityPhysicalStorageBufferAddresses)
         .commit(&header_);
   }
 
@@ -99,14 +99,19 @@ void IRBuilder::init_header() {
 
   if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
     ib_.begin(spv::OpExtension)
-        .add("SPV_EXT_physical_storage_buffer")
+        .add("SPV_KHR_physical_storage_buffer")
         .commit(&header_);
-  }
 
-  // memory model
-  ib_.begin(spv::OpMemoryModel)
-      .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
-      .commit(&entry_);
+    // memory model
+    ib_.begin(spv::OpMemoryModel)
+        .add_seq(spv::AddressingModelPhysicalStorageBuffer64,
+                 spv::MemoryModelGLSL450)
+        .commit(&entry_);
+  } else {
+    ib_.begin(spv::OpMemoryModel)
+        .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
+        .commit(&entry_);
+  }
 
   this->init_pre_defs();
 }
@@ -816,15 +821,25 @@ Value IRBuilder::alloca_variable(const SType &type) {
 
 Value IRBuilder::load_variable(Value pointer, const SType &res_type) {
   TI_ASSERT(pointer.flag == ValueKind::kVariablePtr ||
-            pointer.flag == ValueKind::kStructArrayPtr);
+            pointer.flag == ValueKind::kStructArrayPtr ||
+            pointer.flag == ValueKind::kPhysicalPtr);
   Value ret = new_value(res_type, ValueKind::kNormal);
   ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer).commit(&function_);
   return ret;
 }
 void IRBuilder::store_variable(Value pointer, Value value) {
-  TI_ASSERT(pointer.flag == ValueKind::kVariablePtr);
+  TI_ASSERT(pointer.flag == ValueKind::kVariablePtr ||
+            pointer.flag == ValueKind::kPhysicalPtr);
   TI_ASSERT(value.stype.id == pointer.stype.element_type_id);
-  ib_.begin(spv::OpStore).add_seq(pointer, value).commit(&function_);
+  if (pointer.flag == ValueKind::kPhysicalPtr) {
+    Value alignment = uint_immediate_number(
+        t_uint32_, get_primitive_type_size(value.stype.dt));
+    ib_.begin(spv::OpStore)
+        .add_seq(pointer, value, spv::MemoryAccessAlignedMask, alignment)
+        .commit(&function_);
+  } else {
+    ib_.begin(spv::OpStore).add_seq(pointer, value).commit(&function_);
+  }
 }
 
 void IRBuilder::register_value(std::string name, Value value) {

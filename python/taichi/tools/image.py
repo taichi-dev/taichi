@@ -92,8 +92,8 @@ def imread(filename, channels=0):
 
 
 def imshow(img, title='imshow'):
-    """Display a taichi.field or a numpy.ndarray in a Taichi GUI window or an interative Ipython notebook.
-    For interactive Ipython environment the image will be shown in the notebook.
+    """Display a taichi.field or a numpy.ndarray in a Taichi GUI window or an interactive Ipython notebook.
+    For an interactive Ipython environment, the image will be shown in the notebook.
 
     Args:
         img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.

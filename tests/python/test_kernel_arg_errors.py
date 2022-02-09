@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_pass_float_as_i32():
     @ti.kernel
     def foo(a: ti.i32):

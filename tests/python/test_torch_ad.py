@@ -5,13 +5,14 @@ import pytest
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
+from tests import test_utils
 
 if has_pytorch():
     import torch
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_torch_ad():
     n = 32
 
@@ -52,7 +53,7 @@ def test_torch_ad():
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.skipif(sys.platform == 'win32', reason='not working on Windows.')
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_torch_ad_gpu():
     if not torch.cuda.is_available():
         return

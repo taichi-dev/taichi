@@ -1,7 +1,10 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@test_utils.test(require=ti.extension.quant,
+                 debug=True,
+                 cfg_optimization=False)
 def test_vectorized_struct_for():
     cu1 = ti.types.quantized_types.quant.int(1, False)
 
@@ -42,7 +45,7 @@ def test_vectorized_struct_for():
     verify()
 
 
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_offset_load():
     ci1 = ti.types.quantized_types.quant.int(1, False)
 
@@ -102,7 +105,7 @@ def test_offset_load():
     verify(-1, 1)
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_evolve():
     ci1 = ti.types.quantized_types.quant.int(1, False)
 

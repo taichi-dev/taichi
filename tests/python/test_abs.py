@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_abs():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

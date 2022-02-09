@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_tape():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -33,7 +34,7 @@ def test_customized_kernels_tape():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_grad():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -64,7 +65,7 @@ def test_customized_kernels_grad():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_indirect():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -97,7 +98,7 @@ def test_customized_kernels_indirect():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_oop():
     @ti.data_oriented
     class A:
@@ -132,7 +133,7 @@ def test_customized_kernels_oop():
     assert a.x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_oop2():
     @ti.data_oriented
     class A:
@@ -170,7 +171,7 @@ def test_customized_kernels_oop2():
     assert a.x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_decorated_primal_is_taichi_kernel():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -196,7 +197,7 @@ def test_decorated_primal_is_taichi_kernel():
         func(4)
 
 
-@ti.test()
+@test_utils.test()
 def test_decorated_primal_missing_decorator():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)

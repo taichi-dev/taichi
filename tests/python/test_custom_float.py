@@ -3,9 +3,10 @@ import math
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float():
     cft = ti.types.quantized_types.quant.fixed(frac=32, num_range=2)
     x = ti.field(dtype=cft)
@@ -26,7 +27,7 @@ def test_custom_float():
     assert x[None] == approx(0.66)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
     cft = ti.types.quantized_types.quant.fixed(frac=16, num_range=1.2)
 
@@ -54,7 +55,7 @@ def test_custom_matrix_rotation():
     assert x[None][1, 1] == approx(0, abs=1e-4)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float_implicit_cast():
     ci13 = ti.types.quantized_types.quant.int(bits=13)
     cft = ti.types.quantized_types.type_factory.custom_float(
@@ -71,7 +72,7 @@ def test_custom_float_implicit_cast():
     assert x[None] == approx(10.0)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_cache_read_only():
     ci15 = ti.types.quantized_types.quant.int(bits=15)
     cft = ti.types.quantized_types.type_factory.custom_float(

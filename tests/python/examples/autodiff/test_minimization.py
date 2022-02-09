@@ -1,6 +1,7 @@
 import random
 
 import taichi as ti
+from tests import test_utils
 
 
 def test_minimization():
@@ -17,4 +18,4 @@ def test_minimization():
         gradient_descent()
 
     for i in range(n):
-        assert x[i] == ti._testing.approx(y[i], rel=1e-2)
+        assert x[i] == test_utils.approx(y[i], rel=1e-2)

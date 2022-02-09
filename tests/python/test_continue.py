@@ -1,9 +1,10 @@
 import taichi as ti
+from tests import test_utils
 
 n = 1000
 
 
-@ti.test()
+@test_utils.test()
 def test_for_continue():
     x = ti.field(ti.i32, shape=n)
 
@@ -23,7 +24,7 @@ def test_for_continue():
         assert xs[i] == expect
 
 
-@ti.test()
+@test_utils.test()
 def test_while_continue():
     x = ti.field(ti.i32, shape=n)
 
@@ -46,7 +47,7 @@ def test_while_continue():
         assert xs[i] == expect
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_continue():
     x = ti.field(ti.i32, shape=n)
 
@@ -65,7 +66,7 @@ def test_kernel_continue():
         assert xs[i] == expect
 
 
-@ti.test()
+@test_utils.test()
 def test_unconditional_continue():
     x = ti.field(ti.i32, shape=n)
 
@@ -84,7 +85,7 @@ def test_unconditional_continue():
         assert xs[i] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_continue_in_nested_if():
     x = ti.field(ti.i32, shape=n)
 
@@ -106,7 +107,7 @@ def test_kernel_continue_in_nested_if():
     assert x[0] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_continue_in_nested_if_2():
     x = ti.field(ti.i32, shape=n)
 
@@ -127,7 +128,7 @@ def test_kernel_continue_in_nested_if_2():
     assert x[0] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_continue_in_nested_if_3():
     x = ti.field(ti.i32, shape=n)
 

@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 def with_data_type(dt):
@@ -27,27 +28,27 @@ def with_data_type(dt):
         assert a[i] == i * i * 4
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_f32():
     with_data_type(np.float32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_numpy_f64():
     with_data_type(np.float64)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_i32():
     with_data_type(np.int32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_numpy_i64():
     with_data_type(np.int64)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_2d():
     val = ti.field(ti.i32)
 
@@ -75,7 +76,7 @@ def test_numpy_2d():
             assert a[i, j] == i * j + i + j
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_2d_transpose():
     val = ti.field(ti.i32)
 
@@ -102,7 +103,7 @@ def test_numpy_2d_transpose():
             assert val[i, j] == i * j + j * 4
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_3d():
     val = ti.field(ti.i32)
 
@@ -134,7 +135,7 @@ def test_numpy_3d():
                 assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_3d_error():
     val = ti.field(ti.i32)
 
@@ -157,7 +158,7 @@ def test_numpy_3d_error():
         test_numpy(a)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_multiple_external_arrays():
 
     n = 4
@@ -179,14 +180,14 @@ def test_numpy_multiple_external_arrays():
         assert b[i] == d[i]
 
 
-@ti.test()
+@test_utils.test()
 def test_index_mismatch():
     with pytest.raises(AssertionError):
         val = ti.field(ti.i32, shape=(1, 2, 3))
         val[0, 0] = 1
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_zero():
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):
@@ -197,7 +198,7 @@ def test_numpy_zero():
     test_numpy(np.empty(shape=(5, 0), dtype=np.int32))
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_struct_for():
     @ti.kernel
     def func1(a: ti.any_arr()):

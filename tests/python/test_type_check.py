@@ -3,9 +3,10 @@ import pytest
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_unary_op():
     @ti.kernel
     def floor():
@@ -17,7 +18,7 @@ def test_unary_op():
         floor()
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_binary_op():
     @ti.kernel
     def bitwise_float():
@@ -30,7 +31,7 @@ def test_binary_op():
         bitwise_float()
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_ternary_op():
     @ti.kernel
     def select():
@@ -45,7 +46,7 @@ def test_ternary_op():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=[ti.cpu, ti.opengl])
+@test_utils.test(arch=[ti.cpu, ti.opengl])
 def test_subscript():
     a = ti.ndarray(ti.i32, shape=(10, 10))
 
@@ -57,7 +58,7 @@ def test_subscript():
         any_array(a)
 
 
-@ti.test()
+@test_utils.test()
 def test_0d_ndarray():
     @ti.kernel
     def foo() -> ti.i32:
@@ -67,7 +68,7 @@ def test_0d_ndarray():
     assert foo() == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_non_0d_ndarray():
     @ti.kernel
     def foo():

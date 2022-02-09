@@ -332,21 +332,67 @@ void export_lang(py::module &m) {
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
       .def("current_ast_builder", &Program::current_ast_builder,
-           py::return_value_policy::reference);
+           py::return_value_policy::reference)
+      .def(
+          "create_kernel",
+          [](Program *program, const std::function<void(Kernel *)> &body,
+             const std::string &name, bool grad) -> Kernel * {
+            py::gil_scoped_release release;
+            return &program->kernel(body, name, grad);
+          },
+          py::return_value_policy::reference)
+      .def("create_function", &Program::create_function,
+           py::return_value_policy::reference)
+      .def("create_sparse_matrix_builder",
+           [](Program *program, int n, int m, uint64 max_num_entries) {
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+                         "SparseMatrix only supports CPU for now.");
+             return SparseMatrixBuilder(n, m, max_num_entries);
+           })
+      .def("create_sparse_matrix",
+           [](Program *program, int n, int m) {
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+                         "SparseMatrix only supports CPU for now.");
+             return SparseMatrix(n, m);
+           })
+      .def(
+          "dump_dot",
+          [](Program *program, std::optional<std::string> rankdir,
+             int embed_states_threshold) {
+            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+            return program->async_engine->sfg->dump_dot(rankdir,
+                                                        embed_states_threshold);
+          },
+          py::arg("rankdir").none(true),
+          py::arg("embed_states_threshold"))  // FIXME:
+      .def("no_activate",
+           [](Program *program, SNode *snode) {
+             // TODO(#2193): Also apply to @ti.func?
+             auto *kernel = dynamic_cast<Kernel *>(program->current_callable);
+             TI_ASSERT(kernel);
+             kernel->no_activate.push_back(snode);
+           })
+      .def("print_sfg",
+           [](Program *program) { return program->async_engine->sfg->print(); })
+      .def("decl_arg",
+           [&](Program *program, const DataType &dt, bool is_array) {
+             return program->current_callable->insert_arg(dt, is_array);
+           })
+      .def("decl_arr_arg",
+           [&](Program *program, const DataType &dt, int total_dim,
+               std::vector<int> shape) {
+             return program->current_callable->insert_arr_arg(dt, total_dim,
+                                                              shape);
+           })
+      .def("decl_ret", [&](Program *program, const DataType &dt) {
+        return program->current_callable->insert_ret(dt);
+      });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
-
-  m.def("get_current_program", get_current_program,
-        py::return_value_policy::reference);
-
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
 
   py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -719,14 +765,6 @@ void export_lang(py::module &m) {
                                                     mesh_idx, to_type);
   });
 
-  m.def(
-      "create_kernel",
-      [&](const std::function<void(Kernel *)> &body, const std::string &name,
-          bool grad) -> Kernel * {
-        py::gil_scoped_release release;
-        return &get_current_program().kernel(body, name, grad);
-      },
-      py::return_value_policy::reference);
   m.def("get_relation_access",
         [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
@@ -741,38 +779,9 @@ void export_lang(py::module &m) {
               mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
-  m.def(
-      "create_kernel",
-      [&](const std::function<void(Kernel *)> &body, const std::string &name,
-          bool grad) -> Kernel * {
-        return &get_current_program().kernel(body, name, grad);
-      },
-      py::return_value_policy::reference);
-
-  m.def(
-      "create_function",
-      [&](const FunctionKey &funcid) {
-        return get_current_program().create_function(funcid);
-      },
-      py::return_value_policy::reference);
-
   py::class_<FunctionKey>(m, "FunctionKey")
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
-
-  m.def("decl_arg", [&](const DataType &dt, bool is_array) {
-    return get_current_program().current_callable->insert_arg(dt, is_array);
-  });
-
-  m.def("decl_arr_arg",
-        [&](const DataType &dt, int total_dim, std::vector<int> shape) {
-          return get_current_program().current_callable->insert_arr_arg(
-              dt, total_dim, shape);
-        });
-
-  m.def("decl_ret", [&](const DataType &dt) {
-    return get_current_program().current_callable->insert_ret(dt);
-  });
 
   m.def("test_throw", [] {
     try {
@@ -794,13 +803,6 @@ void export_lang(py::module &m) {
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("reset_snode_access_flag", reset_snode_access_flag);
-  m.def("no_activate", [](SNode *snode) {
-    // TODO(#2193): Also apply to @ti.func?
-    auto *kernel =
-        dynamic_cast<Kernel *>(get_current_program().current_callable);
-    TI_ASSERT(kernel);
-    kernel->no_activate.push_back(snode);
-  });
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
@@ -864,14 +866,6 @@ void export_lang(py::module &m) {
   m.def("stop_recording",
         []() { ActionRecorder::get_instance().stop_recording(); });
 
-  // A temporary option which will be removed soon in the future
-  m.def("toggle_advanced_optimization", [](bool option) {
-    TI_WARN(
-        "'ti.core.toggle_advance_optimization(False)' is deprecated."
-        " Use 'ti.init(advanced_optimization=False)' instead");
-    get_current_program().config.advanced_optimization = option;
-  });
-
   m.def("query_int64", [](const std::string &key) {
     if (key == "cuda_compute_capability") {
 #if defined(TI_WITH_CUDA)
@@ -883,17 +877,6 @@ void export_lang(py::module &m) {
       TI_ERROR("Key {} not supported in query_int64", key);
     }
   });
-
-  m.def("print_sfg",
-        []() { return get_current_program().async_engine->sfg->print(); });
-  m.def(
-      "dump_dot",
-      [](std::optional<std::string> rankdir, int embed_states_threshold) {
-        // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-        return get_current_program().async_engine->sfg->dump_dot(
-            rankdir, embed_states_threshold);
-      },
-      py::arg("rankdir").none(true), py::arg("embed_states_threshold"));
 
   // Type system
 
@@ -931,13 +914,6 @@ void export_lang(py::module &m) {
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
-  m.def("create_sparse_matrix_builder",
-        [](int n, int m, uint64 max_num_entries) {
-          TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
-                      "SparseMatrix only supports CPU for now.");
-          return SparseMatrixBuilder(n, m, max_num_entries);
-        });
-
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def("to_string", &SparseMatrix::to_string)
       .def(py::self + py::self, py::return_value_policy::reference_internal)
@@ -954,12 +930,6 @@ void export_lang(py::module &m) {
       .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
-
-  m.def("create_sparse_matrix", [](int n, int m) {
-    TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
-                "SparseMatrix only supports CPU for now.");
-    return SparseMatrix(n, m);
-  });
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

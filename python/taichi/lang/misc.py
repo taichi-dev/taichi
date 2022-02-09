@@ -9,7 +9,7 @@ from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.impl import axes
+from taichi.lang.impl import axes, get_runtime
 from taichi.lang.snode import SNode
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
@@ -362,7 +362,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        _ti_core.no_activate(v.snode.ptr)
+        get_runtime().prog.no_activate(v.snode.ptr)
 
 
 def block_local(*args):

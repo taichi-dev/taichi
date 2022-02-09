@@ -1,6 +1,7 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang.field import Field
+from taichi.lang.impl import get_runtime
 from taichi.types.primitive_types import f32
 
 
@@ -18,7 +19,7 @@ class SparseMatrix:
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = _ti_core.create_sparse_matrix(n, m)
+            self.matrix = get_runtime().prog.create_sparse_matrix(n, m)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -143,7 +144,7 @@ class SparseMatrixBuilder:
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         if num_rows is not None:
-            self.ptr = _ti_core.create_sparse_matrix_builder(
+            self.ptr = get_runtime().prog.create_sparse_matrix_builder(
                 num_rows, num_cols, max_num_triplets)
 
     def get_addr(self):

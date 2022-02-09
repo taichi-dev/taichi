@@ -857,7 +857,7 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body);
+  this->create_scope(stmt->body, For);
 }
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
@@ -866,7 +866,7 @@ void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
       std::make_unique<FrontendForStmt>(loop_vars, global, arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body);
+  this->create_scope(stmt->body, For);
 }
 
 void ASTBuilder::begin_frontend_mesh_for(
@@ -877,17 +877,20 @@ void ASTBuilder::begin_frontend_mesh_for(
       std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type, arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body);
+  this->create_scope(stmt->body, For);
 }
 
 void ASTBuilder::begin_frontend_while(const Expr &cond) {
   auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body);
+  this->create_scope(stmt->body, While);
 }
 
 void ASTBuilder::insert_break_stmt() {
+  if (loop_state_stack_.back() == Outermost) {
+    throw TaichiSyntaxError("Cannot break in the outermost loop");
+  }
   this->insert(Stmt::make<FrontendBreakStmt>());
 }
 
@@ -899,17 +902,26 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
   this->insert(Stmt::make<FrontendExprStmt>(val));
 }
 
-void ASTBuilder::create_scope(std::unique_ptr<Block> &list) {
+void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
   stack_.push_back(list.get());
+  LoopState prev = loop_state_stack_.back();
+  if (tp == NotLoop) {
+    loop_state_stack_.push_back(prev);
+  } else if (tp == For && prev == None) {
+    loop_state_stack_.push_back(Outermost);
+  } else {
+    loop_state_stack_.push_back(Inner);
+  }
 }
 
 void ASTBuilder::pop_scope() {
   stack_.pop_back();
+  loop_state_stack_.pop_back();
 }
 
 void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

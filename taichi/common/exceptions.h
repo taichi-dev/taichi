@@ -16,5 +16,16 @@ class TaichiTypeError : public std::exception {
   }
 };
 
+class TaichiSyntaxError : public std::exception {
+  std::string msg_;
+
+ public:
+  TaichiSyntaxError(const std::string msg) : msg_(msg) {
+  }
+  const char *what() const throw() override {
+    return msg_.c_str();
+  }
+};
+
 }  // namespace lang
 }  // namespace taichi

@@ -101,12 +101,16 @@ void IRBuilder::init_header() {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_physical_storage_buffer")
         .commit(&header_);
-  }
 
-  // memory model
-  ib_.begin(spv::OpMemoryModel)
-      .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
-      .commit(&entry_);
+    // memory model
+    ib_.begin(spv::OpMemoryModel)
+        .add_seq(spv::AddressingModelPhysicalStorageBuffer64EXT, spv::MemoryModelGLSL450)
+        .commit(&entry_);
+  } else {
+    ib_.begin(spv::OpMemoryModel)
+        .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
+        .commit(&entry_);
+  }
 
   this->init_pre_defs();
 }

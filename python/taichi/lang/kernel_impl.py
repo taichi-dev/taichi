@@ -199,7 +199,7 @@ class Func:
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        fn = _ti_core.create_function(key)
+        fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
             ctx.ast_builder = fn.ast_builder()
@@ -468,8 +468,8 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
-                                               kernel_name, self.is_grad)
+        taichi_kernel = impl.get_runtime().prog.create_kernel(
+            taichi_ast_generator, kernel_name, self.is_grad)
 
         self.kernel_cpp = taichi_kernel
 

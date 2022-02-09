@@ -76,12 +76,6 @@ struct hash<taichi::lang::JITEvaluatorId> {
 namespace taichi {
 namespace lang {
 
-extern Program *current_program;
-
-TI_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
-
 class StructCompiler;
 class LlvmProgramImpl;
 class AsyncEngine;

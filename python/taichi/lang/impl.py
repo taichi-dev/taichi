@@ -874,7 +874,7 @@ def stop_grad(x):
 
 
 def current_cfg():
-    return _ti_core.current_compile_config()
+    return get_runtime().prog.config
 
 
 def default_cfg():

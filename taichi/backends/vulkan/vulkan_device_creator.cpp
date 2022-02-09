@@ -553,8 +553,9 @@ void VulkanDeviceCreator::create_logical_device() {
   std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
       enabled_extensions.end()
 
-#define CHECK_VERSION(major, minor) \
-  physical_device_properties.apiVersion >= VK_MAKE_API_VERSION(0, major, minor, 0)
+#define CHECK_VERSION(major, minor)        \
+  physical_device_properties.apiVersion >= \
+      VK_MAKE_API_VERSION(0, major, minor, 0)
 
     // Variable ptr
     if (CHECK_VERSION(1, 1) ||

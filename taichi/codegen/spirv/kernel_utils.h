@@ -20,7 +20,7 @@ namespace spirv {
  * Per offloaded task attributes.
  */
 struct TaskAttributes {
-  enum class BufferType { Root, GlobalTmps, Context, ListGen, ExtArr };
+  enum class BufferType { Root, GlobalTmps, Args, Rets, ListGen, ExtArr };
 
   struct BufferInfo {
     BufferType type;
@@ -204,21 +204,6 @@ class KernelContextAttributes {
   }
 
   /**
-   * Offset (in bytes) of the return values in the memory.
-   */
-  inline size_t rets_mem_offset() const {
-    return args_bytes();
-  }
-
-  /**
-   * Total size in bytes of the input args and return values.
-   *
-   * This *excludes* the extra args bytes.
-   */
-  inline size_t ctx_bytes() const {
-    return args_bytes() + rets_bytes();
-  }
-  /**
    * Number of bytes needed by the extra arguments.
    *
    * Extra argument region is used to store some metadata, like the shape of the
@@ -232,14 +217,7 @@ class KernelContextAttributes {
    * Offset (in bytes) of the extra arguments in the memory.
    */
   inline size_t extra_args_mem_offset() const {
-    return ctx_bytes();
-  }
-
-  /**
-   * Total bytes needed for allocating the device buffer.
-   */
-  inline size_t total_bytes() const {
-    return ctx_bytes() + extra_args_bytes();
+    return args_bytes();
   }
 
   TI_IO_DEF(arg_attribs_vec_,

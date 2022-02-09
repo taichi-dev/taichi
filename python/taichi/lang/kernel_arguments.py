@@ -1,9 +1,9 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang import impl
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang import impl
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64

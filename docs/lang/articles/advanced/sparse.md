@@ -38,7 +38,6 @@ The traditional sparse spatial data stuctures are [Quadtrees](https://en.wikiped
 In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi sparse spatial data structures include
 1. Access with indices, which just like accessing a dense data structure.
 2. Automatic parallelization when iterating.
-2. The sparse data could be looped in parallel.
 3. Automatic memory access optimization.
 
 
@@ -59,7 +58,7 @@ Sparse spatial data structures in Taichi are usually composed of `pointer`, `bit
 On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
 The rest of the grid is simply *inactive*.
-In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
+In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell, Taichi automatically activates it. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
 
 :::note
 Reading an inactive pixel returns zero.
@@ -152,7 +151,7 @@ def print_active():
         print('field x[{}, {}] = {}'.format(i, j, x[i, j]))
 ```
 
-The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked SNode replaces the dense SNode (line 3). As shown in the figure below, the active blocks are the same as the `ponter.py`. But the bitmasked pixels in the block are not all activated. Because each pixel in the block has an activity value.
+The code snippet above also creates an 8x8 sparse grid. The only difference between `bitmasked.py` and `pointer.py` is that the bitmasked SNode replaces the dense SNode (line 3). As shown in the figure below, the active blocks are the same as `pointer.py`. However, the bitmasked pixels in the block are not all activated, because each of them has an activity value.
 
 <center>
 
@@ -161,7 +160,7 @@ The code snippet above also creates an 8x8 sparse grid. The only difference betw
 </center>
 
 
-The bitmasked SNodes are like dense SNodes which have auxiliary activity values.
+The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 <center>
 
 ![Bitmasked SNode Tree](https://raw.githubusercontent.com/FantasyVR/public_files/sparse_computation/taichi/doc/bitmasked_tree_small.png)
@@ -170,7 +169,7 @@ The bitmasked SNodes are like dense SNodes which have auxiliary activity values.
 
 ### Dynamic SNode
 
-To support variable-length fields, Taichi provides dynamic SNodes. In the code snippet below create a 5x1 dense block firstly (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you could use `ti.append` to add a value to the end of a dynamic SNode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic SNode.
+To support variable-length fields, Taichi provides dynamic SNodes. The code snippet below first creates a 5x1 dense block (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you can use `ti.append()` to add a value to the end of a dynamic SNode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic SNode.
 
 ```python {3} title=dynamic.py
 x = ti.field(ti.i32)
@@ -179,12 +178,13 @@ pixel = block.dynamic(ti.j, 5)
 pixel.place(x)
 l = ti.field(ti.i32)
 ti.root.dense(ti.i, 5).place(l)
+
 @ti.kernel
 def make_lists():
     for i in range(5):
         for j in range(i):
-            ti.append(x.parent(), i, j * j) # ti.append(pixel, i, j * j)
-        l[i] = ti.length(x.parent(), i) # [0, 1, 2, 3, 4]
+            ti.append(x.parent(), i, j * j)  # ti.append(pixel, i, j * j)
+        l[i] = ti.length(x.parent(), i)  # [0, 1, 2, 3, 4]
 ```
 
 
@@ -199,12 +199,11 @@ def make_lists():
 ### Sparse struct-fors
 
 Efficiently looping over sparse grid cells that distribute irregularly can be challenging, especially on parallel devices such as GPUs.
-In Taichi, *struct-for's* natively support sparse spatial data structures and only loops over currently active pixels.
-The Taichi system ensures efficient parallelization.
+In Taichi, *struct-for*s natively support sparse spatial data structures and only loop over currently active pixels with automatic efficient parallelization.
 
 ### Explicitly manipulating and querying sparsity
 
-Taichi also provides APIs that explicitly manipulate data structure sparsity. You could manually **check** the activity, **active** or **deactivate** SNode. Based on the field defined below, we illustrate these functions.
+Taichi also provides APIs that explicitly manipulate data structure sparsity. You can manually **check** the activity of a SNode, **activate** a SNode, or **deactivate** a SNode. We now illustrate these functions based on the field defined below.
 
 ```python
 x = ti.field(dtype=ti.i32)
@@ -215,7 +214,7 @@ pixel.place(x)
 ```
 
 #### 1. Activity checking
-You can use `ti.is_active(snode, [i, j, ...])` to explicitly query if `snode[i, j, ...]` is active or not. As mentioned above, you could also use struct-for loops to loop over all active snode in parallel.
+You can use `ti.is_active(snode, [i, j, ...])` to explicitly query if `snode[i, j, ...]` is active or not.
 
 ```python
 @ti.kernel
@@ -233,7 +232,7 @@ for i in range(12):
         activity_checking(pixel, i, j)
 ```
 #### 2. Activation
-You can use `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`.
+You can use `ti.activate(snode, [i, j, ...])` to explicitly activate a cell of `snode[i, j, ...]`.
 ```python
 @ti.kernel
 def activate_snodes()
@@ -253,6 +252,7 @@ activity_checking(pixel, [7, 3])  # output: 1
 </center>
 
 #### 3. Deactivation
+- Use `ti.deactivate(snode, [i, j, ...])` to explicitly deactivate a cell of `snode[i, j, ...]`.
 - Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`. This operation also recursively deactivates all its children.
 - Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
 
@@ -269,7 +269,7 @@ Similarly, `ti.deactivate` ...
 :::
 
 #### 4. Ancestor index query
-- Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
+You can use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
 
 ```python
 print(ti.rescale_index(x, block1, ti.Vector([7, 3]))) # output: [1, 0]
@@ -278,7 +278,7 @@ print(ti.rescale_index(x, pixel,  [7, 3]))            # output: [7, 3]
 print(ti.rescale_index(block1, block2, [3, 1]))       # output: [1, 0]
 ```
 
-As noticed, the output of `ti.rescale_index(x, block1, ti.Vector([7, 3]))` is `[1, 0]`. You could also compute the `block1` index given `pixel` index `[7, 3]` as `[7//2//2, 3//2//2]`. However, doing so couples computation code with the internal configuration of data structures (in this case, the size of `block1` containers). Use `ti.rescale_index` to avoid hard-coding internal information of data structures.
+Regarding line 1, you can also compute the `block1` index given `pixel` index `[7, 3]` as `[7//2//2, 3//2//2]`. However, doing so couples computation code with the internal configuration of data structures (in this case, the size of `block1` containers). By using `ti.rescale_index()`, you can avoid hard-coding internal information of data structures.
 
 ## Further reading
 

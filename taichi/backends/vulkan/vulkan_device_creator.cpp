@@ -648,7 +648,7 @@ void VulkanDeviceCreator::create_logical_device() {
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
       if (CHECK_VERSION(1, 3) ||
-              buffer_device_address_feature.bufferDeviceAddress) {
+          buffer_device_address_feature.bufferDeviceAddress) {
         if (device_supported_features.shaderInt64) {
           ti_device_->set_cap(
               DeviceCapability::spirv_has_physical_storage_buffer, true);

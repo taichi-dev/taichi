@@ -832,8 +832,8 @@ void IRBuilder::store_variable(Value pointer, Value value) {
             pointer.flag == ValueKind::kPhysicalPtr);
   TI_ASSERT(value.stype.id == pointer.stype.element_type_id);
   if (pointer.flag == ValueKind::kPhysicalPtr) {
-    Value alignment =
-        uint_immediate_number(t_uint32_, get_primitive_type_size(value.stype.dt));
+    Value alignment = uint_immediate_number(
+        t_uint32_, get_primitive_type_size(value.stype.dt));
     ib_.begin(spv::OpStore)
         .add_seq(pointer, value, spv::MemoryAccessAlignedMask, alignment)
         .commit(&function_);

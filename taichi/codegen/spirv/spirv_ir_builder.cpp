@@ -104,7 +104,8 @@ void IRBuilder::init_header() {
 
     // memory model
     ib_.begin(spv::OpMemoryModel)
-        .add_seq(spv::AddressingModelPhysicalStorageBuffer64EXT, spv::MemoryModelGLSL450)
+        .add_seq(spv::AddressingModelPhysicalStorageBuffer64EXT,
+                 spv::MemoryModelGLSL450)
         .commit(&entry_);
   } else {
     ib_.begin(spv::OpMemoryModel)

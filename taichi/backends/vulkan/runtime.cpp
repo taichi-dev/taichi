@@ -161,7 +161,7 @@ class HostDeviceContextBlitter {
     } else {
       return false;
     }
-    
+
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
@@ -175,7 +175,7 @@ class HostDeviceContextBlitter {
           device_->unmap(buffer);
         }
       }
-    }    
+    }
 
     if (!ctx_attribs_->has_rets())
       return require_sync;

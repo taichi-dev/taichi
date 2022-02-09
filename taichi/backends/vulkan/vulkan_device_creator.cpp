@@ -650,7 +650,7 @@ void VulkanDeviceCreator::create_logical_device() {
       if (buffer_device_address_feature.bufferDeviceAddress) {
         if (device_supported_features.shaderInt64) {
           ti_device_->set_cap(
-              DeviceCapability::spirv_has_physical_storage_buffer, true);        
+              DeviceCapability::spirv_has_physical_storage_buffer, true);
         }
       }
       *pNextEnd = &buffer_device_address_feature;

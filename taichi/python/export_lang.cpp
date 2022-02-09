@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include "taichi/ir/snode.h"
 
 #if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -17,10 +18,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/program/snode_expr_utils.h"
-#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/ndarray.h"
-#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -54,24 +52,19 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
+void expr_assign(ASTBuilder *ast_builder,
+                 const Expr &lhs,
+                 const Expr &rhs,
+                 std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
   stmt->set_tb(tb);
-  current_ast_builder().insert(std::move(stmt));
+  ast_builder->insert(std::move(stmt));
 }
 
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 std::string libdevice_path();
-
-SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
-  return get_current_program().get_snode_rw_accessors_bank().get(snode);
-}
-
-NdarrayRwAccessorsBank::Accessors get_ndarray_rw_accessors(Ndarray *ndarray) {
-  return get_current_program().get_ndarray_rw_accessors_bank().get(ndarray);
-}
 
 TLANG_NAMESPACE_END
 
@@ -267,15 +260,29 @@ void export_lang(py::module &m) {
 
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
-      .def("create_kernel_return",
-           [&](ASTBuilder *self, const Expr &value) {
-             self->insert(Stmt::make<FrontendReturnStmt>(value));
+      .def("create_kernel_exprgroup_return",
+           [&](ASTBuilder *self, const ExprGroup &group) {
+             self->insert(Stmt::make<FrontendReturnStmt>(group));
            })
-      .def("create_print",
+      .def("create_print",  // This function will call `Expr
+                            // &Expr::operator=(const Expr &o)` implicitly.
            [&](ASTBuilder *self,
                std::vector<std::variant<Expr, std::string>> contents) {
              self->insert(std::make_unique<FrontendPrintStmt>(contents));
            })
+      .def("begin_func",
+           [&](ASTBuilder *self, const std::string &funcid) {
+             auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
+             auto stmt = stmt_unique.get();
+             self->insert(std::move(stmt_unique));
+             scope_stack.push_back(self->create_scope(stmt->body));
+           })
+      .def("end_func",
+           [&](ASTBuilder *, const std::string &funcid) {
+             scope_stack.pop_back();
+           })
+      .def("stop_grad",
+           [](ASTBuilder *self, SNode *snode) { self->stop_gradient(snode); })
       .def("begin_frontend_if",
            [&](ASTBuilder *self, const Expr &cond) {
              auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
@@ -294,13 +301,64 @@ void export_lang(py::module &m) {
              scope_stack.push_back(
                  self->create_scope(if_stmt->false_statements));
            })
-      .def("make_id_expr",
-           [](ASTBuilder *, const std::string &name) {
-             return Expr::make<IdExpression>(name);
+      .def("insert_deactivate", Deactivate)
+      .def("insert_activate", Activate)
+      .def("insert_external_func_call",
+           [](ASTBuilder *self, std::size_t func_addr, std::string source,
+              std::string filename, std::string funcname, const ExprGroup &args,
+              const ExprGroup &outputs) {
+             auto stmt = Stmt::make<FrontendExternalFuncStmt>(
+                 (void *)func_addr, source, filename, funcname, args.exprs,
+                 outputs.exprs);
+             self->insert(std::move(stmt));
            })
+      .def("expr_alloca",
+           [](ASTBuilder *self) {
+             auto var = Expr(std::make_shared<IdExpression>());
+             self->insert(std::make_unique<FrontendAllocaStmt>(
+                 std::static_pointer_cast<IdExpression>(var.expr)->id,
+                 PrimitiveType::unknown));
+             return var;
+           })
+      .def("expr_alloca_local_tensor",
+           [](ASTBuilder *self, const std::vector<int> &shape,
+              const DataType &element_type, const ExprGroup &elements) {
+             auto var = Expr(std::make_shared<IdExpression>());
+             self->insert(std::make_unique<FrontendAllocaStmt>(
+                 std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+                 element_type));
+             var->ret_type = self->get_last_stmt()->ret_type;
+             for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+               ExprGroup reversed_indices;
+               int linearized_index = i;
+               for (int d = (int)shape.size() - 1; d >= 0; --d) {
+                 reversed_indices.push_back(
+                     Expr::make<ConstExpression, const DataType &, int32>(
+                         PrimitiveType::i32, linearized_index % shape[d]));
+                 linearized_index /= shape[d];
+               }
+               ExprGroup indices;
+               for (int d = 0; d < (int)shape.size(); ++d)
+                 indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+               self->insert(std::make_unique<FrontendAssignStmt>(
+                   Expr::make<TensorElementExpression>(
+                       var, indices, shape, data_type_size(element_type)),
+                   elements.exprs[i]));
+             }
+             return var;
+           })
+      .def("create_assert_stmt",
+           [&](ASTBuilder *self, const Expr &cond, const std::string &msg,
+               const std::vector<Expr> &args) {
+             auto stmt_unique =
+                 std::make_unique<FrontendAssertStmt>(cond, msg, args);
+             self->insert(std::move(stmt_unique));
+           })
+      .def("expr_assign", expr_assign)
       .def("begin_frontend_range_for",
            [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
-             auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+             auto stmt_unique =
+                 std::make_unique<FrontendForStmt>(i, s, e, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));
@@ -310,8 +368,8 @@ void export_lang(py::module &m) {
       .def("begin_frontend_struct_for",
            [&](ASTBuilder *self, const ExprGroup &loop_vars,
                const Expr &global) {
-             auto stmt_unique =
-                 std::make_unique<FrontendForStmt>(loop_vars, global);
+             auto stmt_unique = std::make_unique<FrontendForStmt>(
+                 loop_vars, global, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));
@@ -321,20 +379,14 @@ void export_lang(py::module &m) {
       .def("begin_frontend_mesh_for",
            [&](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
                const mesh::MeshElementType &element_type) {
-             auto stmt_unique =
-                 std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
+             auto stmt_unique = std::make_unique<FrontendForStmt>(
+                 i, mesh_ptr, element_type, self->arch());
              auto stmt = stmt_unique.get();
              self->insert(std::move(stmt_unique));
              scope_stack.push_back(self->create_scope(stmt->body));
            })
       .def("end_frontend_mesh_for",
            [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("get_relation_access",
-           [](ASTBuilder *, mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-              mesh::MeshElementType to_type, const Expr &neighbor_idx) {
-             return Expr::make<MeshRelationAccessExpression>(
-                 mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-           })
       .def("begin_frontend_while",
            [&](ASTBuilder *self, const Expr &cond) {
              auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
@@ -350,9 +402,14 @@ void export_lang(py::module &m) {
            [&](ASTBuilder *self) {
              self->insert(Stmt::make<FrontendContinueStmt>());
            })
-      .def("insert_expr_stmt", [&](ASTBuilder *self, const Expr &val) {
-        self->insert(Stmt::make<FrontendExprStmt>(val));
-      });
+      .def("insert_expr_stmt",
+           [&](ASTBuilder *self, const Expr &val) {
+             self->insert(Stmt::make<FrontendExprStmt>(val));
+           })
+      .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
+      .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
+      .def("expr_var",
+           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -448,11 +505,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
-      .def("place",
-           [](SNode *snode, Expr &expr, const std::vector<int> &offset) {
-             place_child(&expr, offset, snode,
-                         get_current_program().get_snode_to_glb_var_exprs());
-           })
+      .def("place", &SNode::place)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("name", [](SNode *snode) { return snode->name; })
       .def("get_num_ch",
@@ -461,39 +514,16 @@ void export_lang(py::module &m) {
           "get_ch",
           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
           py::return_value_policy::reference)
-      .def("lazy_grad",
-           [](SNode *snode) {
-             make_lazy_grad(snode,
-                            get_current_program().get_snode_to_glb_var_exprs());
-           })
-      .def("read_int",
-           [](SNode *snode, const std::vector<int> &I) -> int64 {
-             return get_snode_rw_accessors(snode).read_int(I);
-           })
-      .def("read_uint",
-           [](SNode *snode, const std::vector<int> &I) -> uint64 {
-             return get_snode_rw_accessors(snode).read_uint(I);
-           })
-      .def("read_float",
-           [](SNode *snode, const std::vector<int> &I) -> float64 {
-             return get_snode_rw_accessors(snode).read_float(I);
-           })
+      .def("lazy_grad", &SNode::lazy_grad)
+      .def("read_int", &SNode::read_int)
+      .def("read_uint", &SNode::read_uint)
+      .def("read_float", &SNode::read_float)
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
-      .def("get_expr",
-           [](SNode *snode) {
-             return Expr(
-                 get_current_program().get_snode_to_glb_var_exprs()->at(snode));
-           })
-      .def("write_int",
-           [](SNode *snode, const std::vector<int> &I, int64 val) {
-             get_snode_rw_accessors(snode).write_int(I, val);
-           })
-      .def("write_float",
-           [](SNode *snode, const std::vector<int> &I, float64 val) {
-             get_snode_rw_accessors(snode).write_float(I, val);
-           })
+      .def("get_expr", &SNode::get_expr)
+      .def("write_int", &SNode::write_int)
+      .def("write_float", &SNode::write_float)
       .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {
@@ -524,26 +554,11 @@ void export_lang(py::module &m) {
       .def("fill_float", &Ndarray::fill_float)
       .def("fill_int", &Ndarray::fill_int)
       .def("fill_uint", &Ndarray::fill_uint)
-      .def("read_int",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
-             return get_ndarray_rw_accessors(ndarray).read_int(I);
-           })
-      .def("read_uint",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> uint64 {
-             return get_ndarray_rw_accessors(ndarray).read_uint(I);
-           })
-      .def("read_float",
-           [](Ndarray *ndarray, const std::vector<int> &I) -> float64 {
-             return get_ndarray_rw_accessors(ndarray).read_float(I);
-           })
-      .def("write_int",
-           [](Ndarray *ndarray, const std::vector<int> &I, int64 val) {
-             get_ndarray_rw_accessors(ndarray).write_int(I, val);
-           })
-      .def("write_float",
-           [](Ndarray *ndarray, const std::vector<int> &I, float64 val) {
-             get_ndarray_rw_accessors(ndarray).write_float(I, val);
-           })
+      .def("read_int", &Ndarray::read_int)
+      .def("read_uint", &Ndarray::read_uint)
+      .def("read_float", &Ndarray::read_float)
+      .def("write_int", &Ndarray::write_int)
+      .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
@@ -636,14 +651,6 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
 
-  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
-    return Deactivate(snode, indices);
-  });
-
-  m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
-    return Activate(snode, indices);
-  });
-
   m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
   });
@@ -651,16 +658,6 @@ void export_lang(py::module &m) {
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {
           return Append(snode, indices, val);
-        });
-
-  m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, std::string filename,
-           std::string funcname, const ExprGroup &args,
-           const ExprGroup &outputs) {
-          auto stmt = Stmt::make<FrontendExternalFuncStmt>(
-              (void *)func_addr, source, filename, funcname, args.exprs,
-              outputs.exprs);
-          current_ast_builder().insert(std::move(stmt));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -671,94 +668,10 @@ void export_lang(py::module &m) {
     return Length(snode, indices);
   });
 
-  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
-                                  const std::vector<Expr> &args) {
-    auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
-    current_ast_builder().insert(std::move(stmt_unique));
-  });
-
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args) {
           return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
         });
-
-  m.def("begin_frontend_while", [&](const Expr &cond) {
-    auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("begin_frontend_range_for",
-        [&](const Expr &i, const Expr &s, const Expr &e) {
-          auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
-
-  m.def("begin_frontend_struct_for", [&](const ExprGroup &loop_vars,
-                                         const Expr &global) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("begin_frontend_mesh_for",
-        [&](const Expr &i, const mesh::MeshPtr &mesh_ptr,
-            const mesh::MeshElementType &element_type) {
-          auto stmt_unique =
-              std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
-
-  m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
-  m.def("pop_scope", [&]() { scope_stack.pop_back(); });
-
-  m.def("begin_frontend_if", [&](const Expr &cond) {
-    auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
-    current_ast_builder().insert(std::move(stmt_tmp));
-  });
-
-  m.def("begin_frontend_if_true", [&]() {
-    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
-    scope_stack.push_back(
-        current_ast_builder().create_scope(if_stmt->true_statements));
-  });
-
-  m.def("begin_frontend_if_false", [&]() {
-    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
-    scope_stack.push_back(
-        current_ast_builder().create_scope(if_stmt->false_statements));
-  });
-
-  m.def("insert_break_stmt", [&]() {
-    current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
-  });
-
-  m.def("create_kernel_exprgroup_return", [&](const ExprGroup &group) {
-    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(group));
-  });
-
-  m.def("insert_continue_stmt", [&]() {
-    current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
-  });
-
-  m.def("insert_expr_stmt", [&](const Expr &val) {
-    current_ast_builder().insert(Stmt::make<FrontendExprStmt>(val));
-  });
-
-  m.def("begin_func", [&](const std::string &funcid) {
-    auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
-
-  m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
   m.def("make_func_call_expr",
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
@@ -768,34 +681,31 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
   m.def("expr_add", expr_add);
@@ -854,42 +764,6 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP_UNARY(exp)
   DEFINE_EXPRESSION_OP_UNARY(log)
 
-  m.def("expr_var", [](const Expr &e) { return Var(e); });
-  m.def("expr_alloca", []() {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id,
-        PrimitiveType::unknown));
-    return var;
-  });
-  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
-                                       const DataType &element_type,
-                                       const ExprGroup &elements) {
-    auto var = Expr(std::make_shared<IdExpression>());
-    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-        element_type));
-    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
-    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-      ExprGroup reversed_indices;
-      int linearized_index = i;
-      for (int d = (int)shape.size() - 1; d >= 0; --d) {
-        reversed_indices.push_back(
-            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
-        linearized_index /= shape[d];
-      }
-      ExprGroup indices;
-      for (int d = 0; d < (int)shape.size(); ++d)
-        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape,
-                                              data_type_size(element_type)),
-          load_if_ptr(elements.exprs[i])));
-    }
-    return var;
-  });
-  m.def("expr_assign", expr_assign);
-
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",
@@ -905,10 +779,11 @@ void export_lang(py::module &m) {
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
-  m.def("make_const_expr_i32", Expr::make<ConstExpression, int32>);
-  m.def("make_const_expr_i64", Expr::make<ConstExpression, int64>);
-  m.def("make_const_expr_f32", Expr::make<ConstExpression, float32>);
-  m.def("make_const_expr_f64", Expr::make<ConstExpression, float64>);
+  m.def("make_const_expr_int",
+        Expr::make<ConstExpression, const DataType &, int64>);
+
+  m.def("make_const_expr_fp",
+        Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
@@ -956,7 +831,7 @@ void export_lang(py::module &m) {
                    const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
+    return Expr::make<GlobalPtrExpression>(snode, indices);
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
@@ -1014,13 +889,6 @@ void export_lang(py::module &m) {
   py::class_<FunctionKey>(m, "FunctionKey")
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
-
-  // This function will call `Expr &Expr::operator=(const Expr &o)` implicitly.
-  m.def("create_print",
-        [&](std::vector<std::variant<Expr, std::string>> contents) {
-          current_ast_builder().insert(
-              std::make_unique<FrontendPrintStmt>(contents));
-        });
 
   m.def("decl_arg", [&](const DataType &dt, bool is_array) {
     return get_current_program().current_callable->insert_arg(dt, is_array);
@@ -1100,8 +968,6 @@ void export_lang(py::module &m) {
     TI_ASSERT(kernel);
     kernel->no_activate.push_back(snode);
   });
-  m.def("stop_grad",
-        [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
@@ -1129,8 +995,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("sifakis_svd_f32", sifakis_svd_export<float32, int32>);
-  m.def("sifakis_svd_f64", sifakis_svd_export<float64, int64>);
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });

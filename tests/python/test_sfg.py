@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import taichi as ti
 
@@ -26,7 +25,7 @@ def test_remove_clear_list_from_fused_serial():
     init_xy()
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     @ti.kernel
@@ -86,7 +85,7 @@ def test_sfg_dead_store_elimination():
     x.from_numpy(xnp)
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     for _ in range(5):

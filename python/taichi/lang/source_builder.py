@@ -123,9 +123,10 @@ class SourceBuilder:
 
     def __getattr__(self, item):
         def bitcode_func_call_wrapper(*args):
-            _ti_core.insert_external_func_call(0, '', self.bc, item,
-                                               make_expr_group(args),
-                                               make_expr_group([]))
+            impl.get_runtime().prog.current_ast_builder(
+            ).insert_external_func_call(0, '', self.bc, item,
+                                        make_expr_group(args),
+                                        make_expr_group([]))
 
         if self.mode == 'bc':
             return bitcode_func_call_wrapper
@@ -133,11 +134,15 @@ class SourceBuilder:
         def external_func_call_wrapper(args=[], outputs=[]):
             func_addr = ctypes.cast(self.so.__getattr__(item),
                                     ctypes.c_void_p).value
-            _ti_core.insert_external_func_call(func_addr, '', '', '',
-                                               make_expr_group(args),
-                                               make_expr_group(outputs))
+            impl.get_runtime().prog.current_ast_builder(
+            ).insert_external_func_call(func_addr, '', '', '',
+                                        make_expr_group(args),
+                                        make_expr_group(outputs))
 
         if self.mode == 'so':
             return external_func_call_wrapper
 
         raise TaichiSyntaxError('Error occurs when calling external function.')
+
+
+__all__ = []

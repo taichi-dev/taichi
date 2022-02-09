@@ -132,7 +132,7 @@ def test_binary_i(is_mat):
     assert allclose(x[4], y // z)
     assert allclose(x[5], y % z)
     assert allclose(x[6], y % z)
-    assert allclose(x[7], y**z)
+    assert allclose(x[7], y**z, rel=1e-5)
     assert allclose(x[8], y == z)
     assert allclose(x[9], y != z)
     assert allclose(x[10], y > z)

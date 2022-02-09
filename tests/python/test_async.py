@@ -52,4 +52,5 @@ def test_listgen_opt_with_offsets():
         inc()
 
     ti.sync()
-    assert ti.get_kernel_stats().get_counters()['launched_tasks_list_gen'] <= 2
+    assert ti.tools.async_utils.get_kernel_stats().get_counters(
+    )['launched_tasks_list_gen'] <= 2

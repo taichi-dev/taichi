@@ -828,7 +828,8 @@ def atomic_xor(a, b):
 
 @writeback_binary
 def assign(a, b):
-    _ti_core.expr_assign(a.ptr, b.ptr, stack_info())
+    impl.get_runtime().prog.current_ast_builder().expr_assign(
+        a.ptr, b.ptr, stack_info())
     return a
 
 
@@ -865,5 +866,5 @@ __all__ = [
     "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
     "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
     "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
-    "max", "min", "select"
+    "max", "min", "select", "abs", "pow"
 ]

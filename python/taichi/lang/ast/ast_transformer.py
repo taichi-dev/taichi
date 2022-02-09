@@ -955,7 +955,7 @@ class ASTTransformer(Builder):
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
-            entry_expr.type_check()
+            entry_expr.type_check(impl.get_runtime().prog.config)
             mesh_idx = mesh.MeshElementFieldProxy(
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)

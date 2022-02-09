@@ -33,8 +33,8 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
-void Expr::type_check() {
-  expr->type_check();
+void Expr::type_check(CompileConfig *config) {
+  expr->type_check(config);
 }
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {

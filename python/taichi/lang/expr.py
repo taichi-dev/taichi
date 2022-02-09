@@ -35,7 +35,7 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.ptr.type_check()
+        self.ptr.type_check(impl.get_runtime().prog.config)
 
     def __hash__(self):
         return self.ptr.get_raw_address()

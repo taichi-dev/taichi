@@ -114,7 +114,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
-void ArgLoadExpression::type_check() {
+void ArgLoadExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
@@ -126,7 +126,7 @@ void ArgLoadExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void RandExpression::type_check() {
+void RandExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for RandExpression", dt->to_string());
   ret_type = dt;
@@ -151,7 +151,7 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
-void UnaryOpExpression::type_check() {
+void UnaryOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -181,7 +181,7 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
-void BinaryOpExpression::type_check() {
+void BinaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
@@ -202,7 +202,7 @@ void BinaryOpExpression::type_check() {
     return;
   }
   if (type == BinaryOpType::truediv) {
-    auto default_fp = get_current_program().config.default_fp;
+    auto default_fp = config->default_fp;
     if (!is_real(lhs_type)) {
       lhs_type = default_fp;
     }
@@ -223,7 +223,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void TernaryOpExpression::type_check() {
+void TernaryOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
@@ -253,7 +253,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void InternalFuncCallExpression::type_check() {
+void InternalFuncCallExpression::type_check(CompileConfig *) {
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
@@ -285,7 +285,7 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-void GlobalPtrExpression::type_check() {
+void GlobalPtrExpression::type_check(CompileConfig *) {
   // Currently, dimension compatibility check happens in Python
   if (snode != nullptr) {
     ret_type = snode->dt;
@@ -356,7 +356,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void TensorElementExpression::type_check() {
+void TensorElementExpression::type_check(CompileConfig *) {
   std::string invalid_msg{
       "Invalid TensorElementExpression: the source is neither a local tensor "
       "nor a global tensor field"};
@@ -401,7 +401,7 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
 }
 
-void RangeAssumptionExpression::type_check() {
+void RangeAssumptionExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
   TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
@@ -421,7 +421,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void LoopUniqueExpression::type_check() {
+void LoopUniqueExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -455,7 +455,7 @@ void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
 }
 
-void AtomicOpExpression::type_check() {
+void AtomicOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
@@ -524,7 +524,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void SNodeOpExpression::type_check() {
+void SNodeOpExpression::type_check(CompileConfig *) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
   } else {
@@ -575,7 +575,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void ConstExpression::type_check() {
+void ConstExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(
       val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
       "Invalid dt [{}] for ConstExpression", val.dt->to_string());
@@ -587,7 +587,7 @@ void ConstExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void ExternalTensorShapeAlongAxisExpression::type_check() {
+void ExternalTensorShapeAlongAxisExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
                  "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
                  ptr.serialize());
@@ -601,7 +601,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FuncCallExpression::type_check() {
+void FuncCallExpression::type_check(CompileConfig *) {
   for (auto &arg : args.exprs) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
@@ -637,11 +637,11 @@ void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void MeshPatchIndexExpression::type_check() {
+void MeshPatchIndexExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 
-void MeshRelationAccessExpression::type_check() {
+void MeshRelationAccessExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 
@@ -657,7 +657,7 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void MeshIndexConversionExpression::type_check() {
+void MeshIndexConversionExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 

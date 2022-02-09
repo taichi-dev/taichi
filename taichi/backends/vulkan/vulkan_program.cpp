@@ -174,7 +174,7 @@ DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
     uint64 *result_buffer) {
   auto &ndarray =
       ref_ndarry_.emplace_back(get_compute_device()->allocate_memory_unique(
-          {alloc_size, /*host_write=*/false, /*host_read=*/true,
+          {alloc_size, /*host_write=*/false, /*host_read=*/false,
            /*export_sharing=*/false}));
   return *ndarray;
 }

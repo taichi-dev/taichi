@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import numpy as np
 from taichi._lib import core as _ti_core
 
@@ -10,7 +8,7 @@ def cook_image_to_bytes(img):
     """
     Takes a NumPy array or Taichi field of any type.
     Returns a NumPy array of uint8.
-    This is used by ti.imwrite and ti.imdisplay.
+    This is used by ti.imwrite.
     """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
@@ -32,26 +30,6 @@ def cook_image_to_bytes(img):
                             4], "Image must be either RGB/RGBA or greyscale"
 
     return img.swapaxes(0, 1)[::-1, :]
-
-
-def imdisplay(img):
-    """
-    Try to display image in interactive shell.
-
-    Args:
-        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
-    """
-    try:
-        get_ipython()
-    except:
-        ti.imshow(img)
-    else:
-        import IPython.display  # pylint: disable=C0415
-        import PIL.Image  # pylint: disable=C0415
-        img = cook_image_to_bytes(img)
-        with BytesIO() as f:
-            PIL.Image.fromarray(img).save(f, 'png')
-            IPython.display.display(IPython.display.Image(data=f.getvalue()))
 
 
 def imresize(img, w, h=None):
@@ -113,26 +91,36 @@ def imread(filename, channels=0):
     return img.swapaxes(0, 1)[:, ::-1, :]
 
 
-def imshow(img, window_name='imshow'):
-    """Show image in a Taichi GUI.
+def imshow(img, title='imshow'):
+    """Display a taichi.field or a numpy.ndarray in a Taichi GUI window or an interative Ipython notebook.
+    For interactive Ipython environment the image will be shown in the notebook.
 
     Args:
         img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
-        window_name (str, optional): The title of GUI window. Default to `imshow`.
+        title (str, optional): The title of GUI window. Default to `imshow`.
     """
-    if not isinstance(img, np.ndarray):
-        img = img.to_numpy()
-    assert len(img.shape) in [2,
-                              3], "Image must be either RGB/RGBA or greyscale"
+    try:  # check if we are in Ipython environment
+        get_ipython()
+    except:
+        if not isinstance(img, np.ndarray):
+            img = img.to_numpy()
+            assert len(
+                img.shape) in [2,
+                               3], "Image must be either RGB/RGBA or greyscale"
 
-    with ti.GUI(window_name, res=img.shape[:2]) as gui:
-        img = gui.cook_image(img)
-        while gui.running:
-            if gui.get_event(ti.GUI.ESCAPE):
-                gui.running = False
+        with ti.GUI(title, res=img.shape[:2]) as gui:
+            img = gui.cook_image(img)
+            while gui.running:
+                if gui.get_event(ti.GUI.ESCAPE):
+                    gui.running = False
 
-            gui.set_image(img)
-            gui.show()
+                gui.set_image(img)
+                gui.show()
+    else:
+        import IPython.display  # pylint: disable=C0415
+        import PIL.Image  # pylint: disable=C0415
+        img = cook_image_to_bytes(img)
+        IPython.display.display(PIL.Image.fromarray(img))
 
 
-__all__ = ['imdisplay', 'imread', 'imresize', 'imshow', 'imwrite']
+__all__ = ['imread', 'imresize', 'imshow', 'imwrite']

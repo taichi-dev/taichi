@@ -62,7 +62,10 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            var = ti_ops.cast(value, anno)
+            if isinstance(value, expr.Expr):
+                var = ti_ops.cast(value, anno)
+            else:
+                var = impl.make_constant_expr(value, anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:

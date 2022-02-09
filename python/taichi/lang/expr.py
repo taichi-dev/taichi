@@ -9,7 +9,7 @@ from taichi.lang.util import is_taichi_class
 # Scalar, basic data type
 class Expr(TaichiOperations):
     """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr` which holds an instance of C++ Expression class."""
-    def __init__(self, *args, tb=None):
+    def __init__(self, *args, tb=None, dtype=None):
         self.tb = tb
         if len(args) == 1:
             if isinstance(args[0], _ti_core.Expr):
@@ -29,11 +29,8 @@ class Expr(TaichiOperations):
                         raise TaichiTypeError(
                             "Only 0-dimensional numpy array can be used to initialize a scalar expression"
                         )
-                    try:
-                        arg = arg.dtype.type(arg)
-                    except:
-                        pass
-                self.ptr = impl.make_constant_expr(arg).ptr
+                    arg = arg.dtype.type(arg)
+                self.ptr = impl.make_constant_expr(arg, dtype).ptr
         else:
             assert False
         if self.tb:

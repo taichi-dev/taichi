@@ -657,6 +657,10 @@ class ConstExpression : public Expression {
   ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
+  template <typename T>
+  ConstExpression(const DataType &dt, const T &x) : val({dt, x}) {
+    ret_type = dt;
+  }
 
   void type_check() override;
 
@@ -799,25 +803,11 @@ class ASTBuilder {
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
-  struct ScopeGuard {
-    ASTBuilder *builder;
-    Block *list;
-    ScopeGuard(ASTBuilder *builder, Block *list)
-        : builder(builder), list(list) {
-      builder->stack_.push_back(list);
-    }
-
-    ~ScopeGuard() {
-      builder->stack_.pop_back();
-    }
-  };
-
   // The function will be removed soon
   Arch arch() const {
     return arch_;
   }
 
-  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
@@ -826,9 +816,44 @@ class ASTBuilder {
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
-};
 
-ASTBuilder &current_ast_builder();
+  Expr insert_thread_idx_expr();
+  Expr insert_patch_idx_expr();
+  void create_kernel_exprgroup_return(const ExprGroup &group);
+  void create_print(std::vector<std::variant<Expr, std::string>> contents);
+  void begin_func(const std::string &funcid);
+  void end_func(const std::string &funcid);
+  void begin_frontend_if(const Expr &cond);
+  void begin_frontend_if_true();
+  void begin_frontend_if_false();
+  void insert_external_func_call(std::size_t func_addr,
+                                 std::string source,
+                                 std::string filename,
+                                 std::string funcname,
+                                 const ExprGroup &args,
+                                 const ExprGroup &outputs);
+  Expr expr_alloca();
+  Expr expr_alloca_local_tensor(const std::vector<int> &shape,
+                                const DataType &element_type,
+                                const ExprGroup &elements);
+  void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  void create_assert_stmt(const Expr &cond,
+                          const std::string &msg,
+                          const std::vector<Expr> &args);
+  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
+  void begin_frontend_struct_for(const ExprGroup &loop_vars,
+                                 const Expr &global);
+  void begin_frontend_mesh_for(const Expr &i,
+                               const mesh::MeshPtr &mesh_ptr,
+                               const mesh::MeshElementType &element_type);
+  void begin_frontend_while(const Expr &cond);
+  void insert_break_stmt();
+  void insert_continue_stmt();
+  void insert_expr_stmt(const Expr &val);
+
+  void create_scope(std::unique_ptr<Block> &list);
+  void pop_scope();
+};
 
 class FrontendContext {
  private:

@@ -25,6 +25,6 @@ __all__ = [
         'any_array', 'ast', 'common_ops', 'enums', 'exception', 'expr', 'impl',
         'inspect', 'kernel_arguments', 'kernel_impl', 'matrix', 'mesh', 'misc',
         'ops', 'platform', 'runtime_ops', 'shell', 'snode', 'source_builder',
-        'struct', 'util'
+        'struct', 'tape', 'util'
     ]
 ]

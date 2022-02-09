@@ -304,3 +304,15 @@ def test_redefining_template_args():
             "Variable 'a' cannot be assigned. Maybe it is not a Taichi object?"
     ):
         foo(1)
+
+
+@ti.test()
+def test_break_in_outermost_for():
+    @ti.kernel
+    def foo():
+        for i in range(10):
+            break
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match="Cannot break in the outermost loop"):
+        foo()

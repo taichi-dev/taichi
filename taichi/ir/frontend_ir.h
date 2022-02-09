@@ -793,12 +793,17 @@ class MeshIndexConversionExpression : public Expression {
 
 class ASTBuilder {
  private:
+  enum LoopState { None, Outermost, Inner };
+  enum LoopType { NotLoop, For, While };
+
   std::vector<Block *> stack_;
+  std::vector<LoopState> loop_state_stack_;
   Arch arch_;
 
  public:
   ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
+    loop_state_stack_.push_back(None);
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
@@ -851,7 +856,7 @@ class ASTBuilder {
   void insert_continue_stmt();
   void insert_expr_stmt(const Expr &val);
 
-  void create_scope(std::unique_ptr<Block> &list);
+  void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
 };
 

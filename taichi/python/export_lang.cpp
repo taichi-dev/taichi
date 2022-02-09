@@ -62,6 +62,8 @@ void export_lang(py::module &m) {
 
   py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
                                           PyExc_TypeError);
+  py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
+                                            PyExc_SyntaxError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"

@@ -1,5 +1,4 @@
 import numpy as np
-from taichi._lib import core as _ti_core
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
 from taichi.types.primitive_types import f32

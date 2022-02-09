@@ -266,7 +266,7 @@ class ArgLoadExpression : public Expression {
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
@@ -282,7 +282,7 @@ class RandExpression : public Expression {
   RandExpression(DataType dt) : dt(dt) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("rand<{}>()", data_type_name(dt));
@@ -306,7 +306,7 @@ class UnaryOpExpression : public Expression {
       : type(type), operand(operand), cast_type(cast_type) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   bool is_cast() const;
 
@@ -324,7 +324,7 @@ class BinaryOpExpression : public Expression {
       : type(type), lhs(lhs), rhs(rhs) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << '(';
@@ -354,7 +354,7 @@ class TernaryOpExpression : public Expression {
     this->op3.set(op3);
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
@@ -382,7 +382,7 @@ class InternalFuncCallExpression : public Expression {
     }
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
@@ -416,7 +416,7 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -451,7 +451,7 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void set_snode(SNode *snode) {
@@ -480,7 +480,7 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -506,7 +506,7 @@ class TensorElementExpression : public Expression {
     // TODO: shape & indices check
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   bool is_local_tensor() const;
 
@@ -549,7 +549,7 @@ class RangeAssumptionExpression : public Expression {
       : input(input), base(base), low(low), high(high) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -574,7 +574,7 @@ class LoopUniqueExpression : public Expression {
       : input(input), covers(covers) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -589,7 +589,7 @@ class IdExpression : public Expression {
   IdExpression(const Identifier &id) : id(id) {
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -617,7 +617,7 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -642,7 +642,7 @@ class SNodeOpExpression : public Expression {
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -662,7 +662,7 @@ class ConstExpression : public Expression {
     ret_type = dt;
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << val.stringify();
@@ -686,7 +686,7 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
       : ptr(ptr), axis(axis) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -696,7 +696,7 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -714,7 +714,7 @@ class MeshPatchIndexExpression : public Expression {
   MeshPatchIndexExpression() {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("mesh_patch_idx()");
@@ -730,7 +730,7 @@ class MeshRelationAccessExpression : public Expression {
   mesh::MeshElementType to_type;
   Expr neighbor_idx;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     if (neighbor_idx) {
@@ -772,7 +772,7 @@ class MeshIndexConversionExpression : public Expression {
   Expr idx;
   mesh::ConvType conv_type;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "

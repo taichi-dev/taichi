@@ -525,7 +525,7 @@ class MeshRelationAccessProxy:
                                                   self.from_index.ptr,
                                                   self.to_element_type,
                                                   impl.Expr(indices[0]).ptr)
-        entry_expr.type_check()
+        entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)
 

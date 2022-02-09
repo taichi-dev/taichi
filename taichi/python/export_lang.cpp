@@ -52,18 +52,6 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(ASTBuilder *ast_builder,
-                 const Expr &lhs,
-                 const Expr &rhs,
-                 std::string tb) {
-  TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
-  stmt->set_tb(tb);
-  ast_builder->insert(std::move(stmt));
-}
-
-std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
-
 std::string libdevice_path();
 
 TLANG_NAMESPACE_END
@@ -261,155 +249,37 @@ void export_lang(py::module &m) {
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
       .def("create_kernel_exprgroup_return",
-           [&](ASTBuilder *self, const ExprGroup &group) {
-             self->insert(Stmt::make<FrontendReturnStmt>(group));
-           })
-      .def("create_print",  // This function will call `Expr
-                            // &Expr::operator=(const Expr &o)` implicitly.
-           [&](ASTBuilder *self,
-               std::vector<std::variant<Expr, std::string>> contents) {
-             self->insert(std::make_unique<FrontendPrintStmt>(contents));
-           })
-      .def("begin_func",
-           [&](ASTBuilder *self, const std::string &funcid) {
-             auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
-      .def("end_func",
-           [&](ASTBuilder *, const std::string &funcid) {
-             scope_stack.pop_back();
-           })
-      .def("stop_grad",
-           [](ASTBuilder *self, SNode *snode) { self->stop_gradient(snode); })
-      .def("begin_frontend_if",
-           [&](ASTBuilder *self, const Expr &cond) {
-             auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
-             self->insert(std::move(stmt_tmp));
-           })
-      .def(
-          "begin_frontend_if_true",
-          [&](ASTBuilder *self) {
-            auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
-            scope_stack.push_back(self->create_scope(if_stmt->true_statements));
-          })
-      .def("pop_scope", [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_if_false",
-           [&](ASTBuilder *self) {
-             auto if_stmt = self->get_last_stmt()->as<FrontendIfStmt>();
-             scope_stack.push_back(
-                 self->create_scope(if_stmt->false_statements));
-           })
+           &ASTBuilder::create_kernel_exprgroup_return)
+      .def("create_print", &ASTBuilder::create_print)
+      .def("begin_func", &ASTBuilder::begin_func)
+      .def("end_func", &ASTBuilder::end_func)
+      .def("stop_grad", &ASTBuilder::stop_gradient)
+      .def("begin_frontend_if", &ASTBuilder::begin_frontend_if)
+      .def("begin_frontend_if_true", &ASTBuilder::begin_frontend_if_true)
+      .def("pop_scope", &ASTBuilder::pop_scope)
+      .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
       .def("insert_deactivate", Deactivate)
       .def("insert_activate", Activate)
-      .def("insert_external_func_call",
-           [](ASTBuilder *self, std::size_t func_addr, std::string source,
-              std::string filename, std::string funcname, const ExprGroup &args,
-              const ExprGroup &outputs) {
-             auto stmt = Stmt::make<FrontendExternalFuncStmt>(
-                 (void *)func_addr, source, filename, funcname, args.exprs,
-                 outputs.exprs);
-             self->insert(std::move(stmt));
-           })
-      .def("expr_alloca",
-           [](ASTBuilder *self) {
-             auto var = Expr(std::make_shared<IdExpression>());
-             self->insert(std::make_unique<FrontendAllocaStmt>(
-                 std::static_pointer_cast<IdExpression>(var.expr)->id,
-                 PrimitiveType::unknown));
-             return var;
-           })
-      .def("expr_alloca_local_tensor",
-           [](ASTBuilder *self, const std::vector<int> &shape,
-              const DataType &element_type, const ExprGroup &elements) {
-             auto var = Expr(std::make_shared<IdExpression>());
-             self->insert(std::make_unique<FrontendAllocaStmt>(
-                 std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-                 element_type));
-             var->ret_type = self->get_last_stmt()->ret_type;
-             for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-               ExprGroup reversed_indices;
-               int linearized_index = i;
-               for (int d = (int)shape.size() - 1; d >= 0; --d) {
-                 reversed_indices.push_back(
-                     Expr::make<ConstExpression, const DataType &, int32>(
-                         PrimitiveType::i32, linearized_index % shape[d]));
-                 linearized_index /= shape[d];
-               }
-               ExprGroup indices;
-               for (int d = 0; d < (int)shape.size(); ++d)
-                 indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
-               self->insert(std::make_unique<FrontendAssignStmt>(
-                   Expr::make<TensorElementExpression>(
-                       var, indices, shape, data_type_size(element_type)),
-                   elements.exprs[i]));
-             }
-             return var;
-           })
-      .def("create_assert_stmt",
-           [&](ASTBuilder *self, const Expr &cond, const std::string &msg,
-               const std::vector<Expr> &args) {
-             auto stmt_unique =
-                 std::make_unique<FrontendAssertStmt>(cond, msg, args);
-             self->insert(std::move(stmt_unique));
-           })
-      .def("expr_assign", expr_assign)
-      .def("begin_frontend_range_for",
-           [&](ASTBuilder *self, const Expr &i, const Expr &s, const Expr &e) {
-             auto stmt_unique =
-                 std::make_unique<FrontendForStmt>(i, s, e, self->arch());
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
-      .def("end_frontend_range_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_struct_for",
-           [&](ASTBuilder *self, const ExprGroup &loop_vars,
-               const Expr &global) {
-             auto stmt_unique = std::make_unique<FrontendForStmt>(
-                 loop_vars, global, self->arch());
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
-      .def("end_frontend_struct_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_mesh_for",
-           [&](ASTBuilder *self, const Expr &i, const mesh::MeshPtr &mesh_ptr,
-               const mesh::MeshElementType &element_type) {
-             auto stmt_unique = std::make_unique<FrontendForStmt>(
-                 i, mesh_ptr, element_type, self->arch());
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
-      .def("end_frontend_mesh_for",
-           [&](ASTBuilder *) { scope_stack.pop_back(); })
-      .def("begin_frontend_while",
-           [&](ASTBuilder *self, const Expr &cond) {
-             auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
-             auto stmt = stmt_unique.get();
-             self->insert(std::move(stmt_unique));
-             scope_stack.push_back(self->create_scope(stmt->body));
-           })
-      .def("insert_break_stmt",
-           [&](ASTBuilder *self) {
-             self->insert(Stmt::make<FrontendBreakStmt>());
-           })
-      .def("insert_continue_stmt",
-           [&](ASTBuilder *self) {
-             self->insert(Stmt::make<FrontendContinueStmt>());
-           })
-      .def("insert_expr_stmt",
-           [&](ASTBuilder *self, const Expr &val) {
-             self->insert(Stmt::make<FrontendExprStmt>(val));
-           })
+      .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
+      .def("expr_alloca", &ASTBuilder::expr_alloca)
+      .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
+      .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
+      .def("expr_assign", &ASTBuilder::expr_assign)
+      .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
+      .def("end_frontend_range_for", &ASTBuilder::pop_scope)
+      .def("begin_frontend_struct_for", &ASTBuilder::begin_frontend_struct_for)
+      .def("end_frontend_struct_for", &ASTBuilder::pop_scope)
+      .def("begin_frontend_mesh_for", &ASTBuilder::begin_frontend_mesh_for)
+      .def("end_frontend_mesh_for", &ASTBuilder::pop_scope)
+      .def("begin_frontend_while", &ASTBuilder::begin_frontend_while)
+      .def("insert_break_stmt", &ASTBuilder::insert_break_stmt)
+      .def("insert_continue_stmt", &ASTBuilder::insert_continue_stmt)
+      .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
+      .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
+      .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
-      .def("expr_var",
-           [](ASTBuilder *self, const Expr &e) { return self->make_var(e); });
+      .def("expr_var", &ASTBuilder::make_var);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -915,43 +785,6 @@ void export_lang(py::module &m) {
   m.def("parallelize", Parallelize);
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
-
-  m.def("insert_thread_idx_expr", [&]() {
-    auto arch = get_current_program().config.arch;
-    auto loop =
-        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
-    TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
-                "ti.thread_idx() is only available in cuda or cpu context.");
-    if (loop != nullptr) {
-      auto i = scope_stack.size() - 1;
-      while (!(loop->is<FrontendForStmt>())) {
-        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
-        if (loop == nullptr)
-          break;
-      }
-    }
-    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
-                "ti.thread_idx() is only valid within loops.");
-    return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
-                                                  std::vector<Expr>{});
-  });
-
-  m.def("insert_patch_idx_expr", [&]() {
-    auto loop =
-        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
-    if (loop != nullptr) {
-      auto i = scope_stack.size() - 1;
-      while (!(loop->is<FrontendForStmt>())) {
-        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
-        if (loop == nullptr)
-          break;
-      }
-    }
-    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
-                  loop->as<FrontendForStmt>()->mesh_for),
-                "ti.mesh_patch_idx() is only valid within mesh-for loops.");
-    return Expr::make<MeshPatchIndexExpression>();
-  });
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)

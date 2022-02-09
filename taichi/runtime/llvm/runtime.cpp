@@ -1662,11 +1662,11 @@ uint64 rand_u64(RuntimeContext *context) {
 }
 
 f32 rand_f32(RuntimeContext *context) {
-    return (rand_u32(context) >> 8) * (1.0f / 16777216.0f);
+  return (rand_u32(context) >> 8) * (1.0f / 16777216.0f);
 }
 
 f64 rand_f64(RuntimeContext *context) {
-    return (rand_u64(context) >> 11) * (1.0 / 9007199254740992.0);
+  return (rand_u64(context) >> 11) * (1.0 / 9007199254740992.0);
 }
 
 i32 rand_i32(RuntimeContext *context) {

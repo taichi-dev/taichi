@@ -126,6 +126,25 @@ def test_init_bad_arg():
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
+def test_init_require_version():
+    ti_core = ti._lib.utils.import_ti_core()
+    require_version = '{}.{}.{}'.format(ti_core.get_version_major(),
+                                        ti_core.get_version_minor(),
+                                        ti_core.get_version_patch())
+    ti.init(_test_mode=True, debug=True, require_version=require_version)
+
+
+def test_init_bad_require_version():
+    with pytest.raises(Exception):
+        ti_core = ti._lib.utils.import_ti_core()
+        bad_require_version = '{}.{}.{}'.format(
+            ti_core.get_version_major(), ti_core.get_version_minor(),
+            ti_core.get_version_patch() + 1)
+        ti.init(_test_mode=True,
+                debug=True,
+                require_version=bad_require_version)
+
+
 @pytest.mark.parametrize(
     'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @ti.test()

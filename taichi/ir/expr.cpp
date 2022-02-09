@@ -94,19 +94,19 @@ void Expr::set_grad(const Expr &o) {
 }
 
 Expr::Expr(int32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i32, x);
 }
 
 Expr::Expr(int64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i64, x);
 }
 
 Expr::Expr(float32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f32, x);
 }
 
 Expr::Expr(float64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f64, x);
 }
 
 Expr::Expr(const Identifier &id) : Expr() {

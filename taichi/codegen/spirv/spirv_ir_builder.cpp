@@ -69,6 +69,11 @@ void IRBuilder::init_header() {
   if (device_->get_cap(cap::spirv_has_float64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
   }
+  if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityPhysicalStorageBufferAddressesEXT)
+        .commit(&header_);
+  }
 
   ib_.begin(spv::OpExtension)
       .add("SPV_KHR_storage_buffer_storage_class")
@@ -89,6 +94,12 @@ void IRBuilder::init_header() {
   if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_shader_atomic_float_min_max")
+        .commit(&header_);
+  }
+
+  if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_EXT_physical_storage_buffer")
         .commit(&header_);
   }
 
@@ -440,6 +451,44 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
 
   this->debug(spv::OpName, struct_type, name + "_t");
 
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+    // NOTE: BufferBlock was deprecated in SPIRV 1.3
+    // use StorageClassStorageBuffer instead.
+    // runtime array are always decorated as BufferBlock(shader storage buffer)
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
+  } else {
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+  }
+
+  SType ptr_type = get_pointer_type(struct_type, storage_class);
+
+  this->debug(spv::OpName, ptr_type, name + "_ptr");
+
+  Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(ptr_type, val, storage_class)
+      .commit(&global_);
+
+  this->debug(spv::OpName, val, name);
+
+  this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
+                 descriptor_set);
+  this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
+  return val;
+}
+
+Value IRBuilder::uniform_struct_argument(const SType &struct_type,
+                                         uint32_t descriptor_set,
+                                         uint32_t binding,
+                                         const std::string &name) {
+  // NOTE: BufferBlock was deprecated in SPIRV 1.3
+  // use StorageClassStorageBuffer instead.
+  spv::StorageClass storage_class = spv::StorageClassUniform;
+
+  this->debug(spv::OpName, struct_type, name + "_t");
+
+  this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+
   SType ptr_type = get_pointer_type(struct_type, storage_class);
 
   this->debug(spv::OpName, ptr_type, name + "_ptr");
@@ -550,6 +599,7 @@ Value IRBuilder::get_num_work_groups(uint32_t dim_index) {
 
   return this->make_value(spv::OpLoad, t_uint32_, ptr);
 }
+
 Value IRBuilder::get_global_invocation_id(uint32_t dim_index) {
   if (gl_global_invocation_id_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_v3_uint_, spv::StorageClassInput);
@@ -566,6 +616,24 @@ Value IRBuilder::get_global_invocation_id(uint32_t dim_index) {
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
 
   return this->make_value(spv::OpLoad, t_uint32_, ptr);
+}
+
+Value IRBuilder::get_subgroup_invocation_id() {
+  if (subgroup_local_invocation_id_.id == 0) {
+    SType ptr_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
+    subgroup_local_invocation_id_ =
+        new_value(ptr_type, ValueKind::kVariablePtr);
+    ib_.begin(spv::OpVariable)
+        .add_seq(ptr_type, subgroup_local_invocation_id_,
+                 spv::StorageClassInput)
+        .commit(&global_);
+    this->decorate(spv::OpDecorate, subgroup_local_invocation_id_,
+                   spv::DecorationBuiltIn,
+                   spv::BuiltInSubgroupLocalInvocationId);
+  }
+
+  return this->make_value(spv::OpLoad, t_uint32_,
+                          subgroup_local_invocation_id_);
 }
 
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \
@@ -764,7 +832,9 @@ void IRBuilder::register_value(std::string name, Value value) {
   if (it != value_name_tbl_.end()) {
     TI_ERROR("{} is existed.", name);
   }
-  this->debug(spv::OpName, value, name);  // Debug info
+  this->debug(
+      spv::OpName, value,
+      fmt::format("{}_{}", name, value.stype.dt.to_string()));  // Debug info
   value_name_tbl_[name] = value;
 }
 
@@ -774,6 +844,10 @@ Value IRBuilder::query_value(std::string name) const {
     return it->second;
   }
   TI_ERROR("Value \"{}\" does not yet exist.", name);
+}
+
+bool IRBuilder::check_value_existence(const std::string &name) const {
+  return value_name_tbl_.find(name) != value_name_tbl_.end();
 }
 
 Value IRBuilder::float_atomic(AtomicOpType op_type,
@@ -804,8 +878,10 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
       Value new_float = atomic_op(old_float, data);
       Value new_val = make_value(spv::OpBitcast, t_uint32_, new_float);
       // int loaded = atomicCompSwap(vals[0], old, new);
-      auto acquire_release = uint_immediate_number(t_uint32_, 0x8);
-      make_inst(spv::OpMemoryBarrier, const_i32_one_, acquire_release);
+      auto semantics = uint_immediate_number(
+          t_uint32_, spv::MemorySemanticsAcquireReleaseMask |
+                         spv::MemorySemanticsUniformMemoryMask);
+      make_inst(spv::OpMemoryBarrier, const_i32_one_, semantics);
       Value loaded = make_value(
           spv::OpAtomicCompareExchange, t_uint32_, addr_ptr,
           /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,

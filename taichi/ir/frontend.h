@@ -77,21 +77,8 @@ inline Expr Append(const Expr &expr,
   return Append(expr.snode(), indices, val);
 }
 
-inline void InsertAssert(const std::string &text, const Expr &cond) {
-  current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(cond, text));
-}
-
-inline void Clear(SNode *snode, const ExprGroup &indices) {
-  current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, indices));
-}
-
 inline Expr is_active(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
-}
-
-inline void Clear(const Expr &expr, const ExprGroup &indices) {
-  return Clear(expr.snode(), indices);
 }
 
 inline Expr Length(SNode *snode, const ExprGroup &indices) {

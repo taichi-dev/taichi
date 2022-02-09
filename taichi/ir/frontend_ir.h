@@ -832,8 +832,6 @@ class ASTBuilder {
                   const std::function<void(Expr)> &func);
 };
 
-ASTBuilder &current_ast_builder();
-
 class FrontendContext {
  private:
   std::unique_ptr<ASTBuilder> current_builder_;

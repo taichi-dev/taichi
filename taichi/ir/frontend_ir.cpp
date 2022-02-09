@@ -731,10 +731,6 @@ std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
   return std::make_unique<ScopeGuard>(this, list.get());
 }
 
-ASTBuilder &current_ast_builder() {
-  return get_current_program().current_callable->context->builder();
-}
-
 void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
   expr->flatten(ctx);
 }

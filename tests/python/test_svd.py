@@ -2,7 +2,6 @@ import numpy as np
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test(require=ti.extension.data64, fast_math=False)
@@ -17,8 +16,8 @@ def test_precision():
         w[None] = ti.cast(u[None] + 7, ti.f64) / ti.cast(u[None] + 3, ti.f64)
 
     forward()
-    assert v[None]**2 == approx(3.25, abs=1e-12)
-    assert w[None] * 3 == approx(7, abs=1e-12)
+    assert v[None]**2 == test_utils.approx(3.25, abs=1e-12)
+    assert w[None] * 3 == test_utils.approx(7, abs=1e-12)
 
 
 def mat_equal(A, B, tol=1e-6):
@@ -59,7 +58,7 @@ def _test_svd(dt, n):
     for i in range(n):
         for j in range(n):
             if i != j:
-                assert sigma[None][i, j] == approx(0)
+                assert sigma[None][i, j] == test_utils.approx(0)
 
 
 def test_svd():

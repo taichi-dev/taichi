@@ -1,6 +1,5 @@
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test()
@@ -19,7 +18,7 @@ def test_random_float():
         fill()
         X = x.to_numpy()
         for i in range(1, 4):
-            assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
+            assert (X**i).mean() == test_utils.approx(1 / (i + 1), rel=1e-2)
 
 
 @test_utils.test()
@@ -42,7 +41,7 @@ def test_random_int():
         fill()
         X = x.to_numpy()
         for i in range(1, 4):
-            assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
+            assert (X**i).mean() == test_utils.approx(1 / (i + 1), rel=1e-2)
 
 
 @test_utils.test()
@@ -60,7 +59,7 @@ def test_random_independent_product():
     fill()
     X = x.to_numpy()
     for i in range(4):
-        assert X.mean() == approx(1 / 4, rel=1e-2)
+        assert X.mean() == test_utils.approx(1 / 4, rel=1e-2)
 
 
 @test_utils.test()
@@ -83,7 +82,7 @@ def test_random_2d_dist():
         counters[c] += 1
 
     for c in range(4):
-        assert counters[c] / n == approx(1 / 4, rel=0.2)
+        assert counters[c] / n == test_utils.approx(1 / 4, rel=0.2)
 
 
 @test_utils.test()
@@ -167,4 +166,5 @@ def test_randn():
         # https://en.wikipedia.org/wiki/Normal_distribution#Moments
         moments = [0.0, 1.0, 0.0, 3.0]
         for i in range(4):
-            assert (X**(i + 1)).mean() == approx(moments[i], abs=3e-2)
+            assert (X**(i + 1)).mean() == test_utils.approx(moments[i],
+                                                            abs=3e-2)

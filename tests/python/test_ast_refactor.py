@@ -5,7 +5,6 @@ from taichi.lang.util import has_pytorch
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test()
@@ -46,7 +45,7 @@ def test_binop():
     foo(x, y, b)
 
     for i in range(12):
-        assert a[i] == approx(b[i])
+        assert a[i] == test_utils.approx(b[i])
 
 
 @test_utils.test()
@@ -93,7 +92,7 @@ def test_augassign():
 
     for i in range(11):
         assert a[i] == b[i]
-    assert c[0] == approx(d[0])
+    assert c[0] == test_utils.approx(d[0])
 
 
 @test_utils.test()
@@ -987,7 +986,7 @@ def test_scalar_argument():
         a = a + b
         return a
 
-    assert add(1.0, 2.0) == approx(3.0)
+    assert add(1.0, 2.0) == test_utils.approx(3.0)
 
 
 @test_utils.test()
@@ -1013,4 +1012,4 @@ def test_grouped_static_for_cast():
             ret += tmp[2] / 2
         return ret
 
-    assert foo() == approx(10)
+    assert foo() == test_utils.approx(10)

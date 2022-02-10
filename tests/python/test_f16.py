@@ -6,7 +6,6 @@ from taichi.lang.util import has_pytorch
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
@@ -17,7 +16,7 @@ def test_snode_read_write():
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -26,7 +25,7 @@ def test_float16():
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -118,7 +117,7 @@ def test_binary_op():
     z[None] = 0.72
     add()
     u = x.to_numpy()
-    assert (u[None] == approx(0.6624, rel=1e-3))
+    assert (u[None] == test_utils.approx(0.6624, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -149,8 +148,8 @@ def test_unary_op():
 
     y[None] = -1.4
     foo()
-    assert (x[None] == approx(1, rel=1e-3))
-    assert (y[None] == approx(-1, rel=1e-3))
+    assert (x[None] == test_utils.approx(1, rel=1e-3))
+    assert (y[None] == test_utils.approx(-1, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -165,7 +164,7 @@ def test_extra_unary_promote():
 
     y[None] = -0.3
     foo()
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16, exclude=ti.vulkan)
@@ -181,7 +180,7 @@ def test_binary_extra_promote():
 
     x[None] = 0.1
     foo()
-    assert (z[None] == approx(math.atan2(0.1**2, 0.3), rel=1e-3))
+    assert (z[None] == test_utils.approx(math.atan2(0.1**2, 0.3), rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -196,7 +195,7 @@ def test_arg_f16():
 
     y[None] = -0.3
     foo(1.2)
-    assert (x[None] == approx(0.9, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.9, rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)
@@ -239,7 +238,7 @@ def test_atomic_add_f16():
                 f[1] = f[1] + 1.12
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
 # TODO(): Vulkan support
@@ -259,7 +258,7 @@ def test_atomic_max_f16():
                 f[1] = ti.max(1.12 * i, f[1])
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
 # TODO(): Vulkan support
@@ -279,7 +278,7 @@ def test_atomic_min_f16():
                 f[1] = ti.min(-3.13 * i, f[1])
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
 @test_utils.test(arch=archs_support_f16)

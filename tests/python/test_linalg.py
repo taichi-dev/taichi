@@ -6,7 +6,6 @@ from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test()
@@ -62,12 +61,12 @@ def test_basic_utils():
 
     sqrt14 = np.sqrt(14.0)
     invSqrt14 = 1.0 / sqrt14
-    assert normSqrA[None] == approx(14.0)
-    assert normInvA[None] == approx(invSqrt14)
-    assert normA[None] == approx(sqrt14)
-    assert aNormalized[None][0] == approx(1.0 * invSqrt14)
-    assert aNormalized[None][1] == approx(2.0 * invSqrt14)
-    assert aNormalized[None][2] == approx(-3.0 * invSqrt14)
+    assert normSqrA[None] == test_utils.approx(14.0)
+    assert normInvA[None] == test_utils.approx(invSqrt14)
+    assert normA[None] == test_utils.approx(sqrt14)
+    assert aNormalized[None][0] == test_utils.approx(1.0 * invSqrt14)
+    assert aNormalized[None][1] == test_utils.approx(2.0 * invSqrt14)
+    assert aNormalized[None][2] == test_utils.approx(-3.0 * invSqrt14)
 
 
 @test_utils.test()
@@ -146,7 +145,7 @@ def test_transpose():
 
     for i in range(dim):
         for j in range(dim):
-            assert m[None][j, i] == approx(i * 2 + j * 7)
+            assert m[None][j, i] == test_utils.approx(i * 2 + j * 7)
 
 
 def _test_polar_decomp(dim, dt):
@@ -180,9 +179,9 @@ def _test_polar_decomp(dim, dt):
 
     for i in range(dim):
         for j in range(dim):
-            assert m[None][i, j] == approx(V(i, j), abs=tol)
-            assert I[None][i, j] == approx(int(i == j), abs=tol)
-            assert D[None][i, j] == approx(0, abs=tol)
+            assert m[None][i, j] == test_utils.approx(V(i, j), abs=tol)
+            assert I[None][i, j] == test_utils.approx(int(i == j), abs=tol)
+            assert D[None][i, j] == test_utils.approx(0, abs=tol)
 
 
 def test_polar_decomp():
@@ -270,11 +269,11 @@ def test_matrix_factories():
             assert a[i][j] == int(i == j)
 
     sqrt3o2 = math.sqrt(3) / 2
-    assert b[0].value.to_numpy() == approx(np.eye(2))
-    assert b[1].value.to_numpy() == approx(
+    assert b[0].value.to_numpy() == test_utils.approx(np.eye(2))
+    assert b[1].value.to_numpy() == test_utils.approx(
         np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
-    assert c[0].value.to_numpy() == approx(np.zeros((2, 3)))
-    assert c[1].value.to_numpy() == approx(np.ones((2, 3)))
+    assert c[0].value.to_numpy() == test_utils.approx(np.zeros((2, 3)))
+    assert c[1].value.to_numpy() == test_utils.approx(np.ones((2, 3)))
 
 
 # TODO: move codes below to test_matrix.py:
@@ -456,6 +455,6 @@ def test_diag():
     for i in range(3):
         for j in range(3):
             if i == j:
-                assert m1[None][i, j] == approx(1.4)
+                assert m1[None][i, j] == test_utils.approx(1.4)
             else:
                 assert m1[None][i, j] == 0.0

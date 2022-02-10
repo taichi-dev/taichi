@@ -3,8 +3,6 @@ from collections import namedtuple
 
 from taichi.lang.ast.symbol_resolver import ASTResolver
 
-from tests import test_utils
-
 
 def test_ast_resolver_basic():
     # import within the function to avoid polluting the global scope

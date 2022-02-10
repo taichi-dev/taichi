@@ -8,7 +8,6 @@ from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
@@ -77,18 +76,17 @@ def test_python_scope_matrix_field(ops):
 
 @test_utils.test(arch=get_host_arch_list())
 def test_constant_matrices():
-    assert ti.cos(math.pi / 3) == approx(0.5)
+    assert ti.cos(math.pi / 3) == test_utils.approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
-    assert ti.cos(ti.Vector([2,
-                             3])).to_numpy() == approx(np.cos(np.array([2,
-                                                                        3])))
+    assert ti.cos(ti.Vector([2, 3])).to_numpy() == test_utils.approx(
+        np.cos(np.array([2, 3])))
     assert ti.max(2, 3) == 3
     res = ti.max(4, ti.Vector([3, 4, 5]))
     assert np.allclose(res.to_numpy(), np.array([4, 4, 5]))
     res = ti.Vector([2, 3]) + ti.Vector([3, 4])
     assert np.allclose(res.to_numpy(), np.array([5, 7]))
     res = ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4]))
-    assert res.to_numpy() == approx(
+    assert res.to_numpy() == test_utils.approx(
         np.arctan2(np.array([2, 3]), np.array([3, 4])))
     res = ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3])
     assert np.allclose(res.to_numpy(), np.array([13, 23]))
@@ -96,8 +94,8 @@ def test_constant_matrices():
     w = ti.Vector([5, -12])
     r = ti.Vector([1, 2, 3, 4])
     s = ti.Matrix([[1, 2], [3, 4]])
-    assert v.normalized().to_numpy() == approx(np.array([0.6, 0.8]))
-    assert v.cross(w) == approx(-12 * 3 - 4 * 5)
+    assert v.normalized().to_numpy() == test_utils.approx(np.array([0.6, 0.8]))
+    assert v.cross(w) == test_utils.approx(-12 * 3 - 4 * 5)
     w.y = v.x * w[0]
     r.x = r.y
     r.y = r.z

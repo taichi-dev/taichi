@@ -100,8 +100,6 @@ def reset():
 
     This would destroy all the fields and kernels.
     """
-    assert get_runtime().prog is None or get_runtime(
-    ).prog.current_ast_builder() is None  #FIXME:Delete it
     impl.reset()
     global runtime
     runtime = impl.get_runtime()

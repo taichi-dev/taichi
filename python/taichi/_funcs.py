@@ -83,6 +83,7 @@ def _matrix_outer_product(self, other):
     return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
                           for i in range(self.n)])
 
+
 @func
 def _inverse2x2(A):
     """Compute the inverse matrix of a 2x2 invertible real matrix.

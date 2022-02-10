@@ -1,9 +1,9 @@
-from taichi._testing import approx
-
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import approx
 
 
-@ti.test()
+@test_utils.test()
 def test_ad_reduce():
     N = 16
 

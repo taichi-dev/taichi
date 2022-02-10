@@ -3,9 +3,10 @@ import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_nested_subscript():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -25,7 +26,7 @@ def test_nested_subscript():
     assert x[0] == 1
 
 
-@ti.test()
+@test_utils.test()
 def test_norm():
     val = ti.field(ti.i32)
     f = ti.field(ti.f32)
@@ -56,7 +57,7 @@ def test_norm():
         assert val[i] == 96 + i
 
 
-@ti.test()
+@test_utils.test()
 def test_simple2():
     val = ti.field(ti.i32)
     f = ti.field(ti.f32)
@@ -83,7 +84,7 @@ def test_simple2():
         assert val[i] == 1 + i * 2
 
 
-@ti.test()
+@test_utils.test()
 def test_recreate():
     @ti.kernel
     def test():
@@ -93,7 +94,7 @@ def test_recreate():
     test()
 
 
-@ti.test()
+@test_utils.test()
 def test_local_atomics():
     n = 32
     val = ti.field(ti.i32, shape=n)
@@ -113,7 +114,7 @@ def test_local_atomics():
         assert val[i] == i + 45
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -125,7 +126,7 @@ def test_loop_var_life():
         test()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():
@@ -140,7 +141,7 @@ def test_loop_var_life_double_iters():
 @pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])
 @pytest.mark.parametrize('ti_zero,zero', [(ti.zero, 0), (ti.one, 1)])
 @pytest.mark.parametrize('is_mat', [False, True])
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
     if is_mat:
         x = ti.Matrix.field(2, 3, dtype, ())

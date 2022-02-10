@@ -2,6 +2,7 @@ import pytest
 from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 _TI_TYPES = [ti.i8, ti.i16, ti.i32, ti.u8, ti.u16, ti.u32, ti.f32]
 _TI_64_TYPES = [ti.i64, ti.u64, ti.f64]
@@ -19,13 +20,13 @@ def _test_type_assign_argument(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_assign_argument(dt):
     _test_type_assign_argument(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
+@test_utils.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_assign_argument64(dt):
     _test_type_assign_argument(dt)
 
@@ -51,13 +52,13 @@ def _test_type_operator(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_operator(dt):
     _test_type_operator(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
+@test_utils.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_operator64(dt):
     _test_type_operator(dt)
 
@@ -76,13 +77,13 @@ def _test_type_field(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_field(dt):
     _test_type_field(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
+@test_utils.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_field64(dt):
     _test_type_field(dt)
 
@@ -118,7 +119,7 @@ def _test_overflow(dt, n):
     (ti.i32, 32),
     (ti.u32, 32),
 ])
-@ti.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_overflow(dt, n):
     _test_overflow(dt, n)
 
@@ -127,7 +128,7 @@ def test_overflow(dt, n):
     (ti.i64, 64),
     (ti.u64, 64),
 ])
-@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
+@test_utils.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_overflow64(dt, n):
     _test_overflow(dt, n)
 
@@ -136,7 +137,7 @@ def test_overflow64(dt, n):
     (ti.u32, 0xffffffff),
     (ti.u64, 0xffffffffffffffff),
 ])
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_uint_max(dt, val):
     # https://github.com/taichi-dev/taichi/issues/2060
     impl.get_runtime().default_ip = dt

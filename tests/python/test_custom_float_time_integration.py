@@ -4,12 +4,13 @@ import pytest
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
 @pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',
                          [(False, False, False), (True, False, False),
                           (True, True, False), (True, True, True)])
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
     if use_cft:
         if use_exponent:

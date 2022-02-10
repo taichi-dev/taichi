@@ -2,9 +2,10 @@ import operator as ops
 
 import numpy as np
 import pytest
-from taichi._testing import allclose
 
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import allclose
 
 binary_func_table = [
     (ops.add, ) * 2,
@@ -99,7 +100,7 @@ def test_python_scope_linalg():
     assert y.all() == 0
 
 
-@ti.test(arch=[ti.x64, ti.cuda, ti.metal])
+@test_utils.test(arch=[ti.x64, ti.cuda, ti.metal])
 def test_16_min_max():
     @ti.kernel
     def min_u16(a: ti.u16, b: ti.u16) -> ti.u16:
@@ -124,7 +125,7 @@ def test_16_min_max():
     assert max_i16(a, b) == max(a, b)
 
 
-@ti.test(exclude=[ti.opengl, ti.cc])
+@test_utils.test(exclude=[ti.opengl, ti.cc])
 def test_32_min_max():
     @ti.kernel
     def min_u32(a: ti.u32, b: ti.u32) -> ti.u32:
@@ -149,7 +150,7 @@ def test_32_min_max():
     assert max_i32(a, b) == max(a, b)
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_64_min_max():
     @ti.kernel
     def min_u64(a: ti.u64, b: ti.u64) -> ti.u64:
@@ -174,7 +175,7 @@ def test_64_min_max():
     assert max_i64(a, b) == max(a, b)
 
 
-@ti.test()
+@test_utils.test()
 def test_min_max_vector_starred():
     @ti.kernel
     def min_starred() -> ti.i32:

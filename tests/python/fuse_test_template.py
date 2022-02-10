@@ -1,6 +1,7 @@
 import time
 
 import taichi as ti
+from tests import test_utils
 
 
 def template_fuse_dense_x2y2z(

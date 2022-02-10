@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -29,7 +30,7 @@ def test_pointer():
     assert s[None] == 32
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_non_dfs_snode_order():
     x = ti.field(dtype=ti.i32)
     y = ti.field(dtype=ti.i32)

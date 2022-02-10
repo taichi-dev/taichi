@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_sum():
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -32,7 +33,7 @@ def test_ad_sum():
         assert a.grad[i] == b[i]
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_sum_local_atomic():
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -63,7 +64,7 @@ def test_ad_sum_local_atomic():
         assert a.grad[i] == b[i]
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_power():
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -94,7 +95,7 @@ def test_ad_power():
         assert a.grad[i] == b[i] * 3**(b[i] - 1)
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_fibonacci():
     N = 15
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -132,7 +133,7 @@ def test_ad_fibonacci():
         assert b.grad[i] == f[i]
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_fibonacci_index():
     N = 5
     M = 10
@@ -164,7 +165,7 @@ def test_ad_fibonacci_index():
         assert b[i] == is_fib * N
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_ad_global_ptr():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -194,7 +195,7 @@ def test_ad_global_ptr():
         assert a.grad[i] == 2 * i * N
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_integer_stack():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -233,7 +234,7 @@ def test_integer_stack():
         t = t * 10 + 1
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_double_for_loops():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -271,7 +272,7 @@ def test_double_for_loops():
         assert b.grad[i] == 2 * i
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_double_for_loops_more_nests():
     N = 6
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -317,7 +318,7 @@ def test_double_for_loops_more_nests():
         assert b.grad[i] == total_grad_b
 
 
-@ti.test(require=[ti.extension.adstack, ti.extension.data64])
+@test_utils.test(require=[ti.extension.adstack, ti.extension.data64])
 def test_complex_body():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -357,7 +358,7 @@ def test_complex_body():
         assert a.grad[i] == g[i]
 
 
-@ti.test(require=[ti.extension.adstack, ti.extension.bls])
+@test_utils.test(require=[ti.extension.adstack, ti.extension.bls])
 def test_triple_for_loops_bls():
     N = 8
     M = 3
@@ -401,7 +402,7 @@ def test_triple_for_loops_bls():
         assert b.grad[i * 2 + 1] == min(min(N - i - 1, i + 1), M) * N
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_mixed_inner_loops():
     x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -423,7 +424,7 @@ def test_mixed_inner_loops():
     assert x.grad[None] == 15.0
 
 
-@ti.test(require=ti.extension.adstack)
+@test_utils.test(require=ti.extension.adstack)
 def test_mixed_inner_loops_tape():
     x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -444,7 +445,7 @@ def test_mixed_inner_loops_tape():
     assert x.grad[None] == 15.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=32)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
 def test_inner_loops_local_variable_fixed_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -469,7 +470,7 @@ def test_inner_loops_local_variable_fixed_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=32)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
 def test_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -495,7 +496,7 @@ def test_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
 def test_inner_loops_local_variable_adaptive_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -520,7 +521,7 @@ def test_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
 def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -546,7 +547,7 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
 def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -573,7 +574,7 @@ def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=32)
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
 def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -600,7 +601,9 @@ def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=32,
+                 arch=[ti.cpu, ti.gpu])
 def test_stacked_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -630,7 +633,9 @@ def test_stacked_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     assert x.grad[None] == 38.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=32,
+                 arch=[ti.cpu, ti.gpu])
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size_kernel_grad(
 ):
     x = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -662,7 +667,9 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size
     assert x.grad[None] == 56.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=0,
+                 arch=[ti.cpu, ti.gpu])
 def test_stacked_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -692,7 +699,9 @@ def test_stacked_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 38.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=0,
+                 arch=[ti.cpu, ti.gpu])
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_size_kernel_grad(
 ):
     x = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -724,7 +733,9 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_s
     assert x.grad[None] == 56.0
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=0,
+                 arch=[ti.cpu, ti.gpu])
 def test_large_for_loops_adaptive_stack_size():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -744,7 +755,9 @@ def test_large_for_loops_adaptive_stack_size():
     assert x.grad[None] == 1e7
 
 
-@ti.test(require=ti.extension.adstack, ad_stack_size=1, arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=1,
+                 arch=[ti.cpu, ti.gpu])
 def test_large_for_loops_fixed_stack_size():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)

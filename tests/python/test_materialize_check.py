@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_check_field_not_placed():
     a = ti.field(ti.i32)
 
@@ -16,7 +17,7 @@ def test_check_field_not_placed():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_check_matrix_field_member_shape():
     a = ti.Matrix.field(2, 2, ti.i32)
     ti.root.dense(ti.i, 10).place(a.get_scalar_field(0, 0))

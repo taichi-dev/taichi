@@ -2,9 +2,10 @@ import functools
 
 import numpy as np
 import pytest
-from taichi._testing import approx
 
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import approx
 
 has_autograd = False
 
@@ -53,7 +54,7 @@ def grad_test(tifunc, npfunc=None):
 
 
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_size1():
     x = ti.field(ti.i32)
 
@@ -75,7 +76,7 @@ def test_size1():
     lambda x: (x - 3) * (x - 1) + x * x,
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_poly(tifunc):
     grad_test(tifunc)
 
@@ -88,7 +89,7 @@ def test_poly(tifunc):
     (lambda x: ti.asin(x), lambda x: np.arcsin(x)),
 ])
 @if_has_autograd
-@ti.test(exclude=[ti.vulkan])
+@test_utils.test(exclude=[ti.vulkan])
 def test_trigonometric(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -99,7 +100,7 @@ def test_trigonometric(tifunc, npfunc):
     lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)),
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_frac(tifunc):
     grad_test(tifunc)
 
@@ -110,7 +111,7 @@ def test_frac(tifunc):
     (lambda x: ti.log(x), lambda x: np.log(x)),
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_unary(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -126,13 +127,13 @@ def test_unary(tifunc, npfunc):
     (lambda x: ti.max(1, x), lambda x: np.maximum(1, x)),
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_minmax(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
 
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_mod():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -160,7 +161,7 @@ def test_mod():
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_atan2(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -170,7 +171,7 @@ def test_atan2(tifunc, npfunc):
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@ti.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_atan2_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -180,7 +181,7 @@ def test_atan2_f64(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@ti.test()
+@test_utils.test()
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -190,12 +191,12 @@ def test_pow(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@ti.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_pow_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
 
-@ti.test()
+@test_utils.test()
 def test_obey_kernel_simplicity():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -220,7 +221,7 @@ def test_obey_kernel_simplicity():
     assert x.grad[0] == approx((42 - 5) * 3)
 
 
-@ti.test()
+@test_utils.test()
 def test_violate_kernel_simplicity1():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -239,7 +240,7 @@ def test_violate_kernel_simplicity1():
     func.grad()
 
 
-@ti.test()
+@test_utils.test()
 def test_violate_kernel_simplicity2():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -258,7 +259,7 @@ def test_violate_kernel_simplicity2():
     func.grad()
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_cast():
     @ti.kernel
     def func():
@@ -267,7 +268,7 @@ def test_cast():
     func()
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_ad_precision_1():
     loss = ti.field(ti.f32, shape=())
     x = ti.field(ti.f64, shape=())
@@ -284,7 +285,7 @@ def test_ad_precision_1():
     assert x.grad[None] == 1
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_ad_precision_2():
     loss = ti.field(ti.f64, shape=())
     x = ti.field(ti.f32, shape=())
@@ -301,7 +302,7 @@ def test_ad_precision_2():
     assert x.grad[None] == 1
 
 
-@ti.test()
+@test_utils.test()
 def test_ad_rand():
     loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
@@ -317,7 +318,7 @@ def test_ad_rand():
     assert 'RandStmt not supported' in e.value.args[0]
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan, ti.opengl])
+@test_utils.test(exclude=[ti.cc, ti.vulkan, ti.opengl])
 def test_ad_frac():
     @ti.func
     def frac(x):

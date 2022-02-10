@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_cse():
     A = ti.field(ti.f32, shape=())
 
@@ -16,7 +17,7 @@ def test_cse():
     assert A[None] == 133
 
 
-@ti.test()
+@test_utils.test()
 def test_store_forward():
     A = ti.field(ti.f32, shape=())
 

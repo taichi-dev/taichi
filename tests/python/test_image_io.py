@@ -2,11 +2,12 @@ import os
 
 import numpy as np
 import pytest
-from taichi._testing import make_temp_file
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import to_numpy_type
 
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import make_temp_file
 
 
 # jpg is also supported but hard to test here since it's lossy:
@@ -15,7 +16,7 @@ import taichi as ti
 @pytest.mark.parametrize('resx,resy', [(201, 173)])
 @pytest.mark.parametrize('is_field', [False, True])
 @pytest.mark.parametrize('dt', [ti.u8])
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_image_io(resx, resy, comp, ext, is_field, dt):
     if comp != 1:
         shape = (resx, resy, comp)
@@ -42,7 +43,7 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_image_io_vector(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(to_numpy_type(dt))
@@ -58,7 +59,7 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_image_io_uint(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     np_type = to_numpy_type(dt)
@@ -78,7 +79,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('comp', [1, 3])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('scale', [1, 2, 3])
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_image_resize_sum(resx, resy, comp, scale):
     shape = (resx, resy)
     if comp != 1:
@@ -88,4 +89,4 @@ def test_image_resize_sum(resx, resy, comp, scale):
         new_img = ti.imresize(old_img, resx * scale)
     else:
         new_img = ti.imresize(old_img, resx * scale, resy * scale)
-    assert np.sum(old_img) * scale**2 == ti._testing.approx(np.sum(new_img))
+    assert np.sum(old_img) * scale**2 == test_utils.approx(np.sum(new_img))

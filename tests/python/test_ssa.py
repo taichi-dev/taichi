@@ -6,12 +6,13 @@ SSA violation edge-case regression test.
 import math
 
 import numpy as np
-from taichi._testing import approx
 
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import approx
 
 
-@ti.test()
+@test_utils.test()
 def test_matrix_self_assign():
     a = ti.Vector.field(2, ti.f32, ())
     b = ti.Matrix.field(2, 2, ti.f32, ())
@@ -34,7 +35,7 @@ def test_matrix_self_assign():
     assert c[None].value == ti.Vector([3, 2])
 
 
-@ti.test()
+@test_utils.test()
 def test_random_vector_dup_eval():
     a = ti.Vector.field(2, ti.f32, ())
 
@@ -47,7 +48,7 @@ def test_random_vector_dup_eval():
         assert a[None].value.norm_sqr() == approx(1)
 
 
-@ti.test()
+@test_utils.test()
 def test_func_argument_dup_eval():
     @ti.func
     def func(a, t):
@@ -61,7 +62,7 @@ def test_func_argument_dup_eval():
         assert kern(1.0) == 0.0
 
 
-@ti.test()
+@test_utils.test()
 def test_func_random_argument_dup_eval():
     @ti.func
     def func(a):

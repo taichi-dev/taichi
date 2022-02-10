@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
-from taichi._testing import approx
 from taichi.lang import impl
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
+from tests import test_utils
+from tests.test_utils import approx
 
 
-@ti.test()
+@test_utils.test()
 def test_binop():
     @ti.kernel
     def foo(x: ti.i32, y: ti.i32, a: ti.template()):
@@ -48,7 +49,7 @@ def test_binop():
         assert a[i] == approx(b[i])
 
 
-@ti.test()
+@test_utils.test()
 def test_augassign():
     @ti.kernel
     def foo(x: ti.i32, y: ti.i32, a: ti.template(), b: ti.template()):
@@ -95,7 +96,7 @@ def test_augassign():
     assert c[0] == approx(d[0])
 
 
-@ti.test()
+@test_utils.test()
 def test_unaryop():
     @ti.kernel
     def foo(x: ti.i32, a: ti.template()):
@@ -119,7 +120,7 @@ def test_unaryop():
         assert a[i] == b[i]
 
 
-@ti.test()
+@test_utils.test()
 def test_boolop():
     @ti.kernel
     def foo(a: ti.template()):
@@ -158,7 +159,7 @@ def test_boolop():
         assert a[i] == b[i]
 
 
-@ti.test()
+@test_utils.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
                        match='"Is" is not supported in Taichi kernels.'):
@@ -170,7 +171,7 @@ def test_compare_fail():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_single_compare():
     @ti.kernel
     def foo(a: ti.template(), b: ti.template(), c: ti.template()):
@@ -200,7 +201,7 @@ def test_single_compare():
         assert c[i] == d[i]
 
 
-@ti.test()
+@test_utils.test()
 def test_chain_compare():
     @ti.kernel
     def foo(a: ti.i32, b: ti.i32, c: ti.template()):
@@ -238,7 +239,7 @@ def test_chain_compare():
         assert c[i] == d[i]
 
 
-@ti.test()
+@test_utils.test()
 def test_return():
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
@@ -247,7 +248,7 @@ def test_return():
     assert foo(1) == 2
 
 
-@ti.test()
+@test_utils.test()
 def test_format_print():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -260,7 +261,7 @@ def test_format_print():
         print(f'fstring: a[0]={a[0]}, a[5]={a[5]}')
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_if():
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
@@ -275,7 +276,7 @@ def test_if():
     assert not foo(0)
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_if():
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
@@ -290,7 +291,7 @@ def test_static_if():
     assert not foo(0)
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_struct_for():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -305,7 +306,7 @@ def test_struct_for():
         assert a[i] == 5
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_grouped_struct_for():
     a = ti.field(ti.i32, shape=(4, 4))
 
@@ -321,7 +322,7 @@ def test_grouped_struct_for():
             assert a[i, j] == 5
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_for():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -336,7 +337,7 @@ def test_static_for():
         assert a[i] == 5
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_grouped_for():
     a = ti.field(ti.i32, shape=(4, 4))
 
@@ -355,7 +356,7 @@ def test_static_grouped_for():
                 assert a[i, j] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_range_for_single_argument():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -373,7 +374,7 @@ def test_range_for_single_argument():
             assert a[i] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_range_for_two_arguments():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -391,7 +392,7 @@ def test_range_for_two_arguments():
             assert a[i] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_range_for_three_arguments():
     a = ti.field(ti.i32, shape=(10, ))
 
@@ -407,7 +408,7 @@ def test_range_for_three_arguments():
         foo(x)
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_ndrange_for():
     x = ti.field(ti.f32, shape=(16, 32, 64))
 
@@ -426,7 +427,7 @@ def test_ndrange_for():
                     assert x[i, j, k] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_grouped_ndrange_for():
     x = ti.field(ti.i32, shape=(6, 6, 6))
     y = ti.field(ti.i32, shape=(6, 6, 6))
@@ -452,7 +453,7 @@ def test_grouped_ndrange_for():
                 assert x[i, j, k] == y[i, j, k]
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_for_break():
     n = 10
 
@@ -476,7 +477,7 @@ def test_static_for_break():
             assert a[i] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_grouped_for_break():
     n = 4
 
@@ -501,7 +502,7 @@ def test_static_grouped_for_break():
                 assert a[i, j] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_for_continue():
     n = 10
 
@@ -523,7 +524,7 @@ def test_static_for_continue():
             assert a[i] == 3
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_grouped_for_continue():
     n = 4
 
@@ -546,7 +547,7 @@ def test_static_grouped_for_continue():
                 assert a[i, j] == 3
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_for_break():
     n = 4
 
@@ -572,7 +573,7 @@ def test_for_break():
                 assert a[i, j] == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_for_continue():
     n = 4
 
@@ -596,7 +597,7 @@ def test_for_continue():
                 assert a[i, j] == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_while():
     x = ti.field(ti.f32)
 
@@ -617,7 +618,7 @@ def test_while():
     assert x[0] == 45
 
 
-@ti.test()
+@test_utils.test()
 def test_while_break():
     ret = ti.field(ti.i32, shape=())
 
@@ -636,7 +637,7 @@ def test_while_break():
     assert ret[None] == 55
 
 
-@ti.test()
+@test_utils.test()
 def test_while_continue():
     ret = ti.field(ti.i32, shape=())
 
@@ -655,7 +656,7 @@ def test_while_continue():
     assert ret[None] == 25
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_func():
     @ti.func
     def bar(x):
@@ -675,7 +676,7 @@ def test_func():
         assert b[i] == -i
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_func_in_python_func():
     @ti.func
     def bar(x: ti.template()):
@@ -701,7 +702,7 @@ def test_func_in_python_func():
         assert foo(i) == fib[i]
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_ifexp():
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:
@@ -711,7 +712,7 @@ def test_ifexp():
     assert foo(0) == 0
 
 
-@ti.test(print_preprocessed_ir=True)
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_ifexp():
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
@@ -721,7 +722,7 @@ def test_static_ifexp():
     assert foo(0) == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_static_assign():
     a = ti.field(ti.i32, shape=(1, ))
     b = ti.field(ti.i32, shape=(1, ))
@@ -738,7 +739,7 @@ def test_static_assign():
     assert foo(a, b) == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_static_assign_element():
     with pytest.raises(
             ti.TaichiCompilationError,
@@ -752,7 +753,7 @@ def test_static_assign_element():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_recreate_variable():
     with pytest.raises(ti.TaichiCompilationError,
                        match='Recreating variables is not allowed'):
@@ -765,7 +766,7 @@ def test_recreate_variable():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_taichi_other_than_ti():
     import taichi as tc
 
@@ -793,7 +794,7 @@ def test_taichi_other_than_ti():
         assert foo(i) == fib[i]
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
     @ti.kernel
     def func():
@@ -804,7 +805,7 @@ def test_assert_message():
         func()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message_formatted():
     x = ti.field(dtype=int, shape=16)
     x[10] = 42
@@ -831,7 +832,7 @@ def test_assert_message_formatted():
     assert_formatted()
 
 
-@ti.test()
+@test_utils.test()
 def test_dict():
     @ti.kernel
     def foo(x: ti.template()) -> ti.i32:
@@ -844,7 +845,7 @@ def test_dict():
         foo(2)
 
 
-@ti.test()
+@test_utils.test()
 def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
@@ -864,7 +865,7 @@ def test_listcomp():
     assert foo(5) == 1 + 4 + 9 + 16
 
 
-@ti.test()
+@test_utils.test()
 def test_dictcomp():
     @ti.kernel
     def foo(n: ti.template()) -> ti.i32:
@@ -879,7 +880,7 @@ def test_dictcomp():
     assert foo(10) == 1 * 1 + 5 * 5 + 7 * 7
 
 
-@ti.test()
+@test_utils.test()
 def test_dictcomp_fail():
     @ti.kernel
     def foo(n: ti.template(), m: ti.template()) -> ti.i32:
@@ -894,7 +895,7 @@ def test_dictcomp_fail():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_ndarray():
     n = 4
     m = 7
@@ -917,7 +918,7 @@ def test_ndarray():
             assert a[i, j][0, 0] == i * j + i + j + 1
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -934,7 +935,7 @@ def test_sparse_matrix_builder():
             assert A[i, j] == i + j
 
 
-@ti.test()
+@test_utils.test()
 def test_func_default_value():
     @ti.func
     def bar(s, t=1):
@@ -947,7 +948,7 @@ def test_func_default_value():
     assert foo() == 2
 
 
-@ti.test()
+@test_utils.test()
 def test_func_default_value_fail():
     with pytest.raises(ti.TaichiCompilationError):
 
@@ -962,7 +963,7 @@ def test_func_default_value_fail():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_raise():
     dim = 1
     m = ti.Matrix.field(dim, dim, ti.f32)
@@ -979,7 +980,7 @@ def test_raise():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_scalar_argument():
     @ti.kernel
     def add(a: ti.f32, b: ti.f32) -> ti.f32:
@@ -989,7 +990,7 @@ def test_scalar_argument():
     assert add(1.0, 2.0) == approx(3.0)
 
 
-@ti.test()
+@test_utils.test()
 def test_default_template_args_on_func():
     @ti.func
     def bar(a: ti.template() = 123):
@@ -1002,7 +1003,7 @@ def test_default_template_args_on_func():
     assert foo() == 123
 
 
-@ti.test()
+@test_utils.test()
 def test_grouped_static_for_cast():
     @ti.kernel
     def foo() -> ti.f32:

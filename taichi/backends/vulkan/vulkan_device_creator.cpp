@@ -347,8 +347,7 @@ void VulkanDeviceCreator::pick_physical_device() {
   physical_device_ = VK_NULL_HANDLE;
 
   for (const auto &device : devices) {
-    if (is_device_suitable(device, surface_) && 
-        (is_device_visible(device))) {
+    if (is_device_suitable(device, surface_) && (is_device_visible(device))) {
       physical_device_ = device;
       break;
     }

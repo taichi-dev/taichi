@@ -1,9 +1,7 @@
 name: Presubmit Title Checks
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
   pull_request_target:
-    types: [opened, edited]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   pre_submit:
@@ -25,7 +23,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
 
       - name: PR Project Card Creation
-        if: github.event_name == 'pull_request_target'
+        if: github.event.action == 'opened' || github.event.action == 'edited'
         run: python misc/ci_create_pr_card.py
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

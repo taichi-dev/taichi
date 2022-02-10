@@ -437,4 +437,3 @@ def sym_eig(A, dt=None):
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']
-

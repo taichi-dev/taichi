@@ -1,3 +1,4 @@
+from cmath import sqrt
 import math
 
 from taichi.lang import impl, matrix, ops
@@ -83,6 +84,19 @@ def _matrix_outer_product(self, other):
     return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
                           for i in range(self.n)])
 
+@func
+def _inverse2x2(A):
+    """Compute the inverse matrix of a 2x2 invertible real matrix.
+
+    Args:
+        A (ti.Matrix(2, 2)): input 2x2 real matrix and det(A) != 0.
+
+    Returns:
+        The inverse matrix of A.
+    """
+    det = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]
+    return Matrix([[A[1, 1], -A[0, 1]], [-A[1, 0], A[0, 0]]]) / det
+
 
 @func
 def polar_decompose2d(A, dt):
@@ -97,12 +111,13 @@ def polar_decompose2d(A, dt):
     Returns:
         Decomposed 2x2 matrices `U` and `P`.
     """
-    x, y = A(0, 0) + A(1, 1), A(1, 0) - A(0, 1)
-    scale = (1.0 / ops.sqrt(x * x + y * y))
-    c = x * scale
-    s = y * scale
-    r = Matrix([[c, -s], [s, c]], dt=dt)
-    return r, r.transpose() @ A
+    adetA = abs(A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1])
+    B = A + adetA * _inverse2x2(A.transpose())
+    adetB = abs(B[0, 0] * B[1, 1] - B[1, 0] * B[0, 1])
+    k = ops.cast(1.0, dt) / ops.sqrt(adetB)
+    U = B * k
+    P = (A.transpose() @ A + adetA * Matrix.identity(dt, 2)) * k
+    return U, P
 
 
 @func

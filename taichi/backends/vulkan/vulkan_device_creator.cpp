@@ -168,6 +168,18 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   }
 }
 
+bool is_device_visible(VkPhysicalDevice device) {
+  auto device_id = VulkanLoader::instance().visible_device_id;
+  if (device_id.empty()) {
+    // user did not specify, all devices visible
+    return true;
+  }
+
+  VkPhysicalDeviceProperties device_properties{};
+  vkGetPhysicalDeviceProperties(device, &device_properties);
+  return device_properties.deviceID == std::stoul(device_id);
+}
+
 }  // namespace
 
 VulkanDeviceCreator::VulkanDeviceCreator(
@@ -333,8 +345,10 @@ void VulkanDeviceCreator::pick_physical_device() {
   std::vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
   physical_device_ = VK_NULL_HANDLE;
+
   for (const auto &device : devices) {
-    if (is_device_suitable(device, surface_)) {
+    if (is_device_suitable(device, surface_) && 
+        (is_device_visible(device))) {
       physical_device_ = device;
       break;
     }

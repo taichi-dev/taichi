@@ -5,7 +5,6 @@ import pytest
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 has_autograd = False
 
@@ -49,8 +48,8 @@ def grad_test(tifunc, npfunc=None):
     func()
     func.grad()
 
-    assert y[0] == approx(npfunc(v), rel=1e-4)
-    assert x.grad[0] == approx(grad(npfunc)(v), rel=1e-4)
+    assert y[0] == test_utils.approx(npfunc(v), rel=1e-4)
+    assert x.grad[0] == test_utils.approx(grad(npfunc)(v), rel=1e-4)
 
 
 @if_has_autograd
@@ -218,7 +217,7 @@ def test_obey_kernel_simplicity():
 
     func()
     func.grad()
-    assert x.grad[0] == approx((42 - 5) * 3)
+    assert x.grad[0] == test_utils.approx((42 - 5) * 3)
 
 
 @test_utils.test()
@@ -349,4 +348,4 @@ def test_ad_frac():
     grads = field0.grad.to_numpy()
     expected = np.modf(randoms)[0] * 2
     for i in range(n):
-        assert grads[i] == approx(expected[i], rel=1e-4)
+        assert grads[i] == test_utils.approx(expected[i], rel=1e-4)

@@ -2,7 +2,6 @@ import pytest
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test()
@@ -26,7 +25,7 @@ def test_const_func_ret():
     def func2() -> ti.i32:
         return 3.3  # return type mismatch, will be auto-casted into ti.i32
 
-    assert func1() == approx(3)
+    assert func1() == test_utils.approx(3)
     assert func2() == 3
 
 
@@ -47,7 +46,7 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
         ys = [0.2, 0.4, 0.8, 1.0]
 
     for x, y in zip(xs, ys):
-        assert func(x, y) == approx(castor(x * y))
+        assert func(x, y) == test_utils.approx(castor(x * y))
 
 
 def test_binary_func_ret():

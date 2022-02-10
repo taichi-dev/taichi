@@ -4,7 +4,6 @@ from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import make_temp_file
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.f32])
@@ -25,7 +24,7 @@ def test_save_image_without_window(dtype):
         else:
             paint(i * 1.0 / n)
         gui.set_image(pixels)
-        image_path = make_temp_file(suffix='.png')
+        image_path = test_utils.make_temp_file(suffix='.png')
         gui.show(image_path)
         image = ti.imread(image_path)
         delta = (image - i).sum()

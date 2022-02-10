@@ -5,7 +5,6 @@ import pytest
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import allclose
 
 binary_func_table = [
     (ops.add, ) * 2,
@@ -58,7 +57,7 @@ def test_python_scope_vector_binary(ti_func, np_func):
     if ti_func in [ops.eq, ops.ne, ops.lt, ops.le, ops.gt, ops.ge]:
         result = result.astype(bool)
     expected = np_func(x.to_numpy(), y.to_numpy())
-    assert allclose(result, expected)
+    assert test_utils.allclose(result, expected)
 
 
 @pytest.mark.parametrize('ti_func,np_func', unary_func_table)
@@ -71,7 +70,7 @@ def test_python_scope_vector_unary(ti_func, np_func):
     if ti_func in [ti.lang.ops.logical_not]:
         result = result.astype(bool)
     expected = np_func(x.to_numpy())
-    assert allclose(result, expected)
+    assert test_utils.allclose(result, expected)
 
 
 def test_python_scope_matmul():
@@ -83,7 +82,7 @@ def test_python_scope_matmul():
 
     result = (x @ y).to_numpy()
     expected = a @ b
-    assert allclose(result, expected)
+    assert test_utils.allclose(result, expected)
 
 
 def test_python_scope_linalg():
@@ -93,9 +92,9 @@ def test_python_scope_linalg():
     x = ti.Vector(a)
     y = ti.Vector(b)
 
-    assert allclose(x.dot(y), np.dot(a, b))
-    assert allclose(x.norm(), np.sqrt(np.dot(a, a)))
-    assert allclose(x.normalized(), a / np.sqrt(np.dot(a, a)))
+    assert test_utils.allclose(x.dot(y), np.dot(a, b))
+    assert test_utils.allclose(x.norm(), np.sqrt(np.dot(a, a)))
+    assert test_utils.allclose(x.normalized(), a / np.sqrt(np.dot(a, a)))
     assert x.any() == 1  # To match that of Taichi IR, we return -1 for True
     assert y.all() == 0
 

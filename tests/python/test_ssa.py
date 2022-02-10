@@ -9,7 +9,6 @@ import numpy as np
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 @test_utils.test()
@@ -45,7 +44,7 @@ def test_random_vector_dup_eval():
 
     for i in range(4):
         func()
-        assert a[None].value.norm_sqr() == approx(1)
+        assert a[None].value.norm_sqr() == test_utils.approx(1)
 
 
 @test_utils.test()
@@ -73,4 +72,4 @@ def test_func_random_argument_dup_eval():
         return func(ti.random()).norm_sqr()
 
     for i in range(4):
-        assert kern() == approx(1.0, rel=5e-5)
+        assert kern() == test_utils.approx(1.0, rel=5e-5)

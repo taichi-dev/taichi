@@ -4,7 +4,6 @@ import pytest
 
 import taichi as ti
 from tests import test_utils
-from tests.test_utils import approx
 
 
 def run_mpm88_test():
@@ -99,7 +98,8 @@ def run_mpm88_test():
         0.07810827,
     ]
     for i in range(4):
-        assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+        assert (pos**(i + 1)).mean() == test_utils.approx(regression[i],
+                                                          rel=1e-2)
 
 
 @test_utils.test()
@@ -216,7 +216,8 @@ def test_mpm88_numpy_and_ndarray():
             0.07810827,
         ]
         for i in range(4):
-            assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+            assert (pos**(i + 1)).mean() == test_utils.approx(regression[i],
+                                                              rel=1e-2)
 
     def test_numpy():
         x = np.zeros((n_particles, dim), dtype=np.float32)

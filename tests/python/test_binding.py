@@ -1,5 +1,4 @@
 import taichi as ti
-from tests import test_utils
 
 
 def test_binding():

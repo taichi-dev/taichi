@@ -9,7 +9,6 @@ import pytest
 from taichi.main import TaichiMain
 
 import taichi as ti
-from tests import test_utils
 
 
 @contextmanager

@@ -102,21 +102,18 @@ def polar_decompose2d(A, dt):
     P = ops.cast(A, dt)
     zero = ops.cast(0.0, dt)
     # if A is the zero matrix we simply return the pair (I, A)
-    if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero and A[0, 0] == zero):
+    if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero
+            and A[0, 0] == zero):
         pass
     else:
         detA = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]
         adetA = abs(detA)
-        B = Matrix([
-            [A[0, 0] + A[1, 1], A[0, 1] - A[1, 0]],
-            [A[1, 0] - A[0, 1], A[1, 1] + A[0, 0]]
-            ], dt)
+        B = Matrix([[A[0, 0] + A[1, 1], A[0, 1] - A[1, 0]],
+                    [A[1, 0] - A[0, 1], A[1, 1] + A[0, 0]]], dt)
 
         if detA < zero:
-            B = Matrix([
-                [A[0, 0] - A[1, 1], A[0, 1] + A[1, 0]],
-                [A[1, 0] + A[0, 1], A[1, 1] - A[0, 0]]
-                ], dt)
+            B = Matrix([[A[0, 0] - A[1, 1], A[0, 1] + A[1, 0]],
+                        [A[1, 0] + A[0, 1], A[1, 1] - A[0, 0]]], dt)
         # here det(B) != 0 if A is not the zero matrix
         adetB = abs(B[0, 0] * B[1, 1] - B[1, 0] * B[0, 1])
         k = ops.cast(1.0, dt) / ops.sqrt(adetB)

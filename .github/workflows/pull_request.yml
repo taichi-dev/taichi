@@ -24,7 +24,9 @@ jobs:
 
       - name: PR Project Card Creation
         if: github.event.action == 'opened' || github.event.action == 'edited'
-        run: python misc/ci_create_pr_card.py
+        run: |
+          [ -z "${GITHUB_TOKEN}" ] && echo "GITHUB_TOKEN is empty"
+          python misc/ci_create_pr_card.py
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
           GH_EVENT: ${{ toJson(github.event) }}

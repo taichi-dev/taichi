@@ -71,22 +71,6 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-class DecoratorRecorder {
- public:
-  int bit_vectorize;
-  int num_cpu_threads;
-  bool strictly_serialized;
-  MemoryAccessOptions mem_access_opt;
-  int block_dim;
-  bool uniform;
-
-  DecoratorRecorder() {
-    reset();
-  }
-
-  void reset();
-};
-
 class Identifier {
  public:
   static int id_counter;
@@ -704,25 +688,6 @@ struct LocalAddress {
 
   LocalAddress(Stmt *var, int offset);
 };
-
-extern DecoratorRecorder dec;
-
-inline void BitVectorize(int v) {
-  dec.bit_vectorize = v;
-}
-
-inline void Parallelize(int v) {
-  dec.num_cpu_threads = v;
-}
-
-inline void StrictlySerialize() {
-  dec.strictly_serialized = true;
-}
-
-inline void BlockDim(int v) {
-  TI_ASSERT(bit::is_power_of_two(v));
-  dec.block_dim = v;
-}
 
 class VectorElement {
  public:

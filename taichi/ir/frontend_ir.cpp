@@ -36,23 +36,26 @@ IRNode *FrontendContext::root() {
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var,
-                                 Arch arch)
-    : global_var(global_var) {
-  bit_vectorize = dec.bit_vectorize;
-  num_cpu_threads = dec.num_cpu_threads;
-  strictly_serialized = dec.strictly_serialized;
-  block_dim = dec.block_dim;
+                                 Arch arch,
+                                 int bit_vectorize,
+                                 int num_cpu_threads,
+                                 bool strictly_serialized,
+                                 int block_dim,
+                                 MemoryAccessOptions &&mem_access_opt)
+    : global_var(global_var),
+      bit_vectorize(bit_vectorize),
+      num_cpu_threads(num_cpu_threads),
+      strictly_serialized(strictly_serialized),
+      mem_access_opt(mem_access_opt),
+      block_dim(block_dim) {
   if (arch == Arch::cuda) {
-    num_cpu_threads = 1;
-    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+    this->num_cpu_threads = 1;
+    TI_ASSERT(this->block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (num_cpu_threads == 0)
-      num_cpu_threads = std::thread::hardware_concurrency();
+    if (this->num_cpu_threads == 0)
+      this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  mem_access_opt = dec.mem_access_opt;
-  dec.reset();
-
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
@@ -63,29 +66,31 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
-                                 Arch arch)
-    : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
-  bit_vectorize = dec.bit_vectorize;
-  num_cpu_threads = dec.num_cpu_threads;
-  block_dim = dec.block_dim;
+                                 Arch arch,
+                                 int bit_vectorize,
+                                 int num_cpu_threads,
+                                 int block_dim,
+                                 MemoryAccessOptions &&mem_access_opt)
+    : bit_vectorize(bit_vectorize),
+      num_cpu_threads(num_cpu_threads),
+      mem_access_opt(mem_access_opt),
+      block_dim(block_dim),
+      mesh_for(true),
+      mesh(mesh.ptr.get()),
+      element_type(element_type) {
   if (arch == Arch::cuda) {
-    num_cpu_threads = 1;
-    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+    this->num_cpu_threads = 1;
+    TI_ASSERT(this->block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (num_cpu_threads == 0)
-      num_cpu_threads = std::thread::hardware_concurrency();
+    if (this->num_cpu_threads == 0)
+      this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  mem_access_opt = dec.mem_access_opt;
-  dec.reset();
-
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
   }
 }
-
-DecoratorRecorder dec;
 
 FrontendContext::FrontendContext(Arch arch) {
   root_node_ = std::make_unique<Block>();
@@ -95,20 +100,25 @@ FrontendContext::FrontendContext(Arch arch) {
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
-                                 Arch arch)
-    : begin(begin), end(end) {
-  bit_vectorize = dec.bit_vectorize;
-  num_cpu_threads = dec.num_cpu_threads;
-  strictly_serialized = dec.strictly_serialized;
-  block_dim = dec.block_dim;
+                                 Arch arch,
+                                 int bit_vectorize,
+                                 int num_cpu_threads,
+                                 bool strictly_serialized,
+                                 int block_dim,
+                                 MemoryAccessOptions &&mem_access_opt)
+    : begin(begin),
+      end(end),
+      bit_vectorize(bit_vectorize),
+      num_cpu_threads(num_cpu_threads),
+      strictly_serialized(strictly_serialized),
+      mem_access_opt(mem_access_opt),
+      block_dim(block_dim) {
   if (arch == Arch::cuda) {
-    num_cpu_threads = 1;
+    this->num_cpu_threads = 1;
   } else {
-    if (num_cpu_threads == 0)
-      num_cpu_threads = std::thread::hardware_concurrency();
+    if (this->num_cpu_threads == 0)
+      this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  mem_access_opt = dec.mem_access_opt;
-  dec.reset();
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
   loop_var.expr->ret_type = PrimitiveType::i32;
@@ -714,7 +724,11 @@ void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
-  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, s, e, this->arch_, for_loop_dec_.bit_vectorize,
+      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
+      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body);
@@ -854,7 +868,11 @@ void ASTBuilder::create_assert_stmt(const Expr &cond,
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
                                           const Expr &e) {
-  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, arch_);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, s, e, arch_, for_loop_dec_.bit_vectorize,
+      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
+      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, For);
@@ -862,8 +880,11 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
                                            const Expr &global) {
-  auto stmt_unique =
-      std::make_unique<FrontendForStmt>(loop_vars, global, arch_);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      loop_vars, global, arch_, for_loop_dec_.bit_vectorize,
+      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
+      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, For);
@@ -873,8 +894,11 @@ void ASTBuilder::begin_frontend_mesh_for(
     const Expr &i,
     const mesh::MeshPtr &mesh_ptr,
     const mesh::MeshElementType &element_type) {
-  auto stmt_unique =
-      std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type, arch_);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, mesh_ptr, element_type, arch_, for_loop_dec_.bit_vectorize,
+      for_loop_dec_.num_cpu_threads, for_loop_dec_.block_dim,
+      std::move(for_loop_dec_.mem_access_opt));
+  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, For);

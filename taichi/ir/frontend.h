@@ -99,9 +99,4 @@ inline Expr AssumeInRange(const Expr &expr,
 inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
   return Expr::make<LoopUniqueExpression>(input, covers);
 }
-
-void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);
-
-void reset_snode_access_flag();
-
 TLANG_NAMESPACE_END

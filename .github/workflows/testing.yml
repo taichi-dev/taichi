@@ -267,6 +267,11 @@ jobs:
           python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
+          
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Build & Install
         run: |

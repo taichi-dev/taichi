@@ -579,5 +579,5 @@ __all__ = [
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
     'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
-    'mesh_local', 'no_activate', 'reset'
+    'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

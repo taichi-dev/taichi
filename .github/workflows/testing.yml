@@ -270,12 +270,14 @@ jobs:
 
       - name: Build & Install
         run: |
+          brew install molten-vk
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++

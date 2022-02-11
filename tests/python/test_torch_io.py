@@ -284,5 +284,5 @@ def test_torch_view():
     y = ti.ndarray(int, (3, 3))
 
     with pytest.raises(ValueError,
-                       match=r'Torch view tensors are not supported'):
+                       match=r'Non contiguous tensors are not supported'):
         copy(x, y)

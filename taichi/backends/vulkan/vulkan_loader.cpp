@@ -14,6 +14,11 @@ VulkanLoader::VulkanLoader() {
 bool VulkanLoader::check_vulkan_device() {
   bool found_device_with_compute = false;
 
+  // We create an temporary Vulkan instance to probe the Vulkan devices.
+  // Otherwise, in the case of a CPU only VM with Vulkan installed, Vulkan will
+  // not run as there is no GPU available, but the fallback will not happen
+  // because Vulkan API is available.
+
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Checking Vulkan Device";
@@ -68,7 +73,8 @@ bool VulkanLoader::check_vulkan_device() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physical_device, &properties);
 
-        TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);      
+        TI_INFO("Found Vulkan Device {} ({})", i,
+                properties.deviceName);      
       }
     }
   } while (false);

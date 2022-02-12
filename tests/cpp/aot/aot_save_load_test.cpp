@@ -4,8 +4,8 @@
 #include "taichi/program/program.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
-#endif
 #include "taichi/backends/vulkan/vulkan_loader.h"
+#endif
 
 using namespace taichi;
 using namespace lang;

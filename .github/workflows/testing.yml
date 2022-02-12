@@ -240,7 +240,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            wanted_archs: "cpu,vulkan"
+            wanted_archs: "cpu"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

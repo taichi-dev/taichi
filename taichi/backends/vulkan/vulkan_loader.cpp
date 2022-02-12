@@ -28,7 +28,7 @@ bool VulkanLoader::check_vulkan_device() {
 
   VkInstance instance{VK_NULL_HANDLE};
   VkResult res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance);
-  
+
   do {
     if (res != VK_SUCCESS) {
       TI_WARN("Can not create Vulkan instance");
@@ -68,7 +68,7 @@ bool VulkanLoader::check_vulkan_device() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physical_device, &properties);
 
-        TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);      
+        TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);
       }
     }
   } while (false);

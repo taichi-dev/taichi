@@ -47,7 +47,10 @@ bool VulkanLoader::check_vulkan_device() {
 
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-    for (const auto &physical_device : devices) {
+
+    for (int i = 0; i < devices.size(); i++) {
+      const auto &physical_device = devices[i];
+
       uint32_t queue_family_count = 0;
       vkGetPhysicalDeviceQueueFamilyProperties(physical_device,
                                                &queue_family_count, nullptr);
@@ -65,8 +68,7 @@ bool VulkanLoader::check_vulkan_device() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physical_device, &properties);
 
-        TI_INFO("Found Vulkan Device {} ({})", properties.deviceID,
-                properties.deviceName);      
+        TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);      
       }
     }
   } while (false);

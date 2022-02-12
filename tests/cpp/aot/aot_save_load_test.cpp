@@ -5,6 +5,7 @@
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #endif
+#include "taichi/backends/vulkan/vulkan_loader.h"
 
 using namespace taichi;
 using namespace lang;

@@ -82,6 +82,12 @@ static void aot_save() {
 
 #ifdef TI_WITH_VULKAN
 TEST(AotSaveLoad, Vulkan) {
+  // Otherwise will segfault on macOS VM,
+  // where Vulkan is installed but no devices are present
+  if (!vulkan::is_vulkan_api_available()) {
+    return;
+  }
+
   aot_save();
 
   vulkan::AotModuleLoaderImpl aot_loader(".");

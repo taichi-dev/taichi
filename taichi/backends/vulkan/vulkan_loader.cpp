@@ -28,10 +28,10 @@ bool VulkanLoader::check_vulkan_device() {
 
   VkInstance instance{VK_NULL_HANDLE};
   VkResult res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance);
-  
+
   if (res != VK_SUCCESS) {
     TI_WARN("Can not create Vulkan instance");
-    goto cleanup; 
+    goto cleanup;
   }
 
   load_instance(instance);
@@ -49,15 +49,13 @@ bool VulkanLoader::check_vulkan_device() {
   for (const auto &physical_device : devices) {
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device,
-                                             &queue_family_count,
-                                             nullptr);
+                                             &queue_family_count, nullptr);
     if (queue_family_count == 0)
       continue;
 
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(
-        physical_device, &queue_family_count,
-                                             queue_families.data());
+        physical_device, &queue_family_count, queue_families.data());
 
     for (auto &queue : queue_families) {
       if (queue.queueFlags & VK_QUEUE_COMPUTE_BIT) {
@@ -68,7 +66,8 @@ bool VulkanLoader::check_vulkan_device() {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(physical_device, &properties);
 
-    TI_INFO("Found Vulkan Device {} ({})", properties.deviceID, properties.deviceName);
+    TI_INFO("Found Vulkan Device {} ({})", properties.deviceID,
+            properties.deviceName);
   }
 
 cleanup:

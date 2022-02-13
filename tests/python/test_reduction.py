@@ -33,8 +33,8 @@ np_ops = {
 
 def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
-    if (ti.cfg.arch == ti.opengl
-            or ti.cfg.arch == ti.vulkan) and dtype == ti.f32:
+    if (ti.lang.impl.current_cfg().arch == ti.opengl or
+            ti.lang.impl.current_cfg().arch == ti.vulkan) and dtype == ti.f32:
         # OpenGL/Vulkan are not capable of such large number in its float32...
         N = 1024 * 16
 

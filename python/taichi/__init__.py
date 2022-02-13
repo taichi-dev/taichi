@@ -47,6 +47,11 @@ if sys.version_info.minor < 7:
 else:
 
     def __getattr__(attr):
+        # There's no easy way to hook accessing attribute with function calls in python3.6.
+        # So let's skip it for now.
+        if attr == 'cfg':
+            return None if lang.impl.get_runtime(
+            ).prog is None else lang.impl.current_cfg()
         if attr in __deprecated_names__:
             lang.util.warning(
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',

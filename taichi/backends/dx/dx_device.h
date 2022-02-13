@@ -18,17 +18,56 @@ void force_ref(bool);
 void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceBinder : public ResourceBinder {
-  ~Dx11ResourceBinder() override;
-};
-
-class Dx11Pipeline : public Pipeline {
  public:
-  Dx11Pipeline(const PipelineSourceDesc &desc, const std::string &name);
-  ~Dx11Pipeline() override;
-  ResourceBinder *resource_binder() override;
+  ~Dx11ResourceBinder() override;
+  std::unique_ptr<ResourceBinder::Bindings> materialize() override;
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DevicePtr ptr,
+                 size_t size) override;
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DeviceAllocation alloc) override;
+  void buffer(uint32_t set,
+              uint32_t binding,
+              DevicePtr ptr,
+              size_t size) override;
+  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
+  void image(uint32_t set,
+             uint32_t binding,
+             DeviceAllocation alloc,
+             ImageSamplerConfig sampler_config) override;
+
+  // Set vertex buffer (not implemented in compute only device)
+  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
+
+  // Set index buffer (not implemented in compute only device)
+  // index_width = 4 -> uint32 index
+  // index_width = 2 -> uint16 index
+  void index_buffer(DevicePtr ptr, size_t index_width) override;
+
+  const std::unordered_map<uint32_t, uint32_t> &binding_to_alloc_id() {
+    return binding_to_alloc_id_;
+  }
+
+ private:
+  std::unordered_map<uint32_t, uint32_t> binding_to_alloc_id_;
 };
 
 class Dx11Device;
+
+class Dx11Pipeline : public Pipeline {
+ public:
+  Dx11Pipeline(const PipelineSourceDesc &desc, const std::string &name, Dx11Device* device);
+  ~Dx11Pipeline() override;
+  ResourceBinder *resource_binder() override;
+
+ private:
+  std::shared_ptr<Dx11Device> device_{};
+  ID3D11ComputeShader *compute_shader_{};
+  Dx11ResourceBinder binder_{};
+};
+
 
 class Dx11Stream : public Stream {
  public:
@@ -161,6 +200,9 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
   ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
   ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
+  ID3D11Device* d3d11_device() {
+    return device_;
+  }
 
  private:
   void create_dx11_device();

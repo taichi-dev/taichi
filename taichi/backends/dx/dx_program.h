@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/program/program_impl.h"
 
@@ -28,7 +29,7 @@ class Dx11ProgramImpl : public ProgramImpl {
   void synchronize() override;
 
  private:
-  std::unique_ptr<Device> device_;
+  std::shared_ptr<directx11::Dx11Device> device_;
   std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
 

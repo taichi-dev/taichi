@@ -2,10 +2,12 @@
 
 #ifdef TI_WITH_DX11
 
+#include "taichi/ir/ir_builder.h"
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
 #include "taichi/backends/dx/dx_program.h"
 #include "taichi/system/memory_pool.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace taichi {
 namespace lang {
@@ -104,7 +106,6 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
       std::make_unique<MemoryPool>(Arch::dx11, device.get());
   std::unique_ptr<Dx11ProgramImpl> program =
       std::make_unique<Dx11ProgramImpl>(default_compile_config);
-
   /*
   This test needs allocate_memory because of the call stack here:
   Dx11ProgramImpl::materialize_runtime
@@ -116,9 +117,19 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
         - Dx11Stream::buffer_fill
         - Dx11Stream::submit_synced
   */
-
   uint64_t *result_buffer;
   program->materialize_runtime(pool.get(), nullptr, &result_buffer);
+
+  TestProgram test_prog;
+  test_prog.setup();
+
+  IRBuilder builder;
+  auto *lhs = builder.get_int32(42);
+
+  auto block = builder.extract_ir();
+  test_prog.prog()->config.arch = Arch::dx11;
+  auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
+  program->compile(ker.get(), nullptr);
 }
 
 }  // namespace directx11

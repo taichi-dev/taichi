@@ -1,5 +1,8 @@
 #include "taichi/backends/dx/dx_device.h"
 
+#include "spirv_hlsl.hpp"
+#include <d3dcompiler.h>
+
 namespace taichi {
 namespace lang {
 namespace directx11 {
@@ -10,19 +13,52 @@ void check_dx_error(HRESULT hr, const char *msg) {
   }
 }
 
-Dx11ResourceBinder::~Dx11ResourceBinder() {
-}
-
-Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
-                           const std::string &name) {
+std::unique_ptr<ResourceBinder::Bindings> Dx11ResourceBinder::materialize() {
   TI_NOT_IMPLEMENTED;
 }
 
-Dx11Pipeline::~Dx11Pipeline() {
+void Dx11ResourceBinder::rw_buffer(uint32_t set,
+                                   uint32_t binding,
+                                   DevicePtr ptr,
+                                   size_t size) {
+  TI_NOT_IMPLEMENTED;
 }
 
-ResourceBinder *Dx11Pipeline::resource_binder() {
-  return nullptr;
+void Dx11ResourceBinder::rw_buffer(uint32_t set,
+                                   uint32_t binding,
+                                   DeviceAllocation alloc) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::buffer(uint32_t set,
+                                uint32_t binding,
+                                DevicePtr ptr,
+                                size_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::buffer(uint32_t set,
+                                uint32_t binding,
+                                DeviceAllocation alloc) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::image(uint32_t set,
+                               uint32_t binding,
+                               DeviceAllocation alloc,
+                               ImageSamplerConfig sampler_config) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
+  TI_NOT_IMPLEMENTED;
+}
+
+Dx11ResourceBinder::~Dx11ResourceBinder() {
 }
 
 Dx11CommandList::Dx11CommandList(Dx11Device *ti_device) : device_(ti_device) {
@@ -256,6 +292,35 @@ HRESULT create_buffer_uav(ID3D11Device *device,
   return device->CreateUnorderedAccessView(buffer, &uav_desc, out_uav);
 }
 
+HRESULT compile_compute_shader_from_string(const std::string &source,
+                                           LPCSTR entry_point,
+                                           ID3D11Device *device,
+                                           ID3DBlob **blob) {
+  UINT flags = D3DCOMPILE_OPTIMIZATION_LEVEL2;
+  LPCSTR profile = (device->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0)
+                       ? "cs_5_0"
+                       : "cs_4_0";
+  const D3D_SHADER_MACRO defines[] = {"EXAMPLE_DEFINE", "1", NULL, NULL};
+  ID3DBlob *shader_blob = nullptr, *error_blob = nullptr;
+  HRESULT hr =
+      D3DCompile(source.data(), source.size(), nullptr, defines, nullptr,
+                 entry_point, profile, flags, 0, &shader_blob, &error_blob);
+  if (FAILED(hr)) {
+    TI_WARN("Error in compile_compute_shader_from_string\n");
+    if (error_blob) {
+      TI_WARN("{}", (char *)error_blob->GetBufferPointer());
+      error_blob->Release();
+    } else
+      TI_WARN("error_blob is null\n");
+    if (shader_blob) {
+      shader_blob->Release();
+    }
+    return hr;
+  }
+  *blob = shader_blob;
+  return hr;
+}
+
 }  // namespace
 
 Dx11Device::Dx11Device() {
@@ -343,7 +408,7 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
 std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
     const PipelineSourceDesc &src,
     std::string name) {
-  TI_NOT_IMPLEMENTED;
+  return std::make_unique<Dx11Pipeline>(src, name, this);
 }
 
 void *Dx11Device::map_range(DevicePtr ptr, uint64_t size) {
@@ -450,6 +515,54 @@ void Dx11Stream::submit_synced(CommandList *cmdlist) {
 void Dx11Stream::command_sync() {
   // Not needed for DX11
 }
+
+
+Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
+                           const std::string &name,
+                           Dx11Device* device)
+    : device_(device) {
+  // TODO: Currently, PipelineSourceType::hlsl_src still returns SPIRV binary.
+  // Will need to update this section when that changes
+  TI_ASSERT(desc.type == PipelineSourceType::hlsl_src ||
+            desc.type == PipelineSourceType::spirv_binary);
+
+  ID3DBlob *shader_blob;
+  HRESULT hr;
+
+  std::vector<uint32_t> spirv_binary(
+      (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
+  spirv_cross::CompilerHLSL hlsl(std::move(spirv_binary));
+  spirv_cross::CompilerHLSL::Options options;
+  options.shader_model = 40;
+  hlsl.set_hlsl_options(options);
+
+  std::string source = hlsl.compile();
+  TI_TRACE("hlsl source: \n{}", source);
+
+  hr = compile_compute_shader_from_string(
+      source, "main", device_->d3d11_device(), &shader_blob);
+  if (SUCCEEDED(hr)) {
+    hr = device_->d3d11_device()->CreateComputeShader(shader_blob->GetBufferPointer(),
+                                     shader_blob->GetBufferSize(), nullptr,
+                                     &compute_shader_);
+    shader_blob->Release();
+    compute_shader_->SetPrivateData(WKPDID_D3DDebugObjectName, name.size(),
+                                    name.c_str());
+    if (!SUCCEEDED(hr)) {
+      TI_ERROR("HLSL compute shader creation error");
+    }
+  } else {
+    TI_ERROR("HLSL compute shader compilation error");
+  }
+}
+
+Dx11Pipeline::~Dx11Pipeline() {
+}
+
+ResourceBinder *Dx11Pipeline::resource_binder() {
+  return nullptr;
+}
+
 
 }  // namespace directx11
 }  // namespace lang

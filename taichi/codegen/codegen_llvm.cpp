@@ -344,6 +344,9 @@ llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
   }
 }
 
+void CodeGenLLVM::visit(DecorationStmt *stmt) {
+}
+
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();

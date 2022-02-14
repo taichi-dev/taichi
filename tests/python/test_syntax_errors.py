@@ -343,5 +343,5 @@ def test_funcdef_in_func():
         foo()
 
     with pytest.raises(ti.TaichiSyntaxError,
-                       match="Function definition not allowed in 'ti.func'"):
+                       match="Function definition is not allowed in 'ti.func'"):
         baz()

@@ -107,6 +107,6 @@ struct CompileConfig {
   CompileConfig();
 };
 
-extern CompileConfig default_compile_config;
+extern TI_DLL_EXPORT CompileConfig default_compile_config;
 
 TLANG_NAMESPACE_END

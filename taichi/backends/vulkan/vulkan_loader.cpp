@@ -1,7 +1,6 @@
-#pragma once
-
 #include "taichi/backends/vulkan/vulkan_common.h"
 
+#include "taichi/lang_util.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 
@@ -17,7 +16,13 @@ bool VulkanLoader::init() {
     if (initialized) {
       return;
     }
-#ifdef __APPLE__
+#if defined(TI_EMSCRIPTENED)
+    initialized = true;
+#elif defined(__APPLE__)
+    vulkan_rt_ = std::make_unique<DynamicLoader>(runtime_lib_dir() + "/libMoltenVK.dylib");
+    PFN_vkGetInstanceProcAddr get_proc_addr = (PFN_vkGetInstanceProcAddr)vulkan_rt_->load_function("vkGetInstanceProcAddr");
+
+    volkInitializeCustom(get_proc_addr);
     initialized = true;
 #else
     VkResult result = volkInitialize();
@@ -29,14 +34,14 @@ bool VulkanLoader::init() {
 
 void VulkanLoader::load_instance(VkInstance instance) {
   vulkan_instance_ = instance;
-#ifdef __APPLE__
+#if defined(TI_EMSCRIPTENED)
 #else
   volkLoadInstance(instance);
 #endif
 }
 void VulkanLoader::load_device(VkDevice device) {
   vulkan_device_ = device;
-#ifdef __APPLE__
+#if defined(TI_EMSCRIPTENED)
 #else
   volkLoadDevice(device);
 #endif

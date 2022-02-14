@@ -277,3 +277,6 @@ class PLYWriter:
 
         real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export(real_path)
+
+
+__all__ = ['PLYWriter']

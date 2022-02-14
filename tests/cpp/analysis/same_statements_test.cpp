@@ -158,7 +158,7 @@ TEST(SameStatements, TestSameLoopIndex) {
   auto range_for =
       block
           ->push_back<RangeForStmt>(zero, four, std::make_unique<Block>(), 1, 1,
-                                    1, 1, false)
+                                    1, false)
           ->as<RangeForStmt>();
   auto loop_index_a = range_for->body->push_back<LoopIndexStmt>(range_for, 0);
   auto loop_index_b = range_for->body->push_back<LoopIndexStmt>(range_for, 0);

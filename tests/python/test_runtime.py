@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 @contextmanager
@@ -110,7 +111,7 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
-@pytest.mark.parametrize('arch', ti._testing.expected_archs())
+@pytest.mark.parametrize('arch', test_utils.expected_archs())
 def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)
@@ -126,16 +127,37 @@ def test_init_bad_arg():
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
-@pytest.mark.parametrize('level', ti.supported_log_levels)
-@ti.test()
+def test_init_require_version():
+    ti_core = ti._lib.utils.import_ti_core()
+    require_version = '{}.{}.{}'.format(ti_core.get_version_major(),
+                                        ti_core.get_version_minor(),
+                                        ti_core.get_version_patch())
+    ti.init(_test_mode=True, debug=True, require_version=require_version)
+
+
+def test_init_bad_require_version():
+    with pytest.raises(Exception):
+        ti_core = ti._lib.utils.import_ti_core()
+        bad_require_version = '{}.{}.{}'.format(
+            ti_core.get_version_major(), ti_core.get_version_minor(),
+            ti_core.get_version_patch() + 1)
+        ti.init(_test_mode=True,
+                debug=True,
+                require_version=bad_require_version)
+
+
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
 
 
-@pytest.mark.parametrize('level', ti.supported_log_levels)
-@ti.test()
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)
     ti.set_logging_level(level)
-    assert ti.is_logging_effective(level)
+    assert ti._logging.is_logging_effective(level)

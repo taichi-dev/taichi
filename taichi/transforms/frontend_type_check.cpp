@@ -28,6 +28,10 @@ class FrontendTypeCheck : public IRVisitor {
       stmt->accept(this);
   }
 
+  void visit(FrontendExternalFuncStmt *stmt) override {
+    // TODO: noop for now; add typechecking after we have type specification
+  }
+
   void visit(FrontendExprStmt *stmt) override {
     // Noop
   }

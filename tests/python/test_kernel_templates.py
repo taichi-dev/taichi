@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_template_basic():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32)
@@ -32,7 +33,7 @@ def test_kernel_template_basic():
         assert x[i] == 12
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_template_gradient():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -66,7 +67,7 @@ def test_kernel_template_gradient():
         assert x.grad[i] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_func_template():
     a = [ti.field(dtype=ti.f32) for _ in range(2)]
     b = [ti.field(dtype=ti.f32) for _ in range(2)]
@@ -98,7 +99,7 @@ def test_func_template():
                 assert b[l][i, j] == l
 
 
-@ti.test()
+@test_utils.test()
 def test_func_template2():
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)

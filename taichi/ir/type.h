@@ -11,7 +11,7 @@ enum class PrimitiveTypeID : int {
 #undef PER_TYPE
 };
 
-class Type {
+class TI_DLL_EXPORT Type {
  public:
   virtual std::string to_string() const = 0;
 
@@ -51,7 +51,7 @@ class Type {
 };
 
 // A "Type" handle. This should be removed later.
-class DataType {
+class TI_DLL_EXPORT DataType {
  public:
   DataType();
 
@@ -107,7 +107,7 @@ class DataType {
 
 // Note that all types are immutable once created.
 
-class PrimitiveType : public Type {
+class TI_DLL_EXPORT PrimitiveType : public Type {
  public:
 #define PER_TYPE(x) static DataType x;
 #include "taichi/inc/data_type.inc.h"
@@ -152,28 +152,6 @@ class PointerType : public Type {
   Type *pointee_{nullptr};
   int addr_space_{0};  // TODO: make this an enum
   bool is_bit_pointer_{false};
-};
-
-class VectorType : public Type {
- public:
-  VectorType(int num_elements, Type *element)
-      : num_elements_(num_elements), element_(element) {
-    TI_ASSERT(num_elements_ != 1);
-  }
-
-  Type *get_element_type() const {
-    return element_;
-  }
-
-  int get_num_elements() const {
-    return num_elements_;
-  }
-
-  std::string to_string() const override;
-
- private:
-  int num_elements_{0};
-  Type *element_{nullptr};
 };
 
 class TensorType : public Type {

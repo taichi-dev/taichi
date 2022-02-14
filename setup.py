@@ -37,8 +37,8 @@ classifiers = [
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 8
-TI_VERSION_PATCH = 11
+TI_VERSION_MINOR = 9
+TI_VERSION_PATCH = 0
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/_lib/runtime/*')
@@ -137,6 +137,10 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
+        if emscriptened:
+            cmake_args += ['-DTI_EMSCRIPTENED=ON']
+
         if shutil.which('ninja'):
             cmake_args += ['-GNinja']
 
@@ -158,6 +162,7 @@ class CMakeBuild(build_ext):
         os.makedirs(self.build_temp, exist_ok=True)
 
         print('-' * 10, 'Running CMake prepare', '-' * 40)
+        print(' '.join(['cmake', cmake_list_dir] + cmake_args))
         subprocess.check_call(['cmake', cmake_list_dir] + cmake_args,
                               cwd=self.build_temp,
                               env=env)

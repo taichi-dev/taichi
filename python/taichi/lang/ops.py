@@ -504,7 +504,7 @@ def truediv(a, b):
 
 
 @binary
-def max(a, b):  # pylint: disable=W0622
+def max_impl(a, b):
     """The maxnimum function.
 
     Args:
@@ -518,7 +518,7 @@ def max(a, b):  # pylint: disable=W0622
 
 
 @binary
-def min(a, b):  # pylint: disable=W0622
+def min_impl(a, b):
     """The minimum function.
 
     Args:
@@ -828,28 +828,29 @@ def atomic_xor(a, b):
 
 @writeback_binary
 def assign(a, b):
-    _ti_core.expr_assign(a.ptr, b.ptr, stack_info())
+    impl.get_runtime().prog.current_ast_builder().expr_assign(
+        a.ptr, b.ptr, stack_info())
     return a
 
 
-def ti_max(*args):
+def max(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
         return args[0]
     if num_args == 2:
-        return max(args[0], args[1])
-    return max(args[0], ti_max(*args[1:]))
+        return max_impl(args[0], args[1])
+    return max_impl(args[0], max(*args[1:]))
 
 
-def ti_min(*args):
+def min(*args):  # pylint: disable=W0622
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
         return args[0]
     if num_args == 2:
-        return min(args[0], args[1])
-    return min(args[0], ti_min(*args[1:]))
+        return min_impl(args[0], args[1])
+    return min_impl(args[0], min(*args[1:]))
 
 
 def ti_any(a):
@@ -858,3 +859,12 @@ def ti_any(a):
 
 def ti_all(a):
     return a.all()
+
+
+__all__ = [
+    "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
+    "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
+    "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
+    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
+    "max", "min", "select", "abs", "pow"
+]

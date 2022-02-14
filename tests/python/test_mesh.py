@@ -3,12 +3,13 @@ import os
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 model_file_path = os.path.join(this_dir, 'ell.json')
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_mesh_patch_idx():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'idx': ti.i32})
@@ -83,30 +84,32 @@ def _test_mesh_for(cell_reorder=False, vert_reorder=False, extra_tests=True):
     assert total == 1144
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_mesh_for():
     _test_mesh_for(False, False)
     _test_mesh_for(False, True)
 
 
-@ti.test(require=ti.extension.mesh, optimize_mesh_reordered_mapping=False)
+@test_utils.test(require=ti.extension.mesh,
+                 optimize_mesh_reordered_mapping=False)
 def test_mesh_reordered_opt():
     _test_mesh_for(True, True, False)
 
 
-@ti.test(require=ti.extension.mesh, mesh_localize_to_end_mapping=False)
+@test_utils.test(require=ti.extension.mesh, mesh_localize_to_end_mapping=False)
 def test_mesh_localize_mapping0():
     _test_mesh_for(False, False, False)
     _test_mesh_for(True, True, False)
 
 
-@ti.test(require=ti.extension.mesh, mesh_localize_from_end_mapping=True)
+@test_utils.test(require=ti.extension.mesh,
+                 mesh_localize_from_end_mapping=True)
 def test_mesh_localize_mapping1():
     _test_mesh_for(False, False, False)
     _test_mesh_for(True, True, False)
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_mesh_reorder():
     vec3i = ti.types.vector(3, ti.i32)
     mesh_builder = ti.Mesh.Tet()
@@ -144,7 +147,7 @@ def test_mesh_reorder():
         assert id234[i][2] == i**4
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_mesh_minor_relations():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'y': ti.i32})
@@ -168,7 +171,7 @@ def test_mesh_minor_relations():
     assert total == 576
 
 
-@ti.test(require=ti.extension.mesh, demote_no_access_mesh_fors=True)
+@test_utils.test(require=ti.extension.mesh, demote_no_access_mesh_fors=True)
 def test_multiple_meshes():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'y': ti.i32})
@@ -190,7 +193,7 @@ def test_multiple_meshes():
         assert out[i] == i**2
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_mesh_local():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'a': ti.i32})
@@ -226,7 +229,7 @@ def test_mesh_local():
         assert res1[i] == res4[i]
 
 
-@ti.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
+@test_utils.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
 def test_auto_mesh_local():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'a': ti.i32, 's': ti.i32})
@@ -263,7 +266,7 @@ def test_auto_mesh_local():
         assert res1[i] == res4[i]
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_nested_mesh_for():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.faces.place({'a': ti.i32, 'b': ti.i32})
@@ -283,7 +286,7 @@ def test_nested_mesh_for():
     assert (a == b).all() == 1
 
 
-@ti.test(require=ti.extension.mesh)
+@test_utils.test(require=ti.extension.mesh)
 def test_multiple_mesh_major_relations():
     mesh = ti.TetMesh()
     mesh.verts.place({

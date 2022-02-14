@@ -1,10 +1,10 @@
 import pytest
 
 import taichi as ti
-from taichi import approx
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_return_without_type_hint():
     @ti.kernel
     def kernel():
@@ -25,11 +25,11 @@ def test_const_func_ret():
     def func2() -> ti.i32:
         return 3.3  # return type mismatch, will be auto-casted into ti.i32
 
-    assert func1() == approx(3)
+    assert func1() == test_utils.approx(3)
     assert func2() == 3
 
 
-@ti.test()
+@test_utils.test()
 def _test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:
@@ -46,7 +46,7 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
         ys = [0.2, 0.4, 0.8, 1.0]
 
     for x, y in zip(xs, ys):
-        assert func(x, y) == approx(castor(x * y))
+        assert func(x, y) == test_utils.approx(castor(x * y))
 
 
 def test_binary_func_ret():
@@ -56,7 +56,7 @@ def test_binary_func_ret():
     _test_binary_func_ret(ti.f32, ti.i32, ti.i32, int)
 
 
-@ti.test()
+@test_utils.test()
 def test_return_in_static_if():
     @ti.kernel
     def foo(a: ti.template()) -> ti.i32:
@@ -71,7 +71,7 @@ def test_return_in_static_if():
     assert foo(123) == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_func_multiple_return():
     @ti.func
     def safe_sqrt(a):
@@ -90,7 +90,7 @@ def test_func_multiple_return():
         kern(-233)
 
 
-@ti.test()
+@test_utils.test()
 def test_return_inside_static_for():
     @ti.kernel
     def foo() -> ti.i32:
@@ -103,7 +103,7 @@ def test_return_inside_static_for():
     assert foo() == 204
 
 
-@ti.test()
+@test_utils.test()
 def test_return_inside_non_static_for():
     with pytest.raises(
             ti.TaichiCompilationError,
@@ -117,7 +117,7 @@ def test_return_inside_non_static_for():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_no_return():
     with pytest.raises(
             ti.TaichiSyntaxError,
@@ -131,7 +131,7 @@ def test_kernel_no_return():
         foo()
 
 
-@ti.test()
+@test_utils.test()
 def test_func_no_return():
     with pytest.raises(
             ti.TaichiCompilationError,

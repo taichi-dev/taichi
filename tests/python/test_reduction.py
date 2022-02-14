@@ -3,6 +3,7 @@ import pytest
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 OP_ADD = 0
 OP_MIN = 1
@@ -80,42 +81,42 @@ def _test_reduction_single(dtype, criterion, op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD, OP_MIN, OP_MAX, OP_AND, OP_OR, OP_XOR])
-@ti.test()
+@test_utils.test()
 def test_reduction_single_i32(op):
     _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD, OP_MIN, OP_MAX])
-@ti.test()
+@test_utils.test()
 def test_reduction_single_f32(op):
     _test_reduction_single(ti.f32, lambda x, y: x == approx(y, 3e-4), op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_reduction_single_i64(op):
     _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(exclude=ti.opengl, require=ti.extension.data64)
+@test_utils.test(exclude=ti.opengl, require=ti.extension.data64)
 def test_reduction_single_u64(op):
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_reduction_single_f64(op):
     _test_reduction_single(ti.f64, lambda x, y: x == approx(y, 1e-12), op)
 
 
-@ti.test()
+@test_utils.test()
 def test_reduction_different_scale():
     @ti.kernel
     def func(n: ti.template()) -> ti.i32:
@@ -130,7 +131,7 @@ def test_reduction_different_scale():
         assert n == func(n)
 
 
-@ti.test()
+@test_utils.test()
 def test_reduction_any_arr():
     @ti.kernel
     def reduce(a: ti.any_arr()) -> ti.i32:

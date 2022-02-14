@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_subscript_user_classes_in_kernel():
     class MyList:
         def __init__(self, elements):

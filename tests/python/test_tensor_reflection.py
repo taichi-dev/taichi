@@ -1,9 +1,11 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_POT():
     val = ti.field(ti.i32)
 
@@ -17,7 +19,7 @@ def test_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@test_utils.test()
 def test_non_POT():
     val = ti.field(ti.i32)
 
@@ -34,7 +36,7 @@ def test_non_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@test_utils.test()
 def test_unordered():
     val = ti.field(ti.i32)
 
@@ -59,7 +61,7 @@ def test_unordered():
     assert val.snode in blk3.get_children()
     assert blk3 in blk2.get_children()
     assert blk2 in blk1.get_children()
-    ti.get_runtime().materialize_root_fb(False)
+    impl.get_runtime().materialize_root_fb(False)
     assert blk1 in ti.FieldsBuilder.finalized_roots()[0].get_children()
 
     expected_str = f'ti.root => dense {[n]} => dense {[m, n]}' \
@@ -67,7 +69,7 @@ def test_unordered():
     assert str(val.snode) == expected_str
 
 
-@ti.test()
+@test_utils.test()
 def test_unordered_matrix():
     val = ti.Matrix.field(3, 2, ti.i32)
 
@@ -91,7 +93,7 @@ def test_unordered_matrix():
     assert val.snode.path_from_root() == [ti.root, blk1, blk2, blk3, val.snode]
 
 
-@ti.test()
+@test_utils.test()
 def test_parent_exceeded():
     val = ti.field(ti.f32)
 

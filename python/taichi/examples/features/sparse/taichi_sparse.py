@@ -1,3 +1,5 @@
+from taichi.examples.patterns import taichi_logo
+
 import taichi as ti
 
 ti.init(arch=ti.cuda)
@@ -19,7 +21,7 @@ def activate(t: ti.f32):
         p = ti.Vector([i, j]) / n
         p = ti.Matrix.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
 
-        if ti.taichi_logo(p) == 0:
+        if taichi_logo(p) == 0:
             x[i, j] = 1
 
 

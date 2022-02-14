@@ -3,6 +3,7 @@ import time
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 def benchmark_fuse_dynamic_x2y2z(size=1024**2, repeat=10, first_n=100):
@@ -55,7 +56,7 @@ def benchmark_fuse_dynamic_x2y2z(size=1024**2, repeat=10, first_n=100):
         assert z[i] == x[i] + 5
 
 
-@ti.test(require=[ti.extension.async_mode, ti.extension.sparse],
-         async_mode=True)
+@test_utils.test(require=[ti.extension.async_mode, ti.extension.sparse],
+                 async_mode=True)
 def test_fuse_dynamic_x2y2z():
     benchmark_fuse_dynamic_x2y2z()

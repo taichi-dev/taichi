@@ -286,6 +286,7 @@ void VulkanPipeline::create_pipeline_layout() {
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
+  TI_TRACE("Compiling Vulkan pipeline {}", params.name);
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
                                              pipeline_layout_);
 }
@@ -1245,6 +1246,10 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+  }
+
   alloc.buffer = vkapi::create_buffer(
       device_, export_sharing ? allocator_export_ : allocator_, &buffer_info,
       &alloc_info);
@@ -1255,6 +1260,14 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
            handle.alloc_id);
 #endif
+
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    VkBufferDeviceAddressInfoKHR info{};
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+    info.buffer = alloc.buffer->buffer;
+    info.pNext = nullptr;
+    alloc.addr = vkGetBufferDeviceAddressKHR(device_, &info);
+  }
 
   return handle;
 }
@@ -1275,15 +1288,26 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   allocations_.erase(handle.alloc_id);
 }
 
+uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
+  const auto &alloc_int = allocations_.at(handle.alloc_id);
+  return uint64_t(alloc_int.addr);
+}
+
 void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {
   AllocationInternal &alloc_int = allocations_.at(ptr.alloc_id);
 
   TI_ASSERT_INFO(alloc_int.mapped == nullptr,
                  "Memory can not be mapped multiple times");
 
-  vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-              alloc_int.alloc_info.offset + ptr.offset, size, 0,
-              &alloc_int.mapped);
+  if (alloc_int.buffer->allocator) {
+    vmaMapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation,
+                 &alloc_int.mapped);
+    alloc_int.mapped = (uint8_t *)(alloc_int.mapped) + ptr.offset;
+  } else {
+    vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
+                alloc_int.alloc_info.offset + ptr.offset, size, 0,
+                &alloc_int.mapped);
+  }
 
   return alloc_int.mapped;
 }
@@ -1294,9 +1318,14 @@ void *VulkanDevice::map(DeviceAllocation alloc) {
   TI_ASSERT_INFO(alloc_int.mapped == nullptr,
                  "Memory can not be mapped multiple times");
 
-  vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-              alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
-              &alloc_int.mapped);
+  if (alloc_int.buffer->allocator) {
+    vmaMapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation,
+                 &alloc_int.mapped);
+  } else {
+    vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
+                alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
+                &alloc_int.mapped);
+  }
 
   return alloc_int.mapped;
 }
@@ -1306,7 +1335,12 @@ void VulkanDevice::unmap(DevicePtr ptr) {
 
   TI_ASSERT_INFO(alloc_int.mapped, "Memory is not mapped");
 
-  vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  if (alloc_int.buffer->allocator) {
+    vmaUnmapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation);
+  } else {
+    vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  }
+
   alloc_int.mapped = nullptr;
 }
 
@@ -1315,7 +1349,12 @@ void VulkanDevice::unmap(DeviceAllocation alloc) {
 
   TI_ASSERT_INFO(alloc_int.mapped, "Memory is not mapped");
 
-  vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  if (alloc_int.buffer->allocator) {
+    vmaUnmapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation);
+  } else {
+    vkUnmapMemory(device_, alloc_int.alloc_info.deviceMemory);
+  }
+
   alloc_int.mapped = nullptr;
 }
 
@@ -1790,9 +1829,8 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.device = device_;
   allocatorInfo.instance = instance_;
 
-#ifndef __APPLE__
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions;
+  VmaVulkanFunctions vk_vma_functions{0};
 
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
@@ -1830,7 +1868,10 @@ void VulkanDevice::create_vma_allocator() {
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
-#endif
+
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+  }
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
@@ -1919,6 +1960,7 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
+#if !defined(TI_EMSCRIPTENED)
 #ifdef ANDROID
   window_ = (ANativeWindow *)config.window_handle;
 #else
@@ -1964,6 +2006,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
   }
+#endif
 }
 
 void VulkanSurface::create_swap_chain() {
@@ -2019,7 +2062,7 @@ void VulkanSurface::create_swap_chain() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getWidth(window_);
-#else
+#elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
 
@@ -2129,7 +2172,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getWidth(window_);
-#else
+#elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
   return std::make_pair(width, height);

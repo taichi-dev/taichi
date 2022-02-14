@@ -1,8 +1,8 @@
 import taichi as ti
-from taichi import approx
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_random_float():
     for precision in [ti.f32, ti.f64]:
         ti.init()
@@ -18,10 +18,10 @@ def test_random_float():
         fill()
         X = x.to_numpy()
         for i in range(1, 4):
-            assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
+            assert (X**i).mean() == test_utils.approx(1 / (i + 1), rel=1e-2)
 
 
-@ti.test()
+@test_utils.test()
 def test_random_int():
     for precision in [ti.i32, ti.i64]:
         ti.init()
@@ -41,10 +41,10 @@ def test_random_int():
         fill()
         X = x.to_numpy()
         for i in range(1, 4):
-            assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
+            assert (X**i).mean() == test_utils.approx(1 / (i + 1), rel=1e-2)
 
 
-@ti.test()
+@test_utils.test()
 def test_random_independent_product():
     n = 1024
     x = ti.field(ti.f32, shape=n * n)
@@ -59,10 +59,10 @@ def test_random_independent_product():
     fill()
     X = x.to_numpy()
     for i in range(4):
-        assert X.mean() == approx(1 / 4, rel=1e-2)
+        assert X.mean() == test_utils.approx(1 / 4, rel=1e-2)
 
 
-@ti.test()
+@test_utils.test()
 def test_random_2d_dist():
     n = 8192
 
@@ -82,10 +82,10 @@ def test_random_2d_dist():
         counters[c] += 1
 
     for c in range(4):
-        assert counters[c] / n == approx(1 / 4, rel=0.2)
+        assert counters[c] / n == test_utils.approx(1 / 4, rel=0.2)
 
 
-@ti.test()
+@test_utils.test()
 def test_random_seed_per_launch():
     n = 10
     x = ti.field(ti.f32, shape=n)
@@ -103,7 +103,7 @@ def test_random_seed_per_launch():
     assert count <= n * 0.15
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_random_seed_per_program():
     import numpy as np
     n = 10
@@ -124,7 +124,7 @@ def test_random_seed_per_program():
     assert not np.allclose(result[0], result[1])
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
     '''
     Tests the granularity of float64 random numbers.
@@ -144,7 +144,7 @@ def test_random_f64():
     assert np.max(frac) > 0
 
 
-@ti.test()
+@test_utils.test()
 def test_randn():
     '''
     Tests the generation of Gaussian random numbers.
@@ -166,4 +166,5 @@ def test_randn():
         # https://en.wikipedia.org/wiki/Normal_distribution#Moments
         moments = [0.0, 1.0, 0.0, 3.0]
         for i in range(4):
-            assert (X**(i + 1)).mean() == approx(moments[i], abs=3e-2)
+            assert (X**(i + 1)).mean() == test_utils.approx(moments[i],
+                                                            abs=3e-2)

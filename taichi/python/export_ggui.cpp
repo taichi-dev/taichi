@@ -232,7 +232,8 @@ struct PyCanvas {
 struct PyWindow {
   std::unique_ptr<WindowBase> window{nullptr};
 
-  PyWindow(std::string name,
+  PyWindow(Program *prog,
+           std::string name,
            py::tuple res,
            bool vsync,
            bool show_window,
@@ -243,7 +244,7 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
-    window = std::make_unique<vulkan::Window>(config);
+    window = std::make_unique<vulkan::Window>(prog, config);
   }
 
   void write_image(const std::string &filename) {
@@ -310,8 +311,8 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, bool, std::string, Arch,
-                    bool>())
+      .def(py::init<Program *, std::string, py::tuple, bool, bool, std::string,
+                    Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("write_image", &PyWindow::write_image)

@@ -8,22 +8,22 @@ import textwrap
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, runtime_ops, util
+from taichi.lang import impl, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
+from taichi.lang.exception import (TaichiCompilationError,
+                                   TaichiRuntimeTypeError, TaichiSyntaxError)
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import to_taichi_type
+from taichi.lang.util import has_pytorch, to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
 
 from taichi import _logging
 
-if util.has_pytorch():
+if has_pytorch():
     import torch
 
 
@@ -199,7 +199,7 @@ class Func:
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        fn = _ti_core.create_function(key)
+        fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
             ctx.ast_builder = fn.ast_builder()
@@ -218,18 +218,18 @@ class Func:
         for i, arg_name in enumerate(arg_names):
             param = params[arg_name]
             if param.kind == inspect.Parameter.VAR_KEYWORD:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi functions do not support variable keyword parameters (i.e., **kwargs)'
                 )
             if param.kind == inspect.Parameter.VAR_POSITIONAL:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi functions do not support variable positional parameters (i.e., *args)'
                 )
             if param.kind == inspect.Parameter.KEYWORD_ONLY:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi functions do not support keyword parameters')
             if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi functions only support "positional or keyword" parameters'
                 )
             annotation = param.annotation
@@ -240,14 +240,14 @@ class Func:
                 #       but that has to happen at runtime when we know which scope it's called from.
                 elif not self.pyfunc and impl.get_runtime(
                 ).experimental_real_function:
-                    raise KernelDefError(
+                    raise TaichiSyntaxError(
                         f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
                     )
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
                               annotation, template):
-                    raise KernelDefError(
+                    raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
             self.argument_annotations.append(annotation)
@@ -329,19 +329,6 @@ class TaichiCallableTemplateMapper:
         return self.mapping[key], key
 
 
-class KernelDefError(Exception):
-    pass
-
-
-class KernelArgError(Exception):
-    def __init__(self, pos, needed, provided):
-        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
-        super().__init__(message)
-        self.pos = pos
-        self.needed = needed
-        self.provided = provided
-
-
 def _get_global_vars(_func):
     # Discussions: https://github.com/taichi-dev/taichi/issues/282
     global_vars = _func.__globals__.copy()
@@ -396,22 +383,22 @@ class Kernel:
         for i, arg_name in enumerate(arg_names):
             param = params[arg_name]
             if param.kind == inspect.Parameter.VAR_KEYWORD:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi kernels do not support variable keyword parameters (i.e., **kwargs)'
                 )
             if param.kind == inspect.Parameter.VAR_POSITIONAL:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi kernels do not support variable positional parameters (i.e., *args)'
                 )
             if param.default is not inspect.Parameter.empty:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi kernels do not support default values for arguments'
                 )
             if param.kind == inspect.Parameter.KEYWORD_ONLY:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi kernels do not support keyword parameters')
             if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                raise KernelDefError(
+                raise TaichiSyntaxError(
                     'Taichi kernels only support "positional or keyword" parameters'
                 )
             annotation = param.annotation
@@ -419,7 +406,7 @@ class Kernel:
                 if i == 0 and self.classkernel:  # The |self| parameter
                     annotation = template()
                 else:
-                    raise KernelDefError(
+                    raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
                 if isinstance(annotation, (template, any_arr)):
@@ -431,7 +418,7 @@ class Kernel:
                 elif isinstance(annotation, MatrixType):
                     pass
                 else:
-                    raise KernelDefError(
+                    raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
             self.argument_annotations.append(annotation)
@@ -481,8 +468,8 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
-                                               kernel_name, self.is_grad)
+        taichi_kernel = impl.get_runtime().prog.create_kernel(
+            taichi_ast_generator, kernel_name, self.is_grad)
 
         self.kernel_cpp = taichi_kernel
 
@@ -500,6 +487,10 @@ class Kernel:
 
         assert has_torch
         assert isinstance(v, torch.Tensor)
+        if not v.is_contiguous():
+            raise ValueError(
+                "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
+            )
         tmp = v
         taichi_arch = self.runtime.prog.config.arch
         # Ndarray means its memory is allocated on the specified taichi arch.
@@ -535,7 +526,7 @@ class Kernel:
             tmps = []
             callbacks = []
             has_external_arrays = False
-            has_torch = util.has_pytorch()
+            has_torch = has_pytorch()
             ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
@@ -548,11 +539,13 @@ class Kernel:
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise KernelArgError(i, needed.to_string(), provided)
+                        raise TaichiRuntimeTypeError(i, needed.to_string(),
+                                                     provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, int):
-                        raise KernelArgError(i, needed.to_string(), provided)
+                        raise TaichiRuntimeTypeError(i, needed.to_string(),
+                                                     provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
@@ -595,7 +588,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], (int, float)):
-                                    raise KernelArgError(
+                                    raise TaichiRuntimeTypeError(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_float(
@@ -605,7 +598,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], int):
-                                    raise KernelArgError(
+                                    raise TaichiRuntimeTypeError(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_int(actual_argument_slot,
@@ -654,7 +647,7 @@ class Kernel:
     @staticmethod
     def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
-        if not has_array and util.has_pytorch():
+        if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
         return has_array
 
@@ -736,7 +729,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
             # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])
             assert not hasattr(clsobj, '_data_oriented')
-            raise KernelDefError(
+            raise TaichiSyntaxError(
                 f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
             )
     else:
@@ -788,15 +781,11 @@ def kernel(fn):
     return _kernel_impl(fn, level_of_class_stackframe=3)
 
 
-classfunc = obsolete('@ti.classfunc', '@ti.func directly')
-classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
-
-
 class _BoundedDifferentiableMethod:
     def __init__(self, kernel_owner, wrapped_kernel_func):
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
-            raise KernelDefError(
+            raise TaichiSyntaxError(
                 f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
             )
         self._kernel_owner = kernel_owner
@@ -872,3 +861,6 @@ def data_oriented(cls):
     cls._data_oriented = True
 
     return cls
+
+
+__all__ = ["data_oriented", "func", "kernel"]

@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_ftz_f32():
     a = ti.field(dtype=ti.f32, shape=2)
 
@@ -15,7 +16,7 @@ def test_ftz_f32():
     assert a[1] == 0
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_ftz_f64():
     a = ti.field(dtype=ti.f64, shape=2)
 

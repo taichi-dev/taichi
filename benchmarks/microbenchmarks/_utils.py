@@ -1,6 +1,24 @@
+from time import perf_counter
+
 from taichi._lib import core as ti_core
 
 import taichi as ti
+
+
+class End2EndTimer:
+    def __init__(self):
+        self._ts1 = 0
+        self._ts2 = 0
+
+    def tick(self):
+        ti.sync()
+        self._ts1 = perf_counter()
+        return self._ts1
+
+    def tock(self):
+        ti.sync()
+        self._ts2 = perf_counter()
+        return self._ts2 - self._ts1
 
 
 def size2tag(size_in_byte):
@@ -42,3 +60,28 @@ def scaled_repeat_times(arch: str, datasize, repeat=1):
     if datasize <= 4 * 1024 * 1024:
         repeat *= 10
     return repeat
+
+
+def fill_random(dst, dtype, container):
+    @ti.kernel
+    def fill_template(dst: ti.template()):
+        for I in ti.grouped(dst):
+            dst[I] = ti.random(dtype)
+
+    @ti.kernel
+    def fill_1d_array(dst: ti.any_arr()):
+        for i in dst:
+            dst[i] = ti.random(dtype)
+
+    @ti.kernel
+    def fill_2d_array(dst: ti.any_arr()):
+        for i, j in dst:
+            dst[i, j] = ti.random(dtype)
+
+    if container == ti.ndarray:
+        if len(dst.shape) == 1:
+            fill_1d_array(dst)
+        elif len(dst.shape) == 2:
+            fill_2d_array(dst)
+    else:
+        fill_template(dst)

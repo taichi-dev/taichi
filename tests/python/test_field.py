@@ -3,8 +3,11 @@ To test our new `ti.field` API is functional (#1500)
 '''
 
 import pytest
+from taichi.lang import impl
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 field_shapes = [(), 8, (6, 12)]
@@ -14,7 +17,7 @@ matrix_dims = [(1, 2), (2, 3)]
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_scalar_field(dtype, shape):
     x = ti.field(dtype, shape)
 
@@ -29,7 +32,7 @@ def test_scalar_field(dtype, shape):
 @pytest.mark.parametrize('n', vector_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_vector_field(n, dtype, shape):
     x = ti.Vector.field(n, dtype, shape)
 
@@ -46,7 +49,7 @@ def test_vector_field(n, dtype, shape):
 @pytest.mark.parametrize('n,m', matrix_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_matrix_field(n, m, dtype, shape):
     x = ti.Matrix.field(n, m, dtype=dtype, shape=shape)
 
@@ -62,7 +65,7 @@ def test_matrix_field(n, m, dtype, shape):
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy(dtype, shape):
     import numpy as np
     x = ti.field(dtype, shape)
@@ -79,7 +82,7 @@ def test_scalr_field_from_numpy(dtype, shape):
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):
     import numpy as np
     x = ti.field(dtype, shape)
@@ -99,7 +102,7 @@ def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):
         x.from_numpy(arr)
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_field_needs_grad():
     # Just make sure the usage doesn't crash, see #1545
     n = 8
@@ -121,7 +124,7 @@ def test_default_fp(dtype):
 
     x = ti.Vector.field(2, float, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == impl.get_runtime().default_fp
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
@@ -130,10 +133,10 @@ def test_default_ip(dtype):
 
     x = ti.Vector.field(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_ip
+    assert x.dtype == impl.get_runtime().default_ip
 
 
-@ti.test()
+@test_utils.test()
 def test_field_name():
     a = ti.field(dtype=ti.f32, shape=(2, 3), name='a')
     b = ti.Vector.field(3, dtype=ti.f32, shape=(2, 3), name='b')
@@ -148,7 +151,7 @@ def test_field_name():
         assert d[i].name == f'd{i}'
 
 
-@ti.test()
+@test_utils.test()
 @pytest.mark.parametrize('shape', field_shapes)
 @pytest.mark.parametrize('dtype', [ti.i32, ti.f32])
 def test_field_copy_from(shape, dtype):
@@ -162,7 +165,7 @@ def test_field_copy_from(shape, dtype):
     assert ((x.to_numpy() == 1).all())
 
 
-@ti.test()
+@test_utils.test()
 def test_field_copy_from_with_mismatch_shape():
     x = ti.field(dtype=ti.f32, shape=(2, 3))
     for other_shape in [(2, ), (2, 2), (2, 3, 4)]:
@@ -171,7 +174,7 @@ def test_field_copy_from_with_mismatch_shape():
             x.copy_from(other)
 
 
-@ti.test()
+@test_utils.test()
 def test_field_copy_from_with_non_filed_object():
     import numpy as np
     x = ti.field(dtype=ti.f32, shape=(2, 3))

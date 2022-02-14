@@ -8,6 +8,78 @@
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
+class IndependentBlocksJudger : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(LocalLoadStmt *stmt) override {
+    for (auto &lane : stmt->src.data) {
+      touched_allocas_.insert(lane.var->as<AllocaStmt>());
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    touched_allocas_.insert(stmt->dest->as<AllocaStmt>());
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    // We don't need to check the global atomics inside the range for-loops
+    // because
+    // 1. If the range for-loop is innermost, they will be captured by
+    // MakeAdjoint anyway
+    // 2. If the range for-loop is not innermost, they will be processed by
+    // another IndependentBlocksJudger
+    if (is_inside_loop_)
+      return;
+    TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+    for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
+      if (node->has_grad()) {
+        qualified_atomics_ = false;
+        break;
+      }
+    }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    inner_most_loop_ = false;
+    is_inside_loop_ = true;
+    stmt->body->accept(this);
+    is_inside_loop_ = false;
+  }
+
+  static bool run(IRNode *root) {
+    IndependentBlocksJudger Judger;
+    Block *block = root->as<Block>();
+    root->accept(&Judger);
+    std::set<Block *> outside_blocks;
+    // Collect all parent blocks (i.e. outside blocks) of the current block for
+    // local load/store stmt checks
+    for (auto b = block->parent_block(); b; b = b->parent_block()) {
+      if (b)
+        outside_blocks.insert(b);
+    }
+    for (const auto &alloca : Judger.touched_allocas_) {
+      // Test if the alloca belongs to the current block
+      if (outside_blocks.find(alloca->parent) != outside_blocks.end()) {
+        // This block is not an IB since it loads/modifies outside variables
+        return false;
+      }
+    }
+
+    // To judge whether a block is an IB
+    // 1. No local load/store to allocas *outside* itself has been strictly
+    // enforced
+    // 2. If the #1 is satisfied, either an inner most loop or a block without
+    // global atomics is an IB
+    return Judger.qualified_atomics_ || Judger.inner_most_loop_;
+  }
+
+ private:
+  std::set<AllocaStmt *> touched_allocas_;
+  bool qualified_atomics_ = true;
+  bool inner_most_loop_ = true;
+  bool is_inside_loop_ = false;
+};
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
@@ -45,66 +117,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     //  - It is OK for an IB to have more than two for loops.
     //  - No atomics operations to the global variables which require gradient
 
-    bool qualified = true;
-    bool qualified_atomics = true;
-    std::set<AllocaStmt *> touched_allocas;
-    std::set<AtomicOpStmt *> touched_global_atomics;
-    // TODO: remove this abuse since it *gathers nothing* but only visit
-    irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
-      if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
-        for (auto &lane : local_load->src.data) {
-          touched_allocas.insert(lane.var->as<AllocaStmt>());
-        }
-      } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
-        touched_allocas.insert(local_store->dest->as<AllocaStmt>());
-      }
-      // atomics here must be ones applied to global variables
-      else if (auto atomics = stmt->cast<AtomicOpStmt>(); atomics) {
-        TI_ASSERT(atomics->dest->is<GlobalPtrStmt>())
-        for (const auto &node :
-             atomics->dest->cast<GlobalPtrStmt>()->snodes.data) {
-          if (node->has_grad()) {
-            touched_global_atomics.insert(atomics);
-            break;
-          }
-        }
-      }
-      return false;
-    });
-
-    for (const auto &alloca : touched_allocas) {
-      // Test if the alloca belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
-        }
-      }
-      if (!belong_to_this_block) {
-        // This block is not an IB since it loads/modifies outside variables
-        qualified = false;
-        break;
-      }
-    }
-
-    for (const auto &atomics : touched_global_atomics) {
-      // Test if the atomics belongs to the current block
-      bool belong_to_this_block = false;
-      for (auto b = atomics->parent; b; b = b->parent_block()) {
-        if (b == block) {
-          belong_to_this_block = true;
-          break;
-        }
-      }
-      if (belong_to_this_block) {
-        // This block is not an IB since it has atomics operation to global
-        // variables
-        qualified_atomics = false;
-        break;
-      }
-    }
-
-    return qualified && qualified_atomics;
+    return IndependentBlocksJudger::run(block);
   }
 
   void visit_loop_body(Block *block) {

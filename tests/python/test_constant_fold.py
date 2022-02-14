@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_constant_fold():
     n = 100
 

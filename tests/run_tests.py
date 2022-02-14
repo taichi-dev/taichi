@@ -21,9 +21,9 @@ def _test_cpp():
                               env={'TI_LIB_DIR': ti_lib_dir},
                               cwd=build_dir)
     else:
-        ti.warn(
-            f"C++ tests are skipped due to missing {cpp_test_filename} in {build_dir}",
-            "Try building taichi with `TAICHI_CMAKE_ARGS=\'-DTI_BUILD_TESTS:BOOL=ON\' python setup.py develop`",
+        warnings.warn(
+            f"C++ tests are skipped due to missing {cpp_test_filename} in {build_dir}."
+            "Try building taichi with `TAICHI_CMAKE_ARGS=\'-DTI_BUILD_TESTS:BOOL=ON\' python setup.py develop`"
             "if you want to enable it.")
 
 

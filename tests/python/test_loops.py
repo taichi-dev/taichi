@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_loops():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -18,7 +19,7 @@ def test_loops():
     @ti.kernel
     def func():
         for i in range(ti.static(N // 2 + 3), N):
-            x[i] = ti.abs(y[i])
+            x[i] = abs(y[i])
 
     func()
 
@@ -29,7 +30,7 @@ def test_loops():
         assert x[i] == abs(y[i])
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_loops():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -50,7 +51,7 @@ def test_numpy_loops():
     @ti.kernel
     def func():
         for i in range(begin, end):
-            x[i] = ti.abs(y[i])
+            x[i] = abs(y[i])
 
     func()
 
@@ -61,7 +62,7 @@ def test_numpy_loops():
         assert x[i] == abs(y[i])
 
 
-@ti.test()
+@test_utils.test()
 def test_nested_loops():
     # this may crash if any LLVM allocas are called in the loop body
     x = ti.field(ti.i32)
@@ -79,7 +80,7 @@ def test_nested_loops():
     paint()
 
 
-@ti.test()
+@test_utils.test()
 def test_zero_outer_loop():
     x = ti.field(ti.i32, shape=())
 
@@ -93,7 +94,7 @@ def test_zero_outer_loop():
     assert x[None] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_zero_inner_loop():
     x = ti.field(ti.i32, shape=())
 
@@ -108,7 +109,7 @@ def test_zero_inner_loop():
     assert x[None] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_dynamic_loop_range():
     x = ti.field(ti.i32)
     c = ti.field(ti.i32)
@@ -129,7 +130,7 @@ def test_dynamic_loop_range():
     assert sum(x.to_numpy()) == (n * (n - 1) // 2) + n * n
 
 
-@ti.test()
+@test_utils.test()
 def test_loop_arg_as_range():
     # Dynamic range loops are intended to make sure global tmps work
     x = ti.field(ti.i32)
@@ -153,7 +154,7 @@ def test_loop_arg_as_range():
             assert x[i - b] == i
 
 
-@ti.test()
+@test_utils.test()
 def test_assignment_in_nested_loops():
     # https://github.com/taichi-dev/taichi/issues/1109
     m = ti.field(ti.f32, 3)

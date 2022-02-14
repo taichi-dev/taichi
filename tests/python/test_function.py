@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
@@ -21,7 +22,7 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_function_with_return():
     x = ti.field(ti.i32, shape=())
 
@@ -41,7 +42,7 @@ def test_function_with_return():
     assert x[None] == 42
 
 
-@ti.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
+@test_utils.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
 def test_function_with_multiple_last_return():
     x = ti.field(ti.i32, shape=())
 
@@ -65,7 +66,7 @@ def test_function_with_multiple_last_return():
     assert x[None] == 42
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_call_expressions():
     x = ti.field(ti.i32, shape=())
 
@@ -86,7 +87,7 @@ def test_call_expressions():
     assert x[None] == 26
 
 
-@ti.test(arch=ti.cpu, experimental_real_function=True)
+@test_utils.test(arch=ti.cpu, experimental_real_function=True)
 def test_failing_multiple_return():
     x = ti.field(ti.i32, shape=())
 
@@ -111,7 +112,7 @@ def test_failing_multiple_return():
         assert x[None] == 26
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_python_function():
     x = ti.field(ti.i32, shape=())
 
@@ -128,7 +129,7 @@ def test_python_function():
             self.count = ti.field(ti.i32, shape=())
             self.count[None] = 0
 
-        @ti.pyfunc
+        @ti.lang.kernel_impl.pyfunc
         def dec(self, val: ti.i32) -> ti.i32:
             self.count[None] += 1
             x[None] -= val
@@ -150,7 +151,7 @@ def test_python_function():
     assert x[None] == 0
 
 
-@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_default_templates():
     @ti.func
     def func1(x: ti.template()):
@@ -217,7 +218,7 @@ def test_default_templates():
     run_func()
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_experimental_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())
@@ -263,16 +264,16 @@ def test_experimental_templates():
     verify()
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_missing_arg_annotation():
-    with pytest.raises(ti.KernelDefError, match='must be type annotated'):
+    with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
 
         @ti.func
         def add(a, b: ti.i32) -> ti.i32:
             return a + b
 
 
-@ti.test(experimental_real_function=True)
+@test_utils.test(experimental_real_function=True)
 def test_missing_return_annotation():
     with pytest.raises(ti.TaichiCompilationError,
                        match='return value must be annotated'):

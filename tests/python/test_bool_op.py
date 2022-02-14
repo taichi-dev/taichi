@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(debug=True, short_circuit_operators=True)
+@test_utils.test(debug=True, short_circuit_operators=True)
 def test_and_shorted():
     a = ti.field(ti.i32, shape=10)
 
@@ -16,7 +17,7 @@ def test_and_shorted():
     assert func() == 0
 
 
-@ti.test(debug=True, short_circuit_operators=True)
+@test_utils.test(debug=True, short_circuit_operators=True)
 def test_and_not_shorted():
     @ti.kernel
     def func() -> ti.i32:
@@ -25,7 +26,7 @@ def test_and_not_shorted():
     assert func() == 0
 
 
-@ti.test(debug=True, short_circuit_operators=True)
+@test_utils.test(debug=True, short_circuit_operators=True)
 def test_or_shorted():
     a = ti.field(ti.i32, shape=10)
 
@@ -40,7 +41,7 @@ def test_or_shorted():
     assert func() == 1
 
 
-@ti.test(debug=True, short_circuit_operators=True)
+@test_utils.test(debug=True, short_circuit_operators=True)
 def test_or_not_shorted():
     @ti.kernel
     def func() -> ti.i32:
@@ -49,7 +50,7 @@ def test_or_not_shorted():
     assert func() == 1
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_static_or():
     @ti.kernel
     def func() -> ti.i32:
@@ -58,7 +59,7 @@ def test_static_or():
     assert func() == 3
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_static_and():
     @ti.kernel
     def func() -> ti.i32:

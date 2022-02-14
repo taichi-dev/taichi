@@ -1,9 +1,11 @@
 import pytest
+from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_compare_basics():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -42,7 +44,7 @@ def test_compare_basics():
     assert a[11]
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_compare_equality():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -81,7 +83,7 @@ def test_compare_equality():
     assert not a[11]
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_no_duplicate_eval():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -96,7 +98,7 @@ def test_no_duplicate_eval():
     assert a[2]  # ti.append returns 0
 
 
-@ti.test()
+@test_utils.test()
 def test_no_duplicate_eval_func():
     a = ti.field(ti.i32, ())
     b = ti.field(ti.i32, ())
@@ -106,7 +108,7 @@ def test_no_duplicate_eval_func():
         return ti.atomic_add(b[None], n)
 
     def foo(n):
-        return ti.atomic_add(ti.subscript(b, None), n)
+        return ti.atomic_add(impl.subscript(b, None), n)
 
     @ti.kernel
     def func():
@@ -117,7 +119,7 @@ def test_no_duplicate_eval_func():
     assert b[None] == 2
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_chain_compare():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -139,7 +141,7 @@ def test_chain_compare():
     assert not a[1]
 
 
-@ti.test()
+@test_utils.test()
 def test_static_in():
     @ti.kernel
     def foo(a: ti.template()) -> ti.i32:
@@ -155,7 +157,7 @@ def test_static_in():
     assert foo(ti.f32) == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_non_static_in():
     with pytest.raises(ti.TaichiCompilationError,
                        match='"In" is only supported inside `ti.static`.'):

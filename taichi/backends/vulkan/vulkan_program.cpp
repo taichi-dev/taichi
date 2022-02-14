@@ -1,8 +1,7 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
-#ifdef ANDROID
-#else
+#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
 #include "GLFW/glfw3.h"
 #endif
 
@@ -22,16 +21,17 @@ std::vector<std::string> get_required_instance_extensions() {
 
   return extensions;
 #else
+  std::vector<std::string> extensions;
+
+#ifndef TI_EMSCRIPTENED
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
 
-  std::vector<std::string> extensions;
-
   for (int i = 0; i < glfw_ext_count; ++i) {
     extensions.push_back(glfw_extensions[i]);
   }
-
+#endif
   // VulkanDeviceCreator will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #if TI_WITH_CUDA
@@ -85,6 +85,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
+#ifndef TI_EMSCRIPTENED
 // Android is meant to be embedded in other application only so the creation of
 // the device and other states is left to the caller/host.
 // The following code is only used when Taichi is running on its own.
@@ -106,10 +107,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     }
   }
 #endif
+#endif
 
   VulkanDeviceCreator::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
     evd_params.additional_instance_extensions =
@@ -167,7 +169,18 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
   }
 }
 
+DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  auto &ndarray =
+      ref_ndarry_.emplace_back(get_compute_device()->allocate_memory_unique(
+          {alloc_size, /*host_write=*/false, /*host_read=*/false,
+           /*export_sharing=*/false}));
+  return *ndarray;
+}
+
 VulkanProgramImpl::~VulkanProgramImpl() {
+  ref_ndarry_.clear();
   vulkan_runtime_.reset();
   embedded_device_.reset();
 }

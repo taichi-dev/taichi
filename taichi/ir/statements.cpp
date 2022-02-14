@@ -236,7 +236,6 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
 RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
-                           int vectorize,
                            int bit_vectorize,
                            int num_cpu_threads,
                            int block_dim,
@@ -245,7 +244,6 @@ RangeForStmt::RangeForStmt(Stmt *begin,
     : begin(begin),
       end(end),
       body(std::move(body)),
-      vectorize(vectorize),
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
@@ -258,21 +256,19 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, bit_vectorize, num_cpu_threads,
-      block_dim, strictly_serialized);
+      begin, end, body->clone(), bit_vectorize, num_cpu_threads, block_dim,
+      strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }
 
 StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
-                             int vectorize,
                              int bit_vectorize,
                              int num_cpu_threads,
                              int block_dim)
     : snode(snode),
       body(std::move(body)),
-      vectorize(vectorize),
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
@@ -281,9 +277,8 @@ StructForStmt::StructForStmt(SNode *snode,
 }
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
-  auto new_stmt = std::make_unique<StructForStmt>(snode, body->clone(),
-                                                  vectorize, bit_vectorize,
-                                                  num_cpu_threads, block_dim);
+  auto new_stmt = std::make_unique<StructForStmt>(
+      snode, body->clone(), bit_vectorize, num_cpu_threads, block_dim);
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
@@ -291,14 +286,12 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
 MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
                          mesh::MeshElementType element_type,
                          std::unique_ptr<Block> &&body,
-                         int vectorize,
                          int bit_vectorize,
                          int num_cpu_threads,
                          int block_dim)
     : mesh(mesh),
       major_from_type(element_type),
       body(std::move(body)),
-      vectorize(vectorize),
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
@@ -307,9 +300,9 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
 }
 
 std::unique_ptr<Stmt> MeshForStmt::clone() const {
-  auto new_stmt = std::make_unique<MeshForStmt>(
-      mesh, major_from_type, body->clone(), vectorize, bit_vectorize,
-      num_cpu_threads, block_dim);
+  auto new_stmt =
+      std::make_unique<MeshForStmt>(mesh, major_from_type, body->clone(),
+                                    bit_vectorize, num_cpu_threads, block_dim);
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
   new_stmt->mem_access_opt = mem_access_opt;

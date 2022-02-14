@@ -1,10 +1,11 @@
 import pytest
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import TaichiRuntimeError
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     shape = 5
     x = ti.field(ti.f32, shape=shape)
@@ -37,7 +38,7 @@ def test_fields_with_shape():
         assert x[i] == i
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -81,7 +82,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -141,7 +142,7 @@ def test_fields_builder_pointer():
 # See https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types for more details.
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_destroy(test_1d_size, field_type):
     def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
@@ -174,6 +175,6 @@ def test_fields_builder_destroy(test_1d_size, field_type):
         fb.dense(ti.i, test_1d_size).place(a)
         c = fb.finalize()
 
-        with pytest.raises(InvalidOperationError):
+        with pytest.raises(TaichiRuntimeError):
             c.destroy()
             c.destroy()

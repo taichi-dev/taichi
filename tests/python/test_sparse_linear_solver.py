@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 """
 The symmetric positive definite matrix is created in matlab using the following script:
@@ -32,7 +33,7 @@ res = np.array([
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 4
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -55,4 +56,4 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
     solver.factorize(A)
     x = solver.solve(b)
     for i in range(n):
-        assert x[i] == ti.approx(res[i])
+        assert x[i] == test_utils.approx(res[i])

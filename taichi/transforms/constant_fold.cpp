@@ -33,7 +33,7 @@ class ConstantFold : public BasicStmtVisitor {
       return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
-    auto func = [&id]() {
+    auto func = [&id, this]() {
       auto lhstmt =
           Stmt::make<ArgLoadStmt>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
       auto rhstmt =
@@ -49,11 +49,11 @@ class ConstantFold : public BasicStmtVisitor {
         }
       }
       auto ret = Stmt::make<ReturnStmt>(oper.get());
-      current_ast_builder().insert(std::move(lhstmt));
+      program->current_ast_builder()->insert(std::move(lhstmt));
       if (id.is_binary)
-        current_ast_builder().insert(std::move(rhstmt));
-      current_ast_builder().insert(std::move(oper));
-      current_ast_builder().insert(std::move(ret));
+        program->current_ast_builder()->insert(std::move(rhstmt));
+      program->current_ast_builder()->insert(std::move(oper));
+      program->current_ast_builder()->insert(std::move(ret));
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);

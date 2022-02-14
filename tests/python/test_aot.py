@@ -7,9 +7,10 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cc)
+@test_utils.test(arch=ti.cc)
 def test_record():
     with tempfile.TemporaryDirectory() as tmpdir:
         recorded_file = os.path.join(tmpdir, 'record.yml')
@@ -33,7 +34,7 @@ def test_record():
             assert 'compute_loss' in ''.join(f.readlines())
 
 
-@ti.test(arch=ti.opengl, max_block_dim=32)
+@test_utils.test(arch=ti.opengl, max_block_dim=32)
 def test_opengl_max_block_dim():
     density = ti.field(float, shape=(8, 8))
 
@@ -56,7 +57,7 @@ def test_opengl_max_block_dim():
                 assert s in gl_file.readlines()
 
 
-@ti.test(arch=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_field_range_hint():
     density = ti.field(float, shape=(8, 8))
 
@@ -77,7 +78,7 @@ def test_aot_field_range_hint():
             assert range_hint == '64'
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_aot_ndarray_range_hint():
     density = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
@@ -97,7 +98,28 @@ def test_aot_ndarray_range_hint():
             assert range_hint == 'arg 0'
 
 
-@ti.test(arch=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=ti.opengl)
+def test_element_size_alignment():
+    a = ti.field(ti.f32, shape=())
+    b = ti.Matrix.field(2, 3, ti.f32, shape=(2, 4))
+    c = ti.field(ti.i32, shape=())
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s = ti.aot.Module(ti.cfg.arch)
+        s.add_field('a', a)
+        s.add_field('b', b)
+        s.add_field('c', c)
+        s.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            offsets = (res['aot_data']['fields'][0]['mem_offset_in_parent'],
+                       res['aot_data']['fields'][1]['mem_offset_in_parent'],
+                       res['aot_data']['fields'][2]['mem_offset_in_parent'])
+            assert 0 in offsets and 4 in offsets and 24 in offsets
+            assert res['aot_data']['root_buffer_size'] == 216
+
+
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_save():
     density = ti.field(float, shape=(4, 4))
 
@@ -116,7 +138,7 @@ def test_save():
             json.load(json_file)
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_save_template_kernel():
     density = ti.field(float, shape=(4, 4))
 
@@ -137,7 +159,7 @@ def test_save_template_kernel():
             json.load(json_file)
 
 
-@ti.test(arch=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_non_dense_snode():
     n = 8
     x = ti.field(dtype=ti.f32)
@@ -152,7 +174,7 @@ def test_non_dense_snode():
         m.add_field('y', y)
 
 
-@ti.test(arch=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_mpm88_aot():
     n_particles = 8192
     n_grid = 128
@@ -246,7 +268,7 @@ def test_mpm88_aot():
             json.load(json_file)
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_opengl_8_ssbo():
     # 6 ndarrays + gtmp + args
     n = 4
@@ -278,7 +300,7 @@ def test_opengl_8_ssbo():
     assert (density6.to_numpy() == (np.zeros(shape=(n, n)) + 6)).all()
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_opengl_exceed_max_ssbo():
     # 8 ndarrays + args > 8 (maximum allowed)
     n = 4
@@ -311,7 +333,7 @@ def test_opengl_exceed_max_ssbo():
              density7, density8)
 
 
-@ti.test(arch=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_mpm99_aot():
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality
@@ -456,7 +478,7 @@ def test_mpm99_aot():
             json.load(json_file)
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_mpm88_ndarray():
     dim = 2
     N = 64

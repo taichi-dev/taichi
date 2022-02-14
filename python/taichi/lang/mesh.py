@@ -370,8 +370,8 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
-        if not lang.is_extension_supported(impl.current_cfg().arch,
-                                           lang.extension.mesh):
+        if not lang.misc.is_extension_supported(impl.current_cfg().arch,
+                                                lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 
@@ -525,6 +525,9 @@ class MeshRelationAccessProxy:
                                                   self.from_index.ptr,
                                                   self.to_element_type,
                                                   impl.Expr(indices[0]).ptr)
-        entry_expr.type_check()
+        entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)
+
+
+__all__ = ["Mesh", "TetMesh", "TriMesh"]

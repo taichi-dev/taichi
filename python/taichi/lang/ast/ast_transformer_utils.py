@@ -15,11 +15,7 @@ class Builder:
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
             if method is None:
-                try:
-                    import astpretty  # pylint: disable=C0415
-                    error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
-                except:
-                    error_msg = f'Unsupported node {node}'
+                error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
             return method(ctx, node)
         except Exception as e:

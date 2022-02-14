@@ -1178,10 +1178,6 @@ class ASTTransformer(Builder):
     def build_Pass(ctx, node):
         return None
 
-    @staticmethod
-    def build_Raise(ctx, node):
-        raise build_stmt(ctx, node.exc)
-
 
 build_stmt = ASTTransformer()
 

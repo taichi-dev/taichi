@@ -52,7 +52,7 @@ class DataSize(BenchmarkItem):
 
     def __init__(self):
         self._items = {}
-        for i in range(1, 10):  # [4KB,16KB...256MB]
+        for i in range(2, 10, 2):  # [16KB,256KB,4MB,64MB]
             size_bytes = (4**i) * 1024  # kibibytes(KiB) = 1024
             self._items[size2tag(size_bytes)] = size_bytes
 

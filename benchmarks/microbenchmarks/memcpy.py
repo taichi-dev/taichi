@@ -1,4 +1,4 @@
-from microbenchmarks._items import BenchmarkItem, Container, DataSize, DataType
+from microbenchmarks._items import Container, DataSize, DataType
 from microbenchmarks._metric import MetricType
 from microbenchmarks._plan import BenchmarkPlan
 from microbenchmarks._utils import dtype_size, fill_random, scaled_repeat_times
@@ -18,7 +18,7 @@ def memcpy_default(arch, repeat, container, dtype, dsize, get_metric):
             dst[I] = src[I]
 
     repeat = scaled_repeat_times(arch, dsize, repeat)
-    num_elements = dsize // dtype_size(dtype)
+    num_elements = dsize // dtype_size(dtype) // 2  # y=x
 
     x = container(dtype, num_elements)
     y = container(dtype, num_elements)

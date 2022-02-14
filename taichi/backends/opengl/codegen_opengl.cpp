@@ -555,6 +555,9 @@ class KernelGen : public IRVisitor {
     ptr_signats_[stmt->id] = "arr" + std::to_string(arg_id);
   }
 
+  void visit(DecorationStmt *stmt) override {
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     auto dt_name = opengl_data_type_name(stmt->element_type());
     if (stmt->op_type == UnaryOpType::logic_not) {

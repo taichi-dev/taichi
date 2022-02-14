@@ -150,7 +150,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   get_meta_input_value_states(root_stmt, &meta, ir_bank);
-  meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
+  meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt).first;
 
   std::unordered_set<SNode *> activates, deactivates;
 

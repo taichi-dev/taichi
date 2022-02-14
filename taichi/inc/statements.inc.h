@@ -17,6 +17,9 @@ PER_STATEMENT(FrontendReturnStmt)
 
 // Middle-end statement
 
+// Decoration / debug statement
+PER_STATEMENT(DecorationStmt)
+
 // Without per-lane attributes
 PER_STATEMENT(RangeForStmt)
 PER_STATEMENT(StructForStmt)

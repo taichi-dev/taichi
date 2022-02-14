@@ -11,6 +11,12 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
   TI_STMT_REG_FIELDS;
 }
 
+DecorationStmt::DecorationStmt(Stmt *operand,
+                               const std::vector<uint32_t> &decoration)
+    : operand(operand), decoration(decoration) {
+  TI_STMT_REG_FIELDS;
+}
+
 bool UnaryOpStmt::is_cast() const {
   return unary_op_is_cast(op_type);
 }

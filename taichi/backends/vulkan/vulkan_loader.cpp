@@ -58,6 +58,10 @@ bool is_vulkan_api_available() {
   return VulkanLoader::instance().init();
 }
 
+void set_vulkan_visible_device(std::string id) {
+  VulkanLoader::instance().visible_device_id = id;
+}
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

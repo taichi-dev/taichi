@@ -327,7 +327,7 @@ def test_funcdef_in_kernel():
             pass
 
     with pytest.raises(ti.TaichiSyntaxError,
-                       match="Function definition not allowed in 'ti.kernel'"):
+                       match="Function definition is not allowed in 'ti.kernel'"):
         foo()
 
 

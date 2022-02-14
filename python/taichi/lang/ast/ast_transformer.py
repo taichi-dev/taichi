@@ -6,7 +6,7 @@ from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
+from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus

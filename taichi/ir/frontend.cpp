@@ -16,13 +16,4 @@ Expr global_new(DataType dt, std::string name) {
   auto id_expr = std::make_shared<IdExpression>(name);
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
-
-void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
-  dec.mem_access_opt.add_flag(field.snode(), v);
-}
-
-void reset_snode_access_flag() {
-  dec.reset();
-}
-
 TLANG_NAMESPACE_END

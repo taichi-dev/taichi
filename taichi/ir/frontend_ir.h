@@ -170,17 +170,33 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var, Arch arch);
+  FrontendForStmt(const ExprGroup &loop_var,
+                  const Expr &global_var,
+                  Arch arch,
+                  int bit_vectorize,
+                  int num_cpu_threads,
+                  bool strictly_serialized,
+                  int block_dim,
+                  MemoryAccessOptions &&mem_access_opt);
 
   FrontendForStmt(const ExprGroup &loop_var,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
-                  Arch arch);
+                  Arch arch,
+                  int bit_vectorize,
+                  int num_cpu_threads,
+                  int block_dim,
+                  MemoryAccessOptions &&mem_access_opt);
 
   FrontendForStmt(const Expr &loop_var,
                   const Expr &begin,
                   const Expr &end,
-                  Arch arch);
+                  Arch arch,
+                  int bit_vectorize,
+                  int num_cpu_threads,
+                  bool strictly_serialized,
+                  int block_dim,
+                  MemoryAccessOptions &&mem_access_opt);
 
   bool is_container_statement() const override {
     return true;
@@ -796,9 +812,33 @@ class ASTBuilder {
   enum LoopState { None, Outermost, Inner };
   enum LoopType { NotLoop, For, While };
 
+  class ForLoopDecoratorRecorder {
+   public:
+    int bit_vectorize;
+    int num_cpu_threads;
+    bool strictly_serialized;
+    MemoryAccessOptions mem_access_opt;
+    int block_dim;
+    bool uniform;
+
+    ForLoopDecoratorRecorder() {
+      reset();
+    }
+
+    void reset() {
+      bit_vectorize = -1;
+      num_cpu_threads = 0;
+      uniform = false;
+      mem_access_opt.clear();
+      block_dim = 0;
+      strictly_serialized = false;
+    }
+  };
+
   std::vector<Block *> stack_;
   std::vector<LoopState> loop_state_stack_;
   Arch arch_;
+  ForLoopDecoratorRecorder for_loop_dec_;
 
  public:
   ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
@@ -858,6 +898,31 @@ class ASTBuilder {
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
+
+  void bit_vectorize(int v) {
+    for_loop_dec_.bit_vectorize = v;
+  }
+
+  void parallelize(int v) {
+    for_loop_dec_.num_cpu_threads = v;
+  }
+
+  void strictly_serialize() {
+    for_loop_dec_.strictly_serialized = true;
+  }
+
+  void block_dim(int v) {
+    TI_ASSERT(bit::is_power_of_two(v));
+    for_loop_dec_.block_dim = v;
+  }
+
+  void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
+    for_loop_dec_.mem_access_opt.add_flag(field.snode(), v);
+  }
+
+  void reset_snode_access_flag() {
+    for_loop_dec_.reset();
+  }
 };
 
 class FrontendContext {

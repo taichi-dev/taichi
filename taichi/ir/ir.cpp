@@ -23,15 +23,6 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
   }
 }
 
-void DecoratorRecorder::reset() {
-  bit_vectorize = -1;
-  num_cpu_threads = 0;
-  uniform = false;
-  mem_access_opt.clear();
-  block_dim = 0;
-  strictly_serialized = false;
-}
-
 int Identifier::id_counter = 0;
 std::string Identifier::raw_name() const {
   if (name_.empty())

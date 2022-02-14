@@ -39,7 +39,7 @@ struct TaskAttributes {
       if (type != other.type) {
         return false;
       }
-      if (type == BufferType::Root) {
+      if (type == BufferType::Root || type == BufferType::ExtArr) {
         return root_id == other.root_id;
       }
       return true;

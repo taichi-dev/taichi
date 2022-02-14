@@ -390,7 +390,8 @@ void export_lang(py::module &m) {
            [&](Program *program, const DataType &dt) {
              return program->current_callable->insert_ret(dt);
            })
-      .def("decl_tensor_type", [&](std::vector<int> shape, DataType element) {
+      .def("decl_tensor_type", [&](Program *program, std::vector<int> shape,
+                                   const DataType &element) {
         return TypeFactory::create_tensor_type(shape, element);
       });
 

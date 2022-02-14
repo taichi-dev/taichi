@@ -516,9 +516,13 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
+    // Now we only support one ret
     const auto &ret_attribs = ctx_attribs_->rets()[0];
+    auto dt = ret_attribs.dt;
+    if (auto tensor_type = dt->cast<TensorType>()) {
+      dt = tensor_type->get_element_type();
+    }
     for (int i = 0; i < stmt->values.size(); i++) {
-      const auto dt = ret_attribs.dt;
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
@@ -1830,10 +1834,24 @@ class TaskCodegen : public IRVisitor {
 
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
+    // Now we only have one ret
     for (auto &ret : ctx_attribs_->rets()) {
-      struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
-                                      "ret" + std::to_string(ret.index),
-                                      ret.offset_in_mem);
+      if (auto tensor_type = ret.dt->cast<TensorType>()) {
+        for (int i = 0; i < tensor_type->get_num_elements(); i++) {
+          struct_components_.emplace_back(
+              ir_->i32_type(),
+              "ret" + std::to_string(ret.index) + std::to_string(i) + "0",
+              ret.offset_in_mem + (i << 3));
+          struct_components_.emplace_back(
+              ir_->i32_type(),
+              "ret" + std::to_string(ret.index) + std::to_string(i) + "1",
+              ret.offset_in_mem + (i << 3) + 4);
+        }
+      } else {
+        struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
+                                        "ret" + std::to_string(ret.index),
+                                        ret.offset_in_mem);
+      }
     }
     ret_struct_type_ = ir_->create_struct_type(struct_components_);
 

@@ -617,6 +617,9 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(DecorationStmt *stmt) override {
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     const auto operand_name = stmt->operand->raw_name();
 

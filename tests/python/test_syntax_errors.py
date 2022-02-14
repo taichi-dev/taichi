@@ -296,8 +296,9 @@ def test_funcdef_in_kernel():
         def bar():
             pass
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match="Function definition not allowed in 'ti.kernel'"):
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.kernel'"):
         foo()
 
 
@@ -312,6 +313,7 @@ def test_funcdef_in_func():
     def baz():
         foo()
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match="Function definition not allowed in 'ti.func'"):
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.func'"):
         baz()

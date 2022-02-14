@@ -405,7 +405,7 @@ class ASTTransformer(Builder):
     def build_FunctionDef(ctx, node):
         if ctx.visited_funcdef:
             raise TaichiSyntaxError(
-                f"Function definition not allowed in 'ti.{'kernel' if ctx.is_kernel else 'func'}'."
+                f"Function definition is not allowed in 'ti.{'kernel' if ctx.is_kernel else 'func'}'."
             )
         ctx.visited_funcdef = True
 

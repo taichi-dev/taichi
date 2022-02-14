@@ -403,6 +403,12 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_FunctionDef(ctx, node):
+        if ctx.visited_funcdef:
+            raise TaichiSyntaxError(
+                f"Function definition not allowed in 'ti.{'kernel' if ctx.is_kernel else 'func'}'."
+            )
+        ctx.visited_funcdef = True
+
         args = node.args
         assert args.vararg is None
         assert args.kwonlyargs == []
@@ -442,19 +448,10 @@ class ASTTransformer(Builder):
             # remove original args
             node.args.args = []
 
-        build_stmts(ctx, node.decorator_list)
         if ctx.is_kernel:  # ti.kernel
-            for decorator in node.decorator_list:
-                if decorator.ptr is kernel_impl.func:
-                    raise TaichiSyntaxError(
-                        "Function definition not allowed in 'ti.kernel'.")
             transform_as_kernel()
 
         else:  # ti.func
-            for decorator in node.decorator_list:
-                if decorator.ptr is kernel_impl.func:
-                    raise TaichiSyntaxError(
-                        "Function definition not allowed in 'ti.func'.")
             if impl.get_runtime().experimental_real_function:
                 transform_as_kernel()
             else:

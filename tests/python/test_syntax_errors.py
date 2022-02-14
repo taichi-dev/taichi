@@ -317,3 +317,31 @@ def test_break_in_outermost_for():
     with pytest.raises(ti.TaichiSyntaxError,
                        match="Cannot break in the outermost loop"):
         foo()
+
+
+@test_utils.test()
+def test_funcdef_in_kernel():
+    @ti.kernel
+    def foo():
+        def bar():
+            pass
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match="Function definition not allowed in 'ti.kernel'"):
+        foo()
+
+
+@test_utils.test()
+def test_funcdef_in_func():
+    @ti.func
+    def foo():
+        def bar():
+            pass
+
+    @ti.kernel
+    def baz():
+        foo()
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match="Function definition not allowed in 'ti.func'"):
+        baz()

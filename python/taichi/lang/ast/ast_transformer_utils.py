@@ -143,6 +143,7 @@ class ASTTransformerContext:
         self.static_scope_status = StaticScopeStatus()
         self.returned = False
         self.ast_builder = ast_builder
+        self.visited_funcdef = False
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

@@ -68,7 +68,8 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
 
 def decl_ret(dtype):
     if isinstance(dtype, MatrixType):
-        dtype = impl.get_runtime().prog.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
+        dtype = impl.get_runtime().prog.decl_tensor_type([dtype.n, dtype.m],
+                                                         dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
     return impl.get_runtime().prog.decl_ret(dtype)

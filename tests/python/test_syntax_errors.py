@@ -264,36 +264,6 @@ def test_expr_set():
 
 
 @test_utils.test()
-def test_func_def_inside_kernel():
-    @ti.kernel
-    def k():
-        @ti.func
-        def illegal():
-            return 1
-
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Function definition not allowed'):
-        k()
-
-
-@test_utils.test()
-def test_func_def_inside_func():
-    @ti.func
-    def f():
-        @ti.func
-        def illegal():
-            return 1
-
-    @ti.kernel
-    def k():
-        f()
-
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Function definition not allowed'):
-        k()
-
-
-@test_utils.test()
 def test_redefining_template_args():
     @ti.kernel
     def foo(a: ti.template()):

@@ -5,6 +5,7 @@
 
 #include "taichi/program/aot_module.h"
 #include "taichi/program/kernel.h"
+#include "taichi/llvm/llvm_fwd.h"
 
 #include "taichi/backends/wasm/codegen_wasm.h"
 

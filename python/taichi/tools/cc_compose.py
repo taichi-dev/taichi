@@ -144,3 +144,5 @@ def main(fin_name, fout_name, hdrout_name, emscripten=False):
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2], sys.argv[3], len(sys.argv) > 4)
+
+__all__ = []

@@ -2,9 +2,10 @@ import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_struct_for_mismatch():
     x = ti.field(ti.f32, (3, 4))
 
@@ -17,7 +18,7 @@ def test_struct_for_mismatch():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_struct_for_mismatch2():
     x = ti.field(ti.f32, (3, 4))
 
@@ -30,7 +31,7 @@ def test_struct_for_mismatch2():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def _test_grouped_struct_for_mismatch():
     # doesn't work for now
     # need grouped refactor
@@ -47,7 +48,7 @@ def _test_grouped_struct_for_mismatch():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def _test_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange refactor
@@ -60,7 +61,7 @@ def _test_ndrange_for_mismatch():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def _test_ndrange_for_mismatch2():
     # doesn't work for now
     # need ndrange and grouped refactor
@@ -73,7 +74,7 @@ def _test_ndrange_for_mismatch2():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def _test_grouped_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange and grouped refactor
@@ -86,7 +87,7 @@ def _test_grouped_ndrange_for_mismatch():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def _test_static_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange and static refactor

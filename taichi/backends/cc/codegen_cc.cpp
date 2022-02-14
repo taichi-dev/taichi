@@ -7,9 +7,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
-#ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
-#endif
 #include "cc_utils.h"
 
 #define C90_COMPAT 0

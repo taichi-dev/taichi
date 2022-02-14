@@ -1,4 +1,5 @@
 import taichi as ti
+from tests import test_utils
 
 
 def _test_block_gc():
@@ -53,20 +54,20 @@ def _test_block_gc():
     assert 1 <= grid.num_dynamically_allocated <= 2, grid.num_dynamically_allocated
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_block():
     _test_block_gc()
 
 
 #TODO: Remove exclude of ti.metal.
-@ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
-         exclude=[ti.metal],
-         async_mode=True)
+@test_utils.test(require=[ti.extension.sparse, ti.extension.async_mode],
+                 exclude=[ti.metal],
+                 async_mode=True)
 def test_block_async():
     _test_block_gc()
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_dynamic_gc():
     x = ti.field(dtype=ti.i32)
 
@@ -81,7 +82,7 @@ def test_dynamic_gc():
         assert L.num_dynamically_allocated <= 2
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_pointer_gc():
     x = ti.field(dtype=ti.i32)
 
@@ -99,8 +100,8 @@ def test_pointer_gc():
         assert L.num_dynamically_allocated == 1
 
 
-@ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
-         async_mode=True)
+@test_utils.test(require=[ti.extension.sparse, ti.extension.async_mode],
+                 async_mode=True)
 def test_fuse_allocator_state():
     N = 16
     x = ti.field(dtype=ti.i32, shape=N)

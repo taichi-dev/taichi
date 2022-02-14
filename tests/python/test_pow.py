@@ -1,4 +1,5 @@
 import taichi as ti
+from tests import test_utils
 
 
 def _test_pow_f(dt):
@@ -27,21 +28,21 @@ def _test_pow_i(dt):
             assert z[None] == x**y
 
 
-@ti.test()
+@test_utils.test()
 def test_pow_f32():
     _test_pow_f(ti.f32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_pow_f64():
     _test_pow_f(ti.f64)
 
 
-@ti.test()
+@test_utils.test()
 def test_pow_i32():
     _test_pow_i(ti.i32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_pow_i64():
     _test_pow_i(ti.i64)

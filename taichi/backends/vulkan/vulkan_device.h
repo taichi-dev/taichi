@@ -457,6 +457,8 @@ class VulkanDevice : public GraphicsDevice {
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
+
   // Mapping can fail and will return nullptr
   void *map_range(DevicePtr ptr, uint64_t size) override;
   void *map(DeviceAllocation alloc) override;
@@ -557,6 +559,7 @@ class VulkanDevice : public GraphicsDevice {
     VmaAllocationInfo alloc_info;
     vkapi::IVkBuffer buffer;
     void *mapped{nullptr};
+    VkDeviceAddress addr{0};
   };
 
   unordered_map<uint32_t, AllocationInternal> allocations_;

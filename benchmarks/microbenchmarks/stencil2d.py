@@ -106,7 +106,7 @@ class BloclLocalStorage(BenchmarkItem):
     name = 'bls'
 
     def __init__(self):
-        self._items = {'bls1': True, 'bls0': False}
+        self._items = {'bls_on': True, 'bls_off': False}
 
 
 class DataSize2D(BenchmarkItem):
@@ -114,7 +114,7 @@ class DataSize2D(BenchmarkItem):
 
     def __init__(self):
         self._items = {}
-        for i in range(1, 10):
+        for i in range(2, 10, 2):  # [16KB,256KB,4MB,64MB]
             size_bytes_2d = 32 * (2**i), 32 * (2**i)
             size_bytes = size_bytes_2d[0] * size_bytes_2d[1]
             self._items[size2tag(size_bytes)] = size_bytes_2d

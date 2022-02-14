@@ -2,9 +2,10 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_no_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -24,7 +25,7 @@ def test_no_grad():
         func()
 
 
-@ti.test()
+@test_utils.test()
 def test_raise_no_gradient():
     y = ti.field(shape=(), name='y', dtype=ti.f32, needs_grad=True)
     x = ti.field(shape=(), name='x', dtype=ti.f32)

@@ -142,6 +142,8 @@ void export_misc(py::module &m) {
         py::arg("use_gles") = false);
 #ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
+  m.def("set_vulkan_visible_device",
+        taichi::lang::vulkan::set_vulkan_visible_device);
 #else
   m.def("with_vulkan", []() { return false; });
 #endif

@@ -2,9 +2,10 @@ import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_classfunc():
     @ti.data_oriented
     class Array2D:
@@ -36,7 +37,7 @@ def test_classfunc():
             assert arr.val[i, j] == i * j * 2
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_oop():
     @ti.data_oriented
     class Array2D:
@@ -98,7 +99,7 @@ def test_oop():
             assert arr.val.grad[i, j] == 8
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_oop_two_items():
     @ti.data_oriented
     class Array2D:
@@ -148,7 +149,7 @@ def test_oop_two_items():
             assert arr2.val.grad[i, j] == arr2_mult
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_oop_inherit_ok():
     # Array1D inherits from object, which makes the callstack being 'class Array2D(object)'
     # instead of '@ti.data_oriented'. Make sure this also works.
@@ -178,7 +179,7 @@ def test_oop_inherit_ok():
             assert arr.val.grad[i, j] == 42
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_oop_class_must_be_data_oriented():
     class Array1D(object):
         def __init__(self, n, mul):
@@ -203,7 +204,7 @@ def test_oop_class_must_be_data_oriented():
         arr.reduce()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_hook():
     @ti.data_oriented
     class Solver:
@@ -227,7 +228,7 @@ def test_hook():
             assert (solver.val[i, j] == 1.0)
 
 
-@ti.test()
+@test_utils.test()
 def test_oop_with_portery_decorator():
     @ti.data_oriented
     class TestPortery:
@@ -246,7 +247,7 @@ def test_oop_with_portery_decorator():
     assert a.raw_proterty == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_oop_with_static_decorator():
     @ti.data_oriented
     class TestStatic:

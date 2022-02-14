@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_basic():
     @ti.kernel
     def func_basic():
@@ -13,7 +14,7 @@ def test_assign_basic():
     func_basic()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_unpack():
     @ti.kernel
     def func_unpack():
@@ -24,7 +25,7 @@ def test_assign_unpack():
     func_unpack()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_chained():
     @ti.kernel
     def func_chained():
@@ -35,7 +36,7 @@ def test_assign_chained():
     func_chained()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_chained_unpack():
     @ti.kernel
     def func_chained_unpack():
@@ -48,7 +49,7 @@ def test_assign_chained_unpack():
     func_chained_unpack()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_assign():
     @ti.kernel
     def func_assign():
@@ -59,7 +60,7 @@ def test_assign_assign():
     func_assign()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_ann():
     @ti.kernel
     def func_ann():
@@ -71,7 +72,7 @@ def test_assign_ann():
     func_ann()
 
 
-@ti.test()
+@test_utils.test()
 def test_assign_ann_over():
     @ti.kernel
     def func_ann_over():

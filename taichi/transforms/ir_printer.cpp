@@ -189,7 +189,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(DecorationStmt *stmt) override {
     if (stmt->decoration.size() == 2 &&
-        stmt->decoration[0] == uint32_t(DecorationStmt::Decoration::loop_unique)) {
+        stmt->decoration[0] ==
+            uint32_t(DecorationStmt::Decoration::loop_unique)) {
       print("decorate {} : Loop-unique {}", stmt->operand->name(),
             stmt->decoration[0], stmt->decoration[1]);
     } else {

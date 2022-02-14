@@ -348,9 +348,8 @@ class LowerAST : public IRVisitor {
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
       for (int i = (int)shape.size() - 1; i >= 0; i--) {
-        Stmt *loop_var =
-            new_statements.push_back<BinaryOpStmt>(BinaryOpType::mod,
-                                                   loop_index, shape[i]);
+        Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::mod, loop_index, shape[i]);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_var;
         std::vector<uint32_t> decoration = {
             uint32_t(DecorationStmt::Decoration::loop_unique), uint32_t(i)};

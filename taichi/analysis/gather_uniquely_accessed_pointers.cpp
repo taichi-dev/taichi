@@ -65,8 +65,8 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
             uint32_t(DecorationStmt::Decoration::loop_unique)) {
       if (loop_unique_.find(stmt->operand) == loop_unique_.end()) {
         loop_unique_[stmt->operand] = stmt->decoration[1];
-        num_different_loop_indices =
-            std::max(loop_unique_[stmt->operand] + 1, num_different_loop_indices);
+        num_different_loop_indices = std::max(loop_unique_[stmt->operand] + 1,
+                                              num_different_loop_indices);
       }
     }
   }
@@ -249,7 +249,8 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     }
     root->accept(&searcher.loop_unique_stmt_searcher_);
     root->accept(&searcher);
-    return std::make_pair(searcher.accessed_pointer_, searcher.accessed_arr_pointer_);
+    return std::make_pair(searcher.accessed_pointer_,
+                          searcher.accessed_arr_pointer_);
   }
 };
 

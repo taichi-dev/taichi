@@ -78,8 +78,8 @@ class DemoteAtomics : public BasicStmtVisitor {
                 demote = true;
               }
             }
-          }        
-        } else if(stmt->dest->is<ExternalPtrStmt>()) {
+          }
+        } else if (stmt->dest->is<ExternalPtrStmt>()) {
           ExternalPtrStmt *dest_ptr = stmt->dest->as<ExternalPtrStmt>();
           demote = true;
           if (loop_unique_arr_ptr_.find(dest_ptr) ==

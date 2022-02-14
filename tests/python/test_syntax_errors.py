@@ -56,6 +56,17 @@ def test_while_else():
 
 
 @test_utils.test()
+def test_raise():
+    @ti.kernel
+    def foo():
+        raise Exception()
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='Unsupported node "Raise"') as e:
+        foo()
+
+
+@test_utils.test()
 def test_loop_var_range():
     x = ti.field(ti.f32)
 

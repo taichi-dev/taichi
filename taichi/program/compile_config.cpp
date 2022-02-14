@@ -39,7 +39,7 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
   async_mode = false;
-  dynamic_index = false;
+  dynamic_index = true;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;

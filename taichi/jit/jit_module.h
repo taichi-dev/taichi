@@ -4,7 +4,6 @@
 #include <functional>
 
 #include "taichi/inc/constants.h"
-#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
 

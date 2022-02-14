@@ -830,8 +830,7 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
     for (int d = 0; d < (int)shape.size(); ++d)
       indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
     this->insert(std::make_unique<FrontendAssignStmt>(
-        Expr::make<TensorElementExpression>(var, indices, shape,
-                                            data_type_size(element_type)),
+        Expr::make<TensorElementExpression>(var, indices, shape, 1),
         elements.exprs[i]));
   }
   return var;

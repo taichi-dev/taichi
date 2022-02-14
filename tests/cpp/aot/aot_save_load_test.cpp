@@ -4,6 +4,7 @@
 #include "taichi/program/program.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 
 using namespace taichi;
@@ -82,6 +83,12 @@ static void aot_save() {
 
 #ifdef TI_WITH_VULKAN
 TEST(AotSaveLoad, Vulkan) {
+  // Otherwise will segfault on macOS VM,
+  // where Vulkan is installed but no devices are present
+  if (!vulkan::is_vulkan_api_available()) {
+    return;
+  }
+
   aot_save();
 
   vulkan::AotModuleLoaderImpl aot_loader(".");

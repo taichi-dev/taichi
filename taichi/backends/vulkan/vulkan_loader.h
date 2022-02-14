@@ -21,6 +21,8 @@ class VulkanLoader {
   VulkanLoader(VulkanLoader const &) = delete;
   void operator=(VulkanLoader const &) = delete;
 
+  bool check_vulkan_device();
+
   void load_instance(VkInstance instance_);
   void load_device(VkDevice device_);
   bool init();

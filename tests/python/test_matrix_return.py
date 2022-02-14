@@ -7,7 +7,7 @@ import taichi as ti
 ### `ti.test`
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_arch_cpu():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -16,7 +16,7 @@ def test_arch_cpu():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.gpu)
+@test_utils.test(arch=ti.gpu)
 def test_arch_gpu():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -25,7 +25,7 @@ def test_arch_gpu():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.cuda)
+@test_utils.test(arch=ti.cuda)
 def test_arch_cuda():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -34,7 +34,7 @@ def test_arch_cuda():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.vulkan)
+@test_utils.test(arch=ti.vulkan)
 def test_arch_vulkan():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -43,7 +43,7 @@ def test_arch_vulkan():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.cc)
+@test_utils.test(arch=ti.cc)
 def test_arch_cc():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -52,7 +52,7 @@ def test_arch_cc():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.metal)
+@test_utils.test(arch=ti.metal)
 def test_arch_metal():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
@@ -61,7 +61,7 @@ def test_arch_metal():
     assert func()[1, 2] == 6
 
 
-@ti.test(arch=ti.opengl)
+@test_utils.test(arch=ti.opengl)
 def test_arch_opengl():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):

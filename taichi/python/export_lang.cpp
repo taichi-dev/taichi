@@ -388,7 +388,10 @@ void export_lang(py::module &m) {
            })
       .def("decl_ret", [&](Program *program, const DataType &dt) {
         return program->current_callable->insert_ret(dt);
-      });
+      })
+      .def("decl_tensor_type", [&](std::vector<int> shape, DataType element) {
+          return TypeFactory::create_tensor_type(shape, element);
+        });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)

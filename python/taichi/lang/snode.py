@@ -422,5 +422,5 @@ def get_addr(f, indices):
 
 __all__ = [
     'activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length',
-    'rescale_index'
+    'rescale_index', "SNode"
 ]

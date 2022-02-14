@@ -1,9 +1,9 @@
 import os
 
 import pytest
-from taichi._testing import approx
 
 import taichi as ti
+from tests import test_utils
 
 
 def run_mpm88_test():
@@ -98,10 +98,11 @@ def run_mpm88_test():
         0.07810827,
     ]
     for i in range(4):
-        assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+        assert (pos**(i + 1)).mean() == test_utils.approx(regression[i],
+                                                          rel=1e-2)
 
 
-@ti.test()
+@test_utils.test()
 def test_mpm88():
     run_mpm88_test()
 
@@ -114,7 +115,9 @@ def _is_appveyor():
 
 #TODO: Remove exclude of ti.metal
 @pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
-@ti.test(require=ti.extension.async_mode, exclude=[ti.metal], async_mode=True)
+@test_utils.test(require=ti.extension.async_mode,
+                 exclude=[ti.metal],
+                 async_mode=True)
 def test_mpm88_async():
     # It seems that all async tests on Appveyor run super slow. For example,
     # on Appveyor, 10+ tests have passed during the execution of
@@ -122,7 +125,7 @@ def test_mpm88_async():
     run_mpm88_test()
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np
 
@@ -213,7 +216,8 @@ def test_mpm88_numpy_and_ndarray():
             0.07810827,
         ]
         for i in range(4):
-            assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+            assert (pos**(i + 1)).mean() == test_utils.approx(regression[i],
+                                                              rel=1e-2)
 
     def test_numpy():
         x = np.zeros((n_particles, dim), dtype=np.float32)

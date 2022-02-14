@@ -1,9 +1,10 @@
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_indices():
     a = ti.field(ti.f32, shape=(128, 32, 8))
 
@@ -36,7 +37,7 @@ def test_indices():
     assert get_field_addr(0, 1) + 4 == get_field_addr(1, 1)
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_float_as_index():
     a = ti.field(ti.f32, (8, 5))
 

@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_complex_dense():
     a = ti.field(ti.i32, shape=(4, 4))
     b = ti.field(ti.i32, shape=(16, 16))
@@ -87,7 +88,7 @@ def test_complex_dense():
                 assert d[i, j, k] == 4
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_complex_pointer():
     a = ti.field(ti.i32, shape=(4, 4))
     b = ti.field(ti.i32, shape=(16, 16))

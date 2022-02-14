@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_while():
     x = ti.field(ti.f32)
 
@@ -22,7 +23,7 @@ def test_while():
     assert x[0] == 45
 
 
-@ti.test()
+@test_utils.test()
 def test_break():
     ret = ti.field(ti.i32, shape=())
 

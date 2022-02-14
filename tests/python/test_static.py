@@ -2,10 +2,11 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 @pytest.mark.parametrize('val', [0, 1])
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_static_if(val):
     x = ti.field(ti.i32)
 
@@ -22,7 +23,7 @@ def test_static_if(val):
     assert x[0] == val
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_static_if_error():
     x = ti.field(ti.i32)
 
@@ -40,7 +41,7 @@ def test_static_if_error():
         static(42)
 
 
-@ti.test()
+@test_utils.test()
 def test_static_ndrange():
     n = 3
     x = ti.Matrix.field(n, n, dtype=ti.f32, shape=(n, n))
@@ -57,7 +58,7 @@ def test_static_ndrange():
             assert x[i, j][i, j] == i + j * 2
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_static_break():
     x = ti.field(ti.i32, 5)
 
@@ -73,7 +74,7 @@ def test_static_break():
     assert np.allclose(x.to_numpy(), np.array([1, 1, 1, 0, 0]))
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_static_continue():
     x = ti.field(ti.i32, 5)
 

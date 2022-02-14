@@ -1,10 +1,11 @@
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
 # TODO: test more matrix operations
-@ti.test()
+@test_utils.test()
 def test_vector():
     type_list = [ti.f32, ti.i32]
 
@@ -31,7 +32,7 @@ def test_vector():
 
 
 # TODO: Support different element types of Matrix on opengl
-@ti.test(require=ti.extension.data64, exclude=ti.opengl)
+@test_utils.test(require=ti.extension.data64, exclude=ti.opengl)
 def test_matrix():
     type_list = [[ti.f32, ti.i32], [ti.i64, ti.f32]]
     a = ti.Matrix.field(len(type_list),
@@ -67,7 +68,7 @@ def test_matrix():
     verify()
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_type():
     cit1 = ti.types.quantized_types.quant.int(bits=10, signed=True)
     cft1 = ti.types.quantized_types.type_factory.custom_float(cit1, scale=0.1)

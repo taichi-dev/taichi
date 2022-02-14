@@ -3,13 +3,14 @@ import pytest
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
+from tests import test_utils
 
 if has_pytorch():
     import torch
 
 
 @pytest.mark.parametrize('size', [[1], [1, 2, 3, 4]])
-@ti.test()
+@test_utils.test()
 def test_get_external_tensor_shape_access_numpy(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
@@ -23,7 +24,7 @@ def test_get_external_tensor_shape_access_numpy(size):
 
 
 @pytest.mark.parametrize('size', [[1, 1], [2, 2]])
-@ti.test()
+@test_utils.test()
 def test_get_external_tensor_shape_sum_numpy(size):
     @ti.kernel
     def func(x: ti.ext_arr()) -> ti.i32:
@@ -43,7 +44,7 @@ def test_get_external_tensor_shape_sum_numpy(size):
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_get_external_tensor_shape_access_torch(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
@@ -58,7 +59,7 @@ def test_get_external_tensor_shape_access_torch(size):
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
-@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_get_external_tensor_shape_access_ndarray(size):
     @ti.kernel
     def func(x: ti.any_arr(), index: ti.template()) -> ti.i32:

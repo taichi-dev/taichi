@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_int_implicit_cast():
     ci13 = ti.types.quantized_types.quant.int(13, True)
     x = ti.field(dtype=ci13)

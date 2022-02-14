@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 @contextmanager
@@ -110,7 +111,7 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
-@pytest.mark.parametrize('arch', ti._testing.expected_archs())
+@pytest.mark.parametrize('arch', test_utils.expected_archs())
 def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)
@@ -147,7 +148,7 @@ def test_init_bad_require_version():
 
 @pytest.mark.parametrize(
     'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
-@ti.test()
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
@@ -155,7 +156,7 @@ def test_supported_log_levels(level):
 
 @pytest.mark.parametrize(
     'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
-@ti.test()
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)
     ti.set_logging_level(level)

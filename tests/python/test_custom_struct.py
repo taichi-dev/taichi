@@ -2,9 +2,10 @@ import numpy as np
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_member_access():
     n = 32
 
@@ -37,7 +38,7 @@ def test_struct_member_access():
         assert y[i].b == i * 2 + 1
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_whole_access():
     n = 32
 
@@ -76,7 +77,7 @@ def test_struct_whole_access():
         assert y[i].b == int(1.01 * i)
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_fill():
     n = 32
 
@@ -113,7 +114,7 @@ def test_struct_fill():
         assert np.allclose(x[i].b.to_numpy(), int(x[i].a))
 
 
-@ti.test()
+@test_utils.test()
 def test_matrix_type():
     n = 32
     vec2f = ti.types.vector(2, ti.f32)
@@ -141,7 +142,7 @@ def test_matrix_type():
         assert np.allclose(x[i].to_numpy(), np.array([i + 1, i, i]))
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_type():
     n = 32
     vec3f = ti.types.vector(3, float)
@@ -203,7 +204,7 @@ def test_struct_type():
         assert x[i].line.length == 5.0
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_assign():
     n = 32
     vec3f = ti.types.vector(3, float)
@@ -242,7 +243,7 @@ def test_struct_assign():
         assert x[i].line.length == i + 0.5
 
 
-@ti.test()
+@test_utils.test()
 def test_compound_type_implicit_cast():
     vec2i = ti.types.vector(2, int)
     vec2f = ti.types.vector(2, float)
@@ -277,7 +278,7 @@ def test_compound_type_implicit_cast():
     assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
 
 
-@ti.test()
+@test_utils.test()
 def test_local_struct_assign():
     n = 32
     vec3f = ti.types.vector(3, float)
@@ -301,7 +302,7 @@ def test_local_struct_assign():
     run_python_scope()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_copy_python_scope_struct_to_taichi_scope():
     a = ti.Struct({'a': 2, 'b': 3})
 
@@ -317,7 +318,7 @@ def test_copy_python_scope_struct_to_taichi_scope():
     test()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_copy_struct_field_element_to_taichi_scope():
     a = ti.Struct.field({'a': ti.i32, 'b': ti.i32}, shape=())
     a[None].a = 2
@@ -338,7 +339,7 @@ def test_copy_struct_field_element_to_taichi_scope():
     test()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_copy_struct_in_taichi_scope():
     @ti.kernel
     def test():

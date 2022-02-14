@@ -2,12 +2,12 @@ import operator as ops
 
 import numpy as np
 import pytest
-from taichi._testing import allclose
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_bit_shl():
     @ti.kernel
     def shl(a: ti.i32, b: ti.i32) -> ti.i32:
@@ -17,7 +17,7 @@ def test_bit_shl():
         assert shl(3, i) == 3 * 2**i
 
 
-@ti.test()
+@test_utils.test()
 def test_bit_sar():
     @ti.kernel
     def sar(a: ti.i32, b: ti.i32) -> ti.i32:
@@ -33,7 +33,7 @@ def test_bit_sar():
         assert sar(neg_test_num, i) == -2**(n - i)
 
 
-@ti.test()
+@test_utils.test()
 def test_bit_shr():
     @ti.kernel
     def shr(a: ti.i32, b: ti.i32) -> ti.i32:

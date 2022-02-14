@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def _test_py_style_mod(arg1, a, arg2, b, arg3, c):
     z = ti.field(arg3, shape=())
 
@@ -13,7 +14,7 @@ def _test_py_style_mod(arg1, a, arg2, b, arg3, c):
     assert z[None] == c
 
 
-@ti.test()
+@test_utils.test()
 def _test_c_style_mod(arg1, a, arg2, b, arg3, c):
     z = ti.field(arg3, shape=())
 
@@ -49,7 +50,7 @@ def test_c_style_mod():
     func(-10, -3)
 
 
-@ti.test()
+@test_utils.test()
 def test_mod_scan():
     z = ti.field(ti.i32, shape=())
     w = ti.field(ti.i32, shape=())

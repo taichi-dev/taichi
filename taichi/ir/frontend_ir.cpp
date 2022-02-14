@@ -35,14 +35,14 @@ IRNode *FrontendContext::root() {
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
-                                 const Expr &global_var)
+                                 const Expr &global_var,
+                                 Arch arch)
     : global_var(global_var) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -62,13 +62,13 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshPtr &mesh,
-                                 const mesh::MeshElementType &element_type)
+                                 const mesh::MeshElementType &element_type,
+                                 Arch arch)
     : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -87,21 +87,21 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 
 DecoratorRecorder dec;
 
-FrontendContext::FrontendContext() {
+FrontendContext::FrontendContext(Arch arch) {
   root_node_ = std::make_unique<Block>();
-  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
-                                 const Expr &end)
+                                 const Expr &end,
+                                 Arch arch)
     : begin(begin), end(end) {
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
-  auto cfg = get_current_program().config;
-  if (cfg.arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     num_cpu_threads = 1;
   } else {
     if (num_cpu_threads == 0)
@@ -114,7 +114,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
-void ArgLoadExpression::type_check() {
+void ArgLoadExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
@@ -126,7 +126,7 @@ void ArgLoadExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void RandExpression::type_check() {
+void RandExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for RandExpression", dt->to_string());
   ret_type = dt;
@@ -151,7 +151,7 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
-void UnaryOpExpression::type_check() {
+void UnaryOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -181,7 +181,7 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
-void BinaryOpExpression::type_check() {
+void BinaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
@@ -202,7 +202,7 @@ void BinaryOpExpression::type_check() {
     return;
   }
   if (type == BinaryOpType::truediv) {
-    auto default_fp = get_current_program().config.default_fp;
+    auto default_fp = config->default_fp;
     if (!is_real(lhs_type)) {
       lhs_type = default_fp;
     }
@@ -223,7 +223,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void TernaryOpExpression::type_check() {
+void TernaryOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
@@ -253,7 +253,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void InternalFuncCallExpression::type_check() {
+void InternalFuncCallExpression::type_check(CompileConfig *) {
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
@@ -285,7 +285,7 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-void GlobalPtrExpression::type_check() {
+void GlobalPtrExpression::type_check(CompileConfig *) {
   // Currently, dimension compatibility check happens in Python
   if (snode != nullptr) {
     ret_type = snode->dt;
@@ -356,7 +356,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void TensorElementExpression::type_check() {
+void TensorElementExpression::type_check(CompileConfig *) {
   std::string invalid_msg{
       "Invalid TensorElementExpression: the source is neither a local tensor "
       "nor a global tensor field"};
@@ -401,7 +401,7 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
 }
 
-void RangeAssumptionExpression::type_check() {
+void RangeAssumptionExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
   TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
@@ -421,7 +421,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void LoopUniqueExpression::type_check() {
+void LoopUniqueExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -455,7 +455,7 @@ void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
 }
 
-void AtomicOpExpression::type_check() {
+void AtomicOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
@@ -524,7 +524,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void SNodeOpExpression::type_check() {
+void SNodeOpExpression::type_check(CompileConfig *) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
   } else {
@@ -575,7 +575,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void ConstExpression::type_check() {
+void ConstExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(
       val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
       "Invalid dt [{}] for ConstExpression", val.dt->to_string());
@@ -587,7 +587,7 @@ void ConstExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void ExternalTensorShapeAlongAxisExpression::type_check() {
+void ExternalTensorShapeAlongAxisExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
                  "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
                  ptr.serialize());
@@ -601,7 +601,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FuncCallExpression::type_check() {
+void FuncCallExpression::type_check(CompileConfig *) {
   for (auto &arg : args.exprs) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
@@ -637,11 +637,11 @@ void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void MeshPatchIndexExpression::type_check() {
+void MeshPatchIndexExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 
-void MeshRelationAccessExpression::type_check() {
+void MeshRelationAccessExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 
@@ -657,7 +657,7 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void MeshIndexConversionExpression::type_check() {
+void MeshIndexConversionExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
 
@@ -714,25 +714,214 @@ void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
-  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  auto _ = this->create_scope(stmt->body);
+  this->create_scope(stmt->body);
   func(i);
+  this->pop_scope();
 }
 
-std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
+Expr ASTBuilder::insert_thread_idx_expr() {
+  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  TI_ERROR_IF(arch_ != Arch::cuda && !arch_is_cpu(arch_),
+              "ti.thread_idx() is only available in cuda or cpu context.");
+  if (loop != nullptr) {
+    auto i = stack_.size() - 1;
+    while (!(loop->is<FrontendForStmt>())) {
+      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      if (loop == nullptr)
+        break;
+    }
+  }
+  TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
+              "ti.thread_idx() is only valid within loops.");
+  return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
+                                                std::vector<Expr>{});
+}
+
+Expr ASTBuilder::insert_patch_idx_expr() {
+  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  if (loop != nullptr) {
+    auto i = stack_.size() - 1;
+    while (!(loop->is<FrontendForStmt>())) {
+      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      if (loop == nullptr)
+        break;
+    }
+  }
+  TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
+                loop->as<FrontendForStmt>()->mesh_for),
+              "ti.mesh_patch_idx() is only valid within mesh-for loops.");
+  return Expr::make<MeshPatchIndexExpression>();
+}
+
+void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
+  this->insert(Stmt::make<FrontendReturnStmt>(group));
+}
+
+void ASTBuilder::create_print(
+    std::vector<std::variant<Expr, std::string>> contents) {
+  this->insert(std::make_unique<FrontendPrintStmt>(contents));
+}
+
+void ASTBuilder::begin_func(const std::string &funcid) {
+  auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body);
+}
+
+void ASTBuilder::end_func(const std::string &funcid) {
+  this->pop_scope();
+}
+
+void ASTBuilder::begin_frontend_if(const Expr &cond) {
+  auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
+  this->insert(std::move(stmt_tmp));
+}
+
+void ASTBuilder::begin_frontend_if_true() {
+  auto if_stmt = this->get_last_stmt()->as<FrontendIfStmt>();
+  this->create_scope(if_stmt->true_statements);
+}
+
+void ASTBuilder::begin_frontend_if_false() {
+  auto if_stmt = this->get_last_stmt()->as<FrontendIfStmt>();
+  this->create_scope(if_stmt->false_statements);
+}
+
+void ASTBuilder::insert_external_func_call(std::size_t func_addr,
+                                           std::string source,
+                                           std::string filename,
+                                           std::string funcname,
+                                           const ExprGroup &args,
+                                           const ExprGroup &outputs) {
+  auto stmt = Stmt::make<FrontendExternalFuncStmt>(
+      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs);
+  this->insert(std::move(stmt));
+}
+
+Expr ASTBuilder::expr_alloca() {
+  auto var = Expr(std::make_shared<IdExpression>());
+  this->insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id,
+      PrimitiveType::unknown));
+  return var;
+}
+
+Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
+                                          const DataType &element_type,
+                                          const ExprGroup &elements) {
+  auto var = Expr(std::make_shared<IdExpression>());
+  this->insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+      element_type));
+  var->ret_type = this->get_last_stmt()->ret_type;
+  for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+    ExprGroup reversed_indices;
+    int linearized_index = i;
+    for (int d = (int)shape.size() - 1; d >= 0; --d) {
+      reversed_indices.push_back(
+          Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+      linearized_index /= shape[d];
+    }
+    ExprGroup indices;
+    for (int d = 0; d < (int)shape.size(); ++d)
+      indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+    this->insert(std::make_unique<FrontendAssignStmt>(
+        Expr::make<TensorElementExpression>(var, indices, shape,
+                                            data_type_size(element_type)),
+        elements.exprs[i]));
+  }
+  return var;
+}
+
+void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
+  TI_ASSERT(lhs->is_lvalue());
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
+  stmt->set_tb(tb);
+  this->insert(std::move(stmt));
+}
+
+void ASTBuilder::create_assert_stmt(const Expr &cond,
+                                    const std::string &msg,
+                                    const std::vector<Expr> &args) {
+  auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
+  this->insert(std::move(stmt_unique));
+}
+
+void ASTBuilder::begin_frontend_range_for(const Expr &i,
+                                          const Expr &s,
+                                          const Expr &e) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, arch_);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body, For);
+}
+
+void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
+                                           const Expr &global) {
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(loop_vars, global, arch_);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body, For);
+}
+
+void ASTBuilder::begin_frontend_mesh_for(
+    const Expr &i,
+    const mesh::MeshPtr &mesh_ptr,
+    const mesh::MeshElementType &element_type) {
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type, arch_);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body, For);
+}
+
+void ASTBuilder::begin_frontend_while(const Expr &cond) {
+  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body, While);
+}
+
+void ASTBuilder::insert_break_stmt() {
+  if (loop_state_stack_.back() == Outermost) {
+    throw TaichiSyntaxError("Cannot break in the outermost loop");
+  }
+  this->insert(Stmt::make<FrontendBreakStmt>());
+}
+
+void ASTBuilder::insert_continue_stmt() {
+  this->insert(Stmt::make<FrontendContinueStmt>());
+}
+
+void ASTBuilder::insert_expr_stmt(const Expr &val) {
+  this->insert(Stmt::make<FrontendExprStmt>(val));
+}
+
+void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
-  return std::make_unique<ScopeGuard>(this, list.get());
+  stack_.push_back(list.get());
+  LoopState prev = loop_state_stack_.back();
+  if (tp == NotLoop) {
+    loop_state_stack_.push_back(prev);
+  } else if (tp == For && prev == None) {
+    loop_state_stack_.push_back(Outermost);
+  } else {
+    loop_state_stack_.push_back(Inner);
+  }
 }
 
-ASTBuilder &current_ast_builder() {
-  return get_current_program().current_callable->context->builder();
+void ASTBuilder::pop_scope() {
+  stack_.pop_back();
+  loop_state_stack_.pop_back();
 }
 
 void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

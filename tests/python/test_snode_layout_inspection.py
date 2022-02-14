@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_primitives():
     x = ti.field(dtype=ti.i16)
     y = ti.field(dtype=ti.f32)
@@ -38,11 +39,12 @@ def test_primitives():
     assert r.snode.offset_bytes_in_parent_cell == 8
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_bit_struct():
-    cit = ti.quant.int(16, False)
+    cit = ti.types.quantized_types.quant.int(16, False)
     x = ti.field(dtype=cit)
-    y = ti.field(dtype=ti.type_factory.custom_float(significand_type=cit))
+    y = ti.field(dtype=ti.types.quantized_types.type_factory.custom_float(
+        significand_type=cit))
     z = ti.field(dtype=ti.f32)
 
     n1 = ti.root.dense(ti.i, 32)

@@ -63,7 +63,10 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            var = ti_ops.cast(value, anno)
+            if isinstance(value, expr.Expr):
+                var = ti_ops.cast(value, anno)
+            else:
+                var = impl.make_constant_expr(value, anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:
@@ -967,7 +970,7 @@ class ASTTransformer(Builder):
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
-            entry_expr.type_check()
+            entry_expr.type_check(impl.get_runtime().prog.config)
             mesh_idx = mesh.MeshElementFieldProxy(
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)

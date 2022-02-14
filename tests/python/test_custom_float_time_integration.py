@@ -4,20 +4,20 @@ import pytest
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
 @pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',
                          [(False, False, False), (True, False, False),
                           (True, True, False), (True, True, True)])
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
     if use_cft:
         if use_exponent:
-            exp = ti.quant.int(6, False)
-            cit = ti.quant.int(13, True)
-            cft = ti.type_factory.custom_float(significand_type=cit,
-                                               exponent_type=exp,
-                                               scale=1)
+            exp = ti.types.quantized_types.quant.int(6, False)
+            cit = ti.types.quantized_types.quant.int(13, True)
+            cft = ti.types.quantized_types.type_factory.custom_float(
+                significand_type=cit, exponent_type=exp, scale=1)
             x = ti.Vector.field(2, dtype=cft)
             if use_shared_exp:
                 ti.root.bit_struct(num_bits=32).place(x, shared_exponent=True)
@@ -25,9 +25,9 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0))
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1))
         else:
-            cit = ti.quant.int(16, True)
-            cft = ti.type_factory.custom_float(significand_type=cit,
-                                               scale=1 / 2**14)
+            cit = ti.types.quantized_types.quant.int(16, True)
+            cft = ti.types.quantized_types.type_factory.custom_float(
+                significand_type=cit, scale=1 / 2**14)
             x = ti.Vector.field(2, dtype=cft)
             ti.root.bit_struct(num_bits=32).place(x)
     else:

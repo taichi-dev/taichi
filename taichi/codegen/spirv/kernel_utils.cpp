@@ -13,8 +13,11 @@ namespace spirv {
 
 // static
 std::string TaskAttributes::buffers_name(BufferInfo b) {
-  if (b.type == BufferType::Context) {
-    return "Context";
+  if (b.type == BufferType::Args) {
+    return "Args";
+  }
+  if (b.type == BufferType::Rets) {
+    return "Rets";
   }
   if (b.type == BufferType::GlobalTmps) {
     return "GlobalTmps";
@@ -95,11 +98,12 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = data_type_size(attribs.dt);
+      const size_t dt_bytes =
+          attribs.is_array ? sizeof(uint64_t) : data_type_size(attribs.dt);
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
-      bytes += attribs.stride;
+      bytes += dt_bytes;
       TI_TRACE("  at={} {} offset_in_mem={} stride={}",
                (*vec)[i].is_array ? "vector ptr" : "scalar", i,
                attribs.offset_in_mem, attribs.stride);
@@ -143,11 +147,13 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 
   TI_TRACE("args:");
   args_bytes_ = arange_args(&arg_attribs_vec_, 0);
-  TI_TRACE("rets:");
-  rets_bytes_ = arange_rets(&ret_attribs_vec_, args_bytes_);
+  // Align to extra args
+  args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
 
-  TI_TRACE("sizes: args={} rets={} ctx={} total={}", args_bytes(), rets_bytes(),
-           ctx_bytes(), total_bytes());
+  TI_TRACE("rets:");
+  rets_bytes_ = arange_rets(&ret_attribs_vec_, 0);
+
+  TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));
 }
 

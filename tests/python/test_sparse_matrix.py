@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -18,7 +19,7 @@ def test_sparse_matrix_builder():
             assert A[i, j] == i + j
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_shape():
     n, m = 8, 9
     Abuilder = ti.linalg.SparseMatrixBuilder(n, m, max_num_triplets=100)
@@ -33,7 +34,7 @@ def test_sparse_matrix_shape():
     assert A.shape() == (n, m)
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_access():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -49,7 +50,7 @@ def test_sparse_matrix_element_access():
         assert A[i, i] == i
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_modify():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -65,7 +66,7 @@ def test_sparse_matrix_element_modify():
     assert A[0, 0] == 1024.0
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_addition():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -87,7 +88,7 @@ def test_sparse_matrix_addition():
             assert C[i, j] == 2 * i
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_subtraction():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -109,7 +110,7 @@ def test_sparse_matrix_subtraction():
             assert C[i, j] == 2 * j
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_scalar_multiplication():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -127,7 +128,7 @@ def test_sparse_matrix_scalar_multiplication():
             assert B[i, j] == 3 * (i + j)
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_transpose():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -145,7 +146,7 @@ def test_sparse_matrix_transpose():
             assert B[i, j] == A[j, i]
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_elementwise_multiplication():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -167,7 +168,7 @@ def test_sparse_matrix_elementwise_multiplication():
             assert C[i, j] == (i + j) * (i - j)
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_multiplication():
     n = 2
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -190,7 +191,7 @@ def test_sparse_matrix_multiplication():
     assert C[1, 1] == -1.0
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_nonsymmetric_multiplication():
     n, k, m = 2, 3, 4
     Abuilder = ti.linalg.SparseMatrixBuilder(n, k, max_num_triplets=100)

@@ -1,9 +1,10 @@
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_abs():
     x = ti.field(ti.f32)
 
@@ -24,7 +25,7 @@ def test_abs():
         assert x[i] == i
 
 
-@ti.test()
+@test_utils.test()
 def test_int():
     x = ti.field(ti.f32)
 
@@ -47,7 +48,7 @@ def test_int():
         assert x[i] == i // 2
 
 
-@ti.test()
+@test_utils.test()
 def test_minmax():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

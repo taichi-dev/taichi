@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def _test_dimensionality(d):
     x = ti.Vector.field(2, dtype=ti.i32, shape=(2, ) * d)
 

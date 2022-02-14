@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_for_break():
     x = ti.field(ti.i32)
     N, M = 4, 4
@@ -24,7 +25,7 @@ def test_for_break():
                 assert x[i, j] == 100 * i + j
 
 
-@ti.test()
+@test_utils.test()
 def test_for_break2():
     x = ti.field(ti.i32)
     N, M = 8, 8
@@ -47,7 +48,7 @@ def test_for_break2():
                 assert x[i, j] == 100 * i + j
 
 
-@ti.test(exclude=ti.vulkan)
+@test_utils.test(exclude=ti.vulkan)
 def test_for_break3():
     x = ti.field(ti.i32)
     N, M = 8, 8
@@ -70,7 +71,7 @@ def test_for_break3():
                 assert x[i, j] == 100 * i + j
 
 
-@ti.test()
+@test_utils.test()
 def test_for_break_complex():
     x = ti.field(ti.i32)
     N, M = 16, 32

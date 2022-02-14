@@ -2,11 +2,12 @@ from inspect import currentframe, getframeinfo
 from sys import version_info
 
 import pytest
+from tests import test_utils
 
 import taichi as ti
 
 
-@ti.test()
+@test_utils.test()
 def test_exception_multiline():
     frameinfo = getframeinfo(currentframe())
     with pytest.raises(ti.TaichiNameError) as e:
@@ -33,7 +34,7 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}", in foo:
     assert e.value.args[0][:len(msg)] == msg
 
 
-@ti.test()
+@test_utils.test()
 def test_exception_from_func():
     frameinfo = getframeinfo(currentframe())
     with pytest.raises(ti.TaichiNameError) as e:
@@ -76,7 +77,7 @@ On line {lineno + 5} of file "{file}", in baz:
     assert e.value.args[0][:len(msg)] == msg
 
 
-@ti.test()
+@test_utils.test()
 def test_tab():
     frameinfo = getframeinfo(currentframe())
     with pytest.raises(ti.TaichiNameError) as e:
@@ -101,7 +102,7 @@ On line {lineno + 5} of file "{file}", in foo:
     assert e.value.args[0][:len(msg)] == msg
 
 
-@ti.test()
+@test_utils.test()
 def test_super_long_line():
     frameinfo = getframeinfo(currentframe())
     with pytest.raises(ti.TaichiNameError) as e:
@@ -132,7 +133,7 @@ bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
 
 
 @pytest.mark.skipif(version_info < (3, 8), reason="This is a feature for python>=3.8")
-@ti.test()
+@test_utils.test()
 def test_exception_in_node_with_body():
     frameinfo = getframeinfo(currentframe())
     @ti.kernel

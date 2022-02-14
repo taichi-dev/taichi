@@ -1,5 +1,6 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang import impl
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
@@ -37,7 +38,7 @@ class SparseMatrixProxy:
 
 def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
-    arg_id = _ti_core.decl_arg(dtype, False)
+    arg_id = impl.get_runtime().prog.decl_arg(dtype, False)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype))
 
 
@@ -50,14 +51,14 @@ def decl_matrix_arg(matrixtype):
 def decl_sparse_matrix():
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
-    arg_id = _ti_core.decl_arg(ptr_type, False)
+    arg_id = impl.get_runtime().prog.decl_arg(ptr_type, False)
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
 
 
 def decl_any_arr_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = _ti_core.decl_arr_arg(dtype, dim, element_shape)
+    arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(
@@ -67,7 +68,7 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
 
 def decl_ret(dtype):
     if isinstance(dtype, MatrixType):
-        dtype = _ti_core.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
+        dtype = impl.get_runtime().prog.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
-    return _ti_core.decl_ret(dtype)
+    return impl.get_runtime().prog.decl_ret(dtype)

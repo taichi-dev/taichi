@@ -7,6 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -169,13 +170,17 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var, Arch arch);
 
   FrontendForStmt(const ExprGroup &loop_var,
                   const mesh::MeshPtr &mesh,
-                  const mesh::MeshElementType &element_type);
+                  const mesh::MeshElementType &element_type,
+                  Arch arch);
 
-  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
+  FrontendForStmt(const Expr &loop_var,
+                  const Expr &begin,
+                  const Expr &end,
+                  Arch arch);
 
   bool is_container_statement() const override {
     return true;
@@ -261,7 +266,7 @@ class ArgLoadExpression : public Expression {
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
@@ -277,7 +282,7 @@ class RandExpression : public Expression {
   RandExpression(DataType dt) : dt(dt) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("rand<{}>()", data_type_name(dt));
@@ -301,7 +306,7 @@ class UnaryOpExpression : public Expression {
       : type(type), operand(operand), cast_type(cast_type) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   bool is_cast() const;
 
@@ -319,7 +324,7 @@ class BinaryOpExpression : public Expression {
       : type(type), lhs(lhs), rhs(rhs) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << '(';
@@ -349,7 +354,7 @@ class TernaryOpExpression : public Expression {
     this->op3.set(op3);
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
@@ -377,7 +382,7 @@ class InternalFuncCallExpression : public Expression {
     }
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
@@ -411,7 +416,7 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -446,7 +451,7 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void set_snode(SNode *snode) {
@@ -475,7 +480,7 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -501,7 +506,7 @@ class TensorElementExpression : public Expression {
     // TODO: shape & indices check
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   bool is_local_tensor() const;
 
@@ -544,7 +549,7 @@ class RangeAssumptionExpression : public Expression {
       : input(input), base(base), low(low), high(high) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -569,7 +574,7 @@ class LoopUniqueExpression : public Expression {
       : input(input), covers(covers) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -584,7 +589,7 @@ class IdExpression : public Expression {
   IdExpression(const Identifier &id) : id(id) {
   }
 
-  void type_check() override {
+  void type_check(CompileConfig *config) override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -612,7 +617,7 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -637,7 +642,7 @@ class SNodeOpExpression : public Expression {
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -652,8 +657,12 @@ class ConstExpression : public Expression {
   ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
+  template <typename T>
+  ConstExpression(const DataType &dt, const T &x) : val({dt, x}) {
+    ret_type = dt;
+  }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << val.stringify();
@@ -677,7 +686,7 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
       : ptr(ptr), axis(axis) {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -687,7 +696,7 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override;
 
@@ -705,7 +714,7 @@ class MeshPatchIndexExpression : public Expression {
   MeshPatchIndexExpression() {
   }
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("mesh_patch_idx()");
@@ -721,7 +730,7 @@ class MeshRelationAccessExpression : public Expression {
   mesh::MeshElementType to_type;
   Expr neighbor_idx;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     if (neighbor_idx) {
@@ -763,7 +772,7 @@ class MeshIndexConversionExpression : public Expression {
   Expr idx;
   mesh::ConvType conv_type;
 
-  void type_check() override;
+  void type_check(CompileConfig *config) override;
 
   void serialize(std::ostream &ss) override {
     ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "
@@ -784,29 +793,26 @@ class MeshIndexConversionExpression : public Expression {
 
 class ASTBuilder {
  private:
+  enum LoopState { None, Outermost, Inner };
+  enum LoopType { NotLoop, For, While };
+
   std::vector<Block *> stack_;
+  std::vector<LoopState> loop_state_stack_;
+  Arch arch_;
 
  public:
-  ASTBuilder(Block *initial) {
+  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
+    loop_state_stack_.push_back(None);
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
-  struct ScopeGuard {
-    ASTBuilder *builder;
-    Block *list;
-    ScopeGuard(ASTBuilder *builder, Block *list)
-        : builder(builder), list(list) {
-      builder->stack_.push_back(list);
-    }
+  // The function will be removed soon
+  Arch arch() const {
+    return arch_;
+  }
 
-    ~ScopeGuard() {
-      builder->stack_.pop_back();
-    }
-  };
-
-  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
@@ -815,9 +821,44 @@ class ASTBuilder {
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
-};
 
-ASTBuilder &current_ast_builder();
+  Expr insert_thread_idx_expr();
+  Expr insert_patch_idx_expr();
+  void create_kernel_exprgroup_return(const ExprGroup &group);
+  void create_print(std::vector<std::variant<Expr, std::string>> contents);
+  void begin_func(const std::string &funcid);
+  void end_func(const std::string &funcid);
+  void begin_frontend_if(const Expr &cond);
+  void begin_frontend_if_true();
+  void begin_frontend_if_false();
+  void insert_external_func_call(std::size_t func_addr,
+                                 std::string source,
+                                 std::string filename,
+                                 std::string funcname,
+                                 const ExprGroup &args,
+                                 const ExprGroup &outputs);
+  Expr expr_alloca();
+  Expr expr_alloca_local_tensor(const std::vector<int> &shape,
+                                const DataType &element_type,
+                                const ExprGroup &elements);
+  void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  void create_assert_stmt(const Expr &cond,
+                          const std::string &msg,
+                          const std::vector<Expr> &args);
+  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
+  void begin_frontend_struct_for(const ExprGroup &loop_vars,
+                                 const Expr &global);
+  void begin_frontend_mesh_for(const Expr &i,
+                               const mesh::MeshPtr &mesh_ptr,
+                               const mesh::MeshElementType &element_type);
+  void begin_frontend_while(const Expr &cond);
+  void insert_break_stmt();
+  void insert_continue_stmt();
+  void insert_expr_stmt(const Expr &val);
+
+  void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
+  void pop_scope();
+};
 
 class FrontendContext {
  private:
@@ -825,7 +866,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext();
+  FrontendContext(Arch arch);
 
   ASTBuilder &builder() {
     return *current_builder_;

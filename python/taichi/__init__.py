@@ -14,13 +14,13 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
-from taichi._testing import *  # isort:skip
 
 __deprecated_names__ = {
     'SOA': 'Layout.SOA',
     'AOS': 'Layout.AOS',
     'print_profile_info': 'profiler.print_scoped_profiler_info',
     'clear_profile_info': 'profiler.clear_scoped_profiler_info',
+    'print_memory_profile_info': 'profiler.print_memory_profiler_info',
     'CuptiMetric': 'profiler.CuptiMetric',
     'get_predefined_cupti_metrics': 'profiler.get_predefined_cupti_metrics',
     'print_kernel_profile_info': 'profiler.print_kernel_profiler_info',
@@ -33,11 +33,12 @@ __deprecated_names__ = {
     'profiler.collect_kernel_profiler_metrics',
     'VideoManager': 'tools.VideoManager',
     'PLYWriter': 'tools.PLYWriter',
-    'imdisplay': 'tools.imdisplay',
     'imread': 'tools.imread',
     'imresize': 'tools.imresize',
     'imshow': 'tools.imshow',
-    'imwrite': 'tools.imwrite'
+    'imwrite': 'tools.imwrite',
+    'quant': 'types.quantized_types.quant',
+    'type_factory': 'types.quantized_types.type_factory'
 }
 
 if sys.version_info.minor < 7:

@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_matrix_arg():
     mat1 = ti.Matrix([[1, 2, 3], [4, 5, 6]])
 
@@ -25,7 +26,7 @@ def test_matrix_arg():
     assert foo2(3, mat3) == 9
 
 
-@ti.test()
+@test_utils.test()
 def test_vector_arg():
     vec1 = ti.Vector([1, 2, 3])
 

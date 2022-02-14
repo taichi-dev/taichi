@@ -2,9 +2,10 @@ import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_fibonacci():
     @ti.kernel
     def ti_fibonacci(n: ti.i32) -> ti.i32:
@@ -25,7 +26,7 @@ def test_fibonacci():
         assert ti_fibonacci(n) == py_fibonacci(n)
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_assign2():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -39,7 +40,7 @@ def test_assign2():
     assert b[None] == 3
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_assign2_mismatch3():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -52,7 +53,7 @@ def test_assign2_mismatch3():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_assign2_mismatch1():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -65,7 +66,7 @@ def test_assign2_mismatch1():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_swap2():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -81,7 +82,7 @@ def test_swap2():
     assert b[None] == 2
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_assign2_static():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -97,7 +98,7 @@ def test_assign2_static():
     assert b[None] == 2
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_swap3():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -116,7 +117,7 @@ def test_swap3():
     assert c[None] == 2
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_from_tuple():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -134,7 +135,7 @@ def test_unpack_from_tuple():
     assert c[None] == 4
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_mismatch_tuple():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -149,7 +150,7 @@ def test_unpack_mismatch_tuple():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_from_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -166,7 +167,7 @@ def test_unpack_from_vector():
     assert c[None] == 4
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_mismatch_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -180,7 +181,7 @@ def test_unpack_mismatch_vector():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_mismatch_type():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -195,7 +196,7 @@ def test_unpack_mismatch_type():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_mismatch_matrix():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -211,7 +212,7 @@ def test_unpack_mismatch_matrix():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_unpack_from_shape():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())

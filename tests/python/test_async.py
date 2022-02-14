@@ -1,9 +1,10 @@
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_simple():
     n = 32
 
@@ -20,7 +21,7 @@ def test_simple():
         assert x[i] == i * 2
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_numpy():
     n = 10000
 
@@ -37,7 +38,7 @@ def test_numpy():
         assert x[i] == i * 10
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_listgen_opt_with_offsets():
     x = ti.field(dtype=ti.i32)
 

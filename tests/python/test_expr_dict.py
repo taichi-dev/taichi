@@ -1,17 +1,18 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_expr_dict_basic():
     @ti.kernel
     def func(u: int, v: float) -> float:
         x = {'foo': 2 + u, 'bar': 3 + v}
         return x['foo'] * 100 + x['bar']
 
-    assert func(2, 0.1) == ti._testing.approx(403.1)
+    assert func(2, 0.1) == test_utils.approx(403.1)
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_expr_dict_field():
     a = ti.field(ti.f32, shape=(4, ))
 
@@ -22,10 +23,10 @@ def test_expr_dict_field():
 
     a[0] = 2
     a[1] = 0.1
-    assert func() == ti._testing.approx(403.1)
+    assert func() == test_utils.approx(403.1)
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_dictcomp_multiple_ifs():
     n = 8
     x = ti.field(ti.i32, shape=(n, ))

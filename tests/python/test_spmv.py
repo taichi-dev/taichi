@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication1():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -22,7 +23,7 @@ def test_sparse_matrix_vector_multiplication1():
         assert x[i] == 8 * i
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication2():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -46,7 +47,7 @@ def test_sparse_matrix_vector_multiplication2():
         assert x[i] == res[i]
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication3():
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)

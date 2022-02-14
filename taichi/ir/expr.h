@@ -5,6 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct CompileConfig;
 class Expression;
 class Identifier;
 class ExprGroup;
@@ -109,7 +110,7 @@ class Expr {
 
   DataType get_ret_type() const;
 
-  void type_check();
+  void type_check(CompileConfig *config);
 };
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);

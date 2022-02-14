@@ -449,6 +449,8 @@ void VulkanDeviceCreator::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BIND_MEMORY_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
                          name) != params_.additional_device_extensions.end()) {
@@ -485,6 +487,39 @@ void VulkanDeviceCreator::create_logical_device() {
                "Taichi GPU GUI requires wide lines support");
   }
 
+  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+    VkPhysicalDeviceSubgroupProperties subgroup_properties{};
+    subgroup_properties.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+    subgroup_properties.pNext = NULL;
+
+    VkPhysicalDeviceProperties2 physical_device_properties{};
+    physical_device_properties.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physical_device_properties.pNext = &subgroup_properties;
+
+    vkGetPhysicalDeviceProperties2(physical_device_,
+                                   &physical_device_properties);
+
+    if (subgroup_properties.supportedOperations &
+        VK_SUBGROUP_FEATURE_BASIC_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_basic, true);
+    }
+    if (subgroup_properties.supportedOperations &
+        VK_SUBGROUP_FEATURE_VOTE_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_vote, true);
+    }
+    if (subgroup_properties.supportedOperations &
+        VK_SUBGROUP_FEATURE_ARITHMETIC_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_arithmetic,
+                          true);
+    }
+    if (subgroup_properties.supportedOperations &
+        VK_SUBGROUP_FEATURE_BALLOT_BIT) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_subgroup_ballot, true);
+    }
+  }
+
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();
@@ -504,13 +539,26 @@ void VulkanDeviceCreator::create_logical_device() {
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+  VkPhysicalDeviceBufferDeviceAddressFeaturesKHR
+      buffer_device_address_feature{};
+  buffer_device_address_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
 
   if (ti_device_->get_cap(DeviceCapability::vk_has_physical_features2)) {
     VkPhysicalDeviceFeatures2KHR features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
+#define CHECK_EXTENSION(ext)                                              \
+  std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
+      enabled_extensions.end()
+
+#define CHECK_VERSION(major, minor)        \
+  physical_device_properties.apiVersion >= \
+      VK_MAKE_API_VERSION(0, major, minor, 0)
+
     // Variable ptr
-    {
+    if (CHECK_VERSION(1, 1) ||
+        CHECK_EXTENSION(VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME)) {
       features2.pNext = &variable_ptr_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -523,7 +571,7 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Atomic float
-    {
+    if (CHECK_EXTENSION(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME)) {
       features2.pNext = &shader_atomic_float_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
@@ -544,7 +592,7 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // Atomic float 2
-    {
+    if (CHECK_EXTENSION(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME)) {
       features2.pNext = &shader_atomic_float_2_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       if (shader_atomic_float_2_feature.shaderBufferFloat16AtomicAdd) {
@@ -570,7 +618,12 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // F16 / I8
+#ifdef __APPLE__
     {
+#else
+    if (CHECK_VERSION(1, 2) ||
+        CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
+#endif
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -586,6 +639,23 @@ void VulkanDeviceCreator::create_logical_device() {
       }
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
+    }
+
+    // Buffer Device Address
+    if (CHECK_VERSION(1, 2) ||
+        CHECK_EXTENSION(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)) {
+      features2.pNext = &buffer_device_address_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (CHECK_VERSION(1, 3) ||
+          buffer_device_address_feature.bufferDeviceAddress) {
+        if (device_supported_features.shaderInt64) {
+          ti_device_->set_cap(
+              DeviceCapability::spirv_has_physical_storage_buffer, true);
+        }
+      }
+      *pNextEnd = &buffer_device_address_feature;
+      pNextEnd = &buffer_device_address_feature.pNext;
     }
 
     // TODO: add atomic min/max feature

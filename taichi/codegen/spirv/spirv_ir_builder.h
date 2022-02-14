@@ -72,6 +72,7 @@ enum class ValueKind {
   kVectorPtr,
   kStructArrayPtr,
   kVariablePtr,
+  kPhysicalPtr,
   kFunction,
   kExtInst
 };
@@ -336,6 +337,10 @@ class IRBuilder {
                                uint32_t descriptor_set,
                                uint32_t binding,
                                const std::string &name);
+  Value uniform_struct_argument(const SType &struct_type,
+                                uint32_t descriptor_set,
+                                uint32_t binding,
+                                const std::string &name);
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
                         uint32_t binding,
@@ -395,6 +400,7 @@ class IRBuilder {
   Value get_work_group_size(uint32_t dim_index);
   Value get_num_work_groups(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
+  Value get_subgroup_invocation_id();
 
   // Expressions
   Value add(Value a, Value b);
@@ -433,6 +439,8 @@ class IRBuilder {
   void register_value(std::string name, Value value);
   // Query Value/VariablePointer by name
   Value query_value(std::string name) const;
+  // Check whether a value has been evaluated
+  bool check_value_existence(const std::string &name) const;
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -531,6 +539,7 @@ class IRBuilder {
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
+  Value subgroup_local_invocation_id_;
 
   // Random function and variables
   bool init_rand_{false};

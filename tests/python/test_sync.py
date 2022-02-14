@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_kernel_sync():
     n = 128
     x = ti.field(ti.i32, shape=(3, ))

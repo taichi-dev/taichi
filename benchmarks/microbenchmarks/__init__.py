@@ -7,5 +7,6 @@ from .saxpy import SaxpyPlan
 from .stencil2d import Stencil2DPlan
 
 benchmark_plan_list = [
-    AtomicOpsPlan, FillPlan, MathOpsPlan, MatrixOpsPlan, MemcpyPlan, SaxpyPlan, Stencil2DPlan
+    AtomicOpsPlan, FillPlan, MathOpsPlan, MatrixOpsPlan, MemcpyPlan, SaxpyPlan,
+    Stencil2DPlan
 ]

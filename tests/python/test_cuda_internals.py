@@ -1,11 +1,12 @@
 from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 # TODO: these are not really tests...
 
 
-@ti.test(arch=ti.cuda)
+@test_utils.test(arch=ti.cuda)
 def test_do_nothing():
     @ti.kernel
     def test():
@@ -15,7 +16,7 @@ def test_do_nothing():
     test()
 
 
-@ti.test(arch=ti.cuda)
+@test_utils.test(arch=ti.cuda)
 def test_active_mask():
     @ti.kernel
     def test():
@@ -26,7 +27,7 @@ def test_active_mask():
     test()
 
 
-@ti.test(arch=ti.cuda)
+@test_utils.test(arch=ti.cuda)
 def test_shfl_down():
     @ti.kernel
     def test():

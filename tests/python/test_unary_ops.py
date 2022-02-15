@@ -1,6 +1,7 @@
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 
 def _test_op(dt, taichi_op, np_op):
@@ -42,8 +43,9 @@ def test_f64_trig():
     for dt in [ti.f32, ti.f64]:
         for taichi_op, np_op in op_pairs:
 
-            @ti.test(require=ti.extension.data64 if dt == ti.f64 else [],
-                     default_fp=dt)
+            @test_utils.test(
+                require=ti.extension.data64 if dt == ti.f64 else [],
+                default_fp=dt)
             def wrapped():
                 _test_op(dt, taichi_op, np_op)
 

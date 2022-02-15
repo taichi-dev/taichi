@@ -72,6 +72,7 @@ enum class ValueKind {
   kVectorPtr,
   kStructArrayPtr,
   kVariablePtr,
+  kPhysicalPtr,
   kFunction,
   kExtInst
 };
@@ -269,6 +270,9 @@ class IRBuilder {
   Value make_value(spv::Op op, const SType &out_type, Args &&... args) {
     Value val = new_value(out_type, ValueKind::kNormal);
     make_inst(op, out_type, val, std::forward<Args>(args)...);
+    if (out_type.flag == TypeKind::kPtr) {
+      val.flag = ValueKind::kVariablePtr;
+    }
     return val;
   }
 
@@ -311,13 +315,32 @@ class IRBuilder {
   SType get_primitive_type(const DataType &dt) const;
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
+  // Get the spirv uint type with the same size of a given Taichi data type
+  SType get_primitive_uint_type(const DataType &dt) const;
+  // Get the Taichi uint type with the same size of a given Taichi data type
+  DataType get_taichi_uint_type(const DataType &dt) const;
+  // Get the pointer type that points to value_type
+  SType get_storage_pointer_type(const SType &value_type);
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
+  // Get a value_type[num_elems] type
+  SType get_array_type(const SType &value_type, uint32_t num_elems);
   // Get a struct{ value_type[num_elems] } type
   SType get_struct_array_type(const SType &value_type, uint32_t num_elems);
+  // Construct a struct type
+  SType create_struct_type(
+      std::vector<std::tuple<SType, std::string, size_t>> &components);
 
   // Declare buffer argument of function
+  Value buffer_struct_argument(const SType &struct_type,
+                               uint32_t descriptor_set,
+                               uint32_t binding,
+                               const std::string &name);
+  Value uniform_struct_argument(const SType &struct_type,
+                                uint32_t descriptor_set,
+                                uint32_t binding,
+                                const std::string &name);
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
                         uint32_t binding,
@@ -377,6 +400,7 @@ class IRBuilder {
   Value get_work_group_size(uint32_t dim_index);
   Value get_num_work_groups(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
+  Value get_subgroup_invocation_id();
 
   // Expressions
   Value add(Value a, Value b);
@@ -415,6 +439,8 @@ class IRBuilder {
   void register_value(std::string name, Value value);
   // Query Value/VariablePointer by name
   Value query_value(std::string name) const;
+  // Check whether a value has been evaluated
+  bool check_value_existence(const std::string &name) const;
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -513,6 +539,7 @@ class IRBuilder {
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
+  Value subgroup_local_invocation_id_;
 
   // Random function and variables
   bool init_rand_{false};

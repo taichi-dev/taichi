@@ -1,9 +1,10 @@
 from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(exclude=[ti.vulkan])
+@test_utils.test(exclude=[ti.vulkan])
 def test_clear_all_gradients():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

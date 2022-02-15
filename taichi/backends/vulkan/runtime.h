@@ -46,15 +46,13 @@ class CompiledTaichiKernel {
 
   size_t num_pipelines() const;
 
-  // DeviceAllocation *ctx_buffer() const;
-  // DeviceAllocation *ctx_buffer_host() const;
-
-  size_t get_ctx_buffer_size() const;
+  size_t get_args_buffer_size() const;
+  size_t get_ret_buffer_size() const;
 
   void generate_command_list(
       CommandList *cmdlist,
-      DeviceAllocationGuard *ctx_buffer_host,
-      DeviceAllocationGuard *ctx_buffer,
+      DeviceAllocationGuard *args_buffer,
+      DeviceAllocationGuard *ret_buffer,
       const std::unordered_map<int, DeviceAllocation> &ext_arrs) const;
 
  private:
@@ -65,11 +63,12 @@ class CompiledTaichiKernel {
 
   InputBuffersMap input_buffers_;
 
-  size_t ctx_buffer_size_{0};
+  size_t args_buffer_size_{0};
+  size_t ret_buffer_size_{0};
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
 };
 
-class VkRuntime {
+class TI_DLL_EXPORT VkRuntime {
  public:
   struct Params {
     uint64_t *host_result_buffer{nullptr};

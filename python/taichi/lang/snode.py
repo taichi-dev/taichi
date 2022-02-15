@@ -389,11 +389,13 @@ def is_active(l, indices):
 
 
 def activate(l, indices):
-    _ti_core.insert_activate(l.snode.ptr, expr.make_expr_group(indices))
+    impl.get_runtime().prog.current_ast_builder().insert_activate(
+        l.snode.ptr, expr.make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    _ti_core.insert_deactivate(l.snode.ptr, expr.make_expr_group(indices))
+    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+        l.snode.ptr, expr.make_expr_group(indices))
 
 
 def length(l, indices):
@@ -420,5 +422,5 @@ def get_addr(f, indices):
 
 __all__ = [
     'activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length',
-    'rescale_index'
+    'rescale_index', "SNode"
 ]

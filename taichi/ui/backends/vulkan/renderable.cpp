@@ -74,7 +74,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   // If there is no current program, VBO information should be provided directly
   // instead of accessing through the current SNode
   DevicePtr vbo_dev_ptr = info.vbo.dev_alloc.get_ptr();
-  if (current_program) {
+  if (prog) {
     vbo_dev_ptr = get_device_ptr(prog, info.vbo.snode);
   }
 

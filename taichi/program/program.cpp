@@ -44,7 +44,6 @@
 
 namespace taichi {
 namespace lang {
-Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch)
@@ -56,7 +55,7 @@ Program::Program(Arch desired_arch)
   // backends (including CPUs).
 #if defined(TI_ARCH_x64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-#else
+#elif !defined(TI_EMSCRIPTENED)
   // Enforce flush to zero on arm64 CPUs
   // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
   std::uint64_t fpcr;
@@ -122,8 +121,6 @@ Program::Program(Arch desired_arch)
   total_compilation_time_ = 0;
   num_instances_ += 1;
   SNode::counter = 0;
-  TI_ASSERT(current_program == nullptr);
-  current_program = this;
   if (arch_uses_llvm(config.arch)) {
 #if TI_WITH_LLVM
     static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
@@ -503,7 +500,6 @@ void Program::finalize() {
   }
 
   synchronize();
-  current_program = nullptr;
   memory_pool_->terminate();
 
   if (arch_uses_llvm(config.arch)) {

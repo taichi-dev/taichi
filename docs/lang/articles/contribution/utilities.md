@@ -150,7 +150,7 @@ when the program crashes.
 
 ```python
 # Python
-ti.set_gdb_trigger(True)
+ti.init(gdb_trigger=True)
 ```
 
 ```cpp

@@ -1,4 +1,5 @@
 import taichi as ti
+from tests import test_utils
 
 
 def _test_basic():
@@ -29,17 +30,18 @@ def _test_basic():
     assert s[None] == 42
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_basic():
     _test_basic()
 
 
-@ti.test(require=[ti.extension.sparse, ti.extension.packed], packed=True)
+@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
+                 packed=True)
 def test_basic_packed():
     _test_basic()
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_bitmasked_then_dense():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -63,7 +65,7 @@ def test_bitmasked_then_dense():
     assert s[None] == 256
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_bitmasked_bitmasked():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -87,7 +89,7 @@ def test_bitmasked_bitmasked():
     assert s[None] == 4
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_huge_bitmasked():
     # Mainly for testing Metal listgen's grid-stride loop implementation.
     x = ti.field(ti.f32)
@@ -114,7 +116,7 @@ def test_huge_bitmasked():
     assert s[None] == (n * n * 2) // 32
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_bitmasked_listgen_bounded():
     # Mainly for testing Metal's listgen is bounded by the actual number of
     # elements possible for that SNode. Note that 1) SNode's size is padded
@@ -145,7 +147,7 @@ def test_bitmasked_listgen_bounded():
     assert c[None] == n
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_deactivate():
     # https://github.com/taichi-dev/taichi/issues/778
     a = ti.field(ti.i32)
@@ -209,17 +211,18 @@ def _test_sparsity_changes():
     assert s[None] == 42
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_sparsity_changes():
     _test_sparsity_changes()
 
 
-@ti.test(require=[ti.extension.sparse, ti.extension.packed], packed=True)
+@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
+                 packed=True)
 def test_sparsity_changes_packed():
     _test_sparsity_changes()
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_bitmasked_offset_child():
     x = ti.field(ti.i32)
     x2 = ti.field(ti.i32)
@@ -258,7 +261,7 @@ def test_bitmasked_offset_child():
     assert s[None] == 7
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_bitmasked_2d_power_of_two():
     some_val = ti.field(dtype=float)
     width, height = 10, 10
@@ -286,7 +289,7 @@ def test_bitmasked_2d_power_of_two():
     assert num_active[None] == total
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_root_deactivate():
     a = ti.field(ti.i32)
     a_a = ti.root.bitmasked(ti.i, 4)

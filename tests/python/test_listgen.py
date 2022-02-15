@@ -1,9 +1,10 @@
 from random import randrange
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_listgen():
     x = ti.field(ti.i32)
     n = 1024
@@ -33,7 +34,7 @@ def test_listgen():
             assert x[i, j] == i * 10 + j + c
 
 
-@ti.test()
+@test_utils.test()
 def test_nested_3d():
     x = ti.field(ti.i32)
     n = 128

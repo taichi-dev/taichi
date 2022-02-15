@@ -2,12 +2,11 @@ import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_minimal():
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         assert 0
@@ -22,7 +21,7 @@ def test_assert_minimal():
         func2()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_basic():
     @ti.kernel
     def func():
@@ -33,7 +32,7 @@ def test_assert_basic():
         func()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
     @ti.kernel
     def func():
@@ -44,7 +43,7 @@ def test_assert_message():
         func()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message_formatted():
     x = ti.field(dtype=int, shape=16)
     x[10] = 42
@@ -71,7 +70,7 @@ def test_assert_message_formatted():
     assert_formatted()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_ok():
     @ti.kernel
     def func():
@@ -81,7 +80,7 @@ def test_assert_ok():
     func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_static_assert_is_static():
     @ti.kernel
     def func():
@@ -91,7 +90,7 @@ def test_static_assert_is_static():
     func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_static_assert_message():
     x = 3
 
@@ -103,7 +102,7 @@ def test_static_assert_message():
         func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_static_assert_vector_n_ok():
     x = ti.Vector.field(4, ti.f32, ())
 
@@ -114,7 +113,7 @@ def test_static_assert_vector_n_ok():
     func()
 
 
-@ti.test(arch=get_host_arch_list())
+@test_utils.test(arch=get_host_arch_list())
 def test_static_assert_data_type_ok():
     x = ti.field(ti.f32, ())
 

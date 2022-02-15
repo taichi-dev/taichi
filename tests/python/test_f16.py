@@ -2,33 +2,33 @@ import math
 
 import numpy as np
 import pytest
-from taichi._testing import approx
 from taichi.lang.util import has_pytorch
 
 import taichi as ti
+from tests import test_utils
 
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_snode_read_write():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_float16():
     dtype = ti.float16
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_to_numpy():
     n = 16
     x = ti.field(ti.f16, shape=n)
@@ -44,7 +44,7 @@ def test_to_numpy():
         assert (y[i] == 2 * i)
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_from_numpy():
     n = 16
     y = ti.field(dtype=ti.f16, shape=n)
@@ -63,7 +63,7 @@ def test_from_numpy():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_to_torch():
     n = 16
     x = ti.field(ti.f16, shape=n)
@@ -81,7 +81,7 @@ def test_to_torch():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_from_torch():
     import torch
     n = 16
@@ -101,7 +101,7 @@ def test_from_torch():
         assert (z[i] == i * 3)
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_binary_op():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -117,10 +117,10 @@ def test_binary_op():
     z[None] = 0.72
     add()
     u = x.to_numpy()
-    assert (u[None] == approx(0.6624, rel=1e-3))
+    assert (u[None] == test_utils.approx(0.6624, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_rand_promote():
     dtype = ti.f16
     x = ti.field(dtype, shape=(4, 4))
@@ -134,7 +134,7 @@ def test_rand_promote():
     init()
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_unary_op():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -148,11 +148,11 @@ def test_unary_op():
 
     y[None] = -1.4
     foo()
-    assert (x[None] == approx(1, rel=1e-3))
-    assert (y[None] == approx(-1, rel=1e-3))
+    assert (x[None] == test_utils.approx(1, rel=1e-3))
+    assert (y[None] == test_utils.approx(-1, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_extra_unary_promote():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -164,10 +164,10 @@ def test_extra_unary_promote():
 
     y[None] = -0.3
     foo()
-    assert (x[None] == approx(0.3, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16, exclude=ti.vulkan)
 def test_binary_extra_promote():
     x = ti.field(dtype=ti.f16, shape=())
     y = ti.field(dtype=ti.f16, shape=())
@@ -180,10 +180,10 @@ def test_binary_extra_promote():
 
     x[None] = 0.1
     foo()
-    assert (z[None] == approx(math.atan2(0.1**2, 0.3), rel=1e-3))
+    assert (z[None] == test_utils.approx(math.atan2(0.1**2, 0.3), rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_arg_f16():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -195,10 +195,10 @@ def test_arg_f16():
 
     y[None] = -0.3
     foo(1.2)
-    assert (x[None] == approx(0.9, rel=1e-3))
+    assert (x[None] == test_utils.approx(0.9, rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_fractal_f16():
     n = 320
     pixels = ti.field(dtype=ti.f16, shape=(n * 2, n))
@@ -222,7 +222,7 @@ def test_fractal_f16():
 
 
 # TODO(): Vulkan support
-@ti.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_add_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -238,11 +238,11 @@ def test_atomic_add_f16():
                 f[1] = f[1] + 1.12
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
 # TODO(): Vulkan support
-@ti.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_max_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -258,11 +258,11 @@ def test_atomic_max_f16():
                 f[1] = ti.max(1.12 * i, f[1])
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
 # TODO(): Vulkan support
-@ti.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_min_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -278,10 +278,10 @@ def test_atomic_min_f16():
                 f[1] = ti.min(-3.13 * i, f[1])
 
     foo()
-    assert (f[0] == approx(f[1], rel=1e-3))
+    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
 
 
-@ti.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16)
 def test_cast_f32_to_f16():
     @ti.kernel
     def func() -> ti.f16:
@@ -292,7 +292,7 @@ def test_cast_f32_to_f16():
     assert func() == pytest.approx(23.0 * 4.0, 1e-4)
 
 
-@ti.test(arch=archs_support_f16, require=ti.extension.data64)
+@test_utils.test(arch=archs_support_f16, require=ti.extension.data64)
 def test_cast_f64_to_f16():
     @ti.kernel
     def func() -> ti.f16:

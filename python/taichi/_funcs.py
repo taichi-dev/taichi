@@ -311,10 +311,8 @@ def _svd(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = svd2d(A, dt)
         return ret
-    elif static(A.n == 3):
-        return svd3d(A, dt)
     else:
-        raise Exception("SVD only supports 2D and 3D matrices.")
+        return svd3d(A, dt)
 
 
 @func
@@ -335,11 +333,8 @@ def _polar_decompose(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = polar_decompose2d(A, dt)
         return ret
-    elif static(A.n == 3):
-        return polar_decompose3d(A, dt)
     else:
-        raise Exception(
-            "Polar decomposition only supports 2D and 3D matrices.")
+        return polar_decompose3d(A, dt)
 
 
 def polar_decompose(A, dt=None):
@@ -357,6 +352,9 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
+    if A.n != 2 and A.n != 3:
+        raise Exception(
+            "Polar decomposition only supports 2D and 3D matrices.")
     return _polar_decompose(A, dt)
 
 
@@ -375,6 +373,8 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
+    if A.n != 2 and A.n != 3:
+        raise Exception("SVD only supports 2D and 3D matrices.")
     return _svd(A, dt)
 
 

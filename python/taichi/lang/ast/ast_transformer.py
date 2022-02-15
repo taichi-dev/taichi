@@ -6,7 +6,7 @@ from sys import version_info
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix, mesh
+from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
@@ -62,7 +62,10 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            var = ti_ops.cast(value, anno)
+            if isinstance(value, expr.Expr):
+                var = ti_ops.cast(value, anno)
+            else:
+                var = impl.make_constant_expr(value, anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:
@@ -400,6 +403,12 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_FunctionDef(ctx, node):
+        if ctx.visited_funcdef:
+            raise TaichiSyntaxError(
+                f"Function definition is not allowed in 'ti.{'kernel' if ctx.is_kernel else 'func'}'."
+            )
+        ctx.visited_funcdef = True
+
         args = node.args
         assert args.vararg is None
         assert args.kwonlyargs == []
@@ -439,19 +448,10 @@ class ASTTransformer(Builder):
             # remove original args
             node.args.args = []
 
-        build_stmts(ctx, node.decorator_list)
         if ctx.is_kernel:  # ti.kernel
-            for decorator in node.decorator_list:
-                if decorator.ptr is kernel_impl.func:
-                    raise TaichiSyntaxError(
-                        "Function definition not allowed in 'ti.kernel'.")
             transform_as_kernel()
 
         else:  # ti.func
-            for decorator in node.decorator_list:
-                if decorator.ptr is kernel_impl.func:
-                    raise TaichiSyntaxError(
-                        "Function definition not allowed in 'ti.func'.")
             if impl.get_runtime().experimental_real_function:
                 transform_as_kernel()
             else:
@@ -507,7 +507,7 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                _ti_core.create_kernel_exprgroup_return(
+                ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group(
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
@@ -774,7 +774,7 @@ class ASTTransformer(Builder):
         with ctx.variable_scope_guard():
             loop_name = node.target.id
             ctx.check_loop_var(loop_name)
-            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            loop_var = expr.Expr(_ti_core.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             if len(node.iter.args) not in [1, 2]:
                 raise TaichiSyntaxError(
@@ -806,7 +806,7 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
                                                      ndrange_end.ptr)
@@ -837,7 +837,7 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
                                                      ndrange_end.ptr)
@@ -896,7 +896,7 @@ class ASTTransformer(Builder):
             else:
                 _vars = []
                 for name in targets:
-                    var = expr.Expr(ctx.ast_builder.make_id_expr(""))
+                    var = expr.Expr(_ti_core.make_id_expr(""))
                     _vars.append(var)
                     ctx.create_variable(name, var)
                 loop_var = node.iter.ptr
@@ -916,7 +916,7 @@ class ASTTransformer(Builder):
         target = targets[0]
 
         with ctx.variable_scope_guard():
-            var = expr.Expr(ctx.ast_builder.make_id_expr(""))
+            var = expr.Expr(_ti_core.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh,
@@ -943,16 +943,16 @@ class ASTTransformer(Builder):
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             loop_name = node.target.id + '_index__'
-            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            loop_var = expr.Expr(_ti_core.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
             end = node.iter.ptr.size
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
-            entry_expr = ctx.ast_builder.get_relation_access(
+            entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
-            entry_expr.type_check()
+            entry_expr.type_check(impl.get_runtime().prog.config)
             mesh_idx = mesh.MeshElementFieldProxy(
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)
@@ -1174,10 +1174,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Pass(ctx, node):
         return None
-
-    @staticmethod
-    def build_Raise(ctx, node):
-        raise build_stmt(ctx, node.exc)
 
 
 build_stmt = ASTTransformer()

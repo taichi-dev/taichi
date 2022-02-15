@@ -1,4 +1,5 @@
 import taichi as ti
+from tests import test_utils
 
 # The walrus operator is not supported until python 3.8,
 # and pytest cannot handle files containing walrus operators when python version is below 3.8.
@@ -7,7 +8,7 @@ import taichi as ti
 # See https://github.com/taichi-dev/taichi/issues/3425 for more information.
 
 
-@ti.test()
+@test_utils.test()
 def test_namedexpr():
     @ti.kernel
     def foo() -> ti.i32:

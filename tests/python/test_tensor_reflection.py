@@ -2,9 +2,10 @@ import pytest
 from taichi.lang import impl
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_POT():
     val = ti.field(ti.i32)
 
@@ -18,7 +19,7 @@ def test_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@test_utils.test()
 def test_non_POT():
     val = ti.field(ti.i32)
 
@@ -35,7 +36,7 @@ def test_non_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@test_utils.test()
 def test_unordered():
     val = ti.field(ti.i32)
 
@@ -68,7 +69,7 @@ def test_unordered():
     assert str(val.snode) == expected_str
 
 
-@ti.test()
+@test_utils.test()
 def test_unordered_matrix():
     val = ti.Matrix.field(3, 2, ti.i32)
 
@@ -92,7 +93,7 @@ def test_unordered_matrix():
     assert val.snode.path_from_root() == [ti.root, blk1, blk2, blk3, val.snode]
 
 
-@ti.test()
+@test_utils.test()
 def test_parent_exceeded():
     val = ti.field(ti.f32)
 

@@ -1,9 +1,10 @@
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_to_numpy_2d():
     val = ti.field(ti.i32)
 
@@ -24,7 +25,7 @@ def test_to_numpy_2d():
             assert arr[i, j] == i + j * 3
 
 
-@ti.test()
+@test_utils.test()
 def test_from_numpy_2d():
     val = ti.field(ti.i32)
 
@@ -46,7 +47,7 @@ def test_from_numpy_2d():
             assert val[i, j] == i + j * 3
 
 
-@ti.test()
+@test_utils.test()
 def test_to_numpy_struct():
     n = 16
     f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
@@ -62,7 +63,7 @@ def test_to_numpy_struct():
         assert arr_dict["b"][i] == i * 2
 
 
-@ti.test()
+@test_utils.test()
 def test_from_numpy_struct():
     n = 16
     f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
@@ -79,7 +80,7 @@ def test_from_numpy_struct():
         assert f[i].b == i * 2
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_f64():
     val = ti.field(ti.f64)
 
@@ -99,7 +100,7 @@ def test_f64():
             assert val[i, j] == (i + j * 3) * 2e100
 
 
-@ti.test()
+@test_utils.test()
 def test_matrix():
     n = 4
     m = 7
@@ -117,7 +118,7 @@ def test_matrix():
     assert (nparr == new_nparr).all()
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_io_example():
     n = 4
     m = 7

@@ -3,21 +3,15 @@ import functools
 import os
 import shutil
 import tempfile
-import time
-from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.impl import axes
-from taichi.lang.runtime_ops import sync
+from taichi.lang.impl import axes, get_runtime
 from taichi.lang.snode import SNode
-from taichi.lang.util import warning
-from taichi.profiler import get_default_kernel_profiler
-from taichi.profiler.kernelmetrics import default_cupti_metrics
-from taichi.tools.util import set_gdb_trigger
+from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
@@ -85,245 +79,6 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
 
-
-def print_kernel_profile_info(mode='count'):
-    """Print the profiling results of Taichi kernels.
-
-    To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    ``'count'`` mode: print the statistics (min,max,avg time) of launched kernels,
-    ``'trace'`` mode: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.),
-    and defaults to ``'count'``.
-
-    Args:
-        mode (str): the way to print profiling results.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> var = ti.field(ti.f32, shape=1)
-
-        >>> @ti.kernel
-        >>> def compute():
-        >>>     var[0] = 1.0
-
-        >>> compute()
-        >>> ti.print_kernel_profile_info()
-        >>> # equivalent calls :
-        >>> # ti.print_kernel_profile_info('count')
-
-        >>> ti.print_kernel_profile_info('trace')
-
-    Note:
-        Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-
-        For advanced mode of `KernelProfiler`, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    """
-    get_default_kernel_profiler().print_info(mode)
-
-
-def query_kernel_profile_info(name):
-    """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
-
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-
-    Args:
-        name (str): kernel name.
-
-    Returns:
-        KernelProfilerQueryResult (class): with member variables(counter, min, max, avg)
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> n = 1024*1024
-        >>> var = ti.field(ti.f32, shape=n)
-
-        >>> @ti.kernel
-        >>> def fill():
-        >>>     for i in range(n):
-        >>>         var[i] = 0.1
-
-        >>> fill()
-        >>> ti.clear_kernel_profile_info() #[1]
-        >>> for i in range(100):
-        >>>     fill()
-        >>> query_result = ti.query_kernel_profile_info(fill.__name__) #[2]
-        >>> print("kernel excuted times =",query_result.counter)
-        >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
-        >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
-        >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
-
-    Note:
-        [1] To get the correct result, query_kernel_profile_info() must be used in conjunction with
-        clear_kernel_profile_info().
-
-        [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-    """
-    return get_default_kernel_profiler().query_info(name)
-
-
-def clear_kernel_profile_info():
-    """Clear all KernelProfiler records."""
-    get_default_kernel_profiler().clear_info()
-
-
-def kernel_profiler_total_time():
-    """Get elapsed time of all kernels recorded in KernelProfiler.
-
-    Returns:
-        time (float): total time in second.
-    """
-    return get_default_kernel_profiler().get_total_time()
-
-
-def set_kernel_profiler_toolkit(toolkit_name='default'):
-    """Set the toolkit used by KernelProfiler.
-
-    Currently, we only support toolkits: ``'default'`` and ``'cupti'``.
-
-    Args:
-        toolkit_name (str): string of toolkit name.
-
-    Returns:
-        status (bool): whether the setting is successful or not.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(arch=ti.cuda, kernel_profiler=True)
-        >>> x = ti.field(ti.f32, shape=1024*1024)
-
-        >>> @ti.kernel
-        >>> def fill():
-        >>>     for i in x:
-        >>>         x[i] = i
-
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> for i in range(100):
-        >>>     fill()
-        >>> ti.print_kernel_profile_info()
-
-        >>> ti.set_kernel_profiler_toolkit('default')
-        >>> for i in range(100):
-        >>>     fill()
-        >>> ti.print_kernel_profile_info()
-    """
-    return get_default_kernel_profiler().set_toolkit(toolkit_name)
-
-
-def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set metrics that will be collected by the CUPTI toolkit.
-
-    Args:
-        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
-        >>> ti.get_predefined_cupti_metrics()
-        >>> # get Taichi pre-defined metrics
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('shared_access')
-
-        >>> global_op_atom = ti.CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> # add user defined metrics
-        >>> profiling_metrics += [global_op_atom]
-
-        >>> # metrics setting will be retained until the next configuration
-        >>> ti.set_kernel_profile_metrics(profiling_metrics)
-        >>> for i in range(16):
-        >>>     reduction()
-        >>> ti.print_kernel_profile_info('trace')
-
-    Note:
-        Metrics setting will be retained until the next configuration.
-    """
-    get_default_kernel_profiler().set_metrics(metric_list)
-
-
-@contextmanager
-def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
-
-    Args:
-        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> ti.set_kernel_profiler_toolkit('cupti')
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
-        >>> ti.get_predefined_cupti_metrics()
-        >>> # get Taichi pre-defined metrics
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('device_utilization')
-
-        >>> global_op_atom = ti.CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> # add user defined metrics
-        >>> profiling_metrics += [global_op_atom]
-
-        >>> # metrics setting is temporary, and will be clear when exit from this context.
-        >>> with ti.collect_kernel_profile_metrics(profiling_metrics):
-        >>>     for i in range(16):
-        >>>         reduction()
-        >>>     ti.print_kernel_profile_info('trace')
-
-    Note:
-        The configuration of the ``metric_list`` will be clear when exit from this context.
-    """
-    get_default_kernel_profiler().set_metrics(metric_list)
-    yield get_default_kernel_profiler()
-    get_default_kernel_profiler().set_metrics()
-
-
-def print_memory_profile_info():
-    """Memory profiling tool for LLVM backends with full sparse support.
-
-    This profiler is automatically on.
-    """
-    impl.get_runtime().materialize()
-    impl.get_runtime().prog.print_memory_profiler_info()
-
-
 extension = _ti_core.Extension
 
 
@@ -345,7 +100,6 @@ def reset():
 
     This would destroy all the fields and kernels.
     """
-    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()
@@ -411,11 +165,53 @@ def prepare_sandbox():
     return tmp_dir
 
 
+def check_require_version(require_version):
+    '''
+    Check if installed version meets the requirements.
+    Allow to specify <major>.<minor>.<patch>.<hash>.
+    <patch>.<hash> is optional. If not match, raise an exception.
+    '''
+    # Extract version number part (i.e. toss any revision / hash parts).
+    version_number_str = require_version
+    for c_idx, c in enumerate(require_version):
+        if not (c.isdigit() or c == "."):
+            version_number_str = require_version[:c_idx]
+            break
+    # Get required version.
+    try:
+        version_number_tuple = tuple(
+            [int(n) for n in version_number_str.split(".")])
+        major = version_number_tuple[0]
+        minor = version_number_tuple[1]
+        patch = 0
+        if len(version_number_tuple) > 2:
+            patch = version_number_tuple[2]
+    except:
+        raise Exception("The require_version should be formatted following PEP 440, " \
+            "and inlucdes major, minor, and patch number, " \
+            "e.g., major.minor.patch.") from None
+    # Get installed version
+    versions = [
+        int(_ti_core.get_version_major()),
+        int(_ti_core.get_version_minor()),
+        int(_ti_core.get_version_patch()),
+    ]
+    # Match installed version and required version.
+    match = major == versions[0] and (
+        minor < versions[1] or minor == versions[1] and patch <= versions[2])
+
+    if not match:
+        raise Exception(
+            f"Taichi version mismatch. Required version >= {major}.{minor}.{patch}, installed version = {_ti_core.get_version_string()}."
+        )
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
          _test_mode=False,
          enable_fallback=True,
+         require_version=None,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -426,6 +222,7 @@ def init(arch=None,
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
         default_ip (Optional[type]): Default integral type.
+        require_version (Optional[string]): A version string.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
             behavior. Below we list some of the most frequently used ones. For a
@@ -439,6 +236,10 @@ def init(arch=None,
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
+
+    # Check if installed version meets the requirements.
+    if require_version is not None:
+        check_require_version(require_version)
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
@@ -512,7 +313,7 @@ def init(arch=None,
 
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
-        set_gdb_trigger(spec_cfg.gdb_trigger)
+        _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
@@ -530,6 +331,11 @@ def init(arch=None,
     if cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
+
+    # user selected visible device
+    visible_device = os.environ.get("TI_VISIBLE_DEVICE")
+    if visible_device and cfg.arch == vulkan:
+        _ti_core.set_vulkan_visible_device(visible_device)
 
     # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
     # So it won't work.
@@ -560,7 +366,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        _ti_core.no_activate(v.snode.ptr)
+        get_runtime().prog.no_activate(v.snode.ptr)
 
 
 def block_local(*args):
@@ -577,21 +383,21 @@ def block_local(*args):
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def mesh_local(*args):
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.read_only, v.ptr)
 
 
@@ -610,11 +416,25 @@ def loop_unique(val, covers=None):
     return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-parallelize = _ti_core.parallelize
+def parallelize(v):
+    get_runtime().prog.current_ast_builder().parallelize(v)
+
+
 serialize = lambda: parallelize(1)
-block_dim = _ti_core.block_dim
-global_thread_idx = _ti_core.insert_thread_idx_expr
-mesh_patch_idx = _ti_core.insert_patch_idx_expr
+
+
+def block_dim(v):
+    get_runtime().prog.current_ast_builder().block_dim(v)
+
+
+def global_thread_idx():
+    return impl.get_runtime().prog.current_ast_builder(
+    ).insert_thread_idx_expr()
+
+
+def mesh_patch_idx():
+    return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
+    )
 
 
 def Tape(loss, clear_gradients=True):
@@ -684,178 +504,6 @@ def clear_all_gradients():
 
     for root_fb in _snode.FieldsBuilder.finalized_roots():
         visit(root_fb)
-
-
-def benchmark(_func, repeat=300, args=()):
-    def run_benchmark():
-        compile_time = time.time()
-        _func(*args)  # compile the kernel first
-        sync()
-        compile_time = time.time() - compile_time
-        stat_write('compilation_time', compile_time)
-        codegen_stat = _ti_core.stat()
-        for line in codegen_stat.split('\n'):
-            try:
-                a, b = line.strip().split(':')
-            except:
-                continue
-            a = a.strip()
-            b = int(float(b))
-            if a == 'codegen_kernel_statements':
-                stat_write('compiled_inst', b)
-            if a == 'codegen_offloaded_tasks':
-                stat_write('compiled_tasks', b)
-            elif a == 'launched_tasks':
-                stat_write('launched_tasks', b)
-
-        # Use 3 initial iterations to warm up
-        # instruction/data caches. Discussion:
-        # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for _ in range(3):
-            _func(*args)
-            sync()
-        clear_kernel_profile_info()
-        t = time.time()
-        for _ in range(repeat):
-            _func(*args)
-            sync()
-        elapsed = time.time() - t
-        avg = elapsed / repeat
-        stat_write('wall_clk_t', avg)
-        device_time = kernel_profiler_total_time()
-        avg_device_time = device_time / repeat
-        stat_write('exec_t', avg_device_time)
-
-    run_benchmark()
-
-
-def benchmark_plot(fn=None,
-                   cases=None,
-                   columns=None,
-                   column_titles=None,
-                   archs=None,
-                   title=None,
-                   bars='sync_vs_async',
-                   bar_width=0.4,
-                   bar_distance=0,
-                   left_margin=0,
-                   size=(12, 8)):
-    import matplotlib.pyplot as plt  # pylint: disable=C0415
-    import yaml  # pylint: disable=C0415
-    if fn is None:
-        fn = os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output',
-                          'benchmark.yml')
-
-    with open(fn, 'r') as f:
-        data = yaml.load(f, Loader=yaml.SafeLoader)
-    if bars != 'sync_vs_async':  # need baseline
-        baseline_dir = os.path.join(_ti_core.get_repo_dir(), 'benchmarks',
-                                    'baseline')
-        baseline_file = f'{baseline_dir}/benchmark.yml'
-        with open(baseline_file, 'r') as f:
-            baseline_data = yaml.load(f, Loader=yaml.SafeLoader)
-    if cases is None:
-        cases = list(data.keys())
-
-    assert len(cases) >= 1
-    if len(cases) == 1:
-        cases = [cases[0], cases[0]]
-        warning(
-            'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
-        )
-
-    if columns is None:
-        columns = list(data[cases[0]].keys())
-    if column_titles is None:
-        column_titles = columns
-    normalize_to_lowest = lambda x: True
-    figure, subfigures = plt.subplots(len(cases), len(columns))
-    if title is None:
-        title = 'Taichi Performance Benchmarks (Higher means more)'
-    figure.suptitle(title, fontweight="bold")
-    for col_id in range(len(columns)):
-        subfigures[0][col_id].set_title(column_titles[col_id])
-    for case_id, case in enumerate(cases):
-        subfigures[case_id][0].annotate(
-            case,
-            xy=(0, 0.5),
-            xytext=(-subfigures[case_id][0].yaxis.labelpad - 5, 0),
-            xycoords=subfigures[case_id][0].yaxis.label,
-            textcoords='offset points',
-            size='large',
-            ha='right',
-            va='center')
-        for col_id, col in enumerate(columns):
-            if archs is None:
-                current_archs = data[case][col].keys()
-            else:
-                current_archs = [
-                    x for x in archs if x in data[case][col].keys()
-                ]
-            if bars == 'sync_vs_async':
-                y_left = [
-                    data[case][col][arch]['sync'] for arch in current_archs
-                ]
-                label_left = 'sync'
-                y_right = [
-                    data[case][col][arch]['async'] for arch in current_archs
-                ]
-                label_right = 'async'
-            elif bars == 'sync_regression':
-                y_left = [
-                    baseline_data[case][col][arch]['sync']
-                    for arch in current_archs
-                ]
-                label_left = 'before'
-                y_right = [
-                    data[case][col][arch]['sync'] for arch in current_archs
-                ]
-                label_right = 'after'
-            elif bars == 'async_regression':
-                y_left = [
-                    baseline_data[case][col][arch]['async']
-                    for arch in current_archs
-                ]
-                label_left = 'before'
-                y_right = [
-                    data[case][col][arch]['async'] for arch in current_archs
-                ]
-                label_right = 'after'
-            else:
-                raise RuntimeError('Unknown bars type')
-            if normalize_to_lowest(col):
-                for _i in range(len(current_archs)):
-                    maximum = max(y_left[_i], y_right[_i])
-                    y_left[_i] = y_left[_i] / maximum if y_left[_i] != 0 else 1
-                    y_right[
-                        _i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
-            ax = subfigures[case_id][col_id]
-            bar_left = ax.bar(x=[
-                i - bar_width / 2 - bar_distance / 2
-                for i in range(len(current_archs))
-            ],
-                              height=y_left,
-                              width=bar_width,
-                              label=label_left,
-                              color=(0.47, 0.69, 0.89, 1.0))
-            bar_right = ax.bar(x=[
-                i + bar_width / 2 + bar_distance / 2
-                for i in range(len(current_archs))
-            ],
-                               height=y_right,
-                               width=bar_width,
-                               label=label_right,
-                               color=(0.68, 0.26, 0.31, 1.0))
-            ax.set_xticks(range(len(current_archs)))
-            ax.set_xticklabels(current_archs)
-            figure.legend((bar_left, bar_right), (label_left, label_right),
-                          loc='lower center')
-    figure.subplots_adjust(left=left_margin)
-
-    fig = plt.gcf()
-    fig.set_size_inches(size)
-
-    plt.show()
 
 
 def stat_write(key, value):
@@ -940,10 +588,6 @@ __all__ = [
     'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
-    'benchmark', 'benchmark_plot', 'block_local', 'cache_read_only',
-    'clear_all_gradients', 'clear_kernel_profile_info',
-    'collect_kernel_profile_metrics', 'init', 'kernel_profiler_total_time',
-    'mesh_local', 'no_activate', 'print_memory_profile_info',
-    'print_kernel_profile_info', 'query_kernel_profile_info', 'reset',
-    'set_kernel_profile_metrics', 'set_kernel_profiler_toolkit'
+    'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
+    'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

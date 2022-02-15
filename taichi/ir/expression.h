@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/program/compile_config.h"
 #include "taichi/util/str.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expr.h"
@@ -38,7 +39,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual void type_check() {
+  virtual void type_check(CompileConfig *config) {
     // TODO: make it pure virtual after type_check for all expressions are
     // implemented
   }

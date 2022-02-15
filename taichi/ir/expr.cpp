@@ -33,8 +33,8 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
-void Expr::type_check() {
-  expr->type_check();
+void Expr::type_check(CompileConfig *config) {
+  expr->type_check(config);
 }
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
@@ -94,19 +94,19 @@ void Expr::set_grad(const Expr &o) {
 }
 
 Expr::Expr(int32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i32, x);
 }
 
 Expr::Expr(int64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i64, x);
 }
 
 Expr::Expr(float32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f32, x);
 }
 
 Expr::Expr(float64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f64, x);
 }
 
 Expr::Expr(const Identifier &id) : Expr() {

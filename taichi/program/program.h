@@ -8,6 +8,7 @@
 #include <stack>
 
 #define TI_RUNTIME_HOST
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
@@ -74,12 +75,6 @@ struct hash<taichi::lang::JITEvaluatorId> {
 
 namespace taichi {
 namespace lang {
-
-extern Program *current_program;
-
-TI_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
 
 class StructCompiler;
 class LlvmProgramImpl;

@@ -59,6 +59,9 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override;
+
   Device *get_compute_device() override {
     if (embedded_device_) {
       return embedded_device_->device();
@@ -83,6 +86,9 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
+
+  // This is a hack until NDArray is properlly owned by programs
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> ref_ndarry_;
 };
 }  // namespace lang
 }  // namespace taichi

@@ -30,6 +30,8 @@ class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
 def handle_exception_from_cpp(exc):
     if isinstance(exc, core.TaichiTypeError):
         return TaichiTypeError(str(exc))
+    if isinstance(exc, core.TaichiSyntaxError):
+        return TaichiSyntaxError(str(exc))
     return exc
 
 

@@ -164,7 +164,7 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Ss33, Stmp1 + Ss33);
   ast_builder->insert_assignment(Stmp1, Sa33 * Sa33);
   ast_builder->insert_assignment(Ss33, Stmp1 + Ss33);
-  StrictlySerialize();
+  ast_builder->strictly_serialize();
   ast_builder->insert_for(0, num_iters, [&](Expr sweep) {
     ast_builder->insert_assignment(Ssh, Ss21 * Sone_half);
     ast_builder->insert_assignment(Stmp5, Ss11 - Ss22);

@@ -1,11 +1,13 @@
 import os
 import pathlib
+import platform
 import tempfile
 
 import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 REGENERATE_GROUNDTRUTH_IMAGES = False
 RENDER_REPEAT = 5
@@ -27,7 +29,7 @@ def write_temp_image(window):
         pass
 
 
-def verify_image(window, image_name):
+def verify_image(window, image_name, tolerence=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         window.write_image(ground_truth_name)
@@ -43,12 +45,12 @@ def verify_image(window, image_name):
             assert ground_truth_np.shape[i] == actual_np.shape[i]
         diff = ground_truth_np - actual_np
         mse = np.mean(diff * diff)
-        assert mse <= 0.1  # the pixel values are 0~255
+        assert mse <= tolerence  # the pixel values are 0~255
         os.remove(actual_name)
 
 
 @pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
-@ti.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs)
 def test_geometry_2d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
@@ -140,12 +142,16 @@ def test_geometry_2d():
         render()
         write_temp_image(window)
     render()
-    verify_image(window, 'test_geometry_2d')
+    if (platform.system() == 'Darwin'):
+        # FIXME: Use lower tolerence when macOS ggui supports wide lines
+        verify_image(window, 'test_geometry_2d', 1.0)
+    else:
+        verify_image(window, 'test_geometry_2d')
     window.destroy()
 
 
 @pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
-@ti.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs)
 def test_geometry_3d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
@@ -237,7 +243,7 @@ def test_geometry_3d():
 
 
 @pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
-@ti.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs)
 def test_set_image():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
@@ -263,7 +269,7 @@ def test_set_image():
 
 
 @pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
-@ti.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs)
 def test_imgui():
     window = ti.ui.Window('test', (640, 480), show_window=False)
 

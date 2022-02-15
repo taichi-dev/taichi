@@ -196,3 +196,6 @@ def make_video(input_files,
         assert ret == 0, "ffmpeg failed to generate video file."
     else:
         assert False, f'input_files should be list (of files) or str (of file template, e.g., "%04d.png") instead of {type(input_files)}'
+
+
+__all__ = ['VideoManager']

@@ -1,10 +1,11 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_cast_uint_to_float(dtype):
     @ti.kernel
     def func(a: dtype) -> ti.f32:
@@ -14,7 +15,7 @@ def test_cast_uint_to_float(dtype):
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
-@ti.test(exclude=ti.opengl)
+@test_utils.test(exclude=ti.opengl)
 def test_cast_float_to_uint(dtype):
     @ti.kernel
     def func(a: ti.f32) -> dtype:
@@ -23,7 +24,7 @@ def test_cast_float_to_uint(dtype):
     assert func(255) == 255
 
 
-@ti.test()
+@test_utils.test()
 def test_cast_f32():
     z = ti.field(ti.i32, shape=())
 
@@ -35,7 +36,7 @@ def test_cast_f32():
     assert z[None] == 1000
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_cast_f64():
     z = ti.field(ti.i32, shape=())
 
@@ -74,7 +75,7 @@ def test_cast_default_ip(dtype):
         assert func(233, large) == 233 * large
 
 
-@ti.test()
+@test_utils.test()
 def test_cast_within_while():
     ret = ti.field(ti.i32, shape=())
 
@@ -89,7 +90,7 @@ def test_cast_within_while():
     func()
 
 
-@ti.test()
+@test_utils.test()
 def test_bit_cast():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.f32, shape=())
@@ -109,7 +110,7 @@ def test_bit_cast():
     assert z[None] == 2333
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_int_extension():
     x = ti.field(dtype=ti.i32, shape=2)
     y = ti.field(dtype=ti.u32, shape=2)
@@ -139,13 +140,13 @@ def test_int_extension():
     assert y[1] == 128
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_custom_int_extension():
     x = ti.field(dtype=ti.i32, shape=2)
     y = ti.field(dtype=ti.u32, shape=2)
 
-    ci5 = ti.quant.int(5, True, ti.i16)
-    cu7 = ti.quant.int(7, False, ti.u16)
+    ci5 = ti.types.quantized_types.quant.int(5, True, ti.i16)
+    cu7 = ti.types.quantized_types.quant.int(7, False, ti.u16)
 
     a = ti.field(dtype=ci5)
     b = ti.field(dtype=cu7)

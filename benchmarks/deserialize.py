@@ -3,15 +3,7 @@ import json
 import os
 from copy import deepcopy
 
-import jsbeautifier
-
-
-# Decouple from taichi by not importing from utils
-def dump2json(obj):
-    obj2dict = obj if type(obj) is dict else obj.__dict__
-    options = jsbeautifier.default_options()
-    options.indent_size = 4
-    return jsbeautifier.beautify(json.dumps(obj2dict), options)
+from utils import dump2json
 
 
 class ResultsBuilder():

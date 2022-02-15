@@ -275,36 +275,6 @@ def test_expr_set():
 
 
 @test_utils.test()
-def test_func_def_inside_kernel():
-    @ti.kernel
-    def k():
-        @ti.func
-        def illegal():
-            return 1
-
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Function definition not allowed'):
-        k()
-
-
-@test_utils.test()
-def test_func_def_inside_func():
-    @ti.func
-    def f():
-        @ti.func
-        def illegal():
-            return 1
-
-    @ti.kernel
-    def k():
-        f()
-
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Function definition not allowed'):
-        k()
-
-
-@test_utils.test()
 def test_redefining_template_args():
     @ti.kernel
     def foo(a: ti.template()):
@@ -328,3 +298,33 @@ def test_break_in_outermost_for():
     with pytest.raises(ti.TaichiSyntaxError,
                        match="Cannot break in the outermost loop"):
         foo()
+
+
+@test_utils.test()
+def test_funcdef_in_kernel():
+    @ti.kernel
+    def foo():
+        def bar():
+            pass
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.kernel'"):
+        foo()
+
+
+@test_utils.test()
+def test_funcdef_in_func():
+    @ti.func
+    def foo():
+        def bar():
+            pass
+
+    @ti.kernel
+    def baz():
+        foo()
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.func'"):
+        baz()

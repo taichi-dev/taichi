@@ -514,7 +514,9 @@ void VulkanResourceBinder::rw_buffer(uint32_t set,
       TI_WARN("Overriding last binding");
     }
   }
-  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ptr, size};
+
+  Binding new_binding = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ptr, size};
+  bindings[binding] = new_binding;
 }
 
 void VulkanResourceBinder::rw_buffer(uint32_t set,
@@ -536,7 +538,9 @@ void VulkanResourceBinder::buffer(uint32_t set,
       TI_WARN("Overriding last binding");
     }
   }
-  bindings[binding] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ptr, size};
+
+  Binding new_binding = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ptr, size};
+  bindings[binding] = new_binding;
 }
 
 void VulkanResourceBinder::buffer(uint32_t set,
@@ -676,6 +680,9 @@ VulkanCommandList::~VulkanCommandList() {
 void VulkanCommandList::bind_pipeline(Pipeline *p) {
   auto pipeline = static_cast<VulkanPipeline *>(p);
 
+  if (current_pipeline_ == pipeline)
+    return;
+
   if (pipeline->is_graphics()) {
     vkapi::IVkPipeline vk_pipeline = pipeline->graphics_pipeline(
         current_renderpass_desc_, current_renderpass_);
@@ -712,10 +719,23 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
   VulkanResourceBinder *binder = static_cast<VulkanResourceBinder *>(ti_binder);
 
   for (auto &pair : binder->get_sets()) {
+    VkPipelineLayout pipeline_layout =
+        current_pipeline_->pipeline_layout()->layout;
+
     vkapi::IVkDescriptorSetLayout layout =
         ti_device_->get_desc_set_layout(pair.second);
-    vkapi::IVkDescriptorSet set = ti_device_->alloc_desc_set(layout);
-    binder->write_to_set(pair.first, *ti_device_, set);
+
+    vkapi::IVkDescriptorSet set = nullptr;
+
+    if (currently_used_sets_.find(pair.second) != currently_used_sets_.end()) {
+      set = currently_used_sets_.at(pair.second);
+    }
+
+    if (!set) {
+      set = ti_device_->alloc_desc_set(layout);
+      binder->write_to_set(pair.first, *ti_device_, set);
+      currently_used_sets_[pair.second] = set;
+    }
 
     VkPipelineBindPoint bind_point;
     if (current_pipeline_->is_graphics()) {
@@ -724,13 +744,14 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
       bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
     }
 
-    vkCmdBindDescriptorSets(buffer_->buffer, bind_point,
-                            current_pipeline_->pipeline_layout()->layout,
+    vkCmdBindDescriptorSets(buffer_->buffer, bind_point, pipeline_layout,
                             /*firstSet=*/0,
                             /*descriptorSetCount=*/1, &set->set,
                             /*dynamicOffsetCount=*/0,
                             /*pDynamicOffsets=*/nullptr);
     buffer_->refs.push_back(set);
+
+    last_bound_layout_ = pipeline_layout;
   }
 
   if (current_pipeline_->is_graphics()) {
@@ -1799,7 +1820,10 @@ vkapi::IVkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
     create_info.bindingCount = bindings.size();
     create_info.pBindings = bindings.data();
 
-    return vkapi::create_descriptor_set_layout(device_, &create_info);
+    auto layout = vkapi::create_descriptor_set_layout(device_, &create_info);
+    desc_set_layouts_[set] = layout;
+
+    return layout;
   } else {
     return desc_set_layouts_.at(set);
   }

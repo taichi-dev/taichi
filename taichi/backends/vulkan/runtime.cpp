@@ -383,6 +383,7 @@ void CompiledTaichiKernel::generate_command_list(
 VkRuntime::VkRuntime(const Params &params)
     : device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
+  current_cmdlist_pending_since_ = high_res_clock::now();
   init_buffers();
 }
 
@@ -536,6 +537,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Create new command list if current one is nullptr
   if (!current_cmdlist_) {
     ctx_buffers_.clear();
+    current_cmdlist_pending_since_ = high_res_clock::now();
     current_cmdlist_ = device_->get_compute_stream()->new_command_list();
   }
 
@@ -557,6 +559,19 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
                                     ext_array_size)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
+    }
+  } else {
+    // If we have accumulated some work but does not require sync
+    // and if the accumulated cmdlist has been pending for some time
+    // launch the cmdlist to start processing.
+    if (current_cmdlist_) {
+      constexpr uint64_t max_pending_time = 2000; // 3000us = 2ms
+      auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
+      if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
+              .count() > max_pending_time) {
+        device_->get_compute_stream()->submit(current_cmdlist_.get());
+        current_cmdlist_ = nullptr;      
+      }
     }
   }
 

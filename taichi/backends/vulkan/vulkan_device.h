@@ -102,6 +102,15 @@ class VulkanResourceBinder : public ResourceBinder {
     DevicePtr ptr;
     VkDeviceSize size;
     VkSampler sampler{VK_NULL_HANDLE};  // used only for images
+
+    bool operator==(const Binding &other) const {
+      return other.type == type && other.ptr == ptr && other.size == size &&
+             other.sampler == sampler;
+    }
+
+    bool operator!=(const Binding &other) const {
+      return !(*this == other);
+    }
   };
 
   struct Set {
@@ -113,12 +122,20 @@ class VulkanResourceBinder : public ResourceBinder {
         return false;
       }
       for (auto &pair : bindings) {
-        const Binding &other_binding = other.bindings.at(pair.first);
+        auto other_binding_iter = other.bindings.find(pair.first);
+        if (other_binding_iter == other.bindings.end()) {
+          return false;
+        }
+        const Binding &other_binding = other_binding_iter->second;
         if (other_binding.type != pair.second.type) {
           return false;
         }
       }
       return true;
+    }
+
+    bool operator!=(const Set &other) const {
+      return !(*this == other);
     }
   };
 
@@ -128,6 +145,45 @@ class VulkanResourceBinder : public ResourceBinder {
       size_t hash = 0;
       for (const auto &pair : set.bindings) {
         hash = (hash ^ size_t(pair.second.type)) ^ size_t(pair.first);
+      }
+      return hash;
+    }
+  };
+
+  struct DescSetCmp {
+    bool operator()(const Set &a, const Set &b) const {
+      if (a.bindings.size() != b.bindings.size()) {
+        return false;
+      }
+      for (auto &pair : a.bindings) {
+        auto other_binding_iter = b.bindings.find(pair.first);
+        if (other_binding_iter == b.bindings.end()) {
+          return false;
+        }
+        const Binding &other_binding = other_binding_iter->second;
+        if (other_binding != pair.second) {
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+
+  struct DescSetHasher {
+    std::size_t operator()(const Set &set) const {
+      // TODO: Come up with a better hash
+      size_t hash = 0;
+      for (const auto &pair : set.bindings) {
+        size_t binding_hash = 0;
+        uint32_t *u32_ptr = (uint32_t *)&pair.second;
+        for (int i = 0; i < sizeof(Set) / sizeof(uint32_t); i++) {
+          binding_hash = binding_hash ^ u32_ptr[i];
+          binding_hash = (binding_hash << 7) | (binding_hash >> (64 - 7));
+        }
+        binding_hash = binding_hash ^ pair.first;
+        binding_hash =
+            (binding_hash << pair.first) | (binding_hash >> (64 - pair.first));
+        hash = hash ^ binding_hash;
       }
       return hash;
     }
@@ -352,6 +408,14 @@ class VulkanCommandList : public CommandList {
   VkDevice device_;
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
+
+  VkPipelineLayout last_bound_layout_{VK_NULL_HANDLE};
+
+  std::unordered_map<VulkanResourceBinder::Set,
+                     vkapi::IVkDescriptorSet,
+                     VulkanResourceBinder::DescSetHasher,
+                     VulkanResourceBinder::DescSetCmp>
+      currently_used_sets_;
 
   // Renderpass & raster pipeline
   VulkanRenderPassDesc current_renderpass_desc_;

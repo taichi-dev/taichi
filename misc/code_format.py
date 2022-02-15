@@ -77,12 +77,19 @@ def format_py_file(filename):
     format_plain_text(filename)
 
 
-def main(all=True, diff=None):
+def main(all=False, diff=None):
     repo = Repo(repo_dir)
 
     if all:
         directories = [
+            'taichi',
+            'tests',
+            'examples',
+            'misc',
+            'python',
             'benchmarks',
+            'docs',
+            'cmake',
         ]
         files = list(Path(repo_dir).glob(
             '*'))  # Include all files under the root folder

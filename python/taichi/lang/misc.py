@@ -100,7 +100,6 @@ def reset():
 
     This would destroy all the fields and kernels.
     """
-    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()
@@ -333,6 +332,11 @@ def init(arch=None,
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
 
+    # user selected visible device
+    visible_device = os.environ.get("TI_VISIBLE_DEVICE")
+    if visible_device and cfg.arch == vulkan:
+        _ti_core.set_vulkan_visible_device(visible_device)
+
     # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
     # So it won't work.
     if cfg.arch == opengl and spec_cfg.ndarray_use_torch:
@@ -379,21 +383,21 @@ def block_local(*args):
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def mesh_local(*args):
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.read_only, v.ptr)
 
 
@@ -412,9 +416,15 @@ def loop_unique(val, covers=None):
     return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-parallelize = _ti_core.parallelize
+def parallelize(v):
+    get_runtime().prog.current_ast_builder().parallelize(v)
+
+
 serialize = lambda: parallelize(1)
-block_dim = _ti_core.block_dim
+
+
+def block_dim(v):
+    get_runtime().prog.current_ast_builder().block_dim(v)
 
 
 def global_thread_idx():

@@ -69,7 +69,7 @@ class Matrix(TaichiOperations):
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n)], dt,
                         expr.make_expr_group([expr.Expr(x) for x in n]))
-                    self.dynamic_index_stride = ti_core.data_type_size(dt)
+                    self.dynamic_index_stride = 1
                     mat = []
                     for i in range(len(n)):
                         mat.append(
@@ -110,7 +110,7 @@ class Matrix(TaichiOperations):
                         [len(n), len(n[0])], dt,
                         expr.make_expr_group(
                             [expr.Expr(x) for row in n for x in row]))
-                    self.dynamic_index_stride = ti_core.data_type_size(dt)
+                    self.dynamic_index_stride = 1
                     mat = []
                     for i in range(len(n)):
                         mat.append([])
@@ -1431,4 +1431,4 @@ class VectorNdarray(Ndarray):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
 
 
-__all__ = ["Matrix", "Vector"]
+__all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

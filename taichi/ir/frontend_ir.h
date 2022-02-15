@@ -408,11 +408,31 @@ class ExternalTensorExpression : public Expression {
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
 
+  // Fill element shape if compile-time specialization is desired.
+  std::vector<int> element_shape;
+
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
                            int element_dim)
-      : dt(dt), dim(dim), arg_id(arg_id), element_dim(element_dim) {
+      : dt(dt),
+        dim(dim),
+        arg_id(arg_id),
+        element_dim(element_dim),
+        element_shape() {
+    set_attribute("dim", std::to_string(dim));
+  }
+
+  ExternalTensorExpression(const DataType &dt,
+                           int dim,
+                           int arg_id,
+                           int element_dim,
+                           const std::vector<int> &element_shape)
+      : dt(dt),
+        dim(dim),
+        arg_id(arg_id),
+        element_dim(element_dim),
+        element_shape(element_shape) {
     set_attribute("dim", std::to_string(dim));
   }
 

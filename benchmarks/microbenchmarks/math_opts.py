@@ -52,9 +52,9 @@ class ForLoopCycle(BenchmarkItem):
             self._items['threadloop' + str(cycles)] = cycles
 
 
-class MathOpsThroughputPlan(BenchmarkPlan):
+class MathOpsPlan(BenchmarkPlan):
     def __init__(self, arch: str):
-        super().__init__('math_ops_throughput', arch, basic_repeat_times=10)
+        super().__init__('math_ops', arch, basic_repeat_times=10)
         math_dtype = DataType()
         math_dtype.remove_integer()
         self.create_plan(MathOps(), math_dtype, ElementNum(), ForLoopCycle(),

@@ -514,4 +514,4 @@ class StructType(CompoundType):
         return Struct.field(self.members, **kwargs)
 
 
-__all__ = ["Struct"]
+__all__ = ["Struct", "StructField"]

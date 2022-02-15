@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "gtest/gtest.h"
 
 #include <memory>
@@ -164,3 +165,4 @@ TEST_F(RefineCoordinatesTest, Basic) {
 }  // namespace
 }  // namespace lang
 }  // namespace taichi
+#endif  // #ifdef TI_WITH_LLVM

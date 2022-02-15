@@ -356,4 +356,4 @@ class NdarrayHostAccess:
         self.setter = setter
 
 
-__all__ = []
+__all__ = ["Ndarray", "ScalarNdarray"]

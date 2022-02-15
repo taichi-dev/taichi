@@ -187,7 +187,6 @@ def test_dense_dynamic_len():
 
 @test_utils.test(require=ti.extension.sparse)
 def test_dynamic_activate():
-    ti.init(arch=ti.metal)
     # record the lengths
     l = ti.field(ti.i32, 3)
     x = ti.field(ti.i32)

@@ -1,7 +1,6 @@
 from microbenchmarks._items import BenchmarkItem, DataType
 from microbenchmarks._metric import MetricType
 from microbenchmarks._plan import BenchmarkPlan
-from microbenchmarks._utils import dtype_size, scaled_repeat_times
 
 import taichi as ti
 
@@ -49,14 +48,21 @@ def matrix_operations_default(arch, repeat, matrix_op, block_mn, element_num,
 
 
 @ti.func
-def matrix_mul(C, A, B):
-    C = A @ B + C
+def matrix_add(C, A, B):
+    C = A + B
     return C
 
 
 @ti.func
-def matrix_add(C, A, B):
-    C = A + B
+def matrix_mul(C, A, B):
+    C = A @ B
+    return C
+
+
+@ti.func
+def matrix_mma(C, A, B):
+    """matrix multiply and add"""
+    C = A @ B + C
     return C
 
 
@@ -65,8 +71,9 @@ class MatrixOps(BenchmarkItem):
 
     def __init__(self):
         self._items = {
-            'mat_mul': matrix_mul,
             'mat_add': matrix_add,
+            'mat_mul': matrix_mul,
+            'mat_mma': matrix_mma,
         }
 
 
@@ -92,7 +99,7 @@ class ElementNum(BenchmarkItem):
         }
 
 
-class MatrixOperationPlan(BenchmarkPlan):
+class MatrixOpsPlan(BenchmarkPlan):
     def __init__(self, arch: str):
         super().__init__('matrix_ops', arch, basic_repeat_times=10)
         dtype = DataType()
@@ -100,4 +107,3 @@ class MatrixOperationPlan(BenchmarkPlan):
         self.create_plan(MatrixOps(), BlockMN(), ElementNum(), dtype,
                          MetricType())
         self.add_func(['element16384'], matrix_operations_default)
-        self.print_plan()

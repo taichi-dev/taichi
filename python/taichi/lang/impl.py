@@ -479,7 +479,7 @@ _root_fb = _UninitializedRootFieldsBuilder()
 
 def deactivate_all_snodes():
     """Recursively deactivate all SNodes."""
-    for root_fb in FieldsBuilder.finalized_roots():
+    for root_fb in FieldsBuilder._finalized_roots():
         root_fb.deactivate_all()
 
 

@@ -34,14 +34,14 @@ class FieldsBuilder:
         fb.finalize()
     """
     def __init__(self):
-        self._ptr = _snode_registry.create_root(impl.get_runtime().prog)
-        self._root = snode.SNode(self._ptr)
-        self._finalized = False
-        self._empty = True
+        self.ptr = _snode_registry.create_root(impl.get_runtime().prog)
+        self.root = snode.SNode(self.ptr)
+        self.finalized = False
+        self.empty = True
 
     # TODO: move this into SNodeTree
     @classmethod
-    def finalized_roots(cls):
+    def _finalized_roots(cls):
         """Gets all the roots of the finalized SNodeTree.
 
         Returns:
@@ -53,22 +53,6 @@ class FieldsBuilder:
             res = impl.get_runtime().prog.get_snode_root(i)
             roots_ptr.append(snode.SNode(res))
         return roots_ptr
-
-    @property
-    def ptr(self):
-        return self._ptr
-
-    @property
-    def root(self):
-        return self._root
-
-    @property
-    def empty(self):
-        return self._empty
-
-    @property
-    def finalized(self):
-        return self._finalized
 
     # TODO: move this to SNodeTree class.
     def deactivate_all(self):
@@ -94,7 +78,7 @@ class FieldsBuilder:
         self._empty = False
         return self._root.pointer(indices, dimensions)
 
-    def hash(self, indices, dimensions):
+    def _hash(self, indices, dimensions):
         """Same as :func:`taichi.lang.snode.SNode.hash`"""
         raise NotImplementedError()
 

@@ -127,12 +127,13 @@ def cast(obj, dtype):
     Args:
         obj (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
-        dtype (:mod:`~taichi.types`): A data type defined in :mod:`~tachi.types` like `i32`, `f64`.
+        dtype (:mod:`~taichi.types`): A scalar type like `i32`, `f64`.
 
     Returns:
         A copy of `obj`, casted to the specified data type `dtype`.
 
-    Example:
+    Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = 2.0
@@ -171,6 +172,7 @@ def bit_cast(obj, dtype):
         This function is equivalent to `reinterpret_cast` in C++.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = 3.14
@@ -181,7 +183,7 @@ def bit_cast(obj, dtype):
         >>>
         >>> main()
         >>> 1078523331
-        >>> 3.140000
+        >>> 3.14
     """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
@@ -218,10 +220,10 @@ def neg(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
     Returns:
-        Returned matrix or scalar: y = -x. This is a scalar if x is a scalar.
+        Returned matrix or scalar: `y = -x`. This is a scalar if `x` is a scalar.
 
     Example::
-        >>> a = ti.Vector([-1, -1])
+        >>> a = ti.Matrix([-1, -1])
         >>> b = ti.neg(a)
         >>> b
         >>> [1, 1]
@@ -237,10 +239,12 @@ def sin(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Angle, in radians.
 
     Returns:
-        The sine of each element of x. This is a scalar if x is a scalar.
+        The sine of each element of `x`. This is a scalar if `x` is a scalar.
 
     Example::
-        >>> ti.sin(math.pi / 2.)
+
+        >>> from math import pi
+        >>> ti.sin(pi / 2.)
         >>> 1.0
     """
     return _unary_operation(_ti_core.expr_sin, math.sin, x)
@@ -254,10 +258,12 @@ def cos(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Angle, in radians.
 
     Returns:
-        The cosine of each element of x. This is a scalar if x is a scalar.
+        The cosine of each element of `x`. This is a scalar if `x` is a scalar.
 
     Example::
-        >>> ti.cos(math.pi / 2.)
+
+        >>> from math import pi
+        >>> ti.cos(pi / 2.)
         >>> 0.0
     """
     return _unary_operation(_ti_core.expr_cos, math.cos, x)
@@ -273,21 +279,23 @@ def asin(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A scalar or a matrix with elements in [-1,1].
 
     Returns:
-        The inverse sine of each element in x, in radians and in the closed interval [-pi/2, pi/2]. This is a scalar if x is a scalar.
+        The inverse sine of each element in `x`, in radians and in the closed interval `[-pi/2, pi/2]`. This is a scalar if `x` is a scalar.
 
     Notes:
-        For input `x` not in domain [-1, 1], this function returns `NaN` if it's called in taichi scope, or raises exception if it's called in python scope.
+        For input `x` not in domain `[-1, 1]`, this function returns `nan` if it's called in taichi scope, or raises exception if it's called in python scope.
 
     Example::
-        >>> ti.asin(1.0)
-        >>> 1.5707963267948966
+
+        >>> from math import pi
+        >>> ti.asin(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
+        >>> [-90., 0., 90.]
     """
     return _unary_operation(_ti_core.expr_asin, math.asin, x)
 
 
 @unary
 def acos(x):
-    """Trigonometric inverse sine, element-wise.
+    """Trigonometric inverse cosine, element-wise.
 
     The inverse of `cos` so that, if `y = cos(x)`, then `x = acos(y)`.
 
@@ -295,14 +303,16 @@ def acos(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A scalar or a matrix with elements in [-1,1].
 
     Returns:
-        The inverse cosine of each element in x, in radians and in the closed interval [0, pi]. This is a scalar if x is a scalar.
+        The inverse cosine of each element in `x`, in radians and in the closed interval `[0, pi]`. This is a scalar if `x` is a scalar.
 
     Notes:
-        For input `x` not in domain [-1, 1], this function returns `NaN` if it's called in taichi scope, or raises exception if it's called in python scope.
+        For input `x` not in domain `[-1, 1]`, this function returns `nan` if it's called in taichi scope, or raises exception if it's called in python scope.
 
     Example::
-        >>> ti.asin(1.0)
-        >>> 1.5707963267948966
+
+        >>> from math import pi
+        >>> ti.acos(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
+        >>> [180., 90., 0.]
     """
     return _unary_operation(_ti_core.expr_acos, math.acos, x)
 
@@ -318,10 +328,11 @@ def sqrt(x):
         The square-root `y` so that `y >= 0` and `y^2 = x`.
 
     Example::
-        >>> x = ti.Vector([1., 4., 9.])
+
+        >>> x = ti.Matrix([1., 4., 9.])
         >>> y = ti.sqrt(x)
         >>> y
-        >>> [1.000000, 2.000000, 3.000000]
+        >>> [1.0, 2.0, 3.0]
     """
     return _unary_operation(_ti_core.expr_sqrt, math.sqrt, x)
 
@@ -329,18 +340,20 @@ def sqrt(x):
 @unary
 def rsqrt(x):
     """Return the reciprocal of the non-negative square-root of a scalar or a matrix, element wise. If `x < 0` an exception is raised.
+    This is equivalent to `1/sqrt(x)`.
 
     Args:
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
     Returns:
-        The reciprocal of `sqrt(x)`.
+        The reciprocal of `sqrt(x)`. This is a scalar if `x` is a scalar.
 
     Example::
-        >>> x = ti.Vector([1., 4., 9.])
+
+        >>> x = ti.Matrix([1., 4., 9.])
         >>> y = ti.rsqrt(x)
         >>> y
-        >>> [1.000000, 0.500000, 0.333333]
+        >>> [1.0, 0.5, 0.333333]
     """
     def _rsqrt(x):
         return 1 / math.sqrt(x)
@@ -359,14 +372,15 @@ def round(x):  # pylint: disable=redefined-builtin
         The nearest integer to `x`, with float type. It's a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([1.5, 3.14])
+        >>>     x = ti.Matrix([1.5, 3.14])
         >>>     y = ti.round(x)
         >>>     print(y)
         >>>
         >>> main()
-        >>> [2.000000, 3.000000]
+        >>> [2.0, 3.0]
     """
     return _unary_operation(_ti_core.expr_round, builtins.round, x)
 
@@ -384,14 +398,15 @@ def floor(x):
         The floor of each element in `x`, with float type. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([3.14, 1.5])
+        >>>     x = ti.Matrix([3.14, 1.5])
         >>>     y = ti.floor(x)
         >>>     print(y)
         >>>
         >>> main()
-        >>> [3.000000, 1.000000]
+        >>> [3.0, 1.0]
     """
     return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
@@ -409,14 +424,15 @@ def ceil(x):
         The ceiling of each element in `x`, with float dtype. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([3.14, -1.5])
+        >>>     x = ti.Matrix([3.14, -1.5])
         >>>     y = ti.ceil(x)
         >>>     print(y)
         >>>
         >>> main()
-        >>> [4.000000, -1.000000]
+        >>> [4.0, -1.0]
     """
     return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
 
@@ -431,18 +447,19 @@ def tan(x):
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
     Returns:
-        The tagent values of `x`. This is a scalar if `x` is a scalar.
+        The tangent values of `x`. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> from math import pi
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([-pi, pi/2, pi])
-        >>>     y = ti.tagent(x)
+        >>>     x = ti.Matrix([-pi, pi/2, pi])
+        >>>     y = ti.tan(x)
         >>>     print(y)
         >>>
         >>> main()
-        >>> [-0.000000, -22877334.000000, 0.000000]
+        >>> [-0.0, -22877334.0, 0.0]
     """
     return _unary_operation(_ti_core.expr_tan, math.tan, x)
 
@@ -458,9 +475,10 @@ def tanh(x):
         The corresponding hyperbolic tangent values. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
         >>>     y = ti.tanh(x)
         >>>     print(y)
         >>>
@@ -481,9 +499,10 @@ def exp(x):
         Element-wise exponential of `x`. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
-        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
         >>>     y = ti.exp(x)
         >>>     print(y)
         >>>
@@ -507,6 +526,7 @@ def log(x):
         The natural logarithm of `x`, element-wise. This is a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = ti.Vector([-1.0, 0.0, 1.0])
@@ -530,6 +550,7 @@ def abs(x):  # pylint: disable=W0622
         The absolute value of each element in `x`. It's a scalar if `x` is a scalar.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = ti.Vector([-1.0, 0.0, 1.0])
@@ -537,7 +558,7 @@ def abs(x):  # pylint: disable=W0622
         >>>     print(y)
         >>>
         >>> main()
-        >>> [1.000000, 0.000000, 1.000000]
+        >>> [1.0, 0.0, 1.0]
     """
     return _unary_operation(_ti_core.expr_abs, builtins.abs, x)
 
@@ -597,16 +618,17 @@ def random(dtype=float):
 
     For float types return a random float in the half-open interval [0.0, 1.0).
 
-    For int types return a random integer in the half-open interval [0, 4294967296) for 32-bit,
-    and [0, 18446744073709551616) for 64-bit.
+    For int types return a random integer in the half-open interval [0, 2^32) for 32-bit,
+    and return a random integer in the half-open interval [0, 2^64) for 64-bit.
 
     Args:
-        dtype (DataType): Type of the required random value.
+        dtype (:mod:`~taichi.types`): Type of the required random value.
 
     Returns:
         A random value with type `dtype`.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = ti.random(float)
@@ -622,6 +644,7 @@ def random(dtype=float):
         >>>     print(j)
         >>>
         >>> main()
+        >>>
         >>> 0.090257
         >>> 0.716101627301
         >>> -963722261
@@ -719,7 +742,6 @@ def mod(x1, x2):
     Args:
         x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Dividend scalar or matrix.
         x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Divisor scalar or matrix.
-
         If both `x1` and `x2` are matrices they must have the same shape.
 
     Returns:
@@ -749,18 +771,18 @@ def mod(x1, x2):
 def pow(x1, x2):  # pylint: disable=W0622
     """First array elements raised to powers from second array, element-wise.
 
-    Negative values raised to a non-integral value will return `NaN`. A zero value raised to a negative value will return `inf`.
+    Negative values raised to a non-integral value will return `nan`. A zero value raised to a negative value will return `inf`.
 
     Args:
         x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The bases.
-        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The exponents.
-
+        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The exponents. 
         If both `x1` and `x2` are matrices they must have the same shape.
 
     Returns:
         The bases in `x1` raised to the exponents in `x2`. This is a scalar if both `x1` and `x2` are scalars.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = ti.Matrix([-2.0, 0.0, 2.0])
@@ -870,6 +892,7 @@ def atan2(x1, x2):
         Angles in radians, in the range `[-pi, pi]`. This is a scalar if both `x1` and `x2` are scalars.
 
     Example::
+
         >>> from math import pi
         >>> @ti.kernel
         >>> def main():
@@ -896,6 +919,7 @@ def raw_div(x1, x2):
         Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     x = 5
@@ -917,20 +941,31 @@ def raw_div(x1, x2):
 
 
 @binary
-def raw_mod(a, b):
-    """Raw_mod function. Both `a` and `b` can be `float`.
+def raw_mod(x1, x2):
+    """Return the remainder of `x1/x2`. This is the C-style `mod` function.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
+        x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The dividend scalar or matrix.
+        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The divisor scalar or matrix.
 
     Returns:
-        The remainder of `a` divided by `b`.
-    """
-    def c_mod(a, b):
-        return a - b * int(float(a) / b)
+        The remainder of `x1` divided by `x2`.
 
-    return _binary_operation(_ti_core.expr_mod, c_mod, a, b)
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     print(ti.mod(-4, 3))
+        >>>     print(ti.raw_mod(-4, 3))
+        >>>
+        >>> main()
+        >>> 2
+        >>> -1
+    """
+    def c_mod(x, y):
+        return x - y * int(float(x) / y)
+
+    return _binary_operation(_ti_core.expr_mod, c_mod, x1, x2)
 
 
 @binary
@@ -1149,6 +1184,7 @@ def select(cond, x1, x2):
             element of `x2`.
 
     Example::
+
         >>> @ti.kernel
         >>> def main():
         >>>     cond = ti.Matrix([0, 1, 0, 1])
@@ -1170,7 +1206,7 @@ def select(cond, x1, x2):
 
 @writeback_binary
 def atomic_add(x1, x2):
-    """Add arguments in an atomic operation. Must be called in Taichi scope. This is the thread-safe version of `~add(x1, x2)`.
+    """Add arguments in an atomic operation. Must be called in Taichi scope. This is the thread-safe version of :func:`~add(x1, x2)`.
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_add(x1.ptr, x2.ptr), tb=stack_info()))
@@ -1178,7 +1214,7 @@ def atomic_add(x1, x2):
 
 @writeback_binary
 def atomic_sub(x1, x2):
-    """Subtraction in an atomic operation. Must be called in Taichi scope. This is the thread-safe version of `~sub(x1, x2)`.
+    """Subtraction in an atomic operation. Must be called in Taichi scope. This is the thread-safe version of :func:`~sub(x1, x2)`.
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_sub(x1.ptr, x2.ptr), tb=stack_info()))
@@ -1186,7 +1222,8 @@ def atomic_sub(x1, x2):
 
 @writeback_binary
 def atomic_min(x1, x2):
-    """Return the minimum of the two arguments element-wise. Must be called in Taichi scope. This is the thread-safe version of `~min(x1, x2)`.
+    """Return the minimum of the two arguments element-wise. Must be called in Taichi scope.
+    This is the thread-safe version of :func:`~min(x1, x2)`.
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x1.ptr, x2.ptr), tb=stack_info()))
@@ -1194,7 +1231,8 @@ def atomic_min(x1, x2):
 
 @writeback_binary
 def atomic_max(x1, x2):
-    """Return the maximum of the two arguments element-wise. Must be called in Taichi scope. This is the thread-safe version of `~max(x1, x2)`.
+    """Return the maximum of the two arguments element-wise. Must be called in Taichi scope.
+    This is the thread-safe version of :func:`~max(x1, x2)`.
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_max(x1.ptr, x2.ptr), tb=stack_info()))

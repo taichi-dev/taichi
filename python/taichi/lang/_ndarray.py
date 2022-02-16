@@ -127,7 +127,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-    def ndarray_from_numpy(self, arr):
+    def _ndarray_from_numpy(self, arr):
         """Loads all values from a numpy array.
 
         Args:
@@ -152,7 +152,7 @@ class Ndarray:
             ext_arr_to_ndarray(arr, self)
             impl.get_runtime().sync()
 
-    def ndarray_matrix_from_numpy(self, arr, as_vector):
+    def _ndarray_matrix_from_numpy(self, arr, as_vector):
         """Loads all values from a numpy array.
 
         Args:
@@ -277,7 +277,7 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_from_numpy(arr)
+        self._ndarray_from_numpy(arr)
 
     def __deepcopy__(self, memo=None):
         ret_arr = ScalarNdarray(self.dtype, self.shape)

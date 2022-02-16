@@ -16,3 +16,6 @@ def vector(n, dtype):
 
 def struct(**kwargs):
     return taichi.lang.struct.StructType(**kwargs)
+
+
+__all__ = ['matrix', 'vector', 'struct']

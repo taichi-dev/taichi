@@ -44,7 +44,7 @@ class Ndarray:
         raise NotImplementedError()
 
     @property
-    def data_handle(self):
+    def _data_handle(self):
         """Gets the pointer to underlying data.
 
         Returns:
@@ -86,7 +86,7 @@ class Ndarray:
         elif impl.current_cfg(
         ).arch != _ti_core.Arch.cuda and impl.current_cfg(
         ).arch != _ti_core.Arch.x64:
-            self.fill_by_kernel(val)
+            self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             self.arr.fill_float(val)
         elif self.dtype == primitive_types.i32:
@@ -94,7 +94,7 @@ class Ndarray:
         elif self.dtype == primitive_types.u32:
             self.arr.fill_uint(val)
         else:
-            self.fill_by_kernel(val)
+            self._fill_by_kernel(val)
 
     def _ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -127,7 +127,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-    def ndarray_from_numpy(self, arr):
+    def _ndarray_from_numpy(self, arr):
         """Loads all values from a numpy array.
 
         Args:
@@ -152,7 +152,7 @@ class Ndarray:
             ext_arr_to_ndarray(arr, self)
             impl.get_runtime().sync()
 
-    def ndarray_matrix_from_numpy(self, arr, as_vector):
+    def _ndarray_matrix_from_numpy(self, arr, as_vector):
         """Loads all values from a numpy array.
 
         Args:
@@ -178,7 +178,7 @@ class Ndarray:
             impl.get_runtime().sync()
 
     @python_scope
-    def get_element_size(self):
+    def _get_element_size(self):
         """Returns the size of one element in bytes.
 
         Returns:
@@ -187,7 +187,7 @@ class Ndarray:
         return self.arr.element_size()
 
     @python_scope
-    def get_nelement(self):
+    def _get_nelement(self):
         """Returns the total number of elements.
 
         Returns:
@@ -218,7 +218,7 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         """Fills ndarray with a specific scalar value using a ti.kernel.
 
         Args:
@@ -234,7 +234,7 @@ class Ndarray:
         assert len(key) == len(self.arr.shape)
         return key
 
-    def initialize_host_accessor(self):
+    def _initialize_host_accessor(self):
         if self.host_accessor:
             return
         impl.get_runtime().materialize()
@@ -261,15 +261,15 @@ class ScalarNdarray(Ndarray):
         if self.ndarray_use_torch:
             self.arr.__setitem__(key, value)
         else:
-            self.initialize_host_accessor()
-            self.host_accessor.setter(value, *self._pad_key(key))
+            self._initialize_host_accessor()
+            self.host_accessor.setter(value, *self.pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
         if self.ndarray_use_torch:
             return self.arr.__getitem__(key)
-        self.initialize_host_accessor()
-        return self.host_accessor.getter(*self._pad_key(key))
+        self._initialize_host_accessor()
+        return self.host_accessor.getter(*self.pad_key(key))
 
     @python_scope
     def to_numpy(self):
@@ -277,14 +277,14 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_from_numpy(arr)
+        self._ndarray_from_numpy(arr)
 
     def __deepcopy__(self, memo=None):
         ret_arr = ScalarNdarray(self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         from taichi._kernels import fill_ndarray  # pylint: disable=C0415
         fill_ndarray(self, val)
 
@@ -343,12 +343,12 @@ class NdarrayHostAccess:
         else:
 
             def getter():
-                self.ndarr.initialize_host_accessor()
+                self.ndarr._initialize_host_accessor()
                 return self.ndarr.host_accessor.getter(
                     *self.ndarr._pad_key(self.indices))
 
             def setter(value):
-                self.ndarr.initialize_host_accessor()
+                self.ndarr._initialize_host_accessor()
                 self.ndarr.host_accessor.setter(
                     value, *self.ndarr._pad_key(self.indices))
 

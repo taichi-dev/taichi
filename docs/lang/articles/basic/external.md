@@ -172,7 +172,7 @@ def copy_vector(x: ti.template(), y: ti.ext_arr()):
         for k in ti.static(range(3)):
             y[i, j, k] = x[i, j][k] # correct
             # y[i][j][k] = x[i, j][k] incorrect
-            # y[i, j][k] = x[i, j][k] incorrext
+            # y[i, j][k] = x[i, j][k] incorrect
 ```
 Also, external arrays in a Taichi kernel are indexed using its **physical memory layout**. For PyTorch users, this implies that the PyTorch tensor [needs to be made contiguous](https://pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html) before passed into a Taichi kernel:
 ```python

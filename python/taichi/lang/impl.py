@@ -549,7 +549,7 @@ def create_field_member(dtype, name):
     pytaichi.global_vars.append(x)
 
     x_grad = None
-    if _ti_core.needs_grad(dtype):
+    if _ti_core._needs_grad(dtype):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)

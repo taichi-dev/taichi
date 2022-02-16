@@ -257,7 +257,7 @@ class SNode:
         return self
 
     @property
-    def needs_grad(self):
+    def _needs_grad(self):
         """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
 
         Returns:

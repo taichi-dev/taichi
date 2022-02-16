@@ -218,23 +218,23 @@ class MeshElement:
         for key, attr in self.attr_dict.items():
             if isinstance(attr.dtype, CompoundType):
                 field_dict[key] = attr.dtype.field(shape=None,
-                                                   needs_grad=attr.needs_grad)
+                                                   needs_grad=attr._needs_grad)
             else:
                 field_dict[key] = impl.field(attr.dtype,
                                              shape=None,
-                                             needs_grad=attr.needs_grad)
+                                             needs_grad=attr._needs_grad)
 
         if self.layout == Layout.SOA:
             for key, field in field_dict.items():
                 impl.root.dense(impl.axes(0), size).place(field)
-                if self.attr_dict[key].needs_grad:
+                if self.attr_dict[key]._needs_grad:
                     impl.root.dense(impl.axes(0), size).place(field.grad)
         elif len(field_dict) > 0:
             impl.root.dense(impl.axes(0),
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
-                if self.attr_dict[key].needs_grad:
+                if self.attr_dict[key]._needs_grad:
                     grads.append(field.grad)
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)

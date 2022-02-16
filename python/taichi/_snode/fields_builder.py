@@ -57,8 +57,8 @@ class FieldsBuilder:
     # TODO: move this to SNodeTree class.
     def deactivate_all(self):
         """Same as :func:`taichi.lang.snode.SNode.deactivate_all`"""
-        if self._finalized:
-            self._root.deactivate_all()
+        if self.finalized:
+            self.root.deactivate_all()
         else:
             warning(
                 """'deactivate_all()' would do nothing if FieldsBuilder is not finalized"""
@@ -68,15 +68,15 @@ class FieldsBuilder:
               dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.dense`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.dense(indices, dimensions)
+        self.empty = False
+        return self.root.dense(indices, dimensions)
 
     def pointer(self, indices: Union[Sequence[_Axis], _Axis],
                 dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.pointer(indices, dimensions)
+        self.empty = False
+        return self.root.pointer(indices, dimensions)
 
     def _hash(self, indices, dimensions):
         """Same as :func:`taichi.lang.snode.SNode.hash`"""
@@ -88,28 +88,28 @@ class FieldsBuilder:
                 chunk_size: Optional[int] = None):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.dynamic(index, dimension, chunk_size)
+        self.empty = False
+        return self.root.dynamic(index, dimension, chunk_size)
 
     def bitmasked(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.bitmasked(indices, dimensions)
+        self.empty = False
+        return self.root.bitmasked(indices, dimensions)
 
     def bit_struct(self, num_bits: int):
         """Same as :func:`taichi.lang.snode.SNode.bit_struct`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.bit_struct(num_bits)
+        self.empty = False
+        return self.root.bit_struct(num_bits)
 
     def bit_array(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int], num_bits: int):
         """Same as :func:`taichi.lang.snode.SNode.bit_array`"""
         self._check_not_finalized()
-        self._empty = False
-        return self._root.bit_array(indices, dimensions, num_bits)
+        self.empty = False
+        return self.root.bit_array(indices, dimensions, num_bits)
 
     def place(self,
               *args: Any,
@@ -117,15 +117,15 @@ class FieldsBuilder:
               shared_exponent: bool = False):
         """Same as :func:`taichi.lang.snode.SNode.place`"""
         self._check_not_finalized()
-        self._empty = False
-        self._root.place(*args, offset=offset, shared_exponent=shared_exponent)
+        self.empty = False
+        self.root.place(*args, offset=offset, shared_exponent=shared_exponent)
 
     def lazy_grad(self):
         """Same as :func:`taichi.lang.snode.SNode.lazy_grad`"""
         # TODO: This complicates the implementation. Figure out why we need this
         self._check_not_finalized()
-        self._empty = False
-        self._root.lazy_grad()
+        self.empty = False
+        self.root.lazy_grad()
 
     def finalize(self, raise_warning=True):
         """Constructs the SNodeTree and finalizes this builder.
@@ -140,14 +140,14 @@ class FieldsBuilder:
 
     def _finalize(self, raise_warning, compile_only):
         self._check_not_finalized()
-        if self._empty and raise_warning:
+        if self.empty and raise_warning:
             warning("Finalizing an empty FieldsBuilder!")
-        self._finalized = True
+        self.finalized = True
         return SNodeTree(
-            _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
+            _ti_core.finalize_snode_tree(_snode_registry, self.ptr,
                                          impl.get_runtime().prog,
                                          compile_only))
 
     def _check_not_finalized(self):
-        if self._finalized:
+        if self.finalized:
             raise TaichiRuntimeError('FieldsBuilder finalized')

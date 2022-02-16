@@ -88,6 +88,17 @@ if __name__ == '__main__':
                         type=str,
                         help='Path of result folder. Defaults to ./results')
 
-    results = ResultsBuilder(parser.parse_args().folder)
+    parser.add_argument('-o',
+                        '--output_path',
+                        default='./results',
+                        dest='output_path',
+                        type=str,
+                        help='Path of result folder. Defaults to ./results')
+
+    args = parser.parse_args()
+    result_folder = args.folder
+    output_path = args.output_path
+
+    results = ResultsBuilder(result_folder)
+    results.save_results_as_json(output_path)
     results.print_info()
-    results.save_results_as_json()

@@ -471,6 +471,7 @@ def test_compiled_functions_torch():
 
 # annotation compatibility
 
+
 def _test_arg_not_match():
     @ti.kernel
     def func1(a: ti.any_arr(element_dim=1)):

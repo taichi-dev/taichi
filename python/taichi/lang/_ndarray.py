@@ -2,8 +2,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
-from taichi.lang.util import (cook_dtype, python_scope,
-                              to_numpy_type)
+from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
 
 
@@ -17,8 +16,8 @@ class Ndarray:
     def __init__(self, dtype, arr_shape):
         self.host_accessor = None
         self.dtype = cook_dtype(dtype)
-        self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
-                                    cook_dtype(dtype), arr_shape)
+        self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype),
+                                    arr_shape)
 
     @property
     def element_shape(self):
@@ -67,8 +66,7 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if impl.current_cfg(
-        ).arch != _ti_core.Arch.cuda and impl.current_cfg(
+        if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg(
         ).arch != _ti_core.Arch.x64:
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
@@ -120,8 +118,7 @@ class Ndarray:
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
 
-        from taichi._kernels import \
-            ext_arr_to_ndarray  # pylint: disable=C0415
+        from taichi._kernels import ext_arr_to_ndarray  # pylint: disable=C0415
         ext_arr_to_ndarray(arr, self)
         impl.get_runtime().sync()
 
@@ -303,8 +300,8 @@ class NdarrayHostAccess:
 
         def setter(value):
             self.ndarr._initialize_host_accessor()
-            self.ndarr.host_accessor.setter(
-                value, *self.ndarr._pad_key(self.indices))
+            self.ndarr.host_accessor.setter(value,
+                                            *self.ndarr._pad_key(self.indices))
 
         self.getter = getter
         self.setter = setter

@@ -230,7 +230,7 @@ class SNode:
 
         return ret
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:

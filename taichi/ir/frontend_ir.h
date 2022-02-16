@@ -15,12 +15,12 @@ TLANG_NAMESPACE_BEGIN
 
 struct ForLoopConfig {
  public:
-  int bit_vectorize;
-  int num_cpu_threads;
-  bool strictly_serialized;
+  int bit_vectorize{0};
+  int num_cpu_threads{0};
+  bool strictly_serialized{false};
   MemoryAccessOptions mem_access_opt;
-  int block_dim;
-  bool uniform;
+  int block_dim{0};
+  bool uniform{false};
 };
 
 // Frontend Statements

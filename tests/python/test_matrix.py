@@ -272,7 +272,7 @@ def test_vector_to_list():
     assert len(b) == len(data)
 
     a[None] = b
-    assert all(a[None].value == ti.Vector(data))
+    assert all(a[None] == ti.Vector(data))
 
 
 @test_utils.test(arch=ti.cpu)
@@ -285,7 +285,7 @@ def test_matrix_to_list():
     assert len(b) == len(data)
 
     a[None] = b
-    assert all(a[None].value == ti.Matrix(data))
+    assert all(a[None] == ti.Matrix(data))
 
 
 @test_utils.test()

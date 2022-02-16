@@ -325,7 +325,7 @@ class SNode:
     def __eq__(self, other):
         return self.ptr == other.ptr
 
-    def physical_index_position(self):
+    def _physical_index_position(self):
         """Gets mappings from virtual axes to physical axes.
 
         Returns:

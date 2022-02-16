@@ -7,13 +7,9 @@ from utils import dump2json
 
 
 class ResultsBuilder():
-    def __init__(self, results_file_path=None):
+    def __init__(self, results_file_path: str):
         self._suites_result = {}
-        if results_file_path is not None:
-            self._file_path = results_file_path
-        else:
-            print('Enter path of result file:')
-            self._file_path = input()
+        self._file_path = results_file_path
         self.load_suites_result()
 
     def load_suites_result(self):
@@ -48,9 +44,8 @@ class ResultsBuilder():
                         case_results = json.load(f)
                         remove_none_list = []
                         for name, data in case_results.items():
-                            # data['metric'] = data['tags'][-1]
-                            data['tags'] = data['tags'][
-                                1:]  # remove case_name & metric
+                            # remove case_name
+                            data['tags'] = data['tags'][1:]
                             if data['result'] is None:
                                 remove_none_list.append(name)
                         for name in remove_none_list:
@@ -69,7 +64,7 @@ class ResultsBuilder():
             print(dump2json(self._suites_result), file=f)
 
     def print_info(self):
-        # remove 'results' in self._suites_result, than print
+        # remove 'results' in self._suites_result, then print
         info_dict = deepcopy(self._suites_result)
         for suite_name in info_dict:
             for arch in info_dict[suite_name]:

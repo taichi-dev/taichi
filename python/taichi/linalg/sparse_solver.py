@@ -27,7 +27,7 @@ class SparseSolver:
             assert False, f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
 
     @staticmethod
-    def type_assert(sparse_matrix):
+    def _type_assert(sparse_matrix):
         assert False, f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
 
     def compute(self, sparse_matrix):
@@ -39,7 +39,7 @@ class SparseSolver:
         if isinstance(sparse_matrix, SparseMatrix):
             self.solver.compute(sparse_matrix.matrix)
         else:
-            self.type_assert(sparse_matrix)
+            self._type_assert(sparse_matrix)
 
     def analyze_pattern(self, sparse_matrix):
         """Reorder the nonzero elements of the matrix, such that the factorization step creates less fill-in.
@@ -50,7 +50,7 @@ class SparseSolver:
         if isinstance(sparse_matrix, SparseMatrix):
             self.solver.analyze_pattern(sparse_matrix.matrix)
         else:
-            self.type_assert(sparse_matrix)
+            self._type_assert(sparse_matrix)
 
     def factorize(self, sparse_matrix):
         """Do the factorization step
@@ -61,7 +61,7 @@ class SparseSolver:
         if isinstance(sparse_matrix, SparseMatrix):
             self.solver.factorize(sparse_matrix.matrix)
         else:
-            self.type_assert(sparse_matrix)
+            self._type_assert(sparse_matrix)
 
     def solve(self, b):
         """Computes the solution of the linear systems.

@@ -75,7 +75,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
-        self[key].set_entries(value)
+        self[key]._set_entries(value)
 
     @python_scope
     def __getitem__(self, key):

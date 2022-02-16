@@ -25,7 +25,7 @@ class Matrix(TaichiOperations):
         m (int): the second dimension of a matrix.
         dt (DataType): the element data type.
     """
-    is_taichi_class = True
+    _is_taichi_class = True
 
     def __init__(self, n=1, m=1, dt=None, suppress_warning=False):
         self.local_tensor_proxy = None
@@ -152,12 +152,12 @@ class Matrix(TaichiOperations):
                 UserWarning,
                 stacklevel=2)
 
-    def element_wise_binary(self, foo, other):
-        other = self.broadcast_copy(other)
+    def _element_wise_binary(self, foo, other):
+        other = self._broadcast_copy(other)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
 
-    def broadcast_copy(self, other):
+    def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if not isinstance(other, Matrix):
@@ -166,26 +166,26 @@ class Matrix(TaichiOperations):
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
-    def element_wise_ternary(self, foo, other, extra):
-        other = self.broadcast_copy(other)
-        extra = self.broadcast_copy(extra)
+    def _element_wise_ternary(self, foo, other, extra):
+        other = self._broadcast_copy(other)
+        extra = self._broadcast_copy(extra)
         return Matrix([[
             foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
         ] for i in range(self.n)])
 
-    def element_wise_writeback_binary(self, foo, other):
+    def _element_wise_writeback_binary(self, foo, other):
         if foo.__name__ == 'assign' and not isinstance(other,
                                                        (list, tuple, Matrix)):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
-        other = self.broadcast_copy(other)
+        other = self._broadcast_copy(other)
         entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
                    for i in range(self.n)]
         return self if foo.__name__ == 'assign' else Matrix(entries)
 
-    def element_wise_unary(self, foo):
+    def _element_wise_unary(self, foo):
         return Matrix([[foo(self(i, j)) for j in range(self.m)]
                        for i in range(self.n)])
 
@@ -211,7 +211,7 @@ class Matrix(TaichiOperations):
                 entries[i].append(acc)
         return Matrix(entries)
 
-    def linearize_entry_id(self, *args):
+    def _linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
@@ -238,15 +238,15 @@ class Matrix(TaichiOperations):
 
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
-        ret = self.entries[self.linearize_entry_id(*args)]
+        ret = self.entries[self._linearize_entry_id(*args)]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
             ret = ret.getter()
         return ret
 
-    def set_entry(self, i, j, e):
-        idx = self.linearize_entry_id(i, j)
+    def _set_entry(self, i, j, e):
+        idx = self._linearize_entry_id(i, j)
         if impl.inside_kernel():
             self.entries[idx].assign(e)
         else:
@@ -331,9 +331,8 @@ class Matrix(TaichiOperations):
     def w(self, value):
         self[3] = value
 
-    @property
     @python_scope
-    def value(self):
+    def _value(self):
         return Matrix(self.to_list())
 
     def to_list(self):
@@ -371,7 +370,7 @@ class Matrix(TaichiOperations):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
-        self.set_entry(i, j, item)
+        self._set_entry(i, j, item)
 
     def __len__(self):
         """Get the length of each row of a matrix"""
@@ -383,7 +382,7 @@ class Matrix(TaichiOperations):
         return ([self(i, j) for j in range(self.m)] for i in range(self.n))
 
     @python_scope
-    def set_entries(self, value):
+    def _set_entries(self, value):
         if not isinstance(value, (list, tuple)):
             value = list(value)
         if not isinstance(value[0], (list, tuple)):
@@ -565,9 +564,9 @@ class Matrix(TaichiOperations):
         for i in range(dim):
             for j in range(dim):
                 if i == j:
-                    ret.set_entry(i, j, val)
+                    ret._set_entry(i, j, val)
                 else:
-                    ret.set_entry(i, j, 0 * val)
+                    ret._set_entry(i, j, 0 * val)
                     # TODO: need a more systematic way to create a "0" with the right type
         return ret
 
@@ -654,7 +653,7 @@ class Matrix(TaichiOperations):
         def assign_renamed(x, y):
             return ops_mod.assign(x, y)
 
-        return self.element_wise_writeback_binary(assign_renamed, val)
+        return self._element_wise_writeback_binary(assign_renamed, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):
@@ -669,7 +668,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.value).reshape(shape_ext)
+        return np.array(self._value()).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1241,7 +1240,7 @@ class MatrixField(Field):
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
-        self[key].set_entries(value)
+        self[key]._set_entries(value)
 
     @python_scope
     def __getitem__(self, key):

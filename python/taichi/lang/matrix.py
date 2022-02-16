@@ -1365,7 +1365,7 @@ class MatrixNdarray(Ndarray):
         ret_arr.copy_from(self)
         return ret_arr
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
@@ -1422,7 +1422,7 @@ class VectorNdarray(Ndarray):
         ret_arr.copy_from(self)
         return ret_arr
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)

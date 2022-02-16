@@ -106,7 +106,7 @@ def test_atomic_add_demoted():
             s = i
             # Both adds should get demoted.
             x[i] = ti.atomic_add(s, step)
-            y[i] = s.atomic_add(step)
+            y[i] = ti.atomic_add(s, step)
 
     func()
 
@@ -192,13 +192,13 @@ def test_atomic_add_with_if_simplify():
                 # A sequence of commands designed such that atomic_add() is the only
                 # thing to decide whether the if branch can be simplified.
                 s = i
-                j = s.atomic_add(s)
+                j = ti.atomic_add(s, s)
                 k = j + s
                 x[i] = k
             else:
                 # If we look at the IR, this branch should be simplified, since nobody
                 # is using atomic_add's result.
-                x[i].atomic_add(i)
+                ti.atomic_add(x[i], i)
                 x[i] += step
 
     func()

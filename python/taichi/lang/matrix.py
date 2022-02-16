@@ -249,7 +249,7 @@ class Matrix(TaichiOperations):
     def set_entry(self, i, j, e):
         idx = self.linearize_entry_id(i, j)
         if impl.inside_kernel():
-            self.entries[idx].assign(e)
+            self.entries[idx]._assign(e)
         else:
             if isinstance(self.entries[idx], SNodeHostAccess):
                 self.entries[idx].accessor.setter(e, *self.entries[idx].key)

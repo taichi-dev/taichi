@@ -258,7 +258,7 @@ class Matrix(TaichiOperations):
                 self.entries[idx] = e
 
     @taichi_scope
-    def subscript(self, *indices):
+    def _subscript(self, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -286,28 +286,28 @@ class Matrix(TaichiOperations):
     def x(self):
         """Get the first element of a matrix."""
         if impl.inside_kernel():
-            return self.subscript(0)
+            return self._subscript(0)
         return self[0]
 
     @property
     def y(self):
         """Get the second element of a matrix."""
         if impl.inside_kernel():
-            return self.subscript(1)
+            return self._subscript(1)
         return self[1]
 
     @property
     def z(self):
         """Get the third element of a matrix."""
         if impl.inside_kernel():
-            return self.subscript(2)
+            return self._subscript(2)
         return self[2]
 
     @property
     def w(self):
         """Get the fourth element of a matrix."""
         if impl.inside_kernel():
-            return self.subscript(3)
+            return self._subscript(3)
         return self[3]
 
     # since Taichi-scope use v.x.assign() instead

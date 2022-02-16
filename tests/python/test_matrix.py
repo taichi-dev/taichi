@@ -55,7 +55,7 @@ def test_python_scope_vector_field(ops):
     a, b = test_vector_arrays[:2]
     t1[None], t2[None] = a.tolist(), b.tolist()
 
-    c = ops(t1[None].value, t2[None].value)
+    c = ops(t1[None], t2[None])
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
@@ -68,7 +68,7 @@ def test_python_scope_matrix_field(ops):
     # ndarray not supported here
     t1[None], t2[None] = a.tolist(), b.tolist()
 
-    c = ops(t1[None].value, t2[None].value)
+    c = ops(t1[None], t2[None])
     print(c)
 
     assert np.allclose(c.to_numpy(), ops(a, b))
@@ -138,8 +138,8 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 
     run()
 
-    assert np.allclose(r1[None].value.to_numpy(), ops(a, b))
-    assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
+    assert np.allclose(r1[None].to_numpy(), ops(a, b))
+    assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
@@ -159,8 +159,8 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 
     run()
 
-    assert np.allclose(r1[None].value.to_numpy(), ops(a, b))
-    assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
+    assert np.allclose(r1[None].to_numpy(), ops(a, b))
+    assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
 @test_utils.test()
@@ -272,7 +272,7 @@ def test_vector_to_list():
     assert len(b) == len(data)
 
     a[None] = b
-    assert all(a[None].value == ti.Vector(data))
+    assert all(a[None] == ti.Vector(data))
 
 
 @test_utils.test(arch=ti.cpu)
@@ -285,7 +285,7 @@ def test_matrix_to_list():
     assert len(b) == len(data)
 
     a[None] = b
-    assert all(a[None].value == ti.Matrix(data))
+    assert all(a[None] == ti.Matrix(data))
 
 
 @test_utils.test()

@@ -29,9 +29,9 @@ def test_matrix_self_assign():
     b[None] = [[1, 2], [3, 4]]
     c[None] = [2, 3]
     func()
-    assert a[None].value == ti.Vector([inv_sqrt2, inv_sqrt2])
-    assert b[None].value == ti.Matrix([[1, 3], [2, 4]])
-    assert c[None].value == ti.Vector([3, 2])
+    assert a[None] == ti.Vector([inv_sqrt2, inv_sqrt2])
+    assert b[None] == ti.Matrix([[1, 3], [2, 4]])
+    assert c[None] == ti.Vector([3, 2])
 
 
 @test_utils.test()
@@ -44,7 +44,7 @@ def test_random_vector_dup_eval():
 
     for i in range(4):
         func()
-        assert a[None].value.norm_sqr() == test_utils.approx(1)
+        assert a[None].norm_sqr() == test_utils.approx(1)
 
 
 @test_utils.test()

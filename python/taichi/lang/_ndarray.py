@@ -187,7 +187,7 @@ class Ndarray:
         return self.arr.element_size()
 
     @python_scope
-    def get_nelement(self):
+    def _get_nelement(self):
         """Returns the total number of elements.
 
         Returns:

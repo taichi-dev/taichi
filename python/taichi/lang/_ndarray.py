@@ -44,7 +44,7 @@ class Ndarray:
         raise NotImplementedError()
 
     @property
-    def data_handle(self):
+    def _data_handle(self):
         """Gets the pointer to underlying data.
 
         Returns:

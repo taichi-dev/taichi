@@ -52,8 +52,4 @@ if record_file:
 __all__ = [
     'start_recording',
     'stop_recording',
-    'record_action_hint',
-    'record_action_entry',
-    'record_action_config',
-    'RecordKernelGroup',
 ]

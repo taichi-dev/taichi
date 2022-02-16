@@ -409,8 +409,6 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
-  VkPipelineLayout last_bound_layout_{VK_NULL_HANDLE};
-
   std::unordered_map<VulkanResourceBinder::Set,
                      vkapi::IVkDescriptorSet,
                      VulkanResourceBinder::DescSetHasher,

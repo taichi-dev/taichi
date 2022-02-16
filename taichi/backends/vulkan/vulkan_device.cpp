@@ -750,8 +750,6 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
                             /*dynamicOffsetCount=*/0,
                             /*pDynamicOffsets=*/nullptr);
     buffer_->refs.push_back(set);
-
-    last_bound_layout_ = pipeline_layout;
   }
 
   if (current_pipeline_->is_graphics()) {

@@ -96,7 +96,7 @@ class Ndarray:
         else:
             self._fill_by_kernel(val)
 
-    def ndarray_to_numpy(self):
+    def _ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
 
         Returns:
@@ -111,7 +111,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-    def ndarray_matrix_to_numpy(self, as_vector):
+    def _ndarray_matrix_to_numpy(self, as_vector):
         """Converts matrix ndarray to a numpy array.
 
         Returns:
@@ -226,7 +226,7 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    def pad_key(self, key):
+    def _pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
@@ -262,18 +262,18 @@ class ScalarNdarray(Ndarray):
             self.arr.__setitem__(key, value)
         else:
             self._initialize_host_accessor()
-            self.host_accessor.setter(value, *self.pad_key(key))
+            self.host_accessor.setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
         if self.ndarray_use_torch:
             return self.arr.__getitem__(key)
         self._initialize_host_accessor()
-        return self.host_accessor.getter(*self.pad_key(key))
+        return self.host_accessor.getter(*self._pad_key(key))
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_to_numpy()
+        return self._ndarray_to_numpy()
 
     @python_scope
     def from_numpy(self, arr):
@@ -345,12 +345,12 @@ class NdarrayHostAccess:
             def getter():
                 self.ndarr._initialize_host_accessor()
                 return self.ndarr.host_accessor.getter(
-                    *self.ndarr.pad_key(self.indices))
+                    *self.ndarr._pad_key(self.indices))
 
             def setter(value):
                 self.ndarr._initialize_host_accessor()
                 self.ndarr.host_accessor.setter(
-                    value, *self.ndarr.pad_key(self.indices))
+                    value, *self.ndarr._pad_key(self.indices))
 
         self.getter = getter
         self.setter = setter

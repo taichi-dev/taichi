@@ -1354,7 +1354,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_matrix_to_numpy(as_vector=0)
+        return self._ndarray_matrix_to_numpy(as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
@@ -1412,7 +1412,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_matrix_to_numpy(as_vector=1)
+        return self._ndarray_matrix_to_numpy(as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):

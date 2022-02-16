@@ -62,7 +62,7 @@ def test_unordered():
     assert blk3 in blk2._get_children()
     assert blk2 in blk1._get_children()
     impl.get_runtime().materialize_root_fb(False)
-    assert blk1 in ti.FieldsBuilder.finalized_roots()[0]._get_children()
+    assert blk1 in ti.FieldsBuilder._finalized_roots()[0]._get_children()
 
     expected_str = f'ti.root => dense {[n]} => dense {[m, n]}' \
         f' => dense {[m, p, n]} => place {[m, p, n]}'

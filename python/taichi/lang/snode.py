@@ -277,7 +277,7 @@ class SNode:
         return children
 
     @property
-    def num_dynamically_allocated(self):
+    def _num_dynamically_allocated(self):
         runtime = impl.get_runtime()
         runtime.materialize_root_fb(False)
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)

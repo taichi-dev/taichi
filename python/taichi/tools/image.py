@@ -33,12 +33,12 @@ def cook_image_to_bytes(img):
 
 
 def imresize(img, w, h=None):
-    """Resize an image to a specific size.
+    """Resize an image to a specified size.
 
     Args:
-        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height, ...)`
-        w (int): The output width after resize.
-        h (int, optional): The output height after resize, will be the same as width if not set. Default to `None`.
+        img (Union[:class:`~taichi.lang.field.Field`, `np.ndarray`]): A field or an numpy ndarray with shape `(width, height, ...)`.
+        w (int): The output image width after resize.
+        h (int, optional): The output image height after resize, will be the same as `w` if not set. Default to `None`.
 
     Returns:
         np.ndarray: An output image after resize input.
@@ -57,11 +57,13 @@ def imresize(img, w, h=None):
 
 
 def imwrite(img, filename):
-    """Save a field to a a specific file.
+    """Save a field or an array as an image.
 
     Args:
-        img (Union[ti.field, np.ndarray]): A field of shape `(height, width)` or `(height, width, 3)` or `(height, width, 4)`, \
-            if dtype is float-type (`ti.f16`, `ti.f32`, `np.float32` etc), **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]\
+        img (Union[:class:`taichi.lang.field.Field`, np.ndarray]): A field or an numpy.ndarray, with shape \
+            `(height, width)` or `(height, width, 3)` or `(height, width, 4)`, \
+            if dtype is float-type (`ti.f16`, `ti.f32`, `np.float32` etc), **the elements in the array should be float in range \[0.0, 1.0\]**. \
+                Otherwise `ti.imwrite` will clamp them into \[0.0, 1.0\]\
                 if dtype is int-type (`ti.u8`, `ti.u16`, `np.uint8` etc), , **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
         filename (str): The filename to save to.
     """
@@ -73,14 +75,14 @@ def imwrite(img, filename):
 
 
 def imread(filename, channels=0):
-    """Load image from a specific file.
+    """Read an image from a file as an numpy.ndarray.
 
     Args:
-        filename (str): An image filename to load from.
-        channels (int, optinal): The channels hint of input image, Default to 0.
+        filename (str): The file name to be read.
+        channels (int, optinal): Number of channels in the image, default to 0.
 
     Returns:
-        np.ndarray : An output image loaded from given filename.
+        np.ndarray: The `numpy.ndarray` obtained by reading the image.
     """
     ptr, resx, resy, comp = _ti_core.imread(filename, channels)
     img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
@@ -92,11 +94,12 @@ def imread(filename, channels=0):
 
 
 def imshow(img, title='imshow'):
-    """Display a taichi.field or a numpy.ndarray in a Taichi GUI window or an interactive Ipython notebook.
-    For an interactive Ipython environment, the image will be shown in the notebook.
+    """Display a `taichi.field` or an `numpy.ndarray` in a Taichi GUI window or an interactive Ipython notebook.
 
     Args:
-        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
+        img (Union[:class:`taichi.lang.field.Field`, np.ndarray]): A field or an numpy.ndarray with shape \
+            `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
+
         title (str, optional): The title of GUI window. Default to `imshow`.
     """
     try:  # check if we are in Ipython environment

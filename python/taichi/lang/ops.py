@@ -127,12 +127,12 @@ def cast(obj, dtype):
     Args:
         obj (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
-        dtype (Union[`~taichi.types`]): A data type defined in `~tachi.types` like `i32`, `f64`.
+        dtype (:mod:`~taichi.types`): A data type defined in :mod:`~tachi.types` like `i32`, `f64`.
 
     Returns:
-        A copy of `obj` and casted to the specified data type `dtype`.
+        A copy of `obj`, casted to the specified data type `dtype`.
 
-    Example::
+    Example:
         >>> @ti.kernel
         >>> def main():
         >>>     x = 2.0
@@ -144,8 +144,8 @@ def cast(obj, dtype):
         >>>     print(a, b)
         >>>
         >>> main()
-        >>> 2.000000 2
-        >>> [0, 1, 2, 3] [0.000000, 1.000000, 2.000000, 3.000000]
+        >>> 2.0 2
+        >>> [0, 1, 2, 3] [0.0, 1.0, 2.0, 3.0]
     """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):

@@ -14,9 +14,12 @@ float64 = ti_core.DataType_f64
 f64 = float64
 """Alias for :const:`~taichi.types.primitive_types.float64`
 """
-
 float16 = ti_core.DataType_f16
+"""16-bit precision floating point data type.
+"""
 f16 = float16
+"""Alias for :const:`~taichi.types.primitive_types.float16`
+"""
 
 real_types = [f16, f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
@@ -24,9 +27,17 @@ real_type_ids = [id(t) for t in real_types]
 # Integer types
 
 int8 = ti_core.DataType_i8
+"""8-bit signed integer data type.
+"""
 i8 = int8
+"""Alias for :const:`~taichi.types.primitive_types.int8`
+"""
 int16 = ti_core.DataType_i16
+"""16-bit signed integer data type.
+"""
 i16 = int16
+"""Alias for :const:`~taichi.types.primitive_types.int16`
+"""
 int32 = ti_core.DataType_i32
 """32-bit signed integer data type.
 """
@@ -41,9 +52,17 @@ i64 = int64
 """
 
 uint8 = ti_core.DataType_u8
+"""8-bit unsigned integer data type.
+"""
 u8 = uint8
+"""Alias for :const:`~taichi.types.primitive_types.uint8`
+"""
 uint16 = ti_core.DataType_u16
+"""16-bit unsigned integer data type.
+"""
 u16 = uint16
+"""Alias for :const:`~taichi.types.primitive_types.uint16`
+"""
 uint32 = ti_core.DataType_u32
 """32-bit unsigned integer data type.
 """

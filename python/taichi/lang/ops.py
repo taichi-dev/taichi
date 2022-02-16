@@ -162,8 +162,8 @@ def bit_cast(obj, dtype):
     Args:
         obj (Union[:class:`~taichi.lang.expr.Expr`]): Input scalar.
 
-        dtype (Union[`~taichi.types`]): A data type defined in `~tachi.types` like `i32`, `f64`, must have
-        the same precision bits as the input type (hence `f32` -> `f64` is not allowed).
+        dtype (Union[`~taichi.types`]): A data type defined in `~tachi.types` like `i32`, `f64`, \
+            must have the same precision bits as the input type (hence `f32` -> `f64` is not allowed).
 
     Returns:
         A copy of `obj` and casted to the specified data type `dtype`.
@@ -417,7 +417,7 @@ def ceil(x):
 
     The ceil of the scalar `x` is the smallest integer `k`, such that `k >= x`.
 
-    Args
+    Args:
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Input scalar or matrix.
 
     Returns:
@@ -775,8 +775,7 @@ def pow(x1, x2):  # pylint: disable=W0622
 
     Args:
         x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The bases.
-        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The exponents. 
-        If both `x1` and `x2` are matrices they must have the same shape.
+        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): The exponents.
 
     Returns:
         The bases in `x1` raised to the exponents in `x2`. This is a scalar if both `x1` and `x2` are scalars.
@@ -912,8 +911,8 @@ def raw_div(x1, x2):
     """Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.
 
     Args:
-        x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Dividend scalar or matrix.
-        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Divisor scalar or matrix.
+        x1 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Dividend.
+        x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Divisor.
 
     Returns:
         Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.

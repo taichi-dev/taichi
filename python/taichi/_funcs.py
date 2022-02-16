@@ -95,14 +95,33 @@ def polar_decompose2d(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed 2x2 matrices `U` and `P`.
+        Decomposed 2x2 matrices `U` and `P`. `U` is a 2x2 orthogonal matrix
+        and `P` is a 2x2 positive or semi-positive definite matrix.
     """
-    x, y = A(0, 0) + A(1, 1), A(1, 0) - A(0, 1)
-    scale = (1.0 / ops.sqrt(x * x + y * y))
-    c = x * scale
-    s = y * scale
-    r = Matrix([[c, -s], [s, c]], dt=dt)
-    return r, r.transpose() @ A
+    U = Matrix.identity(dt, 2)
+    P = ops.cast(A, dt)
+    zero = ops.cast(0.0, dt)
+    # if A is the zero matrix we simply return the pair (I, A)
+    if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero and A[0, 0] == zero):
+        pass
+    
+    else:
+        detA = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]
+        adetA = abs(detA)
+        B = Matrix([[A[0, 0] + A[1, 1], A[0, 1] - A[1, 0]],
+                    [A[1, 0] - A[0, 1], A[1, 1] + A[0, 0]]], dt)
+
+        if detA < zero:
+            B = Matrix([[A[0, 0] - A[1, 1], A[0, 1] + A[1, 0]],
+                        [A[1, 0] + A[0, 1], A[1, 1] - A[0, 0]]], dt)
+        
+        # here det(B) != 0 if A is not the zero matrix
+        adetB = abs(B[0, 0] * B[1, 1] - B[1, 0] * B[0, 1])
+        k = ops.cast(1.0, dt) / ops.sqrt(adetB)
+        U = B * k
+        P = (A.transpose() @ A + adetA * Matrix.identity(dt, 2)) * k
+
+    return U, P
 
 
 @func
@@ -311,8 +330,10 @@ def _svd(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = svd2d(A, dt)
         return ret
-    else:
+    elif static(A.n == 3):
         return svd3d(A, dt)
+    else:
+        raise Exception("SVD only supports 2D and 3D matrices.")
 
 
 @func
@@ -333,8 +354,11 @@ def _polar_decompose(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = polar_decompose2d(A, dt)
         return ret
-    else:
+    elif static(A.n == 3):
         return polar_decompose3d(A, dt)
+    else:
+        raise Exception(
+            "Polar decomposition only supports 2D and 3D matrices.")
 
 
 def polar_decompose(A, dt=None):
@@ -352,9 +376,6 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    if A.n != 2 and A.n != 3:
-        raise Exception(
-            "Polar decomposition only supports 2D and 3D matrices.")
     return _polar_decompose(A, dt)
 
 
@@ -373,8 +394,6 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    if A.n != 2 and A.n != 3:
-        raise Exception("SVD only supports 2D and 3D matrices.")
     return _svd(A, dt)
 
 

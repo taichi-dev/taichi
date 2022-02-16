@@ -297,7 +297,7 @@ class StructField(Field):
         self.register_fields()
 
     @property
-    def name(self):
+    def _name(self):
         return self._name
 
     @property
@@ -305,15 +305,15 @@ class StructField(Field):
         return list(self.field_dict.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.field_dict.values())
 
     @property
-    def items(self):
+    def _items(self):
         return self.field_dict.items()
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
             return self.field_dict[key]
@@ -321,23 +321,23 @@ class StructField(Field):
         return getter
 
     @staticmethod
-    def make_setter(key):
+    def _make_setter(key):
         @python_scope
         def setter(self, value):
             self.field_dict[key] = value
 
         return setter
 
-    def register_fields(self):
+    def _register_fields(self):
         for k in self.keys:
             setattr(
                 StructField, k,
                 property(
-                    StructField.make_getter(k),
-                    StructField.make_setter(k),
+                    StructField._make_getter(k),
+                    StructField._make_setter(k),
                 ))
 
-    def get_field_members(self):
+    def _get_field_members(self):
         """Get A flattened list of all struct elements.
 
         Returns:
@@ -346,7 +346,7 @@ class StructField(Field):
         field_members = []
         for m in self.members:
             assert isinstance(m, Field)
-            field_members += m.get_field_members()
+            field_members += m._get_field_members()
         return field_members
 
     @property
@@ -358,13 +358,13 @@ class StructField(Field):
         """
         return self.members[0].snode
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0].loop_range()
+        return self.members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -390,9 +390,9 @@ class StructField(Field):
         for v in self.members:
             v.fill(val)
 
-    def initialize_host_accessors(self):
+    def _initialize_host_accessors(self):
         for v in self.members:
-            v.initialize_host_accessors()
+            v._initialize_host_accessors()
 
     def get_member_field(self, key):
         """Creates a ScalarField using a specific field member. Only used for quant.
@@ -440,15 +440,15 @@ class StructField(Field):
 
     @python_scope
     def __setitem__(self, indices, element):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         self[indices].set_entries(element)
 
     @python_scope
     def __getitem__(self, indices):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         # scalar fields does not instantiate SNodeHostAccess by default
         entries = {
-            k: v.host_access(self.pad_key(indices))[0] if isinstance(
+            k: v._host_access(self._pad_key(indices))[0] if isinstance(
                 v, ScalarField) else v[indices]
             for k, v in self.items
         }

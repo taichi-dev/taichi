@@ -47,7 +47,7 @@ class Field:
         return self.snode.dtype
 
     @property
-    def name(self):
+    def _name(self):
         """Gets field name.
 
         Returns:
@@ -55,7 +55,7 @@ class Field:
         """
         return self.snode.name
 
-    def parent(self, n=1):
+    def _parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
 
         Args:
@@ -66,7 +66,7 @@ class Field:
         """
         return self.snode.parent(n)
 
-    def get_field_members(self):
+    def _get_field_members(self):
         """Gets field members.
 
         Returns:
@@ -74,7 +74,7 @@ class Field:
         """
         return self.vars
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
@@ -82,7 +82,7 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def set_grad(self, grad):
+    def _set_grad(self, grad):
         """Sets corresponding gradient field.
 
         Args:
@@ -191,7 +191,7 @@ class Field:
             return '<Field: Definition of this field is incomplete>'
         return str(self.to_numpy())
 
-    def pad_key(self, key):
+    def _pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
@@ -199,7 +199,7 @@ class Field:
         assert len(key) == len(self.shape)
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
-    def initialize_host_accessors(self):
+    def _initialize_host_accessors(self):
         if self.host_accessors:
             return
         taichi.lang.impl.get_runtime().materialize()
@@ -207,7 +207,7 @@ class Field:
             SNodeHostAccessor(e.ptr.snode()) for e in self.vars
         ]
 
-    def host_access(self, key):
+    def _host_access(self, key):
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
 
@@ -266,13 +266,13 @@ class ScalarField(Field):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
-        self.host_accessors[0].setter(value, *self.pad_key(key))
+        self._initialize_host_accessors()
+        self.host_accessors[0].setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
-        return self.host_accessors[0].getter(*self.pad_key(key))
+        self._initialize_host_accessors()
+        return self.host_accessors[0].getter(*self._pad_key(key))
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization

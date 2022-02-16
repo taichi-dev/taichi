@@ -839,7 +839,7 @@ class Matrix(TaichiOperations):
         entries, entries_grad = zip(*entries)
         entries, entries_grad = MatrixField(entries, n, m), MatrixField(
             entries_grad, n, m)
-        entries.set_grad(entries_grad)
+        entries._set_grad(entries_grad)
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
@@ -858,11 +858,11 @@ class Matrix(TaichiOperations):
 
             dim = len(shape)
             if layout == Layout.SOA:
-                for e in entries.get_field_members():
+                for e in entries._get_field_members():
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
-                    for e in entries_grad.get_field_members():
+                    for e in entries_grad._get_field_members():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
@@ -1085,7 +1085,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
-            for e in field.get_field_members()
+            for e in field._get_field_members()
         ])
         self.dynamic_index_stride = field.dynamic_index_stride
 
@@ -1119,7 +1119,7 @@ class MatrixField(Field):
         j = 0 if len(indices) == 1 else indices[1]
         return ScalarField(self.vars[i * self.m + j])
 
-    def calc_dynamic_index_stride(self):
+    def _calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
         paths = [ScalarField(var).snode.path_from_root() for var in self.vars]
         num_members = len(paths)
@@ -1241,15 +1241,15 @@ class MatrixField(Field):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         self[key].set_entries(value)
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
-        key = self.pad_key(key)
-        host_access = self.host_access(key)
-        return Matrix([[host_access[i * self.m + j] for j in range(self.m)]
+        self._initialize_host_accessors()
+        key = self._pad_key(key)
+        _host_access = self._host_access(key)
+        return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
                        for i in range(self.n)])
 
     def __repr__(self):

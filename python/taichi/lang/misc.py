@@ -382,21 +382,21 @@ def block_local(*args):
         _logging.warn("""opt_level = 1 is enforced to enable bls analysis.""")
         impl.current_cfg().opt_level = 1
     for a in args:
-        for v in a.get_field_members():
+        for v in a._get_field_members():
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def mesh_local(*args):
     for a in args:
-        for v in a.get_field_members():
+        for v in a._get_field_members():
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
-        for v in a.get_field_members():
+        for v in a._get_field_members():
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.read_only, v.ptr)
 

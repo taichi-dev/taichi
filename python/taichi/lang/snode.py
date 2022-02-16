@@ -144,7 +144,7 @@ class SNode:
 
         for arg in args:
             if isinstance(arg, Field):
-                for var in arg.get_field_members():
+                for var in arg._get_field_members():
                     self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:

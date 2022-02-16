@@ -8,8 +8,8 @@ from tests import test_utils
 ### `ti.test`
 
 
-@test_utils.test(arch=ti.cpu)
-def test_arch_cpu():
+@test_utils.test()
+def test_arch():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i32):
         return ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -17,55 +17,22 @@ def test_arch_cpu():
     assert func()[1, 2] == 6
 
 
-@test_utils.test(arch=ti.gpu)
-def test_arch_gpu():
+@test_utils.test()
+def test_ret_i16():
     @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
+    def func() -> ti.types.matrix(2, 3, ti.i16):
         return ti.Matrix([[1, 2, 3], [4, 5, 6]])
 
     assert func()[1, 2] == 6
+    assert type(func())
 
 
-@test_utils.test(arch=ti.cuda)
-def test_arch_cuda():
+@test_utils.test()
+def test_arch_exceed_limit():
     @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
+    def func() -> ti.types.matrix(3, 10, ti.i32):
+        return ti.Matrix([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                          [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+                          [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]])
 
-    assert func()[1, 2] == 6
-
-
-@test_utils.test(arch=ti.vulkan)
-def test_arch_vulkan():
-    @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
-
-    assert func()[1, 2] == 6
-
-
-@test_utils.test(arch=ti.cc)
-def test_arch_cc():
-    @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
-
-    assert func()[1, 2] == 6
-
-
-@test_utils.test(arch=ti.metal)
-def test_arch_metal():
-    @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
-
-    assert func()[1, 2] == 6
-
-
-@test_utils.test(arch=ti.opengl)
-def test_arch_opengl():
-    @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
-
-    assert func()[1, 2] == 6
+    assert func()[1, 2] == 12

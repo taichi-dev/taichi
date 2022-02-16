@@ -875,7 +875,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_CUDA)
       return CUDAContext::get_instance().get_compute_capability();
 #else
-          TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
 #endif
     } else {
       TI_ERROR("Key {} not supported in query_int64", key);
@@ -904,12 +904,13 @@ void export_lang(py::module &m) {
   m.def("decl_tensor_type",
         [&](std::vector<int> shape, const DataType &element) {
           return TypeFactory::create_tensor_type(shape, element);
-        })
+        });
 
-      py::class_<SNodeRegistry>(m, "SNodeRegistry")
-          .def(py::init<>())
-          .def("create_root", &SNodeRegistry::create_root,
-               py::return_value_policy::reference);
+  py::class_<SNodeRegistry>(m, "SNodeRegistry")
+      .def(py::init<>())
+      .def("create_root", &SNodeRegistry::create_root,
+           py::return_value_policy::reference);
+
   m.def(
       "finalize_snode_tree",
       [](SNodeRegistry *registry, const SNode *root, Program *program,

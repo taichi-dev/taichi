@@ -138,7 +138,7 @@ def cast(obj, dtype):
         >>>     x = 2.0
         >>>     y = ti.cast(x, ti.i32)
         >>>     print(x, y)
-        >>>     
+        >>>
         >>>     a = ti.Matrix([0, 1, 2, 3], ti.i32)
         >>>     b = ti.cast(a, ti.f32)
         >>>     print(a, b)
@@ -266,7 +266,7 @@ def cos(x):
 @unary
 def asin(x):
     """Trigonometric inverse sine, element-wise.
-    
+
     The inverse of `sin` so that, if `y = sin(x)`, then `x = asin(y)`.
 
     Args:
@@ -288,7 +288,7 @@ def asin(x):
 @unary
 def acos(x):
     """Trigonometric inverse sine, element-wise.
-    
+
     The inverse of `cos` so that, if `y = cos(x)`, then `x = acos(y)`.
 
     Args:
@@ -548,7 +548,7 @@ def bit_not(x):
 
     Computes the bit-wise NOT of the underlying binary representation of the integers in `x`.
     This is equivalent to the C/Python operator ~.
-    For signed integer inputs, the two's complement is returned. 
+    For signed integer inputs, the two's complement is returned.
 
     Args:
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): Only integer and boolean types are handled.
@@ -798,7 +798,8 @@ def floordiv(x1, x2):
         >>> main()
         >>> [0.000000, 1.000000, 2.000000]
     """
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, x1, x2)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, x1,
+                             x2)
 
 
 @binary
@@ -825,7 +826,8 @@ def truediv(x1, x2):
         >>> main()
         >>> [0.666667, 1.333333, 2.000000]
     """
-    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, x1, x2)
+    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, x1,
+                             x2)
 
 
 @binary

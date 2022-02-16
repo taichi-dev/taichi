@@ -265,7 +265,7 @@ class SNode:
         """
         return self.ptr.has_grad()
 
-    def get_children(self):
+    def _get_children(self):
         """Gets all children components of `self`.
 
         Returns:
@@ -294,7 +294,7 @@ class SNode:
 
     def deactivate_all(self):
         """Recursively deactivate all children components of `self`."""
-        ch = self.get_children()
+        ch = self._get_children()
         for c in ch:
             c.deactivate_all()
         SNodeType = _ti_core.SNodeType

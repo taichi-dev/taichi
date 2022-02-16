@@ -498,7 +498,7 @@ class _Root:
     @staticmethod
     def get_children():
         """Same as :func:`taichi.SNode.get_children`"""
-        return _root_fb.root.get_children()
+        return _root_fb.root._get_children()
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
     @staticmethod

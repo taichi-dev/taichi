@@ -136,7 +136,7 @@ class MeshElementField:
 
     def _get_field_members(self):
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
             field_members += m._get_field_members()
         return field_members
@@ -150,11 +150,11 @@ class MeshElementField:
 
     @python_scope
     def fill(self, val):
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
     def _initialize_host_accessors(self):
-        for v in self.members:
+        for v in self._members:
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
@@ -162,21 +162,21 @@ class MeshElementField:
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
     def to_numpy(self):
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
 
     @python_scope
     def __len__(self):

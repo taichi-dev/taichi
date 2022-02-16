@@ -294,7 +294,7 @@ class StructField(Field):
         # will not call Field initializer
         self.field_dict = field_dict
         self._name = name
-        self.register_fields()
+        self._register_fields()
 
     @property
     def _name(self):
@@ -344,7 +344,7 @@ class StructField(Field):
             A list of struct elements.
         """
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
             field_members += m._get_field_members()
         return field_members
@@ -356,7 +356,7 @@ class StructField(Field):
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
-        return self.members[0].snode
+        return self._members[0].snode
 
     def _loop_range(self):
         """Gets representative field member for loop range info.
@@ -364,7 +364,7 @@ class StructField(Field):
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0]._loop_range()
+        return self._members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -387,11 +387,11 @@ class StructField(Field):
         Args:
             val (Union[int, float]): Value to fill.
         """
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
     def _initialize_host_accessors(self):
-        for v in self.members:
+        for v in self._members:
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
@@ -407,12 +407,12 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
@@ -424,7 +424,7 @@ class StructField(Field):
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
@@ -436,7 +436,7 @@ class StructField(Field):
         Returns:
             Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
         """
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
 
     @python_scope
     def __setitem__(self, indices, element):

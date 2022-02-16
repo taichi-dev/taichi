@@ -102,7 +102,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    ast_builder.begin_frontend_struct_for(group, loop_range.loop_range())
+    ast_builder.begin_frontend_struct_for(group, loop_range._loop_range())
 
 
 def begin_frontend_if(ast_builder, cond):
@@ -491,14 +491,14 @@ class _Root:
         return _root_fb.root.parent(n)
 
     @staticmethod
-    def loop_range():
+    def _loop_range():
         """Same as :func:`taichi.SNode.loop_range`"""
-        return _root_fb.root.loop_range()
+        return _root_fb.root._loop_range()
 
     @staticmethod
-    def get_children():
+    def _get_children():
         """Same as :func:`taichi.SNode.get_children`"""
-        return _root_fb.root.get_children()
+        return _root_fb.root._get_children()
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
     @staticmethod
@@ -514,8 +514,8 @@ class _Root:
         return _root_fb.root.shape
 
     @property
-    def id(self):
-        return _root_fb.root.id
+    def _id(self):
+        return _root_fb.root._id
 
     def __getattr__(self, item):
         return getattr(_root_fb, item)

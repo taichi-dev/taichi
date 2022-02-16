@@ -1121,7 +1121,7 @@ class MatrixField(Field):
 
     def calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
-        paths = [ScalarField(var).snode.path_from_root() for var in self.vars]
+        paths = [ScalarField(var).snode._path_from_root() for var in self.vars]
         num_members = len(paths)
         if num_members == 1:
             self.dynamic_index_stride = 0
@@ -1138,15 +1138,15 @@ class MatrixField(Field):
                 break
         for i in range(depth_below_lca, length - 1):
             if any(path[i].ptr.type != ti_core.SNodeType.dense
-                   or path[i].cell_size_bytes != paths[0][i].cell_size_bytes
-                   or path[i + 1].offset_bytes_in_parent_cell != paths[0][
-                       i + 1].offset_bytes_in_parent_cell for path in paths):
+                   or path[i]._cell_size_bytes != paths[0][i]._cell_size_bytes
+                   or path[i + 1]._offset_bytes_in_parent_cell != paths[0][
+                       i + 1]._offset_bytes_in_parent_cell for path in paths):
                 return
-        stride = paths[1][depth_below_lca].offset_bytes_in_parent_cell - \
-                 paths[0][depth_below_lca].offset_bytes_in_parent_cell
+        stride = paths[1][depth_below_lca]._offset_bytes_in_parent_cell - \
+                 paths[0][depth_below_lca]._offset_bytes_in_parent_cell
         for i in range(2, num_members):
-            if stride != paths[i][depth_below_lca].offset_bytes_in_parent_cell \
-                    - paths[i - 1][depth_below_lca].offset_bytes_in_parent_cell:
+            if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
+                    - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
                 return
         self.dynamic_index_stride = stride
 

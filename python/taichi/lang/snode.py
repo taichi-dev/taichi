@@ -288,7 +288,7 @@ class SNode:
         return self.ptr.cell_size_bytes
 
     @property
-    def offset_bytes_in_parent_cell(self):
+    def _offset_bytes_in_parent_cell(self):
         impl.get_runtime().materialize_root_fb(False)
         return self.ptr.offset_bytes_in_parent_cell
 

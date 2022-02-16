@@ -239,7 +239,7 @@ class SNode:
         return _ti_core.global_var_expr_from_snode(self.ptr)
 
     @property
-    def name(self):
+    def _name(self):
         """Gets the name of `self`.
 
         Returns:

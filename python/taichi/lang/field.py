@@ -53,7 +53,7 @@ class Field:
         Returns:
             str: Field name.
         """
-        return self.snode.name
+        return self.snode._name
 
     def parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.

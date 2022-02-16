@@ -109,4 +109,9 @@ template = Template
 """Alias for :class:`~taichi.types.annotations.Template`.
 """
 
-__all__ = ['ext_arr', 'any_arr', 'template']
+
+class sparse_matrix_builder:
+    pass
+
+
+__all__ = ['ext_arr', 'any_arr', 'template', 'sparse_matrix_builder']

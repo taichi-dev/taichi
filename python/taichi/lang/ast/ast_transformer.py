@@ -16,8 +16,6 @@ from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types
 
-from taichi import linalg
-
 if version_info < (3, 9):
     from astunparse import unparse
 else:
@@ -425,7 +423,7 @@ class ASTTransformer(Builder):
                               annotations.template):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
-                                linalg.sparse_matrix_builder):
+                                annotations.sparse_matrix_builder):
                     ctx.create_variable(arg.arg,
                                         kernel_arguments.decl_sparse_matrix())
                 elif isinstance(ctx.func.argument_annotations[i],

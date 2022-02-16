@@ -40,7 +40,7 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+    def fill(Abuilder: ti.types.sparse_matrix_builder(),
              InputArray: ti.ext_arr(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += InputArray[i, j]

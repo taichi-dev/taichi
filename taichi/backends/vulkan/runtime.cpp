@@ -566,7 +566,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // and if the accumulated cmdlist has been pending for some time
   // launch the cmdlist to start processing.
   if (current_cmdlist_) {
-    constexpr uint64_t max_pending_time = 2000;  // 3000us = 2ms
+    constexpr uint64_t max_pending_time = 2000;  // 2000us = 2ms
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {

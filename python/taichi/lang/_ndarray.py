@@ -86,7 +86,7 @@ class Ndarray:
         elif impl.current_cfg(
         ).arch != _ti_core.Arch.cuda and impl.current_cfg(
         ).arch != _ti_core.Arch.x64:
-            self.fill_by_kernel(val)
+            self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             self.arr.fill_float(val)
         elif self.dtype == primitive_types.i32:
@@ -94,7 +94,7 @@ class Ndarray:
         elif self.dtype == primitive_types.u32:
             self.arr.fill_uint(val)
         else:
-            self.fill_by_kernel(val)
+            self._fill_by_kernel(val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -218,7 +218,7 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         """Fills ndarray with a specific scalar value using a ti.kernel.
 
         Args:
@@ -284,7 +284,7 @@ class ScalarNdarray(Ndarray):
         ret_arr.copy_from(self)
         return ret_arr
 
-    def fill_by_kernel(self, val):
+    def _fill_by_kernel(self, val):
         from taichi._kernels import fill_ndarray  # pylint: disable=C0415
         fill_ndarray(self, val)
 

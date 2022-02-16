@@ -46,4 +46,4 @@ While originally designed for physics simulation, Taichi has found its applicati
 
 **Maybe a new frontend?**
 
-The benefit of adopting the compiler approach is the decoupling of the frontend from the backend. Taichi is embedded Python, but who says it needs to stay that way? Stay tuned :-)
+The benefit of adopting the compiler approach is to decouple the frontend from the backend. Taichi is embedded Python, but who says it needs to stay that way? Stay tuned :-)

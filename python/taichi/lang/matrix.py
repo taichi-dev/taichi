@@ -332,11 +332,6 @@ class Matrix(TaichiOperations):
     def w(self, value):
         self[3] = value
 
-    @property
-    @python_scope
-    def _value(self):
-        return Matrix(self.to_list())
-
     def to_list(self):
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
@@ -670,7 +665,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self._value).reshape(shape_ext)
+        return np.array(self.to_list()).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):

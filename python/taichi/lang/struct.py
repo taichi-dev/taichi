@@ -293,8 +293,12 @@ class StructField(Field):
     def __init__(self, field_dict, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self._name = name
+        self.__name = name
         self._register_fields()
+
+    @property
+    def _name(self):
+        return self.__name
 
     @property
     def keys(self):

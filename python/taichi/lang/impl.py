@@ -186,7 +186,7 @@ def subscript(value, *_indices, skip_reordered=False):
         if isinstance(value, StructField):
             return _IntermediateStruct(
                 {k: subscript(v, *_indices)
-                 for k, v in value.items})
+                 for k, v in value._items})
         return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim

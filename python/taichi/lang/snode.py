@@ -186,7 +186,7 @@ class SNode:
             return impl.root
         return SNode(p)
 
-    def path_from_root(self):
+    def _path_from_root(self):
         """Gets the path from root to `self` in the SNode tree.
 
         Returns:

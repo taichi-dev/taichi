@@ -1120,7 +1120,7 @@ class MatrixField(Field):
 
     def calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
-        paths = [ScalarField(var).snode.path_from_root() for var in self.vars]
+        paths = [ScalarField(var).snode._path_from_root() for var in self.vars]
         num_members = len(paths)
         if num_members == 1:
             self.dynamic_index_stride = 0

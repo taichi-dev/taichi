@@ -1837,16 +1837,10 @@ class TaskCodegen : public IRVisitor {
     // Now we only have one ret
     for (auto &ret : ctx_attribs_->rets()) {
       if (auto tensor_type = ret.dt->cast<TensorType>()) {
-        for (int i = 0; i < tensor_type->get_num_elements(); i++) {
-          struct_components_.emplace_back(
-              ir_->i32_type(),
-              "ret" + std::to_string(ret.index) + std::to_string(i) + "0",
-              ret.offset_in_mem + (i << 3));
-          struct_components_.emplace_back(
-              ir_->i32_type(),
-              "ret" + std::to_string(ret.index) + std::to_string(i) + "1",
-              ret.offset_in_mem + (i << 3) + 4);
-        }
+        struct_components_.emplace_back(
+            ir_->get_array_type(ir_->i64_type(),
+                                tensor_type->get_num_elements()),
+            "retarr" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
         struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
                                         "ret" + std::to_string(ret.index),

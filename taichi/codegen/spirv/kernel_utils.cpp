@@ -67,28 +67,13 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ra.dt = kr.dt;
     size_t dt_bytes{0};
     if (auto tensor_type = ra.dt->cast<TensorType>()) {
-      dt_bytes = data_type_size(ra.dt);
+      dt_bytes = data_type_size(PrimitiveType::i64);
       ra.is_array = true;
-      ra.stride = tensor_type->get_num_elements() * dt_bytes * 2;
-      // we use two slots to represent one element
-      if (dt_bytes > 4) {
-        // Metal doesn't support 64bit data buffers.
-        TI_ERROR(
-            "SPIRV kernel only supports less than 32-bit return value, got {} "
-            "which is Tensor's element type",
-            data_type_name(tensor_type->get_element_type()));
-      }
+      ra.stride = tensor_type->get_num_elements() * dt_bytes;
     } else {
       dt_bytes = data_type_size(ra.dt);
       ra.is_array = false;
-      ra.stride = dt_bytes * 2;
-      // we use two slots to represent one element
-      if (dt_bytes > 4) {
-        // Metal doesn't support 64bit data buffers.
-        TI_ERROR(
-            "SPIRV kernel only supports less than 32-bit return value, got {}",
-            data_type_name(ra.dt));
-      }
+      ra.stride = dt_bytes;
     }
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);
@@ -135,7 +120,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = data_type_size(attribs.dt);
+      const size_t dt_bytes = element_type_size(attribs.dt);
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;

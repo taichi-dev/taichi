@@ -105,8 +105,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
             "Tensor's element type",
             metal_data_type_name(mr.dt));
       }
-      mr.stride = tensor_type->get_num_elements() * dt_bytes * 2;
-      // we use two slots to represent one element
+      mr.stride = tensor_type->get_num_elements() *
+                  metal_data_type_bytes(MetalDataType::i64);
     } else {
       mr.dt = to_metal_type(kr.dt);
       const size_t dt_bytes = metal_data_type_bytes(mr.dt);
@@ -116,7 +116,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
         TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
                  metal_data_type_name(mr.dt));
       }
-      mr.stride = dt_bytes * 2;
+      mr.stride = metal_data_type_bytes(MetalDataType::i64);
       // we use two slots to represent one element
     }
     mr.index = ret_attribs_vec_.size();
@@ -145,7 +145,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+      const size_t dt_bytes = metal_data_type_bytes(MetalDataType::i64);
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;

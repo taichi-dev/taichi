@@ -386,13 +386,8 @@ void export_lang(py::module &m) {
              return program->current_callable->insert_arr_arg(dt, total_dim,
                                                               shape);
            })
-      .def("decl_ret",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_ret(dt);
-           })
-      .def("decl_tensor_type", [&](Program *program, std::vector<int> shape,
-                                   const DataType &element) {
-        return TypeFactory::create_tensor_type(shape, element);
+      .def("decl_ret", [&](Program *program, const DataType &dt) {
+        return program->current_callable->insert_ret(dt);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -488,8 +483,8 @@ void export_lang(py::module &m) {
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_int_matrix", &Kernel::get_ret_int_matrix)
-      .def("get_ret_float_matrix", &Kernel::get_ret_float_matrix)
+      .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
+      .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -906,10 +901,15 @@ void export_lang(py::module &m) {
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
 
-  py::class_<SNodeRegistry>(m, "SNodeRegistry")
-      .def(py::init<>())
-      .def("create_root", &SNodeRegistry::create_root,
-           py::return_value_policy::reference);
+  m.def("decl_tensor_type",
+        [&](std::vector<int> shape, const DataType &element) {
+          return TypeFactory::create_tensor_type(shape, element);
+        })
+
+      py::class_<SNodeRegistry>(m, "SNodeRegistry")
+          .def(py::init<>())
+          .def("create_root", &SNodeRegistry::create_root,
+               py::return_value_policy::reference);
   m.def(
       "finalize_snode_tree",
       [](SNodeRegistry *registry, const SNode *root, Program *program,

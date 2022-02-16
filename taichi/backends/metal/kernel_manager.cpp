@@ -509,7 +509,6 @@ class HostMetalCtxBlitter {
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
       if (ret.is_array) {
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(host_result_buffer_, device_ptr, ret.stride);
       } else {
         const auto dt = ret.dt;

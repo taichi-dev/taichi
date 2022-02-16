@@ -102,9 +102,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   int64 get_ret_int(int i);
 
-  std::vector<int64> get_ret_int_matrix(int i);
+  std::vector<int64> get_ret_int_tensor(int i);
 
-  std::vector<float64> get_ret_float_matrix(int i);
+  std::vector<float64> get_ret_float_tensor(int i);
 
   void set_arch(Arch arch);
 

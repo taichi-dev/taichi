@@ -345,7 +345,7 @@ int64 Kernel::get_ret_int(int i) {
   }
 }
 
-std::vector<int64> Kernel::get_ret_int_matrix(int i) {
+std::vector<int64> Kernel::get_ret_int_tensor(int i) {
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   auto dt = rets[i].dt->as<TensorType>()->get_element_type();
   std::vector<int64> res;
@@ -377,7 +377,7 @@ std::vector<int64> Kernel::get_ret_int_matrix(int i) {
   return res;
 }
 
-std::vector<float64> Kernel::get_ret_float_matrix(int i) {
+std::vector<float64> Kernel::get_ret_float_tensor(int i) {
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   auto dt = rets[i].dt->as<TensorType>()->get_element_type();
   std::vector<float64> res;

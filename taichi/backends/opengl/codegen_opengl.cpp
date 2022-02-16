@@ -851,9 +851,9 @@ class KernelGen : public IRVisitor {
     int idx{0};
     for (auto &value : stmt->values) {
       emit("_args_{}_[({} >> {}) + {}] = {};",
-           opengl_data_type_short_name(value->element_type()),
+           opengl_data_type_short_name(PrimitiveType::i32),
            taichi_opengl_ret_base,
-           opengl_data_address_shifter(value->element_type()), idx,
+           opengl_data_address_shifter(PrimitiveType::i32), idx,
            value->short_name());
       idx += 2;
       // opengl only support i32 array, but there are i64 slots in

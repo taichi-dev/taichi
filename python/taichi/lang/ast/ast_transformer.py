@@ -519,10 +519,7 @@ class ASTTransformer(Builder):
                 elif isinstance(ctx.func.return_type, MatrixType):
                     ctx.ast_builder.create_kernel_exprgroup_return(
                         expr.make_expr_group([
-                            ti_ops.cast(
-                                exp, ctx.func.return_type.dtype if isinstance(
-                                    ctx.func.return_type, MatrixType) else
-                                ctx.func.return_type)
+                            ti_ops.cast(exp, ctx.func.return_type.dtype)
                             for exp in itertools.chain.from_iterable(
                                 node.value.ptr.to_list())
                         ]))

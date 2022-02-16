@@ -1077,7 +1077,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
-    int idx = 0;
+    int idx{0};
     for (auto &value : stmt->values) {
       auto intermediate_bits = 0;
       if (auto cit = value->ret_type->cast<CustomIntType>()) {

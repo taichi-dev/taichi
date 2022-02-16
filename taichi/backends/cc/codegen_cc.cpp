@@ -192,8 +192,6 @@ class CCTransformer : public IRVisitor {
       emit("ti_ctx->args[{}].val_{} = {};", idx++,
            data_type_name(value->element_type()), value->raw_name());
     }
-    // CC backend use arg buffer to access result values, so It doesn't support
-    // paas-by-ref now.
   }
 
   void visit(ConstStmt *stmt) override {

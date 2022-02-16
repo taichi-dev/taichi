@@ -248,7 +248,15 @@ class SNode:
         return self.ptr.name()
 
     @property
-    def _needs_grad(self):
+    def snode(self):
+        """Gets `self`.
+        Returns:
+            SNode: `self`.
+        """
+        return self
+
+    @property
+    def needs_grad(self):
         """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
 
         Returns:

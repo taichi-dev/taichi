@@ -491,12 +491,12 @@ class _Root:
         return _root_fb.root.parent(n)
 
     @staticmethod
-    def loop_range():
+    def _loop_range():
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root._loop_range()
 
     @staticmethod
-    def get_children():
+    def _get_children():
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root._get_children()
 
@@ -514,7 +514,7 @@ class _Root:
         return _root_fb.root.shape
 
     @property
-    def id(self):
+    def _id(self):
         return _root_fb.root._id
 
     def __getattr__(self, item):
@@ -549,7 +549,7 @@ def create_field_member(dtype, name):
     pytaichi.global_vars.append(x)
 
     x_grad = None
-    if _ti_core._needs_grad(dtype):
+    if _ti_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)

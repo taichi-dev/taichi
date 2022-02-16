@@ -74,7 +74,7 @@ class Field:
         """
         return self.vars
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:

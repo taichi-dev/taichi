@@ -178,7 +178,7 @@ class Ndarray:
             impl.get_runtime().sync()
 
     @python_scope
-    def get_element_size(self):
+    def _get_element_size(self):
         """Returns the size of one element in bytes.
 
         Returns:
@@ -187,7 +187,7 @@ class Ndarray:
         return self.arr.element_size()
 
     @python_scope
-    def get_nelement(self):
+    def _get_nelement(self):
         """Returns the total number of elements.
 
         Returns:

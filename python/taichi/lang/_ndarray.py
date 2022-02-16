@@ -262,14 +262,14 @@ class ScalarNdarray(Ndarray):
             self.arr.__setitem__(key, value)
         else:
             self._initialize_host_accessor()
-            self.host_accessor.setter(value, *self.pad_key(key))
+            self.host_accessor.setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
         if self.ndarray_use_torch:
             return self.arr.__getitem__(key)
         self._initialize_host_accessor()
-        return self.host_accessor.getter(*self.pad_key(key))
+        return self.host_accessor.getter(*self._pad_key(key))
 
     @python_scope
     def to_numpy(self):

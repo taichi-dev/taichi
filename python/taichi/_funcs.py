@@ -202,9 +202,9 @@ def svd3d(A, dt, iters=None):
     sigma = expr_init(Matrix.zero(dt, 3, 3))
     for i in range(3):
         for j in range(3):
-            U(i, j).assign(U_entries[i * 3 + j])
-            V(i, j).assign(V_entries[i * 3 + j])
-        sigma(i, i).assign(sig_entries[i])
+            U(i, j)._assign(U_entries[i * 3 + j])
+            V(i, j)._assign(V_entries[i * 3 + j])
+        sigma(i, i)._assign(sig_entries[i])
     return U, sigma, V
 
 

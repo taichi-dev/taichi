@@ -38,7 +38,7 @@ class AnyArray:
             element_dim:] if self.layout == Layout.SOA else ret[:-element_dim]
 
     @taichi_scope
-    def loop_range(self):
+    def _loop_range(self):
         """Gets the corresponding taichi_core.Expr to serve as loop range.
 
         This is not in use now because struct fors on AnyArrays are not supported yet.

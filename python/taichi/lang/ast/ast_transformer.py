@@ -73,7 +73,7 @@ class ASTTransformer(Builder):
             if var.ptr.get_ret_type() != anno:
                 raise TaichiSyntaxError(
                     "Static assign cannot have type overloading")
-            var.assign(value)
+            var._assign(value)
         return var
 
     @staticmethod
@@ -141,7 +141,7 @@ class ASTTransformer(Builder):
         else:
             var = build_stmt(ctx, target)
             try:
-                var.assign(value)
+                var._assign(value)
             except AttributeError:
                 raise TaichiSyntaxError(
                     f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
@@ -561,8 +561,8 @@ class ASTTransformer(Builder):
     def build_AugAssign(ctx, node):
         build_stmt(ctx, node.target)
         build_stmt(ctx, node.value)
-        node.ptr = node.target.ptr.augassign(node.value.ptr,
-                                             type(node.op).__name__)
+        node.ptr = node.target.ptr._augassign(node.value.ptr,
+                                              type(node.op).__name__)
         return node.ptr
 
     @staticmethod
@@ -588,11 +588,11 @@ class ASTTransformer(Builder):
 
         ast_builder.begin_frontend_if_true()
         rhs = ASTTransformer.build_short_circuit_and(ast_builder, operands[1:])
-        val.assign(rhs)
+        val._assign(rhs)
         ast_builder.pop_scope()
 
         ast_builder.begin_frontend_if_false()
-        val.assign(0)
+        val._assign(0)
         ast_builder.pop_scope()
 
         return val
@@ -607,12 +607,12 @@ class ASTTransformer(Builder):
         impl.begin_frontend_if(ast_builder, lhs)
 
         ast_builder.begin_frontend_if_true()
-        val.assign(1)
+        val._assign(1)
         ast_builder.pop_scope()
 
         ast_builder.begin_frontend_if_false()
         rhs = ASTTransformer.build_short_circuit_or(ast_builder, operands[1:])
-        val.assign(rhs)
+        val._assign(rhs)
         ast_builder.pop_scope()
 
         return val
@@ -823,8 +823,8 @@ class ASTTransformer(Builder):
                     impl.expr_init(target_tmp + impl.subscript(
                         impl.subscript(ndrange_var.bounds, i), 0)))
                 if i + 1 < len(targets):
-                    I.assign(I -
-                             target_tmp * ndrange_var.acc_dimensions[i + 1])
+                    I._assign(I -
+                              target_tmp * ndrange_var.acc_dimensions[i + 1])
             build_stmts(ctx, node.body)
             ctx.ast_builder.end_frontend_range_for()
         return None
@@ -858,11 +858,11 @@ class ASTTransformer(Builder):
                     target_tmp = I // ndrange_var.acc_dimensions[i + 1]
                 else:
                     target_tmp = I
-                impl.subscript(target_var,
-                               i).assign(target_tmp + ndrange_var.bounds[i][0])
+                impl.subscript(target_var, i)._assign(target_tmp +
+                                                      ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
-                    I.assign(I -
-                             target_tmp * ndrange_var.acc_dimensions[i + 1])
+                    I._assign(I -
+                              target_tmp * ndrange_var.acc_dimensions[i + 1])
             build_stmts(ctx, node.body)
             ctx.ast_builder.end_frontend_range_for()
         return None
@@ -1102,10 +1102,10 @@ class ASTTransformer(Builder):
 
         impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
         ctx.ast_builder.begin_frontend_if_true()
-        val.assign(node.body.ptr)
+        val._assign(node.body.ptr)
         ctx.ast_builder.pop_scope()
         ctx.ast_builder.begin_frontend_if_false()
-        val.assign(node.orelse.ptr)
+        val._assign(node.orelse.ptr)
         ctx.ast_builder.pop_scope()
 
         node.ptr = val

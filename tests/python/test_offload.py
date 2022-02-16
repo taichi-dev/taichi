@@ -20,8 +20,8 @@ def test_running_loss():
     def compute_loss():
         total_loss[None] = 0.0
         for i in range(steps):
-            total_loss[None].atomic_add(running_loss[i] * 2)
-        total_loss[None].atomic_add(additional_loss[None] * 3)
+            ti.atomic_add(total_loss[None], running_loss[i] * 2)
+        ti.atomic_add(total_loss[None], additional_loss[None] * 3)
 
     compute_loss()
 

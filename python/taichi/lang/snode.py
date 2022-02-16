@@ -210,7 +210,7 @@ class SNode:
         return self.ptr.data_type()
 
     @property
-    def id(self):
+    def _id(self):
         """Gets the id of `self`.
 
         Returns:

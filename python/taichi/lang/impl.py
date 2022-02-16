@@ -515,7 +515,7 @@ class _Root:
 
     @property
     def id(self):
-        return _root_fb.root.id
+        return _root_fb.root._id
 
     def __getattr__(self, item):
         return getattr(_root_fb, item)

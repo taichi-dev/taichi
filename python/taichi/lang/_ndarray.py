@@ -96,7 +96,7 @@ class Ndarray:
         else:
             self.fill_by_kernel(val)
 
-    def ndarray_to_numpy(self):
+    def _ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
 
         Returns:
@@ -111,7 +111,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-    def ndarray_matrix_to_numpy(self, as_vector):
+    def _ndarray_matrix_to_numpy(self, as_vector):
         """Converts matrix ndarray to a numpy array.
 
         Returns:
@@ -273,7 +273,7 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_to_numpy()
+        return self._ndarray_to_numpy()
 
     @python_scope
     def from_numpy(self, arr):

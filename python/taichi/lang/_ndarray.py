@@ -234,7 +234,7 @@ class Ndarray:
         assert len(key) == len(self.arr.shape)
         return key
 
-    def initialize_host_accessor(self):
+    def _initialize_host_accessor(self):
         if self.host_accessor:
             return
         impl.get_runtime().materialize()
@@ -261,14 +261,14 @@ class ScalarNdarray(Ndarray):
         if self.ndarray_use_torch:
             self.arr.__setitem__(key, value)
         else:
-            self.initialize_host_accessor()
+            self._initialize_host_accessor()
             self.host_accessor.setter(value, *self.pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
         if self.ndarray_use_torch:
             return self.arr.__getitem__(key)
-        self.initialize_host_accessor()
+        self._initialize_host_accessor()
         return self.host_accessor.getter(*self.pad_key(key))
 
     @python_scope
@@ -343,12 +343,12 @@ class NdarrayHostAccess:
         else:
 
             def getter():
-                self.ndarr.initialize_host_accessor()
+                self.ndarr._initialize_host_accessor()
                 return self.ndarr.host_accessor.getter(
                     *self.ndarr.pad_key(self.indices))
 
             def setter(value):
-                self.ndarr.initialize_host_accessor()
+                self.ndarr._initialize_host_accessor()
                 self.ndarr.host_accessor.setter(
                     value, *self.ndarr.pad_key(self.indices))
 

@@ -358,13 +358,13 @@ class StructField(Field):
         """
         return self._members[0].snode
 
-    def _loop_range(self):
+    def loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self._members[0]._loop_range()
+        return self._members[0].loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -450,7 +450,7 @@ class StructField(Field):
         entries = {
             k: v._host_access(self._pad_key(indices))[0] if isinstance(
                 v, ScalarField) else v[indices]
-            for k, v in self.items
+            for k, v in self._items
         }
         return Struct(entries)
 

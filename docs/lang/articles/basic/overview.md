@@ -27,7 +27,7 @@ Going forward, we see many new opportunities lying ahead this path, and would li
 
 **Academia**
 
-Taichi will keep embracing the academia. Towards this goal, we have implemented or planned for features that are particular useful for researchers, small matrix and sparse matrix solvers, to name a few. Taichi has also supported automatic differentiation, a key feature for differential simulation and robotics training.
+Taichi will keep embracing the academia. Towards this goal, we have implemented or planned for features that are particular useful for researchers, small matrix and sparse matrix solvers, to name a few. Taichi has also supported automatic differentiation, a key feature for differentiable simulation and robotics training.
 
 
 **Apps & game engine integration**

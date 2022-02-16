@@ -10,7 +10,8 @@ from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
                                 _MatrixFieldElement)
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import CompoundType, i32
+from taichi.types import i32
+from taichi.types.compound_types import CompoundType
 
 from taichi import lang
 

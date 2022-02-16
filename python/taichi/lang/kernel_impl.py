@@ -549,7 +549,7 @@ class Kernel:
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
+                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
                 elif isinstance(needed, any_arr) and isinstance(
                         v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True

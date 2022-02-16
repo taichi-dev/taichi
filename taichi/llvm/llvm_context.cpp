@@ -443,6 +443,8 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   TI_AUTO_PROF
   auto struct_module = get_this_thread_struct_module();
+  std::cout << struct_module->size() << std::endl;
+  struct_module->rbegin()->print(llvm::errs());
   TI_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }

@@ -67,8 +67,8 @@ def test_nested_struct_fill_and_clear():
 
     @ti.kernel
     def clear():
-        for i, j in a.parent():
-            ti.deactivate(a.parent().parent(), [i, j])
+        for i, j in a._parent():
+            ti.deactivate(a._parent().parent(), [i, j])
 
     def task():
         fill()

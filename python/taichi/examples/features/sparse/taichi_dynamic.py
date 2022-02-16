@@ -14,8 +14,8 @@ ti.root.dense(ti.i, n).place(l)
 def make_lists():
     for i in range(n):
         for j in range(i):
-            ti.append(x.parent(), i, j * j)
-        l[i] = ti.length(x.parent(), i)
+            ti.append(x._parent(), i, j * j)
+        l[i] = ti.length(x._parent(), i)
 
 
 make_lists()

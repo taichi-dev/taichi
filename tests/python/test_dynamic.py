@@ -74,7 +74,7 @@ def test_append():
     @ti.kernel
     def func():
         for i in range(n):
-            ti.append(x.parent(), [], i)
+            ti.append(x._parent(), [], i)
 
     func()
 
@@ -97,13 +97,13 @@ def test_length():
     @ti.kernel
     def func():
         for i in range(n):
-            ti.append(x.parent(), [], i)
+            ti.append(x._parent(), [], i)
 
     func()
 
     @ti.kernel
     def get_len():
-        y[None] = ti.length(x.parent(), [])
+        y[None] = ti.length(x._parent(), [])
 
     get_len()
 
@@ -124,7 +124,7 @@ def test_append_ret_value():
     @ti.kernel
     def func():
         for i in range(n):
-            u = ti.append(x.parent(), [], i)
+            u = ti.append(x._parent(), [], i)
             y[u] = i + 1
             z[u] = i + 3
 
@@ -155,10 +155,10 @@ def test_dense_dynamic():
         serialize()
         for i in range(n):
             for j in range(n):
-                ti.append(x.parent(), j, i)
+                ti.append(x._parent(), j, i)
 
         for i in range(n):
-            l[i] = ti.length(x.parent(), i)
+            l[i] = ti.length(x._parent(), i)
 
     func()
 
@@ -177,7 +177,7 @@ def test_dense_dynamic_len():
     @ti.kernel
     def func():
         for i in range(n):
-            l[i] = ti.length(x.parent(), i)
+            l[i] = ti.length(x._parent(), i)
 
     func()
 

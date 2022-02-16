@@ -297,10 +297,6 @@ class StructField(Field):
         self._register_fields()
 
     @property
-    def _name(self):
-        return self._name
-
-    @property
     def keys(self):
         return list(self.field_dict.keys())
 

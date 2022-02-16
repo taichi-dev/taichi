@@ -35,7 +35,7 @@ class MPMSolver:
         ti.block_dim(256)
         for p in self.x:
             base = ti.floor(self.x[p] * self.inv_dx - 0.5).cast(int) + 1
-            ti.append(self.pid.parent(), base, p)
+            ti.append(self.pid._parent(), base, p)
 
     def step(self):
         for i in range(1000):

@@ -283,7 +283,7 @@ class SNode:
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
 
     @property
-    def cell_size_bytes(self):
+    def _cell_size_bytes(self):
         impl.get_runtime().materialize_root_fb(False)
         return self.ptr.cell_size_bytes
 

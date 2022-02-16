@@ -1137,7 +1137,7 @@ class MatrixField(Field):
                 break
         for i in range(depth_below_lca, length - 1):
             if any(path[i].ptr.type != ti_core.SNodeType.dense
-                   or path[i].cell_size_bytes != paths[0][i].cell_size_bytes
+                   or path[i]._cell_size_bytes != paths[0][i]._cell_size_bytes
                    or path[i + 1].offset_bytes_in_parent_cell != paths[0][
                        i + 1].offset_bytes_in_parent_cell for path in paths):
                 return

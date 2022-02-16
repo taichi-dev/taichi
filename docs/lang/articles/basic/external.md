@@ -19,8 +19,8 @@ support NumPy, e.g. `matplotlib`.
 ```python {8}
 @ti.kernel
 def my_kernel():
-	for i in x:
-		x[i] = i * 2
+    for i in x:
+        x[i] = i * 2
 
 x = ti.field(ti.f32, 4)
 my_kernel()
@@ -41,12 +41,38 @@ print(x[2])  # 3
 print(x[3])  # 5
 ```
 
+Similarly, Taichi fields can be **imported from and exported to PyTorch tensors**:
+```python
+@ti.kernel
+def my_kernel():
+    for i in x:
+        x[i] = i * 2
+
+x = ti.field(ti.f32, 4)
+my_kernel()
+x_torch = x.to_torch()
+print(x_torch)  # torch.tensor([0, 2, 4, 6])
+
+x.from_numpy(torch.tensor([1, 7, 3, 5]))
+print(x[0])  # 1
+print(x[1])  # 7
+print(x[2])  # 3
+print(x[3])  # 5
+```
+When calling the `to_torch()` method, the PyTorch device where the Taichi field is exported can be specified using the `device` argument:
+```python
+x = ti.field(ti.f32, 4)
+x.fill(3.0)
+x_torch = x.to_torch(device="cuda:0")
+print(x_torch.device) # device(type='cuda', index=0)
+```
+
 ## External array shapes
 
-Shapes of Taichi fields and those of corresponding NumPy arrays are closely
+Shapes of Taichi fields and those of corresponding NumPy arrays or PyTorch tensors are closely
 connected via the following rules:
 
-- For scalar fields, **the shape of NumPy array is exactly the same as
+- For scalar fields, **the shape of NumPy array or PyTorch tensor is exactly the same as
   the Taichi field**:
 
 ```python
@@ -60,7 +86,7 @@ field.from_numpy(array)  # the input array must be of shape (256, 512)
 ```
 
 - For vector fields, if the vector is `n`-D, then **the shape of NumPy
-  array should be** `(*field_shape, vector_n)`:
+  array or Pytorch tensor should be** `(*field_shape, vector_n)`:
 
 ```python
 field = ti.Vector.field(3, ti.i32, shape=(256, 512))
@@ -74,7 +100,7 @@ field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
 ```
 
 - For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy
-array should be** `(*field_shape, matrix_n, matrix_m)`:
+array or Pytorch Tensor should be** `(*field_shape, matrix_n, matrix_m)`:
 
 ```python
 field = ti.Matrix.field(3, 4, ti.i32, shape=(256, 512))
@@ -88,7 +114,8 @@ array.shape  # (256, 512, 3, 4)
 field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
 ```
 
-- For struct fields, the external array will be exported as **a dictionary of arrays** with the keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
+- For struct fields, the external array will be exported as **a dictionary of NumPy arrays or Pytorch tensors** with the keys 
+being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
 
 ```python
 field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(float, 3)} shape=(256, 512))
@@ -104,7 +131,7 @@ field.from_numpy(array_dict) # the input array must have the same keys as the fi
 
 ## Using external arrays as Taichi kernel arguments
 
-Use the type hint `ti.ext_arr()` for passing external arrays as kernel
+Use the type hint `ti.ext_arr()` or `ti.any_arr()` for passing external arrays as kernel
 arguments. For example:
 
 ```python {10}

@@ -147,7 +147,7 @@ def subscript(value, *_indices, skip_reordered=False):
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value.subscript(*_indices)
+        return value._subscript(*_indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*_indices)
     if isinstance(value, MeshRelationAccessProxy):

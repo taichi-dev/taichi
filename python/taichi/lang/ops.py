@@ -39,7 +39,7 @@ def unary(foo):
     @functools.wraps(foo)
     def wrapped(a):
         if is_taichi_class(a):
-            return a.element_wise_unary(imp_foo)
+            return a._element_wise_unary(imp_foo)
         return imp_foo(a)
 
     return wrapped
@@ -60,9 +60,9 @@ def binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         if is_taichi_class(a):
-            return a.element_wise_binary(imp_foo, b)
+            return a._element_wise_binary(imp_foo, b)
         if is_taichi_class(b):
-            return b.element_wise_binary(rev_foo, a)
+            return b._element_wise_binary(rev_foo, a)
         return imp_foo(a, b)
 
     binary_ops.append(wrapped)
@@ -88,11 +88,11 @@ def ternary(foo):
     @functools.wraps(foo)
     def wrapped(a, b, c):
         if is_taichi_class(a):
-            return a.element_wise_ternary(abc_foo, b, c)
+            return a._element_wise_ternary(abc_foo, b, c)
         if is_taichi_class(b):
-            return b.element_wise_ternary(bac_foo, a, c)
+            return b._element_wise_ternary(bac_foo, a, c)
         if is_taichi_class(c):
-            return c.element_wise_ternary(cab_foo, a, b)
+            return c._element_wise_ternary(cab_foo, a, b)
         return abc_foo(a, b, c)
 
     ternary_ops.append(wrapped)
@@ -110,7 +110,7 @@ def writeback_binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         if is_taichi_class(a):
-            return a.element_wise_writeback_binary(imp_foo, b)
+            return a._element_wise_writeback_binary(imp_foo, b)
         if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')

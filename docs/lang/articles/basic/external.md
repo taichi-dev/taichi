@@ -162,3 +162,30 @@ for i in range(n):
     for j in range(m):
         assert a[i, j] == i * j + i + j
 ```
+
+Note that the elements in an external array must be indexed using a single square bracket.
+This is in contrast to a Taichi vector or matrix field where field and matrix indices are indexed separately:
+```python
+@ti.kernel
+def copy_vector(x: ti.template(), y: ti.ext_arr()):
+    for i, j in ti.ndrange(n, m):
+        for k in ti.static(range(3)):
+            y[i, j, k] = x[i, j][k] # correct
+            # y[i][j][k] = x[i, j][k] incorrect
+            # y[i, j][k] = x[i, j][k] incorrext
+```
+Also, external arrays in a Taichi kernel are indexed using its **physical memory layout**. For PyTorch users, this implies that the PyTorch tensor [needs to be made contiguous](https://pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html) before passed into a Taichi kernel:
+```python
+@ti.kernel
+def copy_scalar(x: ti.template(), y: ti.ext_arr()):
+    for i, j in x:
+        y[i, j] = x[i, j]
+
+x = ti.field(dtype=int, shape=(3, 3))
+y = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+y = y.T # Transposing the tensor returns a view of the tensor which is not contiguous
+copy(x, y) # error!
+copy(x, y.clone()) # correct
+copy(x, y.contiguous()) # correct
+```
+

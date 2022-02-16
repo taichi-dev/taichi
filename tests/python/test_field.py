@@ -144,7 +144,7 @@ def test_field_name():
     assert a.name == 'a'
     assert b.name == 'b'
     assert c.name == 'c'
-    assert b.snode.name == 'b'
+    assert b.snode._name == 'b'
     d = []
     for i in range(10):
         d.append(ti.field(dtype=ti.f32, shape=(2, 3), name=f'd{i}'))

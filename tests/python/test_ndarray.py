@@ -558,12 +558,12 @@ def test_arg_not_match():
 
 def _test_size_in_bytes():
     a = ti.ndarray(ti.i32, 8)
-    assert a.get_element_size() == 4
-    assert a.get_nelement() == 8
+    assert a._get_element_size() == 4
+    assert a._get_nelement() == 8
 
     b = ti.Vector.ndarray(10, ti.f64, 5)
-    assert b.get_element_size() == 8
-    assert b.get_nelement() == 50
+    assert b._get_element_size() == 8
+    assert b._get_nelement() == 50
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

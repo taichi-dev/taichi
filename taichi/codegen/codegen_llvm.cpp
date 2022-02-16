@@ -140,18 +140,6 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
-    // Initialize as zero
-    for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-      auto origin_address = builder->CreatePtrToInt(
-          llvm_val[stmt], llvm::Type::getInt64Ty(*llvm_context));
-      int address_offset = i * data_type_size(tensor_type->get_element_type());
-      auto target_address = builder->CreateAdd(
-          origin_address, tlctx->get_constant((int64)address_offset));
-      auto target_ptr = builder->CreateIntToPtr(
-          target_address, llvm::PointerType::get(type, 0));
-      builder->CreateStore(
-          tlctx->get_constant(tensor_type->get_element_type(), 0), target_ptr);
-    }
   } else {
     TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
@@ -1568,14 +1556,19 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
-  auto origin_address = builder->CreatePtrToInt(
-      llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
-  auto address_offset = builder->CreateSExt(
-      llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
-  auto target_address = builder->CreateAdd(origin_address, address_offset);
-  auto dt = stmt->ret_type.ptr_removed();
-  llvm_val[stmt] = builder->CreateIntToPtr(
-      target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  if (stmt->is_local_ptr()) {
+    llvm_val[stmt] =
+        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+  } else {
+    auto origin_address = builder->CreatePtrToInt(
+        llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
+    auto address_offset = builder->CreateSExt(
+        llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
+    auto target_address = builder->CreateAdd(origin_address, address_offset);
+    auto dt = stmt->ret_type.ptr_removed();
+    llvm_val[stmt] = builder->CreateIntToPtr(
+        target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  }
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {

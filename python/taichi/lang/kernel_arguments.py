@@ -15,7 +15,7 @@ class SparseMatrixEntry:
         self.i = i
         self.j = j
 
-    def augassign(self, value, op):
+    def _augassign(self, value, op):
         if op == 'Add':
             taichi.lang.impl.call_internal("insert_triplet", self.ptr, self.i,
                                            self.j,

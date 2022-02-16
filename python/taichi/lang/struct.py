@@ -8,7 +8,8 @@ from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
-from taichi.types import CompoundType, primitive_types
+from taichi.types import primitive_types
+from taichi.types.compound_types import CompoundType
 
 
 class Struct(TaichiOperations):
@@ -16,7 +17,7 @@ class Struct(TaichiOperations):
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): keys and values for struct members.
     """
-    is_taichi_class = True
+    _is_taichi_class = True
 
     def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
@@ -34,26 +35,26 @@ class Struct(TaichiOperations):
             if isinstance(v, dict):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)
-        self.register_members()
+        self._register_members()
 
     @property
     def keys(self):
         return list(self.entries.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.entries.values())
 
     @property
     def items(self):
         return self.entries.items()
 
-    def register_members(self):
+    def _register_members(self):
         for k in self.keys:
             setattr(Struct, k,
                     property(
-                        Struct.make_getter(k),
-                        Struct.make_setter(k),
+                        Struct._make_getter(k),
+                        Struct._make_setter(k),
                     ))
 
     def __getitem__(self, key):
@@ -69,7 +70,7 @@ class Struct(TaichiOperations):
             if in_python_scope():
                 if isinstance(self.entries[key], Struct) or isinstance(
                         self.entries[key], Matrix):
-                    self.entries[key].set_entries(value)
+                    self.entries[key]._set_entries(value)
                 else:
                     if isinstance(value, numbers.Number):
                         self.entries[key] = value
@@ -80,14 +81,14 @@ class Struct(TaichiOperations):
             else:
                 self.entries[key] = value
 
-    def set_entries(self, value):
+    def _set_entries(self, value):
         if isinstance(value, dict):
             value = Struct(value)
         for k in self.keys:
             self[k] = value[k]
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
             return self[key]
@@ -95,40 +96,40 @@ class Struct(TaichiOperations):
         return getter
 
     @staticmethod
-    def make_setter(key):
+    def _make_setter(key):
         @python_scope
         def setter(self, value):
             self[key] = value
 
         return setter
 
-    def element_wise_unary(self, foo):
+    def _element_wise_unary(self, foo):
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_unary(foo)
+                entries[k] = v._element_wise_unary(foo)
             else:
                 entries[k] = foo(v)
         return Struct(entries)
 
-    def element_wise_binary(self, foo, other):
-        other = self.broadcast_copy(other)
+    def _element_wise_binary(self, foo, other):
+        other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_binary(foo, other.entries[k])
+                entries[k] = v._element_wise_binary(foo, other.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k])
         return Struct(entries)
 
-    def broadcast_copy(self, other):
+    def _broadcast_copy(self, other):
         if isinstance(other, dict):
             other = Struct(other)
         if not isinstance(other, Struct):
             entries = {}
             for k, v in self.items:
                 if is_taichi_class(v):
-                    entries[k] = v.broadcast_copy(other)
+                    entries[k] = v._broadcast_copy(other)
                 else:
                     entries[k] = other
             other = Struct(entries)
@@ -137,29 +138,29 @@ class Struct(TaichiOperations):
                 f"Member mismatch between structs {self.keys}, {other.keys}")
         return other
 
-    def element_wise_writeback_binary(self, foo, other):
+    def _element_wise_writeback_binary(self, foo, other):
         if foo.__name__ == 'assign' and not isinstance(other, (dict, Struct)):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
-        other = self.broadcast_copy(other)
+        other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_binary(foo, other.entries[k])
+                entries[k] = v._element_wise_binary(foo, other.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k])
         return self if foo.__name__ == 'assign' else Struct(entries)
 
-    def element_wise_ternary(self, foo, other, extra):
-        other = self.broadcast_copy(other)
-        extra = self.broadcast_copy(extra)
+    def _element_wise_ternary(self, foo, other, extra):
+        other = self._broadcast_copy(other)
+        extra = self._broadcast_copy(extra)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_ternary(foo, other.entries[k],
-                                                    extra.entries[k])
+                entries[k] = v._element_wise_ternary(foo, other.entries[k],
+                                                     extra.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k], extra.entries[k])
         return Struct(entries)
@@ -174,7 +175,7 @@ class Struct(TaichiOperations):
         def assign_renamed(x, y):
             return ops.assign(x, y)
 
-        return self.element_wise_writeback_binary(assign_renamed, val)
+        return self._element_wise_writeback_binary(assign_renamed, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -277,7 +278,7 @@ class _IntermediateStruct(Struct):
     def __init__(self, entries):
         assert isinstance(entries, dict)
         self.entries = entries
-        self.register_members()
+        self._register_members()
 
 
 class StructField(Field):
@@ -357,13 +358,13 @@ class StructField(Field):
         """
         return self.members[0].snode
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0].loop_range()
+        return self.members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -440,7 +441,7 @@ class StructField(Field):
     @python_scope
     def __setitem__(self, indices, element):
         self.initialize_host_accessors()
-        self[indices].set_entries(element)
+        self[indices]._set_entries(element)
 
     @python_scope
     def __getitem__(self, indices):

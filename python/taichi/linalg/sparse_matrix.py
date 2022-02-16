@@ -146,7 +146,7 @@ class SparseMatrixBuilder:
             self.ptr = get_runtime().prog.create_sparse_matrix_builder(
                 num_rows, num_cols, max_num_triplets)
 
-    def get_addr(self):
+    def _get_addr(self):
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 

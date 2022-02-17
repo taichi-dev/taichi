@@ -114,7 +114,7 @@ array.shape  # (256, 512, 3, 4)
 field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
 ```
 
-- For struct fields, the external array will be exported as **a dictionary of NumPy arrays or PyTorch tensors** with the keys
+- For struct fields, the external array will be exported as **a dictionary of NumPy arrays or PyTorch tensors** with keys
 being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
 
 ```python

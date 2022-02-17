@@ -90,7 +90,7 @@ def test_no_duplicate_eval():
 
     @ti.kernel
     def func():
-        a[2] = 0 <= ti.append(a._parent(), [], 10) < 1
+        a[2] = 0 <= ti.append(a.parent(), [], 10) < 1
 
     func()
     assert a[0] == 10

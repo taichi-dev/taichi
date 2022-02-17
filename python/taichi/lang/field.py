@@ -55,7 +55,7 @@ class Field:
         """
         return self.snode.name
 
-    def _parent(self, n=1):
+    def parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
 
         Args:

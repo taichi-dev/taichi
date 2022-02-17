@@ -12,7 +12,7 @@ def _test_nested():
 
     @ti.kernel
     def iterate():
-        for i, j in x._parent():
+        for i, j in x.parent():
             x[i, j] += 1
 
     iterate()

@@ -35,7 +35,7 @@ def test_dense_dynamic():
     def append():
         for i in range(n):
             for j in range(i):
-                ti.append(x._parent(), i, j * 2)
+                ti.append(x.parent(), i, j * 2)
 
     append()
 

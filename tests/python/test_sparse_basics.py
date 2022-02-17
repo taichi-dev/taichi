@@ -40,7 +40,7 @@ def test_pointer_is_active():
     @ti.kernel
     def func():
         for i in range(n * n):
-            s[None] += ti.is_active(x._parent().parent(), i)
+            s[None] += ti.is_active(x.parent().parent(), i)
 
     x[0] = 1
     x[127] = 1

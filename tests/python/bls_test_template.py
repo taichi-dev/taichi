@@ -179,7 +179,7 @@ def bls_particle_grid(N,
                 int(ti.floor(x[i][1] * N) - grid_offset[1])
             ])
             base_p = ti.rescale_index(m1, pid, base)
-            ti.append(pid._parent(), base_p, i)
+            ti.append(pid.parent(), base_p, i)
 
     scatter_weight = (N * N / M) * 0.01
 

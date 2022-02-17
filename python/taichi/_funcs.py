@@ -52,15 +52,17 @@ def randn(dt=None):
 
 
 @pyfunc
-def _matrix_transpose(self):
-    """Get the transpose of a matrix.
+def _matrix_transpose(mat):
+    """Permute the first two axes of the matrix.
 
+    Args:
+        mat (:class:`~taichi.lang.matrix.Matrix`): Input matrix.
+    
     Returns:
-        Get the transpose of a matrix.
-
+        Transpose of the input matrix.
     """
-    return matrix.Matrix([[self[i, j] for i in range(self.n)]
-                          for j in range(self.m)])
+    return matrix.Matrix([[mat[i, j] for i in range(mat.n)]
+                          for j in range(mat.m)])
 
 
 @pyfunc

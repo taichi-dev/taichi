@@ -25,13 +25,22 @@ def _randn(dt):
 def randn(dt=None):
     """Generate a random float sampled from univariate standard normal
     (Gaussian) distribution of mean 0 and variance 1, using the
-    Box-Muller transformation.
+    Box-Muller transformation. Must be called in Taichi scope.
 
     Args:
-        dt (DataType): The datatype for the generated random number.
+        dt (DataType): The data type for the generated random number.
 
     Returns:
         The generated random float.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     print(ti.randn())
+        >>>
+        >>> main()
+        -0.463608
     """
     if dt is None:
         dt = impl.get_runtime().default_fp

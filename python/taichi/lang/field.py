@@ -44,7 +44,11 @@ class Field:
         Returns:
             DataType: Data type of each individual value.
         """
+<<<<<<< HEAD
+        return self.snode.dtype
+=======
         return self.snode._dtype
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
 
     @property
     def name(self):

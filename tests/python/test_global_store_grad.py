@@ -1,7 +1,11 @@
 """
 import taichi as ti
 
+<<<<<<< HEAD
+ti.cfg.print_ir = True
+=======
 ti.lang.impl.current_cfg().print_ir = True
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
 
 
 def test_global_store_branching():

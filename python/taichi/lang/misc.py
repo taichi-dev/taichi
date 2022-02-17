@@ -366,7 +366,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        get_runtime().prog.no_activate(v.snode.ptr)
+        get_runtime().prog.no_activate(v._snode.ptr)
 
 
 def block_local(*args):

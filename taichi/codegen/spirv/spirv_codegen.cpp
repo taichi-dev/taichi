@@ -527,7 +527,8 @@ class TaskCodegen : public IRVisitor {
           spv::OpAccessChain,
           ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
           get_buffer_value(BufferType::Rets, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), (i << 1)));
+          ir_->int_immediate_number(ir_->i32_type(), 0),
+          ir_->int_immediate_number(ir_->i32_type(), i));
       buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
       ir_->store_variable(buffer_val, val);
@@ -1835,14 +1836,15 @@ class TaskCodegen : public IRVisitor {
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
     // Now we only have one ret
+    TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
       if (auto tensor_type = ret.dt->cast<TensorType>()) {
         struct_components_.emplace_back(
             ir_->get_array_type(ir_->i64_type(),
                                 tensor_type->get_num_elements()),
-            "retarr" + std::to_string(ret.index), ret.offset_in_mem);
+            "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
-        struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
+        struct_components_.emplace_back(ir_->get_array_type(ir_->i64_type(), 1),
                                         "ret" + std::to_string(ret.index),
                                         ret.offset_in_mem);
       }

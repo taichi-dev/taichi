@@ -22,7 +22,7 @@ def get_field_info(field):
     info.shape = [n for n in field.shape]
 
     info.dtype = field.dtype
-    info.snode = field.snode.ptr
+    info.snode = field._snode.ptr
 
     if hasattr(field, 'n'):
         info.field_type = _ti_core.FieldType.Matrix

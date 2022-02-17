@@ -118,7 +118,7 @@ class Module:
         else:
             assert isinstance(field, ScalarField)
         self._aot_builder.add_field(name, field.snode.ptr, is_scalar,
-                                    field.dtype, field.snode.shape, row_num,
+                                    field.dtype, field._snode.shape, row_num,
                                     column_num)
 
     def add_kernel(self, kernel_fn, example_any_arrays=None, name=None):

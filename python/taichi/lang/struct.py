@@ -364,7 +364,7 @@ class StructField(Field):
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0]._loop_range()
+        return self._members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):

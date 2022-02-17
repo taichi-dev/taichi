@@ -502,7 +502,7 @@ def clear_all_gradients():
                 clear_gradients  # pylint: disable=C0415
             clear_gradients(places)
 
-    for root_fb in _snode.FieldsBuilder.finalized_roots():
+    for root_fb in _snode.FieldsBuilder._finalized_roots():
         visit(root_fb)
 
 

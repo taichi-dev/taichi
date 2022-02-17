@@ -26,7 +26,7 @@ def mat_equal(A, B, tol=1e-6):
 
 def _test_svd(dt, n):
     print(
-        f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp} fast_math={ti.cfg.fast_math} dim={n}'
+        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp} fast_math={ti.lang.impl.current_cfg().fast_math} dim={n}'
     )
     A = ti.Matrix.field(n, n, dtype=dt, shape=())
     A_reconstructed = ti.Matrix.field(n, n, dtype=dt, shape=())

@@ -37,17 +37,13 @@ IRNode *FrontendContext::root() {
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var,
                                  Arch arch,
-                                 int bit_vectorize,
-                                 int num_cpu_threads,
-                                 bool strictly_serialized,
-                                 int block_dim,
-                                 MemoryAccessOptions &&mem_access_opt)
+                                 const ForLoopConfig &config)
     : global_var(global_var),
-      bit_vectorize(bit_vectorize),
-      num_cpu_threads(num_cpu_threads),
-      strictly_serialized(strictly_serialized),
-      mem_access_opt(mem_access_opt),
-      block_dim(block_dim) {
+      bit_vectorize(config.bit_vectorize),
+      num_cpu_threads(config.num_cpu_threads),
+      strictly_serialized(config.strictly_serialized),
+      mem_access_opt(config.mem_access_opt),
+      block_dim(config.block_dim) {
   if (arch == Arch::cuda) {
     this->num_cpu_threads = 1;
     TI_ASSERT(this->block_dim <= taichi_max_gpu_block_dim);
@@ -67,14 +63,11 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
-                                 int bit_vectorize,
-                                 int num_cpu_threads,
-                                 int block_dim,
-                                 MemoryAccessOptions &&mem_access_opt)
-    : bit_vectorize(bit_vectorize),
-      num_cpu_threads(num_cpu_threads),
-      mem_access_opt(mem_access_opt),
-      block_dim(block_dim),
+                                 const ForLoopConfig &config)
+    : bit_vectorize(config.bit_vectorize),
+      num_cpu_threads(config.num_cpu_threads),
+      mem_access_opt(config.mem_access_opt),
+      block_dim(config.block_dim),
       mesh_for(true),
       mesh(mesh.ptr.get()),
       element_type(element_type) {
@@ -101,18 +94,14 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
                                  Arch arch,
-                                 int bit_vectorize,
-                                 int num_cpu_threads,
-                                 bool strictly_serialized,
-                                 int block_dim,
-                                 MemoryAccessOptions &&mem_access_opt)
+                                 const ForLoopConfig &config)
     : begin(begin),
       end(end),
-      bit_vectorize(bit_vectorize),
-      num_cpu_threads(num_cpu_threads),
-      strictly_serialized(strictly_serialized),
-      mem_access_opt(mem_access_opt),
-      block_dim(block_dim) {
+      bit_vectorize(config.bit_vectorize),
+      num_cpu_threads(config.num_cpu_threads),
+      strictly_serialized(config.strictly_serialized),
+      mem_access_opt(config.mem_access_opt),
+      block_dim(config.block_dim) {
   if (arch == Arch::cuda) {
     this->num_cpu_threads = 1;
   } else {
@@ -724,10 +713,8 @@ void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>());
-  auto stmt_unique = std::make_unique<FrontendForStmt>(
-      i, s, e, this->arch_, for_loop_dec_.bit_vectorize,
-      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
-      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_,
+                                                       for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -867,10 +854,8 @@ void ASTBuilder::create_assert_stmt(const Expr &cond,
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
                                           const Expr &e) {
-  auto stmt_unique = std::make_unique<FrontendForStmt>(
-      i, s, e, arch_, for_loop_dec_.bit_vectorize,
-      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
-      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -879,10 +864,8 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
                                            const Expr &global) {
-  auto stmt_unique = std::make_unique<FrontendForStmt>(
-      loop_vars, global, arch_, for_loop_dec_.bit_vectorize,
-      for_loop_dec_.num_cpu_threads, for_loop_dec_.strictly_serialized,
-      for_loop_dec_.block_dim, std::move(for_loop_dec_.mem_access_opt));
+  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global, arch_,
+                                                       for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -894,9 +877,7 @@ void ASTBuilder::begin_frontend_mesh_for(
     const mesh::MeshPtr &mesh_ptr,
     const mesh::MeshElementType &element_type) {
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      i, mesh_ptr, element_type, arch_, for_loop_dec_.bit_vectorize,
-      for_loop_dec_.num_cpu_threads, for_loop_dec_.block_dim,
-      std::move(for_loop_dec_.mem_access_opt));
+      i, mesh_ptr, element_type, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));

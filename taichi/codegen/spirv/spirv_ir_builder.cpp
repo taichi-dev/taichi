@@ -893,10 +893,13 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
       Value new_float = atomic_op(old_float, data);
       Value new_val = make_value(spv::OpBitcast, t_uint32_, new_float);
       // int loaded = atomicCompSwap(vals[0], old, new);
+      /*
+      * Don't need this part, theoretically
       auto semantics = uint_immediate_number(
           t_uint32_, spv::MemorySemanticsAcquireReleaseMask |
                          spv::MemorySemanticsUniformMemoryMask);
       make_inst(spv::OpMemoryBarrier, const_i32_one_, semantics);
+      */
       Value loaded = make_value(
           spv::OpAtomicCompareExchange, t_uint32_, addr_ptr,
           /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,

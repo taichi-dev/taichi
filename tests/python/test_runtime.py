@@ -59,7 +59,6 @@ init_args = {
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],
-    'print_benchmark_stat': [False, TF],
     'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],
     'print_accessor_ir': [False, TF],
@@ -86,11 +85,12 @@ def test_init_arg(key, values):
 
     # helper function:
     def test_arg(key, value, kwargs={}):
-        spec_cfg = ti.init(_test_mode=True, **kwargs)
         if key in special_init_cfgs:
+            spec_cfg = ti.init(_test_mode=True, **kwargs)
             cfg = spec_cfg
         else:
-            cfg = ti.cfg
+            ti.init(**kwargs)
+            cfg = ti.lang.impl.current_cfg()
         assert getattr(cfg, key) == value
 
     with patch_os_environ_helper({}, excludes=env_configs):
@@ -115,11 +115,11 @@ def test_init_arg(key, values):
 def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)
-        assert ti.cfg.arch == arch
+        assert ti.lang.impl.current_cfg().arch == arch
     with patch_os_environ_helper({'TI_ARCH': ti._lib.core.arch_name(arch)},
                                  excludes=['TI_ARCH']):
         ti.init(arch=ti.cc)
-        assert ti.cfg.arch == arch
+        assert ti.lang.impl.current_cfg().arch == arch
 
 
 def test_init_bad_arg():

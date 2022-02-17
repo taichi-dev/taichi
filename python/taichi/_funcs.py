@@ -27,6 +27,10 @@ def randn(dt=None):
     (Gaussian) distribution of mean 0 and variance 1, using the
     Box-Muller transformation. Must be called in Taichi scope.
 
+    The returned value will be within the range that a 32-bit float or
+    a 64-bit float that can represent, depending on whether `dt` is `ti.f32`
+    or `ti.f64`.
+
     Args:
         dt (DataType): The data type for the generated random number.
 

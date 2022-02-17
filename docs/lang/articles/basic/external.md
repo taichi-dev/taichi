@@ -59,7 +59,7 @@ print(x[1])  # 7
 print(x[2])  # 3
 print(x[3])  # 5
 ```
-When calling the `to_torch()` method, the PyTorch device where the Taichi field is exported can be specified using the `device` argument:
+When calling `to_torch()`, specify the PyTorch device where the Taichi field is exported using the `device` argument:
 ```python
 x = ti.field(ti.f32, 4)
 x.fill(3.0)

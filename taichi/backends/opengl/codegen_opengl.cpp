@@ -851,12 +851,15 @@ class KernelGen : public IRVisitor {
     int idx{0};
     for (auto &value : stmt->values) {
       emit("_args_{}_[({} >> {}) + {}] = {};",
-           opengl_data_type_short_name(PrimitiveType::i32),
+           opengl_data_type_short_name(value->element_type()),
            taichi_opengl_ret_base,
-           opengl_data_address_shifter(PrimitiveType::i32), idx,
+           opengl_data_address_shifter(value->element_type()), idx,
            value->short_name());
-      idx += 2;
-      // opengl only support i32 array, but there are i64 slots in
+      if(value->element_type()->is_primitive(PrimitiveTypeID::f64))
+        idx += 1;
+      else
+        idx += 2;
+      // opengl only support i32, f32 and f64 array, but there are 64bit slots in
       // taichi's result buffer,so we need two slots to make them match.
     }
   }

@@ -20,6 +20,15 @@ class Field:
         self.grad = None
 
     @property
+    def snode(self):
+        """Gets representative SNode for info purposes.
+
+        Returns:
+            SNode: Representative SNode (SNode of first field member).
+        """
+        return self._snode
+
+    @property
     def _snode(self):
         """Gets representative SNode for info purposes.
 

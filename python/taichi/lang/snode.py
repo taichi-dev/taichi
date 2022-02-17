@@ -368,29 +368,29 @@ def rescale_index(a, b, I):
 
 def append(l, indices, val):
     a = impl.expr_init(
-        _ti_core.insert_append(l.snode.ptr, expr.make_expr_group(indices),
+        _ti_core.insert_append(l._snode.ptr, expr.make_expr_group(indices),
                                expr.Expr(val).ptr))
     return a
 
 
 def is_active(l, indices):
     return expr.Expr(
-        _ti_core.insert_is_active(l.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.insert_is_active(l._snode.ptr, expr.make_expr_group(indices)))
 
 
 def activate(l, indices):
     impl.get_runtime().prog.current_ast_builder().insert_activate(
-        l.snode.ptr, expr.make_expr_group(indices))
+        l._snode.ptr, expr.make_expr_group(indices))
 
 
 def deactivate(l, indices):
     impl.get_runtime().prog.current_ast_builder().insert_deactivate(
-        l.snode.ptr, expr.make_expr_group(indices))
+        l.s_node.ptr, expr.make_expr_group(indices))
 
 
 def length(l, indices):
     return expr.Expr(
-        _ti_core.insert_len(l.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.insert_len(l._snode.ptr, expr.make_expr_group(indices)))
 
 
 def get_addr(f, indices):
@@ -407,7 +407,7 @@ def get_addr(f, indices):
 
     """
     return expr.Expr(
-        _ti_core.expr_get_addr(f.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_get_addr(f._snode.ptr, expr.make_expr_group(indices)))
 
 
 __all__ = [

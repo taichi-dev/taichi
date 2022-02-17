@@ -201,7 +201,7 @@ class SNode:
         return res
 
     @property
-    def dtype(self):
+    def _dtype(self):
         """Gets the data type of `self`.
 
         Returns:
@@ -254,15 +254,6 @@ class SNode:
             SNode: `self`.
         """
         return self
-
-    @property
-    def needs_grad(self):
-        """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-
-        Returns:
-            bool: Whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-        """
-        return self.ptr.has_grad()
 
     def _get_children(self):
         """Gets all children components of `self`.

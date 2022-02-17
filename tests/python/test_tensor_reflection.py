@@ -84,14 +84,14 @@ def test_unordered_matrix():
 
     assert val.shape == (m, p, n)
     assert val.dtype == ti.i32
-    assert val._snode.parent(0) == val._snode
-    assert val._snode.parent() == blk3
-    assert val._snode.parent(1) == blk3
-    assert val._snode.parent(2) == blk2
-    assert val._snode.parent(3) == blk1
-    assert val._snode.parent(4) == ti.root
-    assert val._snode._path_from_root() == [
-        ti.root, blk1, blk2, blk3, val._snode
+    assert val.snode.parent(0) == val.snode
+    assert val.snode.parent() == blk3
+    assert val.snode.parent(1) == blk3
+    assert val.snode.parent(2) == blk2
+    assert val.snode.parent(3) == blk1
+    assert val.snode.parent(4) == ti.root
+    assert val.snode._path_from_root() == [
+        ti.root, blk1, blk2, blk3, val.snode
     ]
 
 

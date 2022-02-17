@@ -1100,6 +1100,15 @@ class MatrixField(Field):
         self.m = m
         self.dynamic_index_stride = None
 
+    @property
+    def snode(self):
+        """Gets corresponding SNode for info purposes.
+
+        Returns:
+            SNode: corresponding SNode (SNode of first field member).
+        """
+        return self._snode
+
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member. Only used for quant.
 

@@ -248,7 +248,7 @@ class SNode:
         return self.ptr.name()
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets `self`.
         Returns:
             SNode: `self`.

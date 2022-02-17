@@ -57,7 +57,7 @@ def _matrix_transpose(mat):
 
     Args:
         mat (:class:`~taichi.lang.matrix.Matrix`): Input matrix.
-    
+
     Returns:
         Transpose of the input matrix.
     """

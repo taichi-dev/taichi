@@ -131,7 +131,7 @@ field.from_numpy(array_dict) # the input array must have the same keys as the fi
 
 ## Using external arrays as Taichi kernel arguments
 
-Use the type hint `ti.ext_arr()` or `ti.any_arr()` for passing external arrays as kernel
+Use type hint `ti.ext_arr()` or `ti.any_arr()` to pass external arrays as kernel
 arguments. For example:
 
 ```python {10}

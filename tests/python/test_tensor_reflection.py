@@ -58,11 +58,11 @@ def test_unordered():
     assert val.snode.parent(3) == blk1
     assert val.snode.parent(4) == ti.root
 
-    assert val.snode in blk3.get_children()
-    assert blk3 in blk2.get_children()
-    assert blk2 in blk1.get_children()
+    assert val.snode in blk3._get_children()
+    assert blk3 in blk2._get_children()
+    assert blk2 in blk1._get_children()
     impl.get_runtime().materialize_root_fb(False)
-    assert blk1 in ti.FieldsBuilder.finalized_roots()[0].get_children()
+    assert blk1 in ti.FieldsBuilder._finalized_roots()[0]._get_children()
 
     expected_str = f'ti.root => dense {[n]} => dense {[m, n]}' \
         f' => dense {[m, p, n]} => place {[m, p, n]}'
@@ -90,7 +90,9 @@ def test_unordered_matrix():
     assert val.snode.parent(2) == blk2
     assert val.snode.parent(3) == blk1
     assert val.snode.parent(4) == ti.root
-    assert val.snode.path_from_root() == [ti.root, blk1, blk2, blk3, val.snode]
+    assert val.snode._path_from_root() == [
+        ti.root, blk1, blk2, blk3, val.snode
+    ]
 
 
 @test_utils.test()

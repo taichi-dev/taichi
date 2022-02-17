@@ -2,6 +2,7 @@
 #include "taichi/lang_util.h"
 
 #include <vector>
+#include <chrono>
 
 #include "taichi/backends/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
@@ -21,6 +22,8 @@ using BufferType = TaskAttributes::BufferType;
 using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
+
+using high_res_clock = std::chrono::high_resolution_clock;
 
 // TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
 // is already a pretty cheap handle>
@@ -123,6 +126,7 @@ class TI_DLL_EXPORT VkRuntime {
   std::vector<std::unique_ptr<DeviceAllocationGuard>> ctx_buffers_;
 
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
+  high_res_clock::time_point current_cmdlist_pending_since_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
 

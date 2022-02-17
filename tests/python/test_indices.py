@@ -11,11 +11,11 @@ def test_indices():
     b = ti.field(ti.f32)
     ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
 
-    mapping_a = a.snode.physical_index_position()
+    mapping_a = a.snode._physical_index_position()
 
     assert mapping_a == {0: 0, 1: 1, 2: 2}
 
-    mapping_b = b.snode.physical_index_position()
+    mapping_b = b.snode._physical_index_position()
 
     assert mapping_b == {0: 0, 1: 1}
     # Note that b is column-major:

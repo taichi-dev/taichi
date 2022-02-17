@@ -53,7 +53,7 @@ class Field:
         Returns:
             str: Field name.
         """
-        return self.snode.name
+        return self.snode._name
 
     def _parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
@@ -74,7 +74,7 @@ class Field:
         """
         return self.vars
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:

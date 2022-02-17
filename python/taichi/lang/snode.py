@@ -53,7 +53,7 @@ class SNode:
                              impl.current_cfg().packed))
 
     @staticmethod
-    def hash(axes, dimensions):
+    def _hash(axes, dimensions):
         # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
@@ -186,7 +186,7 @@ class SNode:
             return impl.root
         return SNode(p)
 
-    def path_from_root(self):
+    def _path_from_root(self):
         """Gets the path from root to `self` in the SNode tree.
 
         Returns:
@@ -210,7 +210,7 @@ class SNode:
         return self.ptr.data_type()
 
     @property
-    def id(self):
+    def _id(self):
         """Gets the id of `self`.
 
         Returns:
@@ -230,7 +230,7 @@ class SNode:
 
         return ret
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:
@@ -239,7 +239,7 @@ class SNode:
         return _ti_core.global_var_expr_from_snode(self.ptr)
 
     @property
-    def name(self):
+    def _name(self):
         """Gets the name of `self`.
 
         Returns:
@@ -250,7 +250,6 @@ class SNode:
     @property
     def snode(self):
         """Gets `self`.
-
         Returns:
             SNode: `self`.
         """
@@ -265,7 +264,7 @@ class SNode:
         """
         return self.ptr.has_grad()
 
-    def get_children(self):
+    def _get_children(self):
         """Gets all children components of `self`.
 
         Returns:
@@ -277,24 +276,24 @@ class SNode:
         return children
 
     @property
-    def num_dynamically_allocated(self):
+    def _num_dynamically_allocated(self):
         runtime = impl.get_runtime()
         runtime.materialize_root_fb(False)
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
 
     @property
-    def cell_size_bytes(self):
+    def _cell_size_bytes(self):
         impl.get_runtime().materialize_root_fb(False)
         return self.ptr.cell_size_bytes
 
     @property
-    def offset_bytes_in_parent_cell(self):
+    def _offset_bytes_in_parent_cell(self):
         impl.get_runtime().materialize_root_fb(False)
         return self.ptr.offset_bytes_in_parent_cell
 
     def deactivate_all(self):
         """Recursively deactivate all children components of `self`."""
-        ch = self.get_children()
+        ch = self._get_children()
         for c in ch:
             c.deactivate_all()
         SNodeType = _ti_core.SNodeType
@@ -325,7 +324,7 @@ class SNode:
     def __eq__(self, other):
         return self.ptr == other.ptr
 
-    def physical_index_position(self):
+    def _physical_index_position(self):
         """Gets mappings from virtual axes to physical axes.
 
         Returns:

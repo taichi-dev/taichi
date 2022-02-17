@@ -332,11 +332,6 @@ class Matrix(TaichiOperations):
     def w(self, value):
         self[3] = value
 
-    @property
-    @python_scope
-    def value(self):
-        return Matrix(self.to_list())
-
     def to_list(self):
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
@@ -670,7 +665,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.value).reshape(shape_ext)
+        return np.array(self.to_list()).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1121,7 +1116,7 @@ class MatrixField(Field):
 
     def _calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
-        paths = [ScalarField(var).snode.path_from_root() for var in self.vars]
+        paths = [ScalarField(var).snode._path_from_root() for var in self.vars]
         num_members = len(paths)
         if num_members == 1:
             self.dynamic_index_stride = 0
@@ -1138,15 +1133,15 @@ class MatrixField(Field):
                 break
         for i in range(depth_below_lca, length - 1):
             if any(path[i].ptr.type != ti_core.SNodeType.dense
-                   or path[i].cell_size_bytes != paths[0][i].cell_size_bytes
-                   or path[i + 1].offset_bytes_in_parent_cell != paths[0][
-                       i + 1].offset_bytes_in_parent_cell for path in paths):
+                   or path[i]._cell_size_bytes != paths[0][i]._cell_size_bytes
+                   or path[i + 1]._offset_bytes_in_parent_cell != paths[0][
+                       i + 1]._offset_bytes_in_parent_cell for path in paths):
                 return
-        stride = paths[1][depth_below_lca].offset_bytes_in_parent_cell - \
-                 paths[0][depth_below_lca].offset_bytes_in_parent_cell
+        stride = paths[1][depth_below_lca]._offset_bytes_in_parent_cell - \
+                 paths[0][depth_below_lca]._offset_bytes_in_parent_cell
         for i in range(2, num_members):
-            if stride != paths[i][depth_below_lca].offset_bytes_in_parent_cell \
-                    - paths[i - 1][depth_below_lca].offset_bytes_in_parent_cell:
+            if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
+                    - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
                 return
         self.dynamic_index_stride = stride
 
@@ -1354,11 +1349,11 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_matrix_to_numpy(as_vector=0)
+        return self._ndarray_matrix_to_numpy(as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_matrix_from_numpy(arr, as_vector=0)
+        self._ndarray_matrix_from_numpy(arr, as_vector=0)
 
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
@@ -1412,11 +1407,11 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_matrix_to_numpy(as_vector=1)
+        return self._ndarray_matrix_to_numpy(as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_matrix_from_numpy(arr, as_vector=1)
+        self._ndarray_matrix_from_numpy(arr, as_vector=1)
 
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)

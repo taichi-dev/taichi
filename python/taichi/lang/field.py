@@ -66,8 +66,10 @@ class Field:
 
     def parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
+        
         Args:
             n (int): the number of levels going up from the representative SNode.
+            
         Returns:
             SNode: The n-th parent of the representative SNode.
         """

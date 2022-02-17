@@ -41,7 +41,7 @@ print(x[2])  # 3
 print(x[3])  # 5
 ```
 
-Similarly, Taichi fields can be **imported from and exported to PyTorch tensors**:
+Likewise, Taichi fields can be **imported from and exported to PyTorch tensors**:
 ```python
 @ti.kernel
 def my_kernel():

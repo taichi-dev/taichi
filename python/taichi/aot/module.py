@@ -117,7 +117,7 @@ class Module:
             column_num = field.n
         else:
             assert isinstance(field, ScalarField)
-        self._aot_builder.add_field(name, field.snode.ptr, is_scalar,
+        self._aot_builder.add_field(name, field._snode.ptr, is_scalar,
                                     field.dtype, field._snode.shape, row_num,
                                     column_num)
 

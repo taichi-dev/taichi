@@ -385,7 +385,7 @@ def activate(l, indices):
 
 def deactivate(l, indices):
     impl.get_runtime().prog.current_ast_builder().insert_deactivate(
-        l.s_node.ptr, expr.make_expr_group(indices))
+        l._snode.ptr, expr.make_expr_group(indices))
 
 
 def length(l, indices):

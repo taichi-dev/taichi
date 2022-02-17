@@ -29,7 +29,7 @@ Going forward, we see many new opportunities lying ahead, and would like to shar
 
 90% of the research code will be trashed due to the nature of research where assumptions keep being broken and ideas keep being iterated. Swiftly coding without thinking too much about performance may lead to incorrect conclusions, while pre-matured code optimization can be a waste of time and often produces a tangled mess. The high performance and productivity are, therefore, extremely helpful for research projects.
 
-Taichi will keep embracing the academia. The key features we have (or plan to have) for high-performance computing research projects include small-scale linear algebra (inside kernels), large-scale sparse systems, and efficient neighbor accessing for both structured and unstructured data. 
+Taichi will keep embracing the academia. The key features we have (or plan to have) for high-performance computing research projects include small-scale linear algebra (inside kernels), large-scale sparse systems, and efficient neighbor accessing for both structured and unstructured data.
 
 Taichi also provides an automatic differentiation module via source code transformation (at IR level), making it a sweet differentiable simulation tool for machine learning projects.
 

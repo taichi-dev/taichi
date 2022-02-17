@@ -293,27 +293,23 @@ class StructField(Field):
     def __init__(self, field_dict, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self._name = name
-        self.register_fields()
-
-    @property
-    def name(self):
-        return self._name
+        self.name = name
+        self._register_fields()
 
     @property
     def keys(self):
         return list(self.field_dict.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.field_dict.values())
 
     @property
-    def items(self):
+    def _items(self):
         return self.field_dict.items()
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
             return self.field_dict[key]
@@ -321,42 +317,42 @@ class StructField(Field):
         return getter
 
     @staticmethod
-    def make_setter(key):
+    def _make_setter(key):
         @python_scope
         def setter(self, value):
             self.field_dict[key] = value
 
         return setter
 
-    def register_fields(self):
+    def _register_fields(self):
         for k in self.keys:
             setattr(
                 StructField, k,
                 property(
-                    StructField.make_getter(k),
-                    StructField.make_setter(k),
+                    StructField._make_getter(k),
+                    StructField._make_setter(k),
                 ))
 
-    def get_field_members(self):
+    def _get_field_members(self):
         """Get A flattened list of all struct elements.
 
         Returns:
             A list of struct elements.
         """
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
-            field_members += m.get_field_members()
+            field_members += m._get_field_members()
         return field_members
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets representative SNode for info purposes.
 
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
-        return self.members[0].snode
+        return self._members[0]._snode
 
     def _loop_range(self):
         """Gets representative field member for loop range info.
@@ -364,7 +360,7 @@ class StructField(Field):
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0]._loop_range()
+        return self._members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -387,12 +383,12 @@ class StructField(Field):
         Args:
             val (Union[int, float]): Value to fill.
         """
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
-    def initialize_host_accessors(self):
-        for v in self.members:
-            v.initialize_host_accessors()
+    def _initialize_host_accessors(self):
+        for v in self._members:
+            v._initialize_host_accessors()
 
     def get_member_field(self, key):
         """Creates a ScalarField using a specific field member. Only used for quant.
@@ -407,12 +403,12 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
@@ -424,7 +420,7 @@ class StructField(Field):
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
@@ -436,21 +432,21 @@ class StructField(Field):
         Returns:
             Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
         """
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
 
     @python_scope
     def __setitem__(self, indices, element):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         self[indices]._set_entries(element)
 
     @python_scope
     def __getitem__(self, indices):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         # scalar fields does not instantiate SNodeHostAccess by default
         entries = {
-            k: v.host_access(self.pad_key(indices))[0] if isinstance(
+            k: v._host_access(self._pad_key(indices))[0] if isinstance(
                 v, ScalarField) else v[indices]
-            for k, v in self.items
+            for k, v in self._items
         }
         return Struct(entries)
 

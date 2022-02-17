@@ -48,15 +48,15 @@ class MeshReorderedScalarFieldProxy(ScalarField):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        self.host_accessors[0].setter(value, *self.pad_key(key))
+        self.host_accessors[0].setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        return self.host_accessors[0].getter(*self.pad_key(key))
+        return self.host_accessors[0].getter(*self._pad_key(key))
 
 
 class MeshReorderedMatrixFieldProxy(MatrixField):
@@ -75,15 +75,15 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         self[key]._set_entries(value)
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        key = self.pad_key(key)
-        return _IntermediateMatrix(self.n, self.m, self.host_access(key))
+        key = self._pad_key(key)
+        return _IntermediateMatrix(self.n, self.m, self._host_access(key))
 
 
 class MeshElementField:
@@ -94,22 +94,22 @@ class MeshElementField:
         self.field_dict = field_dict
         self.g2r_field = g2r_field
 
-        self.register_fields()
+        self._register_fields()
 
     @property
     def keys(self):
         return list(self.field_dict.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.field_dict.values())
 
     @property
-    def items(self):
+    def _items(self):
         return self.field_dict.items()
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             if key not in self.getter_dict:
                 if self.attr_dict[key].reorder:
@@ -128,17 +128,17 @@ class MeshElementField:
 
         return getter
 
-    def register_fields(self):
+    def _register_fields(self):
         self.getter_dict = {}
         for k in self.keys:
             setattr(MeshElementField, k,
-                    property(fget=MeshElementField.make_getter(k)))
+                    property(fget=MeshElementField._make_getter(k)))
 
-    def get_field_members(self):
+    def _get_field_members(self):
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
-            field_members += m.get_field_members()
+            field_members += m._get_field_members()
         return field_members
 
     @python_scope
@@ -150,33 +150,33 @@ class MeshElementField:
 
     @python_scope
     def fill(self, val):
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
-    def initialize_host_accessors(self):
-        for v in self.members:
-            v.initialize_host_accessors()
+    def _initialize_host_accessors(self):
+        for v in self._members:
+            v._initialize_host_accessors()
 
     def get_member_field(self, key):
         return self.field_dict[key]
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
     def to_numpy(self):
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
 
     @python_scope
     def __len__(self):
@@ -484,7 +484,7 @@ class MeshElementFieldProxy:
             elif isinstance(attr, StructField):
                 raise RuntimeError('ti.Mesh has not support StructField yet')
             else:  # isinstance(attr, Field)
-                var = attr.get_field_members()[0].ptr
+                var = attr._get_field_members()[0].ptr
                 setattr(
                     self, key,
                     impl.Expr(_ti_core.subscript(var,

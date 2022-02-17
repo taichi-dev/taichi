@@ -84,7 +84,7 @@ def test_unordered_matrix():
 
     assert val.shape == (m, p, n)
     assert val.dtype == ti.i32
-    assert val._snode.parent(0) == val.snode
+    assert val._snode.parent(0) == val._snode
     assert val._snode.parent() == blk3
     assert val._snode.parent(1) == blk3
     assert val._snode.parent(2) == blk2

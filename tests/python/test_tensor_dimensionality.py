@@ -18,7 +18,7 @@ def _test_dimensionality(d):
         x.__getitem__(tuple(indices))[0] = sum(indices) * 2
     fill()
     # FIXME(yuanming-hu): snode_writer needs 9 arguments actually..
-    if ti.cfg.arch == ti.cc and d >= 8:
+    if ti.lang.impl.current_cfg().arch == ti.cc and d >= 8:
         return
     for i in range(2**d):
         indices = []

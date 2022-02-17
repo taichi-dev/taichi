@@ -15,59 +15,59 @@ from tests import test_utils
 
 @test_utils.test()
 def test_all_archs():
-    assert ti.cfg.arch in test_utils.expected_archs()
+    assert ti.lang.impl.current_cfg().arch in test_utils.expected_archs()
 
 
 @test_utils.test(arch=ti.cpu)
 def test_arch_cpu():
-    assert ti.cfg.arch in [ti.cpu]
+    assert ti.lang.impl.current_cfg().arch in [ti.cpu]
 
 
 @test_utils.test(arch=[ti.cpu])
 def test_arch_list_cpu():
-    assert ti.cfg.arch in [ti.cpu]
+    assert ti.lang.impl.current_cfg().arch in [ti.cpu]
 
 
 @test_utils.test(exclude=ti.cpu)
 def test_exclude_cpu():
-    assert ti.cfg.arch not in [ti.cpu]
+    assert ti.lang.impl.current_cfg().arch not in [ti.cpu]
 
 
 @test_utils.test(exclude=[ti.cpu])
 def test_exclude_list_cpu():
-    assert ti.cfg.arch not in [ti.cpu]
+    assert ti.lang.impl.current_cfg().arch not in [ti.cpu]
 
 
 @test_utils.test(arch=ti.opengl)
 def test_arch_opengl():
-    assert ti.cfg.arch in [ti.opengl]
+    assert ti.lang.impl.current_cfg().arch in [ti.opengl]
 
 
 @test_utils.test(arch=[ti.cpu, ti.opengl, ti.metal])
 def test_multiple_archs():
-    assert ti.cfg.arch in [ti.cpu, ti.opengl, ti.metal]
+    assert ti.lang.impl.current_cfg().arch in [ti.cpu, ti.opengl, ti.metal]
 
 
 @test_utils.test(arch=ti.cpu, debug=True, advanced_optimization=False)
 def test_init_args():
-    assert ti.cfg.debug == True
-    assert ti.cfg.advanced_optimization == False
+    assert ti.lang.impl.current_cfg().debug == True
+    assert ti.lang.impl.current_cfg().advanced_optimization == False
 
 
 @test_utils.test(require=ti.extension.sparse)
 def test_require_extensions_1():
-    assert ti.cfg.arch in [ti.cpu, ti.cuda, ti.metal]
+    assert ti.lang.impl.current_cfg().arch in [ti.cpu, ti.cuda, ti.metal]
 
 
 @test_utils.test(arch=[ti.cpu, ti.opengl], require=ti.extension.sparse)
 def test_require_extensions_2():
-    assert ti.cfg.arch in [ti.cpu]
+    assert ti.lang.impl.current_cfg().arch in [ti.cpu]
 
 
 @test_utils.test(arch=[ti.cpu, ti.opengl],
                  require=[ti.extension.sparse, ti.extension.bls])
 def test_require_extensions_2():
-    assert ti.cfg.arch in [ti.cuda]
+    assert ti.lang.impl.current_cfg().arch in [ti.cuda]
 
 
 ### `test_utils.approx` and `test_utils.allclose`

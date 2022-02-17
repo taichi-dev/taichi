@@ -32,7 +32,6 @@ ikl = axes(0, 2, 3)
 jkl = axes(1, 2, 3)
 ijkl = axes(0, 1, 2, 3)
 
-cfg = impl.default_cfg()
 x86_64 = _ti_core.x64
 """The x64 CPU backend.
 """
@@ -237,6 +236,7 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
 
+    cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
@@ -506,30 +506,6 @@ def clear_all_gradients():
         visit(root_fb)
 
 
-def stat_write(key, value):
-    import yaml  # pylint: disable=C0415
-    case_name = os.environ.get('TI_CURRENT_BENCHMARK')
-    if case_name is None:
-        return
-    if case_name.startswith('benchmark_'):
-        case_name = case_name[10:]
-    arch_name = _ti_core.arch_name(cfg.arch)
-    async_mode = 'async' if cfg.async_mode else 'sync'
-    output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-    filename = f'{output_dir}/benchmark.yml'
-    try:
-        with open(filename, 'r') as f:
-            data = yaml.load(f, Loader=yaml.SafeLoader)
-    except FileNotFoundError:
-        data = {}
-    data.setdefault(case_name, {})
-    data[case_name].setdefault(key, {})
-    data[case_name][key].setdefault(arch_name, {})
-    data[case_name][key][arch_name][async_mode] = value
-    with open(filename, 'w') as f:
-        yaml.dump(data, f, Dumper=yaml.SafeDumper)
-
-
 def is_arch_supported(arch, use_gles=False):
     """Checks whether an arch is supported on the machine.
 
@@ -585,9 +561,9 @@ def get_host_arch_list():
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
-    'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
-    'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
-    'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
+    'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
+    'no_activate', 'reset', 'mesh_patch_idx'
 ]

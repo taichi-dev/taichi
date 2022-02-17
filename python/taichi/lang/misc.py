@@ -32,7 +32,10 @@ ikl = axes(0, 2, 3)
 jkl = axes(1, 2, 3)
 ijkl = axes(0, 1, 2, 3)
 
+<<<<<<< HEAD
 cfg = impl.default_cfg()
+=======
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
 x86_64 = _ti_core.x64
 """The x64 CPU backend.
 """
@@ -237,6 +240,10 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
 
+<<<<<<< HEAD
+=======
+    cfg = impl.default_cfg()
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
@@ -506,6 +513,7 @@ def clear_all_gradients():
         visit(root_fb)
 
 
+<<<<<<< HEAD
 def stat_write(key, value):
     import yaml  # pylint: disable=C0415
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
@@ -530,6 +538,8 @@ def stat_write(key, value):
         yaml.dump(data, f, Dumper=yaml.SafeDumper)
 
 
+=======
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
 def is_arch_supported(arch, use_gles=False):
     """Checks whether an arch is supported on the machine.
 
@@ -585,9 +595,17 @@ def get_host_arch_list():
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
+<<<<<<< HEAD
     'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
     'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
     'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
     'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+=======
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
+    'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
+    'no_activate', 'reset', 'mesh_patch_idx'
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
 ]

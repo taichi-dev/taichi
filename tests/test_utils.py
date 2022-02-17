@@ -13,7 +13,11 @@ import taichi as ti
 
 # Helper functions
 def get_rel_eps():
+<<<<<<< HEAD
     arch = ti.cfg.arch
+=======
+    arch = ti.lang.impl.current_cfg().arch
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
     if arch == ti.opengl:
         return 1e-3
     if arch == ti.metal:

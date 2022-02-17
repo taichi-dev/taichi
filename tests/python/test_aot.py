@@ -105,7 +105,11 @@ def test_element_size_alignment():
     c = ti.field(ti.i32, shape=())
 
     with tempfile.TemporaryDirectory() as tmpdir:
+<<<<<<< HEAD
         s = ti.aot.Module(ti.cfg.arch)
+=======
+        s = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         s.add_field('a', a)
         s.add_field('b', b)
         s.add_field('c', c)
@@ -130,7 +134,11 @@ def test_save():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+<<<<<<< HEAD
         m = ti.aot.Module(ti.cfg.arch)
+=======
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         m.add_field('density', density)
         m.add_kernel(init)
         m.save(tmpdir, '')
@@ -149,7 +157,11 @@ def test_save_template_kernel():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+<<<<<<< HEAD
         m = ti.aot.Module(ti.cfg.arch)
+=======
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         m.add_field('density', density)
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
@@ -169,7 +181,11 @@ def test_non_dense_snode():
     blk.dense(ti.i, n).place(y)
 
     with pytest.raises(RuntimeError, match='AOT: only supports dense field'):
+<<<<<<< HEAD
         m = ti.aot.Module(ti.cfg.arch)
+=======
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         m.add_field('x', x)
         m.add_field('y', y)
 
@@ -254,7 +270,11 @@ def test_mpm88_aot():
             J[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
+<<<<<<< HEAD
         m = ti.aot.Module(ti.cfg.arch)
+=======
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         m.add_field("x", x)
         m.add_field("v", v)
         m.add_field("C", C)
@@ -460,7 +480,11 @@ def test_mpm99_aot():
             Jp[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
+<<<<<<< HEAD
         m = ti.aot.Module(ti.cfg.arch)
+=======
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+>>>>>>> 5d372d76cdb12826fd31d3f6bd81b56ed22bcef7
         m.add_field('x', x)
         m.add_field('v', v)
         m.add_field('C', C)

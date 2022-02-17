@@ -445,28 +445,17 @@ def _test_compiled_functions():
     v = np.zeros((6, 10), dtype=np.int32)
     func(v)
     assert impl.get_runtime().get_num_compiled_functions() == 1
-    v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    v = np.zeros((6, 11), dtype=np.int32)
     func(v)
     assert impl.get_runtime().get_num_compiled_functions() == 2
+    v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    func(v)
+    assert impl.get_runtime().get_num_compiled_functions() == 3
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_compiled_functions():
     _test_compiled_functions()
-
-
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_compiled_functions_torch():
-    @ti.kernel
-    def func(a: ti.any_arr(element_dim=1)):
-        for i in range(5):
-            for j in range(4):
-                a[i][j * j] = j * j
-
-    v = torch.zeros((6, 11), dtype=torch.int32)
-    func(v)
-    assert impl.get_runtime().get_num_compiled_functions() == 1
 
 
 # annotation compatibility

@@ -31,8 +31,8 @@ def randn(dt=None):
     depending on whether `dt` is `ti.f32` or `ti.f64`.
 
     Args:
-        dt (DataType): The data type for the generated random number. Default
-            to `None`. If set to `None` it will be determined dynamically in runtime.
+        dt (DataType): Data type of the required random number. Default to `None`.
+            If set to `None` `dt` will be determined dynamically in runtime.
 
     Returns:
         The generated random float.

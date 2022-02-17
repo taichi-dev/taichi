@@ -11,7 +11,7 @@ from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
 
 _has_pytorch = False
 
-_env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
+_env_torch = os.environ.get('TI_ENABLE_TORCH', '0')
 if not _env_torch or int(_env_torch):
     try:
         import torch

@@ -527,7 +527,6 @@ class Kernel:
             callbacks = []
             has_external_arrays = False
             has_torch = has_pytorch()
-            ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -554,16 +553,7 @@ class Kernel:
                         v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
                     v = v.arr
-                    if ndarray_use_torch:
-                        is_ndarray = True
-                        tmp, torch_callbacks = self.get_torch_callbacks(
-                            v, has_torch, is_ndarray)
-                        callbacks += torch_callbacks
-                        launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape)
-                    else:
-                        launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                    launch_ctx.set_arg_ndarray(actual_argument_slot, v)
                 elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)

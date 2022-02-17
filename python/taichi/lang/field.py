@@ -20,7 +20,7 @@ class Field:
         self.grad = None
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets representative SNode for info purposes.
 
         Returns:
@@ -35,7 +35,7 @@ class Field:
         Returns:
             Tuple[Int]: Field shape.
         """
-        return self.snode.shape
+        return self._snode.shape
 
     @property
     def dtype(self):
@@ -44,7 +44,7 @@ class Field:
         Returns:
             DataType: Data type of each individual value.
         """
-        return self.snode.dtype
+        return self._snode.dtype
 
     @property
     def _name(self):
@@ -53,18 +53,7 @@ class Field:
         Returns:
             str: Field name.
         """
-        return self.snode._name
-
-    def parent(self, n=1):
-        """Gets an ancestor of the representative SNode in the SNode tree.
-
-        Args:
-            n (int): the number of levels going up from the representative SNode.
-
-        Returns:
-            SNode: The n-th parent of the representative SNode.
-        """
-        return self.snode.parent(n)
+        return self._snode._name
 
     def _get_field_members(self):
         """Gets field members.
@@ -187,7 +176,7 @@ class Field:
     def __str__(self):
         if taichi.lang.impl.inside_kernel():
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
-        if self.snode.ptr is None:
+        if self._snode.ptr is None:
             return '<Field: Definition of this field is incomplete>'
         return str(self.to_numpy())
 
@@ -219,6 +208,26 @@ class ScalarField(Field):
     """
     def __init__(self, var):
         super().__init__([var])
+
+    @property
+    def snode(self):
+        """Gets corresponding SNode for info purposes.
+
+        Returns:
+            SNode: corresponding SNode (SNode of first field member).
+        """
+        return self._snode
+
+    def parent(self, n=1):
+        """Gets an ancestor of the representative SNode in the SNode tree.
+
+        Args:
+            n (int): the number of levels going up from the representative SNode.
+
+        Returns:
+            SNode: The n-th parent of the representative SNode.
+        """
+        return self.snode.parent(n)
 
     @python_scope
     def fill(self, val):

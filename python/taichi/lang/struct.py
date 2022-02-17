@@ -293,12 +293,8 @@ class StructField(Field):
     def __init__(self, field_dict, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self.__name = name
+        self.name = name
         self._register_fields()
-
-    @property
-    def _name(self):
-        return self.__name
 
     @property
     def keys(self):
@@ -350,13 +346,13 @@ class StructField(Field):
         return field_members
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets representative SNode for info purposes.
 
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
-        return self._members[0].snode
+        return self._members[0]._snode
 
     def _loop_range(self):
         """Gets representative field member for loop range info.

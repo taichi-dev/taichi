@@ -72,7 +72,7 @@ print(x_torch.device) # device(type='cuda', index=0)
 Shapes of Taichi fields and those of corresponding NumPy arrays or PyTorch tensors are closely
 connected via the following rules:
 
-- For scalar fields, **the shape of NumPy array or PyTorch tensor is exactly the same as
+- For scalar fields, **the shape of NumPy array or PyTorch tensor equals the shape of
   the Taichi field**:
 
 ```python

@@ -15,7 +15,7 @@ def _randn(dt):
     Box-Muller transformation.
     """
     assert dt == f32 or dt == f64
-    u1 = 1.0 - ops.random(dt)  # map [0, 1) to (0, 1] to avoid log(0)
+    u1 = ops.cast(1.0, dt) - ops.random(dt)
     u2 = ops.random(dt)
     r = ops.sqrt(-2 * ops.log(u1))
     c = ops.cos(math.tau * u2)

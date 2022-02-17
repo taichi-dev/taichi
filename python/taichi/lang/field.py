@@ -64,6 +64,15 @@ class Field:
         """
         return self._snode._name
 
+    def parent(self, n=1):
+        """Gets an ancestor of the representative SNode in the SNode tree.
+        Args:
+            n (int): the number of levels going up from the representative SNode.
+        Returns:
+            SNode: The n-th parent of the representative SNode.
+        """
+        return self.snode.parent(n)
+
     def _get_field_members(self):
         """Gets field members.
 
@@ -217,26 +226,6 @@ class ScalarField(Field):
     """
     def __init__(self, var):
         super().__init__([var])
-
-    @property
-    def snode(self):
-        """Gets corresponding SNode for info purposes.
-
-        Returns:
-            SNode: corresponding SNode (SNode of first field member).
-        """
-        return self._snode
-
-    def parent(self, n=1):
-        """Gets an ancestor of the representative SNode in the SNode tree.
-
-        Args:
-            n (int): the number of levels going up from the representative SNode.
-
-        Returns:
-            SNode: The n-th parent of the representative SNode.
-        """
-        return self.snode.parent(n)
 
     @python_scope
     def fill(self, val):

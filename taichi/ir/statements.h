@@ -104,10 +104,7 @@ class ContinueStmt : public Stmt {
  */
 class DecorationStmt : public Stmt {
  public:
-  enum class Decoration : uint32_t {
-    kUnknown,
-    kLoopUnique
-  };
+  enum class Decoration : uint32_t { kUnknown, kLoopUnique };
 
   Stmt *operand;
   std::vector<uint32_t> decoration;

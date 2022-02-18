@@ -177,7 +177,9 @@ bool is_device_visible(VkPhysicalDevice device) {
 
   VkPhysicalDeviceProperties device_properties{};
   vkGetPhysicalDeviceProperties(device, &device_properties);
-  return device_properties.deviceID == std::stoul(device_id);
+  std::stringstream id_sstream;
+  id_sstream << std::hex << device_properties.deviceID;
+  return id_sstream.str() == device_id;
 }
 
 }  // namespace

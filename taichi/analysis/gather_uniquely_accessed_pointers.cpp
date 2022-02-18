@@ -62,19 +62,7 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   void visit(DecorationStmt *stmt) override {
     if (stmt->decoration.size() == 2 &&
         stmt->decoration[0] ==
-            uint32_t(DecorationStmt::Decoration::loop_unique)) {
-      if (loop_unique_.find(stmt->operand) == loop_unique_.end()) {
-        loop_unique_[stmt->operand] = stmt->decoration[1];
-        num_different_loop_indices =
-            std::max(loop_unique_[stmt->operand] + 1, num_different_loop_indices);
-      }
-    }
-  }
-
-  void visit(DecorationStmt *stmt) override {
-    if (stmt->decoration.size() == 2 &&
-        stmt->decoration[0] ==
-            uint32_t(DecorationStmt::Decoration::loop_unique)) {
+            uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
       if (loop_unique_.find(stmt->operand) == loop_unique_.end()) {
         loop_unique_[stmt->operand] = stmt->decoration[1];
         num_different_loop_indices = std::max(loop_unique_[stmt->operand] + 1,

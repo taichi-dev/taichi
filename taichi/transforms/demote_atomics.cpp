@@ -78,7 +78,7 @@ class DemoteAtomics : public BasicStmtVisitor {
                 demote = true;
               }
             }
-          }        
+          }
         } else if(stmt->dest->is<ExternalPtrStmt>()) {
           ExternalPtrStmt *dest_ptr = stmt->dest->as<ExternalPtrStmt>();
           demote = true;
@@ -92,7 +92,7 @@ class DemoteAtomics : public BasicStmtVisitor {
               // Not loop unique
               demote = false;
             }
-          }          
+          }
           // TODO: Is BLS / Mem Access Opt a thing for any_arr?
         }
       }

@@ -17,14 +17,13 @@ def test_arch():
     assert func()[1, 2] == 6
 
 
-@test_utils.test()
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_ret_i16():
     @ti.kernel
     def func() -> ti.types.matrix(2, 3, ti.i16):
         return ti.Matrix([[1, 2, 3], [4, 5, 6]])
 
     assert func()[1, 2] == 6
-    assert type(func())
 
 
 @test_utils.test()

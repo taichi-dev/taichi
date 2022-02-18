@@ -64,13 +64,14 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   }
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;
-    ra.dt = kr.dt;
     size_t dt_bytes{0};
-    if (auto tensor_type = ra.dt->cast<TensorType>()) {
-      dt_bytes = data_type_size(PrimitiveType::i64);
+    if (auto tensor_type = kr.dt->cast<TensorType>()) {
+      ra.dt = tensor_type->get_element_type();
+      dt_bytes = data_type_size(ra.dt);
       ra.is_array = true;
       ra.stride = tensor_type->get_num_elements() * dt_bytes;
     } else {
+      ra.dt = kr.dt;
       dt_bytes = data_type_size(ra.dt);
       ra.is_array = false;
       ra.stride = dt_bytes;
@@ -120,7 +121,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = element_type_size(attribs.dt);
+      const size_t dt_bytes = data_type_size(attribs.dt);
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;

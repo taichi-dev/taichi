@@ -432,10 +432,7 @@ class KernelCodegenImpl : public IRVisitor {
     int idx{0};
     for (auto &value : stmt->values) {
       emit("{}.ret0()[{}] = {};", kContextVarName, idx, value->raw_name());
-      idx += 2;
-      // The return array of our Metal backend is of type i32, but there are i64
-      // slots in taichi's result buffer,so we need two slots to make them
-      // match.
+      idx++;
     }
   }
 

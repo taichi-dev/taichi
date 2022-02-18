@@ -63,7 +63,6 @@ int data_type_size(DataType t) {
   //  setting a loud failure on pointers);
   //  2. Support pointer types here.
   t.set_is_pointer(false);
-
   if (false) {
   } else if (t->is_primitive(PrimitiveTypeID::f16))
     return 2;

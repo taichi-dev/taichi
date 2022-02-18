@@ -183,12 +183,12 @@ class HostDeviceContextBlitter {
     char *const device_base =
         reinterpret_cast<char *>(device_->map(*device_ret_buffer_));
 
-#define TO_HOST(short_type, type)                          \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {     \
-    const type d = *reinterpret_cast<type *>(device_ptr);  \
-    host_result_buffer_[i] =                               \
-        taichi_union_cast_with_different_sizes<uint64>(d); \
-    break;                                                 \
+#define TO_HOST(short_type, type, offset)                          \
+  if (dt->is_primitive(PrimitiveTypeID::short_type)) {             \
+    const type d = *reinterpret_cast<type *>(device_ptr) + offset; \
+    host_result_buffer_[offset] =                                  \
+        taichi_union_cast_with_different_sizes<uint64>(d);         \
+    continue;                                                      \
   }
 
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
@@ -197,41 +197,38 @@ class HostDeviceContextBlitter {
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = device_base + ret.offset_in_mem;
       const auto dt = ret.dt;
-      do {
-        if (ret.is_array) {
-          std::memcpy(host_result_buffer_, device_ptr, ret.stride);
-          break;
-        }
+      const auto num = ret.stride / data_type_size(ret.dt);
+      for (int j = 0; j < num; ++j) {
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
-          TO_HOST(i8, int8)
-          TO_HOST(u8, uint8)
+          TO_HOST(i8, int8, j)
+          TO_HOST(u8, uint8, j)
         }
         if (device_->get_cap(DeviceCapability::spirv_has_int16)) {
-          TO_HOST(i16, int16)
-          TO_HOST(u16, uint16)
+          TO_HOST(i16, int16, j)
+          TO_HOST(u16, uint16, j)
         }
-        TO_HOST(i32, int32)
-        TO_HOST(u32, uint32)
-        TO_HOST(f32, float32)
+        TO_HOST(i32, int32, j)
+        TO_HOST(u32, uint32, j)
+        TO_HOST(f32, float32, j)
         if (device_->get_cap(DeviceCapability::spirv_has_int64)) {
-          TO_HOST(i64, int64)
-          TO_HOST(u64, uint64)
+          TO_HOST(i64, int64, j)
+          TO_HOST(u64, uint64, j)
         }
         if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
-          TO_HOST(f64, float64)
+          TO_HOST(f64, float64, j)
         }
         if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
           if (dt->is_primitive(PrimitiveTypeID::f16)) {
             const float d = fp16_ieee_to_fp32_value(
-                *reinterpret_cast<uint16 *>(device_ptr));
-            host_result_buffer_[i] =
+                *reinterpret_cast<uint16 *>(device_ptr) + j);
+            host_result_buffer_[j] =
                 taichi_union_cast_with_different_sizes<uint64>(d);
-            break;
+            continue;
           }
         }
         TI_ERROR("Vulkan does not support return value type={}",
                  data_type_name(ret.dt));
-      } while (0);
+      }
     }
 #undef TO_HOST
 

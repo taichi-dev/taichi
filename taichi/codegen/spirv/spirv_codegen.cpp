@@ -526,15 +526,13 @@ class TaskCodegen : public IRVisitor {
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
-          get_buffer_value(BufferType::Rets, PrimitiveType::i32),
+          get_buffer_value(BufferType::Rets, dt),
           ir_->int_immediate_number(ir_->i32_type(), 0),
           ir_->int_immediate_number(ir_->i32_type(), i));
       buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
       ir_->store_variable(buffer_val, val);
     }
-    // spirV only support i32 array, but there are i64 slots in
-    // taichi's result buffer,so we need two slots to make them match.
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -1840,13 +1838,14 @@ class TaskCodegen : public IRVisitor {
     for (auto &ret : ctx_attribs_->rets()) {
       if (auto tensor_type = ret.dt->cast<TensorType>()) {
         struct_components_.emplace_back(
-            ir_->get_array_type(ir_->i64_type(),
-                                tensor_type->get_num_elements()),
+            ir_->get_array_type(
+                ir_->get_primitive_type(tensor_type->get_element_type()),
+                tensor_type->get_num_elements()),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
-        struct_components_.emplace_back(ir_->get_array_type(ir_->i64_type(), 1),
-                                        "ret" + std::to_string(ret.index),
-                                        ret.offset_in_mem);
+        struct_components_.emplace_back(
+            ir_->get_array_type(ir_->get_primitive_type(ret.dt), 1),
+            "ret" + std::to_string(ret.index), ret.offset_in_mem);
       }
     }
     ret_struct_type_ = ir_->create_struct_type(struct_components_);

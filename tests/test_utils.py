@@ -2,6 +2,7 @@ import copy
 import functools
 import itertools
 import os
+from errno import EEXIST
 from tempfile import mkstemp
 
 from taichi._lib import core as _ti_core
@@ -22,6 +23,18 @@ def get_rel_eps():
         # https://github.com/taichi-dev/taichi/pull/1779
         return 1e-4
     return 1e-6
+
+
+def mkdir_p(dir_path):
+    '''Creates a directory. equivalent to using mkdir -p on the command line'''
+
+    try:
+        os.makedirs(dir_path)
+    except OSError as exc:  # Python > 2.5
+        if exc.errno == EEXIST and os.path.isdir(dir_path):
+            pass
+        else:
+            raise
 
 
 def approx(expected, **kwargs):

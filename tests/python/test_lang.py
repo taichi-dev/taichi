@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from taichi.lang.misc import get_host_arch_list
 from taichi._lib import core
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils

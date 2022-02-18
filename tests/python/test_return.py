@@ -1,6 +1,6 @@
 import pytest
-
 from taichi._lib import core
+
 import taichi as ti
 from tests import test_utils
 

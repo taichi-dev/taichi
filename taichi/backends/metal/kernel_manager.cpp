@@ -472,9 +472,9 @@ class HostMetalCtxBlitter {
   }
 
   void metal_to_host() {
-#define TO_HOST(type, offset)                                    \
+#define TO_HOST(type, offset)                                      \
   const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
-  host_result_buffer_[offset] =                                  \
+  host_result_buffer_[offset] =                                    \
       taichi_union_cast_with_different_sizes<uint64>(d);
 
     if (ctx_attribs_->empty()) {

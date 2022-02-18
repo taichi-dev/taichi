@@ -183,12 +183,12 @@ class HostDeviceContextBlitter {
     char *const device_base =
         reinterpret_cast<char *>(device_->map(*device_ret_buffer_));
 
-#define TO_HOST(short_type, type, offset)                          \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {             \
+#define TO_HOST(short_type, type, offset)                            \
+  if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \
     const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
-    host_result_buffer_[offset] =                                  \
-        taichi_union_cast_with_different_sizes<uint64>(d);         \
-    continue;                                                      \
+    host_result_buffer_[offset] =                                    \
+        taichi_union_cast_with_different_sizes<uint64>(d);           \
+    continue;                                                        \
   }
 
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {

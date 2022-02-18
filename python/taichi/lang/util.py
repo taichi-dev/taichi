@@ -236,7 +236,7 @@ def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
         msg (str): message to print.
         warning_type (Warning): type of warning.
         stacklevel (int): warning stack level from the caller.
-        print_stack: whether we print the stack
+        print_stack (bool): whether to print the stack
     """
     msg = f'{warning_type.__name__}: {msg}'
     if print_stack:

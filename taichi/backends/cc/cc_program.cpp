@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "taichi/backends/cc/cc_program.h"
 
 using namespace taichi::lang::cccp;

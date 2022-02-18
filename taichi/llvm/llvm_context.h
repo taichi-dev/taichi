@@ -128,6 +128,11 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+  void add_function_to_snode_tree(int id, std::string func);
+
+  void delete_functions_of_snode_tree(int id);
+
+
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
@@ -155,6 +160,8 @@ class TaichiLLVMContext {
   ThreadLocalData *main_thread_data_{nullptr};
   std::mutex mut_;
   std::mutex thread_map_mut_;
+
+  std::unordered_map<int, std::vector<std::string>> snode_tree_funcs_;
 };
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,

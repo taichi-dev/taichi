@@ -1,5 +1,3 @@
-import warnings
-
 from taichi.lang import ops, util
 
 

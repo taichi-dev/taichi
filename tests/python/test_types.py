@@ -1,5 +1,6 @@
 import pytest
 from taichi.lang import impl
+from taichi._lib import core
 
 import taichi as ti
 from tests import test_utils
@@ -105,7 +106,7 @@ def _test_overflow(dt, n):
     assert a[None] == 2**n // 3
     assert b[None] == 2**n // 3
 
-    if ti.types.is_signed(dt):
+    if core.is_signed(dt):
         assert c[None] == 2**n // 3 * 2 - (2**n)  # overflows
     else:
         assert c[None] == 2**n // 3 * 2  # does not overflow

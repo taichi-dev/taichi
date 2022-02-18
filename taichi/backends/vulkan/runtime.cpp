@@ -185,7 +185,7 @@ class HostDeviceContextBlitter {
 
 #define TO_HOST(short_type, type, offset)                          \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) {             \
-    const type d = *reinterpret_cast<type *>(device_ptr) + offset; \
+    const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
     host_result_buffer_[offset] =                                  \
         taichi_union_cast_with_different_sizes<uint64>(d);         \
     continue;                                                      \

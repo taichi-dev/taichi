@@ -13,7 +13,7 @@ TLANG_NAMESPACE_BEGIN
 class DemoteAtomics : public BasicStmtVisitor {
  private:
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
-  std::unordered_set<ExternalPtrStmt *> loop_unique_arr_ptr_;
+  std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -82,14 +82,17 @@ class DemoteAtomics : public BasicStmtVisitor {
         } else if(stmt->dest->is<ExternalPtrStmt>()) {
           ExternalPtrStmt *dest_ptr = stmt->dest->as<ExternalPtrStmt>();
           demote = true;
-          if (loop_unique_arr_ptr_.find(dest_ptr) ==
-              loop_unique_arr_ptr_.end()) {
-            // Not loop unique
-            demote = false;
-          }
           if (dest_ptr->indices.empty()) {
             demote = false;
           }
+          for (Stmt *base_stmt : dest_ptr->base_ptrs.data) {
+            ArgLoadStmt *arg_load_stmt = base_stmt->as<ArgLoadStmt>();
+            int arg_id = arg_load_stmt->arg_id;
+            if (loop_unique_arr_ptr_[arg_id] == nullptr) {
+              // Not loop unique
+              demote = false;
+            }
+          }          
           // TODO: Is BLS / Mem Access Opt a thing for any_arr?
         }
       }

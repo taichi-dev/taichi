@@ -97,6 +97,10 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
     }
   }
 
+  bool is_loop_unique(Stmt *stmt) const {
+    return loop_unique_.find(stmt) != loop_unique_.end();
+  }
+
   bool is_ptr_indices_loop_unique(GlobalPtrStmt *stmt) const {
     // Check if the address is loop-unique, i.e., stmt contains
     // either a loop-unique index or all top-level loop indices.
@@ -167,7 +171,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   std::unordered_map<const SNode *, GlobalPtrStmt *> rel_access_pointer_;
 
   // Search any_arrs that are uniquely accessed. Maps: ArgID -> ExternalPtrStmt
-  std::unordered_set<ExternalPtrStmt *> accessed_arr_pointer_;
+  std::unordered_map<int, ExternalPtrStmt *> accessed_arr_pointer_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -226,13 +230,55 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     // A memory location of an ExternalPtrStmt depends on the indices
     // If the accessed indices are loop unique,
     // the accessed memory location is loop unique
-    if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
-      accessed_arr_pointer_.insert(stmt);
+    for (auto base_ptr : stmt->base_ptrs.data) {
+      ArgLoadStmt *arg_load_stmt = base_ptr->as<ArgLoadStmt>();
+      int arg_id = arg_load_stmt->arg_id;
+
+      auto accessed_ptr = accessed_arr_pointer_.find(arg_id);
+
+      bool stmt_loop_unique =
+          loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt);
+
+      if (!stmt_loop_unique) {
+        accessed_arr_pointer_[arg_id] = nullptr;  // not loop-unique
+      } else {
+        if (accessed_ptr == accessed_arr_pointer_.end()) {
+          // First time using arr @ arg_id
+          accessed_arr_pointer_[arg_id] = stmt;
+        } else {
+          /**
+           * We know stmt->base_ptr and the previously recorded pointers
+           * are loop-unique. We need to figure out whether their loop-unique
+           * indicies are the same while ignoring the others.
+           * e.g. a[i, j, 1] and a[i, j, 2] are both uniquely accessed
+           *      a[i, j, 1] and a[j, i, 2] are not uniquely accessed
+           *      a[i, j + 1, 1] and a[i, j, 2] are not uniquely accessed
+           */
+          if (accessed_ptr->second) {
+            ExternalPtrStmt *other_ptr = accessed_ptr->second;
+            TI_ASSERT(stmt->indices.size() == other_ptr->indices.size());
+            for (int axis = 0; axis < stmt->indices.size(); axis++) {
+              Stmt *this_index = stmt->indices[axis];
+              Stmt *other_index = other_ptr->indices[axis];
+              // We only compare unique indices here.
+              // Since both pointers are loop-unique, all the unique indices
+              // need to be the same for both to be uniquely accessed
+              if (loop_unique_stmt_searcher_.is_loop_unique(this_index)) {
+                if (!irpass::analysis::same_value(this_index, other_index)) {
+                  // Not equal -> not uniquely accessed
+                  accessed_arr_pointer_[arg_id] = nullptr;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 
   static std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-                   std::unordered_set<ExternalPtrStmt *>>
+                   std::unordered_map<int, ExternalPtrStmt *>>
   run(IRNode *root) {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
@@ -249,7 +295,9 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     }
     root->accept(&searcher.loop_unique_stmt_searcher_);
     root->accept(&searcher);
-    return std::make_pair(searcher.accessed_pointer_, searcher.accessed_arr_pointer_);
+
+    return std::make_pair(searcher.accessed_pointer_,
+                          searcher.accessed_arr_pointer_);
   }
 };
 
@@ -324,7 +372,7 @@ const std::string GatherUniquelyAccessedBitStructsPass::id =
 
 namespace irpass::analysis {
 std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-          std::unordered_set<ExternalPtrStmt *>>
+          std::unordered_map<int, ExternalPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);

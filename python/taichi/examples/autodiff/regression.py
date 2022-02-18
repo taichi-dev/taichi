@@ -55,7 +55,6 @@ def initialize():
 
 
 def regress_raw():
-    # why use constant value...
     use_tape = True
 
     for i in range(1000):

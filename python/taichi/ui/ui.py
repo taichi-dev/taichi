@@ -1,6 +1,6 @@
 from taichi._lib import core as _ti_core
 
-from .camera import Camera  # pylint: disable=unused-import
+from .camera import Camera
 from .canvas import Canvas  # pylint: disable=unused-import
 from .constants import *  # pylint: disable=unused-import,wildcard-import
 from .imgui import Gui  # pylint: disable=unused-import

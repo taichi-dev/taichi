@@ -1,6 +1,6 @@
 # Optional environment variables supported by setup.py:
-#   DEBUG
-#     build the C++ taichi_core extension with debug symbols.
+#   {DEBUG, RELWITHDEBINFO, MINSIZEREL}
+#     build the C++ taichi_core extension with various build types.
 #
 #   TAICHI_CMAKE_ARGS
 #     extra cmake args for C++ taichi_core extension.
@@ -143,8 +143,14 @@ class CMakeBuild(build_ext):
         if shutil.which('ninja'):
             cmake_args += ['-GNinja']
 
-        self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
-        cfg = 'Debug' if self.debug else 'Release'
+        cfg = 'Release'
+        if (os.getenv('DEBUG', '0') in ('1', 'ON')):
+            cfg = 'Debug'
+        elif (os.getenv('RELWITHDEBINFO', '0') in ('1', 'ON')):
+            cfg = 'RelWithDebInfo'
+        elif (os.getenv('MINSIZEREL', '0') in ('1', 'ON')):
+            cfg = 'MinSizeRel'
+
         build_args = ['--config', cfg]
 
         cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]

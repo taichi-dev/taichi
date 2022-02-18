@@ -808,7 +808,8 @@ def floordiv(x1, x2):
         >>> main()
         [0.0, 1.0, 2.0]
     """
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, x1, x2)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, x1,
+                             x2)
 
 
 @binary

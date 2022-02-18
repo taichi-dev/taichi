@@ -228,7 +228,7 @@ def python_scope(func):
     return wrapped
 
 
-def warning(msg, warning_type=UserWarning, stacklevel=1):
+def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
     """Print a warning message. Note that the builtin `warnings` module is
     unreliable since it may be suppressed by other packages such as IPython.
 
@@ -236,11 +236,12 @@ def warning(msg, warning_type=UserWarning, stacklevel=1):
         msg (str): message to print.
         warning_type (Warning): type of warning.
         stacklevel (int): warning stack level from the caller.
+        print_stack (bool): whether to print the stack
     """
-    print(Fore.YELLOW + Style.BRIGHT, end='')
-    print(f'{warning_type.__name__}: {msg}')
-    print(f'\n{get_traceback(stacklevel)}')
-    print(Style.RESET_ALL, end='')
+    msg = f'{warning_type.__name__}: {msg}'
+    if print_stack:
+        msg += f'\n{get_traceback(stacklevel)}'
+    print(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL)
 
 
 def get_traceback(stacklevel=1):

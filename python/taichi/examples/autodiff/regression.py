@@ -81,7 +81,8 @@ def draw():
     for i in range(number_coeffs):
         curve_ys += coeffs[i] * np.power(curve_xs, i)
 
-    plt.title('Nonlinear Regression with Gradient Descent (3rd order polynomial)')
+    plt.title(
+        'Nonlinear Regression with Gradient Descent (3rd order polynomial)')
     ax = plt.gca()
     ax.scatter(xs, ys, label='data', color='r')
     ax.plot(curve_xs, curve_ys, label='fitted')

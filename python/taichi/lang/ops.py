@@ -279,7 +279,7 @@ def asin(x):
 
     Args:
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \
-            A scalar or a matrix with elements in [-1,1].
+            A scalar or a matrix with elements in [-1, 1].
 
     Returns:
         The inverse sine of each element in `x`, in radians and in the closed \

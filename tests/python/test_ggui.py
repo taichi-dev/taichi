@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from taichi._lib import core as _ti_core
 from tests import test_utils
 
 REGENERATE_GROUNDTRUTH_IMAGES = False
@@ -49,7 +50,7 @@ def verify_image(window, image_name, tolerence=0.1):
         os.remove(actual_name)
 
 
-@pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_geometry_2d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
@@ -150,7 +151,7 @@ def test_geometry_2d():
     window.destroy()
 
 
-@pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_geometry_3d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
@@ -242,7 +243,7 @@ def test_geometry_3d():
     window.destroy()
 
 
-@pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_set_image():
     window = ti.ui.Window('test', (640, 480), show_window=False)
@@ -268,7 +269,7 @@ def test_set_image():
     window.destroy()
 
 
-@pytest.mark.skipif(not ti.ui.GGUI_AVAILABLE, reason="GGUI Not Available")
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_imgui():
     window = ti.ui.Window('test', (640, 480), show_window=False)

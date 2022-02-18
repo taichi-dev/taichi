@@ -509,7 +509,7 @@ class HostMetalCtxBlitter {
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
-      cosnt int dt_bytes = metal_data_type_bytes(ret.dt);
+      const int dt_bytes = metal_data_type_bytes(ret.dt);
       const int num = ret.stride / dt_bytes;
       for (int j = 0; j < num; ++j) {
         const auto dt = ret.dt;

@@ -119,26 +119,6 @@ class TaichiOperations:
     def __rrshift__(self, other):
         return ops.bit_sar(other, self)
 
-    def _logical_and(self, other):
-        """Return the new expression of computing logical and between self and a given operand.
-
-        Args:
-            other (Any): Given operand.
-
-        Returns:
-            :class:`~taichi.lang.expr.Expr`: The computing expression of logical and."""
-        return ops.logical_and(self, other)
-
-    def _logical_or(self, other):
-        """Return the new expression of computing logical or between self and a given operand.
-
-        Args:
-            other (Any): Given operand.
-
-        Returns:
-            :class:`~taichi.lang.expr.Expr`: The computing expression of logical or."""
-        return ops.logical_or(self, other)
-
     def __invert__(self):  # ~a => a.__invert__()
         return ops.bit_not(self)
 

@@ -321,6 +321,21 @@ HRESULT compile_compute_shader_from_string(const std::string &source,
   return hr;
 }
 
+HRESULT create_cpu_accessible_buffer_copy(ID3D11Device *device,
+                                          ID3D11Buffer *src_buf,
+                                          ID3D11Buffer **out_buf) {
+  D3D11_BUFFER_DESC desc;
+  src_buf->GetDesc(&desc);
+  D3D11_BUFFER_DESC desc1 = {};
+  desc1.BindFlags = 0;
+  desc1.ByteWidth = desc.ByteWidth;
+  desc1.Usage = D3D11_USAGE_STAGING;
+  desc1.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
+  desc1.MiscFlags = 0;
+  HRESULT hr = device->CreateBuffer(&desc1, nullptr, out_buf);
+  return hr;
+}
+
 }  // namespace
 
 Dx11Device::Dx11Device() {
@@ -402,6 +417,9 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   alloc_id_to_buffer_.erase(alloc_id);
   ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
   uav->Release();
+  ID3D11Buffer *cpucopy = alloc_id_to_cpucopy_[alloc_id];
+  if (cpucopy)
+    cpucopy->Release();
   alloc_id_to_uav_.erase(alloc_id);
 }
 
@@ -416,15 +434,31 @@ void *Dx11Device::map_range(DevicePtr ptr, uint64_t size) {
 }
 
 void *Dx11Device::map(DeviceAllocation alloc) {
-  TI_NOT_IMPLEMENTED;
+  uint32_t alloc_id = alloc.alloc_id;
+  ID3D11Buffer *buf = alloc_id_to_buffer(alloc_id);
+  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(alloc_id);
+
+  if (cpucopy == nullptr) {
+    create_cpu_accessible_buffer_copy(device_, buf, &cpucopy);
+    alloc_id_to_cpucopy_[alloc_id] = cpucopy;
+  }
+
+  context_->CopyResource(cpucopy, buf);
+  D3D11_MAPPED_SUBRESOURCE mapped;
+  context_->Map(cpucopy, 0, D3D11_MAP_READ_WRITE, 0, &mapped);
+  return mapped.pData;
 }
 
 void Dx11Device::unmap(DevicePtr ptr) {
-  TI_NOT_IMPLEMENTED;
+  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(ptr.alloc_id);
+  context_->Unmap(cpucopy, 0);
 }
 
 void Dx11Device::unmap(DeviceAllocation alloc) {
-  TI_NOT_IMPLEMENTED;
+  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(alloc.alloc_id);
+  ID3D11Buffer *buf = alloc_id_to_buffer(alloc.alloc_id);
+  context_->Unmap(cpucopy, 0);
+  context_->CopyResource(buf, cpucopy);
 }
 
 void Dx11Device::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
@@ -485,6 +519,8 @@ ID3D11Buffer *Dx11Device::alloc_id_to_buffer(uint32_t alloc_id) {
 }
 
 ID3D11Buffer *Dx11Device::alloc_id_to_buffer_cpu_copy(uint32_t alloc_id) {
+  if (alloc_id_to_cpucopy_.find(alloc_id) == alloc_id_to_cpucopy_.end())
+    return nullptr;
   return alloc_id_to_cpucopy_.at(alloc_id);
 }
 

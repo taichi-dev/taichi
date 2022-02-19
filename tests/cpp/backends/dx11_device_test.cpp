@@ -45,6 +45,21 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
     EXPECT_EQ(count1 - count0, 2);
   }
 
+  // Map to CPU, write some values, then check those values
+  void *mapped = device->map(device_alloc);
+  int *mapped_int = reinterpret_cast<int *>(mapped);
+  for (int i = 0; i < 100; i++) {
+    mapped_int[i] = i;
+  }
+  device->unmap(device_alloc);
+
+  mapped = device->map(device_alloc);
+  mapped_int = reinterpret_cast<int *>(mapped);
+  for (int i = 0; i < 100; i++) {
+    EXPECT_EQ(mapped_int[i], i);
+  }
+  device->unmap(device_alloc);
+
   // The 2 objects should have been released.
   device->dealloc_memory(device_alloc);
   if (kD3d11DebugEnabled) {

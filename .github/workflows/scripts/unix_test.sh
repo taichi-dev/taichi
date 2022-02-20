@@ -24,6 +24,8 @@ if [ -z "$GPU_TEST" ]; then
 else
     ## Only GPU machine uses system python.
     export PATH=$PATH:$HOME/.local/bin
+    # pip will skip packages if already installed
+    python3 -m pip install -r requirements_test.txt
 fi
 ti diagnose
 ti changelog

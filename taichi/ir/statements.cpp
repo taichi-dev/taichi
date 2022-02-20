@@ -26,11 +26,15 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
   return false;
 }
 
-ExternalPtrStmt::ExternalPtrStmt(
-    const LaneAttribute<Stmt *> &base_ptrs,
-    const std::vector<Stmt *> &indices,
-    const std::vector<int> &element_shape = std::vector<int>(),
-    const int element_dim = 0)
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices)
+    : ExternalPtrStmt(base_ptrs, indices, std::vector<int>(), 0) 
+      {}
+
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices,
+                                 const std::vector<int> &element_shape,
+                                 const int element_dim)
     : base_ptrs(base_ptrs),
       indices(indices),
       element_shape(element_shape),

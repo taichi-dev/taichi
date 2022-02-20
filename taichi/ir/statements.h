@@ -269,6 +269,9 @@ class ExternalPtrStmt : public Stmt {
   int element_dim;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                  const std::vector<Stmt *> &indices);
+
+  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices,
                   const std::vector<int> &element_shape,
                   const int element_dim);

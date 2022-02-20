@@ -415,12 +415,11 @@ class ExternalTensorExpression : public Expression {
                            int dim,
                            int arg_id,
                            int element_dim)
-      : dt(dt),
-        dim(dim),
-        arg_id(arg_id),
-        element_dim(element_dim),
-        element_shape() {
-    set_attribute("dim", std::to_string(dim));
+      : ExternalTensorExpression(dt,
+                                 dim,
+                                 arg_id,
+                                 element_dim,
+                                 std::vector<int>()) {
   }
 
   ExternalTensorExpression(const DataType &dt,

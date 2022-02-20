@@ -28,8 +28,8 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                                  const std::vector<Stmt *> &indices)
-    : ExternalPtrStmt(base_ptrs, indices, std::vector<int>(), 0) 
-      {}
+    : ExternalPtrStmt(base_ptrs, indices, std::vector<int>(), 0) {
+}
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                                  const std::vector<Stmt *> &indices,

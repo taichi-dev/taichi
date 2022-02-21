@@ -4,7 +4,6 @@ import itertools
 import os
 from errno import EEXIST
 from tempfile import mkstemp
-from errno import EEXIST
 
 from taichi._lib import core as _ti_core
 from taichi.lang import cc, cpu, cuda, gpu, metal, opengl, vulkan

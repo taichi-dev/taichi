@@ -10,12 +10,11 @@ def test_regression():
 
 
 def pic_regression(result_dir):
-    from taichi.examples.autodiff.regression import (initialize, regress_raw,
-                                                            number_coeffs, coeffs,
-                                                            xs, ys)
-
-    from matplotlib import pyplot as plt
     import numpy as np
+    from matplotlib import pyplot as plt
+    from taichi.examples.autodiff.regression import (coeffs, initialize,
+                                                     number_coeffs,
+                                                     regress_raw, xs, ys)
 
     initialize()
     regress_raw()

@@ -1,3 +1,6 @@
+# exit on the first error
+$ErrorActionPreference = "Stop"
+
 . venv\Scripts\activate.ps1
 python -c "import taichi"
 ti diagnose

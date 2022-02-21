@@ -522,15 +522,15 @@ class IRPrinter : public IRVisitor {
       }
     }
     s += "]";
-    if (stmt->element_shape.size() ) {
+    if (stmt->element_shape.size()) {
       s += ", (";
-    for (int i = 0; i < (int)stmt->element_shape.size(); i++) {
-      s += fmt::format("{}", stmt->element_shape[i]);
-      if (i + 1 < (int)stmt->element_shape.size()) {
-        s += ", ";
+      for (int i = 0; i < (int)stmt->element_shape.size(); i++) {
+        s += fmt::format("{}", stmt->element_shape[i]);
+        if (i + 1 < (int)stmt->element_shape.size()) {
+          s += ", ";
+        }
       }
-    }
-    s += ")";
+      s += ")";
     }
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),

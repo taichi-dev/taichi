@@ -1,6 +1,6 @@
 import warnings
 
-from taichi.lang import ops, util
+from taichi.lang import ops
 
 
 class TaichiOperations:

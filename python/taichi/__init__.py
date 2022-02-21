@@ -49,7 +49,7 @@ else:
     def __getattr__(attr):
         # There's no easy way to hook accessing attribute with function calls in python3.6.
         # So let's skip it for now.
-        import warnings
+        import warnings  # pylint: disable=C0415
         if attr == 'cfg':
             return None if lang.impl.get_runtime(
             ).prog is None else lang.impl.current_cfg()

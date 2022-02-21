@@ -689,6 +689,12 @@ class ASTTransformer(Builder):
             l = operands[i]
             r = operands[i + 1]
             op = ops.get(type(node_op))
+            if isinstance(node_op, (ast.Is, ast.IsNot)):
+                name = "is" if isinstance(node_op, ast.Is) else "is not"
+                warnings.warn_explicit(
+                    f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
+                    DeprecationWarning, ctx.file,
+                    node.lineno + ctx.lineno_offset)
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(

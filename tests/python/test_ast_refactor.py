@@ -161,7 +161,7 @@ def test_boolop():
 @test_utils.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
-                       match='"Is" is not supported in Taichi kernels.'):
+                       match='"Is" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def foo():

@@ -274,7 +274,7 @@ class ExternalPtrStmt : public Stmt {
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices,
                   const std::vector<int> &element_shape,
-                  const int element_dim);
+                  int element_dim);
 
   bool has_global_side_effect() const override {
     return false;

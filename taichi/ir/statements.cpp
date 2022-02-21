@@ -28,17 +28,7 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                                  const std::vector<Stmt *> &indices)
-    : ExternalPtrStmt(base_ptrs, indices, std::vector<int>(), 0) {
-}
-
-ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                                 const std::vector<Stmt *> &indices,
-                                 const std::vector<int> &element_shape,
-                                 const int element_dim)
-    : base_ptrs(base_ptrs),
-      indices(indices),
-      element_shape(element_shape),
-      element_dim(element_dim) {
+    : base_ptrs(base_ptrs), indices(indices) {
   DataType dt = PrimitiveType::f32;
   for (int i = 0; i < (int)base_ptrs.size(); i++) {
     TI_ASSERT(base_ptrs[i] != nullptr);
@@ -47,6 +37,15 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
   TI_ASSERT(base_ptrs.size() == 1);
   element_type() = dt;
   TI_STMT_REG_FIELDS;
+}
+
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices,
+                                 const std::vector<int> &element_shape,
+                                 int element_dim)
+    : ExternalPtrStmt(base_ptrs, indices) {
+  this->element_shape = element_shape;
+  this->element_dim = element_dim;
 }
 
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,

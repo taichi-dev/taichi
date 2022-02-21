@@ -415,11 +415,8 @@ class ExternalTensorExpression : public Expression {
                            int dim,
                            int arg_id,
                            int element_dim)
-      : ExternalTensorExpression(dt,
-                                 dim,
-                                 arg_id,
-                                 element_dim,
-                                 std::vector<int>()) {
+      : dt(dt), dim(dim), arg_id(arg_id), element_dim(element_dim) {
+    set_attribute("dim", std::to_string(dim));
   }
 
   ExternalTensorExpression(const DataType &dt,
@@ -427,12 +424,8 @@ class ExternalTensorExpression : public Expression {
                            int arg_id,
                            int element_dim,
                            const std::vector<int> &element_shape)
-      : dt(dt),
-        dim(dim),
-        arg_id(arg_id),
-        element_dim(element_dim),
-        element_shape(element_shape) {
-    set_attribute("dim", std::to_string(dim));
+      : ExternalTensorExpression(dt, dim, arg_id, element_dim) {
+    this->element_shape = element_shape;
   }
 
   void type_check(CompileConfig *config) override {

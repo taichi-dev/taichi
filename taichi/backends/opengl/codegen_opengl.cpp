@@ -536,7 +536,8 @@ class KernelGen : public IRVisitor {
     auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
 
     if (element_shape.size() > 0) {
-      int elem_beg(0), elem_end(0);
+      int elem_beg = 0;
+      int elem_end = 0;
       if (layout == layout_SOA) {
         elem_beg = 0;
         elem_end = element_shape.size();
@@ -562,8 +563,8 @@ class KernelGen : public IRVisitor {
     // args buffer: 5, 4, 3, 2
     // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.SOA)
     // args buffer: 3, 2, 5, 4
-
-    int ind_beg(0), ind_end(0);
+    int ind_beg = 0;
+    int ind_end = 0;
     if (layout == layout_SOA) {
       ind_beg = element_shape.size();
       ind_end = num_indices;

@@ -9,4 +9,13 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 } else {
     pip install torch
 }
-python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
+if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
+  python tests/run_tests.py -vr2 -t6 -k "not torch" -a cuda
+}
+if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
+  python tests/run_tests.py -vr2 -t8 -k "not torch" -a cpu
+}
+if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
+  python tests/run_tests.py -vr2 -t6 -k "not torch" -a opengl
+}
+python tests/run_tests.py -vr2 -t2 -k "torch" -a "$env:TI_WANTED_ARCHS"

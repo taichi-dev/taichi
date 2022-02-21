@@ -18,21 +18,26 @@ def fill():
         a[i, j] = int(ti.get_addr(a.snode, [i, j]) - base) // 4
 
 
-fill()
-print(a.to_numpy())
+def main():
+    fill()
+    print(a.to_numpy())
 
-impl.get_runtime().prog.visualize_layout('layout.pdf')
+    impl.get_runtime().prog.visualize_layout('layout.pdf')
 
-gui = ti.GUI('layout', res=(256, 512), background_color=0xFFFFFF)
+    gui = ti.GUI('layout', res=(256, 512), background_color=0xFFFFFF)
 
-while True:
-    for i in range(1, m):
-        gui.line(begin=(0, i / m), end=(1, i / m), radius=2, color=0x000000)
-    for i in range(1, n):
-        gui.line(begin=(i / n, 0), end=(i / n, 1), radius=2, color=0x000000)
-    for i in range(n):
-        for j in range(m):
-            gui.text(f'{a[i, j]}', ((i + 0.3) / n, (j + 0.75) / m),
-                     font_size=30,
-                     color=0x0)
-    gui.show()
+    while True:
+        for i in range(1, m):
+            gui.line(begin=(0, i / m), end=(1, i / m), radius=2, color=0x000000)
+        for i in range(1, n):
+            gui.line(begin=(i / n, 0), end=(i / n, 1), radius=2, color=0x000000)
+        for i in range(n):
+            for j in range(m):
+                gui.text(f'{a[i, j]}', ((i + 0.3) / n, (j + 0.75) / m),
+                         font_size=30,
+                         color=0x0)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

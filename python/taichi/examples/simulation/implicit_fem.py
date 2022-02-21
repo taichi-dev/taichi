@@ -1,5 +1,9 @@
-import taichi as ti, argparse, numpy as np
+import argparse
+
+import numpy as np
 from taichi._lib import core as _ti_core
+
+import taichi as ti
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp', default='implicit')
@@ -19,7 +23,7 @@ if args.gui == 'auto':
         args.gui = 'cpu'
 
 E, nu = 5e4, 0.0
-mu, la = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu)) # lambda = 0
+mu, la = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # lambda = 0
 density = 1000.0
 dt = 2e-5
 
@@ -30,7 +34,6 @@ n_cube = np.array([5] * 3)
 n_verts = np.product(n_cube)
 n_cells = 5 * np.product(n_cube - 1)
 dx = 1 / (n_cube.max() - 1)
-
 
 vertices = ti.Vector.field(4, dtype=ti.i32, shape=n_cells)
 
@@ -45,14 +48,17 @@ n_cells = (n_cube - 1).prod() * 5
 B = ti.Matrix.field(args.dim, args.dim, dtype=ti.f32, shape=n_cells)
 W = ti.field(dtype=ti.f32, shape=n_cells)
 
+
 @ti.func
 def i2p(I):
     return (I.x * n_cube[1] + I.y) * n_cube[2] + I.z
+
 
 @ti.func
 def set_element(e, I, verts):
     for i in ti.static(range(args.dim + 1)):
         vertices[e][i] = i2p(I + (([verts[i] >> k for k in range(3)] ^ I) & 1))
+
 
 @ti.kernel
 def get_vertices():
@@ -73,6 +79,7 @@ def get_vertices():
 def Ds(verts):
     return ti.Matrix.cols([x[verts[i]] - x[verts[3]] for i in range(3)])
 
+
 @ti.func
 def ssvd(F):
     U, sig, V = ti.svd(F)
@@ -86,6 +93,7 @@ def ssvd(F):
         sig[2, 2] = -sig[2, 2]
     return U, sig, V
 
+
 @ti.func
 def get_force_func(c, verts):
     F = Ds(verts) @ B[c]
@@ -98,12 +106,14 @@ def get_force_func(c, verts):
         f[verts[i]] += force
         f[verts[3]] -= force
 
+
 @ti.kernel
 def get_force():
     for c in vertices:
         get_force_func(c, vertices[c])
     for u in f:
         f[u].y -= 9.8 * m[u]
+
 
 @ti.kernel
 def matmul_cell(ret: ti.template(), vel: ti.template()):
@@ -126,14 +136,16 @@ def matmul_cell(ret: ti.template(), vel: ti.template()):
                 dH = -W_c * dP @ B_c.transpose()
                 for i in range(3):
                     for j in range(3):
-                        ret[verts[u]][d] += -dt**2 * dH[j, i] * vel[verts[i]][j]
-                        ret[verts[u]][d] -= -dt**2 * dH[j, i] * vel[verts[3]][j]
+                        tmp = (vel[verts[i]][j] - vel[verts[3]][j])
+                        ret[verts[u]][d] += -dt**2 * dH[j, i] * tmp
+
 
 @ti.kernel
 def add(ans: ti.template(), a: ti.template(), k: ti.f32, b: ti.template()):
     for i in ans:
         ans[i] = a[i] + k * b[i]
-    
+
+
 @ti.kernel
 def dot(a: ti.template(), b: ti.template()) -> ti.f32:
     ans = 0.0
@@ -141,19 +153,23 @@ def dot(a: ti.template(), b: ti.template()) -> ti.f32:
         ans += a[i].dot(b[i])
     return ans
 
+
 b = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 r0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
+
 
 @ti.kernel
 def get_b():
     for i in b:
         b[i] = m[i] * v[i] + dt * f[i]
 
+
 def cg():
     def mul(x):
         matmul_cell(mul_ans, x)
         return mul_ans
+
     get_force()
     get_b()
     mul(v)
@@ -179,12 +195,14 @@ def cg():
     f.fill(0)
     add(x, x, dt, v)
 
+
 @ti.kernel
 def advect():
     for p in x:
         v[p] += dt * (f[p] / m[p])
         x[p] += dt * v[p]
         f[p] = ti.Vector([0, 0, 0])
+
 
 @ti.kernel
 def init():
@@ -211,6 +229,7 @@ def floor_bound():
             if v[u].y < 0:
                 v[u].y = 0
 
+
 @ti.func
 def check(u):
     ans = 0
@@ -222,10 +241,13 @@ def check(u):
         if k == n_cube[2 - i] - 1: ans |= (1 << (i * 2 + 1))
     return ans
 
+
 su = 0
 for i in range(3):
     su += (n_cube[i] - 1) * (n_cube[(i + 1) % 3] - 1)
 indices = ti.field(ti.i32, shape=2 * su * 2 * 3)
+
+
 @ti.kernel
 def get_indices():
     # calculate all the meshes on surface
@@ -237,14 +259,17 @@ def get_indices():
                 sum = check(verts[0]) & check(verts[1]) & check(verts[2])
                 if sum:
                     m = ti.atomic_add(cnt, 1)
-                    ma = ti.Matrix.rows([x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)])
-                    if ma.determinant() < 0:
+                    det = ti.Matrix.rows([
+                        x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)
+                    ]).determinant()
+                    if det < 0:
                         tmp = verts[1]
                         verts[1] = verts[2]
                         verts[2] = tmp
                     indices[m * 3] = verts[0]
                     indices[m * 3 + 1] = verts[1]
                     indices[m * 3 + 2] = verts[2]
+
 
 def substep():
     if args.exp == 'explicit':
@@ -255,6 +280,7 @@ def substep():
         for i in range(1):
             cg()
     floor_bound()
+
 
 get_vertices()
 init()
@@ -273,10 +299,12 @@ if args.gui == 'ggui':
     camera.fov(55)
 
     def render():
-        camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+        camera.track_user_inputs(window,
+                                 movement_speed=0.03,
+                                 hold_key=ti.ui.RMB)
         scene.set_camera(camera)
 
-        scene.ambient_light((0.1,) * 3)
+        scene.ambient_light((0.1, ) * 3)
 
         scene.point_light(pos=(0.5, 10.0, 0.5), color=(0.5, 0.5, 0.5))
         scene.point_light(pos=(10.0, 10.0, 10.0), color=(0.5, 0.5, 0.5))
@@ -297,10 +325,10 @@ if args.gui == 'ggui':
 
         render()
 
-
         window.show()
 
 else:
+
     def T(a):
 
         phi, theta = np.radians(28), np.radians(32)

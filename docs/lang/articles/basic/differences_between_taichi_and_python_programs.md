@@ -159,4 +159,4 @@ The iterators and conditions are implicitly in [static scope](/lang/articles/adv
 
 ### Operator `is`
 
-Currently, Taichi does not support operator `is` and `is not`.
+Operator `is` and `is not` only works in  [static scope](/lang/articles/advanced/meta#static-scope) (inside `ti.static()`).

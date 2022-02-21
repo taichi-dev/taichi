@@ -1,17 +1,6 @@
 import argparse
 
-
-def mkdir_p(dir_path):
-    '''Creates a directory. equivalent to using mkdir -p on the command line'''
-    from errno import EEXIST
-    from os import makedirs,path
-
-    try:
-        makedirs(dir_path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == EEXIST and path.isdir(dir_path):
-            pass
-        else: raise
+from tests import test_utils
 
 
 def pic_simple_derivative(result_dir):
@@ -33,7 +22,7 @@ def pic_simple_derivative(result_dir):
     ax.spines['top'].set_color('none')
 
     # Create new directory
-    mkdir_p(result_dir)
+    test_utils.mkdir_p(result_dir)
     plt.savefig(result_dir + '/output.png')
 
 

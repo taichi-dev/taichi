@@ -49,14 +49,14 @@ else:
     def __getattr__(attr):
         # There's no easy way to hook accessing attribute with function calls in python3.6.
         # So let's skip it for now.
+        import warnings
         if attr == 'cfg':
             return None if lang.impl.get_runtime(
             ).prog is None else lang.impl.current_cfg()
         if attr in __deprecated_names__:
-            lang.util.warning(
+            warnings.warn(
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
-                DeprecationWarning,
-                stacklevel=2)
+                DeprecationWarning)
             exec(f'{attr} = {__deprecated_names__[attr]}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")

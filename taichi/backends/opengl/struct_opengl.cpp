@@ -66,15 +66,10 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
     snode_info.stride = data_type_size(snode.dt);
-  } else if (snode.type == SNodeType::dense ||
-             snode.type == SNodeType::dynamic ||
-             snode.type == SNodeType::root) {
+  } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
     int64 n = snode.num_cells_per_container;
-    // the `length` field of a dynamic SNode is at it's end:
-    // | x[0] | x[1] | x[2] | x[3] | ... | len |
-    int extension = opengl_get_snode_meta_size(snode);
     snode_info.length = n;
-    snode_info.stride = snode_child_info.stride * n + extension;  // my stride
+    snode_info.stride = snode_child_info.stride * n;   // my stride
     snode_info.elem_stride = snode_child_info.stride;  // my child stride
   } else {
     TI_ERROR(

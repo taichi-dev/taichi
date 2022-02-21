@@ -57,13 +57,5 @@ inline int opengl_argument_address_shifter(DataType type) {
   return 3 - opengl_data_address_shifter(type);
 }
 
-inline int opengl_get_snode_meta_size(const SNode &snode) {
-  if (snode.type == SNodeType::dynamic) {
-    return sizeof(int);
-  } else {
-    return 0;
-  }
-}
-
 }  // namespace opengl
 TLANG_NAMESPACE_END

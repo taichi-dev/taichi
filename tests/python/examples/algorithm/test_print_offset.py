@@ -10,10 +10,6 @@ FRAMES = 100
 def test_print_diff():
     from taichi.examples.algorithm.print_offset import n, m, a, fill
     fill()
-    for f in range(FRAMES):
-        for i in range(n):
-            for j in range(m):
-                f'{a[i, j]}'
 
 
 def video_print_diff(result_dir):

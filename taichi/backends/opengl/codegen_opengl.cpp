@@ -398,16 +398,7 @@ class KernelGen : public IRVisitor {
          stmt->input_index->short_name(), stmt->snode->node_type_name);
 
     if (stmt->activate) {
-      if (stmt->snode->type == SNodeType::dense) {
-        // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
-             get_snode_meta_address(stmt->snode),
-             stmt->input_index->short_name());
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
+      TI_ASSERT(stmt->snode->type == SNodeType::dense);
     }
   }
 
@@ -421,10 +412,6 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
-             get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -433,10 +420,6 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("_data_i32_[{} >> 2] = 0; // dynamic deactivate",
-             get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -446,38 +429,9 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("int {} = int({} < _data_i32_[{} >> 2]);", stmt->short_name(),
-             stmt->val->short_name(), get_snode_meta_address(stmt->snode));
       } else {
         TI_NOT_IMPLEMENTED
       }
-
-    } else if (stmt->op_type == SNodeOpType::append) {
-      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-      used.int32 = true;
-      emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
-           get_snode_meta_address(stmt->snode));
-      auto dt = stmt->val->element_type();
-      emit("int _ad_{} = {} + {} * {};", stmt->short_name(),
-           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
-               .mem_offset_in_root,
-           stmt->short_name(),
-           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
-               .elem_stride);
-      emit("_data_{}_[_ad_{} >> {}] = {};", opengl_data_type_short_name(dt),
-           stmt->short_name(), opengl_data_address_shifter(dt),
-           stmt->val->short_name());
-
-    } else if (stmt->op_type == SNodeOpType::length) {
-      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-      used.int32 = true;
-      emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
-           get_snode_meta_address(stmt->snode));
-
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -1063,14 +1017,6 @@ class KernelGen : public IRVisitor {
     used_tls_ = false;
 
     emit("}}\n");
-  }
-
-  size_t get_snode_meta_address(const SNode *snode) {
-    auto addr = struct_compiled_->snode_map.at(snode->node_type_name)
-                    .mem_offset_in_root;
-    addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
-    addr -= opengl_get_snode_meta_size(*snode);
-    return addr;
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

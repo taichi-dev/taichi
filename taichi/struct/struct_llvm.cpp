@@ -14,21 +14,25 @@ namespace lang {
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
                                        TaichiLLVMContext *tlctx,
-                                       std::unique_ptr<llvm::Module> &&module, int snode_tree_id)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : LLVMModuleBuilder(std::move(module), tlctx),
       arch_(arch),
       config_(config),
       tlctx_(tlctx),
-      llvm_ctx_(tlctx_->get_this_thread_context()), snode_tree_id_(snode_tree_id) {
+      llvm_ctx_(tlctx_->get_this_thread_context()),
+      snode_tree_id_(snode_tree_id) {
 }
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        LlvmProgramImpl *prog,
-                                       std::unique_ptr<llvm::Module> &&module, int snode_tree_id)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : StructCompilerLLVM(arch,
                          prog->config,
                          prog->get_llvm_context(arch),
-                         std::move(module), snode_tree_id) {
+                         std::move(module),
+                         snode_tree_id) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -154,10 +158,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_ASSERT(body_type != nullptr);
 
   // Here we create a stub holding 4 LLVM types as struct members.
-  // The aim is to give a **unique** func_name to the stub, so that we can look up
-  // these types using this func_name. This decouples them from the LLVM context.
-  // Note that body_type might not have a unique func_name, since literal structs
-  // (such as {i32, i32}) cannot be aliased in LLVM.
+  // The aim is to give a **unique** func_name to the stub, so that we can look
+  // up these types using this func_name. This decouples them from the LLVM
+  // context. Note that body_type might not have a unique func_name, since
+  // literal structs (such as {i32, i32}) cannot be aliased in LLVM.
   auto stub = llvm::StructType::create(
       *ctx,
       {node_type, body_type, aux_type ? aux_type : llvm::Type::getInt8Ty(*ctx),
@@ -169,7 +173,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   // so that the type is referenced in the module
   std::string func_name = type_stub_name(&snode) + "_func";
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
-  llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, module.get());
+  llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
+                         module.get());
   tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
 }
 
@@ -184,9 +189,8 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       false);
 
   std::string func_name = snode->refine_coordinates_func_name();
-  auto func =
-      llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                             func_name, *module);
+  auto func = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                                     func_name, *module);
   tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
 
   auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
@@ -262,9 +266,8 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
     std::string func_name = snode.get_ch_from_parent_func_name();
-    auto func =
-        llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                               func_name, *module);
+    auto func = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                                       func_name, *module);
 
     tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
 

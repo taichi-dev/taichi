@@ -132,7 +132,6 @@ class TaichiLLVMContext {
 
   void delete_functions_of_snode_tree(int id);
 
-
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,

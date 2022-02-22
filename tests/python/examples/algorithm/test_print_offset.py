@@ -20,7 +20,6 @@ def video_print_offset(result_dir):
 
     fill()
 
-
     gui = ti.GUI('layout',
                  res=(256, 512),
                  background_color=0xFFFFFF,

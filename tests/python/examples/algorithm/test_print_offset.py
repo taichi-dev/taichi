@@ -19,7 +19,6 @@ def video_print_offset(result_dir):
                                     automatic_build=False)
 
     fill()
-    print(a.to_numpy())
 
     impl.get_runtime().prog.visualize_layout('layout.pdf')
 

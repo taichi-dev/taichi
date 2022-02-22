@@ -8,7 +8,7 @@ FRAMES = 100
 
 
 def test_print_offset():
-    from taichi.examples.algorithm.print_offset import a, fill, m, n
+    from taichi.examples.algorithm.print_offset import fill
     fill()
 
 

@@ -10,9 +10,9 @@ def test_simple_derivative():
 
 
 def pic_simple_derivative(result_dir):
-    from taichi.examples.autodiff.simple_derivative import (initialize,
-                                                            xs, ys, grad_xs)
     from matplotlib import pyplot as plt
+    from taichi.examples.autodiff.simple_derivative import (grad_xs,
+                                                            initialize, xs, ys)
 
     initialize()
 
@@ -33,7 +33,8 @@ def pic_simple_derivative(result_dir):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate simple_derivative pic')
+    parser = argparse.ArgumentParser(
+        description='Generate simple_derivative pic')
     parser.add_argument('output_directory',
                         help='output directory of generated pic')
     pic_simple_derivative(parser.parse_args().output_directory)

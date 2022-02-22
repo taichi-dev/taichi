@@ -20,7 +20,6 @@ def video_print_offset(result_dir):
 
     fill()
 
-    impl.get_runtime().prog.visualize_layout('layout.pdf')
 
     gui = ti.GUI('layout',
                  res=(256, 512),

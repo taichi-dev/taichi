@@ -85,8 +85,10 @@ def main():
         if not paused:
             run()
 
-        gui.set_image(ti.tools.imresize(alive, img_size).astype(np.uint8) * 255)
+        gui.set_image(
+            ti.tools.imresize(alive, img_size).astype(np.uint8) * 255)
         gui.show()
+
 
 if __name__ == '__main__':
     main()

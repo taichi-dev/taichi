@@ -6,14 +6,11 @@ from taichi._lib import core as _ti_core
 import taichi as ti
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--exp', default='implicit')
-# edit args.exp to switch between implicit and explicit intergration:
-# parser.add_argument('--exp', default='explicit')
+parser.add_argument('--exp',
+                    choices=['implicit', 'explicit'],
+                    default='implicit')
 parser.add_argument('--dim', type=int, default=3)
-parser.add_argument('--gui', default='auto')
-# edit args.gui to switch the gui type:
-# parser.add_argument('--gui', default='ggui')
-# parser.add_argument('--gui', default='cpu')
+parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
 args = parser.parse_args()
 
 ti.init(arch=ti.gpu, dynamic_index=True)

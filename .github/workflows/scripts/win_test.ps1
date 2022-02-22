@@ -13,12 +13,16 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
     pip install torch
 }
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  python tests/run_tests.py -vr2 -t6 -k "not torch" -a cuda
+  python tests/run_tests.py -vr2 -t4 -k "not torch" -a cuda
+  if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
-  python tests/run_tests.py -vr2 -t8 -k "not torch" -a cpu
+  python tests/run_tests.py -vr2 -t6 -k "not torch" -a cpu
+  if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
-  python tests/run_tests.py -vr2 -t6 -k "not torch" -a opengl
+  python tests/run_tests.py -vr2 -t4 -k "not torch" -a opengl
+  if (-not $?) { exit 1 }
 }
 python tests/run_tests.py -vr2 -t2 -k "torch" -a "$env:TI_WANTED_ARCHS"
+if (-not $?) { exit 1 }

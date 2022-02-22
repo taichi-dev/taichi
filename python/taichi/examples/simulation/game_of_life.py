@@ -58,31 +58,35 @@ def init():
             alive[i, j] = 0
 
 
-gui = ti.GUI('Game of Life', (img_size, img_size))
-gui.fps_limit = 15
+def main():
+    gui = ti.GUI('Game of Life', (img_size, img_size))
+    gui.fps_limit = 15
 
-print('[Hint] Press `r` to reset')
-print('[Hint] Press SPACE to pause')
-print('[Hint] Click LMB, RMB and drag to add alive / dead cells')
+    print('[Hint] Press `r` to reset')
+    print('[Hint] Press SPACE to pause')
+    print('[Hint] Click LMB, RMB and drag to add alive / dead cells')
 
-init()
-paused = False
-while gui.running:
-    for e in gui.get_events(gui.PRESS, gui.MOTION):
-        if e.key == gui.ESCAPE:
-            gui.running = False
-        elif e.key == gui.SPACE:
-            paused = not paused
-        elif e.key == 'r':
-            alive.fill(0)
+    init()
+    paused = False
+    while gui.running:
+        for e in gui.get_events(gui.PRESS, gui.MOTION):
+            if e.key == gui.ESCAPE:
+                gui.running = False
+            elif e.key == gui.SPACE:
+                paused = not paused
+            elif e.key == 'r':
+                alive.fill(0)
 
-    if gui.is_pressed(gui.LMB, gui.RMB):
-        mx, my = gui.get_cursor_pos()
-        alive[int(mx * n), int(my * n)] = gui.is_pressed(gui.LMB)
-        paused = True
+        if gui.is_pressed(gui.LMB, gui.RMB):
+            mx, my = gui.get_cursor_pos()
+            alive[int(mx * n), int(my * n)] = gui.is_pressed(gui.LMB)
+            paused = True
 
-    if not paused:
-        run()
+        if not paused:
+            run()
 
-    gui.set_image(ti.imresize(alive, img_size).astype(np.uint8) * 255)
-    gui.show()
+        gui.set_image(ti.tools.imresize(alive, img_size).astype(np.uint8) * 255)
+        gui.show()
+
+if __name__ == '__main__':
+    main()

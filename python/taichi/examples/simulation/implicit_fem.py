@@ -7,11 +7,13 @@ import taichi as ti
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp', default='implicit')
-#parser.add_argument('--exp', default='explicit')
+# edit args.exp to switch between implicit and explicit intergration:
+# parser.add_argument('--exp', default='explicit')
 parser.add_argument('--dim', type=int, default=3)
 parser.add_argument('--gui', default='auto')
-#parser.add_argument('--gui', default='ggui')
-#parser.add_argument('--gui', default='cpu')
+# edit args.gui to switch the gui type:
+# parser.add_argument('--gui', default='ggui')
+# parser.add_argument('--gui', default='cpu')
 args = parser.parse_args()
 
 ti.init(arch=ti.gpu, dynamic_index=True)
@@ -25,7 +27,7 @@ if args.gui == 'auto':
 E, nu = 5e4, 0.0
 mu, la = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # lambda = 0
 density = 1000.0
-dt = 2e-5
+dt = 2e-4
 
 if args.exp == 'implicit':
     dt = 1e-2
@@ -282,72 +284,72 @@ def substep():
     floor_bound()
 
 
-get_vertices()
-init()
-get_indices()
+if __name__ == '__main__':
+    get_vertices()
+    init()
+    get_indices()
 
-if args.gui == 'ggui':
-    res = (800, 600)
-    window = ti.ui.Window("Implicit FEM", res, vsync=True)
+    if args.gui == 'ggui':
+        res = (800, 600)
+        window = ti.ui.Window("Implicit FEM", res, vsync=True)
 
-    frame_id = 0
-    canvas = window.get_canvas()
-    scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
-    camera.position(2.0, 2.0, 3.95)
-    camera.lookat(0.5, 0.5, 0.5)
-    camera.fov(55)
+        frame_id = 0
+        canvas = window.get_canvas()
+        scene = ti.ui.Scene()
+        camera = ti.ui.make_camera()
+        camera.position(2.0, 2.0, 3.95)
+        camera.lookat(0.5, 0.5, 0.5)
+        camera.fov(55)
 
-    def render():
-        camera.track_user_inputs(window,
-                                 movement_speed=0.03,
-                                 hold_key=ti.ui.RMB)
-        scene.set_camera(camera)
+        def render():
+            camera.track_user_inputs(window,
+                                     movement_speed=0.03,
+                                     hold_key=ti.ui.RMB)
+            scene.set_camera(camera)
 
-        scene.ambient_light((0.1, ) * 3)
+            scene.ambient_light((0.1, ) * 3)
 
-        scene.point_light(pos=(0.5, 10.0, 0.5), color=(0.5, 0.5, 0.5))
-        scene.point_light(pos=(10.0, 10.0, 10.0), color=(0.5, 0.5, 0.5))
+            scene.point_light(pos=(0.5, 10.0, 0.5), color=(0.5, 0.5, 0.5))
+            scene.point_light(pos=(10.0, 10.0, 10.0), color=(0.5, 0.5, 0.5))
 
-        #scene.particles(x, radius=0.02)
-        scene.mesh(x, indices, color=(0.73, 0.33, 0.23))
+            scene.mesh(x, indices, color=(0.73, 0.33, 0.23))
 
-        canvas.scene(scene)
+            canvas.scene(scene)
 
-    while window.running:
-        frame_id += 1
-        frame_id = frame_id % 256
-        substep()
-        if window.is_pressed('r'):
-            init()
-        if window.is_pressed(ti.GUI.ESCAPE):
-            break
+        while window.running:
+            frame_id += 1
+            frame_id = frame_id % 256
+            substep()
+            if window.is_pressed('r'):
+                init()
+            if window.is_pressed(ti.GUI.ESCAPE):
+                break
 
-        render()
+            render()
 
-        window.show()
+            window.show()
 
-else:
+    else:
 
-    def T(a):
+        def T(a):
 
-        phi, theta = np.radians(28), np.radians(32)
+            phi, theta = np.radians(28), np.radians(32)
 
-        a = a - 0.2
-        x, y, z = a[:, 0], a[:, 1], a[:, 2]
-        c, s = np.cos(phi), np.sin(phi)
-        C, S = np.cos(theta), np.sin(theta)
-        x, z = x * c + z * s, z * c - x * s
-        u, v = x, y * C + z * S
-        return np.array([u, v]).swapaxes(0, 1) + 0.5
+            a = a - 0.2
+            x, y, z = a[:, 0], a[:, 1], a[:, 2]
+            c, s = np.cos(phi), np.sin(phi)
+            C, S = np.cos(theta), np.sin(theta)
+            x, z = x * c + z * s, z * c - x * s
+            u, v = x, y * C + z * S
+            return np.array([u, v]).swapaxes(0, 1) + 0.5
 
-    gui = ti.GUI('Implicit FEM')
-    while gui.running:
-        substep()
-        if gui.get_event(ti.GUI.PRESS):
-            if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: break
-        if gui.is_pressed('r'):
-            init()
-        gui.clear(0x000000)
-        gui.circles(T(x.to_numpy() / 3), radius=1.5, color=0xba543a)
-        gui.show()
+        gui = ti.GUI('Implicit FEM')
+        while gui.running:
+            substep()
+            if gui.get_event(ti.GUI.PRESS):
+                if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: break
+            if gui.is_pressed('r'):
+                init()
+            gui.clear(0x000000)
+            gui.circles(T(x.to_numpy() / 3), radius=1.5, color=0xba543a)
+            gui.show()

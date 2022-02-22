@@ -3,6 +3,12 @@ import argparse
 from tests import test_utils
 
 
+def test_simple_derivative():
+    from taichi.examples.autodiff.simple_derivative import initialize
+
+    initialize()
+
+
 def pic_simple_derivative(result_dir):
     from taichi.examples.autodiff.simple_derivative import (initialize,
                                                             xs, ys, grad_xs)

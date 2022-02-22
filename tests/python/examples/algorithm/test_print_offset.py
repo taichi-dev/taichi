@@ -7,12 +7,12 @@ import taichi as ti
 FRAMES = 100
 
 
-def test_print_diff():
+def test_print_offset():
     from taichi.examples.algorithm.print_offset import a, fill, m, n
     fill()
 
 
-def video_print_diff(result_dir):
+def video_print_offset(result_dir):
     from taichi.examples.algorithm.print_offset import a, fill, m, n
     video_manager = ti.VideoManager(output_dir=result_dir,
                                     framerate=24,
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate print_offset video')
     parser.add_argument('output_directory',
                         help='output directory of generated video')
-    video_print_diff(parser.parse_args().output_directory)
+    video_print_offset(parser.parse_args().output_directory)

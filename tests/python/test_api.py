@@ -20,12 +20,7 @@ user_api[ti.StructField] = ['copy_from', 'dtype', 'fill', 'from_numpy', 'from_to
 user_api[ti.VectorNdarray] = ['copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy']
 
 
-def get_current_api(src):
-    print(dir(src))
-    return [s for s in dir(src) if not s.startswith('_')]
-
-
 @pytest.mark.parametrize('src', user_api.keys())
 @test_utils.test(arch=ti.cpu)
 def test_api(src):
-    assert get_current_api(src) == user_api[src]
+    assert [s for s in dir(src) if not s.startswith('_')] == user_api[src]

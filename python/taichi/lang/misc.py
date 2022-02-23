@@ -333,7 +333,7 @@ def init(arch=None,
 
     # user selected visible device
     visible_device = os.environ.get("TI_VISIBLE_DEVICE")
-    if visible_device and cfg.arch == vulkan:
+    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
         _ti_core.set_vulkan_visible_device(visible_device)
 
     if _test_mode:

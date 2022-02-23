@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {

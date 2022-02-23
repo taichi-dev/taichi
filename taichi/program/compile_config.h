@@ -1,6 +1,6 @@
 #pragma once
 
-#include "arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN

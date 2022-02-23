@@ -2,7 +2,7 @@
 
 #include <string>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 
 TI_UI_NAMESPACE_BEGIN
 

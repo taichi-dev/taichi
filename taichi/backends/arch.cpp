@@ -1,6 +1,6 @@
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
 
 std::string arch_name(Arch arch) {
   switch (arch) {
@@ -79,4 +79,4 @@ int default_simd_width(Arch arch) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi

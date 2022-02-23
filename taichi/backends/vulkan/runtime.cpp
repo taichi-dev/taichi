@@ -282,16 +282,11 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
   // Compiled_structs can be empty if loading a kernel from an AOT module as
   // the SNode are not re-compiled/structured. In thise case, we assume a
   // single root buffer size configured from the AOT module.
-  if (ti_params.compiled_structs.empty() &&
-      (ti_params.root_buffers.size() == 1)) {
-    BufferInfo buffer = {BufferType::Root, 0};
-    input_buffers_[buffer] = ti_params.root_buffers[0];
-  } else {
-    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
-      BufferInfo buffer = {BufferType::Root, root};
-      input_buffers_[buffer] = ti_params.root_buffers[root];
-    }
+  for (int root = 0; root < ti_params.num_snode_trees; ++root) {
+    BufferInfo buffer = {BufferType::Root, root};
+    input_buffers_[buffer] = ti_params.root_buffers[root];
   }
+
   const auto arg_sz = ti_kernel_attribs_.ctx_attribs.args_bytes();
   const auto ret_sz = ti_kernel_attribs_.ctx_attribs.rets_bytes();
 
@@ -384,7 +379,7 @@ VkRuntime::VkRuntime(const Params &params)
     : device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   current_cmdlist_pending_since_ = high_res_clock::now();
-  init_buffers();
+  init_nonroot_buffers();
 }
 
 VkRuntime::~VkRuntime() {
@@ -396,36 +391,11 @@ VkRuntime::~VkRuntime() {
   global_tmps_buffer_.reset();
 }
 
-void VkRuntime::materialize_snode_tree(SNodeTree *tree) {
-  auto *const root = tree->root();
-  CompiledSNodeStructs compiled_structs = vulkan::compile_snode_structs(*root);
-  add_root_buffer(compiled_structs.root_size);
-  compiled_snode_structs_.push_back(compiled_structs);
-}
-
-void VkRuntime::destroy_snode_tree(SNodeTree *snode_tree) {
-  int root_id = -1;
-  for (int i = 0; i < compiled_snode_structs_.size(); ++i) {
-    if (compiled_snode_structs_[i].root == snode_tree->root()) {
-      root_id = i;
-    }
-  }
-  if (root_id == -1) {
-    TI_ERROR("the tree to be destroyed cannot be found");
-  }
-  root_buffers_[root_id].reset();
-}
-
-const std::vector<CompiledSNodeStructs> &VkRuntime::get_compiled_structs()
-    const {
-  return compiled_snode_structs_;
-}
-
 VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
     VkRuntime::RegisterParams reg_params) {
   CompiledTaichiKernel::Params params;
   params.ti_kernel_attribs = &(reg_params.kernel_attribs);
-  params.compiled_structs = get_compiled_structs();
+  params.num_snode_trees = reg_params.num_snode_trees;
   params.device = device_;
   params.root_buffers = {};
   for (int root = 0; root < root_buffers_.size(); ++root) {
@@ -598,7 +568,7 @@ Device *VkRuntime::get_ti_device() const {
   return device_;
 }
 
-void VkRuntime::init_buffers() {
+void VkRuntime::init_nonroot_buffers() {
   global_tmps_buffer_ = device_->allocate_memory_unique(
       {kGtmpBufferSize,
        /*host_write=*/false, /*host_read=*/false,
@@ -636,10 +606,6 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
   root_buffers_.push_back(std::move(new_buffer));
 }
 
-DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
-  return root_buffers_[tree_id]->get_ptr();
-}
-
 VkRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Device *device,
@@ -657,7 +623,8 @@ VkRuntime::RegisterParams run_codegen(
   spirv::KernelCodegen codegen(params);
   VkRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
-  return std::move(res);
+  res.num_snode_trees = compiled_structs.size();
+  return res;
 }
 
 }  // namespace vulkan

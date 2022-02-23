@@ -44,6 +44,10 @@ bool AotModuleLoaderImpl::get_kernel(const std::string &name,
     if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
       kernel.kernel_attribs = ti_aot_data_.kernels[i];
       kernel.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
+      // We don't have to store the number of SNodeTree in |ti_aot_data_| yet,
+      // because right now we only support a single SNodeTree during AOT.
+      // TODO: Support multiple SNodeTrees in AOT.
+      kernel.num_snode_trees = 1;
       return true;
     }
   }

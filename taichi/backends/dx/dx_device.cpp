@@ -552,10 +552,9 @@ void Dx11Stream::command_sync() {
   // Not needed for DX11
 }
 
-
 Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
                            const std::string &name,
-                           Dx11Device* device)
+                           Dx11Device *device)
     : device_(device) {
   // TODO: Currently, PipelineSourceType::hlsl_src still returns SPIRV binary.
   // Will need to update this section when that changes
@@ -578,9 +577,9 @@ Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
   hr = compile_compute_shader_from_string(
       source, "main", device_->d3d11_device(), &shader_blob);
   if (SUCCEEDED(hr)) {
-    hr = device_->d3d11_device()->CreateComputeShader(shader_blob->GetBufferPointer(),
-                                     shader_blob->GetBufferSize(), nullptr,
-                                     &compute_shader_);
+    hr = device_->d3d11_device()->CreateComputeShader(
+        shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), nullptr,
+        &compute_shader_);
     shader_blob->Release();
     compute_shader_->SetPrivateData(WKPDID_D3DDebugObjectName, name.size(),
                                     name.c_str());
@@ -598,7 +597,6 @@ Dx11Pipeline::~Dx11Pipeline() {
 ResourceBinder *Dx11Pipeline::resource_binder() {
   return nullptr;
 }
-
 
 }  // namespace directx11
 }  // namespace lang

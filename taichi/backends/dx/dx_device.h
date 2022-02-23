@@ -58,7 +58,9 @@ class Dx11Device;
 
 class Dx11Pipeline : public Pipeline {
  public:
-  Dx11Pipeline(const PipelineSourceDesc &desc, const std::string &name, Dx11Device* device);
+  Dx11Pipeline(const PipelineSourceDesc &desc,
+               const std::string &name,
+               Dx11Device *device);
   ~Dx11Pipeline() override;
   ResourceBinder *resource_binder() override;
 
@@ -67,7 +69,6 @@ class Dx11Pipeline : public Pipeline {
   ID3D11ComputeShader *compute_shader_{};
   Dx11ResourceBinder binder_{};
 };
-
 
 class Dx11Stream : public Stream {
  public:
@@ -200,7 +201,7 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
   ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
   ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
-  ID3D11Device* d3d11_device() {
+  ID3D11Device *d3d11_device() {
     return device_;
   }
 

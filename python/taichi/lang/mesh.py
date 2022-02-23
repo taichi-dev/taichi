@@ -456,6 +456,7 @@ class Mesh:
     def generate_meta(data):
         return MeshMetadata(data)
 
+
 def TriMesh():
     return Mesh.Tri()
 

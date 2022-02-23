@@ -11,6 +11,7 @@ parser.add_argument('--exp',
                     default='implicit')
 parser.add_argument('--dim', type=int, default=3)
 parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
+parser.add_argument('place_holder', nargs='*')
 args = parser.parse_args()
 
 ti.init(arch=ti.gpu, dynamic_index=True)

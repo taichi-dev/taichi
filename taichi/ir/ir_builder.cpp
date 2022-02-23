@@ -427,7 +427,8 @@ GlobalPtrStmt *IRBuilder::create_global_ptr(
 ExternalPtrStmt *IRBuilder::create_external_ptr(
     ArgLoadStmt *ptr,
     const std::vector<Stmt *> &indices) {
-  return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
+  return insert(
+      Stmt::make_typed<ExternalPtrStmt>(ptr, indices, std::vector<int>(), 0));
 }
 
 AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,

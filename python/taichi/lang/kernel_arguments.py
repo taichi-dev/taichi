@@ -15,7 +15,7 @@ class SparseMatrixEntry:
         self.i = i
         self.j = j
 
-    def augassign(self, value, op):
+    def _augassign(self, value, op):
         if op == 'Add':
             taichi.lang.impl.call_internal("insert_triplet", self.ptr, self.i,
                                            self.j,
@@ -62,8 +62,9 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(
-        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim),
-        element_shape, layout)
+        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim,
+                                           element_shape), element_shape,
+        layout)
 
 
 def decl_ret(dtype):

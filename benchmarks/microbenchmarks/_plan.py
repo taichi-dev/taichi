@@ -78,3 +78,12 @@ class BenchmarkPlan:
         #remove
         for name in remove_list:
             self.plan.pop(name)
+
+    def remove_cases_with_tags(self, tags: list):
+        remove_list = []
+        for case, plan in self.plan.items():
+            if set(tags).issubset(plan['tags']):
+                remove_list.append(case)
+        #remove
+        for case in remove_list:
+            self.plan.pop(case)

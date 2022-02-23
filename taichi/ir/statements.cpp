@@ -39,6 +39,15 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
   TI_STMT_REG_FIELDS;
 }
 
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices,
+                                 const std::vector<int> &element_shape,
+                                 int element_dim)
+    : ExternalPtrStmt(base_ptrs, indices) {
+  this->element_shape = element_shape;
+  this->element_dim = element_dim;
+}
+
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                              const std::vector<Stmt *> &indices,
                              bool activate)

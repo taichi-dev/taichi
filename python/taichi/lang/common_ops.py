@@ -1,8 +1,29 @@
+import warnings
+
 from taichi.lang import ops
 
 
 class TaichiOperations:
     """The base class of taichi operations of expressions. Subclasses: :class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`"""
+
+    __deprecated_atomic_ops__ = {
+        "atomic_add": "_atomic_add",
+        "atomic_and": "_atomic_and",
+        "atomic_or": "_atomic_or",
+        "atomic_sub": "_atomic_sub",
+        "atomic_xor": "_atomic_xor",
+    }
+
+    def __getattr__(self, item):
+        if item in TaichiOperations.__deprecated_atomic_ops__:
+            warnings.warn(
+                f"a.{item}(b) is deprecated. Please use ti.{item}(a, b) instead.",
+                DeprecationWarning)
+            return getattr(self,
+                           TaichiOperations.__deprecated_atomic_ops__[item])
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{item}'")
+
     def __neg__(self):
         return ops.neg(self)
 
@@ -99,33 +120,13 @@ class TaichiOperations:
     def __rrshift__(self, other):
         return ops.bit_sar(other, self)
 
-    def logical_and(self, other):
-        """Return the new expression of computing logical and between self and a given operand.
-
-        Args:
-            other (Any): Given operand.
-
-        Returns:
-            :class:`~taichi.lang.expr.Expr`: The computing expression of logical and."""
-        return ops.logical_and(self, other)
-
-    def logical_or(self, other):
-        """Return the new expression of computing logical or between self and a given operand.
-
-        Args:
-            other (Any): Given operand.
-
-        Returns:
-            :class:`~taichi.lang.expr.Expr`: The computing expression of logical or."""
-        return ops.logical_or(self, other)
-
     def __invert__(self):  # ~a => a.__invert__()
         return ops.bit_not(self)
 
     def __not__(self):  # not a => a.__not__()
         return ops.logical_not(self)
 
-    def atomic_add(self, other):
+    def _atomic_add(self, other):
         """Return the new expression of computing atomic add between self and a given operand.
 
         Args:
@@ -135,7 +136,7 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic add."""
         return ops.atomic_add(self, other)
 
-    def atomic_sub(self, other):
+    def _atomic_sub(self, other):
         """Return the new expression of computing atomic sub between self and a given operand.
 
         Args:
@@ -145,7 +146,7 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic sub."""
         return ops.atomic_sub(self, other)
 
-    def atomic_and(self, other):
+    def _atomic_and(self, other):
         """Return the new expression of computing atomic and between self and a given operand.
 
         Args:
@@ -155,7 +156,7 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic and."""
         return ops.atomic_and(self, other)
 
-    def atomic_xor(self, other):
+    def _atomic_xor(self, other):
         """Return the new expression of computing atomic xor between self and a given operand.
 
         Args:
@@ -165,7 +166,7 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic xor."""
         return ops.atomic_xor(self, other)
 
-    def atomic_or(self, other):
+    def _atomic_or(self, other):
         """Return the new expression of computing atomic or between self and a given operand.
 
         Args:
@@ -176,55 +177,55 @@ class TaichiOperations:
         return ops.atomic_or(self, other)
 
     def __iadd__(self, other):
-        self.atomic_add(other)
+        self._atomic_add(other)
         return self
 
     def __isub__(self, other):
-        self.atomic_sub(other)
+        self._atomic_sub(other)
         return self
 
     def __iand__(self, other):
-        self.atomic_and(other)
+        self._atomic_and(other)
         return self
 
     def __ixor__(self, other):
-        self.atomic_xor(other)
+        self._atomic_xor(other)
         return self
 
     def __ior__(self, other):
-        self.atomic_or(other)
+        self._atomic_or(other)
         return self
 
     # we don't support atomic_mul/truediv/floordiv/mod yet:
     def __imul__(self, other):
-        self.assign(ops.mul(self, other))
+        self._assign(ops.mul(self, other))
         return self
 
     def __itruediv__(self, other):
-        self.assign(ops.truediv(self, other))
+        self._assign(ops.truediv(self, other))
         return self
 
     def __ifloordiv__(self, other):
-        self.assign(ops.floordiv(self, other))
+        self._assign(ops.floordiv(self, other))
         return self
 
     def __imod__(self, other):
-        self.assign(ops.mod(self, other))
+        self._assign(ops.mod(self, other))
         return self
 
     def __ilshift__(self, other):
-        self.assign(ops.bit_shl(self, other))
+        self._assign(ops.bit_shl(self, other))
         return self
 
     def __irshift__(self, other):
-        self.assign(ops.bit_shr(self, other))
+        self._assign(ops.bit_shr(self, other))
         return self
 
     def __ipow__(self, other):
-        self.assign(ops.pow(self, other))
+        self._assign(ops.pow(self, other))
         return self
 
-    def assign(self, other):
+    def _assign(self, other):
         """Assign the expression of the given operand to self.
 
         Args:
@@ -235,7 +236,7 @@ class TaichiOperations:
         return ops.assign(self, other)
 
     # pylint: disable=R0201
-    def augassign(self, x, op):
+    def _augassign(self, x, op):
         """Generate the computing expression between self and the given operand of given operator and assigned to self.
 
         Args:

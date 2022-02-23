@@ -21,6 +21,8 @@ class VulkanLoader {
   VulkanLoader(VulkanLoader const &) = delete;
   void operator=(VulkanLoader const &) = delete;
 
+  bool check_vulkan_device();
+
   void load_instance(VkInstance instance_);
   void load_device(VkDevice device_);
   bool init();
@@ -28,6 +30,7 @@ class VulkanLoader {
   VkInstance get_instance() {
     return vulkan_instance_;
   }
+  std::string visible_device_id;
 
  private:
   std::once_flag init_flag_;
@@ -44,6 +47,8 @@ class VulkanLoader {
 };
 
 bool is_vulkan_api_available();
+
+void set_vulkan_visible_device(std::string id);
 
 }  // namespace vulkan
 }  // namespace lang

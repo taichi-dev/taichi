@@ -30,25 +30,25 @@ class ArgAnyArray:
         self.field_dim = field_dim
         self.layout = layout
 
-    def check_element_dim(self, arg, arg_dim):
+    def _check_element_dim(self, arg, arg_dim):
         if self.element_dim is not None and self.element_dim != arg_dim:
             raise ValueError(
                 f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided"
             )
 
-    def check_layout(self, arg):
+    def _check_layout(self, arg):
         if self.layout is not None and self.layout != arg.layout:
             raise ValueError(
                 f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided"
             )
 
-    def check_element_shape(self, shapes):
+    def _check_element_shape(self, shapes):
         if self.element_shape is not None and shapes != self.element_shape:
             raise ValueError(
                 f"Invalid argument into ti.any_arr() - required element_shape={self.element_shape}, but {shapes} is provided"
             )
 
-    def check_field_dim(self, field_dim):
+    def _check_field_dim(self, field_dim):
         if self.field_dim is not None and field_dim != self.field_dim:
             raise ValueError(
                 f"Invalid argument into ti.any_arr() - required field_dim={self.field_dim}, but {field_dim} is provided"
@@ -109,4 +109,9 @@ template = Template
 """Alias for :class:`~taichi.types.annotations.Template`.
 """
 
-__all__ = ['ext_arr', 'any_arr', 'template']
+
+class sparse_matrix_builder:
+    pass
+
+
+__all__ = ['ext_arr', 'any_arr', 'template', 'sparse_matrix_builder']

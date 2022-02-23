@@ -248,6 +248,12 @@ void export_lang(py::module &m) {
       .def_readwrite("metric_values",
                      &KernelProfileTracedRecord::metric_values);
 
+  py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
+      .value("block_local", SNodeAccessFlag::block_local)
+      .value("read_only", SNodeAccessFlag::read_only)
+      .value("mesh_local", SNodeAccessFlag::mesh_local)
+      .export_values();
+
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
       .def("create_kernel_exprgroup_return",
@@ -281,7 +287,12 @@ void export_lang(py::module &m) {
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
-      .def("expr_var", &ASTBuilder::make_var);
+      .def("expr_var", &ASTBuilder::make_var)
+      .def("bit_vectorize", &ASTBuilder::bit_vectorize)
+      .def("parallelize", &ASTBuilder::parallelize)
+      .def("block_dim", &ASTBuilder::block_dim)
+      .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
+      .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -691,7 +702,8 @@ void export_lang(py::module &m) {
         Expr::make<ArgLoadExpression, int, const DataType &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
+                   const std::vector<int> &>);
 
   m.def("make_id_expr", Expr::make<IdExpression, std::string>);
 
@@ -792,19 +804,6 @@ void export_lang(py::module &m) {
       TI_INFO("caught");
     }
   });
-  // Schedules
-  m.def("parallelize", Parallelize);
-  m.def("bit_vectorize", BitVectorize);
-  m.def("block_dim", BlockDim);
-
-  py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
-      .value("block_local", SNodeAccessFlag::block_local)
-      .value("read_only", SNodeAccessFlag::read_only)
-      .value("mesh_local", SNodeAccessFlag::mesh_local)
-      .export_values();
-
-  m.def("insert_snode_access_flag", insert_snode_access_flag);
-  m.def("reset_snode_access_flag", reset_snode_access_flag);
 
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);

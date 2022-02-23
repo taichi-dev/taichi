@@ -161,7 +161,7 @@ def test_boolop():
 @test_utils.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
-                       match='"Is" is not supported in Taichi kernels.'):
+                       match='"Is" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def foo():
@@ -923,7 +923,7 @@ def test_sparse_matrix_builder():
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+    def fill(Abuilder: ti.types.sparse_matrix_builder()):
         for i, j in ti.static(ti.ndrange(n, n)):
             Abuilder[i, j] += i + j
 

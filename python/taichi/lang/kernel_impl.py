@@ -18,8 +18,8 @@ from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
-from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.types import any_arr, primitive_types, template
+from taichi.types import (any_arr, primitive_types, sparse_matrix_builder,
+                          template)
 
 from taichi import _logging
 
@@ -277,21 +277,21 @@ class TaichiCallableTemplateMapper:
             return arg
         if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
-                anno.check_element_dim(arg, 0)
-                anno.check_element_shape(())
-                anno.check_field_dim(len(arg.shape))
+                anno._check_element_dim(arg, 0)
+                anno._check_element_shape(())
+                anno._check_field_dim(len(arg.shape))
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno.check_element_dim(arg, 1)
-                anno.check_element_shape((arg.n, ))
-                anno.check_field_dim(len(arg.shape))
-                anno.check_layout(arg)
+                anno._check_element_dim(arg, 1)
+                anno._check_element_shape((arg.n, ))
+                anno._check_field_dim(len(arg.shape))
+                anno._check_layout(arg)
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno.check_element_dim(arg, 2)
-                anno.check_element_shape((arg.n, arg.m))
-                anno.check_field_dim(len(arg.shape))
-                anno.check_layout(arg)
+                anno._check_element_dim(arg, 2)
+                anno._check_element_shape((arg.n, arg.m))
+                anno._check_field_dim(len(arg.shape))
+                anno._check_layout(arg)
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), arg.layout
             # external arrays
@@ -527,7 +527,6 @@ class Kernel:
             callbacks = []
             has_external_arrays = False
             has_torch = has_pytorch()
-            ndarray_use_torch = impl.get_runtime().ndarray_use_torch
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -549,21 +548,12 @@ class Kernel:
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
+                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
                 elif isinstance(needed, any_arr) and isinstance(
                         v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
                     v = v.arr
-                    if ndarray_use_torch:
-                        is_ndarray = True
-                        tmp, torch_callbacks = self.get_torch_callbacks(
-                            v, has_torch, is_ndarray)
-                        callbacks += torch_callbacks
-                        launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape)
-                    else:
-                        launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                    launch_ctx.set_arg_ndarray(actual_argument_slot, v)
                 elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)

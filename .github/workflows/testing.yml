@@ -270,14 +270,16 @@ jobs:
 
       - name: Build & Install
         run: |
+          brew install molten-vk
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -351,6 +353,7 @@ jobs:
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
+          docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
         env:
           PY: py38
@@ -442,11 +445,12 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          PYTHON: ${{ matrix.python }}
           CXX: clang++
 
       - name: Test
@@ -454,7 +458,9 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=$PATH:$HOME/Library/Python/3.8/bin
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
+          PYTHON: ${{ matrix.python }}
+          GPU_TEST: ON

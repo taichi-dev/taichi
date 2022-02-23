@@ -9,12 +9,13 @@ from taichi.types import f32, f64
 
 @func
 def _randn(dt):
-    '''
-    Generates a random number from standard normal distribution
-    using the Box-Muller transform.
-    '''
+    """
+    Generate a random float sampled from univariate standard normal
+    (Gaussian) distribution of mean 0 and variance 1, using the
+    Box-Muller transformation.
+    """
     assert dt == f32 or dt == f64
-    u1 = ops.random(dt)
+    u1 = ops.cast(1.0, dt) - ops.random(dt)
     u2 = ops.random(dt)
     r = ops.sqrt(-2 * ops.log(u1))
     c = ops.cos(math.tau * u2)
@@ -22,15 +23,25 @@ def _randn(dt):
 
 
 def randn(dt=None):
-    """Generates a random number from standard normal distribution.
-
-    Implementation refers to :func:`taichi.lang.random.randn`.
+    """Generate a random float sampled from univariate standard normal
+    (Gaussian) distribution of mean 0 and variance 1, using the
+    Box-Muller transformation. Must be called in Taichi scope.
 
     Args:
-        dt (DataType): The datatype for the generated random number.
+        dt (DataType): Data type of the required random number. Default to `None`.
+            If set to `None` `dt` will be determined dynamically in runtime.
 
     Returns:
-        The generated random number.
+        The generated random float.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     print(ti.randn())
+        >>>
+        >>> main()
+        -0.463608
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
@@ -38,15 +49,17 @@ def randn(dt=None):
 
 
 @pyfunc
-def _matrix_transpose(self):
-    """Get the transpose of a matrix.
+def _matrix_transpose(mat):
+    """Permute the first two axes of the matrix.
+
+    Args:
+        mat (:class:`~taichi.lang.matrix.Matrix`): Input matrix.
 
     Returns:
-        Get the transpose of a matrix.
-
+        Transpose of the input matrix.
     """
-    return matrix.Matrix([[self[i, j] for i in range(self.n)]
-                          for j in range(self.m)])
+    return matrix.Matrix([[mat[i, j] for i in range(mat.n)]
+                          for j in range(mat.m)])
 
 
 @pyfunc
@@ -202,9 +215,9 @@ def svd3d(A, dt, iters=None):
     sigma = expr_init(Matrix.zero(dt, 3, 3))
     for i in range(3):
         for j in range(3):
-            U(i, j).assign(U_entries[i * 3 + j])
-            V(i, j).assign(V_entries[i * 3 + j])
-        sigma(i, i).assign(sig_entries[i])
+            U(i, j)._assign(U_entries[i * 3 + j])
+            V(i, j)._assign(V_entries[i * 3 + j])
+        sigma(i, i)._assign(sig_entries[i])
     return U, sigma, V
 
 
@@ -311,10 +324,8 @@ def _svd(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = svd2d(A, dt)
         return ret
-    elif static(A.n == 3):
-        return svd3d(A, dt)
     else:
-        raise Exception("SVD only supports 2D and 3D matrices.")
+        return svd3d(A, dt)
 
 
 @func
@@ -335,11 +346,8 @@ def _polar_decompose(A, dt):
     if static(A.n == 2):  # pylint: disable=R1705
         ret = polar_decompose2d(A, dt)
         return ret
-    elif static(A.n == 3):
-        return polar_decompose3d(A, dt)
     else:
-        raise Exception(
-            "Polar decomposition only supports 2D and 3D matrices.")
+        return polar_decompose3d(A, dt)
 
 
 def polar_decompose(A, dt=None):
@@ -357,6 +365,9 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
+    if A.n != 2 and A.n != 3:
+        raise Exception(
+            "Polar decomposition only supports 2D and 3D matrices.")
     return _polar_decompose(A, dt)
 
 
@@ -375,6 +386,8 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
+    if A.n != 2 and A.n != 3:
+        raise Exception("SVD only supports 2D and 3D matrices.")
     return _svd(A, dt)
 
 

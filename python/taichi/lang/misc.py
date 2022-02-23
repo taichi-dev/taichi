@@ -3,6 +3,7 @@ import functools
 import os
 import shutil
 import tempfile
+import warnings
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
@@ -15,6 +16,8 @@ from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
+
+warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
 i = axes(0)
 j = axes(1)
@@ -32,7 +35,6 @@ ikl = axes(0, 2, 3)
 jkl = axes(1, 2, 3)
 ijkl = axes(0, 1, 2, 3)
 
-cfg = impl.default_cfg()
 x86_64 = _ti_core.x64
 """The x64 CPU backend.
 """
@@ -100,7 +102,6 @@ def reset():
 
     This would destroy all the fields and kernels.
     """
-    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()
@@ -151,7 +152,6 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.experimental_real_function = False
         self.short_circuit_operators = False
-        self.ndarray_use_torch = False
 
 
 def prepare_sandbox():
@@ -238,6 +238,7 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
 
+    cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
@@ -294,7 +295,6 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
-    env_spec.add('ndarray_use_torch')
 
     # compiler configurations (ti.cfg):
     for key in dir(cfg):
@@ -319,8 +319,6 @@ def init(arch=None,
             spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
-        impl.get_runtime().ndarray_use_torch = \
-            spec_cfg.ndarray_use_torch
         _logging.set_logging_level(spec_cfg.log_level.lower())
 
     # select arch (backend):
@@ -333,13 +331,10 @@ def init(arch=None,
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
 
-    # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
-    # So it won't work.
-    if cfg.arch == opengl and spec_cfg.ndarray_use_torch:
-        _logging.warn(
-            'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
-        )
-        impl.get_runtime().ndarray_use_torch = False
+    # user selected visible device
+    visible_device = os.environ.get("TI_VISIBLE_DEVICE")
+    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
+        _ti_core.set_vulkan_visible_device(visible_device)
 
     if _test_mode:
         return spec_cfg
@@ -362,7 +357,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        get_runtime().prog.no_activate(v.snode.ptr)
+        get_runtime().prog.no_activate(v._snode.ptr)
 
 
 def block_local(*args):
@@ -378,22 +373,22 @@ def block_local(*args):
         _logging.warn("""opt_level = 1 is enforced to enable bls analysis.""")
         impl.current_cfg().opt_level = 1
     for a in args:
-        for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+        for v in a._get_field_members():
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def mesh_local(*args):
     for a in args:
-        for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+        for v in a._get_field_members():
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
-        for v in a.get_field_members():
-            _ti_core.insert_snode_access_flag(
+        for v in a._get_field_members():
+            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.read_only, v.ptr)
 
 
@@ -412,9 +407,15 @@ def loop_unique(val, covers=None):
     return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-parallelize = _ti_core.parallelize
+def parallelize(v):
+    get_runtime().prog.current_ast_builder().parallelize(v)
+
+
 serialize = lambda: parallelize(1)
-block_dim = _ti_core.block_dim
+
+
+def block_dim(v):
+    get_runtime().prog.current_ast_builder().block_dim(v)
 
 
 def global_thread_idx():
@@ -492,32 +493,8 @@ def clear_all_gradients():
                 clear_gradients  # pylint: disable=C0415
             clear_gradients(places)
 
-    for root_fb in _snode.FieldsBuilder.finalized_roots():
+    for root_fb in _snode.FieldsBuilder._finalized_roots():
         visit(root_fb)
-
-
-def stat_write(key, value):
-    import yaml  # pylint: disable=C0415
-    case_name = os.environ.get('TI_CURRENT_BENCHMARK')
-    if case_name is None:
-        return
-    if case_name.startswith('benchmark_'):
-        case_name = case_name[10:]
-    arch_name = _ti_core.arch_name(cfg.arch)
-    async_mode = 'async' if cfg.async_mode else 'sync'
-    output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-    filename = f'{output_dir}/benchmark.yml'
-    try:
-        with open(filename, 'r') as f:
-            data = yaml.load(f, Loader=yaml.SafeLoader)
-    except FileNotFoundError:
-        data = {}
-    data.setdefault(case_name, {})
-    data[case_name].setdefault(key, {})
-    data[case_name][key].setdefault(arch_name, {})
-    data[case_name][key][arch_name][async_mode] = value
-    with open(filename, 'w') as f:
-        yaml.dump(data, f, Dumper=yaml.SafeDumper)
 
 
 def is_arch_supported(arch, use_gles=False):
@@ -575,9 +552,9 @@ def get_host_arch_list():
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'cfg', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
-    'parallelize', 'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range',
-    'block_local', 'cache_read_only', 'clear_all_gradients', 'init',
-    'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
+    'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
+    'no_activate', 'reset', 'mesh_patch_idx'
 ]

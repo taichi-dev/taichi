@@ -21,22 +21,22 @@ def test_primitives():
     n3 = ti.root.dense(ti.i, 1)
     n3.place(p, q, r)
 
-    assert n1.cell_size_bytes == 2
-    assert n2.cell_size_bytes in [12, 16]
-    assert n3.cell_size_bytes == 16
+    assert n1._cell_size_bytes == 2
+    assert n2._cell_size_bytes in [12, 16]
+    assert n3._cell_size_bytes == 16
 
-    assert n1.offset_bytes_in_parent_cell == 0
-    assert n2.offset_bytes_in_parent_cell == 2 * 32
-    assert n3.offset_bytes_in_parent_cell in [
+    assert n1._offset_bytes_in_parent_cell == 0
+    assert n2._offset_bytes_in_parent_cell == 2 * 32
+    assert n3._offset_bytes_in_parent_cell in [
         2 * 32 + 12 * 32, 2 * 32 + 16 * 32
     ]
 
-    assert x.snode.offset_bytes_in_parent_cell == 0
-    assert y.snode.offset_bytes_in_parent_cell == 0
-    assert z.snode.offset_bytes_in_parent_cell in [4, 8]
-    assert p.snode.offset_bytes_in_parent_cell == 0
-    assert q.snode.offset_bytes_in_parent_cell == 4
-    assert r.snode.offset_bytes_in_parent_cell == 8
+    assert x.snode._offset_bytes_in_parent_cell == 0
+    assert y.snode._offset_bytes_in_parent_cell == 0
+    assert z.snode._offset_bytes_in_parent_cell in [4, 8]
+    assert p.snode._offset_bytes_in_parent_cell == 0
+    assert q.snode._offset_bytes_in_parent_cell == 4
+    assert r.snode._offset_bytes_in_parent_cell == 8
 
 
 @test_utils.test(arch=ti.cpu)
@@ -54,5 +54,5 @@ def test_bit_struct():
     n2.bit_struct(num_bits=32).place(y)
     n2.place(z)
 
-    assert n1.cell_size_bytes == 4
-    assert n2.cell_size_bytes == 8
+    assert n1._cell_size_bytes == 4
+    assert n2._cell_size_bytes == 8

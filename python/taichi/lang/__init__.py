@@ -2,9 +2,11 @@ import platform
 
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
+from taichi.lang._ndarray import *
 from taichi.lang._ndrange import ndrange
 from taichi.lang.enums import Layout
 from taichi.lang.exception import *
+from taichi.lang.field import *
 from taichi.lang.impl import *
 from taichi.lang.kernel_impl import *
 from taichi.lang.matrix import *

@@ -333,10 +333,34 @@ void VulkanDeviceCreator::pick_physical_device() {
   std::vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
   physical_device_ = VK_NULL_HANDLE;
-  for (const auto &device : devices) {
-    if (is_device_suitable(device, surface_)) {
-      physical_device_ = device;
-      break;
+
+  for (int i = 0; i < device_count; i++) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(devices[i], &properties);
+    TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);
+  }
+
+  auto device_id = VulkanLoader::instance().visible_device_id;
+  bool has_visible_device{0};
+  if (!device_id.empty()) {
+    int id = std::stoi(device_id);
+    TI_ASSERT_INFO(
+        (id >= 0) && (id < device_count),
+        "TI_VISIBLE_DEVICE={} is not valid, found {} devices available", id,
+        device_count);
+    if (is_device_suitable(devices[id], surface_)) {
+      physical_device_ = devices[id];
+      has_visible_device = 1;
+    }
+  }
+
+  if (!has_visible_device) {
+    // could not find a user defined visible device, use the first one suitable
+    for (const auto &device : devices) {
+      if (is_device_suitable(device, surface_)) {
+        physical_device_ = device;
+        break;
+      }
     }
   }
   TI_ASSERT_INFO(physical_device_ != VK_NULL_HANDLE,

@@ -141,14 +141,14 @@ def test_field_name():
     a = ti.field(dtype=ti.f32, shape=(2, 3), name='a')
     b = ti.Vector.field(3, dtype=ti.f32, shape=(2, 3), name='b')
     c = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(5, 4), name='c')
-    assert a.name == 'a'
-    assert b.name == 'b'
-    assert c.name == 'c'
-    assert b.snode.name == 'b'
+    assert a._name == 'a'
+    assert b._name == 'b'
+    assert c._name == 'c'
+    assert b.snode._name == 'b'
     d = []
     for i in range(10):
         d.append(ti.field(dtype=ti.f32, shape=(2, 3), name=f'd{i}'))
-        assert d[i].name == f'd{i}'
+        assert d[i]._name == f'd{i}'
 
 
 @test_utils.test()

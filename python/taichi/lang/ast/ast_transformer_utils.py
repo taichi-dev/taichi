@@ -15,11 +15,7 @@ class Builder:
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
             if method is None:
-                try:
-                    import astpretty  # pylint: disable=C0415
-                    error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
-                except:
-                    error_msg = f'Unsupported node {node}'
+                error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
             return method(ctx, node)
         except Exception as e:
@@ -143,6 +139,7 @@ class ASTTransformerContext:
         self.static_scope_status = StaticScopeStatus()
         self.returned = False
         self.ast_builder = ast_builder
+        self.visited_funcdef = False
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

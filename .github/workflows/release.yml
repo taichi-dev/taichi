@@ -164,10 +164,12 @@ jobs:
 
       - name: Create Python Wheel
         run: |
+          brew install molten-vk
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -241,6 +243,7 @@ jobs:
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
           PYTHON: ${{ matrix.python }}
+          GPU_TEST: ON
 
       - name: Upload PyPI
         env:

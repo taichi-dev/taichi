@@ -9,7 +9,7 @@ from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
-from taichi import ad, tools
+from taichi import ad, linalg, tools
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
@@ -47,11 +47,16 @@ if sys.version_info.minor < 7:
 else:
 
     def __getattr__(attr):
+        # There's no easy way to hook accessing attribute with function calls in python3.6.
+        # So let's skip it for now.
+        import warnings  # pylint: disable=C0415,W0621
+        if attr == 'cfg':
+            return None if lang.impl.get_runtime(
+            ).prog is None else lang.impl.current_cfg()
         if attr in __deprecated_names__:
-            lang.util.warning(
+            warnings.warn(
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
-                DeprecationWarning,
-                stacklevel=2)
+                DeprecationWarning)
             exec(f'{attr} = {__deprecated_names__[attr]}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")

@@ -2,9 +2,8 @@ import os
 import warnings
 
 from suite_microbenchmarks import MicroBenchmark
-from utils import datatime_with_format, dump2json, get_commit_hash
-
-import taichi as ti
+from taichi._lib import core as ti_core
+from utils import datatime_with_format, dump2json
 
 benchmark_suites = [MicroBenchmark]
 
@@ -12,7 +11,7 @@ benchmark_suites = [MicroBenchmark]
 class BenchmarkInfo:
     def __init__(self):
         """init with commit info"""
-        self.commit_hash = get_commit_hash()
+        self.commit_hash = ti_core.get_commit_hash()
         self.datetime = datatime_with_format()
         self.suites = {}
         print(f'commit_hash = {self.commit_hash}')

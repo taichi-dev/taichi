@@ -1,7 +1,8 @@
 import numpy as np
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.types.primitive_types import f32
+from taichi.lang.util import warning
+from taichi.types import annotations, f32
 
 
 class SparseMatrix:
@@ -146,7 +147,7 @@ class SparseMatrixBuilder:
             self.ptr = get_runtime().prog.create_sparse_matrix_builder(
                 num_rows, num_cols, max_num_triplets)
 
-    def get_addr(self):
+    def _get_addr(self):
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
@@ -160,5 +161,12 @@ class SparseMatrixBuilder:
         return SparseMatrix(sm=sm)
 
 
-sparse_matrix_builder = SparseMatrixBuilder
-# Alias for :class:`SparseMatrixBuilder`
+# TODO: remove this in 1.0 release
+class sparse_matrix_builder(annotations.sparse_matrix_builder):
+    def __init__(self):
+        warning(
+            'ti.linalg.sparse_matrix_builder is deprecated. Please use ti.types.sparse_matrix_builder instead.',
+            DeprecationWarning)
+
+
+__all__ = ['SparseMatrix', 'SparseMatrixBuilder', 'sparse_matrix_builder']

@@ -6,9 +6,10 @@ from taichi.lang.impl import default_cfg, get_runtime
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui
+from .utils import check_ggui_availability
 
 
-class Window(_ti_core.PyWindow):
+class Window:
     """The window class.
 
     Args:
@@ -17,20 +18,30 @@ class Window(_ti_core.PyWindow):
         layout (vsync): whether or not vertical sync should be enabled.
     """
     def __init__(self, name, res, vsync=False, show_window=True):
+        check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
 
         ti_arch = default_cfg().arch
         is_packed = default_cfg().packed
-        super().__init__(get_runtime().prog, name, res, vsync, show_window,
-                         package_path, ti_arch, is_packed)
+        self.window = _ti_core.PyWindow(get_runtime().prog, name, res, vsync,
+                                        show_window, package_path, ti_arch,
+                                        is_packed)
 
     @property
     def running(self):
-        return self.is_running()
+        return self.window.is_running()
 
     @running.setter
     def running(self, value):
-        self.set_is_running(value)
+        self.window.set_is_running(value)
+
+    @property
+    def event(self):
+        return self.window.get_current_event()
+
+    @event.setter
+    def event(self, value):
+        self.window.set_current_event(value)
 
     def get_events(self, tag=None):
         """ Obtain a list of unprocessed events.
@@ -39,11 +50,11 @@ class Window(_ti_core.PyWindow):
             tag (str): A tag used for filtering events. If it is None, then all events are returned.
         """
         if tag is None:
-            return super().get_events(_ti_core.EventType.Any)
+            return self.window.get_events(_ti_core.EventType.Any)
         if tag is PRESS:
-            return super().get_events(_ti_core.EventType.Press)
+            return self.window.get_events(_ti_core.EventType.Press)
         if tag is RELEASE:
-            return super().get_events(_ti_core.EventType.Release)
+            return self.window.get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
     def get_event(self, tag=None):
@@ -53,24 +64,36 @@ class Window(_ti_core.PyWindow):
 
         """
         if tag is None:
-            return super().get_event(_ti_core.EventType.Any)
+            return self.window.get_event(_ti_core.EventType.Any)
         if tag is PRESS:
-            return super().get_event(_ti_core.EventType.Press)
+            return self.window.get_event(_ti_core.EventType.Press)
         if tag is RELEASE:
-            return super().get_event(_ti_core.EventType.Release)
+            return self.window.get_event(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
     def is_pressed(self, *keys):
         for k in keys:
-            if super().is_pressed(k):
+            if self.window.is_pressed(k):
                 return True
         return False
 
     def get_canvas(self):
         """Returns a canvas handle. See :class`~taichi.ui.canvas.Canvas` """
-        return Canvas(super().get_canvas())
+        return Canvas(self.window.get_canvas())
 
     @property
     def GUI(self):
         """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` """
-        return Gui(super().GUI())
+        return Gui(self.window.GUI())
+
+    def get_cursor_pos(self):
+        return self.window.get_cursor_pos()
+
+    def show(self):
+        return self.window.show()
+
+    def write_image(self, filename):
+        return self.window.write_image(filename)
+
+    def destroy(self):
+        return self.window.destroy()

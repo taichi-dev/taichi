@@ -453,7 +453,7 @@ class Mesh:
         return MeshMetadata(data)
 
     @staticmethod
-    def json2meta(data):
+    def generate_meta(data):
         return MeshMetadata(data)
 
 def TriMesh():

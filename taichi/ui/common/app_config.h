@@ -4,7 +4,8 @@
 #include "taichi/ui/utils/utils.h"
 #include "taichi/backends/arch.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi {
+namespace ui {
 
 struct AppConfig {
   std::string name;
@@ -13,8 +14,9 @@ struct AppConfig {
   bool vsync{false};
   bool show_window{true};
   std::string package_path;
-  taichi::lang::Arch ti_arch;
+  Arch ti_arch;
   bool is_packed_mode{false};
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace ui
+}  // namespace taichi

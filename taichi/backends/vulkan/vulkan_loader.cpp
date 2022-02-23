@@ -69,7 +69,6 @@ bool VulkanLoader::check_vulkan_device() {
             found_device_with_compute = true;
           }
         }
-
       }
     }
   } while (false);

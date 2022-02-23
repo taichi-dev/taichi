@@ -344,9 +344,10 @@ void VulkanDeviceCreator::pick_physical_device() {
   bool has_visible_device{0};
   if (!device_id.empty()) {
     int id = std::stoi(device_id);
-    TI_ASSERT_INFO((id >= 0) && (id < device_count),
-                   "TI_VISIBLE_DEVICE={} is not valid, found {} devices available",
-                   id, device_count);
+    TI_ASSERT_INFO(
+        (id >= 0) && (id < device_count),
+        "TI_VISIBLE_DEVICE={} is not valid, found {} devices available", id,
+        device_count);
     if (is_device_suitable(devices[id], surface_)) {
       physical_device_ = devices[id];
       has_visible_device = 1;

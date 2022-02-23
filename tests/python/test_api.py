@@ -1,5 +1,6 @@
-import pytest
 import sys
+
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -83,4 +84,6 @@ user_api[ti.VectorNdarray] = [
 def test_api(src):
     # When Python version is below 3.7, deprecated names are
     # handled as normal names, which will fail this test.
-    assert sys.version_info < (3, 7) or [s for s in dir(src) if not s.startswith('_')] == user_api[src]
+    assert sys.version_info < (3, 7) or [
+        s for s in dir(src) if not s.startswith('_')
+    ] == user_api[src]

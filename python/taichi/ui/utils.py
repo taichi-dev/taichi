@@ -60,3 +60,8 @@ def vec_to_euler(v):
             yaw = -yaw
 
     return yaw, pitch
+
+
+def check_ggui_availability():
+    if not _ti_core.GGUI_AVAILABLE:
+        raise Exception("GGUI Not Available")

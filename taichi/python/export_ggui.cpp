@@ -322,8 +322,8 @@ void export_ggui(py::module &m) {
       .def("set_is_running", &PyWindow::set_is_running)
       .def("get_event", &PyWindow::get_event)
       .def("get_events", &PyWindow::get_events)
-      .def_property("event", &PyWindow::get_current_event,
-                    &PyWindow::set_current_event)
+      .def("get_current_event", &PyWindow::get_current_event)
+      .def("set_current_event", &PyWindow::set_current_event)
       .def("destroy", &PyWindow::destroy)
       .def("GUI", &PyWindow::GUI);
 

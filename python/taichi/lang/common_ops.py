@@ -1,4 +1,6 @@
-from taichi.lang import ops, util
+import warnings
+
+from taichi.lang import ops
 
 
 class TaichiOperations:
@@ -14,10 +16,9 @@ class TaichiOperations:
 
     def __getattr__(self, item):
         if item in TaichiOperations.__deprecated_atomic_ops__:
-            util.warning(
+            warnings.warn(
                 f"a.{item}(b) is deprecated. Please use ti.{item}(a, b) instead.",
-                DeprecationWarning,
-                print_stack=False)
+                DeprecationWarning)
             return getattr(self,
                            TaichiOperations.__deprecated_atomic_ops__[item])
         raise AttributeError(

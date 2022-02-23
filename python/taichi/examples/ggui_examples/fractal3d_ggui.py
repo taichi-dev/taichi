@@ -1,6 +1,7 @@
 import taichi as ti
 
-ti.init(ti.cuda)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 
 @ti.func

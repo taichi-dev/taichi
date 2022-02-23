@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "taichi/codegen/spirv/kernel_utils.h"
-#include "taichi/program/aot_module.h"
+#include "taichi/aot/module_loader.h"
 
 namespace taichi {
 namespace lang {

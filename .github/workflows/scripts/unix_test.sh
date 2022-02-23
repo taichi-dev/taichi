@@ -39,16 +39,20 @@ if [ -z "$GPU_TEST" ]; then
 else
     # only split per arch for self_hosted GPU tests
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a cuda 
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a cuda
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
         python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a cpu
     fi
     if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a vulkan 
+        python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a vulkan
     fi
     if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a opengl 
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a opengl
+    fi
+    # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
+    if [[ $TI_WANTED_ARCHS == *"metal"* ]]; then
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a metal
     fi
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
 fi

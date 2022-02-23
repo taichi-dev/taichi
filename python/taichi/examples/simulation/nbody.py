@@ -80,23 +80,28 @@ def update():
         pos[i] += dt * vel[i]
 
 
-gui = ti.GUI('N-body problem', (800, 800))
+def main():
+    gui = ti.GUI('N-body problem', (800, 800))
 
-initialize()
-while gui.running:
+    initialize()
+    while gui.running:
 
-    for e in gui.get_events(ti.GUI.PRESS):
-        if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
-            exit()
-        elif e.key == 'r':
-            initialize()
-        elif e.key == ti.GUI.SPACE:
-            paused[None] = not paused[None]
+        for e in gui.get_events(ti.GUI.PRESS):
+            if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
+                exit()
+            elif e.key == 'r':
+                initialize()
+            elif e.key == ti.GUI.SPACE:
+                paused[None] = not paused[None]
 
-    if not paused[None]:
-        for i in range(substepping):
-            compute_force()
-            update()
+        if not paused[None]:
+            for i in range(substepping):
+                compute_force()
+                update()
 
-    gui.circles(pos.to_numpy(), color=0xffffff, radius=planet_radius)
-    gui.show()
+        gui.circles(pos.to_numpy(), color=0xffffff, radius=planet_radius)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

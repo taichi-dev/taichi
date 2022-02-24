@@ -167,7 +167,7 @@ def bit_cast(obj, dtype):
 
     Returns:
         A copy of `obj`, casted to the specified data type `dtype`.
-        
+
     Example::
 
         >>> @ti.kernel
@@ -279,12 +279,12 @@ def asin(x):
 
     Args:
         x (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \
-            A scalar or a matrix with elements in [-1,1].
+            A scalar or a matrix with elements in [-1, 1].
 
     Returns:
         The inverse sine of each element in `x`, in radians and in the closed \
             interval `[-pi/2, pi/2]`. This is a scalar if `x` is a scalar.
-        
+
     Example::
 
         >>> from math import pi
@@ -310,7 +310,7 @@ def acos(x):
     Returns:
         The inverse cosine of each element in `x`, in radians and in the closed \
             interval `[0, pi]`. This is a scalar if `x` is a scalar.
-        
+
     Example::
 
         >>> from math import pi
@@ -686,7 +686,7 @@ def sub(x1, x2):
 def mul(x1, x2):
     """Multiply arguments element-wise.
 
-    Do not confuse this with the matrix multiplication `x1 @ x2` if 
+    Do not confuse this with the matrix multiplication `x1 @ x2` if
     both `x1` and `x2` are matrices.
 
     Args:
@@ -696,7 +696,7 @@ def mul(x1, x2):
 
     Returns:
         The product of `x1` and `x2`, element-wise. This is a scalar if both `x1` and `x2` are scalars.
- 
+
     Example::
 
         >>> @ti.kernel
@@ -837,7 +837,8 @@ def truediv(x1, x2):
         >>> main()
         >>> [0.666667, 1.333333, 2.000000]
     """
-    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, x1, x2)
+    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, x1,
+                             x2)
 
 
 @binary
@@ -945,7 +946,8 @@ def cmp_lt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
+                             b)
 
 
 @binary
@@ -960,7 +962,8 @@ def cmp_le(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
+                             a, b)
 
 
 @binary
@@ -975,7 +978,8 @@ def cmp_gt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
+                             b)
 
 
 @binary
@@ -990,7 +994,8 @@ def cmp_ge(a, b):
         bool: True if LHS is greater than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
+                             a, b)
 
 
 @binary
@@ -1005,7 +1010,8 @@ def cmp_eq(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
-    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
+                             a, b)
 
 
 @binary
@@ -1020,7 +1026,8 @@ def cmp_ne(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b), a, b)
+    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
+                             a, b)
 
 
 @binary

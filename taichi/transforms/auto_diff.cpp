@@ -71,6 +71,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // enforced
     // 2. If the #1 is satisfied, either an inner most loop or a block without
     // global atomics is an IB
+    std:: cout << " atomics " << Judger.qualified_atomics_ << " inner most " << Judger.inner_most_loop_<< std::endl;
     return Judger.qualified_atomics_ || Judger.inner_most_loop_;
   }
 
@@ -236,6 +237,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   void visit(RangeForStmt *stmt) override {
     auto old_execute_once = execute_once_;
     execute_once_ = false;  // loop body may be executed many times
+    std::cout << "execute once or not ??? " << execute_once_ << std::endl;
     stmt->body->accept(this);
     execute_once_ = old_execute_once;
   }
@@ -469,6 +471,7 @@ class MakeAdjoint : public IRVisitor {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
+      std::cout << "do we create new alloca " << stmt->type() << std::endl;
       // normal SSA cases
 
       // create the alloca
@@ -723,13 +726,16 @@ class MakeAdjoint : public IRVisitor {
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_grad()) {
-      // No adjoint SNode. Do nothing
+      // No adjoint SNode. Do
+      std::cout << "no adjoint "<< snodes[0]->get_node_type_name_hinted() << std::endl;
       return;
     }
     if (gradients_stopped(stmt, snodes[0])) {
       // gradients stopped, do nothing.
+      std::cout << "gradients stopped "<< snodes[0]->get_node_type_name_hinted() << std::endl;
       return;
     }
+    std::cout << "global load stmt here? " << snodes[0]->get_node_type_name_hinted() << std::endl;
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
@@ -756,6 +762,7 @@ class MakeAdjoint : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    std::cout << "do we meet any atomic op stmt "<< stmt->type() << std::endl;
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (snodes[0]->has_grad()) {
@@ -892,22 +899,41 @@ class BackupSSA : public BasicStmtVisitor {
   }
 };
 
+
 namespace irpass {
+  std::function<void(const std::string &)>
+  make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+    if (!verbose) {
+      return [](const std::string &) {};
+    }
+    return [ir, kernel_name](const std::string &pass) {
+        TI_INFO("[{}] {}:", kernel_name, pass);
+        std::cout << std::flush;
+        irpass::re_id(ir);
+        irpass::print(ir);
+        std::cout << std::flush;
+    };
+  }
 
 void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   TI_AUTO_PROF;
+  auto print = make_pass_printer(true, "autodiff debug", root);
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-
+    print("after ReverseOuterLoops");
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
+      print("after PromoteSSA2LocalVar");
       ReplaceLocalVarWithStacks replace(config.ad_stack_size);
       ib->accept(&replace);
       type_check(root, config);
+      print("after ReplaceWithStacks");
       MakeAdjoint::run(ib);
       type_check(root, config);
+      print("after Make adjoint");
       BackupSSA::run(ib);
+      print("after Backup SSA");
       irpass::analysis::verify(root);
     }
   } else {

@@ -9,8 +9,6 @@ std::string data_type_name(DataType t);
 
 std::string data_type_format(DataType dt);
 
-int element_type_size(DataType t);
-
 int data_type_size(DataType t);
 
 inline int data_type_bits(DataType t) {

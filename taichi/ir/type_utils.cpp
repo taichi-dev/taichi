@@ -50,13 +50,6 @@ std::string data_type_format(DataType dt) {
   }
 }
 
-int element_type_size(DataType t) {
-  if (auto tensor_type = t->cast<TensorType>())
-    return data_type_size(tensor_type->get_element_type());
-  else
-    return 0;
-}
-
 int data_type_size(DataType t) {
   // TODO:
   //  1. Ensure in the old code, pointer attributes of t are correct (by

@@ -409,6 +409,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
+    TI_ASSERT(stmt->width() == 1);
     if (stmt->get_kernel() != nullptr) {
       TI_ASSERT(stmt->get_kernel()->rets.size() == 1);
       if (auto ret_tensor =

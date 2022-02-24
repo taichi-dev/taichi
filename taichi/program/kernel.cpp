@@ -288,87 +288,62 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
   return *ctx_;
 }
 
-float64 Kernel::get_ret_float(int i) {
-  Type *dt;
-  if (auto tensor_type = rets[0].dt->cast<TensorType>()) {
-    dt = tensor_type->get_element_type();
-  } else {
-    dt = rets[0].dt->get_compute_type();
-  }
+template <typename T>
+T Kernel::fetch_ret(DataType dt, int i) {
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (float64)program->fetch_result<float32>(i);
+    return (T)program->fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (float64)program->fetch_result<float64>(i);
+    return (T)program->fetch_result<float64>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (float64)program->fetch_result<int32>(i);
+    return (T)program->fetch_result<int32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (float64)program->fetch_result<int64>(i);
+    return (T)program->fetch_result<int64>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (float64)program->fetch_result<int8>(i);
+    return (T)program->fetch_result<int8>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (float64)program->fetch_result<int16>(i);
+    return (T)program->fetch_result<int16>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (float64)program->fetch_result<uint8>(i);
+    return (T)program->fetch_result<uint8>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (float64)program->fetch_result<uint16>(i);
+    return (T)program->fetch_result<uint16>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (float64)program->fetch_result<uint32>(i);
+    return (T)program->fetch_result<uint32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (float64)program->fetch_result<uint64>(i);
+    return (T)program->fetch_result<uint64>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     // use f32 to interact with python
-    return (float64)program->fetch_result<float32>(i);
+    return (T)program->fetch_result<float32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+float64 Kernel::get_ret_float(int i) {
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<float64>(dt, i);
 }
 
 int64 Kernel::get_ret_int(int i) {
-  Type *dt;
-  if (auto tensor_type = rets[0].dt->cast<TensorType>()) {
-    dt = tensor_type->get_element_type();
-  } else {
-    dt = rets[0].dt->get_compute_type();
-  }
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (int64)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (int64)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (int64)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (int64)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (int64)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (int64)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (int64)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (int64)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (int64)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (int64)program->fetch_result<float64>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<int64>(dt, i);
 }
 
 std::vector<int64> Kernel::get_ret_int_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<int64> res;
   for (int j = 0; j < size; j++) {
-    res.emplace_back(get_ret_int(j));
+    res.emplace_back(fetch_ret<int64>(dt, j));
   }
   return res;
 }
 
 std::vector<float64> Kernel::get_ret_float_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<float64> res;
   for (int j = 0; j < size; j++) {
-    res.emplace_back(get_ret_float(j));
+    res.emplace_back(fetch_ret<float64>(dt, j));
   }
   return res;
 }

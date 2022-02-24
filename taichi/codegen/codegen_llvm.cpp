@@ -1098,10 +1098,8 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
       }
       auto extended = builder->CreateZExt(
           builder->CreateBitCast(llvm_val[value], intermediate_type), dest_ty);
-      create_call(
-          "LLVMRuntime_store_result",
-          {get_runtime(), extended,
-           llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, idx++))});
+      create_call("LLVMRuntime_store_result",
+                  {get_runtime(), extended, tlctx->get_constant<int32>(idx++)});
     }
   }
 }

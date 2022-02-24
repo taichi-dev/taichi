@@ -902,8 +902,8 @@ void export_lang(py::module &m) {
         py::return_value_policy::reference);
 
   m.def("decl_tensor_type",
-        [&](std::vector<int> shape, const DataType &element) {
-          return TypeFactory::create_tensor_type(shape, element);
+        [&](std::vector<int> shape, const DataType &element_type) {
+          return TypeFactory::create_tensor_type(shape, element_type);
         });
 
   py::class_<SNodeRegistry>(m, "SNodeRegistry")

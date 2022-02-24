@@ -258,6 +258,21 @@ class Matrix(TaichiOperations):
             else:
                 self.entries[idx] = e
 
+    @python_scope
+    def _get_slice(self, a, b):
+        # return Matrix([[itertools.islice()]])
+        if not isinstance(a, slice):
+            a = [a]
+        else:
+            a = range(a.start or 0, a.stop or self.n, a.step or 1)
+        if not isinstance(b, slice):
+            b = [b]
+        else:
+            b = range(b.start or 0, b.stop or self.m, b.step or 1)
+        iti, itj = iter(a), iter(b)
+        return Matrix([[self(i, j) for j in b] for i in a])
+
+
     @taichi_scope
     def _subscript(self, *indices):
         assert len(indices) in [1, 2]
@@ -352,6 +367,8 @@ class Matrix(TaichiOperations):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
+        if isinstance(i, slice) or isinstance(j, slice):
+            return self._get_slice(i, j)
         return self(i, j)
 
     @python_scope

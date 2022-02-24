@@ -349,8 +349,9 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
     flatten_lvalue(var, ctx);
+    auto expr = var.cast<ExternalTensorExpression>();
     ctx->push_back(std::make_unique<ExternalPtrStmt>(
-        var.cast<ExternalTensorExpression>()->stmt, index_stmts));
+        expr->stmt, index_stmts, expr->element_shape, expr->element_dim));
   }
   stmt = ctx->back_stmt();
 }

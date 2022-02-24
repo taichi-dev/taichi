@@ -2,7 +2,8 @@ import numpy as np
 
 import taichi as ti
 
-ti.init(arch=ti.gpu)  # Try to run on GPU
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 quality = 1  # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality**2, 128 * quality

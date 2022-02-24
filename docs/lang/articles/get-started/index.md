@@ -44,13 +44,13 @@ There are a few of extra requirements depend on which operating system you are u
   </TabItem>
 </Tabs>
 
-Please refer to the [Installation Troubleshooting](./misc/install.md) section if you run into any issues when installing Taichi.
+Please refer to the [Installation Troubleshooting](../misc/install.md) section if you run into any issues when installing Taichi.
 
 ## Hello, world!
 
 We introduce the Taichi programming language through a very basic _fractal_ example.
 
-Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` _(you can find more information about the Taichi CLI in the [Command line utilities](./misc/cli_utilities.md) section)_ will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
+Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` _(you can find more information about the Taichi CLI in the [Command line utilities](../misc/cli_utilities.md) section)_ will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
 
 <center>
 
@@ -168,7 +168,7 @@ type-hinted (if any).
 Taichi **functions** are defined with the decorator `@ti.func`. They can
 **only** be called by Taichi kernels or other Taichi functions.
 
-See [syntax](./basic/syntax.md) for more details about Taichi
+See [syntax](../basic/syntax.md) for more details about Taichi
 kernels and functions.
 
 The language used in Taichi kernels and functions looks exactly like
@@ -263,7 +263,7 @@ over all the pixel coordinates, i.e.,
 
 :::note
 
-Struct-for is the key to [sparse computation](./advanced/sparse.md) in
+Struct-for is the key to [sparse computation](../advanced/sparse.md) in
 Taichi, as it will only loop over active elements in a sparse field. In
 dense fields, all elements are active.
 :::
@@ -318,7 +318,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a cpu-based [GUI system](./misc/gui.md) for users to render
+Taichi provides a cpu-based [GUI system](../gui/gui.md) for users to render
 their results on the screen.
 
 ```python
@@ -377,18 +377,18 @@ while gui.running:
     gui.show()
 ```
 
-See [Interacting with external arrays](./basic/external.md#interacting-with-external-arrays) for more details.
+See [Interacting with external arrays](../basic/external.md#interacting-with-external-arrays) for more details.
 
 ## What's next?
 
 Now we have gone through core features of the
 Taichi programming language using the fractal example,
 feel free to dive into the language concepts in
-the next section, or jump to the advanced topics, such as the [Metaprogramming](./advanced/meta.md) or [Differentiable programming](./advanced/differentiable_programming.md). Remember that you can
+the next section, or jump to the advanced topics, such as the [Metaprogramming](../advanced/meta.md) or [Differentiable programming](../advanced/differentiable_programming.md). Remember that you can
 use the search bar at the top right corner to search for topics or keywords
 at any time!
 
 If you are interested in joining the Taichi community, we strongly recommend you take some time to
-familiarize yourself with our [contribution guide](./contribution/contributor_guide.md).
+familiarize yourself with our [contribution guide](../contribution/contributor_guide.md).
 
 We hope you enjoy your adventure with Taichi!

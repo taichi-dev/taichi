@@ -64,6 +64,8 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
         stmt->decoration[0] ==
             uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
       if (loop_unique_.find(stmt->operand) == loop_unique_.end()) {
+        // This decoration exists IFF we are looping over NDArray (or any other cases where the array index is linearized by the codegen)
+        // In that case the original loop dimensions have been reduced to 1D.
         loop_unique_[stmt->operand] = stmt->decoration[1];
         num_different_loop_indices = std::max(loop_unique_[stmt->operand] + 1,
                                               num_different_loop_indices);
@@ -97,7 +99,7 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
     }
   }
 
-  bool is_loop_unique(Stmt *stmt) const {
+  bool is_partially_loop_unique(Stmt *stmt) const {
     return loop_unique_.find(stmt) != loop_unique_.end();
   }
 
@@ -253,6 +255,10 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
            * e.g. a[i, j, 1] and a[i, j, 2] are both uniquely accessed
            *      a[i, j, 1] and a[j, i, 2] are not uniquely accessed
            *      a[i, j + 1, 1] and a[i, j, 2] are not uniquely accessed
+           * This is a bit stricter than needed.
+           * e.g. a[i, j, i] and a[i, j, 0] are uniquely accessed
+           * However this is probably not common and improvements can be made
+           * in a future patch.
            */
           if (accessed_ptr->second) {
             ExternalPtrStmt *other_ptr = accessed_ptr->second;
@@ -263,7 +269,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
               // We only compare unique indices here.
               // Since both pointers are loop-unique, all the unique indices
               // need to be the same for both to be uniquely accessed
-              if (loop_unique_stmt_searcher_.is_loop_unique(this_index)) {
+              if (loop_unique_stmt_searcher_.is_partially_loop_unique(this_index)) {
                 if (!irpass::analysis::same_value(this_index, other_index)) {
                   // Not equal -> not uniquely accessed
                   accessed_arr_pointer_[arg_id] = nullptr;

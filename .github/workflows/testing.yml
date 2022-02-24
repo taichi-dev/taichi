@@ -412,6 +412,7 @@ jobs:
           TI_WANTED_ARCHS: cpu,cuda,opengl
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
+          PYTHON: "3.7"
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -445,12 +446,12 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           CXX: clang++
 
       - name: Test
@@ -458,9 +459,9 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           GPU_TEST: ON

@@ -326,7 +326,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.2 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -351,7 +351,7 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.2 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/

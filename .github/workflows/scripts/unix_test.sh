@@ -20,6 +20,9 @@ fi
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
+    if [[ $PY != *"3.10"* ]]; then
+        python3 -m pip install torch
+    fi
 else
     ## Only GPU machine uses system python.
     export PATH=$PATH:$HOME/.local/bin

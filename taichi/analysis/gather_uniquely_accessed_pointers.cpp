@@ -64,8 +64,9 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
         stmt->decoration[0] ==
             uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
       if (loop_unique_.find(stmt->operand) == loop_unique_.end()) {
-        // This decoration exists IFF we are looping over NDArray (or any other cases where the array index is linearized by the codegen)
-        // In that case the original loop dimensions have been reduced to 1D.
+        // This decoration exists IFF we are looping over NDArray (or any other
+        // cases where the array index is linearized by the codegen) In that
+        // case the original loop dimensions have been reduced to 1D.
         loop_unique_[stmt->operand] = stmt->decoration[1];
         num_different_loop_indices = std::max(loop_unique_[stmt->operand] + 1,
                                               num_different_loop_indices);
@@ -269,7 +270,8 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
               // We only compare unique indices here.
               // Since both pointers are loop-unique, all the unique indices
               // need to be the same for both to be uniquely accessed
-              if (loop_unique_stmt_searcher_.is_partially_loop_unique(this_index)) {
+              if (loop_unique_stmt_searcher_.is_partially_loop_unique(
+                      this_index)) {
                 if (!irpass::analysis::same_value(this_index, other_index)) {
                   // Not equal -> not uniquely accessed
                   accessed_arr_pointer_[arg_id] = nullptr;

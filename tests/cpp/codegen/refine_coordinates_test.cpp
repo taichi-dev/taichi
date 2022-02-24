@@ -7,12 +7,12 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/BasicBlock.h"
 
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
+#include "taichi/ir/snode.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
 #include "taichi/struct/struct_llvm.h"
-#include "taichi/ir/snode.h"
-#include "taichi/program/compile_config.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
 
 namespace taichi {
 

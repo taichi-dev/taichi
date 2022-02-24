@@ -22,13 +22,13 @@ class Expr {
     atomic = false;
   }
 
-  Expr(int32 x);
+  explicit Expr(int32 x);
 
-  Expr(int64 x);
+  explicit Expr(int64 x);
 
-  Expr(float32 x);
+  explicit Expr(float32 x);
 
-  Expr(float64 x);
+  explicit Expr(float64 x);
 
   Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;
@@ -45,7 +45,7 @@ class Expr {
     atomic = o.atomic;
   }
 
-  Expr(const Identifier &id);
+  explicit Expr(const Identifier &id);
 
   void set(const Expr &o) {
     expr = o.expr;

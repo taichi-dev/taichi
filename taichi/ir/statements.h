@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -295,9 +295,18 @@ class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
   std::vector<Stmt *> indices;
+  std::vector<int> element_shape;
+  // AOS: element_dim < 0
+  // SOA: element_dim > 0
+  int element_dim;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices);
+
+  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                  const std::vector<Stmt *> &indices,
+                  const std::vector<int> &element_shape,
+                  int element_dim);
 
   bool has_global_side_effect() const override {
     return false;

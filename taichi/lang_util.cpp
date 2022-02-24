@@ -3,7 +3,7 @@
 #include "taichi/lang_util.h"
 
 #include "taichi/math/linalg.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"

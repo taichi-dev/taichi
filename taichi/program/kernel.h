@@ -3,7 +3,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/ndarray.h"
 

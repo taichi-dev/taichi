@@ -398,16 +398,7 @@ class KernelGen : public IRVisitor {
          stmt->input_index->short_name(), stmt->snode->node_type_name);
 
     if (stmt->activate) {
-      if (stmt->snode->type == SNodeType::dense) {
-        // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
-             get_snode_meta_address(stmt->snode),
-             stmt->input_index->short_name());
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
+      TI_ASSERT(stmt->snode->type == SNodeType::dense);
     }
   }
 
@@ -421,10 +412,6 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
-             get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -433,10 +420,6 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         // do nothing
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("_data_i32_[{} >> 2] = 0; // dynamic deactivate",
-             get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -446,38 +429,9 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        used.int32 = true;
-        emit("int {} = int({} < _data_i32_[{} >> 2]);", stmt->short_name(),
-             stmt->val->short_name(), get_snode_meta_address(stmt->snode));
       } else {
         TI_NOT_IMPLEMENTED
       }
-
-    } else if (stmt->op_type == SNodeOpType::append) {
-      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-      used.int32 = true;
-      emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
-           get_snode_meta_address(stmt->snode));
-      auto dt = stmt->val->element_type();
-      emit("int _ad_{} = {} + {} * {};", stmt->short_name(),
-           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
-               .mem_offset_in_root,
-           stmt->short_name(),
-           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
-               .elem_stride);
-      emit("_data_{}_[_ad_{} >> {}] = {};", opengl_data_type_short_name(dt),
-           stmt->short_name(), opengl_data_address_shifter(dt),
-           stmt->val->short_name());
-
-    } else if (stmt->op_type == SNodeOpType::length) {
-      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-      used.int32 = true;
-      emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
-           get_snode_meta_address(stmt->snode));
-
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -529,8 +483,50 @@ class KernelGen : public IRVisitor {
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     const int num_indices = stmt->indices.size();
+    auto element_shape = stmt->element_shape;
     std::vector<std::string> size_var_names;
-    for (int i = 0; i < num_indices; i++) {
+    std::vector<std::string> element_shape_size_var_names;
+    enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
+    auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
+
+    if (element_shape.size() > 0) {
+      int elem_beg = 0;
+      int elem_end = 0;
+      if (layout == layout_SOA) {
+        elem_beg = 0;
+        elem_end = element_shape.size();
+      } else {
+        elem_beg = num_indices - element_shape.size();
+        elem_end = num_indices;
+      }
+      for (int i = elem_beg; i < elem_end; i++) {
+        used.int32 = true;
+        std::string var_name = fmt::format("_s{}_{}{}", i, "arr", arg_id);
+        if (!loaded_args_.count(var_name)) {
+          emit("int {} = {};", var_name, element_shape[i - elem_beg]);
+          loaded_args_.insert(var_name);
+        }
+        element_shape_size_var_names.push_back(std::move(var_name));
+      }
+    }
+    // Args buffer arrange dimensions from outer to inner
+    // AoS args buffer:   array_shape|element_shape
+    // SoA args buffer: element_shape|array_shape
+    //
+    // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.AOS)
+    // args buffer: 5, 4, 3, 2
+    // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.SOA)
+    // args buffer: 3, 2, 5, 4
+    int ind_beg = 0;
+    int ind_end = 0;
+    if (layout == layout_SOA) {
+      ind_beg = element_shape.size();
+      ind_end = num_indices;
+    } else {
+      ind_beg = 0;
+      ind_end = num_indices - element_shape.size();
+    }
+    for (int i = ind_beg; i < ind_end; i++) {
       used.buf_args = true;
       used.int32 = true;
       std::string var_name = fmt::format("_s{}_{}{}", i, "arr", arg_id);
@@ -542,6 +538,16 @@ class KernelGen : public IRVisitor {
         loaded_args_.insert(var_name);
       }
       size_var_names.push_back(std::move(var_name));
+    }
+    // Arrange index stride and offsets in correct order
+    if (layout == layout_SOA) {
+      size_var_names.insert(size_var_names.begin(),
+                            element_shape_size_var_names.begin(),
+                            element_shape_size_var_names.end());
+    } else {
+      size_var_names.insert(size_var_names.end(),
+                            element_shape_size_var_names.begin(),
+                            element_shape_size_var_names.end());
     }
 
     emit("int {} = {};", linear_index_name,
@@ -1066,14 +1072,6 @@ class KernelGen : public IRVisitor {
     used_tls_ = false;
 
     emit("}}\n");
-  }
-
-  size_t get_snode_meta_address(const SNode *snode) {
-    auto addr = struct_compiled_->snode_map.at(snode->node_type_name)
-                    .mem_offset_in_root;
-    addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
-    addr -= opengl_get_snode_meta_size(*snode);
-    return addr;
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

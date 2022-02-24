@@ -3,6 +3,7 @@ import functools
 import os
 import shutil
 import tempfile
+import warnings
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
@@ -15,6 +16,8 @@ from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
+
+warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
 i = axes(0)
 j = axes(1)
@@ -330,7 +333,7 @@ def init(arch=None,
 
     # user selected visible device
     visible_device = os.environ.get("TI_VISIBLE_DEVICE")
-    if visible_device and cfg.arch == vulkan:
+    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
         _ti_core.set_vulkan_visible_device(visible_device)
 
     if _test_mode:

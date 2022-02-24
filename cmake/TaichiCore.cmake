@@ -332,6 +332,12 @@ if (TI_WITH_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 endif()
 
+if (TI_WITH_DX11)
+    set(SPIRV_CROSS_CLI false)
+    #target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-hlsl spirv-cross-core)
+endif()
+
 # SPIR-V codegen is always there, regardless of Vulkan
 set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)

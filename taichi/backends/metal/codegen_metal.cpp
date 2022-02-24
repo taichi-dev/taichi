@@ -501,6 +501,9 @@ class KernelCodegenImpl : public IRVisitor {
     }
   }
 
+  void visit(DecorationStmt *stmt) override {
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::cast_value) {
       emit("const {} {} = static_cast<{}>({});",

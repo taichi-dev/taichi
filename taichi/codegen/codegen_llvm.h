@@ -172,6 +172,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
 
+  void visit(DecorationStmt *stmt) override;
+
   void visit(UnaryOpStmt *stmt) override;
 
   void visit(BinaryOpStmt *stmt) override;

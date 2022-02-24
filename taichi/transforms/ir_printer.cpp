@@ -187,6 +187,18 @@ class IRPrinter : public IRVisitor {
     print("{}{} = rand()", stmt->type_hint(), stmt->name());
   }
 
+  void visit(DecorationStmt *stmt) override {
+    if (stmt->decoration.size() == 2 &&
+        stmt->decoration[0] ==
+            uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
+      print("decorate {} : Loop-unique {}", stmt->operand->name(),
+            stmt->decoration[0], stmt->decoration[1]);
+    } else {
+      print("decorate {} : ... size = {}", stmt->operand->name(),
+            stmt->decoration.size());
+    }
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->is_cast()) {
       std::string reint =

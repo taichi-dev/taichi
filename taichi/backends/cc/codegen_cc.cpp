@@ -348,6 +348,9 @@ class CCTransformer : public IRVisitor {
     }
   }
 
+  void visit(DecorationStmt *stmt) override {
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt_name = cc_data_type_name(stmt->element_type());

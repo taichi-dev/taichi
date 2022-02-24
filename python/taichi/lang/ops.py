@@ -682,8 +682,13 @@ def sub(x1, x2):
 def mul(x1, x2):
     """Multiply arguments element-wise.
 
-    Do not confuse this with the matrix multiplication `x1 @ x2` if
-    both `x1` and `x2` are matrices.
+    When both `x1` and `x2` are matrices, they must have the same shape, and the
+    (i, j)-entry of the resulting martix is the product of the (i, j)-entries
+    in `x1` and `x2`.
+
+    Do not confuse this with the matrix multiplication `x1 @ x2`. In there the
+    (i, j)-entry of the resulting matrix is the dot product of the i-th row of
+    `x1` and the j-th column of `x2`.
 
     Args:
         x1, x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \

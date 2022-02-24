@@ -37,10 +37,10 @@ def randn(dt=None):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     print(ti.randn())
         >>>
-        >>> main()
+        >>> test()
         -0.463608
     """
     if dt is None:

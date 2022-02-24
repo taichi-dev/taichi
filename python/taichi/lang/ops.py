@@ -137,12 +137,12 @@ def cast(obj, dtype):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([0, 1, 2], ti.i32)
         >>>     y = ti.cast(x, ti.f32)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [0.0, 1.0, 2.0]
     """
     dtype = cook_dtype(dtype)
@@ -171,7 +171,7 @@ def bit_cast(obj, dtype):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = 3.14
         >>>     y = ti.bit_cast(x, ti.i32)
         >>>     print(y)
@@ -388,13 +388,13 @@ def floor(x):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
-        >>>     x = ti.Matrix([3.14, 1.5])
+        >>> def test():
+        >>>     x = ti.Matrix([3.14, -1.5])
         >>>     y = ti.floor(x)
         >>>     print(y)
         >>>
-        >>> main()
-        [3.0, 1.0]
+        >>> test()
+        [3.0, -2.0]
     """
     return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
@@ -415,12 +415,12 @@ def ceil(x):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([3.14, -1.5])
         >>>     y = ti.ceil(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [4.0, -1.0]
     """
     return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
@@ -443,12 +443,12 @@ def tan(x):
 
         >>> from math import pi
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([-pi, pi/2, pi])
         >>>     y = ti.tan(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [-0.0, -22877334.0, 0.0]
     """
     return _unary_operation(_ti_core.expr_tan, math.tan, x)
@@ -468,12 +468,12 @@ def tanh(x):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
         >>>     y = ti.tanh(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [-0.761594, 0.000000, 0.761594]
     """
     return _unary_operation(_ti_core.expr_tanh, math.tanh, x)
@@ -493,12 +493,12 @@ def exp(x):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
         >>>     y = ti.exp(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [0.367879, 1.000000, 2.718282]
     """
     return _unary_operation(_ti_core.expr_exp, math.exp, x)
@@ -521,12 +521,12 @@ def log(x):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Vector([-1.0, 0.0, 1.0])
         >>>     y = ti.log(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [-nan, -inf, 0.000000]
     """
     return _unary_operation(_ti_core.expr_log, math.log, x)
@@ -546,12 +546,12 @@ def abs(x):  # pylint: disable=W0622
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Vector([-1.0, 0.0, 1.0])
         >>>     y = ti.abs(x)
         >>>     print(y)
         >>>
-        >>> main()
+        >>> test()
         [1.0, 0.0, 1.0]
     """
     return _unary_operation(_ti_core.expr_abs, builtins.abs, x)
@@ -601,22 +601,18 @@ def random(dtype=float):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.random(float)
-        >>>      print(x)
-        0.090257
+        >>>     print(x)  # 0.090257
         >>>
         >>>     y = ti.random(ti.f64)
-        >>>     print(y)
-        0.716101627301
+        >>>     print(y)  # 0.716101627301
         >>>
         >>>     i = ti.random(ti.i32)
-        >>>     print(i)
-        -963722261
+        >>>     print(i)  # -963722261
         >>>
         >>>     j = ti.random(ti.i64)
-        >>>     print(j)
-        73412986184350777
+        >>>     print(j)  # 73412986184350777
     """
     dtype = cook_dtype(dtype)
     x = expr.Expr(_ti_core.make_rand_expr(dtype))
@@ -632,7 +628,7 @@ def add(x1, x2):
 
     Args:
         x1, x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \
-            The arguments to be added. If both x1, x2 are matrices they must have the same shape. \
+            The arguments to be added. When both x1, x2 are matrices they must have the same shape. \
                 For a scalar and a matrix the scalar will be added element-wise with the matrix.
 
     Returns:
@@ -641,13 +637,13 @@ def add(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([0, 1, 2])
         >>>     y = ti.Matrix([1, 2, 3])
         >>>     z = ti.add(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [1, 3, 5]
     """
     return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, x1, x2)
@@ -660,8 +656,8 @@ def sub(x1, x2):
     Args:
         x1, x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \
             The arguments to be subtracted. If both x1, x2 are matrices they must have the \
-                same shape. For a scalar and a matrix the scalar will be applied element-wise \
-                    to the matrix.
+                same shape. For a scalar and a matrix the scalar will be automatically broadcasted \
+                    to a matrix with the same shape.
 
     Returns:
         Subtract `x1` by `x2`, i.e. `x1 - x2`, element-wise. This is a scalar if \
@@ -670,13 +666,13 @@ def sub(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([0, 1, 2])
         >>>     y = 3
         >>>     z = ti.sub(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         >>> [-3, -2, -1]
     """
     return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, x1, x2)
@@ -691,7 +687,7 @@ def mul(x1, x2):
 
     Args:
         x1, x2 (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): \
-            The arguments to be multiplied. If both `x1`, `x2` are matrices they must have the \
+            The arguments to be multiplied. When both `x1`, `x2` are matrices they must have the \
                 same shape.
 
     Returns:
@@ -700,13 +696,13 @@ def mul(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([0, 1, 2])
         >>>     y = ti.Matrix([-1, 0, 1])
         >>>     z = ti.mul(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [0, 0, 2]
     """
     return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, x1, x2)
@@ -733,13 +729,13 @@ def mod(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([3.0, 4.0, 5.0])
         >>>     y = 3
         >>>     z = ti.mod(y, x)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [1.0, 0.0, 4.0]
     """
     def expr_python_mod(a, b):
@@ -771,13 +767,13 @@ def pow(x1, x2):  # pylint: disable=W0622
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([-2.0, 0.0, 2.0])
         >>>     y = -2.2
         >>>     z = ti.pow(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [-nan, inf, 0.217638]
     """
     return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, x1, x2)
@@ -799,13 +795,13 @@ def floordiv(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([1.0, 2.0, 3.0])
         >>>     y = 1.5
         >>>     z = ti.floordiv(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [0.0, 1.0, 2.0]
     """
     return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, x1,
@@ -828,13 +824,13 @@ def truediv(x1, x2):
     Example::
 
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([1.0, 2.0, 3.0])
         >>>     y = 1.5
         >>>     z = ti.truediv(x, y)
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         >>> [0.666667, 1.333333, 2.000000]
     """
     return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, x1,
@@ -886,13 +882,13 @@ def atan2(x1, x2):
 
         >>> from math import pi
         >>> @ti.kernel
-        >>> def main():
+        >>> def test():
         >>>     x = ti.Matrix([-1.0, 1.0, -1.0, 1.0])
         >>>     y = ti.Matrix([-1.0, -1.0, 1.0, 1.0])
         >>>     z = ti.atan2(y, x) * 180 / pi
         >>>     print(z)
         >>>
-        >>> main()
+        >>> test()
         [-135.0, -45.0, 135.0, 45.0]
     """
     return _binary_operation(_ti_core.expr_atan2, math.atan2, x1, x2)

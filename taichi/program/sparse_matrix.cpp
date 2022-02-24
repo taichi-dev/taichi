@@ -10,8 +10,12 @@ namespace lang {
 
 SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
-                                         int max_num_triplets)
-    : rows_(rows), cols_(cols), max_num_triplets_(max_num_triplets) {
+                                         int max_num_triplets,
+                                         DataType dtype)
+    : rows_(rows),
+      cols_(cols),
+      max_num_triplets_(max_num_triplets),
+      dtype_(dtype) {
   data_.reserve(max_num_triplets * 3);
   data_base_ptr_ = get_data_base_ptr();
 }

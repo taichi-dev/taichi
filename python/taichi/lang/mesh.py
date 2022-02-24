@@ -297,10 +297,7 @@ class MeshInstance:
 
 
 class MeshMetadata:
-    def __init__(self, filename):
-        with open(filename, "r") as fi:
-            data = json.loads(fi.read())
-
+    def __init__(self, data):
         self.num_patches = data["num_patches"]
 
         self.element_fields = {}
@@ -451,7 +448,13 @@ class Mesh:
 
     @staticmethod
     def load_meta(filename):
-        return MeshMetadata(filename)
+        with open(filename, "r") as fi:
+            data = json.loads(fi.read())
+        return MeshMetadata(data)
+
+    @staticmethod
+    def generate_meta(data):
+        return MeshMetadata(data)
 
 
 def TriMesh():

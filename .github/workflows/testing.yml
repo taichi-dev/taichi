@@ -149,10 +149,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python: py36
-            with_cc: OFF
-            wanted_archs: "cpu"
-          - os: ubuntu-latest
             python: py39
             with_cc: ON
             wanted_archs: "cpu,cc"

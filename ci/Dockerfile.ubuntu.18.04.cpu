@@ -46,10 +46,11 @@ ENV PATH="/home/dev/miniconda/bin:$PATH"
 
 # Set up multi-python environment
 RUN conda init bash
-RUN conda create -n py36 python=3.6 -y
-RUN conda create -n py37 python=3.7 -y
-RUN conda create -n py38 python=3.8 -y
-RUN conda create -n py39 python=3.9 -y
+RUN conda create -n py36 python=3.6 pytorch -y
+RUN conda create -n py37 python=3.7 pytorch -y
+RUN conda create -n py38 python=3.8 pytorch -y
+RUN conda create -n py39 python=3.9 pytorch -y
+# TODO add torch to 3.10 when supported
 RUN conda create -n py310 python=3.10 -y
 
 WORKDIR /home/dev

@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from taichi.main import TaichiMain
+from taichi._main import TaichiMain
 
 import taichi as ti
 

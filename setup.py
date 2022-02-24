@@ -273,7 +273,7 @@ setup(name=project_name,
       include_package_data=True,
       entry_points={
           'console_scripts': [
-              'ti=taichi.main:main',
+              'ti=taichi._main:main',
           ],
       },
       classifiers=classifiers,

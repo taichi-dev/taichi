@@ -58,6 +58,10 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     aa.dt = ka.dt;
     const size_t dt_bytes = data_type_size(aa.dt);
     aa.is_array = ka.is_array;
+    if (aa.is_array) {
+      aa.field_dim = ka.total_dim - ka.element_shape.size();
+      aa.element_shape = ka.element_shape;
+    }
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(aa);

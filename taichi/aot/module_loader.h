@@ -56,7 +56,10 @@ class AotModuleLoader {
       const std::string &name) = 0;
 
  private:
-  std::unordered_map<std::string, std::unique_ptr<AotKernel>> loaded_kernels_;
+  // For some unknown reason, storing std::unique_ptr<AotKernel> in the map
+  // doesn't work on MSVC.
+  std::unordered_map<std::string, AotKernel *> loaded_kernels_;
+  std::vector<std::unique_ptr<AotKernel>> kernel_holders_;
 };
 
 // Only responsible for reporting device capabilities

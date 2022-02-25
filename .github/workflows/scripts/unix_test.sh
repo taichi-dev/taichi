@@ -20,7 +20,7 @@ fi
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
-    if [[ $PY != *"3.10"* || $PY != *"py310"* ]]; then
+    if [[ $PY != *"3.10"* && $PY != *"py310"* ]]; then
         python3 -m pip install torch
     fi
 else

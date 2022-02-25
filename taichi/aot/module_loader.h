@@ -28,7 +28,7 @@ class AotKernel {
    *
    * @param ctx Host context
    */
-  virtual void run(RuntimeContext *ctx) = 0;
+  virtual void launch(RuntimeContext *ctx) = 0;
 };
 
 class AotModuleLoader {

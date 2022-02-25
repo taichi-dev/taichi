@@ -18,7 +18,7 @@ class KernelImpl : public AotKernel {
       : runtime_(runtime), handle_(handle) {
   }
 
-  void run(RuntimeContext *ctx) override {
+  void launch(RuntimeContext *ctx) override {
     runtime_->launch_kernel(handle_, ctx);
   }
 

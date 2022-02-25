@@ -158,10 +158,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_ASSERT(body_type != nullptr);
 
   // Here we create a stub holding 4 LLVM types as struct members.
-  // The aim is to give a **unique** func_name to the stub, so that we can look
-  // up these types using this func_name. This decouples them from the LLVM
-  // context. Note that body_type might not have a unique func_name, since
-  // literal structs (such as {i32, i32}) cannot be aliased in LLVM.
+  // The aim is to give a **unique** name to the stub, so that we can look up
+  // these types using this name. This decouples them from the LLVM context.
+  // Note that body_type might not have a unique name, since literal structs
+  // (such as {i32, i32}) cannot be aliased in LLVM.
   auto stub = llvm::StructType::create(
       *ctx,
       {node_type, body_type, aux_type ? aux_type : llvm::Type::getInt8Ty(*ctx),

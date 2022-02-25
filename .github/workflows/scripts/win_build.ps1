@@ -1,4 +1,5 @@
 # Build script for windows
+$ErrorActionPreference = "Stop"
 
 param (
     [switch]$clone = $false,
@@ -75,6 +76,7 @@ python -m venv venv
 python -m pip install wheel
 python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
+if (-not $?) { exit 1 }
 WriteInfo("Building Taichi")
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$libsDir\\taichi_clang\\bin\\clang++.exe"
 $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$libsDir\\taichi_llvm\\bin\\llvm-as.exe"
@@ -84,6 +86,7 @@ if ($install) {
     } else {
         python setup.py install
     }
+    if (-not $?) { exit 1 }
     WriteInfo("Build and install finished")
 } else {
     if ($env:PROJECT_NAME -eq "taichi-nightly") {
@@ -91,6 +94,7 @@ if ($install) {
     } else {
         python setup.py bdist_wheel
     }
+    if (-not $?) { exit 1 }
     WriteInfo("Build finished")
 }
 ccache -s -v

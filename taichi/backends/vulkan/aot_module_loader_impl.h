@@ -13,6 +13,8 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
+class VkRuntime;
+
 class TI_DLL_EXPORT AotModuleLoaderImpl : public AotModuleLoader {
  public:
   explicit AotModuleLoaderImpl(const std::string &output_dir);
@@ -25,10 +27,12 @@ class TI_DLL_EXPORT AotModuleLoaderImpl : public AotModuleLoader {
   size_t get_root_size() const override;
 
  private:
+  std::unique_ptr<AotKernel> make_new_kernel(const std::string &name) override;
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,
                                       const TaskAttributes &k);
 
   TaichiAotData ti_aot_data_;
+  VkRuntime *runtime_{nullptr};
 };
 
 }  // namespace vulkan

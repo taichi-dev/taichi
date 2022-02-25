@@ -3,9 +3,30 @@
 #include <fstream>
 #include <type_traits>
 
+#include "taichi/backends/vulkan/runtime.h"
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
+namespace {
+
+using KernelHandle = VkRuntime::KernelHandle;
+
+class KernelImpl : public AotKernel {
+ public:
+  explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
+      : runtime_(runtime), handle_(handle) {
+  }
+
+  void run(RuntimeContext *ctx) override {
+    runtime_->launch_kernel(handle_, ctx);
+  }
+
+ private:
+  VkRuntime *const runtime_;
+  const KernelHandle handle_;
+};
+}  // namespace
 
 AotModuleLoaderImpl::AotModuleLoaderImpl(const std::string &output_dir) {
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
@@ -53,6 +74,17 @@ bool AotModuleLoaderImpl::get_kernel(const std::string &name,
   }
 
   return false;
+}
+
+std::unique_ptr<AotKernel> AotModuleLoaderImpl::make_new_kernel(
+    const std::string &name) {
+  VkRuntime::RegisterParams kparams;
+  if (!get_kernel(name, kparams)) {
+    TI_DEBUG("Failed to load kernel {}", name);
+    return nullptr;
+  }
+  auto handle = runtime_->register_taichi_kernel(kparams);
+  return std::make_unique<KernelImpl>(runtime_, handle);
 }
 
 bool AotModuleLoaderImpl::get_field(const std::string &name,

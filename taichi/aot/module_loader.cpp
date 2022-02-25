@@ -10,7 +10,7 @@ AotKernel *AotModuleLoader::get_kernel(const std::string &name) {
   }
   auto k = make_new_kernel(name);
   auto *kptr = k.get();
-  loaded_kernels_.insert(std::make_pair(name, std::move(k)));
+  loaded_kernels_[name] = std::move(k);
   return kptr;
 }
 

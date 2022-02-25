@@ -2,10 +2,10 @@
 $ErrorActionPreference = "Stop"
 
 param (
-    [switch]$clone = $false,
-    [switch]$installVulkan = $false,
-    [switch]$develop = $false,
-    [switch]$installTaichi = $false,
+    [switch]$clone,
+    [switch]$installVulkan,
+    [switch]$develop,
+    [switch]$installTaichi,
     [string]$libsDir = "."
 )
 

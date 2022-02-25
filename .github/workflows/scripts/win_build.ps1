@@ -1,13 +1,14 @@
 # Build script for windows
-$ErrorActionPreference = "Stop"
 
 param (
-    [switch]$clone,
-    [switch]$installVulkan,
-    [switch]$develop,
-    [switch]$installTaichi,
+    [switch]$clone = $false,
+    [switch]$installVulkan = $false,
+    [switch]$develop = $false,
+    [switch]$install = $false,
     [string]$libsDir = "."
 )
+
+$ErrorActionPreference = "Stop"
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'
 
@@ -80,7 +81,7 @@ if (-not $?) { exit 1 }
 WriteInfo("Building Taichi")
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$libsDir\\taichi_clang\\bin\\clang++.exe"
 $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$libsDir\\taichi_llvm\\bin\\llvm-as.exe"
-if ($installTaichi) {
+if ($install) {
     if ($develop) {
         python setup.py develop
     } else {

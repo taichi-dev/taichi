@@ -135,10 +135,6 @@ def main(all=False, diff=None):
         if re.match(r'.*examples\/[a-z_]+\d\d+\.py$', fn):
             print(f'Skipping example file "{fn}"...')
             continue
-        if fn.find(os.path.join(
-                'tests', 'python38')) != -1 and sys.version_info < (3, 8):
-            print(f'Skipping "{fn}"...')
-            continue
         if not format_file(fn):
             print(f'Skipping "{fn}"...')
 

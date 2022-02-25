@@ -12,6 +12,8 @@ concurrency:
 jobs:
   check_files:
     name: Check files
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     outputs:
       run_job: ${{ steps.check_files.outputs.run_job }}
     runs-on: ubuntu-latest

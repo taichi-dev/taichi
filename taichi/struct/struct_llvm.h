@@ -28,6 +28,9 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
 
   void run(SNode &node) override;
 
+  llvm::Function *create_function(llvm::FunctionType *ft,
+                                  std::string func_name);
+
   void generate_refine_coordinates(SNode *snode);
 
   static std::string type_stub_name(SNode *snode);

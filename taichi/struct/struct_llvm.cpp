@@ -173,9 +173,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   // so that the type is referenced in the module
   std::string func_name = type_stub_name(&snode) + "_func";
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
-  llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
-                         module.get());
-  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+  create_function(ft, func_name);
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -189,9 +187,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       false);
 
   std::string func_name = snode->refine_coordinates_func_name();
-  auto func = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                                     func_name, *module);
-  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+  auto func = create_function(ft, func_name);
 
   auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -266,10 +262,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
     std::string func_name = snode.get_ch_from_parent_func_name();
-    auto func = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                                       func_name, *module);
-
-    tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+    auto func = create_function(ft, func_name);
 
     auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -360,6 +353,13 @@ llvm::Type *StructCompilerLLVM::get_llvm_aux_type(llvm::Module *module,
 llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
                                                       SNode *snode) {
   return get_stub(module, snode, 3);
+}
+
+llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
+                                                    std::string func_name) {
+  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+  return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
+                                *module);
 }
 
 }  // namespace lang

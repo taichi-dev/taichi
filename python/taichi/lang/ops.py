@@ -126,7 +126,7 @@ def cast(obj, dtype):
     Must be called in Taichi scope.
 
     Args:
-        obj (Union[:class:`~taichi.Matrix`]): \
+        obj (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.lang.matrix.Matrix`]): \
             Input scalar or matrix.
 
         dtype (:mod:`~taichi.types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.

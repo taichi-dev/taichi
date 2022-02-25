@@ -43,9 +43,9 @@ class AotModuleLoader {
 
   /**
    * @brief Get the kernel object
-   * 
+   *
    * @param name Name of the kernel
-   * @return AotKernel* 
+   * @return AotKernel*
    */
   AotKernel *get_kernel(const std::string &name);
 

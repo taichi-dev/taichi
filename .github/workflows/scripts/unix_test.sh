@@ -42,17 +42,29 @@ else
         python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a cuda
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a cpu
+        if [[ $ARCH == *"m1"* ]]; then
+            python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a cpu
+	else
+            python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a cpu
+	fi
     fi
     if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a vulkan
+        if [[ $ARCH == *"m1"* ]]; then
+            python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a vulkan
+	else
+            python3 tests/run_tests.py -vr2 -t8 -k "not torch" -a vulkan
+	fi
     fi
     if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
         python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a opengl
     fi
     # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
     if [[ $TI_WANTED_ARCHS == *"metal"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a metal
+        if [[ $ARCH == *"m1"* ]]; then
+            python3 tests/run_tests.py -vr2 -t2 -k "not torch" -a metal
+	else
+            python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a metal
+	fi
     fi
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
 fi

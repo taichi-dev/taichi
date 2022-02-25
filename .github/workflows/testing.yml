@@ -399,7 +399,7 @@ jobs:
           if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
             exit 0
           }
-          .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -installTaichi -libsDir C:\
 
       - name: Test
         shell: powershell

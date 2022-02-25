@@ -15,7 +15,7 @@ class AotModuleLoader {
  public:
   virtual ~AotModuleLoader() = default;
 
-  // @TODO: Add method get_kernel(...) once the kernel field data will be
+  // TODO: Add method get_kernel(...) once the kernel field data will be
   // generic/common across all backends.
 
   virtual bool get_field(const std::string &name,

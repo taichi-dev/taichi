@@ -5,10 +5,10 @@ from tests import test_utils
 @test_utils.test()
 def test_arch():
     @ti.kernel
-    def func() -> ti.types.matrix(2, 3, ti.i32):
-        return ti.Matrix([[1, 2, 3], [4, 5, 6]])
+    def func() -> ti.types.vector(3, ti.i32):
+        return ti.Vector([1, 2, 3])
 
-    assert func()[1, 2] == 6
+    assert func()[1] == 2
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])

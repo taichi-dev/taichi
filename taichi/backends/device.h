@@ -53,7 +53,7 @@ struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
-struct DeviceAllocation {
+struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
   uint32_t alloc_id{0};
 
@@ -68,14 +68,14 @@ struct DeviceAllocation {
   }
 };
 
-struct DeviceAllocationGuard : public DeviceAllocation {
+struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
   DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
   DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
   ~DeviceAllocationGuard();
 };
 
-struct DevicePtr : public DeviceAllocation {
+struct TI_DLL_EXPORT DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
   bool operator==(const DevicePtr &other) const {

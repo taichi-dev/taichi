@@ -171,9 +171,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   // Create a dummy function in the module with the type stub as return type
   // so that the type is referenced in the module
-  std::string func_name = type_stub_name(&snode) + "_func";
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
-  create_function(ft, func_name);
+  create_function(ft, type_stub_name(&snode) + "_func");
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -186,8 +185,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx_)},
       false);
 
-  std::string func_name = snode->refine_coordinates_func_name();
-  auto func = create_function(ft, func_name);
+  auto func = create_function(ft, snode->refine_coordinates_func_name());
 
   auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -261,8 +259,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
-    std::string func_name = snode.get_ch_from_parent_func_name();
-    auto func = create_function(ft, func_name);
+    auto func = create_function(ft, snode.get_ch_from_parent_func_name());
 
     auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 

@@ -104,12 +104,12 @@ class TI_DLL_EXPORT VkRuntime {
 
   Device *get_ti_device() const;
 
+  void add_root_buffer(size_t root_buffer_size);
+
  private:
   friend class taichi::lang::vulkan::SNodeTreeManager;
 
   void init_nonroot_buffers();
-
-  void add_root_buffer(size_t root_buffer_size);
 
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;

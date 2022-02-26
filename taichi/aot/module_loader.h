@@ -19,6 +19,7 @@ class RuntimeContext;
 // the `aot` namespace.
 class TI_DLL_EXPORT AotKernel {
  public:
+  // Rule of 5 to make MSVC happy
   AotKernel() = default;
   virtual ~AotKernel() = default;
   AotKernel(const AotKernel &) = delete;
@@ -38,6 +39,7 @@ class TI_DLL_EXPORT AotKernel {
 
 class TI_DLL_EXPORT AotModuleLoader {
  public:
+  // Rule of 5 to make MSVC happy
   AotModuleLoader() = default;
   virtual ~AotModuleLoader() = default;
   AotModuleLoader(const AotModuleLoader &) = delete;
@@ -66,10 +68,7 @@ class TI_DLL_EXPORT AotModuleLoader {
       const std::string &name) = 0;
 
  private:
-  // For some unknown reason, storing std::unique_ptr<AotKernel> in the map
-  // doesn't work on MSVC.
-  std::unordered_map<std::string, AotKernel *> loaded_kernels_;
-  std::vector<std::unique_ptr<AotKernel>> kernel_holders_;
+  std::unordered_map<std::string, std::unique_ptr<AotKernel>> loaded_kernels_;
 };
 
 // Only responsible for reporting device capabilities

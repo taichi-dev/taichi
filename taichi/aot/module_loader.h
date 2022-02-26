@@ -17,7 +17,7 @@ class RuntimeContext;
 
 // TODO: Instead of prefixing all these classes with "Aot", just put them into
 // the `aot` namespace.
-class AotKernel {
+class TI_DLL_EXPORT AotKernel {
  public:
   virtual ~AotKernel() = default;
 
@@ -31,9 +31,13 @@ class AotKernel {
   virtual void launch(RuntimeContext *ctx) = 0;
 };
 
-class AotModuleLoader {
+class TI_DLL_EXPORT AotModuleLoader {
  public:
   virtual ~AotModuleLoader() = default;
+  AotModuleLoader(const AotModuleLoader&) = delete;
+  AotModuleLoader& operator=(const AotModuleLoader&) = delete;
+  AotModuleLoader(AotModuleLoader&&) = default;
+  AotModuleLoader& operator=(AotModuleLoader&&) = default;
 
   // TODO: Add method get_kernel(...) once the kernel field data will be
   // generic/common across all backends.

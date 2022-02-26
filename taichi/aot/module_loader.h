@@ -19,6 +19,7 @@ class RuntimeContext;
 // the `aot` namespace.
 class TI_DLL_EXPORT AotKernel {
  public:
+  AotKernel() = default;
   virtual ~AotKernel() = default;
   AotKernel(const AotKernel &) = delete;
   AotKernel &operator=(const AotKernel &) = delete;
@@ -37,6 +38,7 @@ class TI_DLL_EXPORT AotKernel {
 
 class TI_DLL_EXPORT AotModuleLoader {
  public:
+  AotModuleLoader() = default;
   virtual ~AotModuleLoader() = default;
   AotModuleLoader(const AotModuleLoader &) = delete;
   AotModuleLoader &operator=(const AotModuleLoader &) = delete;

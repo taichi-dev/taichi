@@ -20,6 +20,10 @@ class RuntimeContext;
 class TI_DLL_EXPORT AotKernel {
  public:
   virtual ~AotKernel() = default;
+  AotKernel(const AotKernel &) = delete;
+  AotKernel &operator=(const AotKernel &) = delete;
+  AotKernel(AotKernel &&) = default;
+  AotKernel &operator=(AotKernel &&) = default;
 
   /**
    * @brief Launches the kernel to the device
@@ -34,10 +38,10 @@ class TI_DLL_EXPORT AotKernel {
 class TI_DLL_EXPORT AotModuleLoader {
  public:
   virtual ~AotModuleLoader() = default;
-  AotModuleLoader(const AotModuleLoader&) = delete;
-  AotModuleLoader& operator=(const AotModuleLoader&) = delete;
-  AotModuleLoader(AotModuleLoader&&) = default;
-  AotModuleLoader& operator=(AotModuleLoader&&) = default;
+  AotModuleLoader(const AotModuleLoader &) = delete;
+  AotModuleLoader &operator=(const AotModuleLoader &) = delete;
+  AotModuleLoader(AotModuleLoader &&) = default;
+  AotModuleLoader &operator=(AotModuleLoader &&) = default;
 
   // TODO: Add method get_kernel(...) once the kernel field data will be
   // generic/common across all backends.

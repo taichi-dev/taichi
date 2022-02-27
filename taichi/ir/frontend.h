@@ -29,13 +29,8 @@ Expr global_new(Expr id_expr, DataType dt);
 
 Expr global_new(DataType dt, std::string name = "");
 
-template <typename T>
-Expr Rand() {
-  return Expr::make<RandExpression>(get_data_type<T>());
-}
-
 template <typename... AX>
-std::vector<Axis> Axes(AX... axes) {
+std::vector<Axis> make_axes(AX... axes) {
   auto ax_vec = std::vector<int>({axes...});
   std::vector<Axis> ret;
   for (auto ax : ax_vec) {
@@ -44,59 +39,54 @@ std::vector<Axis> Axes(AX... axes) {
   return ret;
 }
 
-inline Expr Atomic(Expr dest) {
-  // NOTE: dest must be passed by value so that the original
-  // expr will not be modified into an atomic one.
-  dest.atomic = true;
-  return dest;
-}
-
 // expr_group are indices
-inline void Activate(ASTBuilder *ast_builder,
-                     SNode *snode,
-                     const ExprGroup &expr_group) {
-  ast_builder->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate,
-                                                      snode, expr_group));
+inline pStmt snode_activate(SNode *snode, const ExprGroup &expr_group) {
+  return Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
+                                         expr_group);
 }
 
-inline void Deactivate(ASTBuilder *ast_builder,
-                       SNode *snode,
-                       const ExprGroup &expr_group) {
-  ast_builder->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate,
-                                                      snode, expr_group));
+inline pStmt snode_deactivate(SNode *snode, const ExprGroup &expr_group) {
+  return Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
+                                         expr_group);
 }
 
-inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+inline Expr snode_append(SNode *snode,
+                         const ExprGroup &indices,
+                         const Expr &val) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
                                        val);
 }
 
-inline Expr Append(const Expr &expr,
-                   const ExprGroup &indices,
-                   const Expr &val) {
-  return Append(expr.snode(), indices, val);
+inline Expr snode_append(const Expr &expr,
+                         const ExprGroup &indices,
+                         const Expr &val) {
+  return snode_append(expr.snode(), indices, val);
 }
 
-inline Expr is_active(SNode *snode, const ExprGroup &indices) {
+inline Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
 }
 
-inline Expr Length(SNode *snode, const ExprGroup &indices) {
+inline Expr snode_length(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
 }
 
-inline Expr Length(const Expr &expr, const ExprGroup &indices) {
-  return Length(expr.snode(), indices);
+inline Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
 }
 
-inline Expr AssumeInRange(const Expr &expr,
-                          const Expr &base,
-                          int low,
-                          int high) {
+inline Expr snode_length(const Expr &expr, const ExprGroup &indices) {
+  return snode_length(expr.snode(), indices);
+}
+
+inline Expr assume_range(const Expr &expr,
+                         const Expr &base,
+                         int low,
+                         int high) {
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
-inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
+inline Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
   return Expr::make<LoopUniqueExpression>(input, covers);
 }
 TLANG_NAMESPACE_END

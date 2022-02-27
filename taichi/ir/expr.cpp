@@ -37,19 +37,6 @@ void Expr::type_check(CompileConfig *config) {
   expr->type_check(config);
 }
 
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
-                                         false_val);
-}
-
-Expr operator-(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
-}
-
-Expr operator~(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
-}
-
 Expr cast(const Expr &input, DataType dt) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
 }
@@ -93,6 +80,10 @@ void Expr::set_grad(const Expr &o) {
   this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
 
+Expr::Expr(int16 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i16, x);
+}
+
 Expr::Expr(int32 x) : Expr() {
   expr = std::make_shared<ConstExpression>(PrimitiveType::i32, x);
 }
@@ -113,4 +104,7 @@ Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
+Expr expr_rand(DataType dt) {
+  return Expr::make<RandExpression>(dt);
+}
 TLANG_NAMESPACE_END

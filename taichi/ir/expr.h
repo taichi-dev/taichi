@@ -22,6 +22,8 @@ class Expr {
     atomic = false;
   }
 
+  explicit Expr(int16 x);
+
   explicit Expr(int32 x);
 
   explicit Expr(int64 x);
@@ -86,8 +88,6 @@ class Expr {
 
   Expr operator!();
 
-  Expr eval() const;
-
   template <typename T, typename... Args>
   static Expr make(Args &&... args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
@@ -113,12 +113,6 @@ class Expr {
   void type_check(CompileConfig *config);
 };
 
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
-
-Expr operator-(const Expr &expr);
-
-Expr operator~(const Expr &expr);
-
 // Value cast
 Expr cast(const Expr &input, DataType dt);
 
@@ -134,4 +128,16 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
+// like Expr::Expr, but allows to explicitly specify the type
+template <typename T>
+Expr value(const T &val) {
+  return Expr(val);
+}
+
+Expr expr_rand(DataType dt);
+
+template <typename T>
+Expr expr_rand() {
+  return taichi::lang::expr_rand(get_data_type<T>());
+}
 TLANG_NAMESPACE_END

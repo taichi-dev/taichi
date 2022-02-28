@@ -8,7 +8,7 @@ def test_sparse_matrix_builder_deprecated_anno():
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+    def fill(Abuilder: ti.types.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
 

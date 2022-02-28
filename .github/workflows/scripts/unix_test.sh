@@ -59,8 +59,5 @@ else
     if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
         python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a opengl
     fi
-    if [[ $TI_WANTED_ARCHS == *"metal"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch" -a metal
-    fi
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
 fi

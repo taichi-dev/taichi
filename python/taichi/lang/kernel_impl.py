@@ -307,6 +307,8 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+        if isinstance(anno, sparse_matrix_builder):
+            return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
         return '#'
 

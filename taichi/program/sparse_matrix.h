@@ -14,6 +14,7 @@ class SparseMatrixBuilder {
  public:
   SparseMatrixBuilder(int rows, int cols, int max_num_triplets, DataType dtype);
 
+  ~SparseMatrixBuilder();
   void *get_data_base_ptr();
 
   void print_triplets();
@@ -24,8 +25,7 @@ class SparseMatrixBuilder {
 
  private:
   uint64 num_triplets_{0};
-  void *data_base_ptr_{nullptr};
-  std::vector<uint32> data_;
+  uint32 *data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};

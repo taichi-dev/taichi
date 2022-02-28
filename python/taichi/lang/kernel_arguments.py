@@ -10,10 +10,11 @@ from taichi.types.primitive_types import u64
 
 
 class SparseMatrixEntry:
-    def __init__(self, ptr, i, j):
+    def __init__(self, ptr, i, j, dtype):
         self.ptr = ptr
         self.i = i
         self.j = j
+        self.dtype = dtype
 
     def _augassign(self, value, op):
         if op == 'Add':
@@ -29,11 +30,12 @@ class SparseMatrixEntry:
 
 
 class SparseMatrixProxy:
-    def __init__(self, ptr):
+    def __init__(self, ptr, dtype):
         self.ptr = ptr
+        self.dtype = dtype
 
     def subscript(self, i, j):
-        return SparseMatrixEntry(self.ptr, i, j)
+        return SparseMatrixEntry(self.ptr, i, j, self.dtype)
 
 
 def decl_scalar_arg(dtype):
@@ -48,11 +50,13 @@ def decl_matrix_arg(matrixtype):
          for _ in range(matrixtype.n)])
 
 
-def decl_sparse_matrix():
+def decl_sparse_matrix(dtype):
+    value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
     arg_id = impl.get_runtime().prog.decl_arg(ptr_type, False)
-    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
+    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type),
+                             value_type)
 
 
 def decl_any_arr_arg(dtype, dim, element_shape, layout):

@@ -16,20 +16,29 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       cols_(cols),
       max_num_triplets_(max_num_triplets),
       dtype_(dtype) {
-  data_.reserve(max_num_triplets * 3);
-  data_base_ptr_ = get_data_base_ptr();
+  auto element_size = data_type_size(dtype);
+  data_base_ptr_ = new uint32[max_num_triplets_ * 3 * element_size];
+  if (data_base_ptr_ == nullptr) {
+    TI_ERROR("Failed to allocate memory for sparse matrix builder");
+  }
+}
+
+SparseMatrixBuilder::~SparseMatrixBuilder() {
+  // TODO: why this genenerates an segment fault error?
+  // delete [] data_base_ptr_;
 }
 
 void *SparseMatrixBuilder::get_data_base_ptr() {
-  return data_.data();
+  return data_base_ptr_;
 }
 
 void SparseMatrixBuilder::print_triplets() {
   fmt::print("n={}, m={}, num_triplets={} (max={})", rows_, cols_,
              num_triplets_, max_num_triplets_);
   for (int64 i = 0; i < num_triplets_; i++) {
-    fmt::print("({}, {}) val={}", data_[i * 3], data_[i * 3 + 1],
-               taichi_union_cast<float32>(data_[i * 3 + 2]));
+    fmt::print("({}, {}) val={}", data_base_ptr_[i * 3],
+               data_base_ptr_[i * 3 + 1],
+               taichi_union_cast<float32>(data_base_ptr_[i * 3 + 2]));
   }
   fmt::print("\n");
 }
@@ -40,8 +49,9 @@ SparseMatrix SparseMatrixBuilder::build() {
   using T = Eigen::Triplet<float32>;
   std::vector<T> triplets;
   for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back(T(data_[i * 3], data_[i * 3 + 1],
-                         taichi_union_cast<float32>(data_[i * 3 + 2])));
+    triplets.push_back(
+        T(data_base_ptr_[i * 3], data_base_ptr_[i * 3 + 1],
+          taichi_union_cast<float32>(data_base_ptr_[i * 3 + 2])));
   }
   SparseMatrix sm(rows_, cols_);
   sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());

@@ -90,7 +90,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
-      bytes += dt_bytes;
+      bytes += attribs.stride;
       TI_TRACE(
           "  at={} {} offset_in_mem={} stride={}",
           (*vec)[i].is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,

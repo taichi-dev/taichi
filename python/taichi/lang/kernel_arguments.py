@@ -1,6 +1,6 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl
+from taichi.lang import impl, ops
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
@@ -17,14 +17,13 @@ class SparseMatrixEntry:
         self.dtype = dtype
 
     def _augassign(self, value, op):
+        call_func = f"insert_triplet_{self.dtype}"
         if op == 'Add':
-            taichi.lang.impl.call_internal("insert_triplet", self.ptr, self.i,
-                                           self.j,
-                                           taichi.lang.impl.ti_float(value))
+            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j,
+                                           ops.cast(value, self.dtype))
         elif op == 'Sub':
-            taichi.lang.impl.call_internal("insert_triplet", self.ptr, self.i,
-                                           self.j,
-                                           -taichi.lang.impl.ti_float(value))
+            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j,
+                                           -ops.cast(value, self.dtype))
         else:
             assert False, "Only operations '+=' and '-=' are supported on sparse matrices."
 

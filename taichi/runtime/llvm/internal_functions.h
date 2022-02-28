@@ -20,11 +20,11 @@ i32 refresh_counter(RuntimeContext *context) {
   return 0;
 }
 
-i32 insert_triplet(RuntimeContext *context,
-                   int64 base_ptr_,
-                   int i,
-                   int j,
-                   float value) {
+i32 insert_triplet_f32(RuntimeContext *context,
+                       int64 base_ptr_,
+                       int i,
+                       int j,
+                       float value) {
   auto base_ptr = (int64 *)base_ptr_;
 
   int64 *num_triplets = base_ptr;
@@ -34,6 +34,23 @@ i32 insert_triplet(RuntimeContext *context,
   data_base_ptr[triplet_id * 3] = i;
   data_base_ptr[triplet_id * 3 + 1] = j;
   data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int32>(value);
+  return 0;
+}
+
+i32 insert_triplet_f64(RuntimeContext *context,
+                       int64 base_ptr_,
+                       int i,
+                       int j,
+                       float64 value) {
+  auto base_ptr = (int64 *)base_ptr_;
+
+  int64 *num_triplets = base_ptr;
+  auto data_base_ptr = *(int64 **)(base_ptr + 1);
+
+  auto triplet_id = atomic_add_i64(num_triplets, 1);
+  data_base_ptr[triplet_id * 3] = i;
+  data_base_ptr[triplet_id * 3 + 1] = j;
+  data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int64>(value);
   return 0;
 }
 

@@ -466,4 +466,4 @@ jobs:
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
           PY: ${{ matrix.python }}
-          GPU_TEST: ON
+          PLATFORM: "m1"

@@ -32,7 +32,7 @@ float __wrap_exp2(float x) {
   return exp2(x);
 }
 __asm__(".symver log2,log2@GLIBC_2.2.5");
- float __wrap_log2(float x) {
+float __wrap_log2(float x) {
   return log2(x);
 }
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -44,15 +44,15 @@ float __wrap_powf(float x, float y) {
   return powf(x, y);
 }
 __asm__(".symver exp,exp@GLIBC_2.2.5");
- float __wrap_exp(float x) {
+float __wrap_exp(float x) {
   return exp(x);
 }
 __asm__(".symver log,log@GLIBC_2.2.5");
- float __wrap_log(float x) {
+float __wrap_log(float x) {
   return log(x);
 }
 __asm__(".symver pow,pow@GLIBC_2.2.5");
- float __wrap_pow(float x, float y) {
+float __wrap_pow(float x, float y) {
   return pow(x, y);
 }
 #endif

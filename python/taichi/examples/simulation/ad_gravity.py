@@ -43,10 +43,14 @@ def init():
         x[i] = [ti.random(), ti.random()]
 
 
-init()
-gui = ti.GUI('Autodiff gravity')
-while gui.running:
-    for i in range(50):
-        substep()
-    gui.circles(x.to_numpy(), radius=3)
-    gui.show()
+def main():
+    init()
+    gui = ti.GUI('Autodiff gravity')
+    while gui.running:
+        for i in range(50):
+            substep()
+        gui.circles(x.to_numpy(), radius=3)
+        gui.show()
+
+if __name__ == "__main__":
+    main()

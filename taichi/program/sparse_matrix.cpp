@@ -17,7 +17,8 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       max_num_triplets_(max_num_triplets),
       dtype_(dtype) {
   auto element_size = data_type_size(dtype);
-  data_base_ptr_ = new uint32[max_num_triplets_ * 3 * element_size];
+  TI_ASSERT((element_size == 4 || element_size == 8));
+  data_base_ptr_ = new uchar[max_num_triplets_ * 3 * element_size];
   if (data_base_ptr_ == nullptr) {
     TI_ERROR("Failed to allocate memory for sparse matrix builder");
   }
@@ -33,30 +34,56 @@ void *SparseMatrixBuilder::get_data_base_ptr() {
 }
 
 void SparseMatrixBuilder::print_triplets() {
-  fmt::print("n={}, m={}, num_triplets={} (max={})", rows_, cols_,
+  // TODO: simplify
+  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
              num_triplets_, max_num_triplets_);
-  for (int64 i = 0; i < num_triplets_; i++) {
-    fmt::print("({}, {}) val={}", data_base_ptr_[i * 3],
-               data_base_ptr_[i * 3 + 1],
-               taichi_union_cast<float32>(data_base_ptr_[i * 3 + 2]));
+  if (data_type_size(dtype_) == 4) {
+    float32 *data = (float32 *)data_base_ptr_;
+    for (int64 i = 0; i < num_triplets_; i++) {
+      fmt::print("({}, {}) val={}\n", ((int32 *)data)[i * 3],
+                 ((int32 *)data)[i * 3 + 1],
+                 taichi_union_cast<float32>(data[i * 3 + 2]));
+    }
+  } else if (data_type_size(dtype_) == 8) {
+    float64 *data = (float64 *)data_base_ptr_;
+    for (int64 i = 0; i < num_triplets_; i++) {
+      fmt::print("({}, {}) val={}\n", ((int64 *)data)[i * 3],
+                 ((int64 *)data)[i * 3 + 1],
+                 taichi_union_cast<float64>(data[i * 3 + 2]));
+    }
   }
   fmt::print("\n");
 }
 
 SparseMatrix SparseMatrixBuilder::build() {
+  // TODO: simplify
   TI_ASSERT(built_ == false);
   built_ = true;
-  using T = Eigen::Triplet<float32>;
-  std::vector<T> triplets;
-  for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back(
-        T(data_base_ptr_[i * 3], data_base_ptr_[i * 3 + 1],
-          taichi_union_cast<float32>(data_base_ptr_[i * 3 + 2])));
+  if (data_type_size(dtype_) == 4) {
+    using T = Eigen::Triplet<float32>;
+    std::vector<T> triplets;
+    float32 *data = (float32 *)data_base_ptr_;
+    for (int i = 0; i < num_triplets_; i++) {
+      triplets.push_back(T(((int32 *)data)[i * 3], ((int32 *)data)[i * 3 + 1],
+                           taichi_union_cast<float32>(data[i * 3 + 2])));
+    }
+    SparseMatrix sm(rows_, cols_);
+    sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
+    clear();
+    return sm;
+  } else {
+    using T = Eigen::Triplet<float64>;
+    std::vector<T> triplets;
+    float64 *data = (float64 *)data_base_ptr_;
+    for (int i = 0; i < num_triplets_; i++) {
+      triplets.push_back(T(((int64 *)data)[i * 3], ((int64 *)data)[i * 3 + 1],
+                           taichi_union_cast<float64>(data[i * 3 + 2])));
+    }
+    SparseMatrix sm(rows_, cols_);
+    sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
+    clear();
+    return sm;
   }
-  SparseMatrix sm(rows_, cols_);
-  sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
-  clear();
-  return sm;
 }
 
 void SparseMatrixBuilder::clear() {

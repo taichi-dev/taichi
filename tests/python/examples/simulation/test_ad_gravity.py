@@ -4,6 +4,7 @@ import taichi as ti
 
 FRAMES = 100
 
+
 def test_ad_gravity():
     from taichi.examples.simulation.ad_gravity import init, substep
 
@@ -12,9 +13,10 @@ def test_ad_gravity():
         for _ in range(50):
             substep()
 
+
 def video_ad_gravity(result_dir):
     import numpy as np
-    from taichi.examples.simulation.ad_gravity import x, init, substep
+    from taichi.examples.simulation.ad_gravity import init, substep, x
 
     video_manager = ti.tools.VideoManager(output_dir=result_dir,
                                           framerate=24,
@@ -29,6 +31,7 @@ def video_ad_gravity(result_dir):
         video_manager.write_frame(gui.get_image())
         gui.clear()
     video_manager.make_video(mp4=True, gif=False)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate ad_gravity video')

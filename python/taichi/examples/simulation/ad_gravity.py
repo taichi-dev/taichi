@@ -52,5 +52,6 @@ def main():
         gui.circles(x.to_numpy(), radius=3)
         gui.show()
 
+
 if __name__ == "__main__":
     main()

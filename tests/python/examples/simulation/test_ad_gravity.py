@@ -21,7 +21,7 @@ def video_ad_gravity(result_dir):
     video_manager = ti.tools.VideoManager(output_dir=result_dir,
                                           framerate=24,
                                           automatic_build=False)
-    
+
     gui = ti.GUI('Autodiff gravity', show_gui=False)
     init()
     for _ in range(FRAMES):

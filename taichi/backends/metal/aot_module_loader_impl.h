@@ -10,6 +10,8 @@ namespace taichi {
 namespace lang {
 namespace metal {
 
+class KernelManager;
+
 struct AotModuleParams {
   std::string module_path;
   KernelManager *runtime{nullptr};

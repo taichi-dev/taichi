@@ -1058,6 +1058,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
       llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
     }
+    std::cout << dest_bits << std::endl;
   }
 }
 
@@ -2381,23 +2382,22 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
 
 void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
-    std::vector<llvm::Type *> arg_types;
-    arg_types.reserve(stmt->func->args.size());
-    for (auto &tp: stmt->func->args) {
-      arg_types.push_back(llvm_type(tp.dt));
-    }
-    auto guard = get_function_creation_guard(arg_types);
+    auto guard = get_function_creation_guard({llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
-    std::cout << "added" << std::endl;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  std::vector<llvm::Value *> args;
-  args.reserve(stmt->args.size());
-  for (auto *s: stmt->args) {
-    args.push_back(llvm_val[s]);
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  call("RuntimeContext_set_runtime", new_ctx, get_runtime());
+  for (int i = 0; i < stmt->args.size(); i++) {
+    auto *original = llvm_val[stmt->args[i]];
+    int src_bits = original->getType()->getPrimitiveSizeInBits();
+    auto *cast = builder->CreateBitCast(original, llvm::Type::getIntNTy(*llvm_context, src_bits));
+    auto *val = builder->CreateZExt(cast, llvm::Type::getInt64Ty(*llvm_context));
+    call("RuntimeContext_set_args", new_ctx, llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
   }
-  llvm_val[stmt] = builder->CreateCall(llvm_func, args);
+
+  llvm_val[stmt] = create_call(llvm_func, {new_ctx});
 }
 
 TLANG_NAMESPACE_END

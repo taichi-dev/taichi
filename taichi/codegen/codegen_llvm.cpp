@@ -1058,7 +1058,6 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
       llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
     }
-    std::cout << dest_bits << std::endl;
   }
 }
 
@@ -2382,7 +2381,8 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
 
 void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
-    auto guard = get_function_creation_guard({llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+    auto guard = get_function_creation_guard(
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
   }
@@ -2392,9 +2392,12 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   for (int i = 0; i < stmt->args.size(); i++) {
     auto *original = llvm_val[stmt->args[i]];
     int src_bits = original->getType()->getPrimitiveSizeInBits();
-    auto *cast = builder->CreateBitCast(original, llvm::Type::getIntNTy(*llvm_context, src_bits));
-    auto *val = builder->CreateZExt(cast, llvm::Type::getInt64Ty(*llvm_context));
-    call("RuntimeContext_set_args", new_ctx, llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
+    auto *cast = builder->CreateBitCast(
+        original, llvm::Type::getIntNTy(*llvm_context, src_bits));
+    auto *val =
+        builder->CreateZExt(cast, llvm::Type::getInt64Ty(*llvm_context));
+    call("RuntimeContext_set_args", new_ctx,
+         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
   }
 
   llvm_val[stmt] = create_call(llvm_func, {new_ctx});

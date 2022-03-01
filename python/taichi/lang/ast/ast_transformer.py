@@ -1082,7 +1082,8 @@ class ASTTransformer(Builder):
                 node.value,
                 ast.Call) or not impl.get_runtime().experimental_real_function:
             return None
-        is_taichi_function = getattr(node.value.func.ptr, '_is_taichi_function', False)
+        is_taichi_function = getattr(node.value.func.ptr,
+                                     '_is_taichi_function', False)
         if is_taichi_function:
             func_call_result = node.value.ptr
             ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)

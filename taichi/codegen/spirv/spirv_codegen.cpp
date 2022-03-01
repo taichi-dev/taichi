@@ -517,7 +517,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(ReturnStmt *stmt) override {
     // Now we only support one ret
-    auto dt = stmt -> element_types()[0];
+    auto dt = stmt->element_types()[0];
     for (int i = 0; i < stmt->values.size(); i++) {
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,

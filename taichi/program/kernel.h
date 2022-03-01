@@ -106,6 +106,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   void account_for_offloaded(OffloadedStmt *stmt);
 
+  uint64 get_next_task_id() {
+    return task_counter_++;
+  }
+
   [[nodiscard]] std::string get_name() const override;
   /**
    * Whether the given |arch| is supported in the lower() method.
@@ -129,6 +133,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // lower inital AST all the way down to a bunch of
   // OffloadedStmt for async execution
   bool lowered_{false};
+  std::atomic<uint64> task_counter_{0};
 };
 
 TLANG_NAMESPACE_END

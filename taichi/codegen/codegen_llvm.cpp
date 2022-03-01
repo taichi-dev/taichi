@@ -124,9 +124,6 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 }  // namespace
 
 // CodeGenLLVM
-
-uint64 CodeGenLLVM::task_counter = 0;
-
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
@@ -1620,9 +1617,9 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
-  auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
-                                      stmt->task_name(), suffix);
-  task_counter += 1;
+  auto task_kernel_name =
+      fmt::format("{}_{}_{}{}", kernel_name, kernel->get_next_task_id(),
+                  stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());

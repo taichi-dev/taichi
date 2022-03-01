@@ -188,7 +188,13 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  TI_ERROR("Templated kernels are not yet supported on vulkan aot.");
+  spirv::lower(kernel);
+  auto compiled =
+      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+
+  compiled.kernel_attribs.name = identifier + "|" + key;
+  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
 }  // namespace vulkan

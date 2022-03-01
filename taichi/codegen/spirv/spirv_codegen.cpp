@@ -516,13 +516,14 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
+    // Now we only support one ret
+    auto dt = stmt->element_types()[0];
     for (int i = 0; i < stmt->values.size(); i++) {
-      const auto &ret_attribs = ctx_attribs_->rets()[i];
-      const auto dt = ret_attribs.dt;
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_storage_pointer_type(ir_->get_primitive_type(dt)),
-          get_buffer_value(BufferType::Rets, PrimitiveType::i32),
+          get_buffer_value(BufferType::Rets, dt),
+          ir_->int_immediate_number(ir_->i32_type(), 0),
           ir_->int_immediate_number(ir_->i32_type(), i));
       buffer_val.flag = ValueKind::kVariablePtr;
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
@@ -615,6 +616,9 @@ class TaskCodegen : public IRVisitor {
     } else {
       ptr_to_buffers_[stmt] = BufferType::Args;
     }
+  }
+
+  void visit(DecorationStmt *stmt) override {
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -1828,10 +1832,20 @@ class TaskCodegen : public IRVisitor {
 
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
+    // Now we only have one ret
+    TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
-      struct_components_.emplace_back(ir_->get_primitive_type(ret.dt),
-                                      "ret" + std::to_string(ret.index),
-                                      ret.offset_in_mem);
+      if (auto tensor_type = ret.dt->cast<TensorType>()) {
+        struct_components_.emplace_back(
+            ir_->get_array_type(
+                ir_->get_primitive_type(tensor_type->get_element_type()),
+                tensor_type->get_num_elements()),
+            "ret" + std::to_string(ret.index), ret.offset_in_mem);
+      } else {
+        struct_components_.emplace_back(
+            ir_->get_array_type(ir_->get_primitive_type(ret.dt), 1),
+            "ret" + std::to_string(ret.index), ret.offset_in_mem);
+      }
     }
     ret_struct_type_ = ir_->create_struct_type(struct_components_);
 

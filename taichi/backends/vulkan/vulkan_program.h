@@ -7,6 +7,7 @@
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
@@ -56,7 +57,8 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
-    vulkan_runtime_->destroy_snode_tree(snode_tree);
+    TI_ASSERT(snode_tree_mgr_ != nullptr);
+    snode_tree_mgr_->destroy_snode_tree(snode_tree);
   }
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
@@ -77,14 +79,15 @@ class VulkanProgramImpl : public ProgramImpl {
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
-    return vulkan_runtime_->get_snode_tree_device_ptr(tree_id);
+    return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
 
   ~VulkanProgramImpl();
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
-  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
+  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_{nullptr};
+  std::unique_ptr<vulkan::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
 
   // This is a hack until NDArray is properlly owned by programs

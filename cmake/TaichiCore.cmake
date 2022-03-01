@@ -332,6 +332,12 @@ if (TI_WITH_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 endif()
 
+if (TI_WITH_DX11)
+    set(SPIRV_CROSS_CLI false)
+    #target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-hlsl spirv-cross-core)
+endif()
+
 # SPIR-V codegen is always there, regardless of Vulkan
 set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
@@ -389,7 +395,12 @@ if (NOT WIN32)
             target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         endif ()
         # Avoid glibc dependencies
-        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
+        if (TI_WITH_VULKAN)
+            target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
+        else()
+            # Enforce compatibility with manylinux2014
+            target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
+        endif()
     endif()
 else()
     # windows

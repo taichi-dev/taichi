@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/program/aot_module.h"
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/opengl/aot_data.h"
 
 namespace taichi {

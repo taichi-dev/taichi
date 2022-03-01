@@ -86,4 +86,4 @@ class Canvas:
 
     def scene(self, scene):
         """Draw a 3D scene on the canvas"""
-        self.canvas.scene(scene)
+        self.canvas.scene(scene.scene)

@@ -1,4 +1,4 @@
-#include "taichi/program/aot_module.h"
+#include "taichi/aot/module_builder.h"
 #include "taichi/program/kernel.h"
 
 namespace taichi {

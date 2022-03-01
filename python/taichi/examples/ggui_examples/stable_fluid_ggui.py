@@ -21,7 +21,8 @@ gravity = True
 debug = False
 paused = False
 
-ti.init(arch=ti.cuda)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))

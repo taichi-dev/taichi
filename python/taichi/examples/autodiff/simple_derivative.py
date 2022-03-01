@@ -27,32 +27,43 @@ xs = []
 ys = []
 grad_xs = []
 
-for i in range(N):
-    v = ((i + 0.5) / N) * 2 - 1
-    xs.append(v)
-    x[i] = v
 
-poly()
+def initialize():
+    for i in range(N):
+        v = ((i + 0.5) / N) * 2 - 1
+        xs.append(v)
+        x[i] = v
 
-print('y')
-for i in range(N):
-    y.grad[i] = 1
-    ys.append(y[i])
-print()
+    poly()
 
-poly.grad()
-print('grad_x')
-for i in range(N):
-    grad_xs.append(x.grad[i])
+    for i in range(N):
+        y.grad[i] = 1
+        ys.append(y[i])
 
-plt.title('Auto Diff')
-ax = plt.gca()
-ax.plot(xs, ys, label='f(x)')
-ax.plot(xs, grad_xs, label='f\'(x)')
-ax.legend()
-ax.grid(True)
-ax.spines['left'].set_position('zero')
-ax.spines['right'].set_color('none')
-ax.spines['bottom'].set_position('zero')
-ax.spines['top'].set_color('none')
-plt.show()
+    poly.grad()
+    print('grad_x')
+    for i in range(N):
+        grad_xs.append(x.grad[i])
+
+
+def draw():
+    plt.title('Auto Diff')
+    ax = plt.gca()
+    ax.plot(xs, ys, label='f(x)')
+    ax.plot(xs, grad_xs, label='f\'(x)')
+    ax.legend()
+    ax.grid(True)
+    ax.spines['left'].set_position('zero')
+    ax.spines['right'].set_color('none')
+    ax.spines['bottom'].set_position('zero')
+    ax.spines['top'].set_color('none')
+    plt.show()
+
+
+def main():
+    initialize()
+    draw()
+
+
+if __name__ == '__main__':
+    main()

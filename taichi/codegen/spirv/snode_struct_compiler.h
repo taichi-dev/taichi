@@ -44,9 +44,9 @@ using SNodeDescriptorsMap = std::unordered_map<int, SNodeDescriptor>;
 
 struct CompiledSNodeStructs {
   // Root buffer size in bytes.
-  size_t root_size;
+  size_t root_size{0};
   // Root SNode
-  const SNode *root;
+  const SNode *root{nullptr};
   // Map from SNode ID to its descriptor.
   SNodeDescriptorsMap snode_descriptors;
 };

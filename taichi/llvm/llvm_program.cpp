@@ -2,7 +2,7 @@
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/runtime/llvm/mem_request.h"
@@ -246,14 +246,14 @@ void LlvmProgramImpl::compile_snode_tree_types(
     auto host_module = clone_struct_compiler_initial_context(
         snode_trees, llvm_context_host_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
-        host_arch(), this, std::move(host_module));
+        host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
         snode_trees, llvm_context_device_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
-        Arch::cuda, this, std::move(device_module));
+        Arch::cuda, this, std::move(device_module), tree->id());
   }
   struct_compiler_->run(*root);
 }

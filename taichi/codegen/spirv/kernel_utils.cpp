@@ -58,46 +58,58 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     aa.dt = ka.dt;
     const size_t dt_bytes = data_type_size(aa.dt);
     aa.is_array = ka.is_array;
+    if (aa.is_array) {
+      aa.field_dim = ka.total_dim - ka.element_shape.size();
+      aa.element_shape = ka.element_shape;
+    }
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(aa);
   }
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;
-    ra.dt = kr.dt;
-    const size_t dt_bytes = data_type_size(ra.dt);
-    ra.is_array = false;  // TODO(#909): this is a temporary limitation
-    ra.stride = dt_bytes;
+    size_t dt_bytes{0};
+    if (auto tensor_type = kr.dt->cast<TensorType>()) {
+      ra.dt = tensor_type->get_element_type();
+      dt_bytes = data_type_size(ra.dt);
+      ra.is_array = true;
+      ra.stride = tensor_type->get_num_elements() * dt_bytes;
+    } else {
+      ra.dt = kr.dt;
+      dt_bytes = data_type_size(ra.dt);
+      ra.is_array = false;
+      ra.stride = dt_bytes;
+    }
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);
   }
 
-  auto arange_args = [](auto *vec, size_t offset) -> size_t {
-    std::vector<int> scalar_indices;
-    std::vector<int> array_indices;
+  auto arange_args = [](auto *vec, size_t offset, bool is_ret) -> size_t {
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes =
-          attribs.is_array ? sizeof(uint64_t) : data_type_size(attribs.dt);
+      const size_t dt_bytes = (attribs.is_array && !is_ret)
+                                  ? sizeof(uint64_t)
+                                  : data_type_size(attribs.dt);
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
-      bytes += dt_bytes;
-      TI_TRACE("  at={} {} offset_in_mem={} stride={}",
-               (*vec)[i].is_array ? "vector ptr" : "scalar", i,
-               attribs.offset_in_mem, attribs.stride);
+      bytes += is_ret ? attribs.stride : dt_bytes;
+      TI_TRACE(
+          "  at={} {} offset_in_mem={} stride={}",
+          (*vec)[i].is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
+          attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };
 
   TI_TRACE("args:");
-  args_bytes_ = arange_args(&arg_attribs_vec_, 0);
+  args_bytes_ = arange_args(&arg_attribs_vec_, 0, false);
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
 
   TI_TRACE("rets:");
-  rets_bytes_ = arange_args(&ret_attribs_vec_, 0);
+  rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true);
 
   TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

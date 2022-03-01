@@ -3,9 +3,30 @@
 #include <fstream>
 #include <type_traits>
 
+#include "taichi/backends/vulkan/runtime.h"
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
+namespace {
+
+using KernelHandle = VkRuntime::KernelHandle;
+
+class KernelImpl : public AotKernel {
+ public:
+  explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
+      : runtime_(runtime), handle_(handle) {
+  }
+
+  void launch(RuntimeContext *ctx) override {
+    runtime_->launch_kernel(handle_, ctx);
+  }
+
+ private:
+  VkRuntime *const runtime_;
+  const KernelHandle handle_;
+};
+}  // namespace
 
 AotModuleLoaderImpl::AotModuleLoaderImpl(const std::string &output_dir) {
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
@@ -44,11 +65,26 @@ bool AotModuleLoaderImpl::get_kernel(const std::string &name,
     if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
       kernel.kernel_attribs = ti_aot_data_.kernels[i];
       kernel.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
+      // We don't have to store the number of SNodeTree in |ti_aot_data_| yet,
+      // because right now we only support a single SNodeTree during AOT.
+      // TODO: Support multiple SNodeTrees in AOT.
+      kernel.num_snode_trees = 1;
       return true;
     }
   }
 
   return false;
+}
+
+std::unique_ptr<AotKernel> AotModuleLoaderImpl::make_new_kernel(
+    const std::string &name) {
+  VkRuntime::RegisterParams kparams;
+  if (!get_kernel(name, kparams)) {
+    TI_DEBUG("Failed to load kernel {}", name);
+    return nullptr;
+  }
+  auto handle = runtime_->register_taichi_kernel(kparams);
+  return std::make_unique<KernelImpl>(runtime_, handle);
 }
 
 bool AotModuleLoaderImpl::get_field(const std::string &name,

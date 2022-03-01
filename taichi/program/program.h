@@ -8,6 +8,7 @@
 #include <stack>
 
 #define TI_RUNTIME_HOST
+#include "taichi/aot/module_builder.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
@@ -15,7 +16,6 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
-#include "taichi/program/aot_module.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"

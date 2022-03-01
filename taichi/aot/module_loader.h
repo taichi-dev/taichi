@@ -13,7 +13,7 @@
 namespace taichi {
 namespace lang {
 
-  class RuntimeContext;
+class RuntimeContext;
 
 namespace aot {
 
@@ -64,8 +64,7 @@ class TI_DLL_EXPORT ModuleLoader {
   virtual size_t get_root_size() const = 0;
 
  protected:
-  virtual std::unique_ptr<Kernel> make_new_kernel(
-      const std::string &name) = 0;
+  virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
 
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;

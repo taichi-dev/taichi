@@ -27,7 +27,8 @@ class TI_DLL_EXPORT AotModuleLoaderImpl : public aot::ModuleLoader {
   size_t get_root_size() const override;
 
  private:
-  std::unique_ptr<aot::Kernel> make_new_kernel(const std::string &name) override;
+  std::unique_ptr<aot::Kernel> make_new_kernel(
+      const std::string &name) override;
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,
                                       const TaskAttributes &k);
 

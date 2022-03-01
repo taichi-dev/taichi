@@ -129,7 +129,7 @@ def cast(obj, dtype):
         obj (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
-        dtype (:mod:`~taichi.types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.
+        dtype (:mod:`~taichi.types.primitive_types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.
 
     Returns:
         A copy of `obj`, casted to the specified data type `dtype`.
@@ -161,7 +161,7 @@ def bit_cast(obj, dtype):
     Args:
         obj (:mod:`~taichi.types.primitive_types`): Input scalar.
 
-        dtype (`~taichi.types.primitive_types`): Wanted data type, must have \
+        dtype (:mod:`~taichi.types.primitive_types`): Target data type, must have \
             the same precision bits as the input (hence `f32` -> `f64` is not allowed).
 
     Returns:
@@ -210,7 +210,7 @@ def neg(x):
     """Numerical negative, element-wise.
 
     Args:
-        x (Union[:class:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
     Returns:
@@ -251,7 +251,7 @@ def cos(x):
     """Trigonometric cosine function :math:`cos(x)`, element-wise.
 
     Args:
-        x (Union[:class:`~taichi.type.primitive_types`, :class:`~taichi.Matrix`]): \
+        x (Union[:mod:`~taichi.type.primitive_types`, :class:`~taichi.Matrix`]): \
             Angle, in radians.
 
     Returns:
@@ -277,7 +277,7 @@ def asin(x):
         it's called in taichi scope, or raises exception if it's called in python scope.
 
     Args:
-        x (Union[:class:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             A scalar or a matrix with elements in [-1, 1].
 
     Returns:
@@ -303,7 +303,7 @@ def acos(x):
         it's called in taichi scope, or raises exception if it's called in python scope.
 
     Args:
-        x (Union[:class:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             A scalar or a matrix with elements in [-1, 1].
 
     Returns:

@@ -94,15 +94,30 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   }
   for (const auto &kr : kernel.rets) {
     RetAttributes mr;
-    mr.dt = to_metal_type(kr.dt);
-    const size_t dt_bytes = metal_data_type_bytes(mr.dt);
-    if (dt_bytes > 4) {
-      // Metal doesn't support 64bit data buffers.
-      TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
-               metal_data_type_name(mr.dt));
+    if (auto tensor_type = kr.dt->cast<TensorType>()) {
+      mr.dt = to_metal_type(tensor_type->get_element_type());
+      const size_t dt_bytes = metal_data_type_bytes(mr.dt);
+      mr.is_array = true;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR(
+            "Metal kernel only supports <= 32-bit data, got {} which is "
+            "Tensor's element type",
+            metal_data_type_name(mr.dt));
+      }
+      mr.stride =
+          tensor_type->get_num_elements() * metal_data_type_bytes(mr.dt);
+    } else {
+      mr.dt = to_metal_type(kr.dt);
+      const size_t dt_bytes = metal_data_type_bytes(mr.dt);
+      mr.is_array = false;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
+                 metal_data_type_name(mr.dt));
+      }
+      mr.stride = metal_data_type_bytes(mr.dt);
     }
-    mr.is_array = false;  // TODO(#909): this is a temporary limitation
-    mr.stride = dt_bytes;
     mr.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(mr);
   }

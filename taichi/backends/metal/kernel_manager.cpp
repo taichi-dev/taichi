@@ -472,9 +472,10 @@ class HostMetalCtxBlitter {
   }
 
   void metal_to_host() {
-#define TO_HOST(type)                                   \
-  const type d = *reinterpret_cast<type *>(device_ptr); \
-  host_result_buffer_[i] = taichi_union_cast_with_different_sizes<uint64>(d);
+#define TO_HOST(type, offset)                                      \
+  const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
+  host_result_buffer_[offset] =                                    \
+      taichi_union_cast_with_different_sizes<uint64>(d);
 
     if (ctx_attribs_->empty()) {
       return;
@@ -508,25 +509,24 @@ class HostMetalCtxBlitter {
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
-      if (ret.is_array) {
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, ret.stride);
-      } else {
+      const int dt_bytes = metal_data_type_bytes(ret.dt);
+      const int num = ret.stride / dt_bytes;
+      for (int j = 0; j < num; ++j) {
         const auto dt = ret.dt;
         if (dt == MetalDataType::i32) {
-          TO_HOST(int32);
+          TO_HOST(int32, j);
         } else if (dt == MetalDataType::u32) {
-          TO_HOST(uint32);
+          TO_HOST(uint32, j);
         } else if (dt == MetalDataType::f32) {
-          TO_HOST(float32);
+          TO_HOST(float32, j);
         } else if (dt == MetalDataType::i8) {
-          TO_HOST(int8);
+          TO_HOST(int8, j);
         } else if (dt == MetalDataType::i16) {
-          TO_HOST(int16);
+          TO_HOST(int16, j);
         } else if (dt == MetalDataType::u8) {
-          TO_HOST(uint8);
+          TO_HOST(uint8, j);
         } else if (dt == MetalDataType::u16) {
-          TO_HOST(uint16);
+          TO_HOST(uint16, j);
         } else {
           TI_ERROR("Metal does not support return value type={}",
                    metal_data_type_name(ret.dt));

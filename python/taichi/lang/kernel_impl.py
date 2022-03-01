@@ -15,7 +15,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError)
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import MatrixType
+from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
 from taichi.types import (any_arr, primitive_types, sparse_matrix_builder,
@@ -623,9 +623,16 @@ class Kernel:
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
-                else:
+                elif id(ret_dt) in primitive_types.real_type_ids:
                     ret = t_kernel.get_ret_float(0)
-
+                elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
+                    it = iter(t_kernel.get_ret_int_tensor(0))
+                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                  for _ in range(ret_dt.n)])
+                else:
+                    it = iter(t_kernel.get_ret_float_tensor(0))
+                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                  for _ in range(ret_dt.n)])
             if callbacks:
                 for c in callbacks:
                     c()

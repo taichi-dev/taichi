@@ -222,7 +222,13 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
 void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
-  ret_count = kernel->rets.size();
+  ret_count = 0;
+  for (auto &ret : kernel->rets) {
+    if (auto tensor_type = ret.dt->cast<TensorType>())
+      ret_count += tensor_type->get_num_elements();
+    else
+      ret_count += 1;
+  }
   for (int i = 0; i < arg_count; i++) {
     const auto dtype_name = kernel->args[i].dt.to_string();
     if (kernel->args[i].is_array) {

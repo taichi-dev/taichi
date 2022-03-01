@@ -4,7 +4,7 @@ from taichi.lang import impl
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import Matrix
+from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64
 
@@ -68,5 +68,8 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
 
 
 def decl_ret(dtype):
-    dtype = cook_dtype(dtype)
+    if isinstance(dtype, MatrixType):
+        dtype = _ti_core.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
+    else:
+        dtype = cook_dtype(dtype)
     return impl.get_runtime().prog.decl_ret(dtype)

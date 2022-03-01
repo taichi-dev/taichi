@@ -857,11 +857,17 @@ class KernelGen : public IRVisitor {
   void visit(ReturnStmt *stmt) override {
     used.buf_args = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[{} >> {} + 0] = {};",
-         opengl_data_type_short_name(stmt->element_types()[0]),
-         taichi_opengl_ret_base,
-         opengl_data_address_shifter(stmt->element_types()[0]),
-         stmt->values[0]->short_name());
+    int idx{0};
+    for (auto &value : stmt->values) {
+      emit("_args_{}_[({} >> {}) + {}] = {};",
+           opengl_data_type_short_name(value->element_type()),
+           taichi_opengl_ret_base,
+           opengl_data_address_shifter(value->element_type()), idx,
+           value->short_name());
+      idx += (4 - opengl_data_address_shifter(value->element_type()));
+      // opengl only support i32, f32 and f64 array, but there are 64bit slots
+      // in taichi's result buffer,so we need two slots to make them match.
+    }
   }
 
   void visit(ArgLoadStmt *stmt) override {

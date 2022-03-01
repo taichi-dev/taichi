@@ -41,7 +41,7 @@ void CCProgramImpl::materialize_snode_tree(
   layout_ = gen.compile();
   size_t root_size = layout_->compile();
   size_t gtmp_size = taichi_global_tmp_buffer_size;
-  size_t args_size = taichi_max_num_args * sizeof(uint64);
+  size_t args_size = taichi_result_buffer_entries * sizeof(uint64);
 
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
 
@@ -189,7 +189,7 @@ CCContext *CCProgramImpl::update_context(RuntimeContext *ctx) {
 void CCProgramImpl::context_to_result_buffer() {
   TI_ASSERT(result_buffer_);
   std::memcpy(result_buffer_, context_->args,
-              sizeof(uint64));  // XXX: assumed 1 return
+              taichi_max_num_ret_value * sizeof(uint64));
   context_->earg = nullptr;
 }
 

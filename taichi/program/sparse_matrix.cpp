@@ -33,56 +33,60 @@ void *SparseMatrixBuilder::get_data_base_ptr() {
   return data_base_ptr_;
 }
 
-void SparseMatrixBuilder::print_triplets() {
-  // TODO: simplify
+template <typename T, typename G>
+void SparseMatrixBuilder::print_template() {
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
              num_triplets_, max_num_triplets_);
-  if (data_type_size(dtype_) == 4) {
-    float32 *data = (float32 *)data_base_ptr_;
-    for (int64 i = 0; i < num_triplets_; i++) {
-      fmt::print("({}, {}) val={}\n", ((int32 *)data)[i * 3],
-                 ((int32 *)data)[i * 3 + 1],
-                 taichi_union_cast<float32>(data[i * 3 + 2]));
-    }
-  } else if (data_type_size(dtype_) == 8) {
-    float64 *data = (float64 *)data_base_ptr_;
-    for (int64 i = 0; i < num_triplets_; i++) {
-      fmt::print("({}, {}) val={}\n", ((int64 *)data)[i * 3],
-                 ((int64 *)data)[i * 3 + 1],
-                 taichi_union_cast<float64>(data[i * 3 + 2]));
-    }
+  T *data = (T *)data_base_ptr_;
+  for (int64 i = 0; i < num_triplets_; i++) {
+    fmt::print("({}, {}) val={}\n", ((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
+               taichi_union_cast<T>(data[i * 3 + 2]));
   }
   fmt::print("\n");
 }
 
+void SparseMatrixBuilder::print_triplets() {
+  auto element_size = data_type_size(dtype_);
+  switch (element_size) {
+    case 4:
+      print_template<float32, int32>();
+      break;
+    case 8:
+      print_template<float64, int64>();
+      break;
+    default:
+      TI_ERROR("Unsupported sparse matrix data type!");
+      break;
+  }
+}
+
+template <typename T, typename G>
+SparseMatrix SparseMatrixBuilder::build_template() {
+  using V = Eigen::Triplet<T>;
+  std::vector<V> triplets;
+  T *data = (T *)data_base_ptr_;
+  for (int i = 0; i < num_triplets_; i++) {
+    triplets.push_back(V(((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
+                         taichi_union_cast<T>(data[i * 3 + 2])));
+  }
+  SparseMatrix sm(rows_, cols_);
+  sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
+  clear();
+  return sm;
+}
+
 SparseMatrix SparseMatrixBuilder::build() {
-  // TODO: simplify
   TI_ASSERT(built_ == false);
   built_ = true;
-  if (data_type_size(dtype_) == 4) {
-    using T = Eigen::Triplet<float32>;
-    std::vector<T> triplets;
-    float32 *data = (float32 *)data_base_ptr_;
-    for (int i = 0; i < num_triplets_; i++) {
-      triplets.push_back(T(((int32 *)data)[i * 3], ((int32 *)data)[i * 3 + 1],
-                           taichi_union_cast<float32>(data[i * 3 + 2])));
-    }
-    SparseMatrix sm(rows_, cols_);
-    sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
-    clear();
-    return sm;
-  } else {
-    using T = Eigen::Triplet<float64>;
-    std::vector<T> triplets;
-    float64 *data = (float64 *)data_base_ptr_;
-    for (int i = 0; i < num_triplets_; i++) {
-      triplets.push_back(T(((int64 *)data)[i * 3], ((int64 *)data)[i * 3 + 1],
-                           taichi_union_cast<float64>(data[i * 3 + 2])));
-    }
-    SparseMatrix sm(rows_, cols_);
-    sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
-    clear();
-    return sm;
+  auto element_size = data_type_size(dtype_);
+  switch (element_size) {
+    case 4:
+      return build_template<float32, int32>();
+    case 8:
+      return build_template<float64, int64>();
+    default:
+      TI_ERROR("Unsupported sparse matrix data type!");
+      break;
   }
 }
 

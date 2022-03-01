@@ -24,6 +24,13 @@ class SparseMatrixBuilder {
   void clear();
 
  private:
+  template <typename T, typename G>
+  void print_template();
+
+  template <typename T, typename G>
+  SparseMatrix build_template();
+
+ private:
   uint64 num_triplets_{0};
   uchar *data_base_ptr_{nullptr};
   int rows_{0};

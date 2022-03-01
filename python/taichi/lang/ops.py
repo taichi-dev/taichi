@@ -122,6 +122,29 @@ def writeback_binary(foo):
 
 
 def cast(obj, dtype):
+    """Copy and cast a scalar or a matrix to a specified data type.
+    Must be called in Taichi scope.
+
+    Args:
+        obj (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
+
+        dtype (:mod:`~taichi.types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.
+
+    Returns:
+        A copy of `obj`, casted to the specified data type `dtype`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([0, 1, 2], ti.i32)
+        >>>     y = ti.cast(x, ti.f32)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [0.0, 1.0, 2.0]
+    """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         # TODO: unify with element_wise_unary

@@ -227,7 +227,7 @@ def neg(x):
 
 @unary
 def sin(x):
-    """Trigonometric sine function :math:`\sin(x)`, element-wise.
+    """Trigonometric sine, element-wise.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
@@ -248,7 +248,7 @@ def sin(x):
 
 @unary
 def cos(x):
-    """Trigonometric cosine function :math:`\cos(x)`, element-wise.
+    """Trigonometric cosine, element-wise.
 
     Args:
         x (Union[:mod:`~taichi.type.primitive_types`, :class:`~taichi.Matrix`]): \
@@ -269,7 +269,7 @@ def cos(x):
 
 @unary
 def asin(x):
-    """Trigonometric inverse sine function :math:`\arcsin(x)`, element-wise.
+    """Trigonometric inverse sine, element-wise.
 
     The inverse of `sin` so that, if `y = sin(x)`, then `x = asin(y)`.
 
@@ -295,7 +295,7 @@ def asin(x):
 
 @unary
 def acos(x):
-    """Trigonometric inverse cosine :math:`\arccos(x)`, element-wise.
+    """Trigonometric inverse cosine, element-wise.
 
     The inverse of `cos` so that, if `y = cos(x)`, then `x = acos(y)`.
 

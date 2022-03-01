@@ -191,6 +191,12 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_ExtSlice(ctx, node):
+        build_stmts(ctx, node.dims)
+        node.ptr = tuple(dim.ptr for dim in node.dims)
+        return node.ptr
+
+    @staticmethod
     def build_Tuple(ctx, node):
         build_stmts(ctx, node.elts)
         node.ptr = tuple(elt.ptr for elt in node.elts)

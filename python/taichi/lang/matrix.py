@@ -267,7 +267,6 @@ class Matrix(TaichiOperations):
             b = [b]
         else:
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
-        iti, itj = iter(a), iter(b)
         return Matrix([[self(i, j) for j in b] for i in a])
 
     @taichi_scope

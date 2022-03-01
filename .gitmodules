@@ -1,58 +1,58 @@
 [submodule "assets"]
 	path = assets
-	url = https://github.com/yuanming-hu/taichi_assets
+	url = git://github.com/yuanming-hu/taichi_assets
 	shallow = true
 [submodule "external/spdlog"]
 	path = external/spdlog
-	url = https://github.com/gabime/spdlog
+	url = git://github.com/gabime/spdlog
 	shallow = true
 [submodule "external/glfw"]
 	path = external/glfw
-	url = https://github.com/taichi-dev/glfw
+	url = git://github.com/taichi-dev/glfw
 	shallow = true
 [submodule "external/glad"]
 	path = external/glad
-	url = https://github.com/taichi-dev/taichi_glad_ready
+	url = git://github.com/taichi-dev/taichi_glad_ready
 	shallow = true
 [submodule "external/assets"]
 	path = external/assets
-	url = https://github.com/taichi-dev/taichi_assets
+	url = git://github.com/taichi-dev/taichi_assets
 	shallow = true
 [submodule "external/googletest"]
 	path = external/googletest
-	url = https://github.com/google/googletest
+	url = git://github.com/google/googletest
 	shallow = true
 [submodule "external/SPIRV-Headers"]
 	path = external/SPIRV-Headers
-	url = https://github.com/KhronosGroup/SPIRV-Headers
+	url = git://github.com/KhronosGroup/SPIRV-Headers
 [submodule "external/volk"]
 	path = external/volk
-	url = https://github.com/zeux/volk.git
+	url = git://github.com/zeux/volk.git
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+	url = git://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 [submodule "external/imgui"]
 	path = external/imgui
-	url = https://github.com/ocornut/imgui.git
+	url = git://github.com/ocornut/imgui.git
 [submodule "external/glm"]
 	path = external/glm
-	url = https://github.com/g-truc/glm.git
+	url = git://github.com/g-truc/glm.git
 [submodule "external/eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 	branch = 3.3
 [submodule "external/SPIRV-Reflect"]
 	path = external/SPIRV-Reflect
-	url = https://github.com/KhronosGroup/SPIRV-Reflect
+	url = git://github.com/KhronosGroup/SPIRV-Reflect
 [submodule "external/SPIRV-Tools"]
 	path = external/SPIRV-Tools
-	url = https://github.com/KhronosGroup/SPIRV-Tools
+	url = git://github.com/KhronosGroup/SPIRV-Tools
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross
+	url = git://github.com/KhronosGroup/SPIRV-Cross
 [submodule "external/Vulkan-Headers"]
 	path = external/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers
+	url = git://github.com/KhronosGroup/Vulkan-Headers
 [submodule "external/FP16"]
 	path = external/FP16
-	url = https://github.com/Maratyszcza/FP16
+	url = git://github.com/Maratyszcza/FP16

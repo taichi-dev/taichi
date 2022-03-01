@@ -80,32 +80,64 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ret_attribs_vec_.push_back(ra);
   }
 
-  auto arange_args = [](auto *vec, size_t offset, bool is_ret) -> size_t {
+  auto arange_args = [](auto *vec, size_t offset) -> size_t {
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = (attribs.is_array && !is_ret)
-                                  ? sizeof(uint64_t)
-                                  : data_type_size(attribs.dt);
+      const size_t dt_bytes =
+          attribs.is_array ? sizeof(uint64_t) : data_type_size(attribs.dt);
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
-      TI_TRACE(
-          "  at={} {} offset_in_mem={} stride={}",
-          (*vec)[i].is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
-          attribs.offset_in_mem, attribs.stride);
+      TI_TRACE("  at={} {} offset_in_mem={} stride={}",
+               (*vec)[i].is_array ? "vector ptr" : "scalar", i,
+               attribs.offset_in_mem, attribs.stride);
+    }
+    return bytes - offset;
+  };
+
+  auto arange_rets = [](auto *vec, size_t offset) -> size_t {
+    std::vector<int> scalar_indices;
+    std::vector<int> array_indices;
+    for (int i = 0; i < vec->size(); ++i) {
+      if ((*vec)[i].is_array) {
+        array_indices.push_back(i);
+      } else {
+        scalar_indices.push_back(i);
+      }
+    }
+    size_t bytes = offset;
+    for (int i : scalar_indices) {
+      auto &attribs = (*vec)[i];
+      const size_t dt_bytes = data_type_size(attribs.dt);
+      // Align bytes to the nearest multiple of dt_bytes
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+      attribs.offset_in_mem = bytes;
+      bytes += attribs.stride;
+      TI_TRACE("  at={} scalar offset_in_mem={} stride={}", i,
+               attribs.offset_in_mem, attribs.stride);
+    }
+    // Then the array args
+    for (int i : array_indices) {
+      auto &attribs = (*vec)[i];
+      const size_t dt_bytes = data_type_size(attribs.dt);
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+      attribs.offset_in_mem = bytes;
+      bytes += attribs.stride;
+      TI_TRACE("  at={} array offset_in_mem={} stride={}", i,
+               attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };
 
   TI_TRACE("args:");
-  args_bytes_ = arange_args(&arg_attribs_vec_, 0, false);
+  args_bytes_ = arange_args(&arg_attribs_vec_, 0);
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
 
   TI_TRACE("rets:");
-  rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true);
+  rets_bytes_ = arange_rets(&ret_attribs_vec_, 0);
 
   TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

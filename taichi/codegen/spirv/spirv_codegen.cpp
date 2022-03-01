@@ -517,11 +517,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(ReturnStmt *stmt) override {
     // Now we only support one ret
-    const auto &ret_attribs = ctx_attribs_->rets()[0];
-    auto dt = ret_attribs.dt;
-    if (auto tensor_type = dt->cast<TensorType>()) {
-      dt = tensor_type->get_element_type();
-    }
+    auto dt = stmt -> element_types()[0];
     for (int i = 0; i < stmt->values.size(); i++) {
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,

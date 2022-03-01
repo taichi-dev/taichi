@@ -2379,6 +2379,27 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   return xlogue;
 }
 
+void CodeGenLLVM::visit(FuncCallStmt *stmt) {
+  if (!func_map.count(stmt->func)) {
+    std::vector<llvm::Type *> arg_types;
+    arg_types.reserve(stmt->func->args.size());
+    for (auto &tp: stmt->func->args) {
+      arg_types.push_back(llvm_type(tp.dt));
+    }
+    auto guard = get_function_creation_guard(arg_types);
+    func_map.insert({stmt->func, guard.body});
+    stmt->func->ir->accept(this);
+    std::cout << "added" << std::endl;
+  }
+  llvm::Function *llvm_func = func_map[stmt->func];
+  std::vector<llvm::Value *> args;
+  args.reserve(stmt->args.size());
+  for (auto *s: stmt->args) {
+    args.push_back(llvm_val[s]);
+  }
+  llvm_val[stmt] = builder->CreateCall(llvm_func, args);
+}
+
 TLANG_NAMESPACE_END
 
 #endif  // #ifdef TI_WITH_LLVM

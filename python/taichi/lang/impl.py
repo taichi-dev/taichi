@@ -247,11 +247,11 @@ def insert_expr_stmt_if_ti_func(ast_builder, func, *args, **kwargs):
     if is_taichi_function:
         # Compiles the function here.
         # Invokes Func.__call__.
-        func_call_result = func(*args, **kwargs)
+        print("is taichi function")
         # Insert FrontendExprStmt here.
-        return ast_builder.insert_expr_stmt(func_call_result.ptr)
+        return True
     # Call the non-Taichi function directly.
-    return func(*args, **kwargs)
+    return False
 
 
 class PyTaichi:
@@ -635,6 +635,7 @@ def ndarray(dtype, shape):
 
 @taichi_scope
 def ti_print(*_vars, sep=' ', end='\n'):
+    print("inside ti_print")
     def entry2content(_var):
         if isinstance(_var, str):
             return _var

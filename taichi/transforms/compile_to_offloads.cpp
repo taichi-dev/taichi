@@ -81,11 +81,6 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
-  if (irpass::inlining(ir, config, {})) {
-    print("Functions inlined");
-    irpass::analysis::verify(ir);
-  }
-
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
   }

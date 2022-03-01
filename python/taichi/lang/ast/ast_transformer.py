@@ -177,6 +177,20 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_Slice(ctx, node):
+        if node.lower is not None:
+            build_stmt(ctx, node.lower)
+        if node.upper is not None:
+            build_stmt(ctx, node.upper)
+        if node.step is not None:
+            build_stmt(ctx, node.step)
+
+        node.ptr = slice(node.lower.ptr if node.lower else None,
+                         node.upper.ptr if node.upper else None,
+                         node.step.ptr if node.step else None)
+        return node.ptr
+
+    @staticmethod
     def build_Tuple(ctx, node):
         build_stmts(ctx, node.elts)
         node.ptr = tuple(elt.ptr for elt in node.elts)

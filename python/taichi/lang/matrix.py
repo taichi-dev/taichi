@@ -258,9 +258,7 @@ class Matrix(TaichiOperations):
             else:
                 self.entries[idx] = e
 
-    @python_scope
     def _get_slice(self, a, b):
-        # return Matrix([[itertools.islice()]])
         if not isinstance(a, slice):
             a = [a]
         else:
@@ -272,12 +270,21 @@ class Matrix(TaichiOperations):
         iti, itj = iter(a), iter(b)
         return Matrix([[self(i, j) for j in b] for i in a])
 
-
     @taichi_scope
     def _subscript(self, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
+        if isinstance(i, slice) or isinstance(j, slice):
+            for a in (i, j):
+                if isinstance(a, slice):
+                    if isinstance(a.start, expr.Expr) or isinstance(
+                            a.step, expr.Expr) or isinstance(
+                                a.stop, expr.Expr):
+                        raise TaichiSyntaxError(
+                            "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
+                        )
+            return self._get_slice(i, j)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)

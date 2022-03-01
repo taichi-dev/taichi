@@ -15,17 +15,17 @@ namespace lang {
 
 class RuntimeContext;
 
-// TODO: Instead of prefixing all these classes with "Aot", just put them into
-// the `aot` namespace.
-class TI_DLL_EXPORT AotKernel {
+namespace aot {
+
+class TI_DLL_EXPORT Kernel {
  public:
   // Rule of 5 to make MSVC happy
-  AotKernel() = default;
-  virtual ~AotKernel() = default;
-  AotKernel(const AotKernel &) = delete;
-  AotKernel &operator=(const AotKernel &) = delete;
-  AotKernel(AotKernel &&) = default;
-  AotKernel &operator=(AotKernel &&) = default;
+  Kernel() = default;
+  virtual ~Kernel() = default;
+  Kernel(const Kernel &) = delete;
+  Kernel &operator=(const Kernel &) = delete;
+  Kernel(Kernel &&) = default;
+  Kernel &operator=(Kernel &&) = default;
 
   /**
    * @brief Launches the kernel to the device
@@ -37,15 +37,15 @@ class TI_DLL_EXPORT AotKernel {
   virtual void launch(RuntimeContext *ctx) = 0;
 };
 
-class TI_DLL_EXPORT AotModuleLoader {
+class TI_DLL_EXPORT ModuleLoader {
  public:
   // Rule of 5 to make MSVC happy
-  AotModuleLoader() = default;
-  virtual ~AotModuleLoader() = default;
-  AotModuleLoader(const AotModuleLoader &) = delete;
-  AotModuleLoader &operator=(const AotModuleLoader &) = delete;
-  AotModuleLoader(AotModuleLoader &&) = default;
-  AotModuleLoader &operator=(AotModuleLoader &&) = default;
+  ModuleLoader() = default;
+  virtual ~ModuleLoader() = default;
+  ModuleLoader(const ModuleLoader &) = delete;
+  ModuleLoader &operator=(const ModuleLoader &) = delete;
+  ModuleLoader(ModuleLoader &&) = default;
+  ModuleLoader &operator=(ModuleLoader &&) = default;
 
   // TODO: Add method get_kernel(...) once the kernel field data will be
   // generic/common across all backends.
@@ -57,24 +57,23 @@ class TI_DLL_EXPORT AotModuleLoader {
    * @brief Get the kernel object
    *
    * @param name Name of the kernel
-   * @return AotKernel*
+   * @return Kernel*
    */
-  AotKernel *get_kernel(const std::string &name);
+  Kernel *get_kernel(const std::string &name);
 
   virtual size_t get_root_size() const = 0;
 
  protected:
-  virtual std::unique_ptr<AotKernel> make_new_kernel(
-      const std::string &name) = 0;
+  virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
 
  private:
-  std::unordered_map<std::string, std::unique_ptr<AotKernel>> loaded_kernels_;
+  std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
 };
 
 // Only responsible for reporting device capabilities
-class AotTargetDevice : public Device {
+class TargetDevice : public Device {
  public:
-  AotTargetDevice(Arch arch) {
+  TargetDevice(Arch arch) {
     // TODO: make this configurable
     set_default_caps(arch);
   }
@@ -116,5 +115,6 @@ class AotTargetDevice : public Device {
   }
 };
 
+}  // namespace aot
 }  // namespace lang
 }  // namespace taichi

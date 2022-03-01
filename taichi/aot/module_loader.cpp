@@ -2,8 +2,9 @@
 
 namespace taichi {
 namespace lang {
+namespace aot {
 
-AotKernel *AotModuleLoader::get_kernel(const std::string &name) {
+Kernel *ModuleLoader::get_kernel(const std::string &name) {
   auto itr = loaded_kernels_.find(name);
   if (itr != loaded_kernels_.end()) {
     return itr->second.get();
@@ -14,5 +15,6 @@ AotKernel *AotModuleLoader::get_kernel(const std::string &name) {
   return kptr;
 }
 
+}  // namespace aot
 }  // namespace lang
 }  // namespace taichi

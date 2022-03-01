@@ -14,21 +14,25 @@ namespace lang {
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
                                        TaichiLLVMContext *tlctx,
-                                       std::unique_ptr<llvm::Module> &&module)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : LLVMModuleBuilder(std::move(module), tlctx),
       arch_(arch),
       config_(config),
       tlctx_(tlctx),
-      llvm_ctx_(tlctx_->get_this_thread_context()) {
+      llvm_ctx_(tlctx_->get_this_thread_context()),
+      snode_tree_id_(snode_tree_id) {
 }
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        LlvmProgramImpl *prog,
-                                       std::unique_ptr<llvm::Module> &&module)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : StructCompilerLLVM(arch,
                          prog->config,
                          prog->get_llvm_context(arch),
-                         std::move(module)) {
+                         std::move(module),
+                         snode_tree_id) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -168,8 +172,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   // Create a dummy function in the module with the type stub as return type
   // so that the type is referenced in the module
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
-  llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                         type_stub_name(&snode) + "_func", module.get());
+  create_function(ft, type_stub_name(&snode) + "_func");
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -182,9 +185,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx_)},
       false);
 
-  auto func =
-      llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                             snode->refine_coordinates_func_name(), *module);
+  auto func = create_function(ft, snode->refine_coordinates_func_name());
 
   auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -258,9 +259,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
-    auto func =
-        llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                               snode.get_ch_from_parent_func_name(), *module);
+    auto func = create_function(ft, snode.get_ch_from_parent_func_name());
 
     auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -351,6 +350,13 @@ llvm::Type *StructCompilerLLVM::get_llvm_aux_type(llvm::Module *module,
 llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
                                                       SNode *snode) {
   return get_stub(module, snode, 3);
+}
+
+llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
+                                                    std::string func_name) {
+  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+  return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
+                                *module);
 }
 
 }  // namespace lang

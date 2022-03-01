@@ -12,6 +12,8 @@ concurrency:
 jobs:
   check_files:
     name: Check files
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     outputs:
       run_job: ${{ steps.check_files.outputs.run_job }}
     runs-on: ubuntu-latest
@@ -372,6 +374,12 @@ jobs:
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
+      # See also https://github.com/taichi-dev/taichi/issues/4161
+      - name: Cleanup
+        shell: powershell
+        run: |
+          remove-item '${{ github.workspace }}\*' -recurse -force
+
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -395,18 +403,14 @@ jobs:
 
       - name: Build
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_test.ps1
         env:
           TI_WANTED_ARCHS: cpu,cuda,opengl
@@ -464,4 +468,4 @@ jobs:
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
           PY: ${{ matrix.python }}
-          GPU_TEST: ON
+          PLATFORM: "m1"

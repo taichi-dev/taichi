@@ -214,7 +214,7 @@ def neg(x):
             Input scalar or matrix.
 
     Returns:
-        Matrix or scalar `y`, so that `y = -x`. This is a scalar if `x` is a scalar.
+        Matrix or scalar `y`, so that `y = -x`. `y` has the same type as `x`.
 
     Example::
         >>> x = ti.Matrix([1, -1])
@@ -288,7 +288,7 @@ def asin(x):
 
         >>> from math import pi
         >>> ti.asin(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
-        >>> [-90., 0., 90.]
+        [-90., 0., 90.]
     """
     return _unary_operation(_ti_core.expr_asin, math.asin, x)
 
@@ -314,7 +314,7 @@ def acos(x):
 
         >>> from math import pi
         >>> ti.acos(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
-        >>> [180., 90., 0.]
+        [180., 90., 0.]
     """
     return _unary_operation(_ti_core.expr_acos, math.acos, x)
 

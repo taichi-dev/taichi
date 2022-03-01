@@ -129,7 +129,7 @@ def cast(obj, dtype):
         obj (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
-        dtype (:mod:`~taichi.types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.
+        dtype (:mod:`~taichi.types.primitive_types`): A primitive type defined in :mod:`~taichi.types.primitive_types`.
 
     Returns:
         A copy of `obj`, casted to the specified data type `dtype`.
@@ -153,6 +153,31 @@ def cast(obj, dtype):
 
 
 def bit_cast(obj, dtype):
+    """Copy and cast a scalar to a specified data type with its underlying
+    bits preserved. Must be called in taichi scope.
+
+    This function is equivalent to `reinterpret_cast` in C++.
+
+    Args:
+        obj (:mod:`~taichi.types.primitive_types`): Input scalar.
+
+        dtype (:mod:`~taichi.types.primitive_types`): Target data type, must have \
+            the same precision bits as the input (hence `f32` -> `f64` is not allowed).
+
+    Returns:
+        A copy of `obj`, casted to the specified data type `dtype`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = 3.14
+        >>>     y = ti.bit_cast(x, ti.i32)
+        >>>     print(y)  # 1078523331
+        >>>
+        >>>     z = ti.bit_cast(y, ti.f32)
+        >>>     print(z)  # 3.14
+    """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
@@ -181,68 +206,117 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 
 @unary
-def neg(a):
-    """The negate function.
+def neg(x):
+    """Numerical negative, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The negative value of `a`.
+        Matrix or scalar `y`, so that `y = -x`. `y` has the same type as `x`.
+
+    Example::
+        >>> x = ti.Matrix([1, -1])
+        >>> y = ti.neg(a)
+        >>> y
+        [-1, 1]
     """
-    return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
+    return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, x)
 
 
 @unary
-def sin(a):
-    """The sine function.
+def sin(x):
+    """Trigonometric sine, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Angle, in radians.
 
     Returns:
-        Sine of `a`.
+        The sine of each element of `x`.
+
+    Example::
+
+        >>> from math import pi
+        >>> x = ti.Matrix([-pi/2., 0, pi/2.])
+        >>> ti.sin(x)
+        [-1., 0., 1.]
     """
-    return _unary_operation(_ti_core.expr_sin, math.sin, a)
+    return _unary_operation(_ti_core.expr_sin, math.sin, x)
 
 
 @unary
-def cos(a):
-    """The cosine function.
+def cos(x):
+    """Trigonometric cosine, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.type.primitive_types`, :class:`~taichi.Matrix`]): \
+            Angle, in radians.
 
     Returns:
-        Cosine of `a`.
+        The cosine of each element of `x`.
+
+    Example::
+
+        >>> from math import pi
+        >>> x = ti.Matrix([-pi, 0, pi/2.])
+        >>> ti.cos(x)
+        [-1., 1., 0.]
     """
-    return _unary_operation(_ti_core.expr_cos, math.cos, a)
+    return _unary_operation(_ti_core.expr_cos, math.cos, x)
 
 
 @unary
-def asin(a):
-    """The inverses function of sine.
+def asin(x):
+    """Trigonometric inverse sine, element-wise.
+
+    The inverse of `sin` so that, if `y = sin(x)`, then `x = asin(y)`.
+
+    For input `x` not in the domain `[-1, 1]`, this function returns `nan` if \
+        it's called in taichi scope, or raises exception if it's called in python scope.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements in [-1,1].
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            A scalar or a matrix with elements in [-1, 1].
 
     Returns:
-        The inverses function of sine of `a`.
+        The inverse sine of each element in `x`, in radians and in the closed \
+            interval `[-pi/2, pi/2]`.
+
+    Example::
+
+        >>> from math import pi
+        >>> ti.asin(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
+        [-90., 0., 90.]
     """
-    return _unary_operation(_ti_core.expr_asin, math.asin, a)
+    return _unary_operation(_ti_core.expr_asin, math.asin, x)
 
 
 @unary
-def acos(a):
-    """The inverses function of cosine.
+def acos(x):
+    """Trigonometric inverse cosine, element-wise.
+
+    The inverse of `cos` so that, if `y = cos(x)`, then `x = acos(y)`.
+
+    For input `x` not in the domain `[-1, 1]`, this function returns `nan` if \
+        it's called in taichi scope, or raises exception if it's called in python scope.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements in [-1,1].
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            A scalar or a matrix with elements in [-1, 1].
 
     Returns:
-        The inverses function of cosine of `a`.
+        The inverse cosine of each element in `x`, in radians and in the closed \
+            interval `[0, pi]`. This is a scalar if `x` is a scalar.
+
+    Example::
+
+        >>> from math import pi
+        >>> ti.acos(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
+        [180., 90., 0.]
     """
-    return _unary_operation(_ti_core.expr_acos, math.acos, a)
+    return _unary_operation(_ti_core.expr_acos, math.acos, x)
 
 
 @unary

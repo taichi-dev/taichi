@@ -12,7 +12,7 @@ namespace {
 
 using KernelHandle = VkRuntime::KernelHandle;
 
-class KernelImpl : public AotKernel {
+class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
       : runtime_(runtime), handle_(handle) {
@@ -76,7 +76,7 @@ bool AotModuleLoaderImpl::get_kernel(const std::string &name,
   return false;
 }
 
-std::unique_ptr<AotKernel> AotModuleLoaderImpl::make_new_kernel(
+std::unique_ptr<aot::Kernel> AotModuleLoaderImpl::make_new_kernel(
     const std::string &name) {
   VkRuntime::RegisterParams kparams;
   if (!get_kernel(name, kparams)) {

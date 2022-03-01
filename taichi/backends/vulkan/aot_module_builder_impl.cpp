@@ -80,7 +80,7 @@ class AotDataConverter {
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
-  aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
+  aot_target_device_ = std::make_unique<aot::TargetDevice>(Arch::vulkan);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }

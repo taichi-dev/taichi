@@ -1,6 +1,7 @@
 #include "circles.h"
 
 #include "taichi/ui/utils/utils.h"
+#include <algorithm>
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -41,7 +42,8 @@ void Circles::update_ubo(glm::vec3 color,
                          bool use_per_vertex_color,
                          float radius) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color,
-                          radius * app_context_->config.height};
+                          radius * std::min(app_context_->config.height,
+                                            app_context_->config.width)};
 
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));

@@ -138,7 +138,7 @@ def test_save():
             json.load(json_file)
 
 
-@test_utils.test(arch=ti.opengl)
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_save_template_kernel():
     density = ti.field(float, shape=(4, 4))
 

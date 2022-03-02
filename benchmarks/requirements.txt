@@ -1,0 +1,2 @@
+jsbeautifier
+bokeh

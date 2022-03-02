@@ -1,5 +1,6 @@
 import ast
 import collections.abc
+import itertools
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -505,10 +506,21 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                ctx.ast_builder.create_kernel_exprgroup_return(
-                    expr.make_expr_group(
-                        ti_ops.cast(expr.Expr(node.value.ptr),
-                                    ctx.func.return_type).ptr))
+                if id(ctx.func.return_type) in primitive_types.type_ids:
+                    ctx.ast_builder.create_kernel_exprgroup_return(
+                        expr.make_expr_group(
+                            ti_ops.cast(expr.Expr(node.value.ptr),
+                                        ctx.func.return_type).ptr))
+                elif isinstance(ctx.func.return_type, MatrixType):
+                    ctx.ast_builder.create_kernel_exprgroup_return(
+                        expr.make_expr_group([
+                            ti_ops.cast(exp, ctx.func.return_type.dtype)
+                            for exp in itertools.chain.from_iterable(
+                                node.value.ptr.to_list())
+                        ]))
+                else:
+                    raise TaichiSyntaxError(
+                        "The return type is not supported now!")
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value

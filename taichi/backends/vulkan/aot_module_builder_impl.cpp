@@ -44,7 +44,19 @@ class AotDataConverter {
     res.args_buffer_size = in.ctx_attribs.args_bytes();
     res.rets_buffer_size = in.ctx_attribs.rets_bytes();
     for (const auto &arg : in.ctx_attribs.args()) {
-      res.scalar_args[arg.index] = visit(arg);
+      if (!arg.is_array) {
+        aot::ScalarArg scalar_arg{};
+        scalar_arg.dtype_name = arg.dt.to_string();
+        scalar_arg.offset_in_args_buf = arg.offset_in_mem;
+        res.scalar_args[arg.index] = scalar_arg;
+      } else {
+        aot::ArrayArg arr_arg{};
+        arr_arg.dtype_name = arg.dt.to_string();
+        arr_arg.field_dim = arg.field_dim;
+        arr_arg.element_shape = arg.element_shape;
+        arr_arg.shape_offset_in_args_buf = arg.index * sizeof(int32_t);
+        res.arr_args[arg.index] = arr_arg;
+      }
     }
     return res;
   }
@@ -62,21 +74,13 @@ class AotDataConverter {
     res.gpu_block_size = in.advisory_num_threads_per_group;
     return res;
   }
-
-  aot::ScalarArg visit(
-      const spirv::KernelContextAttributes::ArgAttributes &in) const {
-    aot::ScalarArg res{};
-    res.dtype_name = in.dt.to_string();
-    res.offset_in_args_buf = in.offset_in_mem;
-    return res;
-  }
 };
 
 }  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
-  aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
+  aot_target_device_ = std::make_unique<aot::TargetDevice>(Arch::vulkan);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }
@@ -184,7 +188,13 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  TI_ERROR("Templated kernels are not yet supported on vulkan aot.");
+  spirv::lower(kernel);
+  auto compiled =
+      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+
+  compiled.kernel_attribs.name = identifier + "|" + key;
+  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
 }  // namespace vulkan

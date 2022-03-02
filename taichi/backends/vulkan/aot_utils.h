@@ -17,7 +17,7 @@ struct TaichiAotData {
   std::vector<std::vector<std::vector<uint32_t>>> spirv_codes;
   std::vector<spirv::TaichiKernelAttributes> kernels;
   std::vector<aot::CompiledFieldData> fields;
-  size_t root_buffer_size;
+  size_t root_buffer_size{0};
 
   TI_IO_DEF(kernels, fields, root_buffer_size);
 };

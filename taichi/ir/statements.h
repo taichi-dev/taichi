@@ -100,6 +100,38 @@ class ContinueStmt : public Stmt {
 };
 
 /**
+ * A decoration statement. The decorated "operands" will keep this decoration.
+ */
+class DecorationStmt : public Stmt {
+ public:
+  enum class Decoration : uint32_t { kUnknown, kLoopUnique };
+
+  Stmt *operand;
+  std::vector<uint32_t> decoration;
+
+  DecorationStmt(Stmt *operand, const std::vector<uint32_t> &decoration);
+
+  bool same_operation(DecorationStmt *o) const {
+    return false;
+  }
+
+  bool is_cast() const {
+    return false;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(operand, decoration);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * A unary operation. The field |cast_type| is used only when is_cast() is true.
  */
 class UnaryOpStmt : public Stmt {

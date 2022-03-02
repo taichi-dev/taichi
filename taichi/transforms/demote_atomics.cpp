@@ -13,6 +13,7 @@ TLANG_NAMESPACE_BEGIN
 class DemoteAtomics : public BasicStmtVisitor {
  private:
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
+  std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -41,42 +42,58 @@ class DemoteAtomics : public BasicStmtVisitor {
       if (!demote &&
           (current_offloaded->task_type == OffloadedTaskType::range_for ||
            current_offloaded->task_type == OffloadedTaskType::mesh_for ||
-           current_offloaded->task_type == OffloadedTaskType::struct_for) &&
-          stmt->dest->is<GlobalPtrStmt>()) {
-        demote = true;
-        auto dest = stmt->dest->as<GlobalPtrStmt>();
-        for (auto snode : dest->snodes.data) {
-          if (loop_unique_ptr_[snode] == nullptr ||
-              loop_unique_ptr_[snode]->indices.empty()) {
-            // not uniquely accessed
-            demote = false;
-            break;
-          }
-          if (current_offloaded->mem_access_opt.has_flag(
-                  snode, SNodeAccessFlag::block_local) ||
-              current_offloaded->mem_access_opt.has_flag(
-                  snode, SNodeAccessFlag::mesh_local)) {
-            // BLS does not support write access yet so we keep atomic_adds.
-            demote = false;
-            break;
-          }
-        }
-        // demote from-end atomics
-        if (current_offloaded->task_type == OffloadedTaskType::mesh_for) {
-          if (dest->indices.size() == 1 &&
-              dest->indices[0]->is<MeshIndexConversionStmt>()) {
-            auto idx = dest->indices[0]->as<MeshIndexConversionStmt>()->idx;
-            while (idx->is<MeshIndexConversionStmt>()) {  // special case: l2g +
-                                                          // g2r
-              idx = idx->as<MeshIndexConversionStmt>()->idx;
+           current_offloaded->task_type == OffloadedTaskType::struct_for)) {
+        if (stmt->dest->is<GlobalPtrStmt>()) {
+          demote = true;
+          auto dest = stmt->dest->as<GlobalPtrStmt>();
+          for (auto snode : dest->snodes.data) {
+            if (loop_unique_ptr_[snode] == nullptr ||
+                loop_unique_ptr_[snode]->indices.empty()) {
+              // not uniquely accessed
+              demote = false;
+              break;
             }
-            if (idx->is<LoopIndexStmt>() &&
-                idx->as<LoopIndexStmt>()->is_mesh_index() &&
-                loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()
-                                     ->snodes.data[0]] != nullptr) {
-              demote = true;
+            if (current_offloaded->mem_access_opt.has_flag(
+                    snode, SNodeAccessFlag::block_local) ||
+                current_offloaded->mem_access_opt.has_flag(
+                    snode, SNodeAccessFlag::mesh_local)) {
+              // BLS does not support write access yet so we keep atomic_adds.
+              demote = false;
+              break;
             }
           }
+          // demote from-end atomics
+          if (current_offloaded->task_type == OffloadedTaskType::mesh_for) {
+            if (dest->indices.size() == 1 &&
+                dest->indices[0]->is<MeshIndexConversionStmt>()) {
+              auto idx = dest->indices[0]->as<MeshIndexConversionStmt>()->idx;
+              while (idx->is<MeshIndexConversionStmt>()) {  // special case: l2g
+                                                            // + g2r
+                idx = idx->as<MeshIndexConversionStmt>()->idx;
+              }
+              if (idx->is<LoopIndexStmt>() &&
+                  idx->as<LoopIndexStmt>()->is_mesh_index() &&
+                  loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()
+                                       ->snodes.data[0]] != nullptr) {
+                demote = true;
+              }
+            }
+          }
+        } else if (stmt->dest->is<ExternalPtrStmt>()) {
+          ExternalPtrStmt *dest_ptr = stmt->dest->as<ExternalPtrStmt>();
+          demote = true;
+          if (dest_ptr->indices.empty()) {
+            demote = false;
+          }
+          for (Stmt *base_stmt : dest_ptr->base_ptrs.data) {
+            ArgLoadStmt *arg_load_stmt = base_stmt->as<ArgLoadStmt>();
+            int arg_id = arg_load_stmt->arg_id;
+            if (loop_unique_arr_ptr_[arg_id] == nullptr) {
+              // Not loop unique
+              demote = false;
+            }
+          }
+          // TODO: Is BLS / Mem Access Opt a thing for any_arr?
         }
       }
     }
@@ -148,8 +165,10 @@ class DemoteAtomics : public BasicStmtVisitor {
     if (stmt->task_type == OffloadedTaskType::range_for ||
         stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
-      loop_unique_ptr_ =
+      auto uniquely_accessed_pointers =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
+      loop_unique_ptr_ = std::move(uniquely_accessed_pointers.first);
+      loop_unique_arr_ptr_ = std::move(uniquely_accessed_pointers.second);
     }
     // We don't need to visit TLS/BLS prologues/epilogues.
     if (stmt->body) {

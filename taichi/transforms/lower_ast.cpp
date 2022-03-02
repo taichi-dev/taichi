@@ -348,9 +348,12 @@ class LowerAST : public IRVisitor {
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
       for (int i = (int)shape.size() - 1; i >= 0; i--) {
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
-            new_statements.push_back<BinaryOpStmt>(BinaryOpType::mod,
-                                                   loop_index, shape[i]);
+        Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::mod, loop_index, shape[i]);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_var;
+        std::vector<uint32_t> decoration = {
+            uint32_t(DecorationStmt::Decoration::kLoopUnique), uint32_t(i)};
+        new_statements.push_back<DecorationStmt>(loop_var, decoration);
         loop_index = new_statements.push_back<BinaryOpStmt>(
             BinaryOpType::div, loop_index, shape[i]);
       }
@@ -384,10 +387,14 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    auto expr = stmt->values[0];
+    auto expr_group = stmt->values;
     auto fctx = make_flatten_ctx();
-    flatten_rvalue(expr, &fctx);
-    fctx.push_back<ReturnStmt>(fctx.back_stmt());
+    std::vector<Stmt *> return_ele;
+    for (auto &x : expr_group.exprs) {
+      flatten_rvalue(x, &fctx);
+      return_ele.push_back(fctx.back_stmt());
+    }
+    fctx.push_back<ReturnStmt>(return_ele);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 

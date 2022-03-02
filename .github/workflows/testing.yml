@@ -12,6 +12,8 @@ concurrency:
 jobs:
   check_files:
     name: Check files
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     outputs:
       run_job: ${{ steps.check_files.outputs.run_job }}
     runs-on: ubuntu-latest
@@ -132,8 +134,8 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
-          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /bin/bash
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2
+          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 /bin/bash
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
           docker exec --user root check_clang_tidy apt install -y clang-tidy-10
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
@@ -149,11 +151,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python: py36
-            with_cc: OFF
-            wanted_archs: "cpu"
-          - os: ubuntu-latest
             python: py39
+            with_cc: ON
+            wanted_archs: "cpu,cc"
+          - os: ubuntu-latest
+            python: py310
             with_cc: ON
             wanted_archs: "cpu,cc"
     runs-on: ${{ matrix.os }}
@@ -180,7 +182,7 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -192,7 +194,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -213,7 +215,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_test.sh
+          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -322,7 +324,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -347,7 +349,7 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
@@ -372,6 +374,12 @@ jobs:
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
+      # See also https://github.com/taichi-dev/taichi/issues/4161
+      - name: Cleanup
+        shell: powershell
+        run: |
+          remove-item '${{ github.workspace }}\*' -recurse -force
+
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -395,23 +403,20 @@ jobs:
 
       - name: Build
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_test.ps1
         env:
           TI_WANTED_ARCHS: cpu,cuda,opengl
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
+          PYTHON: "3.7"
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -445,12 +450,12 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           CXX: clang++
 
       - name: Test
@@ -458,9 +463,9 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
-          PYTHON: ${{ matrix.python }}
-          GPU_TEST: ON
+          PY: ${{ matrix.python }}
+          PLATFORM: "m1"

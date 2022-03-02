@@ -1,9 +1,12 @@
 {
-  "lang": "Language Features & Embedding in Python",
-  "gui": "GGUI",
-  "doc": "Docs",
-  "docs": "Docs",
-  "benchmark": "Backend Performance",
   "aot": "AOT",
-  "ir": "Compiler Frontend & Middle-end"
+  "autodiff": "Autodiff",
+  "benchmark": "Backend Performance",
+  "build": "CI/CD & Build & Tests",
+  "ci": "CI/CD & Build & Tests",
+  "doc": "Docs & Examples & Tutorials",
+  "docs": "Docs & Examples & Tutorials",
+  "gui": "GGUI",
+  "ir": "Compiler Frontend & Middle-end",
+  "lang": "Lang Features & Python"
 }

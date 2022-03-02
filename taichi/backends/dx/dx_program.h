@@ -2,6 +2,7 @@
 
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
 
 namespace taichi {
@@ -29,8 +30,9 @@ class Dx11ProgramImpl : public ProgramImpl {
   void synchronize() override;
 
  private:
-  std::shared_ptr<directx11::Dx11Device> device_;
-  std::unique_ptr<vulkan::VkRuntime> runtime_;
+  std::shared_ptr<directx11::Dx11Device> device_{nullptr};
+  std::unique_ptr<vulkan::VkRuntime> runtime_{nullptr};
+  std::unique_ptr<vulkan::SNodeTreeManager> snode_tree_mgr_{nullptr};
 };
 
 }  // namespace lang

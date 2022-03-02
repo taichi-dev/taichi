@@ -409,7 +409,6 @@ class TypeCheck : public IRVisitor {
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    stmt->ret_type = stmt->values[0]->ret_type;
     TI_ASSERT(stmt->width() == 1);
   }
 

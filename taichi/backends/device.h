@@ -444,6 +444,9 @@ class Device {
     TI_NOT_IMPLEMENTED
   }
 
+  // Each thraed will acquire its own stream
+  virtual Stream *get_compute_stream() = 0;
+
   // Mapping can fail and will return nullptr
   virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
   virtual void *map(DeviceAllocation alloc) = 0;
@@ -475,9 +478,6 @@ class Device {
                               void *host_buffer,
                               DevicePtr src,
                               uint64_t size);
-
-  // Each thraed will acquire its own stream
-  virtual Stream *get_compute_stream() = 0;
 
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;

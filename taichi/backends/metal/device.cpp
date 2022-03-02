@@ -7,6 +7,8 @@
 namespace taichi {
 namespace lang {
 namespace metal {
+
+#ifdef TI_PLATFORM_OSX
 namespace {
 
 class ResourceBinderImpl : public ResourceBinder {
@@ -71,7 +73,7 @@ class ResourceBinderImpl : public ResourceBinder {
 class PipelineImpl : public Pipeline {
  public:
   explicit PipelineImpl(nsobj_unique_ptr<MTLComputePipelineState> pipeline)
-      : pipeline_state_(pipeline) {
+      : pipeline_state_(std::move(pipeline)) {
   }
 
   ResourceBinder *resource_binder() override {
@@ -223,6 +225,7 @@ class DeviceImpl : public Device {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override {
     TI_NOT_IMPLEMENTED;
+    return DeviceAllocation{};
   }
 
   void dealloc_memory(DeviceAllocation handle) override {
@@ -248,15 +251,21 @@ class DeviceImpl : public Device {
 
   void *map_range(DevicePtr ptr, uint64_t size) override {
     TI_NOT_IMPLEMENTED;
+    return nullptr;
   }
   void *map(DeviceAllocation alloc) override {
     TI_NOT_IMPLEMENTED;
+    return nullptr;
   }
 
   void unmap(DevicePtr ptr) override {
     TI_NOT_IMPLEMENTED;
   }
   void unmap(DeviceAllocation alloc) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -276,6 +285,16 @@ std::unique_ptr<taichi::lang::Device> make_compute_device(
     const ComputeDeviceParams &params) {
   return std::make_unique<DeviceImpl>(params.device);
 }
+
+#else
+
+std::unique_ptr<taichi::lang::Device> make_compute_device(
+    const ComputeDeviceParams &params) {
+  TI_ERROR("Platform does not support Metal");
+  return nullptr;
+}
+
+#endif  // TI_PLATFORM_OSX
 
 }  // namespace metal
 }  // namespace lang

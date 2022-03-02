@@ -10,7 +10,7 @@ namespace taichi {
 namespace lang {
 namespace metal {
 
-BufferMemoryView::BufferMemoryView(size_t size, MemoryPool *mem_pool) {
+BufferMemoryView::BufferMemoryView(std::size_t size, MemoryPool *mem_pool) {
   // Both |ptr_| and |size_| must be aligned to page size.
   size_ = iroundup(size, taichi_page_size);
   ptr_ = (char *)mem_pool->allocate(size_, /*alignment=*/taichi_page_size);

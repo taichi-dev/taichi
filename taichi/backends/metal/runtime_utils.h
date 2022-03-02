@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace taichi {
 namespace lang {
 
@@ -12,7 +14,7 @@ namespace metal {
 // GC is deferred to the memory pool.
 class BufferMemoryView {
  public:
-  BufferMemoryView(size_t size, MemoryPool *mem_pool);
+  BufferMemoryView(std::size_t size, MemoryPool *mem_pool);
   // Move only
   BufferMemoryView(BufferMemoryView &&) = default;
   BufferMemoryView &operator=(BufferMemoryView &&) = default;
@@ -27,7 +29,7 @@ class BufferMemoryView {
   }
 
  private:
-  size_t size_;
+  std::size_t size_;
   char *ptr_;
 };
 

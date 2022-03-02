@@ -482,42 +482,81 @@ def tanh(x):
 
 
 @unary
-def exp(a):
-    """The exp function.
+def exp(x):
+    """Compute the exponential of all elements in `x`, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        `e` to the `a`.
+        Element-wise exponential of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
+        >>>     y = ti.exp(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [0.367879, 1.000000, 2.718282]
     """
-    return _unary_operation(_ti_core.expr_exp, math.exp, a)
+    return _unary_operation(_ti_core.expr_exp, math.exp, x)
 
 
 @unary
-def log(a):
-    """The natural logarithm function.
+def log(x):
+    """Compute the natural logarithm, element-wise.
+
+    The natural logarithm `log` is the inverse of the exponential function,
+    so that `log(exp(x)) = x`. The natural logarithm is logarithm in base `e`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements greater than zero.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The natural logarithm of `a`.
+        The natural logarithm of `x`, element-wise.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     y = ti.log(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [-nan, -inf, 0.000000]
     """
-    return _unary_operation(_ti_core.expr_log, math.log, a)
+    return _unary_operation(_ti_core.expr_log, math.log, x)
 
 
 @unary
-def abs(a):  # pylint: disable=W0622
-    """The absolute value function.
+def abs(x):  # pylint: disable=W0622
+    """Compute the absolute value :math:`|x|` of `x`, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The absolute value of `a`.
+        The absolute value of each element in `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     y = ti.abs(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [1.0, 0.0, 1.0]
     """
-    return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
+    return _unary_operation(_ti_core.expr_abs, builtins.abs, x)
 
 
 @unary

@@ -1,13 +1,14 @@
 name: Publishing Release
 on:
-  release:
-    # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
-    types: [published]
-  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
-  # We use this to distinguish which taichi to release.
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
+    # Manually trigger the release workflow, a version must be provided
+    inputs:
+      version:
+        description: "The version to release (e.g. v0.8.0)"
+        type: string
+        required: true
 
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
@@ -15,26 +16,21 @@ env:
   METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
+  RELEASE_VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   add_version_to_database:
     name: Add version to database
     # Skip running release workflow on forks
-    if: github.repository_owner == 'taichi-dev'
+    if: github.repository_owner == 'taichi-dev' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: set tag
-        id: tag
-        run: echo ::set-output name=version::${GITHUB_REF#refs/*/}
-
       - name: Save new version
         run: |
           python3 -m pip install requests==2.26
-          [ -z "${{ github.event.action }}" ] || python3 misc/save_new_version.py
-        env:
-          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+          python3 misc/save_new_version.py
 
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
@@ -46,17 +42,17 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [ -z "${{ github.event.action }}" ]; then
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            # For production release, we run on four python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
+
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
+          else
             # For nightly release, we only run on python 3.8
             echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38 and py39(conda), so change matrix.
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
-          else
-            # For production release, we run on four python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
-
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
           fi
 
   build_and_upload_linux:
@@ -374,3 +370,63 @@ jobs:
         run: |
           python -m pip install twine
           venv\Scripts\python misc/upload_release.py
+
+  create_release:
+    name: Create tag and publish release
+    needs:
+      [
+        build_and_upload_linux,
+        build_and_upload_mac,
+        build_and_upload_m1,
+        build_and_upload_macos_1014,
+        build_and_upload_windows,
+      ]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          pip3 install gitpython
+          content=$(python3 misc/make_changelog.py)
+          echo $content
+          # Escape multiline strings:
+          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          echo "::set-output name=content::$content"
+
+      - name: Create tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a ${RELEASE_VERSION} -m "Release ${RELEASE_VERSION}"
+          git push origin --tags
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog.outputs.content }}
+          tag_name: ${{ github.event.inputs.version }}
+
+      - name: Bump version
+        run: |
+          import os
+          version = os.getenv("RELEASE_VERSION")
+          prefix, patch = version.rsplit(".", 1)
+          next_version = f"{prefix}.{int(patch) + 1}"
+          with open('version.txt', 'w') as f:
+              f.write(next_version + '\n')
+        shell: python
+
+      - name: Commit and Push Changes
+        run: |
+          git add version.txt
+          git commit -m "[misc] Bump version to $(cat version.txt)"
+          git push origin master

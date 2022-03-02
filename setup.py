@@ -35,10 +35,19 @@ classifiers = [
     'Programming Language :: Python :: 3.10',
 ]
 
+
+def get_version():
+    if os.getenv("RELEASE_VERSION"):
+        version = os.environ["RELEASE_VERSION"]
+    else:
+        version_file = os.path.join(os.path.dirname(__file__), 'version.txt')
+        with open(version_file, 'r') as f:
+            version = f.read().strip()
+    return tuple(int(x) for x in version.lstrip('v').split('.'))
+
+
 project_name = os.getenv('PROJECT_NAME', 'taichi')
-TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 9
-TI_VERSION_PATCH = 2
+TI_VERSION_MAJOR, TI_VERSION_MINOR, TI_VERSION_PATCH = get_version()
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/_lib/runtime/*')

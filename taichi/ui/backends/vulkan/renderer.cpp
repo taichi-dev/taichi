@@ -10,6 +10,10 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
+Renderer::~Renderer() {
+  cleanup();
+}
+
 void Renderer::init(Program *prog,
                     TaichiWindow *window,
                     const AppConfig &config) {

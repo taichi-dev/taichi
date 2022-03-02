@@ -272,7 +272,8 @@ class DeviceImpl : public Device {
 
 }  // namespace
 
-std::unique_ptr<taichi::lang::Device> make_compute_device(const ComputeDeviceParams &params) {
+std::unique_ptr<taichi::lang::Device> make_compute_device(
+    const ComputeDeviceParams &params) {
   return std::make_unique<DeviceImpl>(params.device);
 }
 

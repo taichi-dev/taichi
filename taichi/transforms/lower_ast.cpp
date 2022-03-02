@@ -15,9 +15,9 @@ namespace {
 using FlattenContext = Expression::FlattenContext;
 
 template <typename T>
-std::vector<T *> make_raw_pointer_list(
-    const std::vector<std::unique_ptr<T>> &unique_pointers) {
-  std::vector<T *> raw_pointers;
+std::list<T *> make_raw_pointer_list(
+    const std::list<std::unique_ptr<T>> &unique_pointers) {
+  std::list<T *> raw_pointers;
   for (auto &ptr : unique_pointers)
     raw_pointers.push_back(ptr.get());
   return raw_pointers;
@@ -212,7 +212,7 @@ class LowerAST : public IRVisitor {
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
-            new_for->body->statements[0].get();
+            new_for->body->statements.front().get();
         fctx.push_back(std::move(new_for));
       } else {
         // transform into a structure as
@@ -233,9 +233,13 @@ class LowerAST : public IRVisitor {
         auto mask = std::make_unique<AllocaStmt>(PrimitiveType::i32);
         new_while->mask = mask.get();
         auto &stmts = new_while->body;
+
+        /*
         for (int i = 0; i < (int)load_and_compare.size(); i++) {
           stmts->insert(std::move(load_and_compare[i]), i);
         }
+        */
+        stmts->insert(std::move(load_and_compare));
 
         VecStatement increase_and_store;
         auto const_one =
@@ -244,9 +248,13 @@ class LowerAST : public IRVisitor {
             BinaryOpType::add, loop_var_load_stmt, const_one);
         increase_and_store.push_back<LocalStoreStmt>(loop_var,
                                                      loop_var_add_one);
+        /*
         for (int i = 0; i < (int)increase_and_store.size(); i++) {
           stmts->insert(std::move(increase_and_store[i]), stmts->size());
         }
+        */
+        stmts->insert(std::move(increase_and_store));
+
         // insert break
         stmts->insert(
             std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
@@ -271,7 +279,7 @@ class LowerAST : public IRVisitor {
       new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                             0);
       new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
-          new_for->body->statements[0].get();
+          new_for->body->statements.front().get();
       new_for->mem_access_opt = stmt->mem_access_opt;
       new_for->fields_registered = true;
       fctx.push_back(std::move(new_for));

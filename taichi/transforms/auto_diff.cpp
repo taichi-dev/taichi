@@ -607,9 +607,15 @@ class MakeAdjoint : public IRVisitor {
       auto old_current_block = current_block;
 
       current_block = new_if->true_statements.get();
+      /*
       for (int i = if_stmt->true_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->true_statements->statements[i]->accept(this);
+      }
+      */
+      for (auto iter = current_block->statements.rbegin();
+           iter != current_block->statements.rend(); iter++) {
+        (*iter)->accept(this);
       }
 
       current_block = old_current_block;
@@ -618,9 +624,15 @@ class MakeAdjoint : public IRVisitor {
       new_if->set_false_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
       current_block = new_if->false_statements.get();
+      /*
       for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->false_statements->statements[i]->accept(this);
+      }
+      */
+      for (auto iter = current_block->statements.rbegin();
+           iter != current_block->statements.rend(); iter++) {
+        (*iter)->accept(this);
       }
       current_block = old_current_block;
     }

@@ -98,9 +98,12 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
             !task_b->tls_epilogue && !task_b->tls_epilogue);
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a
+  /*
   for (int j = 0; j < (int)task_b->body->size(); j++) {
     task_a->body->insert(std::move(task_b->body->statements[j]));
   }
+  */
+  task_a->body->insert(std::move(task_b->body->statements));
   task_b->body->statements.clear();
 
   // replace all reference to the offloaded statement B to A

@@ -448,10 +448,18 @@ class CFGBuilder : public IRVisitor {
     last_node_in_current_block_ = nullptr;
     begin_location_ = 0;
 
+    /*
     for (int i = 0; i < (int)block->size(); i++) {
       current_stmt_id_ = i;
       block->statements[i]->accept(this);
     }
+    */
+    current_stmt_id_ = 0;
+    for (auto &stmt : block->statements) {
+      stmt->accept(this);
+      current_stmt_id_++;
+    }
+
     current_stmt_id_ = block->size();
     new_node(-1);  // Each block has a deterministic last node.
     graph_->final_node = (int)graph_->size() - 1;

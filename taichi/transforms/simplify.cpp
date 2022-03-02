@@ -45,10 +45,17 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void accept_block() {
+    int i = 0;
+    for (auto &stmt : block->statements) {
+      current_stmt_id = i++;
+      stmt->accept(this);
+    }
+    /*
     for (int i = 0; i < (int)block->statements.size(); i++) {
       current_stmt_id = i;
       block->statements[i]->accept(this);
     }
+    */
   }
 
   static bool run(Block *block,
@@ -96,7 +103,7 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
     for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
+      auto &bstmt = (*block)[i];
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
@@ -108,18 +115,18 @@ class BasicBlockSimplify : public IRVisitor {
             auto advanced_optimization = config.advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
               if (!advanced_optimization) {
-                if (block->statements[j]
+                if ((*block)[j]
                         ->is_container_statement()) {  // no if, while, etc..
                   has_store = true;
                   break;
                 }
-                if (block->statements[j]->is<GlobalStoreStmt>()) {
+                if ((*block)[j]->is<GlobalStoreStmt>()) {
                   has_store = true;
                 }
                 continue;
               }
               if (!irpass::analysis::gather_statements(
-                       block->statements[j].get(),
+                       (*block)[j].get(),
                        [&](Stmt *s) {
                          if (auto store = s->cast<GlobalStoreStmt>())
                            return irpass::analysis::maybe_same_address(
@@ -388,14 +395,14 @@ class BasicBlockSimplify : public IRVisitor {
     return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
   }
 
-  static bool is_atomic_value_used(const std::vector<pStmt> &clause,
-                                   int atomic_stmt_i) {
+  static bool is_atomic_value_used(const std::list<pStmt> &clause,
+                                   std::list<pStmt>::const_iterator iter) {
     // Cast type to check precondition
-    const auto *stmt = clause[atomic_stmt_i]->as<AtomicOpStmt>();
+    const auto *stmt = (*iter)->as<AtomicOpStmt>();
     auto alloca = stmt->dest;
 
-    for (std::size_t i = atomic_stmt_i + 1; i < clause.size(); ++i) {
-      for (const auto &op : clause[i]->get_operands()) {
+    for (; iter != clause.cend(); iter++) {
+      for (const auto &op : (*iter)->get_operands()) {
         if (op && (op->instance_id == stmt->instance_id ||
                    op->instance_id == alloca->instance_id)) {
           return true;
@@ -412,7 +419,7 @@ class BasicBlockSimplify : public IRVisitor {
       modifier.mark_as_modified();
       return;
     }
-    auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
+    auto flatten = [&](std::list<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
       // Here we try to move statements outside the clause;
@@ -420,36 +427,37 @@ class BasicBlockSimplify : public IRVisitor {
       // global side effects. LocalStore is kept and specially treated later.
 
       bool global_state_changed = false;
-      for (int i = 0; i < (int)clause.size() && plain_clause; i++) {
-        bool has_side_effects = clause[i]->is_container_statement() ||
-                                clause[i]->has_global_side_effect();
+      for (auto iter = clause.begin(); iter != clause.end() && plain_clause;
+           iter++) {
+        auto &stmt = *iter;
+        bool has_side_effects = stmt->is_container_statement() || stmt->has_global_side_effect();
 
-        if (global_state_changed && clause[i]->is<GlobalLoadStmt>()) {
+        if (global_state_changed && stmt->is<GlobalLoadStmt>()) {
           // This clause cannot be trivially simplified, since there's a global
           // load after store and they must be kept in order
           plain_clause = false;
         }
 
-        if (clause[i]->is<GlobalStoreStmt>() ||
-            clause[i]->is<LocalStoreStmt>() || !has_side_effects) {
+        if (stmt->is<GlobalStoreStmt>() || stmt->is<LocalStoreStmt>() ||
+            !has_side_effects) {
           // This stmt can be kept.
-        } else if (clause[i]->is<AtomicOpStmt>()) {
-          plain_clause = plain_clause && !is_atomic_value_used(clause, i);
+        } else if (stmt->is<AtomicOpStmt>()) {
+          plain_clause = plain_clause && !is_atomic_value_used(clause, iter);
         } else {
           plain_clause = false;
         }
-        if (is_global_write(clause[i].get()) || has_side_effects) {
+        if (is_global_write(stmt.get()) || has_side_effects) {
           global_state_changed = true;
         }
       }
       if (plain_clause) {
-        for (int i = 0; i < (int)clause.size(); i++) {
-          if (is_global_write(clause[i].get())) {
+        for (auto &stmt : clause) {
+          if (is_global_write(stmt.get())) {
             // do nothing. Keep the statement.
             continue;
           }
-          if (clause[i]->is<LocalStoreStmt>()) {
-            auto store = clause[i]->as<LocalStoreStmt>();
+          if (stmt->is<LocalStoreStmt>()) {
+            auto store = stmt->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
             for (int l = 0; l < store->width(); l++) {
               lanes.push_back(LocalAddress(store->dest, l));
@@ -464,12 +472,12 @@ class BasicBlockSimplify : public IRVisitor {
             store->val = select.get();
             modifier.insert_before(if_stmt, std::move(load));
             modifier.insert_before(if_stmt, std::move(select));
-            modifier.insert_before(if_stmt, std::move(clause[i]));
+            modifier.insert_before(if_stmt, std::move(stmt));
           } else {
-            modifier.insert_before(if_stmt, std::move(clause[i]));
+            modifier.insert_before(if_stmt, std::move(stmt));
           }
         }
-        auto clean_clause = std::vector<pStmt>();
+        auto clean_clause = std::list<pStmt>();
         bool reduced = false;
         for (auto &&stmt : clause) {
           if (stmt != nullptr) {
@@ -521,9 +529,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (config.advanced_optimization) {
       // Merge adjacent if's with the identical condition.
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
-      if (current_stmt_id > 0 &&
-          block->statements[current_stmt_id - 1]->is<IfStmt>()) {
-        auto bstmt = block->statements[current_stmt_id - 1]->as<IfStmt>();
+      if (current_stmt_id > 0 && (*block)[current_stmt_id - 1]->is<IfStmt>()) {
+        auto bstmt = (*block)[current_stmt_id - 1]->as<IfStmt>();
         if (bstmt->cond == if_stmt->cond) {
           auto concatenate = [](std::unique_ptr<Block> &clause1,
                                 std::unique_ptr<Block> &clause2) {

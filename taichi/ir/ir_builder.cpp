@@ -8,7 +8,7 @@ namespace {
 
 inline bool stmt_location_did_not_change(Stmt *stmt, int location) {
   return location >= 0 && location < stmt->parent->size() &&
-         stmt->parent->statements[location].get() == stmt;
+         (*stmt->parent)[location].get() == stmt;
 }
 
 }  // namespace

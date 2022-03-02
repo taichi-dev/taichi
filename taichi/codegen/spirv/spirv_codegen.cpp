@@ -1998,10 +1998,12 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                         std::vector<std::vector<uint32_t>> &generated_spirv) {
   auto *root = params_.kernel->ir->as<Block>();
   auto &tasks = root->statements;
-  for (int i = 0; i < tasks.size(); ++i) {
+
+  int i = 0;
+  for (auto &stmt : tasks) {
     TaskCodegen::Params tp;
-    tp.task_ir = tasks[i]->as<OffloadedStmt>();
-    tp.task_id_in_kernel = i;
+    tp.task_ir = stmt->as<OffloadedStmt>();
+    tp.task_id_in_kernel = i++;
     tp.compiled_structs = params_.compiled_structs;
     tp.ctx_attribs = &ctx_attribs_;
     tp.ti_kernel_name = fmt::format("{}_{}", params_.ti_kernel_name, i);

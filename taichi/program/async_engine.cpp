@@ -208,10 +208,12 @@ void AsyncEngine::launch(Kernel *kernel, RuntimeContext &context) {
   auto &kmeta = kernel_metas_[kernel];
   const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
   std::vector<TaskLaunchRecord> records;
+
+  auto head = offloads.begin();
   for (std::size_t i = 0; i < offloads.size(); i++) {
     if (!kmeta_inited) {
       TI_ASSERT(kmeta.ir_handle_cached.size() == i);
-      IRHandle tmp_ir_handle(offloads[i].get(), 0);
+      IRHandle tmp_ir_handle(head->get(), 0);
       auto cloned_offs = tmp_ir_handle.clone();
       irpass::re_id(cloned_offs.get());
       auto h = ir_bank_.get_hash(cloned_offs.get());
@@ -220,6 +222,7 @@ void AsyncEngine::launch(Kernel *kernel, RuntimeContext &context) {
     }
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
+    head++;
   }
   sfg->insert_tasks(records, config_->async_listgen_fast_filtering);
   if ((config_->async_flush_every > 0) &&

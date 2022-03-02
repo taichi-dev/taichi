@@ -62,10 +62,11 @@ class MergeBitStructStores : public BasicStmtVisitor {
     std::unordered_map<Stmt *, std::vector<BitStructStoreStmt *>>
         ptr_to_bit_struct_stores;
     std::vector<Stmt *> statements_to_delete;
+    auto iter = statements.begin();
     for (int i = 0; i <= (int)statements.size(); i++) {
       // TODO: in some cases BitStructStoreStmts across container statements can
       // still be merged, similar to basic block v.s. CFG optimizations.
-      if (i == statements.size() || statements[i]->is_container_statement()) {
+      if (i == statements.size() || (*iter)->is_container_statement()) {
         for (const auto &item : ptr_to_bit_struct_stores) {
           auto ptr = item.first;
           auto stores = item.second;
@@ -95,9 +96,10 @@ class MergeBitStructStores : public BasicStmtVisitor {
         ptr_to_bit_struct_stores.clear();
         continue;
       }
-      if (auto stmt = statements[i]->cast<BitStructStoreStmt>()) {
+      if (auto stmt = (*iter)->cast<BitStructStoreStmt>()) {
         ptr_to_bit_struct_stores[stmt->ptr].push_back(stmt);
       }
+      iter++;
     }
 
     for (auto stmt : statements_to_delete) {

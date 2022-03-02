@@ -110,11 +110,21 @@ class IRNodeComparator : public IRVisitor {
       same = false;
       return;
     }
+    /*
     for (int i = 0; i < (int)stmt_list->size(); i++) {
       other_node_ = other->statements[i].get();
       stmt_list->statements[i]->accept(this);
       if (!same)
         break;
+    }
+    */
+    auto other_head = other->statements.begin();
+    for (auto &stmt : stmt_list->statements) {
+      other_node_ = other_head->get();
+      stmt->accept(this);
+      if (!same)
+        break;
+      other_head++;
     }
     other_node_ = other;
   }

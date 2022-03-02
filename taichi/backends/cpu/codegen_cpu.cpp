@@ -68,8 +68,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
            llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
 
-      for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
-        auto &s = stmt->mesh_prologue->statements[i];
+      for (auto &s : stmt->mesh_prologue->statements) {
         s->accept(this);
       }
 
@@ -100,8 +99,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       {
         builder->SetInsertPoint(loop_body_bb);
         loop_vars_llvm[stmt].push_back(loop_index);
-        for (int i = 0; i < stmt->body->size(); i++) {
-          auto &s = stmt->body->statements[i];
+        for (auto &s : stmt->body->statements) {
           s->accept(this);
         }
         builder->CreateStore(builder->CreateAdd(builder->CreateLoad(loop_index),

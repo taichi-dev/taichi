@@ -43,14 +43,16 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
 
   void visit(Block *stmt_list) override {
     const int block_size = stmt_list->size();
+    auto iter = stmt_list->statements.begin();
     for (int i = 0; i < block_size - 1; i++) {
-      if (stmt_list->statements[i]->is<ContinueStmt>()) {
+      if ((*iter)->is<ContinueStmt>()) {
         // Eliminate statements after ContinueStmt
         for (int j = block_size - 1; j > i; j--)
           stmt_list->erase(j);
         modified = true;
         break;
       }
+      iter++;
     }
     for (auto &stmt : stmt_list->statements)
       stmt->accept(this);

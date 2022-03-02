@@ -25,9 +25,17 @@ class IRCloner : public IRVisitor {
 
   void visit(Block *stmt_list) override {
     auto other = other_node->as<Block>();
+    /*
     for (int i = 0; i < (int)stmt_list->size(); i++) {
       other_node = other->statements[i].get();
       stmt_list->statements[i]->accept(this);
+    }
+    */
+    auto other_head = other->statements.begin();
+    for (auto &stmt : stmt_list->statements) {
+      other_node = other_head->get();
+      stmt->accept(this);
+      other_head++;
     }
     other_node = other;
   }

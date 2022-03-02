@@ -80,8 +80,13 @@ void MeshBLSAnalyzer::visit(Stmt *stmt) {
 bool MeshBLSAnalyzer::run() {
   const auto &block = for_stmt_->body;
 
+  /*
   for (int i = 0; i < (int)block->statements.size(); i++) {
     block->statements[i]->accept(this);
+  }
+  */
+  for (auto &stmt : block->statements) {
+    stmt->accept(this);
   }
 
   return analysis_ok_;

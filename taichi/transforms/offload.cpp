@@ -86,8 +86,7 @@ class Offloader {
       }
     };
 
-    for (int i = 0; i < (int)root_statements.size(); i++) {
-      auto &stmt = root_statements[i];
+    for (auto &stmt : root_statements) {
       // Note that stmt->parent is root_block, which doesn't contain stmt now.
       if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized) {
         assemble_serial_statements();
@@ -127,9 +126,14 @@ class Offloader {
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
+
+        /*
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
+        */
+        offloaded->body->insert(std::move(s->body->statements));
+
         offloaded->range_hint = s->range_hint;
         root_block->insert(std::move(offloaded));
       } else if (auto st = stmt->cast<StructForStmt>()) {
@@ -148,9 +152,14 @@ class Offloader {
         offloaded->num_cpu_threads =
             std::min(st->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(st, st, offloaded.get());
+
+        /*
         for (int j = 0; j < (int)st->body->statements.size(); j++) {
           offloaded->body->insert(std::move(st->body->statements[j]));
         }
+        */
+        offloaded->body->insert(std::move(st->body->statements));
+
         offloaded->mesh = st->mesh;
         offloaded->major_from_type = std::move(st->major_from_type);
         offloaded->major_to_types = std::move(st->major_to_types);
@@ -242,10 +251,14 @@ class Offloader {
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 
+    /*
     for (int i = 0; i < (int)for_stmt->body->statements.size(); i++) {
       offloaded_struct_for->body->insert(
           std::move(for_stmt->body->statements[i]));
     }
+    */
+    offloaded_struct_for->body->insert(
+        std::move(for_stmt->body->statements));
 
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads =
@@ -683,11 +696,14 @@ void insert_gc(IRNode *root, const CompileConfig &config) {
   auto *b = dynamic_cast<Block *>(root);
   TI_ASSERT(b);
   std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
-  for (int i = 0; i < (int)b->statements.size(); i++) {
-    auto snodes =
-        irpass::analysis::gather_deactivations(b->statements[i].get());
+  
+  // FIXME: This is a complicated mess with `i`
+  int i = 0;
+  for (auto &stmt : b->statements) {
+    auto snodes = irpass::analysis::gather_deactivations(stmt.get());
     gc_statements.emplace_back(
         std::make_pair(i, std::vector<SNode *>(snodes.begin(), snodes.end())));
+    i++;
   }
 
   for (int i = (int)b->statements.size() - 1; i >= 0; i--) {

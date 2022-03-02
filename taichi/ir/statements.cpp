@@ -177,6 +177,7 @@ bool LoopUniqueStmt::covers_snode(const SNode *snode) const {
 }
 
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
+  /*
   int position = parent->locate(this);
   // TI_ASSERT(width() == 1);
   // TI_ASSERT(this->ptr[0].offset == 0);
@@ -196,6 +197,29 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
       }
     }
   }
+  */
+
+  // Reverse iterator
+  auto iter = parent->locate_riter(this);
+
+  for (; iter != parent->statements.rend(); iter++) {
+    if ((*iter)->is<LocalStoreStmt>()) {
+      auto store = (*iter)->as<LocalStoreStmt>();
+      // TI_ASSERT(store->width() == 1);
+      if (store->dest == this->src[0].var) {
+        // found
+        return store;
+      }
+    } else if ((*iter)->is<AllocaStmt>()) {
+      auto alloca = (*iter)->as<AllocaStmt>();
+      // TI_ASSERT(alloca->width() == 1);
+      if (alloca == this->src[0].var) {
+        return alloca;
+      }
+    }
+  }
+
+
   return nullptr;
 }
 

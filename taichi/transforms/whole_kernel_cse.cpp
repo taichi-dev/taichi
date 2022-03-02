@@ -167,12 +167,12 @@ class WholeKernelCSE : public BasicStmtVisitor {
       auto &true_clause = if_stmt->true_statements;
       auto &false_clause = if_stmt->false_statements;
       if (irpass::analysis::same_statements(
-              true_clause->statements[0].get(),
-              false_clause->statements[0].get())) {
+              true_clause->statements.front().get(),
+              false_clause->statements.front().get())) {
         // Directly modify this because it won't invalidate any iterators.
         auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
-                                        false_clause->statements[0].get(),
+                                        false_clause->statements.front().get(),
                                         common_stmt.get());
         modifier_.insert_before(if_stmt, std::move(common_stmt));
         false_clause->erase(0);

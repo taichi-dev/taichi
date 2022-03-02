@@ -349,7 +349,7 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
             "generation must be a serial offload with a single statement.");
       }
       auto clear_list =
-          previous_offload->body->statements[0]->cast<ClearListStmt>();
+          previous_offload->body->statements.front()->cast<ClearListStmt>();
       if (!clear_list || clear_list->snode != snode)
         TI_ERROR("Invalid clear list stmt");
       stat.add("total_list_gen");

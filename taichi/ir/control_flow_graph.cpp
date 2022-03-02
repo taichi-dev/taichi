@@ -79,7 +79,7 @@ void CFGNode::replace_with(int location,
                            std::unique_ptr<Stmt> &&new_stmt,
                            bool replace_usages) const {
   TI_ASSERT(location >= begin_location && location < end_location);
-  block->replace_with(block->statements[location].get(), std::move(new_stmt),
+  block->replace_with((*block)[location].get(), std::move(new_stmt),
                       replace_usages);
 }
 
@@ -122,7 +122,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
     for (auto store_ptr :
-         irpass::analysis::get_store_destination(block->statements[i].get())) {
+         irpass::analysis::get_store_destination((*block)[i].get())) {
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
         last_def_position = i;
         break;
@@ -142,14 +142,13 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   };
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
-    Stmt *result = irpass::analysis::get_store_data(
-        block->statements[last_def_position].get());
+    Stmt *result = irpass::analysis::get_store_data((*block)[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
         if (!irpass::analysis::same_value(
                 result,
-                irpass::analysis::get_store_data(block->statements[i].get()))) {
-          if (may_contain_address(block->statements[i].get(), var)) {
+                irpass::analysis::get_store_data((*block)[i].get()))) {
+          if (may_contain_address((*block)[i].get(), var)) {
             return nullptr;
           }
         }
@@ -219,7 +218,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   if (!result) {
     // The UD-chain is empty.
     TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
-            block->statements[position]->id);
+            (*block)[position]->id);
     return nullptr;
   }
   if (!result_visible) {
@@ -236,7 +235,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   reach_kill.clear();
   for (int i = end_location - 1; i >= begin_location; i--) {
     // loop in reversed order
-    auto stmt = block->statements[i].get();
+    auto stmt = (*block)[i].get();
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source
@@ -256,7 +255,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
-    auto stmt = block->statements[i].get();
+    auto stmt = (*block)[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       bool regular = true;
@@ -339,7 +338,7 @@ void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
   // Requires reaching definition analysis.
   std::unordered_set<Stmt *> killed_in_this_node;
   for (int i = begin_location; i < end_location; i++) {
-    auto stmt = block->statements[i].get();
+    auto stmt = (*block)[i].get();
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     for (auto &load_ptr : load_ptrs) {
       if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
@@ -377,7 +376,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   live_gen.clear();
   live_kill.clear();
   for (int i = begin_location; i < end_location; i++) {
-    auto stmt = block->statements[i].get();
+    auto stmt = (*block)[i].get();
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
@@ -416,7 +415,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   // Map a variable to its nearest load
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
-    auto stmt = block->statements[i].get();
+    auto stmt = (*block)[i].get();
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
@@ -577,8 +576,8 @@ void ControlFlowGraph::print_graph_structure() const {
     } else {
       node_info += fmt::format(
           "{}~{} (size={})",
-          nodes[i]->block->statements[nodes[i]->begin_location]->name(),
-          nodes[i]->block->statements[nodes[i]->end_location - 1]->name(),
+          (*nodes[i]->block)[nodes[i]->begin_location]->name(),
+          (*nodes[i]->block)[nodes[i]->end_location - 1]->name(),
           nodes[i]->size());
     }
     if (!nodes[i]->prev.empty()) {
@@ -623,7 +622,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   nodes[start_node]->reach_kill.clear();
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-      auto stmt = nodes[i]->block->statements[j].get();
+      auto stmt = (*nodes[i]->block)[j].get();
       if ((stmt->is<PtrOffsetStmt>() &&
            stmt->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) ||
           (!after_lower_access &&
@@ -721,7 +720,7 @@ void ControlFlowGraph::live_variable_analysis(
   if (!after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-        auto stmt = nodes[i]->block->statements[j].get();
+        auto stmt = (*nodes[i]->block)[j].get();
         for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
           if (in_final_node_live_gen(store_ptr)) {
             nodes[final_node]->live_gen.insert(store_ptr);
@@ -919,7 +918,7 @@ void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
 
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-      Stmt *stmt = nodes[i]->block->statements[j].get();
+      Stmt *stmt = (*nodes[i]->block)[j].get();
       if (auto *stack = stmt->cast<AdStackAllocaStmt>()) {
         all_stacks.insert(stack);
         max_increased_size.insert(
@@ -934,7 +933,7 @@ void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
   // pre-processing step for the next maximum stack size determining algorithm.
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-      Stmt *stmt = nodes[i]->block->statements[j].get();
+      Stmt *stmt = (*nodes[i]->block)[j].get();
       if (auto *stack_push = stmt->cast<AdStackPushStmt>()) {
         auto *stack = stack_push->stack->as<AdStackAllocaStmt>();
         if (stack->max_size == 0 /*adaptive*/) {

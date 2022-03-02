@@ -100,7 +100,7 @@ class Identifier {
 
 class VecStatement {
  public:
-  std::vector<pStmt> stmts;
+  std::list<pStmt> stmts;
 
   VecStatement() {
   }
@@ -113,7 +113,7 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
-  VecStatement(std::vector<pStmt> &&other_stmts) {
+  VecStatement(std::list<pStmt> &&other_stmts) {
     stmts = std::move(other_stmts);
   }
 
@@ -127,6 +127,10 @@ class VecStatement {
     return ptr;
   }
 
+  pStmt &front() {
+    return stmts.front();
+  }
+
   pStmt &back() {
     return stmts.back();
   }
@@ -135,9 +139,11 @@ class VecStatement {
     return stmts.size();
   }
 
+  /*
   pStmt &operator[](int i) {
     return stmts[i];
   }
+  */
 };
 
 class IRVisitor {
@@ -586,7 +592,7 @@ class Stmt : public IRNode {
 class Block : public IRNode {
  public:
   Stmt *parent_stmt;
-  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
+  std::list<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -604,6 +610,8 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
+  std::list<std::unique_ptr<Stmt>>::iterator locate_iter(Stmt *stmt);
+  std::list<std::unique_ptr<Stmt>>::reverse_iterator locate_riter(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
   std::unique_ptr<Stmt> extract(int location);
@@ -614,6 +622,8 @@ class Block : public IRNode {
 
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
+
+  Stmt *insert(std::list<pStmt> &&stmt, int location = -1);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);
@@ -646,7 +656,22 @@ class Block : public IRNode {
   }
 
   pStmt &operator[](int i) {
-    return statements[i];
+    // return statements[i];
+    auto head = statements.begin();
+    for (; i > 0; i--) {
+      head = head++;
+    }
+    return *head;
+  }
+
+  std::list<std::unique_ptr<Stmt>>::iterator at(int i) {
+    if (i == -1)
+      return statements.end();
+    auto head = statements.begin();
+    for (; i > 0; i--) {
+      head = head++;
+    }
+    return head;
   }
 
   std::unique_ptr<Block> clone() const;

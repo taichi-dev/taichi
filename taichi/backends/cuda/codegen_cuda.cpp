@@ -623,8 +623,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
-      for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
-        auto &s = stmt->mesh_prologue->statements[i];
+      for (auto &s : stmt->mesh_prologue->statements) {
         s->accept(this);
       }
 
@@ -660,8 +659,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       {
         builder->SetInsertPoint(loop_body_bb);
         loop_vars_llvm[stmt].push_back(loop_index);
-        for (int i = 0; i < stmt->body->size(); i++) {
-          auto &s = stmt->body->statements[i];
+        for (auto &s : stmt->body->statements) {
           s->accept(this);
         }
         builder->CreateStore(

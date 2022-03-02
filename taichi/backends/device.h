@@ -53,9 +53,11 @@ struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
+using DeviceAllocationId = uint32_t;
+
 struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
-  uint32_t alloc_id{0};
+  DeviceAllocationId alloc_id{0};
 
   DevicePtr get_ptr(uint64_t offset = 0) const;
 
@@ -274,6 +276,17 @@ class CommandList {
   virtual void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) = 0;
   virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) = 0;
   virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
+
+  struct ComputeSize {
+    uint32_t x{0};
+    uint32_t y{0};
+    uint32_t z{0};
+  };
+  // Some GPU APIs can set the block (workgroup, threadsgroup) size at
+  // dispatch time.
+  virtual void dispatch(ComputeSize grid_size, ComputeSize block_size) {
+    dispatch(grid_size.x, grid_size.y, grid_size.z);
+  }
 
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,

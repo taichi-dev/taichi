@@ -3,6 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
+
 #include "Eigen/Sparse"
 
 namespace taichi {

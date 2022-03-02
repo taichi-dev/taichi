@@ -295,6 +295,17 @@ void compile_inline_function(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
+  irpass::lower_access(ir, config, {{}, true});
+  print("Access lowered");
+  irpass::analysis::verify(ir);
+
+  irpass::die(ir);
+  print("DIE");
+  irpass::analysis::verify(ir);
+
+  irpass::flag_access(ir);
+  print("Access flagged III");
+  irpass::analysis::verify(ir);
 
   irpass::type_check(ir, config);
   print("Typechecked");

@@ -155,9 +155,7 @@ class Func:
         if not impl.inside_kernel():
             if not self.pyfunc:
                 raise TaichiSyntaxError(
-                    "Taichi functions cannot be called from Python-scope."
-                    " Use @ti.pyfunc if you wish to call Taichi functions "
-                    "from both Python-scope and Taichi-scope.")
+                    "Taichi functions cannot be called from Python-scope.")
             return self.func(*args)
 
         if impl.get_runtime().experimental_real_function:

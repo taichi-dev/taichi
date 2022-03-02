@@ -49,8 +49,6 @@ class FunctionCreationGuard {
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
-  static uint64 task_counter;
-
   Kernel *kernel;
   IRNode *ir;
   Program *prog;

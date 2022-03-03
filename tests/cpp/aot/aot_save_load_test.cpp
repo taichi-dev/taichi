@@ -95,8 +95,10 @@ TEST(AotSaveLoad, Vulkan) {
 
   aot_save();
 
+  // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize Vulkan program
   taichi::uint64 *result_buffer{nullptr};
+  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool =
       std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
@@ -131,19 +133,25 @@ TEST(AotSaveLoad, Vulkan) {
   vulkan_runtime->add_root_buffer(root_size);
 
   // TODO
-  // vulkan::VkRuntime::RegisterParams init_kernel, ret_kernel;
-  // auto init_kernel = vk_module->get_kernel("init");
-  // EXPECT_TRUE(init_kernel);
+  //auto init_kernel = vk_module->get_kernel("init");
+  //EXPECT_TRUE(init_kernel);
+ 
+  //auto substep_kernel = vk_module->get_kernel("substep");
+  //EXPECT_TRUE(substep_kernel);
 
-  // auto ret = vk_module.get_kernel("init", init_kernel);
-  // EXPECT_TRUE(ret);
+  // Run kernels
+  //int n_particles = 8192;
+  //std::vector<float> x{n_particles * 2}; 
 
-  // ret = vk_module.get_kernel("ret", ret_kernel);
-  // EXPECT_TRUE(ret);
+  // init_kernel
+  //init_kernel->launch(&host_ctx)
+  //for (int i = 0; i < 50; i++) {
+  //  substep_kernel->launch(&host_ctx);
+  //}
+  //vulkan_runtime->synchronize();
 
-  // ret = vk_module.get_kernel("ret2", ret_kernel);
-  // EXPECT_FALSE(ret);
-
-  // auto root_size = vk_module.get_root_size();
+  //auto x_field = vk_module.get_field("x");
+  //EXPECT_TRUE(x_field);
+  //x_field.copy_to(/*dst=*/x.get());
 }
 #endif

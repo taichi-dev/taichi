@@ -366,7 +366,8 @@ class ASTTransformer(Builder):
         func = node.func.ptr
         if id(func) in primitive_types.type_ids:
             if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
-                raise TaichiSyntaxError("Type annotation can only be given to a single literal.")
+                raise TaichiSyntaxError(
+                    "Type annotation can only be given to a single literal.")
             node.ptr = expr.Expr(args[0], dtype=func)
             return True
         return False

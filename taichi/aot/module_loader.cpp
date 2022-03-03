@@ -12,7 +12,7 @@ std::unique_ptr<Module> Module::load(const std::string &path,
                                      std::any mod_params) {
   if (arch == Arch::vulkan) {
     vulkan::AotModuleParams vulkan_params =
-        std::any_cast<vulkan::AotModuleParams &>(vulkan_params);
+        std::any_cast<vulkan::AotModuleParams &>(mod_params);
     return vulkan::make_aot_module(vulkan_params);
   } else if (arch == Arch::metal) {
 

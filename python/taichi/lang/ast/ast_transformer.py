@@ -61,10 +61,7 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            if isinstance(value, expr.Expr):
-                var = ti_ops.cast(value, anno)
-            else:
-                var = impl.make_constant_expr(value, anno)
+            var = ti_ops.cast(value, anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:
@@ -365,6 +362,16 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
+    def build_call_if_is_type(ctx, node, args, keywords):
+        func = node.func.ptr
+        if id(func) in primitive_types.type_ids:
+            if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
+                raise TaichiSyntaxError("Type annotation can only be given to a single literal.")
+            node.ptr = expr.Expr(args[0], dtype=func)
+            return True
+        return False
+
+    @staticmethod
     def warn_if_is_external_func(ctx, node):
         func = node.func.ptr
         if ctx.is_in_static_scope():  # allow external function in static scope
@@ -413,6 +420,9 @@ class ASTTransformer(Builder):
             return node.ptr
 
         if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
+            return node.ptr
+
+        if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
             return node.ptr
 
         node.ptr = func(*args, **keywords)

@@ -133,25 +133,25 @@ TEST(AotSaveLoad, Vulkan) {
   vulkan_runtime->add_root_buffer(root_size);
 
   // TODO
-  //auto init_kernel = vk_module->get_kernel("init");
-  //EXPECT_TRUE(init_kernel);
- 
-  //auto substep_kernel = vk_module->get_kernel("substep");
-  //EXPECT_TRUE(substep_kernel);
+  // auto init_kernel = vk_module->get_kernel("init");
+  // EXPECT_TRUE(init_kernel);
+
+  // auto substep_kernel = vk_module->get_kernel("substep");
+  // EXPECT_TRUE(substep_kernel);
 
   // Run kernels
-  //int n_particles = 8192;
-  //std::vector<float> x{n_particles * 2}; 
+  // int n_particles = 8192;
+  // std::vector<float> x{n_particles * 2};
 
   // init_kernel
-  //init_kernel->launch(&host_ctx)
-  //for (int i = 0; i < 50; i++) {
+  // init_kernel->launch(&host_ctx)
+  // for (int i = 0; i < 50; i++) {
   //  substep_kernel->launch(&host_ctx);
   //}
-  //vulkan_runtime->synchronize();
+  // vulkan_runtime->synchronize();
 
-  //auto x_field = vk_module.get_field("x");
-  //EXPECT_TRUE(x_field);
-  //x_field.copy_to(/*dst=*/x.get());
+  // auto x_field = vk_module.get_field("x");
+  // EXPECT_TRUE(x_field);
+  // x_field.copy_to(/*dst=*/x.get());
 }
 #endif

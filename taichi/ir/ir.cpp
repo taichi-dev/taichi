@@ -417,6 +417,7 @@ bool Block::has_container_statements() {
 
 int Block::locate(Stmt *stmt) {
   for (int i = 0; i < (int)statements.size(); i++) {
+    std::cout << " inside the block " << statements[i].get()->type() << " " << statements[i].get() << " target "<< stmt << std::endl;
     if (statements[i].get() == stmt) {
       return i;
     }

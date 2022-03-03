@@ -19,6 +19,8 @@ class BasicBlockSimplify : public IRVisitor {
   Block *block;
 
   int current_stmt_id;
+  std::list<pStmt>::iterator current_stmt_iter;
+
   std::set<int> &visited;
   StructForStmt *current_struct_for;
   CompileConfig config;
@@ -46,16 +48,12 @@ class BasicBlockSimplify : public IRVisitor {
 
   void accept_block() {
     int i = 0;
+    auto iter = block->statements.begin();
     for (auto &stmt : block->statements) {
       current_stmt_id = i++;
+      current_stmt_iter = iter++;
       stmt->accept(this);
     }
-    /*
-    for (int i = 0; i < (int)block->statements.size(); i++) {
-      current_stmt_id = i;
-      block->statements[i]->accept(this);
-    }
-    */
   }
 
   static bool run(Block *block,
@@ -102,8 +100,10 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     if (is_done(stmt))
       return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = (*block)[i];
+    // for (int i = 0; i < current_stmt_id; i++) {
+    for (auto iter = block->statements.begin(); iter != current_stmt_iter; iter++) {
+      // auto &bstmt = (*block)[i];
+      auto &bstmt = *iter;
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
@@ -113,20 +113,20 @@ class BasicBlockSimplify : public IRVisitor {
             // no store to the var?
             bool has_store = false;
             auto advanced_optimization = config.advanced_optimization;
-            for (int j = i + 1; j < current_stmt_id; j++) {
+            // for (int j = i + 1; j < current_stmt_id; j++) {
+            for (auto j = std::next(iter); j != current_stmt_iter; j++) {
               if (!advanced_optimization) {
-                if ((*block)[j]
-                        ->is_container_statement()) {  // no if, while, etc..
+                if ((*j)->is_container_statement()) {  // no if, while, etc..
                   has_store = true;
                   break;
                 }
-                if ((*block)[j]->is<GlobalStoreStmt>()) {
+                if ((*j)->is<GlobalStoreStmt>()) {
                   has_store = true;
                 }
                 continue;
               }
               if (!irpass::analysis::gather_statements(
-                       (*block)[j].get(),
+                       j->get(),
                        [&](Stmt *s) {
                          if (auto store = s->cast<GlobalStoreStmt>())
                            return irpass::analysis::maybe_same_address(
@@ -530,8 +530,9 @@ class BasicBlockSimplify : public IRVisitor {
     if (config.advanced_optimization) {
       // Merge adjacent if's with the identical condition.
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
-      if (current_stmt_id > 0 && (*block)[current_stmt_id - 1]->is<IfStmt>()) {
-        auto bstmt = (*block)[current_stmt_id - 1]->as<IfStmt>();
+      // if (current_stmt_id > 0 && (*block)[current_stmt_id - 1]->is<IfStmt>()) {
+      if (current_stmt_id > 0 && (*std::prev(current_stmt_iter))->is<IfStmt>()) {
+        auto bstmt = (*std::prev(current_stmt_iter))->as<IfStmt>();
         if (bstmt->cond == if_stmt->cond) {
           auto concatenate = [](std::unique_ptr<Block> &clause1,
                                 std::unique_ptr<Block> &clause2) {

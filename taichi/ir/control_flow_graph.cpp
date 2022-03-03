@@ -45,13 +45,13 @@ int CFGNode::locate_in_block(Stmt *s) const {
   if (iter != location_cache_.end()) {
     return iter->second;
   } else {
-    int lcount = 0;
     int loc = 0;
     for (auto &st : block->statements) {
+      location_cache_[st.get()] = loc++;
       if (s == st.get()) {
-        loc = lcount;
+        loc--;
+        break;
       }
-      location_cache_[st.get()] = lcount++;
     }
     return loc;
   }

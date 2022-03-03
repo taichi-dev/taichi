@@ -15,9 +15,14 @@ namespace vulkan {
 
 class VkRuntime;
 
+struct AotModuleParams {
+  std::string module_path;
+  VkRuntime *runtime{nullptr};
+};
+
 class TI_DLL_EXPORT AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleImpl(const std::string &output_dir);
+  explicit AotModuleImpl(const AotModuleParams &params);
 
   bool get_kernel(const std::string &name, VkRuntime::RegisterParams &kernel);
   bool get_field(const std::string &name,
@@ -33,11 +38,6 @@ class TI_DLL_EXPORT AotModuleImpl : public aot::Module {
   VkRuntime *runtime_{nullptr};
 };
 
-
-struct AotModuleParams {
-  std::string module_path;
-  VkRuntime *runtime{nullptr};
-};
 
 std::unique_ptr<aot::Module> make_aot_module(const AotModuleParams &params);
 

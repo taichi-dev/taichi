@@ -388,7 +388,7 @@ class BasicBlockSimplify : public IRVisitor {
     return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
   }
 
-  static bool is_atomic_value_used(const std::vector<pStmt> &clause,
+  static bool is_atomic_value_used(const stmt_vector &clause,
                                    int atomic_stmt_i) {
     // Cast type to check precondition
     const auto *stmt = clause[atomic_stmt_i]->as<AtomicOpStmt>();
@@ -412,7 +412,7 @@ class BasicBlockSimplify : public IRVisitor {
       modifier.mark_as_modified();
       return;
     }
-    auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
+    auto flatten = [&](stmt_vector &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
       // Here we try to move statements outside the clause;
@@ -469,7 +469,7 @@ class BasicBlockSimplify : public IRVisitor {
             modifier.insert_before(if_stmt, std::move(clause[i]));
           }
         }
-        auto clean_clause = std::vector<pStmt>();
+        auto clean_clause = stmt_vector();
         bool reduced = false;
         for (auto &&stmt : clause) {
           if (stmt != nullptr) {

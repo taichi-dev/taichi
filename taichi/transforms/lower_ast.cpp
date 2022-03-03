@@ -14,10 +14,10 @@ namespace {
 
 using FlattenContext = Expression::FlattenContext;
 
-template <typename T>
-std::vector<T *> make_raw_pointer_list(
-    const std::vector<std::unique_ptr<T>> &unique_pointers) {
-  std::vector<T *> raw_pointers;
+template <typename Vec>
+std::vector<typename Vec::value_type::pointer> make_raw_pointer_list(
+    const Vec &unique_pointers) {
+  std::vector<typename Vec::value_type::pointer> raw_pointers;
   for (auto &ptr : unique_pointers)
     raw_pointers.push_back(ptr.get());
   return raw_pointers;

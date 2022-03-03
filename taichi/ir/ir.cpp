@@ -230,8 +230,8 @@ void Block::erase(Stmt *stmt) {
   erase_range(iter, std::next(iter));
 }
 
-void Block::erase_range(std::vector<pStmt>::iterator begin,
-                  std::vector<pStmt>::iterator end) {
+void Block::erase_range(stmt_vector::iterator begin,
+                  stmt_vector::iterator end) {
   for (auto iter = begin; iter != end; iter++) {
     (*iter)->erased = true;
     trash_bin.push_back(std::move(*iter));
@@ -240,7 +240,7 @@ void Block::erase_range(std::vector<pStmt>::iterator begin,
 }
 
 void Block::erase(std::unordered_set<Stmt *> stmts) {
-  std::vector<pStmt> clean_stmts;
+  stmt_vector clean_stmts;
   clean_stmts.reserve(statements.size());
   // We dont have access to erase_if in C++17
   for (pStmt &stmt : statements) {
@@ -274,7 +274,7 @@ Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 }
 
 Stmt *Block::insert_at(std::unique_ptr<Stmt> &&stmt,
-                    std::vector<pStmt>::iterator location) {
+                    stmt_vector::iterator location) {
   auto stmt_ptr = stmt.get();
   stmt->parent = this;
   statements.insert(location, std::move(stmt));
@@ -286,7 +286,7 @@ Stmt *Block::insert(VecStatement &&stmt, int location) {
 }
 
 Stmt *Block::insert_at(VecStatement &&stmt,
-                    std::vector<pStmt>::iterator location) {
+                    stmt_vector::iterator location) {
   Stmt *stmt_ptr = nullptr;
   if (stmt.size()) {
     stmt_ptr = stmt.back().get();
@@ -356,26 +356,18 @@ void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
 void Block::replace_with(Stmt *old_statement,
                          VecStatement &&new_statements,
                          bool replace_usages) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
+  auto iter = find(old_statement);
+  TI_ASSERT(iter != statements.end());
   if (replace_usages && !new_statements.stmts.empty())
     old_statement->replace_usages_with(new_statements.back().get());
-  trash_bin.push_back(std::move(statements[location]));
+  trash_bin.push_back(std::move(*iter));
   if (new_statements.size() == 1) {
     // Keep all std::vector::iterator valid in this case.
-    statements[location] = std::move(new_statements[0]);
-    statements[location]->parent = this;
-    return;
-  }
-  statements.erase(statements.begin() + location);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
+    *iter = std::move(new_statements[0]);
+    (*iter)->parent = this;
+  } else {
+    statements.erase(iter);
+    insert_at(std::move(new_statements), iter);
   }
 }
 
@@ -406,13 +398,13 @@ int Block::locate(Stmt *stmt) {
   return -1;
 }
 
-std::vector<pStmt>::iterator Block::locate(int location) {
+stmt_vector::iterator Block::locate(int location) {
   if (location == -1)
     return statements.end();
   return statements.begin() + location;
 }
 
-std::vector<pStmt>::iterator Block::find(Stmt *stmt) {
+stmt_vector::iterator Block::find(Stmt *stmt) {
   return std::find_if(statements.begin(), statements.end(),
                       [stmt](const pStmt &x) { return x.get() == stmt;
     });

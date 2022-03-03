@@ -586,7 +586,7 @@ class Stmt : public IRNode {
 class Block : public IRNode {
  public:
   Stmt *parent_stmt;
-  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
+  std::vector<pStmt> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -604,16 +604,23 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
+  std::vector<pStmt>::iterator locate(int location);
+  std::vector<pStmt>::iterator find(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
+  void erase_range(std::vector<pStmt>::iterator begin,
+             std::vector<pStmt>::iterator end);
+  void erase(std::unordered_set<Stmt *> stmts);
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   // Returns stmt.get()
   Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+  Stmt *insert_at(std::unique_ptr<Stmt> &&stmt, std::vector<pStmt>::iterator location);
 
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
+  Stmt *insert_at(VecStatement &&stmt, std::vector<pStmt>::iterator location);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);

@@ -237,19 +237,36 @@ int Stmt::locate_operand(Stmt **stmt) {
 }
 
 void Block::erase(int location) {
-  statements[location]->erased = true;
-  trash_bin.push_back(std::move(statements[location]));  // do not delete the
-  // stmt, otherwise print_ir will not function properly
-  statements.erase(statements.begin() + location);
+  auto iter = locate(location);
+  erase_range(iter, iter);
 }
 
 void Block::erase(Stmt *stmt) {
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (statements[i].get() == stmt) {
-      erase(i);
-      break;
+  auto iter = find(stmt);
+  erase_range(iter, iter);
+}
+
+void Block::erase_range(std::vector<pStmt>::iterator begin,
+                  std::vector<pStmt>::iterator end) {
+  for (auto iter = begin; iter != end; iter++) {
+    (*iter)->erased = true;
+    trash_bin.push_back(std::move(*iter));
+  }
+  statements.erase(begin, end);
+}
+
+void Block::erase(std::unordered_set<Stmt *> stmts) {
+  std::vector<pStmt> clean_stmts;
+  // We dont have access to erase_if in C++17
+  for (pStmt &stmt : statements) {
+    if (stmts.find(stmt.get()) != stmts.end()) {
+      stmt->erased = true;
+      trash_bin.push_back(std::move(stmt));    
+    } else {
+      clean_stmts.push_back(std::move(stmt));
     }
   }
+  statements = std::move(clean_stmts);
 }
 
 std::unique_ptr<Stmt> Block::extract(int location) {
@@ -268,27 +285,32 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
 }
 
 Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  return insert_at(std::move(stmt), locate(location));
+}
+
+Stmt *Block::insert_at(std::unique_ptr<Stmt> &&stmt,
+                    std::vector<pStmt>::iterator location) {
   auto stmt_ptr = stmt.get();
   stmt->parent = this;
-  if (location == -1) {
-    statements.push_back(std::move(stmt));
-  } else {
-    statements.insert(statements.begin() + location, std::move(stmt));
-  }
+  statements.insert(location, std::move(stmt));
   return stmt_ptr;
 }
 
 Stmt *Block::insert(VecStatement &&stmt, int location) {
+  return insert_at(std::move(stmt), locate(location));
+}
+
+Stmt *Block::insert_at(VecStatement &&stmt,
+                    std::vector<pStmt>::iterator location) {
   Stmt *stmt_ptr = nullptr;
   if (stmt.size()) {
     stmt_ptr = stmt.back().get();
   }
-  if (location == -1) {
-    location = (int)statements.size();
+  for (auto &s : stmt.stmts) {
+    s->parent = this;
   }
-  for (int i = 0; i < stmt.size(); i++) {
-    insert(std::move(stmt[i]), location + i);
-  }
+  statements.insert(location, std::make_move_iterator(stmt.stmts.begin()),
+                    std::make_move_iterator(stmt.stmts.end()));
   return stmt_ptr;
 }
 
@@ -296,13 +318,8 @@ void Block::replace_statements_in_range(int start,
                                         int end,
                                         VecStatement &&stmts) {
   TI_ASSERT(start <= end);
-  for (int i = 0; i < end - start; i++) {
-    erase(start);
-  }
-
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    insert(std::move(stmts[i]), start + i);
-  }
+  erase_range(locate(start), locate(end));
+  insert(std::move(stmts), start);
 }
 
 void Block::replace_with(Stmt *old_statement,
@@ -422,6 +439,18 @@ int Block::locate(Stmt *stmt) {
     }
   }
   return -1;
+}
+
+std::vector<pStmt>::iterator Block::locate(int location) {
+  if (location == -1)
+    return statements.end();
+  return statements.begin() + location;
+}
+
+std::vector<pStmt>::iterator Block::find(Stmt *stmt) {
+  return std::find_if(statements.begin(), statements.end(),
+                      [stmt](const pStmt &x) { return x.get() == stmt;
+    });
 }
 
 std::unique_ptr<Block> Block::clone() const {

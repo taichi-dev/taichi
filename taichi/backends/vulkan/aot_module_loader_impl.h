@@ -20,7 +20,7 @@ struct AotModuleParams {
   VkRuntime *runtime{nullptr};
 };
 
-class TI_DLL_EXPORT AotModuleImpl : public aot::Module {
+class AotModuleImpl : public aot::Module {
  public:
   explicit AotModuleImpl(const AotModuleParams &params);
 

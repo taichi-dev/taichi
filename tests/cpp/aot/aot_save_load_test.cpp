@@ -9,7 +9,6 @@
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
-
 #endif
 
 using namespace taichi;
@@ -126,8 +125,15 @@ TEST(AotSaveLoad, Vulkan) {
       aot::Module::load(".", Arch::vulkan, mod_params);
   EXPECT_TRUE(vk_module);
 
+  // Retrieve kernels/fields/etc from AOT module to initialize runtime
+  auto root_size = vk_module->get_root_size();
+  EXPECT_EQ(root_size, 64);
+  vulkan_runtime->add_root_buffer(root_size);
+
   // TODO
   // vulkan::VkRuntime::RegisterParams init_kernel, ret_kernel;
+  // auto init_kernel = vk_module->get_kernel("init");
+  // EXPECT_TRUE(init_kernel);
 
   // auto ret = vk_module.get_kernel("init", init_kernel);
   // EXPECT_TRUE(ret);
@@ -139,6 +145,5 @@ TEST(AotSaveLoad, Vulkan) {
   // EXPECT_FALSE(ret);
 
   // auto root_size = vk_module.get_root_size();
-  // EXPECT_EQ(root_size, 64);
 }
 #endif

@@ -57,7 +57,7 @@ class TI_DLL_EXPORT Module {
   // uint64_t version() const;
   // APIs to be overriden by each backend.
   // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
-  // virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
+  //virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
   virtual size_t get_root_size() const = 0;
 
  protected:

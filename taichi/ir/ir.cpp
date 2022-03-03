@@ -231,7 +231,7 @@ void Block::erase(Stmt *stmt) {
 }
 
 void Block::erase_range(stmt_vector::iterator begin,
-                  stmt_vector::iterator end) {
+                        stmt_vector::iterator end) {
   for (auto iter = begin; iter != end; iter++) {
     (*iter)->erased = true;
     trash_bin.push_back(std::move(*iter));
@@ -246,7 +246,7 @@ void Block::erase(std::unordered_set<Stmt *> stmts) {
   for (pStmt &stmt : statements) {
     if (stmts.find(stmt.get()) != stmts.end()) {
       stmt->erased = true;
-      trash_bin.push_back(std::move(stmt));    
+      trash_bin.push_back(std::move(stmt));
     } else {
       clean_stmts.push_back(std::move(stmt));
     }
@@ -274,7 +274,7 @@ Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 }
 
 Stmt *Block::insert_at(std::unique_ptr<Stmt> &&stmt,
-                    stmt_vector::iterator location) {
+                       stmt_vector::iterator location) {
   auto stmt_ptr = stmt.get();
   stmt->parent = this;
   statements.insert(location, std::move(stmt));
@@ -285,8 +285,7 @@ Stmt *Block::insert(VecStatement &&stmt, int location) {
   return insert_at(std::move(stmt), locate(location));
 }
 
-Stmt *Block::insert_at(VecStatement &&stmt,
-                    stmt_vector::iterator location) {
+Stmt *Block::insert_at(VecStatement &&stmt, stmt_vector::iterator location) {
   Stmt *stmt_ptr = nullptr;
   if (stmt.size()) {
     stmt_ptr = stmt.back().get();
@@ -406,8 +405,7 @@ stmt_vector::iterator Block::locate(int location) {
 
 stmt_vector::iterator Block::find(Stmt *stmt) {
   return std::find_if(statements.begin(), statements.end(),
-                      [stmt](const pStmt &x) { return x.get() == stmt;
-    });
+                      [stmt](const pStmt &x) { return x.get() == stmt; });
 }
 
 std::unique_ptr<Block> Block::clone() const {

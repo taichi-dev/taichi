@@ -614,8 +614,7 @@ class Block : public IRNode {
   stmt_vector::iterator find(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
-  void erase_range(stmt_vector::iterator begin,
-             stmt_vector::iterator end);
+  void erase_range(stmt_vector::iterator begin, stmt_vector::iterator end);
   void erase(std::unordered_set<Stmt *> stmts);
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);

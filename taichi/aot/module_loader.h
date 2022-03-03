@@ -18,9 +18,6 @@ class RuntimeContext;
 
 namespace aot {
 
-// TODO Field, Ndarray, how to reuse
-// TODO how to put runtime info into module
-
 class TI_DLL_EXPORT Kernel {
  public:
   // Rule of 5 to make MSVC happy

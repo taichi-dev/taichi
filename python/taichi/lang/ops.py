@@ -589,13 +589,12 @@ def random(dtype=float):
     """Return a single random float/integer according to the specified data type.
     Must be called in taichi scope.
 
-    If the required `dtype` is float type, this function returns a random number
-    sampled from the uniform distribution in the half-open interval [0, 1),
+    If the required `dtype` is a float type, this function returns a random number
+    sampled from the uniform distribution on the half-open interval [0, 1).
 
-    For integer types this function returns a random integer in the
-    half-open interval [0, 2^32) if a 32-bit integer is required,
-    or a random integer in the half-open interval [0, 2^64) if a
-    64-bit integer is required.
+    For integer types this function returns a random integer in the half-open interval
+    [0, 2^32) if a 32-bit integer is required, or a random integer in the half-open interval
+    [0, 2^64) if a 64-bit integer is required.
 
     Args:
         dtype (:mod:`~taichi.types.primitive_types`): Type of the required random value.

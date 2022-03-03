@@ -23,9 +23,9 @@ class KernelImpl : public aot::Kernel {
   const std::string kernel_name_;
 };
 
-class AotModuleLoaderImpl : public aot::ModuleLoader {
+class AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleLoaderImpl(const AotModuleParams &params)
+  explicit AotModuleImpl(const AotModuleParams &params)
       : runtime_(params.runtime) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
@@ -68,9 +68,9 @@ class AotModuleLoaderImpl : public aot::ModuleLoader {
 
 }  // namespace
 
-std::unique_ptr<aot::ModuleLoader> make_aot_module_loader(
+std::unique_ptr<aot::Module> make_aot_module(
     const AotModuleParams &params) {
-  return std::make_unique<AotModuleLoaderImpl>(params);
+  return std::make_unique<AotModuleImpl>(params);
 }
 
 }  // namespace metal

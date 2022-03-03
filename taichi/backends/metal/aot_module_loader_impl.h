@@ -17,7 +17,7 @@ struct AotModuleParams {
   KernelManager *runtime{nullptr};
 };
 
-std::unique_ptr<aot::ModuleLoader> make_aot_module_loader(
+std::unique_ptr<aot::Module> make_aot_module(
     const AotModuleParams &params);
 
 }  // namespace metal

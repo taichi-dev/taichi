@@ -91,7 +91,7 @@ TEST(AotSaveLoad, Vulkan) {
 
   aot_save();
 
-  vulkan::AotModuleLoaderImpl aot_loader(".");
+  vulkan::AotModuleImpl aot_loader(".");
   vulkan::VkRuntime::RegisterParams init_kernel, ret_kernel;
 
   auto ret = aot_loader.get_kernel("init", init_kernel);

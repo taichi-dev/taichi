@@ -28,11 +28,14 @@ class KernelImpl : public aot::Kernel {
 };
 }  // namespace
 
-AotModuleLoaderImpl::AotModuleLoaderImpl(const std::string &output_dir) {
+
+AotModuleImpl::AotModuleImpl(const std::string &output_dir) {
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   read_from_binary_file(ti_aot_data_, bin_path);
+
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     auto k = ti_aot_data_.kernels[i];
+
     std::vector<std::vector<uint32_t>> spirv_sources_codes;
     for (int j = 0; j < k.tasks_attribs.size(); ++j) {
       std::vector<uint32_t> res = read_spv_file(output_dir, k.tasks_attribs[j]);
@@ -42,7 +45,7 @@ AotModuleLoaderImpl::AotModuleLoaderImpl(const std::string &output_dir) {
   }
 }
 
-std::vector<uint32_t> AotModuleLoaderImpl::read_spv_file(
+std::vector<uint32_t> AotModuleImpl::read_spv_file(
     const std::string &output_dir,
     const TaskAttributes &k) {
   const std::string spv_path = fmt::format("{}/{}.spv", output_dir, k.name);
@@ -56,7 +59,7 @@ std::vector<uint32_t> AotModuleLoaderImpl::read_spv_file(
   return source_code;
 }
 
-bool AotModuleLoaderImpl::get_kernel(const std::string &name,
+bool AotModuleImpl::get_kernel(const std::string &name,
                                      VkRuntime::RegisterParams &kernel) {
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     // Offloaded task names encode more than the name of the function, but for
@@ -76,7 +79,7 @@ bool AotModuleLoaderImpl::get_kernel(const std::string &name,
   return false;
 }
 
-std::unique_ptr<aot::Kernel> AotModuleLoaderImpl::make_new_kernel(
+std::unique_ptr<aot::Kernel> AotModuleImpl::make_new_kernel(
     const std::string &name) {
   VkRuntime::RegisterParams kparams;
   if (!get_kernel(name, kparams)) {
@@ -87,15 +90,16 @@ std::unique_ptr<aot::Kernel> AotModuleLoaderImpl::make_new_kernel(
   return std::make_unique<KernelImpl>(runtime_, handle);
 }
 
-bool AotModuleLoaderImpl::get_field(const std::string &name,
+bool AotModuleImpl::get_field(const std::string &name,
                                     aot::CompiledFieldData &field) {
   TI_ERROR("AOT: get_field for Vulkan not implemented yet");
   return false;
 }
 
-size_t AotModuleLoaderImpl::get_root_size() const {
+size_t AotModuleImpl::get_root_size() const {
   return ti_aot_data_.root_buffer_size;
 }
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

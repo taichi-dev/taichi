@@ -15,15 +15,12 @@ namespace vulkan {
 
 class VkRuntime;
 
-class TI_DLL_EXPORT AotModuleLoaderImpl : public aot::ModuleLoader {
+class TI_DLL_EXPORT AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleLoaderImpl(const std::string &output_dir);
+  explicit AotModuleImpl(const std::string &output_dir);
 
   bool get_kernel(const std::string &name, VkRuntime::RegisterParams &kernel);
-
-  bool get_field(const std::string &name,
-                 aot::CompiledFieldData &field) override;
-
+  bool get_field(const std::string &name, aot::CompiledFieldData &field) override;
   size_t get_root_size() const override;
 
  private:
@@ -31,7 +28,6 @@ class TI_DLL_EXPORT AotModuleLoaderImpl : public aot::ModuleLoader {
       const std::string &name) override;
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,
                                       const TaskAttributes &k);
-
   TaichiAotData ti_aot_data_;
   VkRuntime *runtime_{nullptr};
 };

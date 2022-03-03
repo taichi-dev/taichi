@@ -98,20 +98,25 @@ TEST(AotSaveLoad, Vulkan) {
 
   // Initialize Vulkan program
   taichi::uint64 *result_buffer{nullptr};
-  auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
-  result_buffer = (taichi::uint64 *)memory_pool->allocate(sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
+  auto memory_pool =
+      std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
+  result_buffer = (taichi::uint64 *)memory_pool->allocate(
+      sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version = taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
-  auto embedded_device = std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
+  evd_params.api_version =
+      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  auto embedded_device =
+      std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
   // Create Vulkan runtime
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = result_buffer;
   params.device = embedded_device->device();
-  auto vulkan_runtime = std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
-  
+  auto vulkan_runtime =
+      std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
+
   // Run AOT module loader
   vulkan::AotModuleParams mod_params;
   mod_params.module_path = ".";
@@ -122,18 +127,18 @@ TEST(AotSaveLoad, Vulkan) {
   EXPECT_TRUE(vk_module);
 
   // TODO
-  //vulkan::VkRuntime::RegisterParams init_kernel, ret_kernel;
+  // vulkan::VkRuntime::RegisterParams init_kernel, ret_kernel;
 
-  //auto ret = vk_module.get_kernel("init", init_kernel);
-  //EXPECT_TRUE(ret);
+  // auto ret = vk_module.get_kernel("init", init_kernel);
+  // EXPECT_TRUE(ret);
 
-  //ret = vk_module.get_kernel("ret", ret_kernel);
-  //EXPECT_TRUE(ret);
+  // ret = vk_module.get_kernel("ret", ret_kernel);
+  // EXPECT_TRUE(ret);
 
-  //ret = vk_module.get_kernel("ret2", ret_kernel);
-  //EXPECT_FALSE(ret);
+  // ret = vk_module.get_kernel("ret2", ret_kernel);
+  // EXPECT_FALSE(ret);
 
-  //auto root_size = vk_module.get_root_size();
-  //EXPECT_EQ(root_size, 64);
+  // auto root_size = vk_module.get_root_size();
+  // EXPECT_EQ(root_size, 64);
 }
 #endif

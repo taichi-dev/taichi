@@ -138,6 +138,7 @@ Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
       std::find_if(stmts.begin(), stmts.end(), [&](const pStmt &x) { return x.get() == this; });
 
   TI_ASSERT(iter != stmts.end());
+  new_stmt->parent = parent;
   // std::list::insert to before the iter
   // https://www.cplusplus.com/reference/list/list/insert/
   stmts.insert(iter, std::move(new_stmt));
@@ -179,6 +180,7 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto iter = std::find_if(stmts.begin(), stmts.end(),
                            [&](const pStmt &x) { return x.get() == this; });
 
+  new_stmt->parent = parent;
   TI_ASSERT(iter != stmts.end());
   stmts.insert(++iter, std::move(new_stmt));
 
@@ -313,6 +315,7 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
   */
   auto iter = std::find_if(statements.begin(), statements.end(),
                            [&](const pStmt &x) { return x.get() == stmt; });
+
   if (iter != statements.end()) {
     auto stmt = std::move(*iter);
     statements.erase(iter);
@@ -335,6 +338,7 @@ Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 
   auto iter = at(location);
   auto stmt_ptr = stmt.get();
+  stmt->parent = this;
   statements.insert(iter, std::move(stmt));
 
   return stmt_ptr;
@@ -356,17 +360,24 @@ Stmt *Block::insert(VecStatement &&stmt, int location) {
   */
 
   auto iter = at(location);
-  auto stmt_ptr = stmt.back().get();
-  statements.insert(iter, std::make_move_iterator(stmt.stmts.begin()), std::make_move_iterator(stmt.stmts.end()));
-
-  return stmt_ptr;
+  return insert(iter, std::move(stmt));
 }
 
-Stmt *Block::insert(std::list<pStmt> &&stmt, int location) {
-  auto iter = at(location);
-  auto stmt_ptr = stmt.back().get();
+Stmt *Block::insert(std::list<pStmt>::iterator iter, VecStatement &&stmt) {
+  auto stmt_ptr = stmt.stmts.back().get();
+
+  /*
+  for (auto &s : stmt.stmts) {
+    s->parent = this;
+  }
   statements.insert(iter, std::make_move_iterator(stmt.begin()),
                     std::make_move_iterator(stmt.end()));
+                    */
+
+  for (auto &s : stmt.stmts) {
+    s->parent = this;
+  }
+  statements.insert(iter, std::make_move_iterator(stmt.stmts.begin()), std::make_move_iterator(stmt.stmts.end()));
 
   return stmt_ptr;
 }
@@ -425,9 +436,7 @@ void Block::set_statements(VecStatement &&stmts) {
     insert(std::move(stmts[i]), i);
   }
   */
-  statements.insert(statements.end(),
-    std::make_move_iterator(stmts.stmts.begin()),
-                    std::make_move_iterator(stmts.stmts.end()));
+  insert(std::move(stmts));
 }
 
 void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
@@ -448,10 +457,7 @@ void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
       std::find_if(statements.begin(), statements.end(),
                    [&](const pStmt &x) { return x.get() == old_statement; });
 
-  TI_ASSERT(iter != statements.end());
-  statements.insert(iter,
-                    std::make_move_iterator(new_statements.stmts.begin()),
-                    std::make_move_iterator(new_statements.stmts.end()));
+  insert(iter, std::move(new_statements));
 }
 
 void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
@@ -471,10 +477,7 @@ void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
   auto iter = std::find_if(statements.begin(), statements.end(),
                    [&](const pStmt &x) { return x.get() == old_statement; });
 
-  TI_ASSERT(iter != statements.end());
-  statements.insert(++iter,
-                    std::make_move_iterator(new_statements.stmts.begin()),
-                    std::make_move_iterator(new_statements.stmts.end()));
+  insert(++iter, std::move(new_statements));
 }
 
 void Block::replace_with(Stmt *old_statement,
@@ -503,11 +506,8 @@ void Block::replace_with(Stmt *old_statement,
   if (new_statements.size() == 1) {
     *iter = std::move(new_statements.front());
     (*iter)->parent = this;
-    return;
   } else {
-    statements.insert(iter,
-                      std::make_move_iterator(new_statements.stmts.begin()),
-                      std::make_move_iterator(--new_statements.stmts.end()));
+    insert(iter, std::move(new_statements));
     statements.erase(iter);
   }
 

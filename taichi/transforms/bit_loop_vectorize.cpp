@@ -59,7 +59,7 @@ class BitLoopVectorize : public IRVisitor {
               (diff.low == 1 || diff.low == -1)) {
             // construct ptr to x[i, j]
             auto indices = ptr->indices;
-            indices[1] = (++loop_stmt->body->statements.begin())->get();
+            indices[1] = (*loop_stmt->body)[1].get();
             auto base_ptr =
                 std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
             base_ptr->ret_type = new_ret_type;

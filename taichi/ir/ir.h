@@ -5,6 +5,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <unordered_map>
+#include <list>
 #include <variant>
 #include <tuple>
 
@@ -623,7 +624,7 @@ class Block : public IRNode {
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
 
-  Stmt *insert(std::list<pStmt> &&stmt, int location = -1);
+  Stmt *insert(std::list<pStmt>::iterator iter, VecStatement &&stmt);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);

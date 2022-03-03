@@ -10,6 +10,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/features.h"
+#include "taichi/backends/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/program/py_print_buffer.h"
@@ -48,36 +49,6 @@ inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   }
   return kMslVersionNone;
 }
-
-// This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
-// Once allocated, it does not own the memory (hence the name "view"). Instead,
-// GC is deferred to the memory pool.
-class BufferMemoryView {
- public:
-  BufferMemoryView(size_t size, MemoryPool *mem_pool) {
-    // Both |ptr_| and |size_| must be aligned to page size.
-    size_ = iroundup(size, taichi_page_size);
-    ptr_ = (char *)mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
-    TI_ASSERT(ptr_ != nullptr);
-    std::memset(ptr_, 0, size_);
-  }
-  // Move only
-  BufferMemoryView(BufferMemoryView &&) = default;
-  BufferMemoryView &operator=(BufferMemoryView &&) = default;
-  BufferMemoryView(const BufferMemoryView &) = delete;
-  BufferMemoryView &operator=(const BufferMemoryView &) = delete;
-
-  inline size_t size() const {
-    return size_;
-  }
-  inline char *ptr() const {
-    return ptr_;
-  }
-
- private:
-  size_t size_;
-  char *ptr_;
-};
 
 // MetalRuntime maintains a series of MTLBuffers that are shared across all the
 // Metal kernels mapped by a single Taichi kernel. This map stores those buffers

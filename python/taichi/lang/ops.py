@@ -320,136 +320,243 @@ def acos(x):
 
 
 @unary
-def sqrt(a):
-    """The square root function.
+def sqrt(x):
+    """Return the non-negative square-root of a scalar or a matrix,
+    element wise. If `x < 0` an exception is raised.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not less than zero.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The scalar or matrix whose square-roots are required.
 
     Returns:
-        `x` such that `x>=0` and `x^2=a`.
+        The square-root `y` so that `y >= 0` and `y^2 = x`. `y` has the same type as `x`.
+
+    Example::
+
+        >>> x = ti.Matrix([1., 4., 9.])
+        >>> y = ti.sqrt(x)
+        >>> y
+        [1.0, 2.0, 3.0]
     """
-    return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
+    return _unary_operation(_ti_core.expr_sqrt, math.sqrt, x)
 
 
 @unary
-def rsqrt(a):
+def rsqrt(x):
     """The reciprocal of the square root function.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            A scalar or a matrix.
 
     Returns:
-        The reciprocal of `sqrt(a)`.
+        The reciprocal of `sqrt(x)`.
     """
-    def _rsqrt(a):
-        return 1 / math.sqrt(a)
+    def _rsqrt(x):
+        return 1 / math.sqrt(x)
 
-    return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, a)
+    return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, x)
 
 
 @unary
-def round(a):  # pylint: disable=redefined-builtin
-    """The round function.
+def round(x):  # pylint: disable=redefined-builtin
+    """Round to the nearest integer, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            A scalar or a matrix.
 
     Returns:
-        The nearest integer of `a`.
+        The nearest integer of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1.5, 1.2, 2.7])
+        >>>     print(ti.round(x))
+        [-2., 1., 3.]
     """
-    return _unary_operation(_ti_core.expr_round, builtins.round, a)
+    return _unary_operation(_ti_core.expr_round, builtins.round, x)
 
 
 @unary
-def floor(a):
-    """The floor function.
+def floor(x):
+    """Return the floor of the input, element-wise.
+
+    The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The greatest integer less than or equal to `a`.
+        The floor of each element in `x`, with float type.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([3.14, -1.5])
+        >>>     y = ti.floor(x)
+        >>>     print(y)  # [3.0, -2.0]
     """
-    return _unary_operation(_ti_core.expr_floor, math.floor, a)
+    return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
 
 @unary
-def ceil(a):
-    """The ceil function.
+def ceil(x):
+    """Return the ceiling of the input, element-wise.
+
+    The ceil of the scalar `x` is the smallest integer `k`, such that `k >= x`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The least integer greater than or equal to `a`.
+        The ceiling of each element in `x`, with float dtype.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([3.14, -1.5])
+        >>>     y = ti.ceil(x)
+        >>>     print(y)  # [4.0, -1.0]
     """
-    return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
+    return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
 
 
 @unary
-def tan(a):
-    """The tangent function.
+def tan(x):
+    """Trigonometric tangent function, element-wise.
+
+    Equivalent to `ti.sin(x)/ti.cos(x)` element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        Tangent of `a`.
+        The tangent values of `x`.
+
+    Example::
+
+        >>> from math import pi
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-pi, pi/2, pi])
+        >>>     y = ti.tan(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [-0.0, -22877334.0, 0.0]
     """
-    return _unary_operation(_ti_core.expr_tan, math.tan, a)
+    return _unary_operation(_ti_core.expr_tan, math.tan, x)
 
 
 @unary
-def tanh(a):
-    """The hyperbolic tangent function.
+def tanh(x):
+    """Compute the hyperbolic tangent of `x`, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        `(e**x - e**(-x)) / (e**x + e**(-x))`.
+        The corresponding hyperbolic tangent values.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
+        >>>     y = ti.tanh(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [-0.761594, 0.000000, 0.761594]
     """
-    return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
+    return _unary_operation(_ti_core.expr_tanh, math.tanh, x)
 
 
 @unary
-def exp(a):
-    """The exp function.
+def exp(x):
+    """Compute the exponential of all elements in `x`, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        `e` to the `a`.
+        Element-wise exponential of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-1.0, 0.0, 1.0])
+        >>>     y = ti.exp(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [0.367879, 1.000000, 2.718282]
     """
-    return _unary_operation(_ti_core.expr_exp, math.exp, a)
+    return _unary_operation(_ti_core.expr_exp, math.exp, x)
 
 
 @unary
-def log(a):
-    """The natural logarithm function.
+def log(x):
+    """Compute the natural logarithm, element-wise.
+
+    The natural logarithm `log` is the inverse of the exponential function,
+    so that `log(exp(x)) = x`. The natural logarithm is logarithm in base `e`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements greater than zero.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The natural logarithm of `a`.
+        The natural logarithm of `x`, element-wise.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     y = ti.log(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [-nan, -inf, 0.000000]
     """
-    return _unary_operation(_ti_core.expr_log, math.log, a)
+    return _unary_operation(_ti_core.expr_log, math.log, x)
 
 
 @unary
-def abs(a):  # pylint: disable=W0622
-    """The absolute value function.
+def abs(x):  # pylint: disable=W0622
+    """Compute the absolute value :math:`|x|` of `x`, element-wise.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input scalar or matrix.
 
     Returns:
-        The absolute value of `a`.
+        The absolute value of each element in `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1.0, 0.0, 1.0])
+        >>>     y = ti.abs(x)
+        >>>     print(y)
+        >>>
+        >>> test()
+        [1.0, 0.0, 1.0]
     """
-    return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
+    return _unary_operation(_ti_core.expr_abs, builtins.abs, x)
 
 
 @unary

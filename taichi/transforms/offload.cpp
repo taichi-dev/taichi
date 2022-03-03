@@ -257,8 +257,7 @@ class Offloader {
           std::move(for_stmt->body->statements[i]));
     }
     */
-    offloaded_struct_for->body->insert(
-        std::move(for_stmt->body->statements));
+    offloaded_struct_for->body->insert(std::move(for_stmt->body->statements));
 
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads =
@@ -696,7 +695,7 @@ void insert_gc(IRNode *root, const CompileConfig &config) {
   auto *b = dynamic_cast<Block *>(root);
   TI_ASSERT(b);
   std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
-  
+
   // FIXME: This is a complicated mess with `i`
   int i = 0;
   for (auto &stmt : b->statements) {

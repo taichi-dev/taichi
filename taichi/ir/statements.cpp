@@ -219,7 +219,6 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     }
   }
 
-
   return nullptr;
 }
 

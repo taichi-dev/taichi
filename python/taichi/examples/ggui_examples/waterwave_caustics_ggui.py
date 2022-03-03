@@ -1,8 +1,9 @@
 # Water wave effect partially based on shallow water equations
 # https://en.wikipedia.org/wiki/Shallow_water_equations#Non-conservative_form
 
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 
@@ -18,12 +19,14 @@ velocity = ti.field(dtype=float, shape=shape)
 
 surface_height = 10.0
 
+
 @ti.func
 def get_background(p):
     scale = np.pi / (16.0)
     t = ti.sin(p.x * scale) * ti.sin(p.y * scale)
     out = 0.3 + ti.max(0.0, ti.min(1.0, t * 4.0 + 0.5)) * 0.7
     return out * ti.Vector([0.2, 0.6, 0.9])
+
 
 @ti.kernel
 def reset():
@@ -45,10 +48,12 @@ def gradient(i, j):
         height[i, j + 1] - height[i, j - 1]
     ]) * (0.5 / dx)
 
+
 @ti.func
 def get_surface_pos(i, j):
     h = height[i, j] + surface_height
     return ti.Vector([i, h, j])
+
 
 @ti.func
 def get_normal(i, j):
@@ -60,6 +65,7 @@ def get_normal(i, j):
     n = vx.cross(vy)
     return n / n.norm()
 
+
 @ti.func
 def refract(I, N, eta):
     k = 1.0 - eta * eta * (1.0 - N.dot(I) * N.dot(I))
@@ -68,10 +74,12 @@ def refract(I, N, eta):
         R = eta * I - (eta * N.dot(I) + ti.sqrt(k)) * N
     return R
 
+
 @ti.func
 def isect_ground(p, v):
     p += p.y * v / -v.y
     return p
+
 
 @ti.kernel
 def create_wave(amplitude: ti.f32, x: ti.f32, y: ti.f32):
@@ -109,7 +117,8 @@ def visualize_wave():
         w_sum = 0.0
         for subi in ti.ndrange(7):
             offset = ti.Vector([subi, 0]) - 3
-            w = ti.exp(-3.0 * ti.sqrt(offset.x * offset.x + offset.y * offset.y))
+            w = ti.exp(-3.0 *
+                       ti.sqrt(offset.x * offset.x + offset.y * offset.y))
             c += caustics[ti.Vector([i, j]) + offset] * w
             w_sum += w
         caustics[i, j] = c / w_sum
@@ -119,7 +128,8 @@ def visualize_wave():
         w_sum = 0.0
         for subj in ti.ndrange(7):
             offset = ti.Vector([0, subj]) - 3
-            w = ti.exp(-3.0 * ti.sqrt(offset.x * offset.x + offset.y * offset.y))
+            w = ti.exp(-3.0 *
+                       ti.sqrt(offset.x * offset.x + offset.y * offset.y))
             c += caustics[ti.Vector([i, j]) + offset] * w
             w_sum += w
         caustics[i, j] = c / w_sum

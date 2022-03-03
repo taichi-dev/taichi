@@ -134,8 +134,8 @@ Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   TI_ASSERT(parent);
   auto &stmts = parent->statements;
 
-  auto iter =
-      std::find_if(stmts.begin(), stmts.end(), [&](const pStmt &x) { return x.get() == this; });
+  auto iter = std::find_if(stmts.begin(), stmts.end(),
+                           [&](const pStmt &x) { return x.get() == this; });
 
   TI_ASSERT(iter != stmts.end());
   new_stmt->parent = parent;
@@ -380,7 +380,8 @@ Stmt *Block::insert(std::list<pStmt>::iterator iter, VecStatement &&stmt) {
   for (auto &s : stmt.stmts) {
     s->parent = this;
   }
-  statements.insert(iter, std::make_move_iterator(stmt.stmts.begin()), std::make_move_iterator(stmt.stmts.end()));
+  statements.insert(iter, std::make_move_iterator(stmt.stmts.begin()),
+                    std::make_move_iterator(stmt.stmts.end()));
 
   return stmt_ptr;
 }
@@ -477,7 +478,8 @@ void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
     insert(std::move(new_statements[i]), location);
   }
   */
-  auto iter = std::find_if(statements.begin(), statements.end(),
+  auto iter =
+      std::find_if(statements.begin(), statements.end(),
                    [&](const pStmt &x) { return x.get() == old_statement; });
 
   insert(++iter, std::move(new_statements));
@@ -571,7 +573,8 @@ std::list<std::unique_ptr<Stmt>>::iterator Block::locate_iter(Stmt *stmt) {
                       [&](const pStmt &x) { return x.get() == stmt; });
 }
 
-std::list<std::unique_ptr<Stmt>>::reverse_iterator Block::locate_riter(Stmt *stmt) {
+std::list<std::unique_ptr<Stmt>>::reverse_iterator Block::locate_riter(
+    Stmt *stmt) {
   return std::find_if(statements.rbegin(), statements.rend(),
                       [&](const pStmt &x) { return x.get() == stmt; });
 }

@@ -430,7 +430,8 @@ class BasicBlockSimplify : public IRVisitor {
       for (auto iter = clause.begin(); iter != clause.end() && plain_clause;
            iter++) {
         auto &stmt = *iter;
-        bool has_side_effects = stmt->is_container_statement() || stmt->has_global_side_effect();
+        bool has_side_effects =
+            stmt->is_container_statement() || stmt->has_global_side_effect();
 
         if (global_state_changed && stmt->is<GlobalLoadStmt>()) {
           // This clause cannot be trivially simplified, since there's a global

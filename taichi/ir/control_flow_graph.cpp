@@ -142,12 +142,12 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   };
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
-    Stmt *result = irpass::analysis::get_store_data((*block)[last_def_position].get());
+    Stmt *result =
+        irpass::analysis::get_store_data((*block)[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
         if (!irpass::analysis::same_value(
-                result,
-                irpass::analysis::get_store_data((*block)[i].get()))) {
+                result, irpass::analysis::get_store_data((*block)[i].get()))) {
           if (may_contain_address((*block)[i].get(), var)) {
             return nullptr;
           }
@@ -574,11 +574,11 @@ void ControlFlowGraph::print_graph_structure() const {
     if (nodes[i]->empty()) {
       node_info += "empty";
     } else {
-      node_info += fmt::format(
-          "{}~{} (size={})",
-          (*nodes[i]->block)[nodes[i]->begin_location]->name(),
-          (*nodes[i]->block)[nodes[i]->end_location - 1]->name(),
-          nodes[i]->size());
+      node_info +=
+          fmt::format("{}~{} (size={})",
+                      (*nodes[i]->block)[nodes[i]->begin_location]->name(),
+                      (*nodes[i]->block)[nodes[i]->end_location - 1]->name(),
+                      nodes[i]->size());
     }
     if (!nodes[i]->prev.empty()) {
       std::vector<std::string> indices;

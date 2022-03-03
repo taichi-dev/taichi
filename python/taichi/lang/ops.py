@@ -590,7 +590,7 @@ def random(dtype=float):
     Must be called in taichi scope.
 
     If the required `dtype` is float type, this function returns a random number
-    sampled from the uniform distribution in the half-open interval [0, 1), 
+    sampled from the uniform distribution in the half-open interval [0, 1),
 
     For integer types this function returns a random integer in the
     half-open interval [0, 2^32) if a 32-bit integer is required,

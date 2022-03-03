@@ -98,11 +98,10 @@ void CFGNode::replace_with(int location,
                            std::unique_ptr<Stmt> &&new_stmt,
                            bool replace_usages) const {
   TI_ASSERT(location >= begin_location && location < end_location);
-  Stmt* old = (*block)[location].get();
+  Stmt *old = (*block)[location].get();
   location_cache_.erase(old);
   location_cache_[new_stmt.get()] = location;
-  block->replace_with(old, std::move(new_stmt),
-                      replace_usages);
+  block->replace_with(old, std::move(new_stmt), replace_usages);
 }
 
 bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
@@ -232,7 +231,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
-        (stmt->parent == block ? locate_in_block(stmt) : stmt->parent->locate(stmt)) < position) {
+        (stmt->parent == block ? locate_in_block(stmt)
+                               : stmt->parent->locate(stmt)) < position) {
       if (!update_result(stmt))
         return nullptr;
     }

@@ -301,7 +301,8 @@ Stmt *Block::insert(VecStatement &&stmt, int location) {
   return insert(std::move(stmt), iter);
 }
 
-Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, std::list<pStmt>::iterator iter) {
+Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt,
+                    std::list<pStmt>::iterator iter) {
   auto stmt_ptr = stmt.get();
 
   stmt->parent = this;
@@ -470,8 +471,7 @@ std::list<std::unique_ptr<Stmt>>::iterator Block::find(Stmt *stmt) {
                       [&](const pStmt &x) { return x.get() == stmt; });
 }
 
-std::list<std::unique_ptr<Stmt>>::reverse_iterator Block::rfind(
-    Stmt *stmt) {
+std::list<std::unique_ptr<Stmt>>::reverse_iterator Block::rfind(Stmt *stmt) {
   return std::find_if(statements.rbegin(), statements.rend(),
                       [&](const pStmt &x) { return x.get() == stmt; });
 }

@@ -593,7 +593,7 @@ def random(dtype=float):
     sampled from the uniform distribution on the half-open interval [0, 1).
 
     For integer types this function returns a random integer in the half-open interval
-    [0, 2^32) if a 32-bit integer is required, or a random integer in the half-open interval
+    [0, 2^32) if a 32-bit integer is required, or an integer in the half-open interval
     [0, 2^64) if a 64-bit integer is required.
 
     Args:
@@ -677,10 +677,10 @@ def mod(x1, x2):
 
     Args:
         x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
-            Dividend scalar or matrix.
+            Dividend.
 
         x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
-            Divisor scalar or matrix. When both `x1` and `x2` are matrices they must have the same shape.
+            Divisor. When both `x1` and `x2` are matrices they must have the same shape.
 
     Returns:
         The element-wise remainder of the quotient `floordiv(x1, x2)`. This is a scalar \
@@ -690,9 +690,9 @@ def mod(x1, x2):
 
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([3.0, 4.0, 5.0])
-        >>>     y = 3
-        >>>     z = ti.mod(y, x)
+        >>>     x = 3
+        >>>     y = ti.Matrix([3.0, 4.0, 5.0])
+        >>>     z = ti.mod(x, y)
         >>>     print(z)
         >>>
         >>> test()
@@ -709,7 +709,7 @@ def mod(x1, x2):
 
 @binary
 def pow(x, a):  # pylint: disable=W0622
-    """First array elements raised to powers from second array :math:`x^a`, element-wise.
+    """Raise elements in `x` to powers from second array :math:`x^a`, element-wise.
 
     Negative values raised to a non-integral value will return `nan`.
     A zero value raised to a negative value will return `inf`.

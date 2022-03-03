@@ -11,10 +11,11 @@ std::unique_ptr<Module> Module::load(const std::string &path,
                                      Arch arch,
                                      std::any mod_params) {
   if (arch == Arch::vulkan) {
-    // TODO: unify the types here between vk with metal
-    std::string vk_params = std::any_cast<std::string &>(mod_params);
-    return std::make_unique<vulkan::AotModuleImpl>(vk_params);
+    vulkan::AotModuleParams vulkan_params =
+        std::any_cast<vulkan::AotModuleParams &>(vulkan_params);
+    return vulkan::make_aot_module(vulkan_params);
   } else if (arch == Arch::metal) {
+
     metal::AotModuleParams metal_params =
         std::any_cast<metal::AotModuleParams &>(mod_params);
     return metal::make_aot_module(metal_params);

@@ -28,8 +28,8 @@ class KernelImpl : public aot::Kernel {
 };
 }  // namespace
 
-AotModuleImpl::AotModuleImpl(const std::string &output_dir) {
-  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
+AotModuleImpl::AotModuleImpl(const AotModuleParams &params) {
+  const std::string bin_path = fmt::format("{}/metadata.tcb", params.module_path);
   read_from_binary_file(ti_aot_data_, bin_path);
 
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
@@ -37,7 +37,7 @@ AotModuleImpl::AotModuleImpl(const std::string &output_dir) {
 
     std::vector<std::vector<uint32_t>> spirv_sources_codes;
     for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-      std::vector<uint32_t> res = read_spv_file(output_dir, k.tasks_attribs[j]);
+      std::vector<uint32_t> res = read_spv_file(params.module_path, k.tasks_attribs[j]);
       spirv_sources_codes.push_back(res);
     }
     ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
@@ -97,6 +97,10 @@ bool AotModuleImpl::get_field(const std::string &name,
 
 size_t AotModuleImpl::get_root_size() const {
   return ti_aot_data_.root_buffer_size;
+}
+
+std::unique_ptr<aot::Module> make_aot_module(const AotModuleParams &params) {
+  return std::make_unique<AotModuleImpl>(params);
 }
 
 }  // namespace vulkan

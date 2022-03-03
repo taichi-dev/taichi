@@ -648,10 +648,8 @@ void full_simplify(IRNode *root,
     bool first_iteration = true;
     while (true) {
       bool modified = false;
-      /*
       if (extract_constant(root, config))
         modified = true;
-        */
       if (unreachable_code_elimination(root))
         modified = true;
       if (binary_op_simplify(root, config))

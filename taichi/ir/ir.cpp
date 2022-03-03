@@ -279,6 +279,9 @@ void Block::erase(Stmt *stmt) {
   auto iter = std::find_if(statements.begin(), statements.end(),
                            [&](const pStmt &x) { return x.get() == stmt; });
   if (iter != statements.end()) {
+    Stmt *stmt = iter->get();
+    stmt->erased = true;
+    trash_bin.push_back(std::move(*iter));
     statements.erase(iter);
   }
   /*

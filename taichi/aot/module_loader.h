@@ -51,10 +51,12 @@ class TI_DLL_EXPORT Module {
   static std::unique_ptr<Module> load(const std::string &path,
                                       Arch arch,
                                       std::any mod_params);
-  // Module metadata
   // TODO
+  // Module metadata
   // Arch arch() const;
   // uint64_t version() const;
+
+  // TODO
   // APIs to be overriden by each backend.
   // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
   // virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
@@ -62,6 +64,7 @@ class TI_DLL_EXPORT Module {
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
+  // TODO, replace this with the above pure virtual function
   virtual bool get_field(const std::string &name,
                          aot::CompiledFieldData &field) = 0;
 

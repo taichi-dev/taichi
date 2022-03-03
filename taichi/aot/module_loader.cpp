@@ -1,7 +1,11 @@
 #include "taichi/aot/module_loader.h"
 
+#ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
+#endif
+#ifdef TI_WITH_METAL
 #include "taichi/backends/metal/aot_module_loader_impl.h"
+#endif
 
 namespace taichi {
 namespace lang {

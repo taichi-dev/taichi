@@ -132,34 +132,18 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc, std::move(new_stmt));
+  auto iter = parent->find(this);
+  TI_ASSERT(iter != parent->statements.end());
+  parent->insert_at(std::move(new_stmt), iter);
   return ret;
 }
 
 Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+  auto iter = parent->find(this);
+  TI_ASSERT(iter != parent->statements.end());
+  parent->insert_at(std::move(new_stmt), std::next(iter));
   return ret;
 }
 
@@ -238,12 +222,12 @@ int Stmt::locate_operand(Stmt **stmt) {
 
 void Block::erase(int location) {
   auto iter = locate(location);
-  erase_range(iter, iter);
+  erase_range(iter, std::next(iter));
 }
 
 void Block::erase(Stmt *stmt) {
   auto iter = find(stmt);
-  erase_range(iter, iter);
+  erase_range(iter, std::next(iter));
 }
 
 void Block::erase_range(std::vector<pStmt>::iterator begin,
@@ -257,6 +241,7 @@ void Block::erase_range(std::vector<pStmt>::iterator begin,
 
 void Block::erase(std::unordered_set<Stmt *> stmts) {
   std::vector<pStmt> clean_stmts;
+  clean_stmts.reserve(statements.size());
   // We dont have access to erase_if in C++17
   for (pStmt &stmt : statements) {
     if (stmts.find(stmt.get()) != stmts.end()) {
@@ -361,31 +346,11 @@ void Block::set_statements(VecStatement &&stmts) {
 }
 
 void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
-  }
+  insert_at(std::move(new_statements), find(old_statement));
 }
 
 void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i + 1;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
-  }
+  insert_at(std::move(new_statements), std::next(find(old_statement)));
 }
 
 void Block::replace_with(Stmt *old_statement,

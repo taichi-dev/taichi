@@ -152,10 +152,9 @@ def subscript(value, *_indices, skip_reordered=False):
         if not isinstance(value, Matrix):
             raise SyntaxError(
                 f"The type {type(value)} do not support index of slice type")
-        return value._subscript(*_indices)
-
-    indices_expr_group = make_expr_group(*_indices)
-    index_dim = indices_expr_group.size()
+    else:
+        indices_expr_group = make_expr_group(*_indices)
+        index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
         return value._subscript(*_indices)

@@ -21,6 +21,9 @@ class CFGNode {
   // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks_;
 
+  mutable std::unordered_map<Stmt *, int> location_cache_;
+  int locate_in_block(Stmt *stmt) const;
+
  public:
   // This node corresponds to block->statements[i]
   // for i in [begin_location, end_location).

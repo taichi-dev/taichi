@@ -200,7 +200,7 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   */
 
   // Reverse iterator
-  auto iter = parent->locate_riter(this);
+  auto iter = parent->rfind(this);
 
   for (; iter != parent->statements.rend(); iter++) {
     if ((*iter)->is<LocalStoreStmt>()) {

@@ -660,30 +660,24 @@ void full_simplify(IRNode *root,
         modified = true;
       if (die(root))
         modified = true;
-      /*
       if (alg_simp(root, config))
         modified = true;
       if (loop_invariant_code_motion(root, config))
         modified = true;
       if (die(root))
         modified = true;
-        */
       if (simplify(root, config))
         modified = true;
       if (die(root))
         modified = true;
-      /*
       if (config.opt_level > 0 && whole_kernel_cse(root))
         modified = true;
-        */
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
-      /*
       if (config.opt_level > 0 && (first_iteration || modified) &&
           config.cfg_optimization &&
           cfg_optimization(root, args.after_lower_access))
         modified = true;
-        */
       first_iteration = false;
       if (!modified)
         break;

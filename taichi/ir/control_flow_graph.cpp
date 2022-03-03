@@ -40,6 +40,23 @@ CFGNode::CFGNode(Block *block,
 CFGNode::CFGNode() : CFGNode(nullptr, -1, -1, false, nullptr) {
 }
 
+int CFGNode::locate_in_block(Stmt *s) const {
+  auto iter = location_cache_.find(s);
+  if (iter != location_cache_.end()) {
+    return iter->second;
+  } else {
+    int lcount = 0;
+    int loc = 0;
+    for (auto &st : block->statements) {
+      if (s == st.get()) {
+        loc = lcount;
+      }
+      location_cache_[st.get()] = lcount++;
+    }
+    return loc;
+  }
+}
+
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
   from->next.push_back(to);
   to->prev.push_back(from);
@@ -56,6 +73,7 @@ std::size_t CFGNode::size() const {
 void CFGNode::erase(int location) {
   TI_ASSERT(location >= begin_location && location < end_location);
   block->erase(location);
+  location_cache_.clear();
   end_location--;
   for (auto node = next_node_in_same_block; node != nullptr;
        node = node->next_node_in_same_block) {
@@ -67,6 +85,7 @@ void CFGNode::erase(int location) {
 void CFGNode::insert(std::unique_ptr<Stmt> &&new_stmt, int location) {
   TI_ASSERT(location >= begin_location && location <= end_location);
   block->insert(std::move(new_stmt), location);
+  location_cache_.clear();
   end_location++;
   for (auto node = next_node_in_same_block; node != nullptr;
        node = node->next_node_in_same_block) {
@@ -79,7 +98,10 @@ void CFGNode::replace_with(int location,
                            std::unique_ptr<Stmt> &&new_stmt,
                            bool replace_usages) const {
   TI_ASSERT(location >= begin_location && location < end_location);
-  block->replace_with((*block)[location].get(), std::move(new_stmt),
+  Stmt* old = (*block)[location].get();
+  location_cache_.erase(old);
+  location_cache_[new_stmt.get()] = location;
+  block->replace_with(old, std::move(new_stmt),
                       replace_usages);
 }
 
@@ -161,7 +183,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   auto visible = [&](Stmt *stmt) {
     // Check if |stmt| is before |position| here.
     if (stmt->parent == block) {
-      return stmt->parent->locate(stmt) < position;
+      return locate_in_block(stmt) < position;
     }
     // |parent_blocks| is precomputed in the constructor of CFGNode.
     // TODO: What if |stmt| appears in an ancestor of |block| but after
@@ -210,7 +232,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
-        stmt->parent->locate(stmt) < position) {
+        (stmt->parent == block ? locate_in_block(stmt) : stmt->parent->locate(stmt)) < position) {
       if (!update_result(stmt))
         return nullptr;
     }
@@ -507,7 +529,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           auto next_load_stmt = live_load_in_this_node[load_ptr];
           TI_ASSERT(irpass::analysis::same_statements(stmt, next_load_stmt));
           next_load_stmt->replace_usages_with(stmt);
-          erase(block->locate(next_load_stmt));
+          erase(locate_in_block(next_load_stmt));
           modified = true;
         }
         live_load_in_this_node[load_ptr] = stmt;

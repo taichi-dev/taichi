@@ -611,8 +611,8 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
-  std::list<std::unique_ptr<Stmt>>::iterator locate_iter(Stmt *stmt);
-  std::list<std::unique_ptr<Stmt>>::reverse_iterator locate_riter(Stmt *stmt);
+  std::list<std::unique_ptr<Stmt>>::iterator find(Stmt *stmt);
+  std::list<std::unique_ptr<Stmt>>::reverse_iterator rfind(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
   std::unique_ptr<Stmt> extract(int location);
@@ -624,7 +624,8 @@ class Block : public IRNode {
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
 
-  Stmt *insert(std::list<pStmt>::iterator iter, VecStatement &&stmt);
+  Stmt *insert(VecStatement &&stmt, std::list<pStmt>::iterator iter);
+  Stmt *insert(std::unique_ptr<Stmt> &&stmt, std::list<pStmt>::iterator iter);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);
@@ -660,7 +661,7 @@ class Block : public IRNode {
     // return statements[i];
     auto head = statements.begin();
     for (; i > 0; i--) {
-      head = head++;
+      head++;
     }
     return *head;
   }
@@ -670,7 +671,7 @@ class Block : public IRNode {
       return statements.end();
     auto head = statements.begin();
     for (; i > 0; i--) {
-      head = head++;
+      head++;
     }
     return head;
   }

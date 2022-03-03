@@ -126,16 +126,20 @@ def wrap_scalar(x):
 @taichi_scope
 def subscript(value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
-        return value.__getitem__(*_indices)
+        return value.__getitem__(_indices)
 
     if isinstance(value, (tuple, list, dict)):
         assert len(_indices) == 1
         return value[_indices[0]]
 
+    has_slice = False
     flattened_indices = []
     for _index in _indices:
         if is_taichi_class(_index):
             ind = _index.entries
+        elif isinstance(_index, slice):
+            ind = [_index]
+            has_slice = True
         else:
             ind = [_index]
         flattened_indices += ind
@@ -143,8 +147,14 @@ def subscript(value, *_indices, skip_reordered=False):
     if isinstance(_indices,
                   tuple) and len(_indices) == 1 and _indices[0] is None:
         _indices = ()
-    indices_expr_group = make_expr_group(*_indices)
-    index_dim = indices_expr_group.size()
+
+    if has_slice:
+        if not isinstance(value, Matrix):
+            raise SyntaxError(
+                f"The type {type(value)} do not support index of slice type")
+    else:
+        indices_expr_group = make_expr_group(*_indices)
+        index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
         return value._subscript(*_indices)

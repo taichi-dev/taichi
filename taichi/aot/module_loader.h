@@ -8,8 +8,8 @@
 
 #include "taichi/aot/module_data.h"
 #include "taichi/backends/device.h"
-#include "taichi/ir/snode.h" 
-#include "taichi/aot/module_data.h" 
+#include "taichi/ir/snode.h"
+#include "taichi/aot/module_data.h"
 
 namespace taichi {
 namespace lang {
@@ -20,7 +20,6 @@ namespace aot {
 
 // TODO Field, Ndarray, how to reuse
 // TODO how to put runtime info into module
-
 
 class TI_DLL_EXPORT Kernel {
  public:
@@ -57,21 +56,21 @@ class TI_DLL_EXPORT Module {
                                       std::any mod_params);
   // Module metadata
   // TODO
-  //Arch arch() const;
-  //uint64_t version() const;
+  // Arch arch() const;
+  // uint64_t version() const;
   // APIs to be overriden by each backend.
-  //virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
-  //virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0; 
+  // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
+  // virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
   virtual size_t get_root_size() const = 0;
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
   virtual bool get_field(const std::string &name,
                          aot::CompiledFieldData &field) = 0;
+
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
 };
-
 
 // Only responsible for reporting device capabilities
 class TargetDevice : public Device {

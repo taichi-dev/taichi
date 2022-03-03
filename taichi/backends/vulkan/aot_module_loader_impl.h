@@ -20,7 +20,8 @@ class TI_DLL_EXPORT AotModuleImpl : public aot::Module {
   explicit AotModuleImpl(const std::string &output_dir);
 
   bool get_kernel(const std::string &name, VkRuntime::RegisterParams &kernel);
-  bool get_field(const std::string &name, aot::CompiledFieldData &field) override;
+  bool get_field(const std::string &name,
+                 aot::CompiledFieldData &field) override;
   size_t get_root_size() const override;
 
  private:

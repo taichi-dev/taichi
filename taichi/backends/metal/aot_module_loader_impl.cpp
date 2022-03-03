@@ -68,8 +68,7 @@ class AotModuleImpl : public aot::Module {
 
 }  // namespace
 
-std::unique_ptr<aot::Module> make_aot_module(
-    const AotModuleParams &params) {
+std::unique_ptr<aot::Module> make_aot_module(const AotModuleParams &params) {
   return std::make_unique<AotModuleImpl>(params);
 }
 

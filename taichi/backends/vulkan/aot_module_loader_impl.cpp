@@ -28,7 +28,6 @@ class KernelImpl : public aot::Kernel {
 };
 }  // namespace
 
-
 AotModuleImpl::AotModuleImpl(const std::string &output_dir) {
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   read_from_binary_file(ti_aot_data_, bin_path);
@@ -60,7 +59,7 @@ std::vector<uint32_t> AotModuleImpl::read_spv_file(
 }
 
 bool AotModuleImpl::get_kernel(const std::string &name,
-                                     VkRuntime::RegisterParams &kernel) {
+                               VkRuntime::RegisterParams &kernel) {
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     // Offloaded task names encode more than the name of the function, but for
     // AOT, only use the name of the function which should be the first part of
@@ -91,7 +90,7 @@ std::unique_ptr<aot::Kernel> AotModuleImpl::make_new_kernel(
 }
 
 bool AotModuleImpl::get_field(const std::string &name,
-                                    aot::CompiledFieldData &field) {
+                              aot::CompiledFieldData &field) {
   TI_ERROR("AOT: get_field for Vulkan not implemented yet");
   return false;
 }

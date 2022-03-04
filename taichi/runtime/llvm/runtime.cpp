@@ -348,6 +348,7 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 STRUCT_FIELD_ARRAY(RuntimeContext, args);
 STRUCT_FIELD(RuntimeContext, runtime);
+STRUCT_FIELD(RuntimeContext, result_buffer)
 
 int32 RuntimeContext_get_extra_args(RuntimeContext *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];
@@ -698,6 +699,10 @@ extern "C" {
 
 void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret, u32 idx) {
   runtime->set_result(taichi_result_buffer_ret_value_id + idx, ret);
+}
+
+void RuntimeContext_store_result(RuntimeContext *ctx, u64 ret, u32 idx) {
+  ctx->result_buffer[taichi_result_buffer_ret_value_id + idx] = ret;
 }
 
 void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {

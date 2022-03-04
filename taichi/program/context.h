@@ -24,6 +24,7 @@ struct RuntimeContext {
   int32 cpu_thread_id;
   // |is_device_allocation| is true iff args[i] is a DeviceAllocation*.
   bool is_device_allocation[taichi_max_num_args_total]{false};
+  uint64 *result_buffer;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 

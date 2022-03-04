@@ -22,26 +22,28 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-# @test_utils.test(experimental_real_function=True, arch=[ti.cpu, ti.gpu])
-# def test_function_with_return():
-#     x = ti.field(ti.i32, shape=())
-#
-#     @ti.func
-#     def foo(val: ti.i32) -> ti.i32:
-#         x[None] += val
-#         return val
-#
-#     @ti.kernel
-#     def run():
-#         a = foo(40)
-#         foo(2)
-#         assert a == 40
-#
-#     x[None] = 0
-#     run()
-#     assert x[None] == 42
-#
-#
+@test_utils.test(experimental_real_function=True,
+                 arch=[ti.cpu, ti.gpu],
+                 debug=True)
+def test_function_with_return():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.func
+    def foo(val: ti.i32) -> ti.i32:
+        x[None] += val
+        return val
+
+    @ti.kernel
+    def run():
+        a = foo(40)
+        foo(2)
+        assert a == 40
+
+    x[None] = 0
+    run()
+    assert x[None] == 42
+
+
 # @test_utils.test(experimental_real_function=True, arch=[ti.cpu, ti.gpu])
 # def test_function_with_multiple_last_return():
 #     x = ti.field(ti.i32, shape=())

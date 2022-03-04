@@ -29,7 +29,8 @@ class KernelImpl : public aot::Kernel {
 
 }  // namespace
 
-AotModuleImpl::AotModuleImpl(const AotModuleParams &params) {
+AotModuleImpl::AotModuleImpl(const AotModuleParams &params)
+  : runtime_(params.runtime) {
   const std::string bin_path =
       fmt::format("{}/metadata.tcb", params.module_path);
   read_from_binary_file(ti_aot_data_, bin_path);
@@ -45,7 +46,6 @@ AotModuleImpl::AotModuleImpl(const AotModuleParams &params) {
     }
     ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
   }
-  runtime_ = params.runtime;
 }
 
 std::vector<uint32_t> AotModuleImpl::read_spv_file(
@@ -62,7 +62,7 @@ std::vector<uint32_t> AotModuleImpl::read_spv_file(
   return source_code;
 }
 
-std::unique_ptr<Kernel> AotModuleImpl::get_kernel(const std::string &name) {
+std::unique_ptr<aot::Kernel> AotModuleImpl::get_kernel(const std::string &name) {
   return make_new_kernel(name);
 }
 

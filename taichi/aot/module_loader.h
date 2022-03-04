@@ -18,6 +18,17 @@ class RuntimeContext;
 
 namespace aot {
 
+class TI_DLL_EXPORT Field {
+ public:
+  // Rule of 5 to make MSVC happy
+  Field() = default;
+  virtual ~Field() = default;
+  Field(const Field &) = delete;
+  Field &operator=(const Field &) = delete;
+  Field(Field &&) = default;
+  Field &operator=(Field &&) = default;
+};
+
 class TI_DLL_EXPORT Kernel {
  public:
   // Rule of 5 to make MSVC happy
@@ -56,15 +67,15 @@ class TI_DLL_EXPORT Module {
   Arch arch() const;
   uint64_t version() const;
 
-  // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
+  /**
+   * Intended to be overriden by each backend's implementation.
+   */
   virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
+  virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
   virtual size_t get_root_size() const = 0;
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
-  // TODO, replace this with the above pure virtual function
-  virtual bool get_field(const std::string &name,
-                         aot::CompiledFieldData &field) = 0;
 
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;

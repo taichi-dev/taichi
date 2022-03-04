@@ -40,10 +40,8 @@ class AotModuleImpl : public aot::Module {
     return make_new_kernel(name);
   }
 
-  bool get_field(const std::string &name,
-                 aot::CompiledFieldData &field) override {
-    TI_ERROR("AOT: get_field for Metal not implemented yet");
-    return false;
+  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
   }
 
   size_t get_root_size() const override {

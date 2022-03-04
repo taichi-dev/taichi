@@ -64,7 +64,7 @@ class ASTTransformer(Builder):
             if isinstance(value, expr.Expr):
                 var = ti_ops.cast(value, anno)
             else:
-                var = impl.make_constant_expr(value, anno)
+                var = expr.Expr(value, dtype=anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:

@@ -50,6 +50,14 @@ class AotModuleImpl : public aot::Module {
     return aot_data_.metadata.root_buffer_size;
   }
 
+  // Module metadata
+  Arch arch() const {
+    return Arch::metal;
+  }
+  uint64_t version() const {
+    TI_NOT_IMPLEMENTED;
+  }
+
  private:
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override {

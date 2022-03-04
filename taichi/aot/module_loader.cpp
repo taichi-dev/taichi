@@ -7,7 +7,6 @@ namespace aot {
 std::unique_ptr<Module> Module::load(const std::string &path,
                                      Arch arch,
                                      std::any mod_params) {
-  //  arch_ = arch;
   if (arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
     return vulkan::make_aot_module(mod_params);
@@ -20,10 +19,6 @@ std::unique_ptr<Module> Module::load(const std::string &path,
     TI_NOT_IMPLEMENTED;
   }
 }
-
-// Arch Module::arch() const {
-//  return arch_;
-//}
 
 }  // namespace aot
 }  // namespace lang

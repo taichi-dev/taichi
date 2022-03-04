@@ -30,6 +30,14 @@ class AotModuleImpl : public aot::Module {
                  aot::CompiledFieldData &field) override;
   size_t get_root_size() const override;
 
+  // Module metadata
+  Arch arch() const {
+    return Arch::vulkan;
+  }
+  uint64_t version() const {
+    TI_NOT_IMPLEMENTED;
+  }
+
  private:
   bool get_kernel_params_by_name(const std::string &name,
                                  VkRuntime::RegisterParams &kernel);

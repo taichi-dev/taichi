@@ -75,6 +75,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
+  std::unordered_map<Function *, llvm::Function *> func_map;
+
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
@@ -377,6 +379,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       llvm::Value *dest,
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+
+  void visit(FuncCallStmt *stmt) override;
 
   ~CodeGenLLVM() override = default;
 };

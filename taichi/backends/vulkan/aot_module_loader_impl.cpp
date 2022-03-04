@@ -29,7 +29,7 @@ class KernelImpl : public aot::Kernel {
 
 class AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleImpl(const AotModuleParams &params) 
+  explicit AotModuleImpl(const AotModuleParams &params)
       : runtime_(params.runtime) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
@@ -73,8 +73,8 @@ class AotModuleImpl : public aot::Module {
                                  VkRuntime::RegisterParams &kernel) {
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
       // Offloaded task names encode more than the name of the function, but for
-      // AOT, only use the name of the function which should be the first part of
-      // the struct
+      // AOT, only use the name of the function which should be the first part
+      // of the struct
       if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
         kernel.kernel_attribs = ti_aot_data_.kernels[i];
         kernel.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];

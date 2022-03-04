@@ -53,7 +53,7 @@ class TI_DLL_EXPORT Module {
                                       std::any mod_params);
 
   // Module metadata
-  //Arch arch() const;
+  // Arch arch() const;
   // uint64_t version() const;
 
   // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;

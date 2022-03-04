@@ -133,8 +133,8 @@ TEST(AotSaveLoad, Vulkan) {
   vulkan_runtime->add_root_buffer(root_size);
 
   // TODO
-  // auto init_kernel = vk_module->get_kernel("init");
-  // EXPECT_TRUE(init_kernel);
+  auto init_kernel = vk_module->get_kernel("init");
+  EXPECT_TRUE(init_kernel);
 
   // auto substep_kernel = vk_module->get_kernel("substep");
   // EXPECT_TRUE(substep_kernel);

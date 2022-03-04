@@ -52,15 +52,14 @@ class TI_DLL_EXPORT Module {
                                       Arch arch,
                                       std::any mod_params);
 
-  // TODO
   // Module metadata
-  // Arch arch() const;
+  Arch arch() const;
   // uint64_t version() const;
 
   // TODO
   // APIs to be overriden by each backend.
   // virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
-  // virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
+  virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
   virtual size_t get_root_size() const = 0;
 
  protected:
@@ -71,6 +70,7 @@ class TI_DLL_EXPORT Module {
 
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
+  static Arch arch_;
 };
 
 // Only responsible for reporting device capabilities

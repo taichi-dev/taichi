@@ -24,12 +24,14 @@ class AotModuleImpl : public aot::Module {
  public:
   explicit AotModuleImpl(const AotModuleParams &params);
 
-  bool get_kernel(const std::string &name, VkRuntime::RegisterParams &kernel);
+  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override;
+
   bool get_field(const std::string &name,
                  aot::CompiledFieldData &field) override;
   size_t get_root_size() const override;
 
  private:
+  bool get_kernel_params_by_name(const std::string &name, VkRuntime::RegisterParams &kernel);
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override;
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,

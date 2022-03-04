@@ -26,6 +26,7 @@ class KernelImpl : public aot::Kernel {
   VkRuntime *const runtime_;
   const KernelHandle handle_;
 };
+
 }  // namespace
 
 AotModuleImpl::AotModuleImpl(const AotModuleParams &params) {
@@ -44,6 +45,7 @@ AotModuleImpl::AotModuleImpl(const AotModuleParams &params) {
     }
     ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
   }
+  runtime_ = params.runtime;
 }
 
 std::vector<uint32_t> AotModuleImpl::read_spv_file(
@@ -60,8 +62,12 @@ std::vector<uint32_t> AotModuleImpl::read_spv_file(
   return source_code;
 }
 
-bool AotModuleImpl::get_kernel(const std::string &name,
-                               VkRuntime::RegisterParams &kernel) {
+std::unique_ptr<Kernel> AotModuleImpl::get_kernel(const std::string &name) {
+  return make_new_kernel(name);
+}
+
+bool AotModuleImpl::get_kernel_params_by_name(const std::string &name,
+                                     VkRuntime::RegisterParams &kernel) {
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     // Offloaded task names encode more than the name of the function, but for
     // AOT, only use the name of the function which should be the first part of
@@ -83,7 +89,7 @@ bool AotModuleImpl::get_kernel(const std::string &name,
 std::unique_ptr<aot::Kernel> AotModuleImpl::make_new_kernel(
     const std::string &name) {
   VkRuntime::RegisterParams kparams;
-  if (!get_kernel(name, kparams)) {
+  if (!get_kernel_params_by_name(name, kparams)) {
     TI_DEBUG("Failed to load kernel {}", name);
     return nullptr;
   }

@@ -132,23 +132,19 @@ TEST(AotSaveLoad, Vulkan) {
   EXPECT_EQ(root_size, 64);
   vulkan_runtime->add_root_buffer(root_size);
 
-  // TODO
   auto init_kernel = vk_module->get_kernel("init");
   EXPECT_TRUE(init_kernel);
 
-  // auto substep_kernel = vk_module->get_kernel("substep");
-  // EXPECT_TRUE(substep_kernel);
+  auto ret_kernel = vk_module->get_kernel("ret");
+  EXPECT_TRUE(ret_kernel);
+
+  auto ret2_kernel = vk_module->get_kernel("ret2");
+  EXPECT_FALSE(ret2_kernel);
 
   // Run kernels
-  // int n_particles = 8192;
-  // std::vector<float> x{n_particles * 2};
-
-  // init_kernel
-  // init_kernel->launch(&host_ctx)
-  // for (int i = 0; i < 50; i++) {
-  //  substep_kernel->launch(&host_ctx);
-  //}
-  // vulkan_runtime->synchronize();
+  init_kernel->launch(&host_ctx);
+  ret_kernel->launch(&host_ctx);
+  vulkan_runtime->synchronize();
 
   // auto x_field = vk_module.get_field("x");
   // EXPECT_TRUE(x_field);

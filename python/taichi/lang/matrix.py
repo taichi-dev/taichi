@@ -76,8 +76,8 @@ class Matrix(TaichiOperations):
                         mat.append(
                             list([
                                 impl.make_tensor_element_expr(
-                                    self.local_tensor_proxy,
-                                    (expr.Expr(i, dtype=primitive_types.i32), ),
+                                    self.local_tensor_proxy, (expr.Expr(
+                                        i, dtype=primitive_types.i32), ),
                                     (len(n), ), self.dynamic_index_stride)
                             ]))
             else:  # now init a Matrix

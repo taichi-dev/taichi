@@ -70,13 +70,15 @@ def _clamp_unsigned_to_range(npty, val):
 
 def make_constant_expr(val, dtype):
     if isinstance(val, (int, np.integer)):
-        constant_dtype = impl.get_runtime().default_ip if dtype is None else dtype
+        constant_dtype = impl.get_runtime(
+        ).default_ip if dtype is None else dtype
         _check_in_range(to_numpy_type(constant_dtype), val)
         return Expr(
             _ti_core.make_const_expr_int(
                 constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
     if isinstance(val, (float, np.floating)):
-        constant_dtype = impl.get_runtime().default_fp if dtype is None else dtype
+        constant_dtype = impl.get_runtime(
+        ).default_fp if dtype is None else dtype
         return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
     raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 

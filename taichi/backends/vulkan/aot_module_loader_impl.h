@@ -38,8 +38,6 @@ class AotModuleImpl : public aot::Module {
   VkRuntime *runtime_{nullptr};
 };
 
-std::unique_ptr<aot::Module> make_aot_module(const AotModuleParams &params);
-
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

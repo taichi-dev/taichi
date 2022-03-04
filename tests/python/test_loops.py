@@ -172,3 +172,18 @@ def test_assignment_in_nested_loops():
     x[None] = 1
     func()
     assert x[None] == 1
+
+
+@test_utils.test()
+def test_break_in_outermost_for_not_in_outermost_scope():
+    @ti.kernel
+    def foo() -> ti.i32:
+        a = 0
+        if True:
+            for i in range(1000):
+                if i == 100:
+                    break
+                a += 1
+        return a
+
+    assert foo() == 100

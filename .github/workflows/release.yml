@@ -404,8 +404,8 @@ jobs:
 
       - name: Create tag
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
           git tag -a ${RELEASE_VERSION} -m "Release ${RELEASE_VERSION}"
           git push origin --tags
 
@@ -417,16 +417,17 @@ jobs:
 
       - name: Bump version
         run: |
-          import os
-          version = os.getenv("RELEASE_VERSION")
-          prefix, patch = version.rsplit(".", 1)
-          next_version = f"{prefix}.{int(patch) + 1}"
-          with open('version.txt', 'w') as f:
-              f.write(next_version + '\n')
-        shell: python
-
-      - name: Commit and Push Changes
-        run: |
+          version_parts=(${RELEASE_VERSION//./ })
+          version_parts[2]=$(expr ${version_parts[2]} + 1)
+          next_version=$(IFS=.; echo "${version_parts[*]}")
+          # Update version.txt
+          git checkout -b "bump/$next_version"
+          echo "$next_version" > version.txt
           git add version.txt
-          git commit -m "[misc] Bump version to $(cat version.txt)"
-          git push origin master
+          # Commit and push changes
+          git commit -m "Bump version to $next_version"
+          git push origin "bump/$next_version"
+          # Create pull request
+          gh pr create -B master -t "[misc] Bump version to $next_version"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

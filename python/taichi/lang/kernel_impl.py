@@ -12,7 +12,7 @@ from taichi.lang import impl, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError,
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError)
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
@@ -611,14 +611,14 @@ class Kernel:
             if actual_argument_slot > 8 and (
                     _ti_core.arch_name(impl.current_cfg().arch) == 'opengl'
                     or _ti_core.arch_name(impl.current_cfg().arch) == 'cc'):
-                raise RuntimeError(
+                raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
             if actual_argument_slot > 64 and (
                 (_ti_core.arch_name(impl.current_cfg().arch) != 'opengl'
                  and _ti_core.arch_name(impl.current_cfg().arch) != 'cc')):
-                raise RuntimeError(
+                raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 

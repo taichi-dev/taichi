@@ -66,8 +66,9 @@ std::unique_ptr<Kernel> AotModuleImpl::get_kernel(const std::string &name) {
   return make_new_kernel(name);
 }
 
-bool AotModuleImpl::get_kernel_params_by_name(const std::string &name,
-                                     VkRuntime::RegisterParams &kernel) {
+bool AotModuleImpl::get_kernel_params_by_name(
+    const std::string &name,
+    VkRuntime::RegisterParams &kernel) {
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     // Offloaded task names encode more than the name of the function, but for
     // AOT, only use the name of the function which should be the first part of

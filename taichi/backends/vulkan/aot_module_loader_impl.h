@@ -31,7 +31,8 @@ class AotModuleImpl : public aot::Module {
   size_t get_root_size() const override;
 
  private:
-  bool get_kernel_params_by_name(const std::string &name, VkRuntime::RegisterParams &kernel);
+  bool get_kernel_params_by_name(const std::string &name,
+                                 VkRuntime::RegisterParams &kernel);
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override;
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,

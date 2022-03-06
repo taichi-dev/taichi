@@ -10,7 +10,7 @@
 using namespace taichi;
 using namespace lang;
 
-static void aot_save() {
+[[maybe_unused]] static void aot_save() {
   auto program = Program(Arch::vulkan);
 
   program.config.advanced_optimization = false;

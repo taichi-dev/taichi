@@ -18,26 +18,15 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       dtype_(dtype) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
-  data_base_ptr_ = new uchar[max_num_triplets_ * 3 * element_size];
-  if (data_base_ptr_ == nullptr) {
-    TI_ERROR("Failed to allocate memory for sparse matrix builder");
-  }
-}
-
-SparseMatrixBuilder::~SparseMatrixBuilder() {
-  // TODO: why this genenerates an segment fault error?
-  // delete [] data_base_ptr_;
-}
-
-void *SparseMatrixBuilder::get_data_base_ptr() {
-  return data_base_ptr_;
+  data_base_ptr_ =
+      std::make_unique<uchar[]>(max_num_triplets_ * 3 * element_size);
 }
 
 template <typename T, typename G>
 void SparseMatrixBuilder::print_template() {
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
              num_triplets_, max_num_triplets_);
-  T *data = (T *)data_base_ptr_;
+  T *data = reinterpret_cast<T *>(data_base_ptr_.get());
   for (int64 i = 0; i < num_triplets_; i++) {
     fmt::print("({}, {}) val={}\n", ((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
                taichi_union_cast<T>(data[i * 3 + 2]));
@@ -64,7 +53,8 @@ template <typename T, typename G>
 SparseMatrix SparseMatrixBuilder::build_template() {
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;
-  T *data = (T *)data_base_ptr_;
+  T *data = reinterpret_cast<T *>(data_base_ptr_.get());
+  // T *data = (T *)data_base_ptr_;
   for (int i = 0; i < num_triplets_; i++) {
     triplets.push_back(V(((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
                          taichi_union_cast<T>(data[i * 3 + 2])));

@@ -230,7 +230,8 @@ class DeviceImpl : public Device {
     res.device = this;
     res.alloc_id = allocations_.size();
 
-    auto &ialloc = allocations_[res.alloc_id];  // "i" for internal
+    AllocationInternal &ialloc =
+        allocations_[res.alloc_id];  // "i" for internal
     auto mem = std::make_unique<BufferMemoryView>(params.size, mem_pool_);
     ialloc.buffer = new_mtl_buffer_no_copy(device_, mem->ptr(), mem->size());
     ialloc.buffer_mem = std::move(mem);

@@ -61,10 +61,10 @@ class AotModuleImpl : public aot::Module {
   }
 
   // Module metadata
-  Arch arch() const {
+  Arch arch() const override {
     return Arch::vulkan;
   }
-  uint64_t version() const {
+  uint64_t version() const override {
     TI_NOT_IMPLEMENTED;
   }
 

@@ -127,14 +127,5 @@ class TargetDevice : public Device {
 };
 
 }  // namespace aot
-
-namespace vulkan {
-std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
-}  // namespace vulkan
-
-namespace metal {
-std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
-}  // namespace metal
-
 }  // namespace lang
 }  // namespace taichi

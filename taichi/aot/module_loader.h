@@ -64,12 +64,8 @@ class TI_DLL_EXPORT Module {
                                       std::any mod_params);
 
   // Module metadata
-  Arch arch() const;
-  uint64_t version() const;
-
-  /**
-   * Intended to be overriden by each backend's implementation.
-   */
+  virtual Arch arch() const = 0;
+  virtual uint64_t version() const = 0;
   virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
   virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
   virtual size_t get_root_size() const = 0;

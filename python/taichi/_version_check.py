@@ -85,7 +85,8 @@ def try_check_version():
                 cur_uuid = version_info_file[2].rstrip()
             if cur_date.strftime('%Y-%m-%d') > last_time:
                 response = check_version(cur_uuid)
-                write_version_info(response, cur_uuid, version_info_path, cur_date)
+                write_version_info(response, cur_uuid, version_info_path,
+                                   cur_date)
         else:
             cur_uuid = str(uuid.uuid4())
             response = check_version(cur_uuid)

@@ -185,7 +185,11 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
       runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
       result_buffer);
   if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     std::memset(root_buffer, 0, rounded_size);
   }

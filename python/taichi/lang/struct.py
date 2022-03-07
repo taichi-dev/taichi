@@ -22,7 +22,7 @@ class Struct(TaichiOperations):
     _is_taichi_class = True
 
     def __init__(self, *args, **kwargs):
-        """ 
+        """
         Args:
             entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
                 keys and values for struct members.

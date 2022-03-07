@@ -909,19 +909,19 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   TI_ASSERT(list == nullptr);
+  LoopState prev = loop_state_stack_.back();
+  if (tp == NotLoop) {
+    loop_state_stack_.push_back(prev);
+  } else if (tp == For && stack_.size() == 1) {
+    loop_state_stack_.push_back(Outermost);
+  } else {
+    loop_state_stack_.push_back(Inner);
+  }
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
   stack_.push_back(list.get());
-  LoopState prev = loop_state_stack_.back();
-  if (tp == NotLoop) {
-    loop_state_stack_.push_back(prev);
-  } else if (tp == For && prev == None) {
-    loop_state_stack_.push_back(Outermost);
-  } else {
-    loop_state_stack_.push_back(Inner);
-  }
 }
 
 void ASTBuilder::pop_scope() {

@@ -3,7 +3,8 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 // In the future we wish to move the MemoryPool inside each Device
 // so that the memory allocated from each Device can be used as-is.
@@ -136,4 +137,5 @@ MemoryPool::~MemoryPool() {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

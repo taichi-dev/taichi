@@ -853,11 +853,6 @@ class ASTBuilder {
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
-  // The function will be removed soon
-  Arch arch() const {
-    return arch_;
-  }
-
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);

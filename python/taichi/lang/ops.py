@@ -1125,21 +1125,71 @@ def select(cond, x1, x2):
 
 
 @writeback_binary
-def atomic_add(a, b):
+def atomic_add(x, y):
+    """Atomically compute `x + y`, store the result in `x`,
+    and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([0, 0, 0])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_add(x, y)
+        >>>     print(x)  # [1, 2, 3]  the new value of x
+        >>>     print(z)  # [0, 0, 0], the old value of x
+        >>>
+        >>>     ti.atomic_add(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_sub(a, b):
+def atomic_sub(x, y):
+    """Atomically subtract `x` by `y`, store the result in `x`,
+    and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([0, 0, 0])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_sub(x, y)
+        >>>     print(x)  # [-1, -2, -3]  the new value of x
+        >>>     print(z)  # [0, 0, 0], the old value of x
+        >>>
+        >>>     ti.atomic_sub(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_min(a, b):
+def atomic_min(x, y):
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1149,21 +1199,96 @@ def atomic_max(a, b):
 
 
 @writeback_binary
-def atomic_and(a, b):
+def atomic_and(x, y):
+    """Atomically compute the bit-wise AND of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_and(x, y)
+        >>>     print(x)  # [1, 0, 0]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_and(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_or(a, b):
+def atomic_or(x, y):
+    """Atomically compute the bit-wise OR of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_or(x, y)
+        >>>     print(x)  # [-1, 2, 3]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_xor(a, b):
+def atomic_xor(x, y):
+    """Atomically compute the bit-wise XOR of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_xor(x, y)
+        >>>     print(x)  # [-2, 2, 2]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_and(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1174,6 +1299,28 @@ def assign(a, b):
 
 
 def max(*args):  # pylint: disable=W0622
+    """Compute the maximum of the arguments, element-wise.
+
+    This function takes no effect on a single argument, even it's array-like.
+    When there are both scalar and matrix arguments in `args`, the matrices
+    must have the same shape, and scalars will be broadcasted to the same shape as the matrix.
+
+    Args:
+        args: (List[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        Maximum of the inputs.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def foo():
+        >>>     x = ti.Vector([0, 1, 2])
+        >>>     y = ti.Vector([3, 4, 5])
+        >>>     z = ti.max(x, y, 4)
+        >>>     print(z)  # [4, 4, 5]
+    """
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
@@ -1184,6 +1331,28 @@ def max(*args):  # pylint: disable=W0622
 
 
 def min(*args):  # pylint: disable=W0622
+    """Compute the minimum of the arguments, element-wise.
+
+    This function takes no effect on a single argument, even it's array-like.
+    When there are both scalar and matrix arguments in `args`, the matrices
+    must have the same shape, and scalars will be broadcasted to the same shape as the matrix.
+
+    Args:
+        args: (List[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        Minimum of the inputs.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def foo():
+        >>>     x = ti.Vector([0, 1, 2])
+        >>>     y = ti.Vector([3, 4, 5])
+        >>>     z = ti.min(x, y, 1)
+        >>>     print(z)  # [0, 1, 1]
+    """
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:

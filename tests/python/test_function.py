@@ -8,7 +8,7 @@ from tests import test_utils
 def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti._wip.real_func
+    @ti.experimental.real_func
     def foo(val: ti.i32):
         x[None] += val
 
@@ -26,7 +26,7 @@ def test_function_without_return():
 # def test_function_with_return():
 #     x = ti.field(ti.i32, shape=())
 #
-#     @ti._wip.real_func
+#     @ti.experimental.real_func
 #     def foo(val: ti.i32) -> ti.i32:
 #         x[None] += val
 #         return val
@@ -46,7 +46,7 @@ def test_function_without_return():
 # def test_call_expressions():
 #     x = ti.field(ti.i32, shape=())
 #
-#     @ti._wip.real_func
+#     @ti.experimental.real_func
 #     def foo(val: ti.i32) -> ti.i32:
 #         if x[None] > 10:
 #             x[None] += 1
@@ -152,7 +152,7 @@ def test_experimental_templates():
         assert x[None] == 11
         assert y[None] == 21
 
-    @ti._wip.real_func
+    @ti.experimental.real_func
     def inc(x: ti.template()):
         x[None] += 1
 
@@ -182,7 +182,7 @@ def test_experimental_templates():
 def test_missing_arg_annotation():
     with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
 
-        @ti._wip.real_func
+        @ti.experimental.real_func
         def add(a, b: ti.i32) -> ti.i32:
             return a + b
 
@@ -192,7 +192,7 @@ def test_missing_return_annotation():
     with pytest.raises(ti.TaichiCompilationError,
                        match='return value must be annotated'):
 
-        @ti._wip.real_func
+        @ti.experimental.real_func
         def add(a: ti.i32, b: ti.i32):
             return a + b
 

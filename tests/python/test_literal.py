@@ -62,7 +62,9 @@ def test_literal_int_annotation_error():
 
     with pytest.raises(
             ti.TaichiTypeError,
-            match="Integer literals must be annotated with a integer type. For type casting, use `ti.cast`."):
+            match=
+            "Integer literals must be annotated with a integer type. For type casting, use `ti.cast`."
+    ):
         int_annotation_error()
 
 
@@ -74,5 +76,7 @@ def test_literal_float_annotation_error():
 
     with pytest.raises(
             ti.TaichiTypeError,
-            match="Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`."):
+            match=
+            "Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`."
+    ):
         float_annotation_error()

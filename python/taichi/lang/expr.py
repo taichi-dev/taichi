@@ -74,7 +74,9 @@ def make_constant_expr(val, dtype):
         constant_dtype = impl.get_runtime(
         ).default_ip if dtype is None else dtype
         if constant_dtype not in integer_types:
-            raise TaichiTypeError('Integer literals must be annotated with a integer type. For type casting, use `ti.cast`.')
+            raise TaichiTypeError(
+                'Integer literals must be annotated with a integer type. For type casting, use `ti.cast`.'
+            )
         _check_in_range(to_numpy_type(constant_dtype), val)
         return Expr(
             _ti_core.make_const_expr_int(
@@ -83,7 +85,9 @@ def make_constant_expr(val, dtype):
         constant_dtype = impl.get_runtime(
         ).default_fp if dtype is None else dtype
         if constant_dtype not in real_types:
-            raise TaichiTypeError('Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`.')
+            raise TaichiTypeError(
+                'Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`.'
+            )
         return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
     raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 

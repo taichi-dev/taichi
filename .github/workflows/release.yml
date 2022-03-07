@@ -48,10 +48,10 @@ jobs:
         run: |
           if [ -z "${{ github.event.action }}" ]; then
             # For nightly release, we only run on python 3.8
-            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"}]}"'
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38 and py39(conda), so change matrix.
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"}]}"'
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
           else
             # For production release, we run on four python versions.
             echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'

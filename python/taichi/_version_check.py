@@ -1,10 +1,11 @@
+import datetime
 import json
 import os
 import platform
 import threading
 import uuid
-import datetime
 from urllib import request
+
 from taichi._lib import core as _ti_core
 
 
@@ -55,6 +56,7 @@ def check_version(cur_uuid):
     except:
         return None
 
+
 def write_version_info(cur_uuid, version_info_path, cur_date):
     response = check_version(cur_uuid)
     if response is None:
@@ -70,10 +72,12 @@ def write_version_info(cur_uuid, version_info_path, cur_date):
         f.write(cur_uuid)
         f.write('\n')
 
+
 def try_check_version():
     try:
         os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-        version_info_path = os.path.join(_ti_core.get_repo_dir(), 'version_info')
+        version_info_path = os.path.join(_ti_core.get_repo_dir(),
+                                         'version_info')
         cur_date = datetime.date.today()
         if os.path.exists(version_info_path):
             last_time = ''

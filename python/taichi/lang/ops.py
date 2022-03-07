@@ -1188,14 +1188,64 @@ def atomic_sub(x, y):
 
 @writeback_binary
 def atomic_min(x, y):
+    """Atomically compute the minimum of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = 2
+        >>>     y = 1
+        >>>     z = ti.atomic_min(x, y)
+        >>>     print(x)  # 1  the new value of x
+        >>>     print(z)  # 2, the old value of x
+        >>>
+        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_max(a, b):
+def atomic_max(x, y):
+    """Atomically compute the maximum of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = 1
+        >>>     y = 2
+        >>>     z = ti.atomic_max(x, y)
+        >>>     print(x)  # 2  the new value of x
+        >>>     print(z)  # 1, the old value of x
+        >>>
+        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary

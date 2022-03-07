@@ -181,3 +181,11 @@ def test_field_copy_from_with_non_filed_object():
     other = np.zeros((2, 3))
     with pytest.raises(TypeError):
         x.copy_from(other)
+
+
+@test_utils.test()
+def test_field_shape_0():
+    with pytest.raises(
+            ti._lib.core.TaichiRuntimeError,
+            match="Every dimension of a Taichi field should be positive"):
+        x = ti.field(dtype=ti.f32, shape=0)

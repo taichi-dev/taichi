@@ -940,7 +940,6 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                bool all_dense) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  std::memset(ptr, 0, rounded_size);
   runtime->root_mem_sizes[snode_tree_id] = rounded_size;
   runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use

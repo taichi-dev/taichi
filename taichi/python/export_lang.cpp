@@ -359,10 +359,11 @@ void export_lang(py::module &m) {
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder",
-           [](Program *program, int n, int m, uint64 max_num_entries) {
+           [](Program *program, int n, int m, uint64 max_num_entries,
+              DataType dtype) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries);
+             return SparseMatrixBuilder(n, m, max_num_entries, dtype);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m) {

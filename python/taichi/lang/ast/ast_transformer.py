@@ -456,8 +456,10 @@ class ASTTransformer(Builder):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
                                 annotations.sparse_matrix_builder):
-                    ctx.create_variable(arg.arg,
-                                        kernel_arguments.decl_sparse_matrix())
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_sparse_matrix(
+                            to_taichi_type(ctx.arg_features[i])))
                 elif isinstance(ctx.func.argument_annotations[i],
                                 annotations.any_arr):
                     ctx.create_variable(

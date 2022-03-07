@@ -305,6 +305,8 @@ class TaichiCallableTemplateMapper:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+        if isinstance(anno, sparse_matrix_builder):
+            return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
         return '#'
 
@@ -545,7 +547,7 @@ class Kernel:
                                                      provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
-                    # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
+                    # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
                 elif isinstance(needed, any_arr) and isinstance(
                         v, taichi.lang._ndarray.Ndarray):

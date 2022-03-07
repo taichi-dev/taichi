@@ -57,8 +57,7 @@ def check_version(cur_uuid):
         return None
 
 
-def write_version_info(cur_uuid, version_info_path, cur_date):
-    response = check_version(cur_uuid)
+def write_version_info(response, cur_uuid, version_info_path, cur_date):
     if response is None:
         return
     with open(version_info_path, 'w') as f:
@@ -80,16 +79,17 @@ def try_check_version():
                                          'version_info')
         cur_date = datetime.date.today()
         if os.path.exists(version_info_path):
-            last_time = ''
             with open(version_info_path, 'r') as f:
                 version_info_file = f.readlines()
                 last_time = version_info_file[0].rstrip()
                 cur_uuid = version_info_file[2].rstrip()
-                if cur_date.strftime('%Y-%m-%d') > last_time:
-                    write_version_info(cur_uuid, version_info_path, cur_date)
+            if cur_date.strftime('%Y-%m-%d') > last_time:
+                response = check_version(cur_uuid)
+                write_version_info(response, cur_uuid, version_info_path, cur_date)
         else:
             cur_uuid = str(uuid.uuid4())
-            write_version_info(cur_uuid, version_info_path, cur_date)
+            response = check_version(cur_uuid)
+            write_version_info(response, cur_uuid, version_info_path, cur_date)
     # Wildcard exception to catch potential file writing errors.
     except:
         pass

@@ -52,3 +52,27 @@ def test_literal_expr_error():
             ti.TaichiSyntaxError,
             match="Type annotation can only be given to a single literal."):
         expr_error()
+
+
+@test_utils.test()
+def test_literal_int_annotation_error():
+    @ti.kernel
+    def int_annotation_error():
+        a = ti.f32(0)
+
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match="Integer literals must be annotated with a integer type. For type casting, use `ti.cast`."):
+        int_annotation_error()
+
+
+@test_utils.test()
+def test_literal_float_annotation_error():
+    @ti.kernel
+    def float_annotation_error():
+        a = ti.i32(0.0)
+
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match="Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`."):
+        float_annotation_error()

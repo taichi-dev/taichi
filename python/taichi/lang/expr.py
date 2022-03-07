@@ -4,6 +4,7 @@ from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiTypeError
 from taichi.lang.util import is_taichi_class, to_numpy_type, to_taichi_type
+from taichi.types.primitive_types import integer_types, real_types
 
 
 # Scalar, basic data type
@@ -72,6 +73,8 @@ def make_constant_expr(val, dtype):
     if isinstance(val, (int, np.integer)):
         constant_dtype = impl.get_runtime(
         ).default_ip if dtype is None else dtype
+        if constant_dtype not in integer_types:
+            raise TaichiTypeError('Integer literals must be annotated with a integer type. For type casting, use `ti.cast`.')
         _check_in_range(to_numpy_type(constant_dtype), val)
         return Expr(
             _ti_core.make_const_expr_int(
@@ -79,6 +82,8 @@ def make_constant_expr(val, dtype):
     if isinstance(val, (float, np.floating)):
         constant_dtype = impl.get_runtime(
         ).default_fp if dtype is None else dtype
+        if constant_dtype not in real_types:
+            raise TaichiTypeError('Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`.')
         return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
     raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 

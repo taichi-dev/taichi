@@ -17,9 +17,7 @@ struct AotModuleParams {
   KernelManager *runtime{nullptr};
 };
 
-std::unique_ptr<aot::ModuleLoader> make_aot_module_loader(
-    const AotModuleParams &params);
-
+std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
 }  // namespace metal
 }  // namespace lang
 }  // namespace taichi

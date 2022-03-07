@@ -240,7 +240,6 @@ class _SpecialConfig:
     def __init__(self):
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.experimental_real_function = False
         self.short_circuit_operators = False
 
 
@@ -383,7 +382,6 @@ def init(arch=None,
     # submodule configurations (spec_cfg):
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
-    env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
 
     # compiler configurations (ti.cfg):
@@ -405,8 +403,6 @@ def init(arch=None,
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
-        impl.get_runtime().experimental_real_function = \
-            spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
         _logging.set_logging_level(spec_cfg.log_level.lower())

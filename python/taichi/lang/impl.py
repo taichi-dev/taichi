@@ -247,7 +247,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.matrix_fields = []
-        self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None

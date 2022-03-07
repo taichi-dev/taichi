@@ -27,7 +27,7 @@ if has_pytorch():
     import torch
 
 
-def func(fn):
+def func(fn, is_real_function=False):
     """Marks a function as callable in Taichi-scope.
 
     This decorator transforms a Python function into a Taichi one. Taichi
@@ -35,6 +35,7 @@ def func(fn):
 
     Args:
         fn (Callable): The Python function to be decorated
+        is_real_function (bool): Whether the function is a real function
 
     Returns:
         Callable: The decorated function
@@ -51,14 +52,19 @@ def func(fn):
     """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
-    fun = Func(fn, _classfunc=is_classfunc)
+    fun = Func(fn, _classfunc=is_classfunc, is_real_function=is_real_function)
 
     @functools.wraps(fn)
     def decorated(*args):
         return fun.__call__(*args)
 
     decorated._is_taichi_function = True
+    decorated._is_real_function = is_real_function
     return decorated
+
+
+def real_func(fn):
+    return func(fn, is_real_function=True)
 
 
 def pyfunc(fn):
@@ -92,7 +98,8 @@ def _get_tree_and_ctx(self,
                       is_kernel=True,
                       arg_features=None,
                       args=None,
-                      ast_builder=None):
+                      ast_builder=None,
+                      is_real_function=False):
     file = oinspect.getsourcefile(self.func)
     src, start_lineno = oinspect.getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
@@ -111,7 +118,7 @@ def _get_tree_and_ctx(self,
     if isinstance(func_body.returns, ast.Name):
         global_vars[func_body.returns.id] = self.return_type
 
-    if is_kernel or impl.get_runtime().experimental_real_function:
+    if is_kernel or is_real_function:
         # inject template parameters into globals
         for i in self.template_slot_locations:
             template_var_name = self.argument_names[i]
@@ -126,19 +133,25 @@ def _get_tree_and_ctx(self,
                                        src=src,
                                        start_lineno=start_lineno,
                                        file=file,
-                                       ast_builder=ast_builder)
+                                       ast_builder=ast_builder,
+                                       is_real_function=is_real_function)
 
 
 class Func:
     function_counter = 0
 
-    def __init__(self, _func, _classfunc=False, _pyfunc=False):
+    def __init__(self,
+                 _func,
+                 _classfunc=False,
+                 _pyfunc=False,
+                 is_real_function=False):
         self.func = _func
         self.func_id = Func.function_counter
         Func.function_counter += 1
         self.compiled = None
         self.classfunc = _classfunc
         self.pyfunc = _pyfunc
+        self.is_real_function = is_real_function
         self.argument_annotations = []
         self.argument_names = []
         self.return_type = None
@@ -158,7 +171,7 @@ class Func:
                     "Taichi functions cannot be called from Python-scope.")
             return self.func(*args)
 
-        if impl.get_runtime().experimental_real_function:
+        if self.is_real_function:
             if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
@@ -174,9 +187,10 @@ class Func:
             self,
             is_kernel=False,
             args=args,
-            ast_builder=impl.get_runtime().prog.current_ast_builder())
+            ast_builder=impl.get_runtime().prog.current_ast_builder(),
+            is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
-        if not impl.get_runtime().experimental_real_function:
+        if not self.is_real_function:
             if self.return_type and not ctx.returned:
                 raise TaichiSyntaxError(
                     "Function has a return type but does not have a return statement"
@@ -185,7 +199,7 @@ class Func:
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
-        assert impl.get_runtime().experimental_real_function
+        assert self.is_real_function
         non_template_args = []
         for i, anno in enumerate(self.argument_annotations):
             if not isinstance(anno, template):
@@ -196,7 +210,10 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
+        tree, ctx = _get_tree_and_ctx(self,
+                                      is_kernel=False,
+                                      args=args,
+                                      is_real_function=self.is_real_function)
         fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
@@ -236,8 +253,7 @@ class Func:
                     annotation = template()
                 # TODO: pyfunc also need type annotation check when real function is enabled,
                 #       but that has to happen at runtime when we know which scope it's called from.
-                elif not self.pyfunc and impl.get_runtime(
-                ).experimental_real_function:
+                elif not self.pyfunc and self.is_real_function:
                     raise TaichiSyntaxError(
                         f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
                     )
@@ -457,7 +473,7 @@ class Kernel:
             try:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
-                if not impl.get_runtime().experimental_real_function:
+                if not ctx.is_real_function:
                     if self.return_type and not ctx.returned:
                         raise TaichiSyntaxError(
                             "Kernel has a return type but does not have a return statement"

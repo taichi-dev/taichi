@@ -114,7 +114,8 @@ class ASTTransformerContext:
                  file=None,
                  src=None,
                  start_lineno=None,
-                 ast_builder=None):
+                 ast_builder=None,
+                 is_real_function=False):
         self.func = func
         self.local_scopes = []
         self.loop_scopes = []
@@ -140,6 +141,7 @@ class ASTTransformerContext:
         self.returned = False
         self.ast_builder = ast_builder
         self.visited_funcdef = False
+        self.is_real_function = is_real_function
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

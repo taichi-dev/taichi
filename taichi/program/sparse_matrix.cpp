@@ -54,7 +54,6 @@ SparseMatrix SparseMatrixBuilder::build_template() {
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;
   T *data = reinterpret_cast<T *>(data_base_ptr_.get());
-  // T *data = (T *)data_base_ptr_;
   for (int i = 0; i < num_triplets_; i++) {
     triplets.push_back(V(((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
                          taichi_union_cast<T>(data[i * 3 + 2])));

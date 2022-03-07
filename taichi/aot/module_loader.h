@@ -13,7 +13,7 @@
 namespace taichi {
 namespace lang {
 
-class RuntimeContext;
+struct RuntimeContext;
 
 namespace aot {
 

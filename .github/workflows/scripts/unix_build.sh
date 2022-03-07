@@ -46,9 +46,7 @@ setup_python() {
         conda activate "$PY"
     fi
     python3 -m pip uninstall taichi taichi-nightly -y
-    if [ -z "$GPU_BUILD" ]; then
-        python3 -m pip install -r requirements_dev.txt
-    fi
+    python3 -m pip install -r requirements_dev.txt
 }
 
 build() {

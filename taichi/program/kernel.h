@@ -3,7 +3,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/ndarray.h"
 
@@ -98,13 +98,24 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   LaunchContextBuilder make_launch_context();
 
+  template <typename T>
+  T fetch_ret(DataType dt, int i);
+
   float64 get_ret_float(int i);
 
   int64 get_ret_int(int i);
 
+  std::vector<int64> get_ret_int_tensor(int i);
+
+  std::vector<float64> get_ret_float_tensor(int i);
+
   void set_arch(Arch arch);
 
   void account_for_offloaded(OffloadedStmt *stmt);
+
+  uint64 get_next_task_id() {
+    return task_counter_++;
+  }
 
   [[nodiscard]] std::string get_name() const override;
   /**
@@ -129,6 +140,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // lower inital AST all the way down to a bunch of
   // OffloadedStmt for async execution
   bool lowered_{false};
+  std::atomic<uint64> task_counter_{0};
 };
 
 TLANG_NAMESPACE_END

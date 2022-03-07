@@ -22,7 +22,7 @@ enum class CuptiMetricsDefault : uint {
   CUPTI_METRIC_DEFAULT_TOTAL = 2
 };
 
-constexpr const char *MetricListDefault[] = {
+[[maybe_unused]] constexpr const char *MetricListDefault[] = {
     "smsp__cycles_elapsed.avg",  // CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
     "smsp__cycles_elapsed.avg.per_second",  // CUPTI_METRIC_CORE_FREQUENCY_HZS
 };

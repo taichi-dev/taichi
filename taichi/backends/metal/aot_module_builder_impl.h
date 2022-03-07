@@ -4,9 +4,9 @@
 #include <vector>
 #include <unordered_set>
 
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/metal/aot_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
-#include "taichi/program/aot_module.h"
 
 namespace taichi {
 namespace lang {

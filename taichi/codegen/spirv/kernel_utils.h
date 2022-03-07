@@ -142,8 +142,10 @@ class KernelContextAttributes {
     int index{-1};
     DataType dt;
     bool is_array{false};
+    std::vector<int> element_shape;
+    std::size_t field_dim{0};
 
-    TI_IO_DEF(stride, offset_in_mem, index, is_array);
+    TI_IO_DEF(stride, offset_in_mem, index, is_array, element_shape, field_dim);
   };
 
  public:

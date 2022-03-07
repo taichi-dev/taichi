@@ -19,62 +19,152 @@ from taichi import _logging, _snode, _version_check
 
 warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
+# ----------------------
 i = axes(0)
+"""Axis 0. For multi-dimensional arrays it's the direction downward the rows.
+For a 1d array it's the direction along this array.
+"""
+# ----------------------
+
 j = axes(1)
+"""Axis 1. For multi-dimensional arrays it's the direction across the columns.
+"""
+# ----------------------
+
 k = axes(2)
+"""Axis 2. For arrays of dimension `d` >= 3, view each cell as an array of
+lower dimension d-2, it's the first axis of this cell.
+"""
+# ----------------------
+
 l = axes(3)
+"""Axis 3. For arrays of dimension `d` >= 4, view each cell as an array of
+lower dimension d-2, it's the second axis of this cell.
+"""
+# ----------------------
+
 ij = axes(0, 1)
+"""Axes (0, 1).
+"""
+# ----------------------
+
 ik = axes(0, 2)
+"""Axes (0, 2).
+"""
+# ----------------------
+
 il = axes(0, 3)
+"""Axes (0, 3).
+"""
+# ----------------------
+
 jk = axes(1, 2)
+"""Axes (1, 2).
+"""
+# ----------------------
+
 jl = axes(1, 3)
+"""Axes (1, 3).
+"""
+# ----------------------
+
 kl = axes(2, 3)
+"""Axes (2, 3).
+"""
+# ----------------------
+
 ijk = axes(0, 1, 2)
+"""Axes (0, 1, 2).
+"""
+# ----------------------
+
 ijl = axes(0, 1, 3)
+"""Axes (0, 1, 3).
+"""
+# ----------------------
+
 ikl = axes(0, 2, 3)
+"""Axes (0, 2, 3).
+"""
+# ----------------------
+
 jkl = axes(1, 2, 3)
+"""Axes (1, 2, 3).
+"""
+# ----------------------
+
 ijkl = axes(0, 1, 2, 3)
+"""Axes (0, 1, 2, 3).
+"""
+# ----------------------
+
+# ----------------------
 
 x86_64 = _ti_core.x64
 """The x64 CPU backend.
 """
+# ----------------------
+
 x64 = _ti_core.x64
 """The X64 CPU backend.
 """
+# ----------------------
+
 arm64 = _ti_core.arm64
 """The ARM CPU backend.
 """
+# ----------------------
+
 cuda = _ti_core.cuda
 """The CUDA backend.
 """
+# ----------------------
+
 metal = _ti_core.metal
 """The Apple Metal backend.
 """
+# ----------------------
+
 opengl = _ti_core.opengl
 """The OpenGL backend. OpenGL 4.3 required.
 """
+# ----------------------
+
 # Skip annotating this one because it is barely maintained.
 cc = _ti_core.cc
+
+# ----------------------
+
 wasm = _ti_core.wasm
 """The WebAssembly backend.
 """
+# ----------------------
+
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
+# ----------------------
+
 dx11 = _ti_core.dx11
 """The DX11 backend.
 """
+# ----------------------
+
 gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
 """
+# ----------------------
+
 cpu = _ti_core.host_arch()
 """A list of CPU backends supported on the current system.
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
+# ----------------------
+
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
@@ -333,7 +423,7 @@ def init(arch=None,
 
     # user selected visible device
     visible_device = os.environ.get("TI_VISIBLE_DEVICE")
-    if visible_device and cfg.arch == vulkan:
+    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
         _ti_core.set_vulkan_visible_device(visible_device)
 
     if _test_mode:

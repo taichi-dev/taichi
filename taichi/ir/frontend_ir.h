@@ -7,7 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
@@ -852,11 +852,6 @@ class ASTBuilder {
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
-
-  // The function will be removed soon
-  Arch arch() const {
-    return arch_;
-  }
 
   Block *current_block();
   Stmt *get_last_stmt();

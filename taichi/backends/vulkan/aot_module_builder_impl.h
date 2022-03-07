@@ -3,12 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/vulkan/aot_utils.h"
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-
-#include "taichi/program/aot_module.h"
 
 namespace taichi {
 namespace lang {

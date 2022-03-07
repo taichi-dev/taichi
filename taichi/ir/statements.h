@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -97,6 +97,38 @@ class ContinueStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(scope);
   TI_DEFINE_ACCEPT_AND_CLONE;
+};
+
+/**
+ * A decoration statement. The decorated "operands" will keep this decoration.
+ */
+class DecorationStmt : public Stmt {
+ public:
+  enum class Decoration : uint32_t { kUnknown, kLoopUnique };
+
+  Stmt *operand;
+  std::vector<uint32_t> decoration;
+
+  DecorationStmt(Stmt *operand, const std::vector<uint32_t> &decoration);
+
+  bool same_operation(DecorationStmt *o) const {
+    return false;
+  }
+
+  bool is_cast() const {
+    return false;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(operand, decoration);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 /**

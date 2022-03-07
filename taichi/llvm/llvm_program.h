@@ -87,6 +87,8 @@ class LlvmProgramImpl : public ProgramImpl {
       uint64 *result_buffer) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
+    get_llvm_context(host_arch())
+        ->delete_functions_of_snode_tree(snode_tree->id());
     snode_tree_buffer_manager_->destroy(snode_tree);
   }
 

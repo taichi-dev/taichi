@@ -33,6 +33,7 @@ class LowerAST : public IRVisitor {
   Stmt *capturing_loop_;
   std::unordered_set<Stmt *> detected_fors_with_break_;
   Block *current_block_;
+  int current_block_depth_;
 
   FlattenContext make_flatten_ctx() {
     FlattenContext fctx;
@@ -43,7 +44,8 @@ class LowerAST : public IRVisitor {
  public:
   explicit LowerAST(const std::unordered_set<Stmt *> &_detected_fors_with_break)
       : detected_fors_with_break_(_detected_fors_with_break),
-        current_block_(nullptr) {
+        current_block_(nullptr),
+        current_block_depth_(0) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     capturing_loop_ = nullptr;
@@ -53,9 +55,11 @@ class LowerAST : public IRVisitor {
     auto backup_block = this->current_block_;
     this->current_block_ = stmt_list;
     auto stmts = make_raw_pointer_list(stmt_list->statements);
+    current_block_depth_++;
     for (auto &stmt : stmts) {
       stmt->accept(this);
     }
+    current_block_depth_--;
     this->current_block_ = backup_block;
   }
 
@@ -201,8 +205,8 @@ class LowerAST : public IRVisitor {
       flatten_rvalue(begin, &fctx);
       flatten_rvalue(end, &fctx);
       bool is_good_range_for =
-          capturing_loop_ == nullptr || detected_fors_with_break_.find(stmt) ==
-                                            detected_fors_with_break_.end();
+          current_block_depth_ == 1 || detected_fors_with_break_.find(stmt) ==
+                                           detected_fors_with_break_.end();
       // #578: a good range for is a range for that doesn't contains a break
       // statement
       if (is_good_range_for) {
@@ -348,9 +352,12 @@ class LowerAST : public IRVisitor {
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
       for (int i = (int)shape.size() - 1; i >= 0; i--) {
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
-            new_statements.push_back<BinaryOpStmt>(BinaryOpType::mod,
-                                                   loop_index, shape[i]);
+        Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::mod, loop_index, shape[i]);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_var;
+        std::vector<uint32_t> decoration = {
+            uint32_t(DecorationStmt::Decoration::kLoopUnique), uint32_t(i)};
+        new_statements.push_back<DecorationStmt>(loop_var, decoration);
         loop_index = new_statements.push_back<BinaryOpStmt>(
             BinaryOpType::div, loop_index, shape[i]);
       }
@@ -384,10 +391,14 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    auto expr = stmt->values[0];
+    auto expr_group = stmt->values;
     auto fctx = make_flatten_ctx();
-    flatten_rvalue(expr, &fctx);
-    fctx.push_back<ReturnStmt>(fctx.back_stmt());
+    std::vector<Stmt *> return_ele;
+    for (auto &x : expr_group.exprs) {
+      flatten_rvalue(x, &fctx);
+      return_ele.push_back(fctx.back_stmt());
+    }
+    fctx.push_back<ReturnStmt>(return_ele);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 

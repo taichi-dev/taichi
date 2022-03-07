@@ -19,7 +19,7 @@ constexpr int taichi_opengl_ret_base =
     taichi_opengl_extra_args_base +
     taichi_max_num_args * taichi_max_num_indices * sizeof(int);
 constexpr int taichi_opengl_external_arr_base =
-    taichi_opengl_ret_base + sizeof(uint64_t);
+    taichi_opengl_ret_base + taichi_max_num_ret_value * sizeof(uint64_t);
 
 struct UsedFeature {
   // types:

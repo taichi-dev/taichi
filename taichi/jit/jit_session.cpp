@@ -33,6 +33,7 @@ std::unique_ptr<JITSession> JITSession::create(LlvmProgramImpl *llvm_prog,
 #else
   TI_ERROR("Llvm disabled");
 #endif
+  return nullptr;
 }
 
 TLANG_NAMESPACE_END

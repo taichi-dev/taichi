@@ -53,9 +53,11 @@ struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
-struct DeviceAllocation {
+using DeviceAllocationId = uint32_t;
+
+struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
-  uint32_t alloc_id{0};
+  DeviceAllocationId alloc_id{0};
 
   DevicePtr get_ptr(uint64_t offset = 0) const;
 
@@ -68,14 +70,14 @@ struct DeviceAllocation {
   }
 };
 
-struct DeviceAllocationGuard : public DeviceAllocation {
+struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
   DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
   DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
   ~DeviceAllocationGuard();
 };
 
-struct DevicePtr : public DeviceAllocation {
+struct TI_DLL_EXPORT DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
   bool operator==(const DevicePtr &other) const {
@@ -275,6 +277,17 @@ class CommandList {
   virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) = 0;
   virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
 
+  struct ComputeSize {
+    uint32_t x{0};
+    uint32_t y{0};
+    uint32_t z{0};
+  };
+  // Some GPU APIs can set the block (workgroup, threadsgroup) size at
+  // dispatch time.
+  virtual void dispatch(ComputeSize grid_size, ComputeSize block_size) {
+    dispatch(grid_size.x, grid_size.y, grid_size.z);
+  }
+
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
                                 int y0,
@@ -431,6 +444,9 @@ class Device {
     TI_NOT_IMPLEMENTED
   }
 
+  // Each thraed will acquire its own stream
+  virtual Stream *get_compute_stream() = 0;
+
   // Mapping can fail and will return nullptr
   virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
   virtual void *map(DeviceAllocation alloc) = 0;
@@ -462,9 +478,6 @@ class Device {
                               void *host_buffer,
                               DevicePtr src,
                               uint64_t size);
-
-  // Each thraed will acquire its own stream
-  virtual Stream *get_compute_stream() = 0;
 
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;

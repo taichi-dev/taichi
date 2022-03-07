@@ -10,6 +10,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/features.h"
+#include "taichi/backends/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/program/py_print_buffer.h"
@@ -48,36 +49,6 @@ inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   }
   return kMslVersionNone;
 }
-
-// This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
-// Once allocated, it does not own the memory (hence the name "view"). Instead,
-// GC is deferred to the memory pool.
-class BufferMemoryView {
- public:
-  BufferMemoryView(size_t size, MemoryPool *mem_pool) {
-    // Both |ptr_| and |size_| must be aligned to page size.
-    size_ = iroundup(size, taichi_page_size);
-    ptr_ = (char *)mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
-    TI_ASSERT(ptr_ != nullptr);
-    std::memset(ptr_, 0, size_);
-  }
-  // Move only
-  BufferMemoryView(BufferMemoryView &&) = default;
-  BufferMemoryView &operator=(BufferMemoryView &&) = default;
-  BufferMemoryView(const BufferMemoryView &) = delete;
-  BufferMemoryView &operator=(const BufferMemoryView &) = delete;
-
-  inline size_t size() const {
-    return size_;
-  }
-  inline char *ptr() const {
-    return ptr_;
-  }
-
- private:
-  size_t size_;
-  char *ptr_;
-};
 
 // MetalRuntime maintains a series of MTLBuffers that are shared across all the
 // Metal kernels mapped by a single Taichi kernel. This map stores those buffers
@@ -472,9 +443,10 @@ class HostMetalCtxBlitter {
   }
 
   void metal_to_host() {
-#define TO_HOST(type)                                   \
-  const type d = *reinterpret_cast<type *>(device_ptr); \
-  host_result_buffer_[i] = taichi_union_cast_with_different_sizes<uint64>(d);
+#define TO_HOST(type, offset)                                      \
+  const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
+  host_result_buffer_[offset] =                                    \
+      taichi_union_cast_with_different_sizes<uint64>(d);
 
     if (ctx_attribs_->empty()) {
       return;
@@ -508,25 +480,24 @@ class HostMetalCtxBlitter {
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
-      if (ret.is_array) {
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, ret.stride);
-      } else {
+      const int dt_bytes = metal_data_type_bytes(ret.dt);
+      const int num = ret.stride / dt_bytes;
+      for (int j = 0; j < num; ++j) {
         const auto dt = ret.dt;
         if (dt == MetalDataType::i32) {
-          TO_HOST(int32);
+          TO_HOST(int32, j);
         } else if (dt == MetalDataType::u32) {
-          TO_HOST(uint32);
+          TO_HOST(uint32, j);
         } else if (dt == MetalDataType::f32) {
-          TO_HOST(float32);
+          TO_HOST(float32, j);
         } else if (dt == MetalDataType::i8) {
-          TO_HOST(int8);
+          TO_HOST(int8, j);
         } else if (dt == MetalDataType::i16) {
-          TO_HOST(int16);
+          TO_HOST(int16, j);
         } else if (dt == MetalDataType::u8) {
-          TO_HOST(uint8);
+          TO_HOST(uint8, j);
         } else if (dt == MetalDataType::u16) {
-          TO_HOST(uint16);
+          TO_HOST(uint16, j);
         } else {
           TI_ERROR("Metal does not support return value type={}",
                    metal_data_type_name(ret.dt));

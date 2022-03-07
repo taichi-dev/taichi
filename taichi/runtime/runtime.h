@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/common/core.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/kernel_profiler.h"
 
 #include <map>

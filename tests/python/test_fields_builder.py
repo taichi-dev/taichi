@@ -180,7 +180,7 @@ def test_fields_builder_destroy(test_1d_size, field_type):
             c.destroy()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_field_initialize_zero():
     fb0 = ti.FieldsBuilder()
     a = ti.field(ti.i32)

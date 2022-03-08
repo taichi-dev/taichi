@@ -22,47 +22,45 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-# @test_utils.test(arch=[ti.cpu, ti.gpu])
-# def test_function_with_return():
-#     x = ti.field(ti.i32, shape=())
-#
-#     @ti.experimental.real_func
-#     def foo(val: ti.i32) -> ti.i32:
-#         x[None] += val
-#         return val
-#
-#     @ti.kernel
-#     def run():
-#         a = foo(40)
-#         foo(2)
-#         assert a == 40
-#
-#     x[None] = 0
-#     run()
-#     assert x[None] == 42
-#
-#
-# @test_utils.test(arch=[ti.cpu, ti.gpu])
-# def test_call_expressions():
-#     x = ti.field(ti.i32, shape=())
-#
-#     @ti.experimental.real_func
-#     def foo(val: ti.i32) -> ti.i32:
-#         if x[None] > 10:
-#             x[None] += 1
-#         x[None] += val
-#         return 0
-#
-#     @ti.kernel
-#     def run():
-#         assert foo(15) == 0
-#         assert foo(10) == 0
-#
-#     x[None] = 0
-#     run()
-#     assert x[None] == 26
-#
-#
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_function_with_return():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.experimental.real_func
+    def foo(val: ti.i32) -> ti.i32:
+        x[None] += val
+        return val
+
+    @ti.kernel
+    def run():
+        a = foo(40)
+        foo(2)
+        assert a == 40
+
+    x[None] = 0
+    run()
+    assert x[None] == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_call_expressions():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.experimental.real_func
+    def foo(val: ti.i32) -> ti.i32:
+        if x[None] > 10:
+            x[None] += 1
+        x[None] += val
+        return 0
+
+    @ti.kernel
+    def run():
+        assert foo(15) == 0
+        assert foo(10) == 0
+
+    x[None] = 0
+    run()
+    assert x[None] == 26
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)

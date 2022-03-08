@@ -1270,7 +1270,7 @@ def atomic_and(x, y):
         >>>     x = ti.Vector([-1, 0, 1])
         >>>     y = ti.Vector([1, 2, 3])
         >>>     z = ti.atomic_and(x, y)
-        >>>     print(x)  # [1, 0, 0]  the new value of x
+        >>>     print(x)  # [1, 0, 1]  the new value of x
         >>>     print(z)  # [-1, 0, 1], the old value of x
         >>>
         >>>     ti.atomic_and(1, x)  # will raises TaichiSyntaxError

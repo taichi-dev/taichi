@@ -573,6 +573,11 @@ cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
   return static_cast<cpu::CpuDevice *>(device_.get());
 }
 
+LlvmDevice *LlvmProgramImpl::llvm_device() {
+  TI_ASSERT(dynamic_cast<LlvmDevice *>(device_.get()));
+  return static_cast<LlvmDevice *>(device_.get());
+}
+
 DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
   return tree_alloc.get_ptr();
@@ -588,7 +593,7 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     tlctx = llvm_context_host_.get();
   }
 
-  return get_compute_device()->allocate_memory_runtime(
+  return llvm_device()->allocate_memory_runtime(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
        config->ndarray_use_cached_allocator,

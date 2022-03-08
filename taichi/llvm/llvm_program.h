@@ -1,4 +1,5 @@
 #pragma once
+#include "taichi/llvm/llvm_device.h"
 #include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
@@ -174,6 +175,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::shared_ptr<Device> device_{nullptr};
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
+  LlvmDevice *llvm_device();
 };
 }  // namespace lang
 }  // namespace taichi

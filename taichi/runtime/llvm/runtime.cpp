@@ -697,10 +697,6 @@ struct NodeManager {
 
 extern "C" {
 
-void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret, u32 idx) {
-  runtime->set_result(taichi_result_buffer_ret_value_id + idx, ret);
-}
-
 void RuntimeContext_store_result(RuntimeContext *ctx, u64 ret, u32 idx) {
   ctx->result_buffer[taichi_result_buffer_ret_value_id + idx] = ret;
 }

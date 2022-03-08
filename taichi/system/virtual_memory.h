@@ -21,7 +21,7 @@ class VirtualMemoryAllocator {
 #if defined(TI_PLATFORM_UNIX)
 #if defined(TI_PLATFORM_LINUX)
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
-               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #else
     // BSD does not have MAP_NONREVERSE
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,

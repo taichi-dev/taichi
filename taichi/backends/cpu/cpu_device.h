@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "taichi/common/core.h"
-#include "taichi/backends/device.h"
+#include "taichi/llvm/llvm_device.h"
 #include "taichi/system/virtual_memory.h"
 
 namespace taichi {
@@ -75,7 +75,7 @@ class CpuStream : public Stream {
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
 
-class CpuDevice : public Device {
+class CpuDevice : public LlvmDevice {
  public:
   struct AllocInfo {
     void *ptr{nullptr};

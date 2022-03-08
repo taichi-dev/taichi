@@ -16,7 +16,7 @@ def test_indices_assert():
     @ti.kernel
     def access_overflow():
         overflow[0, 5] = 10
-        print(overflow[2, 715827882])
+        overflow[2, 715827882] = 10
 
     with pytest.raises(RuntimeError,
                        match='The indices provided are too big!'):

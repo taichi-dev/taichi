@@ -31,15 +31,15 @@ def _get_logging(name):
 def set_logging_level(level):
     """Setting the logging level to a specified value.
     Available levels are: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
-    
+
     Note that after calling this function, logging levels below the specified one will
     also be effective. For example if `level` is set to 'warn', then the levels below
-    it, which are 'error' and 'critical' in this case, will also be effective. 
+    it, which are 'error' and 'critical' in this case, will also be effective.
 
     See also https://docs.taichi.graphics/lang/articles/contribution/utilities#logging.
 
     Args:
-        level (str): Logging level.       
+        level (str): Logging level.
 
     Example::
 

@@ -1211,7 +1211,7 @@ def atomic_min(x, y):
         >>>     print(x)  # 1  the new value of x
         >>>     print(z)  # 2, the old value of x
         >>>
-        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_min(1, x)  # will raises TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
@@ -1242,7 +1242,7 @@ def atomic_max(x, y):
         >>>     print(x)  # 2  the new value of x
         >>>     print(z)  # 1, the old value of x
         >>>
-        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_max(1, x)  # will raises TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))

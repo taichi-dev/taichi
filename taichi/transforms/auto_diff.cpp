@@ -250,8 +250,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
-
-
+std::set<TernaryOpType>stack_needed_ternary_collections{TernaryOpType::select};
+std::set<UnaryOpType> stack_needed_unary_collections{UnaryOpType::abs, UnaryOpType::sin, UnaryOpType::cos, UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos, UnaryOpType::exp, UnaryOpType::log, UnaryOpType::sqrt};
 std::set<BinaryOpType> stack_needed_binary_collections{BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2, BinaryOpType::pow};
 class AdStackAllocaJudger : public BasicStmtVisitor {
 public:
@@ -259,33 +259,51 @@ public:
     // Find the usage of the stmt recursively along the LocalLoadStmt
     void visit(LocalLoadStmt *stmt) override {
       if(stmt->has_source(target_alloca_)) {
+        local_loaded_ = true;
         std::cout << "the name of the local load " << stmt->name() << std::endl;
         target_alloca_ = stmt;
       }
     }
 
-    void visit(LocalStoreStmt *stmt) override {
-
-    }
-
-    void visit(AtomicOpStmt *stmt) override {
-
+    void visit(LocalStoreStmt *stmt) override{
+      if(local_loaded_ && stmt->dest == target_alloca_backup_){
+        std::cout << "cycle " << stmt->name() << std::endl;
+        is_stack_needed_ = true;
+      }
     }
 
     // The stack is needed if the alloc serves as the index of any global variables
     void visit(GlobalPtrStmt *stmt) override{
+      if(is_stack_needed_) return;
       for(const auto&index : stmt->indices){
-        if (index == target_alloca_) {
+        if (index == target_alloca_)
           is_stack_needed_ = true;
-          std::cout << "global ptr indices " << index->type() << std::endl;
-        }
+      }
+    }
+
+    // Check whether the target stmt is used by the UnaryOpStmts who requires the ad stack
+    void visit(UnaryOpStmt *stmt) override{
+      if(is_stack_needed_) return;
+      if(stack_needed_unary_collections.find(stmt->op_type) != stack_needed_unary_collections.end()){
+        if(stmt->operand == target_alloca_)
+          is_stack_needed_ = true;
       }
     }
 
     // Check whether the target stmt is used by the BinaryOpStmts who requires the ad stack
     void visit(BinaryOpStmt *stmt) override{
+      if(is_stack_needed_) return;
       if(stack_needed_binary_collections.find(stmt->op_type) != stack_needed_binary_collections.end()){
         if(stmt->lhs == target_alloca_ || stmt->rhs == target_alloca_)
+          is_stack_needed_ = true;
+      }
+    }
+
+    // Check whether the target stmt is used by the TernaryOpStmts who requires the ad stack
+    void visit(TernaryOpStmt *stmt) override{
+      if(is_stack_needed_) return;
+      if(stack_needed_ternary_collections.find(stmt->op_type) != stack_needed_ternary_collections.end()){
+        if(stmt->op1 == target_alloca_ || stmt->op2 == target_alloca_ || stmt->op3 == target_alloca_)
           is_stack_needed_ = true;
       }
     }
@@ -293,103 +311,22 @@ public:
     static bool run(IRNode *root, AllocaStmt* target_alloca) {
       AdStackAllocaJudger judger;
       judger.target_alloca_ = target_alloca;
+      judger.target_alloca_backup_ = target_alloca;
       root->accept(&judger);
       return judger.is_stack_needed_;
     }
 
 private:
     Stmt* target_alloca_;
+    Stmt* target_alloca_backup_;
     bool is_stack_needed_ = false;
-};
-
-// AllocaPropertyJudger:
-// 1. Whether an alloc is `load only`
-// 2. Whether an alloc is `LocalStored` by a `GlobalLoadStmt`,
-//    this information will be used in the following `MakeAdjoint` pass
-//    to decide where we should insert the adjoint alloca
-class AllocaPropertyJudger : public BasicStmtVisitor {
-public:
-    using BasicStmtVisitor::visit;
-    std::unordered_map<Stmt *, Stmt *> allocas_stored_by_global_load;
-    std::unordered_map<Stmt *, Stmt *> allocas_stored_by_constant;
-
-    void visit(LocalStoreStmt *stmt) override {
-      if(stmt->dest == running_target_alloca_) {
-        load_only_ = false;
-        std::cout << "are we here local store "<< stmt->val->type() << std::endl;
-        // Record the alloca who is stored by a GlobalLoadStmt
-        if(stmt->val->is<GlobalLoadStmt>()){
-          std::cout << "are we here local store and global store"<< stmt->val->type() << std::endl;
-          if(allocas_stored_by_global_load.find(target_alloca_) == allocas_stored_by_global_load.end()) {
-            std::cout << "are we here local store and global store [inserted] "<< stmt->val->type() << std::endl;
-            allocas_stored_by_global_load[target_alloca_] = stmt->val;
-          }
-        }else if(stmt->val->is<ConstStmt>()){
-          if(allocas_stored_by_constant.find(target_alloca_) == allocas_stored_by_constant.end())
-            allocas_stored_by_constant[target_alloca_] = stmt->val;
-        }else if(stmt->val->is<LocalLoadStmt>()){
-          auto backup_alloca = running_target_alloca_;
-          running_target_alloca_ = stmt->val;
-          root_->accept(this);
-          running_target_alloca_ = backup_alloca;
-        }
-      }
-    }
-
-    void visit(AtomicOpStmt *stmt) override {
-      if(stmt->dest == running_target_alloca_) {
-        load_only_ = false;
-        // Record the alloca who is stored by a GlobalLoadStmt
-        if(stmt->val->is<GlobalLoadStmt>()){
-          if(allocas_stored_by_global_load.find(target_alloca_) == allocas_stored_by_global_load.end())
-            allocas_stored_by_global_load[target_alloca_] = stmt->val;
-        }else if(stmt->val->is<ConstStmt>()){
-          if(allocas_stored_by_constant.find(target_alloca_) == allocas_stored_by_constant.end())
-            allocas_stored_by_constant[target_alloca_] = stmt->val;
-        }else if(stmt->val->is<LocalLoadStmt>()){
-          auto backup_alloca = running_target_alloca_;
-          running_target_alloca_ = stmt->val;
-          root_->accept(this);
-          running_target_alloca_ = backup_alloca;
-        }
-      }
-    }
-
-    static bool run(IRNode *root, AllocaStmt* target_alloca,
-                    std::unordered_map<Stmt *, Stmt *>& allocas_stored_by_global_load,
-                    std::unordered_map<Stmt *, Stmt *>& allocas_stored_by_constant) {
-      AllocaPropertyJudger judger;
-      judger.root_ = root;
-      judger.target_alloca_ = target_alloca;
-      judger.running_target_alloca_ = target_alloca;
-      root->accept(&judger);
-      std::cout << "collected allocs size  inside " << judger.allocas_stored_by_global_load.size() << std::endl;
-      for(auto item:judger.allocas_stored_by_global_load){
-        if(allocas_stored_by_global_load.find(item.first) == allocas_stored_by_global_load.end()){
-          allocas_stored_by_global_load[item.first] = item.second;
-        }
-      }
-      for(auto item:judger.allocas_stored_by_constant){
-        if(allocas_stored_by_constant.find(item.first) == allocas_stored_by_constant.end()){
-          allocas_stored_by_constant[item.first] = item.second;
-        }
-      }
-      return judger.load_only_;
-    }
-
-private:
-    Stmt* target_alloca_;
-    Stmt* running_target_alloca_;
-    bool load_only_ = true;
-    IRNode *root_;
+    bool local_loaded_ = false;
 };
 
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   int ad_stack_size;
-  std::unordered_map<Stmt *, Stmt *> allocas_stored_by_global_load;
-  std::unordered_map<Stmt *, Stmt *> allocas_stored_by_constant;
   explicit ReplaceLocalVarWithStacks(int ad_stack_size)
       : ad_stack_size(ad_stack_size) {
   }
@@ -406,13 +343,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
             return false;
           }
         }).empty();
-//    bool load_only = AllocaPropertyJudger::run(alloc->parent, alloc, allocas_stored_by_global_load, allocas_stored_by_constant);
-//    std::cout << "collected allocs size  " << allocas_stored_by_global_load.size() << std::endl;
-//    for (const auto&item:allocas_stored_by_global_load){
-//      std::cout << "collected allocs "<<  " " << item.first->name() << " " << item.second->name()  << std::endl;
-//    }
-//    bool is_stack_needed = AdStackAllocaJudger::run(alloc->parent, alloc);
-    bool is_stack_needed = true;
+
+    bool is_stack_needed = AdStackAllocaJudger::run(alloc->parent, alloc);
+//    bool is_stack_needed = true;
     std::cout << "alloca name " << alloc->name() << " is stack needed ? " << is_stack_needed << std::endl;
     if (!load_only && is_stack_needed) {
 //    if (!load_only) {
@@ -554,7 +487,6 @@ class MakeAdjoint : public IRVisitor {
   Block *alloca_block;
   Block *forward_backup;
   std::map<Stmt *, Stmt *> adjoint_stmt;
-  std::unordered_map<Stmt *, Stmt *> allocas_stored_by_global_load;
 
   MakeAdjoint(Block *block) {
     current_block = nullptr;
@@ -562,9 +494,8 @@ class MakeAdjoint : public IRVisitor {
     forward_backup = block;
   }
 
-  static void run(Block *block, std::unordered_map<Stmt *, Stmt *>& allocas_stored_by_global_load) {
+  static void run(Block *block) {
     auto p = MakeAdjoint(block);
-    p.allocas_stored_by_global_load = allocas_stored_by_global_load;
     block->accept(&p);
   }
 
@@ -627,40 +558,15 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
-
       // We need to insert the alloca to the block of GlobalLoadStmt when the GlobalLoadStmt is not inside the alloca_block
-      if (stmt->is<GlobalLoadStmt>()){
+      if (stmt->is<GlobalLoadStmt>() && stmt->parent->parent_stmt->is<RangeForStmt>()){
+        std::cout << " stmt parent " << stmt->parent->parent_stmt->name() << " : "<< stmt->parent->parent_stmt->type() << std::endl;
         if(forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1){
           std::cout << "we move the alloca, " << alloca->name() << " the global stmt is "<< stmt->as<GlobalLoadStmt>()->name() << " target position " << stmt->as<GlobalLoadStmt>()->name() <<std::endl;
           stmt->as<GlobalLoadStmt>()->parent->insert(std::move(alloca), 0);
         }else{
           alloca_block->insert(std::move(alloca), 0);
         }
-      }
-      else if(stmt->is<LocalLoadStmt>()){
-        std::cout << "me src " << stmt->as<LocalLoadStmt>()->src.data[0].var << std::endl;
-        auto found = allocas_stored_by_global_load.find(stmt->as<LocalLoadStmt>()->src.data[0].var);
-        if(found != allocas_stored_by_global_load.end()){
-          std::cout << " found " << found->first->name() << " " << found->first << " " << found->second->name() << " " << found->second << std::endl;
-        }
-        if(found != allocas_stored_by_global_load.end() && forward_backup->locate(found->second->as<GlobalLoadStmt>()) == -1){
-          std::cout << "we move the alloca, " << alloca->name() << "the LocalLoadStmt is "<< stmt->as<LocalLoadStmt>()->name() << " target position " << found->second->name() << std::endl;
-          found->second->parent->insert(std::move(alloca), 0);
-        }else{
-          alloca_block->insert(std::move(alloca), 0);
-        }
-      }else if(stmt->is<AllocaStmt>()){
-        auto found = allocas_stored_by_global_load.find(stmt->as<AllocaStmt>());
-        if(found != allocas_stored_by_global_load.end()){
-          std::cout << " found " << found->first->name() << " " << found->first << " " << found->second->name() << " " << found->second << std::endl;
-        }
-        if(found != allocas_stored_by_global_load.end() && forward_backup->locate(found->second->as<GlobalLoadStmt>()) == -1){
-          std::cout << "we move the alloca, " << alloca->name() << "the AllocaStmt is "<< stmt->as<AllocaStmt>()->name() << " target position " << found->second->name() << std::endl;
-          found->second->parent->insert(std::move(alloca), 0);
-        }else{
-          alloca_block->insert(std::move(alloca), 0);
-        }
-
       }else{
         alloca_block->insert(std::move(alloca), 0);
       }
@@ -799,6 +705,7 @@ class MakeAdjoint : public IRVisitor {
       for (int i = if_stmt->true_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->true_statements->statements[i]->accept(this);
+        forward_backup = if_stmt->true_statements.get();
       }
 
       current_block = old_current_block;
@@ -813,6 +720,7 @@ class MakeAdjoint : public IRVisitor {
       for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->false_statements->statements[i]->accept(this);
+        forward_backup = if_stmt->false_statements.get();
       }
       current_block = old_current_block;
     }
@@ -890,7 +798,6 @@ class MakeAdjoint : public IRVisitor {
     accumulate(stmt->val, load(adjoint(stmt->dest)));
 
     // TODO: Clear the adjoint after local store?
-//    std::cout << "what is my type " << adjoint(stmt->dest)->type() << "me " << stmt->name() << " my dest " << stmt->dest->name() << " "<< load(adjoint(stmt->dest))->type()<< std::endl;
     if(needs_grad(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
@@ -1135,7 +1042,7 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
       ib->accept(&replace);
       type_check(root, config);
       print("after ReplaceWithStacks");
-      MakeAdjoint::run(ib, replace.allocas_stored_by_global_load);
+      MakeAdjoint::run(ib);
       type_check(root, config);
       print("after Make adjoint");
       BackupSSA::run(ib);
@@ -1146,9 +1053,9 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
     type_check(root, config);
-//    for (auto ib : IB) {
-//      MakeAdjoint::run(ib);
-//    }
+    for (auto ib : IB) {
+      MakeAdjoint::run(ib);
+    }
   }
   type_check(root, config);
   irpass::analysis::verify(root);

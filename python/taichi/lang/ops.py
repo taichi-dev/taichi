@@ -1335,7 +1335,7 @@ def atomic_xor(x, y):
         >>>     print(x)  # [-2, 2, 2]  the new value of x
         >>>     print(z)  # [-1, 0, 1], the old value of x
         >>>
-        >>>     ti.atomic_and(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_xor(1, x)  # will raises TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))

@@ -6,7 +6,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_caching_allocator.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/backends/device.h"
+#include "taichi/llvm/llvm_device.h"
 
 namespace taichi {
 namespace lang {
@@ -75,7 +75,7 @@ class CudaStream : public Stream {
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
 
-class CudaDevice : public Device {
+class CudaDevice : public LlvmDevice {
  public:
   struct AllocInfo {
     void *ptr{nullptr};

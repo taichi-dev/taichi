@@ -11,12 +11,12 @@ from tests import test_utils
 @test_utils.test(debug=True, gdb_trigger=False, packed=False, arch=[ti.cpu])
 def test_indices_assert():
 
-    overflow = ti.field(ti.f16, (3, 1073741824))
+    overflow = ti.field(ti.u8, (3, 715827883))
 
     @ti.kernel
     def access_overflow():
-        overflow[0, 0] = 10
-        print(overflow[2, 1073741823])
+        overflow[0, 5] = 10
+        print(overflow[2, 715827882])
 
     with pytest.raises(RuntimeError,
                        match='The indices provided are too big!'):

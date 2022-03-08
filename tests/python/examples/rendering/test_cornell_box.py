@@ -6,14 +6,14 @@ from tests import test_utils
 FRAMES = 200
 
 
-@test_utils.test(arch=ti.gpu)
 def test_cornell_box():
-    from taichi.examples.rendering.cornell_box import render, tonemap
-    for i in range(FRAMES):
-        render()
-        interval = 10
-        if i % interval == 0:
-            tonemap(i)
+    if len(set(ti.gpu) & set(test_utils.expected_archs())) > 0:
+        from taichi.examples.rendering.cornell_box import render, tonemap
+        for i in range(FRAMES):
+            render()
+            interval = 10
+            if i % interval == 0:
+                tonemap(i)
 
 
 def video_cornell_box(result_dir):

@@ -6,14 +6,13 @@ from tests import test_utils
 FRAMES = 100
 
 
-@test_utils.test(arch=ti.gpu)
 def test_mpm99():
-    from taichi.examples.simulation.mpm99 import dt, initialize, substep
-
-    initialize()
-    for i in range(FRAMES):
-        for s in range(int(2e-3 // dt)):
-            substep()
+    if len(set(ti.gpu) & set(test_utils.expected_archs())) > 0:
+        from taichi.examples.simulation.mpm99 import dt, initialize, substep
+        initialize()
+        for i in range(FRAMES):
+            for s in range(int(2e-3 // dt)):
+                substep()
 
 
 def video_mpm99(result_dir):

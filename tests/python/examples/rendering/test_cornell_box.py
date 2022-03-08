@@ -1,10 +1,12 @@
 import argparse
 
 import taichi as ti
+from tests import test_utils
 
 FRAMES = 200
 
 
+@test_utils.test(arch=ti.gpu)
 def test_cornell_box():
     from taichi.examples.rendering.cornell_box import render, tonemap
     for i in range(FRAMES):

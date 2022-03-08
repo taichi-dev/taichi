@@ -15,7 +15,6 @@ def test_indices_assert():
 
     @ti.kernel
     def access_overflow():
-        overflow[0, 5] = 10
         overflow[2, 715827882] = 10
 
     with pytest.raises(RuntimeError,

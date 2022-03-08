@@ -69,7 +69,7 @@ dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 if use_sparse_matrix:
     # use a sparse matrix to solve Poisson's pressure equation.
     @ti.kernel
-    def fill_laplacian_matrix(A: ti.linalg.sparse_matrix_builder()):
+    def fill_laplacian_matrix(A: ti.types.sparse_matrix_builder()):
         for i, j in ti.ndrange(res, res):
             row = i * res + j
             center = 0.0

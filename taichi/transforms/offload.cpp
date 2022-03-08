@@ -672,7 +672,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
  private:
-  const CompileConfig &config_;
+  [[maybe_unused]] const CompileConfig &config_;
   StmtToOffsetMap local_to_global_offset_;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded_;
   OffloadedRanges *const offloaded_ranges_;

@@ -81,8 +81,12 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
   } else if (config.arch == Arch::metal) {
+#ifdef TI_WITH_METAL
     TI_ASSERT(metal::is_metal_api_available());
     program_impl_ = std::make_unique<MetalProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with Metal")
+#endif
   } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
     TI_ASSERT(vulkan::is_vulkan_api_available());
@@ -398,7 +402,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
-  auto kernel_name = fmt::format("ndarray_reader");
+  static uint64 ndarray_reader_counter = 0;
+  auto kernel_name = fmt::format("ndarray_reader_{}", ndarray_reader_counter++);
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;
@@ -422,7 +427,8 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
 }
 
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
-  auto kernel_name = fmt::format("ndarray_writer");
+  static uint64 ndarray_writer_counter = 0;
+  auto kernel_name = fmt::format("ndarray_writer_{}", ndarray_writer_counter++);
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;

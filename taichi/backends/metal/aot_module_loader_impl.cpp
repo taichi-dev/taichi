@@ -23,9 +23,9 @@ class KernelImpl : public aot::Kernel {
   const std::string kernel_name_;
 };
 
-class AotModuleLoaderImpl : public aot::ModuleLoader {
+class AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleLoaderImpl(const AotModuleParams &params)
+  explicit AotModuleImpl(const AotModuleParams &params)
       : runtime_(params.runtime) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
@@ -36,14 +36,24 @@ class AotModuleLoaderImpl : public aot::ModuleLoader {
     }
   }
 
-  bool get_field(const std::string &name,
-                 aot::CompiledFieldData &field) override {
-    TI_ERROR("AOT: get_field for Metal not implemented yet");
-    return false;
+  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override {
+    return make_new_kernel(name);
+  }
+
+  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
   }
 
   size_t get_root_size() const override {
     return aot_data_.metadata.root_buffer_size;
+  }
+
+  // Module metadata
+  Arch arch() const override {
+    return Arch::metal;
+  }
+  uint64_t version() const override {
+    TI_NOT_IMPLEMENTED;
   }
 
  private:
@@ -68,9 +78,9 @@ class AotModuleLoaderImpl : public aot::ModuleLoader {
 
 }  // namespace
 
-std::unique_ptr<aot::ModuleLoader> make_aot_module_loader(
-    const AotModuleParams &params) {
-  return std::make_unique<AotModuleLoaderImpl>(params);
+std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
+  AotModuleParams params = std::any_cast<AotModuleParams &>(mod_params);
+  return std::make_unique<AotModuleImpl>(params);
 }
 
 }  // namespace metal

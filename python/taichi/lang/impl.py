@@ -4,12 +4,11 @@ from typing import Iterable
 
 import numpy as np
 from taichi._lib import core as _ti_core
-from taichi._logging import error
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -23,8 +22,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
-                              python_scope, taichi_scope, to_numpy_type,
-                              to_taichi_type, warning)
+                              python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64
 
 
@@ -117,25 +115,23 @@ def begin_frontend_if(ast_builder, cond):
     ast_builder.begin_frontend_if(Expr(cond).ptr)
 
 
-def wrap_scalar(x):
-    if type(x) in [int, float]:
-        return Expr(x)
-    return x
-
-
 @taichi_scope
 def subscript(value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
-        return value.__getitem__(*_indices)
+        return value.__getitem__(_indices)
 
     if isinstance(value, (tuple, list, dict)):
         assert len(_indices) == 1
         return value[_indices[0]]
 
+    has_slice = False
     flattened_indices = []
     for _index in _indices:
         if is_taichi_class(_index):
             ind = _index.entries
+        elif isinstance(_index, slice):
+            ind = [_index]
+            has_slice = True
         else:
             ind = [_index]
         flattened_indices += ind
@@ -143,8 +139,14 @@ def subscript(value, *_indices, skip_reordered=False):
     if isinstance(_indices,
                   tuple) and len(_indices) == 1 and _indices[0] is None:
         _indices = ()
-    indices_expr_group = make_expr_group(*_indices)
-    index_dim = indices_expr_group.size()
+
+    if has_slice:
+        if not isinstance(value, Matrix):
+            raise SyntaxError(
+                f"The type {type(value)} do not support index of slice type")
+    else:
+        indices_expr_group = make_expr_group(*_indices)
+        index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
         return value._subscript(*_indices)
@@ -226,34 +228,6 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
                                           shape, stride))
 
 
-@taichi_scope
-def insert_expr_stmt_if_ti_func(ast_builder, func, *args, **kwargs):
-    """This method is used only for real functions. It inserts a
-    FrontendExprStmt to the C++ AST to hold the function call if `func` is a
-    Taichi function.
-
-    Args:
-        func: The function to be called.
-        args: The arguments of the function call.
-        kwargs: The keyword arguments of the function call.
-
-    Returns:
-        The return value of the function call if it's a non-Taichi function.
-        Returns None if it's a Taichi function."""
-    is_taichi_function = getattr(func, '_is_taichi_function', False)
-    # If is_taichi_function is true: call a decorated Taichi function
-    # in a Taichi kernel/function.
-
-    if is_taichi_function:
-        # Compiles the function here.
-        # Invokes Func.__call__.
-        func_call_result = func(*args, **kwargs)
-        # Insert FrontendExprStmt here.
-        return ast_builder.insert_expr_stmt(func_call_result.ptr)
-    # Call the non-Taichi function directly.
-    return func(*args, **kwargs)
-
-
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
@@ -265,7 +239,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.matrix_fields = []
-        self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
@@ -380,47 +353,6 @@ pytaichi = PyTaichi()
 
 def get_runtime():
     return pytaichi
-
-
-def _check_in_range(npty, val):
-    iif = np.iinfo(npty)
-    if not iif.min <= val <= iif.max:
-        # This isn't the case we want to deal with: |val| does't fall into the valid range of either
-        # the signed or the unsigned type.
-        error(
-            f'Constant {val} has exceeded the range of {to_taichi_type(npty)}: [{iif.min}, {iif.max}]'
-        )
-
-
-def _clamp_unsigned_to_range(npty, val):
-    # npty: np.int32 or np.int64
-    iif = np.iinfo(npty)
-    if iif.min <= val <= iif.max:
-        return val
-    cap = (1 << iif.bits)
-    assert 0 <= val < cap
-    new_val = val - cap
-    return new_val
-
-
-@taichi_scope
-def make_constant_expr_i32(val):
-    assert isinstance(val, (int, np.integer))
-    return Expr(_ti_core.make_const_expr_int(i32, val))
-
-
-@taichi_scope
-def make_constant_expr(val, dtype):
-    if isinstance(val, (int, np.integer)):
-        constant_dtype = pytaichi.default_ip if dtype is None else dtype
-        _check_in_range(to_numpy_type(constant_dtype), val)
-        return Expr(
-            _ti_core.make_const_expr_int(
-                constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
-    if isinstance(val, (float, np.floating)):
-        constant_dtype = pytaichi.default_fp if dtype is None else dtype
-        return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
-    raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 
 
 def reset():

@@ -124,9 +124,6 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 }  // namespace
 
 // CodeGenLLVM
-
-uint64 CodeGenLLVM::task_counter = 0;
-
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
@@ -1620,9 +1617,9 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
-  auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
-                                      stmt->task_name(), suffix);
-  task_counter += 1;
+  auto task_kernel_name =
+      fmt::format("{}_{}_{}{}", kernel_name, kernel->get_next_task_id(),
+                  stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
@@ -2377,6 +2374,30 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   }
 
   return xlogue;
+}
+
+void CodeGenLLVM::visit(FuncCallStmt *stmt) {
+  if (!func_map.count(stmt->func)) {
+    auto guard = get_function_creation_guard(
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+    func_map.insert({stmt->func, guard.body});
+    stmt->func->ir->accept(this);
+  }
+  llvm::Function *llvm_func = func_map[stmt->func];
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  call("RuntimeContext_set_runtime", new_ctx, get_runtime());
+  for (int i = 0; i < stmt->args.size(); i++) {
+    auto *original = llvm_val[stmt->args[i]];
+    int src_bits = original->getType()->getPrimitiveSizeInBits();
+    auto *cast = builder->CreateBitCast(
+        original, llvm::Type::getIntNTy(*llvm_context, src_bits));
+    auto *val =
+        builder->CreateZExt(cast, llvm::Type::getInt64Ty(*llvm_context));
+    call("RuntimeContext_set_args", new_ctx,
+         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
+  }
+
+  llvm_val[stmt] = create_call(llvm_func, {new_ctx});
 }
 
 TLANG_NAMESPACE_END

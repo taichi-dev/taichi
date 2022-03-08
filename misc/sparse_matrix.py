@@ -9,8 +9,8 @@ f = ti.linalg.SparseMatrixBuilder(n, 1, max_num_triplets=100)
 
 
 @ti.kernel
-def fill(A: ti.linalg.sparse_matrix_builder(),
-         b: ti.linalg.sparse_matrix_builder(), interval: ti.i32):
+def fill(A: ti.types.sparse_matrix_builder(),
+         b: ti.types.sparse_matrix_builder(), interval: ti.i32):
     for i in range(n):
         if i > 0:
             A[i - 1, i] += -1.0

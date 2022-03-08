@@ -1,8 +1,8 @@
 #pragma once
 
-#include "taichi/backends/device.h"
 #include "taichi/common/core.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/llvm/llvm_device.h"
 #include <stdint.h>
 #include <map>
 
@@ -12,14 +12,14 @@ namespace cuda {
 
 class CudaCachingAllocator {
  public:
-  CudaCachingAllocator(Device *device);
+  CudaCachingAllocator(LlvmDevice *device);
 
-  uint64_t *allocate(const Device::LlvmRuntimeAllocParams &params);
+  uint64_t *allocate(const LlvmDevice::LlvmRuntimeAllocParams &params);
   void release(size_t sz, uint64_t *ptr);
 
  private:
   std::multimap<size_t, uint64_t *> mem_blocks_;
-  Device *device_{nullptr};
+  LlvmDevice *device_{nullptr};
 };
 
 }  // namespace cuda

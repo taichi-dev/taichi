@@ -400,7 +400,7 @@ void MakeMeshBlockLocal::fetch_mapping(
 
 MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
                                        const CompileConfig &config)
-    : offload_(offload), config_(config) {
+    : config_(config), offload_(offload) {
   // Step 0: simplify l2g + g2r -> l2r
   simplify_nested_conversion();
 

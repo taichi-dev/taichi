@@ -81,8 +81,12 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
   } else if (config.arch == Arch::metal) {
+#ifdef TI_WITH_METAL
     TI_ASSERT(metal::is_metal_api_available());
     program_impl_ = std::make_unique<MetalProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with Metal")
+#endif
   } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
     TI_ASSERT(vulkan::is_vulkan_api_available());

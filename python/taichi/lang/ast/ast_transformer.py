@@ -456,8 +456,10 @@ class ASTTransformer(Builder):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
                                 annotations.sparse_matrix_builder):
-                    ctx.create_variable(arg.arg,
-                                        kernel_arguments.decl_sparse_matrix())
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_sparse_matrix(
+                            to_taichi_type(ctx.arg_features[i])))
                 elif isinstance(ctx.func.argument_annotations[i],
                                 annotations.any_arr):
                     ctx.create_variable(
@@ -482,7 +484,7 @@ class ASTTransformer(Builder):
             transform_as_kernel()
 
         else:  # ti.func
-            if impl.get_runtime().experimental_real_function:
+            if ctx.is_real_function:
                 transform_as_kernel()
             else:
                 len_args = len(args.args)
@@ -524,12 +526,12 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Return(ctx, node):
-        if not impl.get_runtime().experimental_real_function:
+        if not ctx.is_real_function:
             if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
         build_stmt(ctx, node.value)
-        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
+        if ctx.is_kernel or ctx.is_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if ctx.func.return_type is None:
@@ -557,7 +559,7 @@ class ASTTransformer(Builder):
                 # only need to replace the object part, i.e. args[0].value
         else:
             ctx.return_data = node.value.ptr
-        if not impl.get_runtime().experimental_real_function:
+        if not ctx.is_real_function:
             ctx.returned = True
         return None
 
@@ -1109,13 +1111,11 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Expr(ctx, node):
         build_stmt(ctx, node.value)
-        if not isinstance(
-                node.value,
-                ast.Call) or not impl.get_runtime().experimental_real_function:
+        if not isinstance(node.value, ast.Call):
             return None
         is_taichi_function = getattr(node.value.func.ptr,
                                      '_is_taichi_function', False)
-        if is_taichi_function:
+        if is_taichi_function and node.value.func.ptr._is_real_function:
             func_call_result = node.value.ptr
             ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)
         return None

@@ -64,7 +64,7 @@ class CompiledTaichiKernel {
   TaichiKernelAttributes ti_kernel_attribs_;
   std::vector<TaskAttributes> tasks_attribs_;
 
-  Device *device_;
+  [[maybe_unused]] Device *device_;
 
   InputBuffersMap input_buffers_;
 

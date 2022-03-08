@@ -4,12 +4,11 @@ from typing import Iterable
 
 import numpy as np
 from taichi._lib import core as _ti_core
-from taichi._logging import error
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -23,8 +22,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
-                              python_scope, taichi_scope, to_numpy_type,
-                              to_taichi_type, warning)
+                              python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64
 
 
@@ -115,12 +113,6 @@ def begin_frontend_if(ast_builder, cond):
             'or\n'
             '    if any(x != y):\n')
     ast_builder.begin_frontend_if(Expr(cond).ptr)
-
-
-def wrap_scalar(x):
-    if type(x) in [int, float]:
-        return Expr(x)
-    return x
 
 
 @taichi_scope
@@ -247,7 +239,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.matrix_fields = []
-        self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
@@ -362,47 +353,6 @@ pytaichi = PyTaichi()
 
 def get_runtime():
     return pytaichi
-
-
-def _check_in_range(npty, val):
-    iif = np.iinfo(npty)
-    if not iif.min <= val <= iif.max:
-        # This isn't the case we want to deal with: |val| does't fall into the valid range of either
-        # the signed or the unsigned type.
-        error(
-            f'Constant {val} has exceeded the range of {to_taichi_type(npty)}: [{iif.min}, {iif.max}]'
-        )
-
-
-def _clamp_unsigned_to_range(npty, val):
-    # npty: np.int32 or np.int64
-    iif = np.iinfo(npty)
-    if iif.min <= val <= iif.max:
-        return val
-    cap = (1 << iif.bits)
-    assert 0 <= val < cap
-    new_val = val - cap
-    return new_val
-
-
-@taichi_scope
-def make_constant_expr_i32(val):
-    assert isinstance(val, (int, np.integer))
-    return Expr(_ti_core.make_const_expr_int(i32, val))
-
-
-@taichi_scope
-def make_constant_expr(val, dtype):
-    if isinstance(val, (int, np.integer)):
-        constant_dtype = pytaichi.default_ip if dtype is None else dtype
-        _check_in_range(to_numpy_type(constant_dtype), val)
-        return Expr(
-            _ti_core.make_const_expr_int(
-                constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
-    if isinstance(val, (float, np.floating)):
-        constant_dtype = pytaichi.default_fp if dtype is None else dtype
-        return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
-    raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 
 
 def reset():

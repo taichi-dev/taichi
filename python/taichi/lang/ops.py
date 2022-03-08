@@ -1180,7 +1180,7 @@ def atomic_sub(x, y):
         >>>     print(x)  # [-1, -2, -3]  the new value of x
         >>>     print(z)  # [0, 0, 0], the old value of x
         >>>
-        >>>     ti.atomic_sub(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_sub(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
@@ -1211,7 +1211,7 @@ def atomic_min(x, y):
         >>>     print(x)  # 1  the new value of x
         >>>     print(z)  # 2, the old value of x
         >>>
-        >>>     ti.atomic_min(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
@@ -1242,7 +1242,7 @@ def atomic_max(x, y):
         >>>     print(x)  # 2  the new value of x
         >>>     print(z)  # 1, the old value of x
         >>>
-        >>>     ti.atomic_max(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_max(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
@@ -1273,7 +1273,7 @@ def atomic_and(x, y):
         >>>     print(x)  # [1, 0, 1]  the new value of x
         >>>     print(z)  # [-1, 0, 1], the old value of x
         >>>
-        >>>     ti.atomic_and(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_and(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
@@ -1304,7 +1304,7 @@ def atomic_or(x, y):
         >>>     print(x)  # [-1, 2, 3]  the new value of x
         >>>     print(z)  # [-1, 0, 1], the old value of x
         >>>
-        >>>     ti.atomic_or(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_or(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
@@ -1335,7 +1335,7 @@ def atomic_xor(x, y):
         >>>     print(x)  # [-2, 2, 2]  the new value of x
         >>>     print(z)  # [-1, 0, 1], the old value of x
         >>>
-        >>>     ti.atomic_xor(1, x)  # will raises TaichiSyntaxError
+        >>>     ti.atomic_xor(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))

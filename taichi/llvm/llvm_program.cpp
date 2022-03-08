@@ -184,7 +184,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   Ptr root_buffer = snode_tree_buffer_manager_->allocate(
       runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
       result_buffer);
-  std::cout << "ptr: " << root_buffer << std::endl;
+  std::cout << "ptr: " << uint64_t(root_buffer) << std::endl;
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);

@@ -26,7 +26,9 @@ class FieldImpl : public aot::Field {
     char *const device_buffer_ptr =
         reinterpret_cast<char *>(device_->map(*root_buffer));
     size_t root_buffer_size = runtime_->get_root_buffer_size(root_id);
-    std::memcpy(dst_host, device_buffer_ptr, root_buffer_size);
+
+    std::memcpy(dst_host, device_buffer_ptr + field_.mem_offset_in_parent,
+        root_buffer_size);
     device_->unmap(*root_buffer);
   }
 

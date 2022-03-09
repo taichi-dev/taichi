@@ -593,7 +593,7 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
   std::unique_ptr<DeviceAllocationGuard> new_buffer =
       device_->allocate_memory_unique(
           {root_buffer_size,
-           /*host_write=*/false, /*host_read=*/false,
+           /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();

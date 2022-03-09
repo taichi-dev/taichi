@@ -127,7 +127,7 @@ TEST(AotSaveLoad, Vulkan) {
       aot::Module::load(".", Arch::vulkan, mod_params);
   EXPECT_TRUE(vk_module);
 
-  // Retrieve kernels/fields/etc from AOT module to initialize runtime
+  // Retrieve kernels/fields/etc from AOT module
   auto root_size = vk_module->get_root_size();
   EXPECT_EQ(root_size, 64);
   vulkan_runtime->add_root_buffer(root_size);

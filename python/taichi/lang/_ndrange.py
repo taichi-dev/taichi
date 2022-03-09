@@ -47,10 +47,8 @@ def ndrange(*args):
 
     This set of multi-dimensional indices is the direct product (in the set-theory sense)
     of `n` groups of integers, it looks like
-    
-    ``
+
     range(x1, y1) x range(x2, y2) x ... x range(xn, yn)
-    ``
 
     This set is n-dimensional, where n equals the number of arguments in the input list.
     Each argument correspondes to one `range()` factor in the above product, and each argument

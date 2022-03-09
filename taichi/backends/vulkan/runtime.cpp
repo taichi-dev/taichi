@@ -612,8 +612,8 @@ DeviceAllocation *VkRuntime::get_root_buffer(int id) const {
 }
 
 size_t VkRuntime::get_root_buffer_size(int id) const {
-	auto it = root_buffers_size_map_.find(root_buffers_[id].get());
-  if (id >= root_buffers_.size() || it == root_buffers_size_map_.end() ) {
+  auto it = root_buffers_size_map_.find(root_buffers_[id].get());
+  if (id >= root_buffers_.size() || it == root_buffers_size_map_.end()) {
     TI_ERROR("root buffer id {} not found", id);
   }
   return it->second;

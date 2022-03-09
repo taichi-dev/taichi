@@ -250,6 +250,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
+<<<<<<< HEAD
 std::set<TernaryOpType> stack_needed_ternary_collections{TernaryOpType::select};
 std::set<UnaryOpType> stack_needed_unary_collections{
     UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
@@ -570,6 +571,7 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
+<<<<<<< HEAD
       // We need to insert the alloca to the block of GlobalLoadStmt when the
       // GlobalLoadStmt is not inside a range-for
       if (stmt->is<GlobalLoadStmt>() &&
@@ -582,6 +584,21 @@ class MakeAdjoint : public IRVisitor {
       } else {
         alloca_block->insert(std::move(alloca), 0);
       }
+=======
+      // We need to insert the alloca to the block of GlobalLoadStmt when the
+      // GlobalLoadStmt is not inside a range-for
+      if (stmt->is<GlobalLoadStmt>() &&
+          stmt->parent->parent_stmt->is<RangeForStmt>()) {
+        if (forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1) {
+          stmt->as<GlobalLoadStmt>()->parent->insert(std::move(alloca), 0);
+        } else {
+          alloca_block->insert(std::move(alloca), 0);
+        }
+      } else {
+        alloca_block->insert(std::move(alloca), 0);
+      }
+
+>>>>>>> 4debd9e349b623c120d4f63704f68733d8597048
     }
     return adjoint_stmt[stmt];
   }

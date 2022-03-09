@@ -600,6 +600,22 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
   cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
+  // cache the root buffer size
+  root_buffers_size_map_[root_buffers_.back().get()] = root_buffer_size;
+}
+
+DeviceAllocation *VkRuntime::get_root_buffer(int id) const {
+  if (id >= root_buffers_.size()) {
+    TI_ERROR("{} root buffers are recorded", root_buffers_.size());
+  }
+  return root_buffers_[id].get();
+}
+
+size_t VkRuntime::get_root_buffer_size(int id) {
+  if (id >= root_buffers_.size()) {
+    TI_ERROR("{} root buffers are recorded", root_buffers_.size());
+  }
+  return root_buffers_size_map_[root_buffers_[id].get()];
 }
 
 VkRuntime::RegisterParams run_codegen(

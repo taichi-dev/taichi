@@ -8,6 +8,21 @@ namespace lang {
 namespace metal {
 namespace {
 
+class FieldImpl : public aot::Field {
+ public:
+  explicit FieldImpl(KernelManager *runtime, CompiledFieldData field)
+      : runtime_(runtime), field_(field) {
+  }
+
+  void copy_to_host_buffer(uint64_t *dst_host) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+ private:
+  KernelManager *const runtime_;
+  CompiledFieldData field_;
+};
+
 class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(KernelManager *runtime, const std::string &kernel_name)

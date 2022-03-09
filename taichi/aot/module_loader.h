@@ -27,6 +27,13 @@ class TI_DLL_EXPORT Field {
   Field &operator=(const Field &) = delete;
   Field(Field &&) = default;
   Field &operator=(Field &&) = default;
+
+  /**
+   * @brief copy data from root buffer back to host
+   *
+   * @param dst host buffer
+   */
+  virtual void copy_to_host_buffer(uint64_t *dst) = 0;
 };
 
 class TI_DLL_EXPORT Kernel {
@@ -72,9 +79,7 @@ class TI_DLL_EXPORT Module {
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
-
- private:
-  std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
+  virtual std::unique_ptr<Field> make_new_field(const std::string &name) = 0;
 };
 
 // Only responsible for reporting device capabilities

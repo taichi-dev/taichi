@@ -146,8 +146,11 @@ TEST(AotSaveLoad, Vulkan) {
   ret_kernel->launch(&host_ctx);
   vulkan_runtime->synchronize();
 
-  // auto x_field = vk_module.get_field("x");
-  // EXPECT_TRUE(x_field);
-  // x_field.copy_to(/*dst=*/x.get());
+  // Retrieve data
+  auto x_field = vk_module->get_field("place");
+  EXPECT_TRUE(x_field);
+
+  std::vector<uint64_t> x(root_size);
+  x_field->copy_to(&x[0]);
 }
 #endif

@@ -12,6 +12,28 @@ namespace {
 
 using KernelHandle = VkRuntime::KernelHandle;
 
+class FieldImpl : public aot::Field {
+ public:
+  explicit FieldImpl(VkRuntime *runtime, aot::CompiledFieldData field)
+      : runtime_(runtime), field_(field) {
+  }
+
+  void copy_to_host_buffer(uint64_t *dst_host) override {
+    // since kernel.num_snode_trees = 1, we always locate the first root
+    int root_id = 0;
+    DeviceAllocation *root_buffer = runtime_->get_root_buffer(root_id);
+    auto device_ = runtime_->get_ti_device();
+    char *const device_buffer_ptr = reinterpret_cast<char *>(device_->map(*root_buffer));
+    size_t root_buffer_size = runtime_->get_root_buffer_size(root_id);
+    std::memcpy(dst_host, device_buffer_ptr, root_buffer_size);
+    device_->unmap(*root_buffer);
+  }
+
+ private:
+  VkRuntime *const runtime_;
+  aot::CompiledFieldData field_;
+};
+
 class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
@@ -53,7 +75,7 @@ class AotModuleImpl : public aot::Module {
   }
 
   std::unique_ptr<aot::Field> get_field(const std::string &name) override {
-    TI_NOT_IMPLEMENTED;
+    return make_new_field(name);
   }
 
   size_t get_root_size() const override {
@@ -69,6 +91,27 @@ class AotModuleImpl : public aot::Module {
   }
 
  private:
+  std::unique_ptr<aot::Field> make_new_field(
+      const std::string &name) override {
+    aot::CompiledFieldData field;
+    if (!get_field_data_by_name(name, field)) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    return std::make_unique<FieldImpl>(runtime_, field);
+  }
+
+  bool get_field_data_by_name(const std::string &name,
+                                 aot::CompiledFieldData &field) {
+    for (int i = 0; i < ti_aot_data_.fields.size(); ++i) {
+      if (ti_aot_data_.fields[i].field_name.rfind(name, 0) == 0) {
+        field = ti_aot_data_.fields[i];
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool get_kernel_params_by_name(const std::string &name,
                                  VkRuntime::RegisterParams &kernel) {
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {

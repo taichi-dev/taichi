@@ -106,6 +106,10 @@ class TI_DLL_EXPORT VkRuntime {
 
   void add_root_buffer(size_t root_buffer_size);
 
+  DeviceAllocation *get_root_buffer(int id) const;
+
+  size_t get_root_buffer_size(int id);
+
  private:
   friend class taichi::lang::vulkan::SNodeTreeManager;
 
@@ -125,6 +129,8 @@ class TI_DLL_EXPORT VkRuntime {
   high_res_clock::time_point current_cmdlist_pending_since_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
+
+  std::unordered_map<DeviceAllocation *, size_t> root_buffers_size_map_;
 };
 
 VkRuntime::RegisterParams run_codegen(

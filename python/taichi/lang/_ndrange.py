@@ -96,7 +96,7 @@ def ndrange(*args):
         the indices are turned into a 1-D array `(0, 1, ..., 9)`:
 
         >>> @ti.kernel
-        >>> def loop_1d():
+        >>> def loop_2d():
         >>>     for i in ti.ndrange(2, 5):
         >>>         print(i)
         will print 0 1 2 3 4 5 6 7 8 9
@@ -108,7 +108,7 @@ def ndrange(*args):
         total number of indices in the last n-k+1 dimensions:
 
         >>> @ti.kernel
-        >>> def loop_1d():
+        >>> def loop_3d():
         >>>     # use two iterators to loop over a set of 3-D indices
         >>>     # the last two dimensions for 4, 5 will collapse into
         >>>     # the array [0, 1, 2, ..., 19]
@@ -116,6 +116,16 @@ def ndrange(*args):
         >>>         print(i, j)
         will print 0 0, 0 1, ..., 0 19, ..., 2 19. But may not be in this order
         due to parallel execution.
+
+        A typical usage of `ndrange` is when you want to loop over a tensor and process
+        its entries in parallel. You must avoid writing nested `for` loops here, since
+        only top level `for` loops are paralleled in taichi, so you can use `ndrange`
+        to hold all entries in one top level loop:
+
+        >>> @ti.kernel
+        >>> def loop_tensor():
+        >>>     for row, col, channel in ti.ndrange(image_height, image_width, channels):
+        >>>         image[row, col, channel] = ...
     """
     return _Ndrange(*args)
 

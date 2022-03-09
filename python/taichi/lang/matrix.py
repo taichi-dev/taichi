@@ -269,10 +269,10 @@ class Matrix(TaichiOperations):
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
         return Matrix([[self(i, j) for j in b] for i in a])
 
-    def _cal_slice(self, slice, dim):
+    def _cal_slice(self, index, dim):
 
-        start, stop, step = slice.start or 0, slice.stop or (
-            self.n if dim is 0 else self.m), slice.step or 1
+        start, stop, step = index.start or 0, index.stop or (
+            self.n if dim is 0 else self.m), index.step or 1
         if isinstance(start, expr.Expr) and isinstance(start.ptr, int):
             start = start.ptr
         if isinstance(stop, expr.Expr) and isinstance(stop.ptr, int):

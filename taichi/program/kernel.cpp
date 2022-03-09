@@ -285,6 +285,7 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
 #endif
+  ctx_->result_buffer = kernel_->program->result_buffer;
   return *ctx_;
 }
 

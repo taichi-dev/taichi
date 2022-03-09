@@ -16,7 +16,6 @@ Ndarray::Ndarray(Program *prog,
                  const std::vector<int> &shape)
     : dtype(type),
       shape(shape),
-      prog_impl_(prog->get_llvm_program_impl()),
       num_active_indices(shape.size()),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
@@ -24,6 +23,7 @@ Ndarray::Ndarray(Program *prog,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
       device_(prog->get_device_shared()),
+      prog_impl_(prog->get_llvm_program_impl()),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);

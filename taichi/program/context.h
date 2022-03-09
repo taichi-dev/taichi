@@ -24,6 +24,11 @@ struct RuntimeContext {
   int32 cpu_thread_id;
   // |is_device_allocation| is true iff args[i] is a DeviceAllocation*.
   bool is_device_allocation[taichi_max_num_args_total]{false};
+  // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
+  // because each real function need a place to store its result, but
+  // LLVMRuntime is shared among functions. So we moved the pointer to
+  // RuntimeContext which each function have one.
+  uint64 *result_buffer;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 

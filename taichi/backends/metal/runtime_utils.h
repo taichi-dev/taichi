@@ -29,8 +29,8 @@ class BufferMemoryView {
   }
 
  private:
-  std::size_t size_;
-  char *ptr_;
+  std::size_t size_{0};
+  char *ptr_{nullptr};
 };
 
 }  // namespace metal

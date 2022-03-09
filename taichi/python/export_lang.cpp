@@ -64,6 +64,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
+                                             PyExc_RuntimeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -357,10 +359,11 @@ void export_lang(py::module &m) {
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder",
-           [](Program *program, int n, int m, uint64 max_num_entries) {
+           [](Program *program, int n, int m, uint64 max_num_entries,
+              DataType dtype) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries);
+             return SparseMatrixBuilder(n, m, max_num_entries, dtype);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m) {

@@ -4,11 +4,12 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
-CudaCachingAllocator::CudaCachingAllocator(Device *device) : device_(device) {
+CudaCachingAllocator::CudaCachingAllocator(LlvmDevice *device)
+    : device_(device) {
 }
 
 uint64_t *CudaCachingAllocator::allocate(
-    const Device::LlvmRuntimeAllocParams &params) {
+    const LlvmDevice::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
   auto size_aligned = taichi::iroundup(params.size, taichi_page_size);
   auto it_blk = mem_blocks_.lower_bound(size_aligned);

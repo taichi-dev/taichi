@@ -22,7 +22,7 @@ n = 4
 K = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
 @ti.kernel
-def fill(A: ti.linalg.sparse_matrix_builder()):
+def fill(A: ti.types.sparse_matrix_builder()):
     for i in range(n):
         A[i, i] += 1  # Only +=  and -= operators are supported for now.
 
@@ -146,7 +146,7 @@ K = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 b = ti.field(ti.f32, shape=n)
 
 @ti.kernel
-def fill(A: ti.linalg.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
+def fill(A: ti.types.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
     for i in range(n):
         A[i, i] += 2.0
 

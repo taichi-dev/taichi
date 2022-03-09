@@ -1,11 +1,15 @@
+import datetime
 import json
 import os
 import platform
 import threading
+import uuid
 from urllib import request
 
+from taichi._lib import core as _ti_core
 
-def check_version():
+
+def check_version(cur_uuid):
     # Check Taichi version for the user.
     major = _ti_core.get_version_major()
     minor = _ti_core.get_version_minor()
@@ -35,7 +39,10 @@ def check_version():
         payload['python'] = 'cp38'
     elif python_version.startswith('3.9.'):
         payload['python'] = 'cp39'
+    elif python_version.startswith('3.10.'):
+        payload['python'] = 'cp310'
 
+    payload['uuid'] = cur_uuid
     # We do not want request exceptions break users' usage of Taichi.
     try:
         payload = json.dumps(payload)
@@ -50,39 +57,40 @@ def check_version():
         return None
 
 
+def write_version_info(response, cur_uuid, version_info_path, cur_date):
+    if response is None:
+        return
+    with open(version_info_path, 'w') as f:
+        f.write((cur_date).strftime('%Y-%m-%d'))
+        f.write('\n')
+        if response['status'] == 1:
+            f.write(response['latest_version'])
+        else:
+            f.write('0.0.0')
+        f.write('\n')
+        f.write(cur_uuid)
+        f.write('\n')
+
+
 def try_check_version():
     try:
         os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        version_info_path = os.path.join(_ti_core.get_repo_dir(),
+                                         'version_info')
         cur_date = datetime.date.today()
-        if os.path.exists(timestamp_path):
-            last_time = ''
-            with open(timestamp_path, 'r') as f:
-                last_time = f.readlines()[0].rstrip()
+        if os.path.exists(version_info_path):
+            with open(version_info_path, 'r') as f:
+                version_info_file = f.readlines()
+                last_time = version_info_file[0].rstrip()
+                cur_uuid = version_info_file[2].rstrip()
             if cur_date.strftime('%Y-%m-%d') > last_time:
-                response = check_version()
-                if response is None:
-                    return
-                with open(timestamp_path, 'w') as f:
-                    f.write((cur_date +
-                             datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                    f.write('\n')
-                    if response['status'] == 1:
-                        f.write(response['latest_version'])
-                    else:
-                        f.write('0.0.0')
+                response = check_version(cur_uuid)
+                write_version_info(response, cur_uuid, version_info_path,
+                                   cur_date)
         else:
-            response = check_version()
-            if response is None:
-                return
-            with open(timestamp_path, 'w') as f:
-                f.write((cur_date +
-                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                f.write('\n')
-                if response['status'] == 1:
-                    f.write(response['latest_version'])
-                else:
-                    f.write('0.0.0')
+            cur_uuid = str(uuid.uuid4())
+            response = check_version(cur_uuid)
+            write_version_info(response, cur_uuid, version_info_path, cur_date)
     # Wildcard exception to catch potential file writing errors.
     except:
         pass

@@ -143,9 +143,10 @@ class SparseMatrixBuilder:
                  dtype=f32):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
+        self.dtype = dtype
         if num_rows is not None:
             self.ptr = get_runtime().prog.create_sparse_matrix_builder(
-                num_rows, num_cols, max_num_triplets)
+                num_rows, num_cols, max_num_triplets, dtype)
 
     def _get_addr(self):
         """Get the address of the sparse matrix"""

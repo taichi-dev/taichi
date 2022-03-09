@@ -172,6 +172,12 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 type_factory_ = _ti_core.get_type_factory_instance()
 
 extension = _ti_core.Extension
+"""An instance of Taichi extension.
+
+The list of currently available extensions is ['sparse', 'async_mode', 'quant', \
+    'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
+        'extfunc', 'packed', 'dynamic_index'].
+"""
 
 
 def is_extension_supported(arch, ext):
@@ -189,8 +195,19 @@ def is_extension_supported(arch, ext):
 
 def reset():
     """Resets Taichi to its initial state.
+    This will destroy all the allocated fields and kernels, and restore
+    the runtime to its default configuration.
 
-    This would destroy all the fields and kernels.
+    Example::
+
+        >>> a = ti.field(ti.i32, shape=())
+        >>> a[None] = 1
+        >>> print("before reset: ", a)
+        before rest: 1
+        >>>
+        >>> ti.reset()
+        >>> print("after reset: ", a)
+        # will raise error because a is unavailable after reset.
     """
     impl.reset()
     global runtime
@@ -240,7 +257,6 @@ class _SpecialConfig:
     def __init__(self):
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.experimental_real_function = False
         self.short_circuit_operators = False
 
 
@@ -383,7 +399,6 @@ def init(arch=None,
     # submodule configurations (spec_cfg):
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
-    env_spec.add('experimental_real_function')
     env_spec.add('short_circuit_operators')
 
     # compiler configurations (ti.cfg):
@@ -405,8 +420,6 @@ def init(arch=None,
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
-        impl.get_runtime().experimental_real_function = \
-            spec_cfg.experimental_real_function
         impl.get_runtime().short_circuit_operators = \
             spec_cfg.short_circuit_operators
         _logging.set_logging_level(spec_cfg.log_level.lower())
@@ -504,8 +517,10 @@ def parallelize(v):
 serialize = lambda: parallelize(1)
 
 
-def block_dim(v):
-    get_runtime().prog.current_ast_builder().block_dim(v)
+def block_dim(dim):
+    """Set the number of threads in a block to `dim`.
+    """
+    get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
 def global_thread_idx():
@@ -545,7 +560,8 @@ def Tape(loss, clear_gradients=True):
         >>>         y[None] += x[I] ** a
         >>>
         >>> with ti.Tape(loss = y):
-        >>>     sum(2)"""
+        >>>     sum(2)
+    """
     impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
@@ -564,7 +580,8 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
-    """Set all fields' gradients to 0."""
+    """Set the gradients of all fields to zero.
+    """
     impl.get_runtime().materialize()
 
     def visit(node):

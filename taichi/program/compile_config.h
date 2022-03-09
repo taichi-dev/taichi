@@ -105,6 +105,10 @@ struct CompileConfig {
   bool experimental_auto_mesh_local{false};
   int auto_mesh_local_default_occupacy{4};
 
+  // Offline cache options
+  bool offline_cache{false};
+  std::string offline_cache_file_path{"."};
+
   CompileConfig();
 };
 

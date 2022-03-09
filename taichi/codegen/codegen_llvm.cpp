@@ -297,7 +297,8 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&module)
+                         std::unique_ptr<llvm::Module> &&module,
+                         bool needs_cache)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
           module == nullptr ? kernel->program->get_llvm_program_impl()
@@ -306,6 +307,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                             : std::move(module),
           kernel->program->get_llvm_program_impl()->get_llvm_context(
               kernel->arch)),
+      needs_cache_(needs_cache),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -2239,6 +2241,16 @@ void CodeGenLLVM::eliminate_unused_functions() {
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
   eliminate_unused_functions();
+
+  auto *llvm_prog = prog->get_llvm_program_impl();
+  if (needs_cache_) {
+    std::vector<std::string> offloaded_task_name_list;
+    for (auto &task : offloaded_tasks) {
+      offloaded_task_name_list.push_back(task.name);
+    }
+    llvm_prog->cache_kernel(this->kernel->get_key(), this->module.get(),
+                            std::move(offloaded_task_name_list));
+  }
 
   tlctx->add_module(std::move(module));
 

@@ -217,7 +217,10 @@ void export_lang(py::module &m) {
       .def_readwrite("experimental_auto_mesh_local",
                      &CompileConfig::experimental_auto_mesh_local)
       .def_readwrite("auto_mesh_local_default_occupacy",
-                     &CompileConfig::auto_mesh_local_default_occupacy);
+                     &CompileConfig::auto_mesh_local_default_occupacy)
+      .def_readwrite("offline_cache", &CompileConfig::offline_cache)
+      .def_readwrite("offline_cache_file_path",
+                     &CompileConfig::offline_cache_file_path);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

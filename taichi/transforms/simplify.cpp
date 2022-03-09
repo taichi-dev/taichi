@@ -523,8 +523,8 @@ class BasicBlockSimplify : public IRVisitor {
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
       if (current_stmt_id < block->size() - 1 &&
           block->statements[current_stmt_id + 1]->is<IfStmt>()) {
-        auto fstmt = block->statements[current_stmt_id + 1]->as<IfStmt>();
-        if (fstmt->cond == if_stmt->cond) {
+        auto bstmt = block->statements[current_stmt_id + 1]->as<IfStmt>();
+        if (bstmt->cond == if_stmt->cond) {
           auto concatenate = [](std::unique_ptr<Block> &clause1,
                                 std::unique_ptr<Block> &clause2) {
             if (clause1 == nullptr) {
@@ -534,8 +534,8 @@ class BasicBlockSimplify : public IRVisitor {
             if (clause2 != nullptr)
               clause1->insert(VecStatement(std::move(clause2->statements)), 0);
           };
-          concatenate(fstmt->true_statements, if_stmt->true_statements);
-          concatenate(fstmt->false_statements, if_stmt->false_statements);
+          concatenate(bstmt->true_statements, if_stmt->true_statements);
+          concatenate(bstmt->false_statements, if_stmt->false_statements);
           modifier.erase(if_stmt);
           return;
         }

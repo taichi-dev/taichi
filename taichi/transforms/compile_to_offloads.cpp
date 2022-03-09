@@ -39,7 +39,6 @@ void compile_to_offloads(IRNode *ir,
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
-  auto print_autodiff = make_pass_printer(true, "autodiff debug", ir);
   print("Initial IR");
 
   if (grad) {
@@ -93,8 +92,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::full_simplify(ir, config, {false, kernel->program});
     irpass::auto_diff(ir, config, ad_use_stack);
     irpass::full_simplify(ir, config, {false, kernel->program});
-//    print("Gradient");
-    print_autodiff("Gradient");
+    print("Gradient");
     irpass::analysis::verify(ir);
   }
 

@@ -250,76 +250,93 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
-std::set<TernaryOpType>stack_needed_ternary_collections{TernaryOpType::select};
-std::set<UnaryOpType> stack_needed_unary_collections{UnaryOpType::abs, UnaryOpType::sin, UnaryOpType::cos, UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos, UnaryOpType::exp, UnaryOpType::log, UnaryOpType::sqrt};
-std::set<BinaryOpType> stack_needed_binary_collections{BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2, BinaryOpType::pow};
+std::set<TernaryOpType> stack_needed_ternary_collections{TernaryOpType::select};
+std::set<UnaryOpType> stack_needed_unary_collections{
+    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+std::set<BinaryOpType> stack_needed_binary_collections{
+    BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+    BinaryOpType::pow};
 class AdStackAllocaJudger : public BasicStmtVisitor {
-public:
-    using BasicStmtVisitor::visit;
-    // Find the usage of the stmt recursively along the LocalLoadStmt
-    void visit(LocalLoadStmt *stmt) override {
-      if(stmt->has_source(target_alloca_)) {
-        local_loaded_ = true;
-        target_alloca_ = stmt;
-      }
+ public:
+  using BasicStmtVisitor::visit;
+  // Find the usage of the stmt recursively along the LocalLoadStmt
+  void visit(LocalLoadStmt *stmt) override {
+    if (stmt->has_source(target_alloca_)) {
+      local_loaded_ = true;
+      target_alloca_ = stmt;
     }
+  }
 
-    // Check if there is a LocalLoadStmt - LocalStoreStmt cycle for an alloca
-    void visit(LocalStoreStmt *stmt) override{
-      if(local_loaded_ && stmt->dest == target_alloca_backup_){
+  // Check if there is a LocalLoadStmt - LocalStoreStmt cycle for an alloca
+  void visit(LocalStoreStmt *stmt) override {
+    if (local_loaded_ && stmt->dest == target_alloca_backup_) {
+      is_stack_needed_ = true;
+    }
+  }
+
+  // The stack is needed if the alloc serves as the index of any global
+  // variables
+  void visit(GlobalPtrStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    for (const auto &index : stmt->indices) {
+      if (index == target_alloca_)
         is_stack_needed_ = true;
-      }
     }
+  }
 
-    // The stack is needed if the alloc serves as the index of any global variables
-    void visit(GlobalPtrStmt *stmt) override{
-      if(is_stack_needed_) return;
-      for(const auto&index : stmt->indices){
-        if (index == target_alloca_)
-          is_stack_needed_ = true;
-      }
+  // Check whether the target stmt is used by the UnaryOpStmts who requires the
+  // ad stack
+  void visit(UnaryOpStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    if (stack_needed_unary_collections.find(stmt->op_type) !=
+        stack_needed_unary_collections.end()) {
+      if (stmt->operand == target_alloca_)
+        is_stack_needed_ = true;
     }
+  }
 
-    // Check whether the target stmt is used by the UnaryOpStmts who requires the ad stack
-    void visit(UnaryOpStmt *stmt) override{
-      if(is_stack_needed_) return;
-      if(stack_needed_unary_collections.find(stmt->op_type) != stack_needed_unary_collections.end()){
-        if(stmt->operand == target_alloca_)
-          is_stack_needed_ = true;
-      }
+  // Check whether the target stmt is used by the BinaryOpStmts who requires the
+  // ad stack
+  void visit(BinaryOpStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    if (stack_needed_binary_collections.find(stmt->op_type) !=
+        stack_needed_binary_collections.end()) {
+      if (stmt->lhs == target_alloca_ || stmt->rhs == target_alloca_)
+        is_stack_needed_ = true;
     }
+  }
 
-    // Check whether the target stmt is used by the BinaryOpStmts who requires the ad stack
-    void visit(BinaryOpStmt *stmt) override{
-      if(is_stack_needed_) return;
-      if(stack_needed_binary_collections.find(stmt->op_type) != stack_needed_binary_collections.end()){
-        if(stmt->lhs == target_alloca_ || stmt->rhs == target_alloca_)
-          is_stack_needed_ = true;
-      }
+  // Check whether the target stmt is used by the TernaryOpStmts who requires
+  // the ad stack
+  void visit(TernaryOpStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    if (stack_needed_ternary_collections.find(stmt->op_type) !=
+        stack_needed_ternary_collections.end()) {
+      if (stmt->op1 == target_alloca_ || stmt->op2 == target_alloca_ ||
+          stmt->op3 == target_alloca_)
+        is_stack_needed_ = true;
     }
+  }
 
-    // Check whether the target stmt is used by the TernaryOpStmts who requires the ad stack
-    void visit(TernaryOpStmt *stmt) override{
-      if(is_stack_needed_) return;
-      if(stack_needed_ternary_collections.find(stmt->op_type) != stack_needed_ternary_collections.end()){
-        if(stmt->op1 == target_alloca_ || stmt->op2 == target_alloca_ || stmt->op3 == target_alloca_)
-          is_stack_needed_ = true;
-      }
-    }
+  static bool run(IRNode *root, AllocaStmt *target_alloca) {
+    AdStackAllocaJudger judger;
+    judger.target_alloca_ = target_alloca;
+    judger.target_alloca_backup_ = target_alloca;
+    root->accept(&judger);
+    return judger.is_stack_needed_;
+  }
 
-    static bool run(IRNode *root, AllocaStmt* target_alloca) {
-      AdStackAllocaJudger judger;
-      judger.target_alloca_ = target_alloca;
-      judger.target_alloca_backup_ = target_alloca;
-      root->accept(&judger);
-      return judger.is_stack_needed_;
-    }
-
-private:
-    Stmt* target_alloca_;
-    Stmt* target_alloca_backup_;
-    bool is_stack_needed_ = false;
-    bool local_loaded_ = false;
+ private:
+  Stmt *target_alloca_;
+  Stmt *target_alloca_backup_;
+  bool is_stack_needed_ = false;
+  bool local_loaded_ = false;
 };
 
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
@@ -553,17 +570,18 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
-      // We need to insert the alloca to the block of GlobalLoadStmt when the GlobalLoadStmt is not inside a range-for
-      if (stmt->is<GlobalLoadStmt>() && stmt->parent->parent_stmt->is<RangeForStmt>()){
-        if(forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1){
+      // We need to insert the alloca to the block of GlobalLoadStmt when the
+      // GlobalLoadStmt is not inside a range-for
+      if (stmt->is<GlobalLoadStmt>() &&
+          stmt->parent->parent_stmt->is<RangeForStmt>()) {
+        if (forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1) {
           stmt->as<GlobalLoadStmt>()->parent->insert(std::move(alloca), 0);
-        }else{
+        } else {
           alloca_block->insert(std::move(alloca), 0);
         }
-      }else{
+      } else {
         alloca_block->insert(std::move(alloca), 0);
       }
-
     }
     return adjoint_stmt[stmt];
   }
@@ -758,7 +776,8 @@ class MakeAdjoint : public IRVisitor {
     }
     std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
     auto old_alloca_block = alloca_block;
-    auto old_forward_backup = forward_backup; // store the block which is not inside the current IB
+    auto old_forward_backup =
+        forward_backup;  // store the block which is not inside the current IB
     forward_backup = for_stmt->body.get();
     for (auto stmt : statements) {
       alloca_block = new_for_ptr->body.get();
@@ -792,15 +811,16 @@ class MakeAdjoint : public IRVisitor {
 
     // Clear the adjoint of the dest after local store,
     // Because LocalStoreStmt overwrites the dest,
-    // 1. If the alloca is inside a loop, the adjoint of this alloca of this iteration should be cleared after this iteration has been done
-    // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the last LocalStoreStmt should be taken account of
-    if(needs_grad(stmt->dest->ret_type)) {
+    // 1. If the alloca is inside a loop, the adjoint of this alloca of this
+    // iteration should be cleared after this iteration has been done
+    // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
+    // last LocalStoreStmt should be taken account of
+    if (needs_grad(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
     }
   }
-
 
   void visit(AdStackLoadTopStmt *stmt) override {
     if (needs_grad(stmt->ret_type))
@@ -1007,7 +1027,6 @@ class BackupSSA : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
-
 
 namespace irpass {
 

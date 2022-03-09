@@ -372,6 +372,21 @@ def static_print(*args, __p=print, **kwargs):
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
+    """Thrown AssertionError when `cond` is False.
+    The bool value in `cond` must can be determined at compile time.
+
+    Args:
+        cond (bool): an expression with a bool value.
+        msg (str): assertion message.
+
+    Example::
+
+    >>> year = 2001
+    >>> @ti.kernel
+    >>>     def test():
+    >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
+    AssertionError: the year must be a lunar year
+    """
     if msg is not None:
         assert cond, msg
     else:

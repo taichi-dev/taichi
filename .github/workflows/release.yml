@@ -55,7 +55,7 @@ jobs:
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
           fi
 
-  build_and_upload_linux:
+  build_and_test_linux:
     name: Build and Upload (linux only)
     needs: matrix_prep
     strategy:
@@ -81,11 +81,11 @@ jobs:
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
-            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+            /home/dev/${{ github.event.repository.name }}/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
-          docker cp taichi_build:/home/dev/taichi/dist shared/dist
-          docker cp taichi_build:/home/dev/taichi/build shared/build
+          docker cp taichi_build:/home/dev/${{ github.event.repository.name }}/dist shared/dist
+          docker cp taichi_build:/home/dev/${{ github.event.repository.name }}/build shared/build
         env:
           PY: ${{ matrix.conda_python }}
           GPU_BUILD: ON
@@ -94,9 +94,9 @@ jobs:
           DISPLAY: ":1"
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
+          name: dist
           path: shared/dist/*.whl
           retention-days: 20
 
@@ -116,20 +116,12 @@ jobs:
           GPU_TEST: ON
           DISPLAY: ":1"
 
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-        run: |
-          cd shared
-          pip install twine requests==2.26
-          python3 ../misc/upload_release.py
-
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
 
-  build_and_upload_mac:
+  build_and_test_mac:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
@@ -170,9 +162,9 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -181,13 +173,7 @@ jobs:
         env:
           TI_WANTED_ARCHS: "cpu"
 
-      - name: Upload PyPI
-        env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROJECT_NAME: ${{ matrix.name }}
-        run: python misc/upload_release.py
-
-  build_and_upload_m1:
+  build_and_test_m1:
     name: Build and Upload (Apple M1)
     needs: matrix_prep
     strategy:
@@ -226,9 +212,9 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -241,15 +227,7 @@ jobs:
           PYTHON: ${{ matrix.python }}
           GPU_TEST: ON
 
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
-        run: |
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          python misc/upload_release.py
-
-  build_and_upload_macos_1014:
+  build_and_test_macos_1014:
     name: Build and Upload (macos 1014)
     needs: matrix_prep
     strategy:
@@ -285,9 +263,9 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-1014.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -299,15 +277,7 @@ jobs:
           TI_WANTED_ARCHS: "cpu"
           PYTHON: ${{ matrix.python }}
 
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
-        run: |
-          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          python misc/upload_release.py
-
-  build_and_upload_windows:
+  build_and_test_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep
     strategy:
@@ -347,7 +317,7 @@ jobs:
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -363,24 +333,43 @@ jobs:
         env:
           TI_SKIP_VERSION_CHECK: ON
 
-      - name: Upload PyPI
-        shell: powershell
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
+  upload_to_pypi:
+    name: Upload release to PyPI
+    needs:
+      [
+        build_and_test_linux,
+        build_and_test_mac,
+        build_and_test_m1,
+        build_and_test_macos_1014,
+        build_and_test_windows,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Get dist files
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload to PyPI
         run: |
-          python -m pip install twine
-          venv\Scripts\python misc/upload_release.py
+          ls -l dist/
+          if [ -z "$RELEASE_VERSION" ]; then
+            export PROJECT_NAME="taichi-nightly"
+          else
+            export PROJECT_NAME="taichi"
+          fi
+          python -m pip install requests twine
+          python misc/upload_release.py
 
   create_release:
     name: Create tag and publish release
-    needs:
-      [
-        build_and_upload_linux,
-        build_and_upload_mac,
-        build_and_upload_m1,
-        build_and_upload_macos_1014,
-        build_and_upload_windows,
-      ]
+    needs: upload_to_pypi
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:

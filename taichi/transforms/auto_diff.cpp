@@ -250,7 +250,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
-<<<<<<< HEAD
+
 std::set<TernaryOpType> stack_needed_ternary_collections{TernaryOpType::select};
 std::set<UnaryOpType> stack_needed_unary_collections{
     UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,

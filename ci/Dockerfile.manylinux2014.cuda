@@ -2,10 +2,16 @@ FROM nvidia/cudagl:11.2.2-devel-centos7
 
 LABEL maintainer="https://github.com/taichi-dev"
 
-# Install development tools with expected versions
-RUN yum install -y git wget epel-release centos-release-scl
-RUN yum install -y cmake3 devtoolset-10-gcc*
+RUN yum install -y git wget
+
+# Install cmake 3.x
+RUN yum install -y epel-release
+RUN yum install -y cmake3
 RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
+
+# Install gcc 10 (https://git.centos.org/rpms/devtoolset-10-gcc)
+RUN yum install -y centos-release-scl
+RUN yum install -y devtoolset-10-gcc*
 ENV PATH="/opt/rh/devtoolset-10/root/usr/bin:$PATH"
 
 # Build LLVM/Clang 10 from source
@@ -44,6 +50,7 @@ RUN conda create -n py36 python=3.6 -y
 RUN conda create -n py37 python=3.7 -y
 RUN conda create -n py38 python=3.8 -y
 RUN conda create -n py39 python=3.9 -y
+RUN conda create -n py310 python=3.10 -y
 
 WORKDIR /home/dev
 ENV LANG="C.UTF-8"

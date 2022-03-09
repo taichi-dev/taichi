@@ -381,11 +381,11 @@ def static_assert(cond, msg=None):
 
     Example::
 
-    >>> year = 2001
-    >>> @ti.kernel
-    >>>     def test():
-    >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
-    AssertionError: the year must be a lunar year
+        >>> year = 2001
+        >>> @ti.kernel
+        >>> def test():
+        >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
+        AssertionError: the year must be a lunar year
     """
     if msg is not None:
         assert cond, msg

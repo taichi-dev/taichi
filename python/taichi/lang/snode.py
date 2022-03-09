@@ -338,7 +338,7 @@ def rescale_index(a, b, I):
             :class:`taichi.Matrix.field`): Input taichi fields or snodes.
 
         I (Union[list, :class:`taichi.Vector`]): grouped loop index.
-    
+
     Returns:
         Ib (:class:`taichi.Vector`): rescaled grouped loop index
     """
@@ -387,7 +387,8 @@ def is_active(node, indices):
         bool: the cell `node[indices]` is active or not.
     """
     return expr.Expr(
-        _ti_core.insert_is_active(node._snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.insert_is_active(node._snode.ptr,
+                                  expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -437,7 +438,7 @@ def get_addr(f, indices):
     Args:
         f (Union[:class:`taichi.field`, :class:`taichi.Vector.field`, \
             :class:`taichi.Matrix.field`]): Input taichi field for memory address query.
-        
+
         indices (Union[int, :class:`taichi.Vector`]): The specified field indices of the query.
 
     Returns:

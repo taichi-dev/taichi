@@ -9,7 +9,7 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -269,21 +269,61 @@ class Matrix(TaichiOperations):
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
         return Matrix([[self(i, j) for j in b] for i in a])
 
+    def _cal_slice(self, slice, dim):
+
+        start, stop, step = slice.start or 0, slice.stop or (
+            self.n if dim is 0 else self.m), slice.step or 1
+        if isinstance(start, expr.Expr) and isinstance(start.ptr, int):
+            start = start.ptr
+        if isinstance(stop, expr.Expr) and isinstance(stop.ptr, int):
+            stop = stop.ptr
+        if isinstance(step, expr.Expr) and isinstance(step.ptr, int):
+            step = step.ptr
+        if isinstance(start, expr.Expr) or isinstance(
+                step, expr.Expr) or isinstance(stop, expr.Expr):
+            raise TaichiSyntaxError(
+                "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
+            )
+        return [_ for _ in range(start, stop, step)]
+
     @taichi_scope
     def _subscript(self, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
-        if isinstance(i, slice) or isinstance(j, slice):
-            for a in (i, j):
-                if isinstance(a, slice):
-                    if isinstance(a.start, expr.Expr) or isinstance(
-                            a.step, expr.Expr) or isinstance(
-                                a.stop, expr.Expr):
-                        raise TaichiSyntaxError(
-                            "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
-                        )
-            return self._get_slice(i, j)
+        has_slice = False
+        if isinstance(i, slice):
+            i = self._cal_slice(i, 0)
+            has_slice = True
+        if isinstance(j, slice):
+            j = self._cal_slice(j, 1)
+            has_slice = True
+
+        if has_slice:
+            if not isinstance(i, list):
+                i = [i]
+            if not isinstance(j, list):
+                j = [j]
+
+            if self.local_tensor_proxy is not None:
+                assert self.dynamic_index_stride is not None
+                if len(indices) == 1:
+                    return Vector([
+                        impl.make_tensor_element_expr(
+                            self.local_tensor_proxy, (a, ), (self.n, ),
+                            self.dynamic_index_stride) for a in i
+                    ])
+                return Matrix([[
+                    impl.make_tensor_element_expr(self.local_tensor_proxy,
+                                                  (a, b), (self.n, self.m),
+                                                  self.dynamic_index_stride)
+                    for b in j
+                ] for a in i])
+            if isinstance(i[0], expr.Expr) or isinstance(j[0], expr.Expr):
+                raise TaichiCompilationError(
+                    "It is detected that there is no dynamic index, please consider setting 'dynamic_index = True' in ti.init to fix this Error!"
+                )
+            return Matrix([[self(a, b) for b in j] for a in i])
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)

@@ -108,7 +108,7 @@ class TI_DLL_EXPORT VkRuntime {
 
   DeviceAllocation *get_root_buffer(int id) const;
 
-  size_t get_root_buffer_size(int id);
+  size_t get_root_buffer_size(int id) const;
 
  private:
   friend class taichi::lang::vulkan::SNodeTreeManager;

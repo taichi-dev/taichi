@@ -606,16 +606,17 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
 
 DeviceAllocation *VkRuntime::get_root_buffer(int id) const {
   if (id >= root_buffers_.size()) {
-    TI_ERROR("{} root buffers are recorded", root_buffers_.size());
+    TI_ERROR("root buffer id {} not found", id);
   }
   return root_buffers_[id].get();
 }
 
-size_t VkRuntime::get_root_buffer_size(int id) {
-  if (id >= root_buffers_.size()) {
-    TI_ERROR("{} root buffers are recorded", root_buffers_.size());
+size_t VkRuntime::get_root_buffer_size(int id) const {
+	auto it = root_buffers_size_map_.find(root_buffers_[id].get());
+  if (id >= root_buffers_.size() || it == root_buffers_size_map_.end() ) {
+    TI_ERROR("root buffer id {} not found", id);
   }
-  return root_buffers_size_map_[root_buffers_[id].get()];
+  return it->second;
 }
 
 VkRuntime::RegisterParams run_codegen(

@@ -151,6 +151,6 @@ TEST(AotSaveLoad, Vulkan) {
   EXPECT_TRUE(x_field);
 
   std::vector<uint64_t> x(root_size);
-  x_field->copy_to(&x[0]);
+  x_field->copy_to_host_buffer(&x[0]);
 }
 #endif

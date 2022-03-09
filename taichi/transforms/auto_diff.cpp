@@ -270,10 +270,19 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   }
 
   // Check if there is a LocalLoadStmt - LocalStoreStmt cycle for an alloca
+  // Check if the alloca is load only
   void visit(LocalStoreStmt *stmt) override {
+    if (stmt->dest == target_alloca_backup_)
+      load_only_ = false;
     if (local_loaded_ && stmt->dest == target_alloca_backup_) {
       is_stack_needed_ = true;
     }
+  }
+
+  // Check if the alloca is load only
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest == target_alloca_backup_)
+      load_only_ = false;
   }
 
   // The stack is needed if the alloc serves as the index of any global
@@ -329,7 +338,7 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
     judger.target_alloca_ = target_alloca;
     judger.target_alloca_backup_ = target_alloca;
     root->accept(&judger);
-    return judger.is_stack_needed_;
+    return (!judger.load_only_) && judger.is_stack_needed_;
   }
 
  private:
@@ -337,6 +346,7 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   Stmt *target_alloca_backup_;
   bool is_stack_needed_ = false;
   bool local_loaded_ = false;
+  bool load_only_ = true;
 };
 
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
@@ -349,19 +359,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only =
-        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
-          if (auto store = s->cast<LocalStoreStmt>()) {
-            return store->dest == alloc;
-          } else if (auto atomic = s->cast<AtomicOpStmt>()) {
-            return atomic->dest == alloc;
-          } else {
-            return false;
-          }
-        }).empty();
 
     bool is_stack_needed = AdStackAllocaJudger::run(alloc->parent, alloc);
-    if (!load_only && is_stack_needed) {
+    if (is_stack_needed) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();

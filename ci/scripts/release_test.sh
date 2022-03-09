@@ -156,13 +156,16 @@ function taichi::test::taichi_elements {
     done
 
     # run special tests
-    python render_particles.py -i ./path/to/particles \
-                               -b 0 -e 400 -s 1 \
-                               -o ./output \
-                               --gpu-memory 20 \
-                               -M 460 \
-                               --shutter-time 0.0 \
-                               -r 128
+    # FIXME: this does not work properly yet
+    # taichi::utils::logger::success $(ls)
+    # read -p "Please input the directory containing the generated particles, e.g. sim_2022-01-01_20-55-48" particles_dir
+    # python render_particles.py -i ./"${particles_dir}" \
+    #                            -b 0 -e 400 -s 1 \
+    #                            -o ./output \
+    #                            --gpu-memory 20 \
+    #                            -M 460 \
+    #                            --shutter-time 0.0 \
+    #                            -r 128
 
     # go back to workdir
     cd "${WORKDIR}"

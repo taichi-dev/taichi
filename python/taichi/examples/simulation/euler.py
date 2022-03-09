@@ -283,9 +283,7 @@ def sign(a):
     return sgn
 
 
-ti.func
-
-
+@ti.func
 def cosh(a):
     return (ti.exp(a) + ti.exp(-a)) / 2.0
 

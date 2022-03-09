@@ -81,7 +81,7 @@ def ndrange(*args):
         contains 2x5=10 elements, and need two indices i, j to loop over them:
 
             >>> @ti.kernel
-            >>> def loop_1d():
+            >>> def loop_2d():
             >>>     for i, j in ti.ndrange(2, 5):
             >>>         print(i, j)
             0 0
@@ -94,7 +94,7 @@ def ndrange(*args):
         the indices are turned into a 1-D array `(0, 1, ..., 9)`:
 
             >>> @ti.kernel
-            >>> def loop_2d():
+            >>> def loop_2d_as_1d():
             >>>     for i in ti.ndrange(2, 5):
             >>>         print(i)
             will print 0 1 2 3 4 5 6 7 8 9
@@ -106,7 +106,7 @@ def ndrange(*args):
         total number of indices in the last n-k+1 dimensions:
 
             >>> @ti.kernel
-            >>> def loop_3d():
+            >>> def loop_3d_as_2d():
             >>>     # use two iterators to loop over a set of 3-D indices
             >>>     # the last two dimensions for 4, 5 will collapse into
             >>>     # the array [0, 1, 2, ..., 19]

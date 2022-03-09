@@ -265,6 +265,7 @@ public:
       }
     }
 
+    // Check if there is a LocalLoadStmt - LocalStoreStmt cycle for an alloca
     void visit(LocalStoreStmt *stmt) override{
       if(local_loaded_ && stmt->dest == target_alloca_backup_){
         std::cout << "cycle " << stmt->name() << std::endl;

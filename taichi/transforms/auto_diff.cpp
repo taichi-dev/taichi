@@ -260,7 +260,6 @@ public:
     void visit(LocalLoadStmt *stmt) override {
       if(stmt->has_source(target_alloca_)) {
         local_loaded_ = true;
-        std::cout << "the name of the local load " << stmt->name() << std::endl;
         target_alloca_ = stmt;
       }
     }
@@ -268,7 +267,6 @@ public:
     // Check if there is a LocalLoadStmt - LocalStoreStmt cycle for an alloca
     void visit(LocalStoreStmt *stmt) override{
       if(local_loaded_ && stmt->dest == target_alloca_backup_){
-        std::cout << "cycle " << stmt->name() << std::endl;
         is_stack_needed_ = true;
       }
     }
@@ -346,10 +344,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
         }).empty();
 
     bool is_stack_needed = AdStackAllocaJudger::run(alloc->parent, alloc);
-//    bool is_stack_needed = true;
-    std::cout << "alloca name " << alloc->name() << " is stack needed ? " << is_stack_needed << std::endl;
     if (!load_only && is_stack_needed) {
-//    if (!load_only) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
@@ -550,7 +545,6 @@ class MakeAdjoint : public IRVisitor {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
-      std::cout << "what is me " << stmt->type() << " my number "<< stmt->name() << " me " << stmt << std::endl;
       // normal SSA cases
 
       // create the alloca
@@ -559,11 +553,9 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
-      // We need to insert the alloca to the block of GlobalLoadStmt when the GlobalLoadStmt is not inside the alloca_block
+      // We need to insert the alloca to the block of GlobalLoadStmt when the GlobalLoadStmt is not inside a range-for
       if (stmt->is<GlobalLoadStmt>() && stmt->parent->parent_stmt->is<RangeForStmt>()){
-        std::cout << " stmt parent " << stmt->parent->parent_stmt->name() << " : "<< stmt->parent->parent_stmt->type() << std::endl;
         if(forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1){
-          std::cout << "we move the alloca, " << alloca->name() << " the global stmt is "<< stmt->as<GlobalLoadStmt>()->name() << " target position " << stmt->as<GlobalLoadStmt>()->name() <<std::endl;
           stmt->as<GlobalLoadStmt>()->parent->insert(std::move(alloca), 0);
         }else{
           alloca_block->insert(std::move(alloca), 0);
@@ -787,18 +779,21 @@ class MakeAdjoint : public IRVisitor {
     // do nothing
   }
 
-  // TODO: (WIP) make it equivalent to AdStackLoadTopStmt when no stack is needed
+  // Equivalent to AdStackLoadTopStmt when no stack is needed
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
     if (needs_grad(stmt->ret_type))
       accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
   }
 
-  // TODO: (WIP) make it equivalent to AdStackPushStmt when no stack is needed
+  // Equivalent to AdStackPushStmt when no stack is needed
   void visit(LocalStoreStmt *stmt) override {
     accumulate(stmt->val, load(adjoint(stmt->dest)));
 
-    // TODO: Clear the adjoint after local store?
+    // Clear the adjoint of the dest after local store,
+    // Because LocalStoreStmt overwrites the dest,
+    // 1. If the alloca is inside a loop, the adjoint of this alloca of this iteration should be cleared after this iteration has been done
+    // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the last LocalStoreStmt should be taken account of
     if(needs_grad(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
@@ -844,7 +839,7 @@ class MakeAdjoint : public IRVisitor {
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_grad()) {
-      // No adjoint SNode. Do
+      // No adjoint SNode. Do nothing
       return;
     }
     if (gradients_stopped(stmt, snodes[0])) {
@@ -1015,39 +1010,20 @@ class BackupSSA : public BasicStmtVisitor {
 
 
 namespace irpass {
-  std::function<void(const std::string &)>
-  make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-    if (!verbose) {
-      return [](const std::string &) {};
-    }
-    return [ir, kernel_name](const std::string &pass) {
-        TI_INFO("[{}] {}:", kernel_name, pass);
-        std::cout << std::flush;
-        irpass::re_id(ir);
-        irpass::print(ir);
-        std::cout << std::flush;
-    };
-  }
 
 void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   TI_AUTO_PROF;
-  auto print = make_pass_printer(true, "autodiff debug", root);
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-    print("after ReverseOuterLoops");
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
-      print("after PromoteSSA2LocalVar");
       ReplaceLocalVarWithStacks replace(config.ad_stack_size);
       ib->accept(&replace);
       type_check(root, config);
-      print("after ReplaceWithStacks");
       MakeAdjoint::run(ib);
       type_check(root, config);
-      print("after Make adjoint");
       BackupSSA::run(ib);
-      print("after Backup SSA");
       irpass::analysis::verify(root);
     }
   } else {

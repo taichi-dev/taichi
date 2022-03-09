@@ -372,7 +372,7 @@ def static_print(*args, __p=print, **kwargs):
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
-    """Thrown AssertionError when `cond` is False.
+    """Throw AssertionError when `cond` is False.
     The bool value in `cond` must can be determined at compile time.
 
     Args:
@@ -509,7 +509,7 @@ def create_field_member(dtype, name):
 
 @python_scope
 def field(dtype, shape=None, name="", offset=None, needs_grad=False):
-    """Defines a Taichi field
+    """Defines a Taichi field.
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
     the complexity of how its underlying :class:`~taichi.lang.snode.SNode` are
@@ -520,13 +520,18 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     Args:
         dtype (DataType): data type of the field.
-        shape (Union[int, tuple[int]], optional): shape of the field
-        name (str, optional): name of the field
-        offset (Union[int, tuple[int]], optional): offset of the field domain
+
+        shape (Union[int, tuple[int]], optional): shape of the field.
+
+        name (str, optional): name of the field.
+
+        offset (Union[int, tuple[int]], optional): offset of the field domain.
+
         needs_grad (bool, optional): whether this field participates in autodiff
             and thus needs an adjoint field to store the gradients.
 
-    Example:
+    Example::
+
         The code below shows how a Taichi field can be declared and defined::
 
             >>> x1 = ti.field(ti.f32, shape=(16, 8))

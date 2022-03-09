@@ -47,18 +47,18 @@ def ndrange(*args):
 
     This set of multi-dimensional indices is the direct product (in the set-theory sense)
     of `n` groups of integers, it looks like
-
-    ```
+    
+    ``
     range(x1, y1) x range(x2, y2) x ... x range(xn, yn)
-    ```
+    ``
 
-    This set is n-dimensional, where `n` equals the number of arguments in the input list.
+    This set is n-dimensional, where n equals the number of arguments in the input list.
     Each argument correspondes to one `range()` factor in the above product, and each argument
-    must be either an integer or a pair of two integers. An integer `n` will be intepreted
-    as `range(0, n)`, and a pair of two integers `(start, end)` will be interpreted as
-    `range(start, end)` as the built-in `range()` function (with the ending boundary excluded).
+    must be either an integer or a pair of two integers. An integer n will be intepreted
+    as `range(0, n)`, and a pair of two integers (start, end) will be interpreted as
+    `range(start, end)`.
 
-    You can loop over this multi-dimensonal set in different ways, see the examples below.
+    You can loop over these multi-dimensonal indices in different ways, see the examples below.
 
     Args:
         entries: (int, tuple): Must be either an integer, or a tuple/list of two integers.
@@ -68,64 +68,63 @@ def ndrange(*args):
 
     Example::
 
-        You can loop over 1-D integers in range [start, end), like in native Python:
+        You can loop over 1-D integers in range [start, end), like in native Python::
 
-        >>> @ti.kernel
-        >>> def loop_1d():
-        >>>     start = 2
-        >>>     end = 5
-        >>>     for i in ti.ndrange((start, end)):
-        >>>         print(i)  # will print 2 3 4
+            >>> @ti.kernel
+            >>> def loop_1d():
+            >>>     start = 2
+            >>>     end = 5
+            >>>     for i in ti.ndrange((start, end)):
+            >>>         print(i)  # will print 2 3 4
 
         Note the braces around `(start, end)` in the above code. If without them,
         the parameter `2` will be interpreted as `range(0, 2)`, `5` will be
         interpreted as `range(0, 5)`, and you will get a set of 2-D indices which
-        contains 2x5=10 elements, and need two indices i, j to loop over them:
+        contains 2x5=10 elements, and need two indices i, j to loop over them::
 
-        >>> @ti.kernel
-        >>> def loop_1d():
-        >>>     for i, j in ti.ndrange(2, 5):
-        >>>         print(i, j)
-        0 0
-        ...
-        0 4
-        ...
-        1 4
+            >>> @ti.kernel
+            >>> def loop_1d():
+            >>>     for i, j in ti.ndrange(2, 5):
+            >>>         print(i, j)
+            0 0
+            ...
+            0 4
+            ...
+            1 4
 
         But you do can use a single index i to loop over these 2-D indices, in this case
-        the indices are turned into a 1-D array `(0, 1, ..., 9)`:
+        the indices are turned into a 1-D array `(0, 1, ..., 9)`::
 
-        >>> @ti.kernel
-        >>> def loop_2d():
-        >>>     for i in ti.ndrange(2, 5):
-        >>>         print(i)
-        will print 0 1 2 3 4 5 6 7 8 9
+            >>> @ti.kernel
+            >>> def loop_2d():
+            >>>     for i in ti.ndrange(2, 5):
+            >>>         print(i)
+            will print 0 1 2 3 4 5 6 7 8 9
 
         In general, you can use any `1 <= k <= n` iterators to loop over a set of n-D
         indices. For `k=n` all the indices are n-dimensional, and they are returned in
         lexical order, but for `k<n` the last n-k+1 dimensions will be collapsed into
         a 1-D array of consecutive integers `(0, 1, 2, ...)` whose length equals the
-        total number of indices in the last n-k+1 dimensions:
+        total number of indices in the last n-k+1 dimensions::
 
-        >>> @ti.kernel
-        >>> def loop_3d():
-        >>>     # use two iterators to loop over a set of 3-D indices
-        >>>     # the last two dimensions for 4, 5 will collapse into
-        >>>     # the array [0, 1, 2, ..., 19]
-        >>>     for i, j in ti.ndrange(3, 4, 5):
-        >>>         print(i, j)
-        will print 0 0, 0 1, ..., 0 19, ..., 2 19. But may not be in this order
-        due to parallel execution.
+            >>> @ti.kernel
+            >>> def loop_3d():
+            >>>     # use two iterators to loop over a set of 3-D indices
+            >>>     # the last two dimensions for 4, 5 will collapse into
+            >>>     # the array [0, 1, 2, ..., 19]
+            >>>     for i, j in ti.ndrange(3, 4, 5):
+            >>>         print(i, j)
+            will print 0 0, 0 1, ..., 0 19, ..., 2 19.
 
         A typical usage of `ndrange` is when you want to loop over a tensor and process
         its entries in parallel. You must avoid writing nested `for` loops here, since
         only top level `for` loops are paralleled in taichi, so you can use `ndrange`
         to hold all entries in one top level loop:
 
-        >>> @ti.kernel
-        >>> def loop_tensor():
-        >>>     for row, col, channel in ti.ndrange(image_height, image_width, channels):
-        >>>         image[row, col, channel] = ...
+            >>> @ti.kernel
+            >>> def loop_tensor():
+            >>>     for row, col, channel in ti.ndrange(image_height, image_width, channels):
+            >>>         image[row, col, channel] = ...
     """
     return _Ndrange(*args)
 

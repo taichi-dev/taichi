@@ -152,6 +152,7 @@ dx11 = _ti_core.dx11
 
 gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
+Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -160,6 +161,7 @@ GPU is detected, Taichi falls back to the CPU backend.
 
 cpu = _ti_core.host_arch()
 """A list of CPU backends supported on the current system.
+Currently contains 'x64', 'x86_64', 'arm64', 'cc', 'wasm'.
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """

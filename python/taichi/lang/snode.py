@@ -330,22 +330,17 @@ class SNode:
 
 
 def rescale_index(a, b, I):
-    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'
+    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'.
 
-    Parameters
-    ----------
-    a: ti.field(), ti.Vector.field, ti.Matrix.field()
-        input taichi field or snode
-    b: ti.field(), ti.Vector.field, ti.Matrix.field()
-        output taichi field or snode
-    I: ti.Vector()
-        grouped loop index
+    Args:
 
-    Returns
-    -------
-    Ib: ti.Vector()
-        rescaled grouped loop index
+        a, b (Union[:class:`taichi.field`, :class:`taichi.Vector.field`, \
+            :class:`taichi.Matrix.field`): Input taichi fields or snodes.
 
+        I (Union[list, :class:`taichi.Vector`]): grouped loop index.
+    
+    Returns:
+        (:class:`taichi.Vector`): rescaled grouped loop index
     """
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
@@ -399,12 +394,13 @@ def get_addr(f, indices):
     Currently, this function can only be called inside a taichi kernel.
 
     Args:
-        f (Union[ti.field, ti.Vector.field, ti.Matrix.field]): Input taichi field for memory address query.
-        indices (Union[int, ti.Vector()]): The specified field indices of the query.
+        f (Union[:class:`taichi.field`, :class:`taichi.Vector.field`, \
+            :class:`taichi.Matrix.field`]): Input taichi field for memory address query.
+        
+        indices (Union[int, :class:`taichi.Vector`]): The specified field indices of the query.
 
     Returns:
-        ti.u64:  The memory address of `f[indices]`.
-
+        ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
         _ti_core.expr_get_addr(f._snode.ptr, expr.make_expr_group(indices)))

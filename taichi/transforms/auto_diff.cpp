@@ -1035,6 +1035,7 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
+
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace(config.ad_stack_size);

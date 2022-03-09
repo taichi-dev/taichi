@@ -2,11 +2,13 @@
 
 # Taichi release test suite
 
+# Usage: `bash release_test.sh`
+
 # This script is created mainly for eyeball-testing
 # that if all of the official examples are still working
 # with the latest version of Taichi.
 
-# The test cases are created from external repositories
+# Some of the test cases are fetched from external repositories
 # please reach out to us if you are the owner of those
 # repos and don't like us to do it.
 
@@ -154,13 +156,13 @@ function taichi::test::taichi_elements {
     done
 
     # run special tests
-    python3 render_particles.py -i ./path/to/particles \
-                                -b 0 -e 400 -s 1 \
-                                -o ./output \
-                                --gpu-memory 20 \
-                                -M 460 \
-                                --shutter-time 0.0 \
-                                -r 128
+    python render_particles.py -i ./path/to/particles \
+                               -b 0 -e 400 -s 1 \
+                               -o ./output \
+                               --gpu-memory 20 \
+                               -M 460 \
+                               --shutter-time 0.0 \
+                               -r 128
 
     # go back to workdir
     cd "${WORKDIR}"
@@ -211,6 +213,26 @@ function taichi::test::sandyfluid {
     cd "${WORKDIR}"
 }
 
+function taichi::test::voxel_editor {
+    local WORKDIR=${1}
+    local ORG="taichi-dev"
+    local REPO="voxel_editor"
+
+    # divider
+    taichi::utils::line
+    taichi::utils::logger::info "Running Voxel Editor examples"
+    
+    # clone the repo
+    taichi::utils::git_clone "${ORG}" "${REPO}"
+    cd "${REPO}"
+
+    # run tests
+    python voxel_editor.py
+
+    # go back to workdir
+    cd "${WORKDIR}"
+}
+
 function taichi::test::main {
     # set debugging flag
     DEBUG="false"
@@ -237,8 +259,11 @@ function taichi::test::main {
     # stannum tests
     taichi::test::stannum "${WORKDIR}"
 
-    # stannum tests 
+    # sandyfluid tests 
     taichi::test::sandyfluid "${WORKDIR}"
+
+    # voxel editor tests 
+    taichi::test::voxel_editor "${WORKDIR}"
 }
 
 taichi::test::main

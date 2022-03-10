@@ -107,7 +107,7 @@ struct CompileConfig {
 
   // Offline cache options
   bool offline_cache{false};
-  std::string offline_cache_file_path{"."};
+  std::string offline_cache_file_path{"./__ticache__"};
 
   CompileConfig();
 };

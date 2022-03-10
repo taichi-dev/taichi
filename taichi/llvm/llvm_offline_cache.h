@@ -2,6 +2,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/llvm/llvm_fwd.h"
+#include "taichi/util/io.h"
 
 TLANG_NAMESPACE_BEGIN
 struct LlvmOfflineCache {
@@ -36,6 +37,7 @@ class LlvmOfflineCacheFileReader {
 class LlvmOfflineCacheFileWriter {
  public:
   LlvmOfflineCacheFileWriter(const std::string &path) : path_(path) {
+    taichi::create_directories(path);
   }
 
   void set_data(LlvmOfflineCache &&data) {

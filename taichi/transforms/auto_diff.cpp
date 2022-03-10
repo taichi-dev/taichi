@@ -584,7 +584,7 @@ class MakeAdjoint : public IRVisitor {
       // Code sample:
       // a and b require grad
       // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
-      // accumulate once, alloca history value is needed): 
+      // accumulate once, alloca history value is needed):
       // for i in range(5):
       //     p = a[i]
       //     q = b[i]
@@ -593,7 +593,7 @@ class MakeAdjoint : public IRVisitor {
 
       // Case 2 (GlobalLoadStmt is inside the for-loop, compute once and
       // accumulate immediately, alloca history value can be discarded): 
-      //for i in range(5):
+      // for i in range(5):
       //     q = b[i]
       //     for _ in range(5)
       //         q += a[i]

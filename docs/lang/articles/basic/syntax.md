@@ -72,8 +72,8 @@ my_kernel(24, 3.2)  # The system prints 27.2
 
 The upper limit for element numbers is backend-specific:
 
-- 8 on OpenGL backend.
-- 64 on CPU, Vulkan, CUDA, or Metal.
+- 8 on OpenGL backend
+- 64 on CPU, Vulkan, CUDA, or Metal
 
 :::note
 - The number of elements in a scalar argument is always 1.
@@ -110,7 +110,7 @@ A kernel can also take the following two types of advanced arguments:
 
 ### Return value
 
-A kernel can have *at most* one return value, which can be a scalar, `ti.Matrix`, and `ti.Vector`. Follow these rules when defining the return value of a kernel:
+A kernel can have *at most* one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`. Follow these rules when defining the return value of a kernel:
 
 - Type hint the return value of a kernel.
 - Ensure that you have *at most* one return value in a kernel.

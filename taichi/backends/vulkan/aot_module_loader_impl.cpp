@@ -78,7 +78,12 @@ class AotModuleImpl : public aot::Module {
   }
 
   std::unique_ptr<aot::Field> get_field(const std::string &name) override {
-    return make_new_field(name);
+    aot::CompiledFieldData field;
+    if (!get_field_data_by_name(name, field)) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    return std::make_unique<FieldImpl>(runtime_, field);
   }
 
   size_t get_root_size() const override {
@@ -94,15 +99,6 @@ class AotModuleImpl : public aot::Module {
   }
 
  private:
-  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
-    aot::CompiledFieldData field;
-    if (!get_field_data_by_name(name, field)) {
-      TI_DEBUG("Failed to load field {}", name);
-      return nullptr;
-    }
-    return std::make_unique<FieldImpl>(runtime_, field);
-  }
-
   bool get_field_data_by_name(const std::string &name,
                               aot::CompiledFieldData &field) {
     for (int i = 0; i < ti_aot_data_.fields.size(); ++i) {

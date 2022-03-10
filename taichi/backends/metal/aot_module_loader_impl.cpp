@@ -10,7 +10,7 @@ namespace {
 
 class FieldImpl : public aot::Field {
  public:
-  explicit FieldImpl(KernelManager *runtime, CompiledFieldData field)
+  explicit FieldImpl(KernelManager *runtime, const CompiledFieldData &field)
       : runtime_(runtime), field_(field) {
   }
 
@@ -72,10 +72,6 @@ class AotModuleImpl : public aot::Module {
   }
 
  private:
-  std::unique_ptr<aot::Field> make_new_field(const std::string &name) {
-    TI_NOT_IMPLEMENTED;
-  }
-
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override {
     auto itr = kernels_.find(name);

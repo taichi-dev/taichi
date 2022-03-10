@@ -79,7 +79,6 @@ class TI_DLL_EXPORT Module {
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
-  virtual std::unique_ptr<Field> make_new_field(const std::string &name) = 0;
 };
 
 // Only responsible for reporting device capabilities

@@ -148,6 +148,6 @@ TEST(AotSaveLoad, Vulkan) {
 
   // Retrieve data
   auto x_field = vk_module->get_field("place");
-  EXPECT_TRUE(x_field);
+  EXPECT_NE(x_field, nullptr);
 }
 #endif

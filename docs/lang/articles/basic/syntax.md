@@ -220,10 +220,11 @@ Taichi functions are the building blocks of a kernel.  All Taichi functions are 
 :::caution WARNING
 
 You must call a Taichi function from inside a kernel or from inside another Taichi function. In other words, you must call a Taichi function from within the Taichi scope, *not* from within the Python scope.
-
 :::
 
-> A Taichi function corresponds to the `__device__` function in CUDA.
+:::note
+A Taichi function corresponds to the `__device__` function in CUDA.
+:::
 
 The following example shows the difference between a kernel and a Taichi function:
 
@@ -307,9 +308,7 @@ def my_kernel():
 The return values of a Taichi function can be scalar, `ti.Matrix`, `ti.Vector`, `ti.Struct`, and more. Note that:
 
 - Unlike a kernel, a Taichi function can have multiple return values.
-
 - You do not need to type hint the return values of a Taichi function.
-
 - There is no limit on the number of elements in the return values.
 
 However, you *cannot* have more than one `return` statement in a Taichi function.
@@ -350,7 +349,7 @@ def test_sign(x):
 | Type hint arguments                                   | Required                            | Optional                                       |
 | Type hint return values                               | Required                            | Optional                                       |
 | Return type                                           | Scalar/`ti.Vector`/`ti.Matrix`      | Scalar/`ti.Vector`/`ti.Matrix`/`ti.Struct`/... |
-| Maximum number of elements in arguments               | 8 (for OpenGL and CC) or 64 (other) | Unlimited                                      |
+| Maximum number of elements in arguments               | <ul><li>8 (for OpenGL)</li><li>64 (for others)</li></ul> | Unlimited                                      |
 | Maximum number of return values in a return statement | 1                                   | Unlimited                                      |
 | Maximum number of elements in return values           | 30                                  | Unlimited                                      |
 

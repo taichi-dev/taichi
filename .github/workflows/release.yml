@@ -22,13 +22,17 @@ jobs:
   add_version_to_database:
     name: Add version to database
     # Skip running release workflow on forks
-    if: github.repository_owner == 'taichi-dev' && github.event_name == 'workflow_dispatch'
+    if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
       - name: Save new version
         run: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Not a production release"
+            exit 0
+          fi
           python3 -m pip install requests==2.26
           python3 misc/save_new_version.py
 

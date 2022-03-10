@@ -14,10 +14,6 @@ class FieldImpl : public aot::Field {
       : runtime_(runtime), field_(field) {
   }
 
-  void copy_to_host_buffer(uint64_t *dst_host) override {
-    TI_NOT_IMPLEMENTED;
-  }
-
  private:
   KernelManager *const runtime_;
   CompiledFieldData field_;

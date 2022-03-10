@@ -149,8 +149,5 @@ TEST(AotSaveLoad, Vulkan) {
   // Retrieve data
   auto x_field = vk_module->get_field("place");
   EXPECT_TRUE(x_field);
-
-  std::vector<uint64_t> x(root_size);
-  x_field->copy_to_host_buffer(&x[0]);
 }
 #endif

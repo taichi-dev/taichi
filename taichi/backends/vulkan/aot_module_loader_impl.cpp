@@ -18,20 +18,6 @@ class FieldImpl : public aot::Field {
       : runtime_(runtime), field_(field) {
   }
 
-  void copy_to_host_buffer(uint64_t *dst_host) override {
-    // since kernel.num_snode_trees = 1, we always locate the first root
-    constexpr int root_id{0};
-    DeviceAllocation *root_buffer = runtime_->get_root_buffer(root_id);
-    auto device_ = runtime_->get_ti_device();
-    char *const device_buffer_ptr =
-        reinterpret_cast<char *>(device_->map(*root_buffer));
-    size_t root_buffer_size = runtime_->get_root_buffer_size(root_id);
-
-    std::memcpy(dst_host, device_buffer_ptr + field_.mem_offset_in_parent,
-                root_buffer_size);
-    device_->unmap(*root_buffer);
-  }
-
  private:
   VkRuntime *const runtime_;
   aot::CompiledFieldData field_;

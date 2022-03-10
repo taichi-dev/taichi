@@ -705,14 +705,22 @@ def ti_float(_var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
-    """Fill the input field with zero.
+    """Fill a scalar variable or a matrix with zeros.
 
     Args:
-        x (DataType): The input field to fill.
+        x (Union[~:mod:`taichi.types.primitive_types`, ~:class:`taichi.Matrix`]): The input.
 
     Returns:
-        DataType: The output field, which keeps the shape but filled with zero.
-
+        A new matrix with the same shape as the input but filled with zero.
+        
+    Example::
+    
+        >>> x = ti.Vector([1, 1])
+        >>> @ti.kernel
+        >>> def test():
+        >>>     y = ti.zero(x)
+        >>>     print(y)
+        [0, 0]
     """
     return x * 0
 

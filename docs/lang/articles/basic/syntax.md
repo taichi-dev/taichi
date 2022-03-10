@@ -19,13 +19,17 @@ We introduce the two terms "Taichi scope" and "Python scope" to make it easy to 
 
 The code inside a kernel or a Taichi function is in the Taichi scope. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation. 
 
-> Taichi scope corresponds to the *device side* in CUDA.  
+:::note
+Taichi scope corresponds to the *device side* in CUDA.  
+:::
 
 ### Python scope
 
 Code outside of the Taichi scope is in the Python scope. The code in the Python scope is native Python and executed by Python's virtual machine, *not* by Taichi's runtime.  
 
-> Python scope corresponds to the *host side* in CUDA. 
+:::note
+Python scope corresponds to the *host side* in CUDA. 
+:::
 
 ## Kernel
 
@@ -37,7 +41,9 @@ Taichi's runtime compiles and executes kernels in the order you call them. It st
 You must *not* call a kernel from inside another kernel or from inside a Taichi function. You can only call a kernel directly or from inside a native Python function. To put it differently, you can only call a kernel from the *Python scope*. 
 :::
 
-> A kernel corresponds to the `__global__` function in CUDA. 
+:::note
+A kernel corresponds to the `__global__` function in CUDA. 
+:::
 
 ### Arguments
 

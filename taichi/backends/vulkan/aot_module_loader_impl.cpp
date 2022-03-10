@@ -14,7 +14,7 @@ using KernelHandle = VkRuntime::KernelHandle;
 
 class FieldImpl : public aot::Field {
  public:
-  explicit FieldImpl(VkRuntime *runtime, aot::CompiledFieldData field)
+  explicit FieldImpl(VkRuntime *runtime, const aot::CompiledFieldData &field)
       : runtime_(runtime), field_(field) {
   }
 

@@ -33,7 +33,7 @@ Python scope corresponds to the *host side* in CUDA.
 
 ## Kernel
 
-A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and each kernel is an *independent* child program. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
+A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and kernels are *independent* from each other. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
 
 Taichi's runtime compiles and executes kernels in the order you call them. It stores compiled kernels in the cache so that the next call to the same kernel does not need to be compiled again.
 

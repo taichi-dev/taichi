@@ -333,11 +333,11 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
     }
   }
 
-  static bool run(IRNode *root, AllocaStmt *target_alloca) {
+  static bool run(AllocaStmt *target_alloca) {
     AdStackAllocaJudger judger;
     judger.target_alloca_ = target_alloca;
     judger.target_alloca_backup_ = target_alloca;
-    root->accept(&judger);
+    target_alloca->parent->accept(&judger);
     return (!judger.load_only_) && judger.is_stack_needed_;
   }
 
@@ -360,7 +360,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
 
-    bool is_stack_needed = AdStackAllocaJudger::run(alloc->parent, alloc);
+    bool is_stack_needed = AdStackAllocaJudger::run(alloc);
     if (is_stack_needed) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);

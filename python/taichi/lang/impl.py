@@ -705,14 +705,15 @@ def ti_float(_var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
-    """Fill a scalar variable or a matrix with zeros.
+    """Return an array of zeros with the same shape and type as the input. It's also a scalar
+    if the input is a scalar.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): The input.
 
     Returns:
-        A new matrix with the same shape as the input but filled with zero.
-        
+        A new copy of the input but filled with zeros.
+
     Example::
     
         >>> x = ti.Vector([1, 1])
@@ -727,14 +728,23 @@ def zero(x):
 
 @taichi_scope
 def one(x):
-    """Fill the input field with one.
+     """Return an array of ones with the same shape and type as the input. It's also a scalar
+    if the input is a scalar.
 
     Args:
-        x (DataType): The input field to fill.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): The input.
 
     Returns:
-        DataType: The output field, which keeps the shape but filled with one.
+        A new copy of the input but filled with ones.
 
+    Example::
+    
+        >>> x = ti.Vector([0, 0])
+        >>> @ti.kernel
+        >>> def test():
+        >>>     y = ti.one(x)
+        >>>     print(y)
+        [1, 1]
     """
     return zero(x) + 1
 

@@ -421,6 +421,6 @@ jobs:
           git commit -m "Bump version to $next_version"
           git push origin "bump/$next_version"
           # Create pull request
-          gh pr create -B master -t "[misc] Bump version to $next_version"
+          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

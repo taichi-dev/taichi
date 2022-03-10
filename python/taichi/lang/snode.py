@@ -334,13 +334,13 @@ def rescale_index(a, b, I):
 
     Args:
 
-        a, b (Union[:class:`taichi.field`, :class:`taichi.Vector.field`, \
-            :class:`taichi.Matrix.field`): Input taichi fields or snodes.
+        a, b (Union[:class:`~taichi.field`, :class:`~taichi.Vector.field`, \
+            :class:`~taichi.Matrix.field`): Input taichi fields or snodes.
 
-        I (Union[list, :class:`taichi.Vector`]): grouped loop index.
+        I (Union[list, :class:`~taichi.Vector`]): grouped loop index.
 
     Returns:
-        Ib (:class:`taichi.Vector`): rescaled grouped loop index
+        Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
@@ -365,9 +365,9 @@ def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
     Args:
-        node (:class:`taichi.SNode`): Input SNode.
-        indices (Union[int, :class:`taichi.Vector`]): the indices to visit.
-        val (:mod:`taichi.types`): the data to be appended.
+        node (:class:`~taichi.SNode`): Input SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
+        val (:mod:`~taichi.types`): the data to be appended.
     """
     a = impl.expr_init(
         _ti_core.insert_append(node._snode.ptr, expr.make_expr_group(indices),
@@ -380,8 +380,8 @@ def is_active(node, indices):
     `indices` is active or not.
 
     Args:
-        node (:class:`taichi.SNode`): Must be a pointer, hash or bitmasked node.
-        indices (Union[int, :class:`taichi.Vector`]): the indices to visit.
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
 
     Returns:
         bool: the cell `node[indices]` is active or not.
@@ -395,8 +395,8 @@ def activate(node, indices):
     """Explicitly activate a cell of `node` at location `indices`.
 
     Args:
-        node (:class:`taichi.SNode`): Must be a pointer, hash or bitmasked node.
-        indices (Union[int, :class:`taichi.Vector`]): the indices to activate.
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
     impl.get_runtime().prog.current_ast_builder().insert_activate(
         node._snode.ptr, expr.make_expr_group(indices))
@@ -409,8 +409,8 @@ def deactivate(node, indices):
     and zero-fills memory of the deactivated cell.
 
     Args:
-        node (:class:`taichi.SNode`): Must be a pointer, hash or bitmasked node.
-        indices (Union[int, :class:`taichi.Vector`]): the indices to deactivate.
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
     impl.get_runtime().prog.current_ast_builder().insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
@@ -420,8 +420,8 @@ def length(node, indices):
     """Return the length of the dynamic SNode `node` at index `indices`.
 
     Args:
-        node (:class:`taichi.SNode`): a dynamic SNode.
-        indices (Union[int, :class:`taichi.Vector`]): the indices to query.
+        node (:class:`~taichi.SNode`): a dynamic SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to query.
 
     Returns:
         int: the length of cell `node[indices]`.
@@ -436,10 +436,10 @@ def get_addr(f, indices):
     Currently, this function can only be called inside a taichi kernel.
 
     Args:
-        f (Union[:class:`taichi.field`, :class:`taichi.Vector.field`, \
-            :class:`taichi.Matrix.field`]): Input taichi field for memory address query.
+        f (Union[:class:`~taichi.field`, :class:`~taichi.Vector.field`, \
+            :class:`~taichi.Matrix.field`]): Input taichi field for memory address query.
 
-        indices (Union[int, :class:`taichi.Vector`]): The specified field indices of the query.
+        indices (Union[int, :class:`~taichi.Vector`]): The specified field indices of the query.
 
     Returns:
         ti.u64: The memory address of `f[indices]`.

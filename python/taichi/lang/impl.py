@@ -708,7 +708,7 @@ def zero(x):
     """Fill a scalar variable or a matrix with zeros.
 
     Args:
-        x (Union[~:mod:`taichi.types.primitive_types`, ~:class:`taichi.Matrix`]): The input.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): The input.
 
     Returns:
         A new matrix with the same shape as the input but filled with zero.

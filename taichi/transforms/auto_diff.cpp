@@ -592,7 +592,7 @@ class MakeAdjoint : public IRVisitor {
       //         q += p
 
       // Case 2 (GlobalLoadStmt is inside the for-loop, compute once and
-      // accumulate immediately, alloca history value can be discarded): 
+      // accumulate immediately, alloca history value can be discarded):
       // for i in range(5):
       //     q = b[i]
       //     for _ in range(5)

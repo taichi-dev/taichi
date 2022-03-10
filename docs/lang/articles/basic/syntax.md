@@ -13,7 +13,7 @@ To differentiate the code for Taichi from the code for Python, we use the two de
 
 ## Taichi scope vs. Python scope
 
-We introduce the two terms "Taichi scope" and "Python scope" to make it easy to define the call range of a function or specify the effective range of a variable. So, before you proceed, familiarize yourself with these two terms.
+Taichi introduces the two terms "Taichi scope" and "Python scope" to make it easy to define the call range of a function or specify the effective range of a variable. So, before you proceed, familiarize yourself with these two terms.
 
 ### Taichi scope
 

@@ -75,8 +75,10 @@ The upper limit for element numbers is backend-specific:
 - 8 on OpenGL backend. 
 - 64 on CPU, Vulkan, CUDA, or Metal.
 
-- > The number of elements in a scalar argument is always 1. 
-- > The number of the elements in a `ti.Matrix` or in a `ti.Vector` is the actual number of scalars inside of them. 
+:::note
+- The number of elements in a scalar argument is always 1. 
+- The number of the elements in a `ti.Matrix` or in a `ti.Vector` is the actual number of scalars inside of them. 
+:::
 
 ```python
 @ti.kernel
@@ -84,13 +86,9 @@ def valid_scalar_argument(vx: ti.f32, vy: ti.f32):
     v = ti.Vector([vx, vy])
     ...
 
-
-
 @ti.kernel
 def valid_matrix_argument(u: ti.i32, v: ti.types.matrix(2, 2, ti.i32)):  # OK: has five elements in total
     ...
-
-
 
 @ti.kernel
 def error_too_many_arguments(u: ti.i32, v: ti.i64, w: ti.types.matrix(7, 9, ti.i64)):  # Error: has 65 elements in total
@@ -289,21 +287,12 @@ def my_kernel():
 
 *You can skip this part if you are just beginning.*
 
-A kernel can also take the following two types of advanced arguments:
-
-- Template arguments: Use `ti.template()` as their type hints. See [Template metaprogramming](../advanced/meta.md#template-metaprogramming). 
-
-- External array arguments: Use `ti.ext_arr()` as their type hints. See [Interacting with external arrays](./external.md).
-
-:::caution WARNING
-
-By using `ti.template()` as type hint, you force arguments to pass by reference. Here's an example:
+A Taichi function can also take template arguments. Use `ti.template()` as their type hints. By using `ti.template()` as type hint, you force arguments to pass by reference. Here's an example:
 
 ```python
 @ti.func
 def my_func(x: ti.template()): # x is forced to pass by reference
     x = x + 1  # This line changes the original value of x
-
 
 @ti.kernel
 def my_kernel():
@@ -311,9 +300,6 @@ def my_kernel():
     my_func(x)
     print(x)  #  will print 25
 ```
-
-:::
-
 </details>
 
 ### Return values

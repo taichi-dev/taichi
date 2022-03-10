@@ -178,7 +178,7 @@ matN = ti.types.matrix(N, N, ti.i32)
 @ti.kernel
 def test_kernel() -> matN:
     return matN([[0] * N for _ in range(N)])
-    # Compilation error: The number of elements  is 36 > 30
+    # Compilation error: The number of elements is 36 > 30
 ```
 
 ### Global variables are compile-time constants

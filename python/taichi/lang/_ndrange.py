@@ -43,18 +43,16 @@ class _Ndrange:
 
 
 def ndrange(*args):
-    """Returns an immutable iterator object for looping over multi-dimensional indices.
+    """Return an immutable iterator object for looping over multi-dimensional indices.
 
-    This set of multi-dimensional indices is the direct product (in the set-theory sense)
-    of `n` groups of integers, it looks like
+    This returned set of multi-dimensional indices is the direct product (in the set-theory sense)
+    of n groups of integers, where n equals the number of arguments in the input list, and looks like
 
     range(x1, y1) x range(x2, y2) x ... x range(xn, yn)
 
-    This set is n-dimensional, where n equals the number of arguments in the input list.
-    Each argument correspondes to one `range()` factor in the above product, and each argument
-    must be either an integer or a pair of two integers. An integer n will be intepreted
-    as `range(0, n)`, and a pair of two integers (start, end) will be interpreted as
-    `range(start, end)`.
+    The k-th argument correspondes to the k-th `range()` factor in the above product, and each
+    argument must be an integer or a pair of two integers. An integer argument n will be intepreted
+    as `range(0, n)`, and a pair of two integers (start, end) will be interpreted as `range(start, end)`.
 
     You can loop over these multi-dimensonal indices in different ways, see the examples below.
 
@@ -66,7 +64,7 @@ def ndrange(*args):
 
     Example::
 
-        You can loop over 1-D integers in range [start, end), like in native Python
+        You can loop over 1-D integers in range [start, end), as in native Python
 
             >>> @ti.kernel
             >>> def loop_1d():
@@ -91,7 +89,7 @@ def ndrange(*args):
             1 4
 
         But you do can use a single index i to loop over these 2-D indices, in this case
-        the indices are turned into a 1-D array `(0, 1, ..., 9)`:
+        the indices are returned as a 1-D array `(0, 1, ..., 9)`:
 
             >>> @ti.kernel
             >>> def loop_2d_as_1d():
@@ -101,7 +99,7 @@ def ndrange(*args):
 
         In general, you can use any `1 <= k <= n` iterators to loop over a set of n-D
         indices. For `k=n` all the indices are n-dimensional, and they are returned in
-        lexical order, but for `k<n` the last n-k+1 dimensions will be collapsed into
+        lexical order, but for `k<n` iterators the last n-k+1 dimensions will be collapsed into
         a 1-D array of consecutive integers `(0, 1, 2, ...)` whose length equals the
         total number of indices in the last n-k+1 dimensions:
 
@@ -115,8 +113,8 @@ def ndrange(*args):
             will print 0 0, 0 1, ..., 0 19, ..., 2 19.
 
         A typical usage of `ndrange` is when you want to loop over a tensor and process
-        its entries in parallel. You must avoid writing nested `for` loops here, since
-        only top level `for` loops are paralleled in taichi, so you can use `ndrange`
+        its entries in parallel. You should avoid writing nested `for` loops here since
+        only top level `for` loops are paralleled in taichi, instead you can use `ndrange`
         to hold all entries in one top level loop:
 
             >>> @ti.kernel

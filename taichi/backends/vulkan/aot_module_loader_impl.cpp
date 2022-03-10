@@ -20,7 +20,7 @@ class FieldImpl : public aot::Field {
 
   void copy_to_host_buffer(uint64_t *dst_host) override {
     // since kernel.num_snode_trees = 1, we always locate the first root
-    int root_id = 0;
+    constexpr int root_id{0};
     DeviceAllocation *root_buffer = runtime_->get_root_buffer(root_id);
     auto device_ = runtime_->get_ti_device();
     char *const device_buffer_ptr =

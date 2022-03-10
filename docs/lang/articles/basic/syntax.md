@@ -72,7 +72,7 @@ my_kernel(24, 3.2)  # The system prints 27.2
 
 The upper limit for element numbers is backend-specific: 
 
-- 8 on OpenGL or CC backend. 
+- 8 on OpenGL backend. 
 - 64 on CPU, Vulkan, CUDA, or Metal.
 
 - > The number of elements in a scalar argument is always 1. 

@@ -254,14 +254,14 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 class AdStackAllocaJudger : public BasicStmtVisitor {
  public:
   inline static const std::set<TernaryOpType> stack_needed_ternary_collections{
-        TernaryOpType::select};
+      TernaryOpType::select};
   inline static const std::set<UnaryOpType> stack_needed_unary_collections{
-    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+      UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+      UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+      UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
   inline static const std::set<BinaryOpType> stack_needed_binary_collections{
-        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-        BinaryOpType::pow};
+      BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+      BinaryOpType::pow};
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {

@@ -253,9 +253,15 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
 class AdStackAllocaJudger : public BasicStmtVisitor {
  public:
-  static const std::set<TernaryOpType> stack_needed_ternary_collections;
-  static const std::set<UnaryOpType> stack_needed_unary_collections;
-  static const std::set<BinaryOpType> stack_needed_binary_collections;
+  inline static const std::set<TernaryOpType> stack_needed_ternary_collections{
+        TernaryOpType::select};
+  inline static const std::set<UnaryOpType> stack_needed_unary_collections{
+    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+  inline static const std::set<BinaryOpType> stack_needed_binary_collections{
+        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+        BinaryOpType::pow};
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
@@ -344,18 +350,6 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   bool local_loaded_ = false;
   bool load_only_ = true;
 };
-
-const std::set<TernaryOpType>
-    AdStackAllocaJudger::stack_needed_ternary_collections{
-        TernaryOpType::select};
-const std::set<UnaryOpType> AdStackAllocaJudger::stack_needed_unary_collections{
-    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-const std::set<BinaryOpType>
-    AdStackAllocaJudger::stack_needed_binary_collections{
-        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-        BinaryOpType::pow};
 
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:

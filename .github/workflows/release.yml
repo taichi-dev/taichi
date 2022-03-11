@@ -1,14 +1,14 @@
 name: Publishing Release
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
   workflow_dispatch:
     # Manually trigger the release workflow, a version must be provided
     inputs:
       version:
-        description: "The version to release (e.g. v0.8.0)"
+        description: 'The version to release (e.g. v0.8.0), or leave it empty for nightly build'
         type: string
-        required: true
+        required: false
 
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
@@ -46,7 +46,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+          if [ !-z "$RELEASE_VERSION" ]; then
             # For production release, we run on four python versions.
             echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
 
@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -95,7 +95,7 @@ jobs:
           GPU_BUILD: ON
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: ":1"
+          DISPLAY: ':1'
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -118,7 +118,7 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: ":1"
+          DISPLAY: ':1'
 
       - name: clean docker container
         if: always()
@@ -135,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -175,7 +175,7 @@ jobs:
       - name: Test
         run: .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)
@@ -186,11 +186,11 @@ jobs:
     runs-on: [self-hosted, m1]
     defaults:
       run:
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -227,7 +227,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,vulkan,cpu"
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PYTHON: ${{ matrix.python }}
           GPU_TEST: ON
 
@@ -241,7 +241,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -278,7 +278,7 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
           PYTHON: ${{ matrix.python }}
 
   build_and_test_windows:
@@ -291,7 +291,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -339,14 +339,7 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs:
-      [
-        build_and_test_linux,
-        build_and_test_mac,
-        build_and_test_m1,
-        build_and_test_macos_1014,
-        build_and_test_windows,
-      ]
+    needs: [build_and_test_linux, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -375,7 +368,7 @@ jobs:
     name: Create tag and publish release
     needs: upload_to_pypi
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

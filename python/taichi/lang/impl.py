@@ -768,7 +768,7 @@ def static(x, *xs):
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is
-    in many ways similar to ``constexpr`` in C++11.
+    in many ways similar to ``constexpr`` in C++.
 
     See also https://docs.taichi.graphics/lang/articles/advanced/meta.
 
@@ -778,15 +778,17 @@ def static(x, *xs):
 
     Example:
         The most common usage of `static()` is for compile-time evaluation::
-
+            
+            >>> cond = False
+            >>>
             >>> @ti.kernel
             >>> def run():
-            >>>     if ti.static(FOO):
+            >>>     if ti.static(cond):
             >>>         do_a()
             >>>     else:
             >>>         do_b()
 
-        Depending on the value of ``FOO``, ``run()`` will be directly compiled
+        Depending on the value of ``cond``, ``run()`` will be directly compiled
         into either ``do_a()`` or ``do_b()``. Thus there won't be a runtime
         condition check.
 
@@ -797,7 +799,7 @@ def static(x, *xs):
             >>>     for i in ti.static(range(3)):
             >>>         print(i)
             >>>
-            >>> # The above is equivalent to:
+            >>> # The above will be unrolled to:
             >>> @ti.kernel
             >>> def run():
             >>>     print(0)
@@ -824,15 +826,24 @@ def static(x, *xs):
 
 @taichi_scope
 def grouped(x):
-    """Groups a list of independent loop indices into a :func:`~taichi.lang.matrix.Vector`.
+    """Groups the indices in the iterator returned by `ndrange()` into a 1-D vector.
+    
+    This is often used when you want to iterator over all indices returned by `ndrange()`
+    in one `for` loop and a single index.
 
     Args:
-        x (Any): does the grouping only if `x` is a :class:`~taichi.lang.ndrange`.
+        x (:func:`~taichi.ndrange`): an iterator object returned by `ti.ndrange`.
 
     Example::
+        >>> # without ti.grouped
+        >>> for I in ti.ndrange(2, 3):
+        >>>     print(I)
+        prints 0, 1, 2, 3, 4, 5
 
-        >>> for I in ti.grouped(ndrange(8, 16)):
-        >>>     print(I[0] + I[1])
+        >>> # with ti.grouped
+        >>> for I in ti.grouped(ndrange(2, 3)):
+        >>>     print(I)
+        prints [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]
     """
     if isinstance(x, _Ndrange):
         return x.grouped()

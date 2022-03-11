@@ -260,7 +260,7 @@ foo_kernel()
 
 A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix`, and `ti.Vector` as argument types. Note that the restrictions applied to a kernel's arguments do not apply here:
 
-- You are *not* required to type hint arguments.
+- You are *not* required (but it is still recommended) to type hint arguments.
 - You can have *an unlimited* number of elements in the arguments.
 
 :::caution WARNING
@@ -308,7 +308,7 @@ def my_kernel():
 The return values of a Taichi function can be scalar, `ti.Matrix`, `ti.Vector`, `ti.Struct`, and more. Note that:
 
 - Unlike a kernel, a Taichi function can have multiple return values.
-- You do not need to type hint the return values of a Taichi function.
+- You do not need (but it is still recommended) to type hint the return values of a Taichi function.
 - There is no limit on the number of elements in the return values.
 
 However, you *cannot* have more than one `return` statement in a Taichi function.
@@ -346,8 +346,8 @@ def test_sign(x):
 |                                                       | **Kernel**                          | **Taichi Function**                            |
 | ----------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
 | Call scope                                            | Python scope                        | Taichi scope                                   |
-| Type hint arguments                                   | Required                            | Optional                                       |
-| Type hint return values                               | Required                            | Optional                                       |
+| Type hint arguments                                   | Required                            | Optional but recommended                       |
+| Type hint return values                               | Required                            | Optional but recommended                       |
 | Return type                                           | Scalar/`ti.Vector`/`ti.Matrix`      | Scalar/`ti.Vector`/`ti.Matrix`/`ti.Struct`/... |
 | Maximum number of elements in arguments               | <ul><li>8 (for OpenGL)</li><li>64 (for others)</li></ul> | Unlimited                                      |
 | Maximum number of return values in a return statement | 1                                   | Unlimited                                      |

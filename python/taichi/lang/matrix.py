@@ -53,6 +53,10 @@ class Matrix(TaichiOperations):
         you can even initialize a matrix with an empty list:
         
         >>> M = ti.Matrix([[], []], ti.i32)
+        >>> M.n
+        2
+        >>> M.m
+        0
     """
     _is_taichi_class = True
 

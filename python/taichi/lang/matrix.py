@@ -270,20 +270,19 @@ class Matrix(TaichiOperations):
         return Matrix([[self(i, j) for j in b] for i in a])
 
     def _cal_slice(self, index, dim):
-
         start, stop, step = index.start or 0, index.stop or (
             self.n if dim is 0 else self.m), index.step or 1
-        if isinstance(start, expr.Expr) and isinstance(start.ptr, int):
-            start = start.ptr
-        if isinstance(stop, expr.Expr) and isinstance(stop.ptr, int):
-            stop = stop.ptr
-        if isinstance(step, expr.Expr) and isinstance(step.ptr, int):
-            step = step.ptr
-        if isinstance(start, expr.Expr) or isinstance(
-                step, expr.Expr) or isinstance(stop, expr.Expr):
-            raise TaichiSyntaxError(
-                "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
-            )
+
+        def helper(x):
+            if isinstance(x, expr.Expr):
+                if isinstance(x.ptr, int):
+                    return x.ptr
+                raise TaichiSyntaxError(
+                    "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
+                )
+            return x
+
+        start, stop, step = helper(start), helper(stop), helper(step)
         return [_ for _ in range(start, stop, step)]
 
     @taichi_scope
@@ -321,7 +320,7 @@ class Matrix(TaichiOperations):
                 ] for a in i])
             if isinstance(i[0], expr.Expr) or isinstance(j[0], expr.Expr):
                 raise TaichiCompilationError(
-                    "It is detected that there is no dynamic index, please consider setting 'dynamic_index = True' in ti.init to fix this Error!"
+                    "Please turn on ti.init(..., dynamic_index=True) to support indexing with variables!"
                 )
             return Matrix([[self(a, b) for b in j] for a in i])
 

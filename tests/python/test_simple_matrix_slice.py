@@ -52,6 +52,6 @@ def test_no_dyn():
     with pytest.raises(
             ti.TaichiCompilationError,
             match=
-            "It is detected that there is no dynamic index, please consider setting 'dynamic_index = True' in ti.init to fix this Error!"
+            "Please turn on ti.init(..., dynamic_index=True) to support indexing with variables!"
     ):
         test_one_col_slice()

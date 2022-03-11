@@ -22,7 +22,7 @@ class Matrix(TaichiOperations):
     """The matrix class.
     
     A matrix is a 2-D rectangular array with scalar entries, it's row-major, and is aligned continously.
-    We recommend only use matrix with no more than 30 elements for efficiency considerations.
+    We recommend only use matrix with no more than 32 elements for efficiency considerations.
     
     Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
 
@@ -30,7 +30,7 @@ class Matrix(TaichiOperations):
         arr (Union[list, tuple, np.ndarray]): The data used to initialize the matrix.
         dt (:mod:`~taichi.types.primitive_types`): matrix data type.
         suppress_warning (bool): whether raise warning or not when the matrix contains more \
-            than 30 elements.
+            than 32 elements.
         
     Example::
         

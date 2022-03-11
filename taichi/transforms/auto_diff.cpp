@@ -4,6 +4,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 
+#include <typeinfo>
+#include <algorithm>
+
 TLANG_NAMESPACE_BEGIN
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
@@ -120,9 +123,14 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
   void visit_loop_body(Block *block) {
     if (is_independent_block(block)) {
       current_ib_ = block;
+      auto old_current_ib_ = current_ib_;
       block->accept(this);
+      if(old_current_ib_ == current_ib_){
+        independent_blocks_.push_back({depth_, current_ib_});
+      }
     } else {
       // No need to dive further
+      independent_blocks_.push_back({depth_-1, current_ib_->parent_block()});
     }
   }
 
@@ -132,9 +140,9 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     current_ib_ = stmt->body.get();
     visit_loop_body(stmt->body.get());
     depth_--;
-    if (depth_ == 0) {
-      independent_blocks_.push_back(current_ib_);
-    }
+    // if (depth_ == 0) {
+    //   independent_blocks_.push_back(current_ib_);
+    // }
   }
 
   void visit(RangeForStmt *stmt) override {
@@ -144,9 +152,9 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     depth_++;
     visit_loop_body(stmt->body.get());
     depth_--;
-    if (depth_ == 0) {
-      independent_blocks_.push_back(current_ib_);
-    }
+    // if (depth_ == 0) {
+    //   independent_blocks_.push_back(current_ib_);
+    // }
   }
 
   static std::vector<Block *> run(IRNode *root) {
@@ -160,16 +168,34 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     }
     if (!has_for) {
       // The whole block is an IB
-      pass.independent_blocks_.push_back(block);
+      pass.independent_blocks_.push_back({0, block});
     } else {
       root->accept(&pass);
     }
     TI_ASSERT(!pass.independent_blocks_.empty());
-    return pass.independent_blocks_;
+    // TODO: remove the inner IBs, preserve the IBs with most shallow depth
+    // pass.independent_blocks_.sort()
+    std::sort(pass.independent_blocks_.begin(), pass.independent_blocks_.end(),
+    [](const std::pair<int, Block *> & a, const std::pair<int, Block *> & b) -> bool
+      { 
+          return a.first < b.first; 
+      });
+    for(auto const& item:pass.independent_blocks_){
+      std::cout << "frist "<< item.first << " second "<< item.second << std::endl;
+    }
+    std::vector<Block *> independent_blocks;
+    int smallest_depth = pass.independent_blocks_.begin()->first;
+    for(auto const& item:pass.independent_blocks_){
+      if(item.first != smallest_depth){
+        break;
+      }
+      independent_blocks.push_back(item.second);
+    }
+    return independent_blocks;
   }
 
  private:
-  std::vector<Block *> independent_blocks_;
+  std::vector<std::pair<int, Block *>> independent_blocks_;
   int depth_{0};
   Block *current_ib_{nullptr};
 };
@@ -1068,7 +1094,9 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-
+    for(auto const&ib:IB){
+      std::cout << "IB " << ib->parent_stmt->name() << std::endl;
+    }
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace(config.ad_stack_size);

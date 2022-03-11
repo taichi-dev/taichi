@@ -20,11 +20,25 @@ from taichi.types.compound_types import CompoundType
 
 class Matrix(TaichiOperations):
     """The matrix class.
+    
+    A matrix is a 2-D rectangular array with scalar entries, it's row-major, and is aligned continously.
+    We recommend only use matrix with no more than 30 elements for efficiency considerations.
+    
+    Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
 
     Args:
-        n (Union[int, list, tuple, np.ndarray]): the first dimension of a matrix.
-        m (int): the second dimension of a matrix.
-        dt (DataType): the element data type.
+        arr (Union[list, tuple, np.ndarray]): The data used to initialize the matrix.
+        dt (:mod:`~taichi.types.primitive_types`): matrix data type.
+        suppress_warning (bool): whether raise warning or not when the matrix contains more \
+            than 30 elements.
+        
+    Example::
+    
+        >>> @ti.kernel
+        >>> def test():
+        >>>     n = 5
+        >>>     m = ti.Matrix([[0] * n for _ in range(n)], ti.i32)
+        >>>     print(m)  # a 5x5 matrix with integer elements
     """
     _is_taichi_class = True
 

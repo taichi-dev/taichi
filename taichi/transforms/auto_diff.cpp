@@ -250,18 +250,16 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     block->accept(&pass);
   }
 };
-
+std::set<TernaryOpType> stack_needed_ternary_collections{TernaryOpType::select};
+std::set<UnaryOpType> stack_needed_unary_collections{
+    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+std::set<BinaryOpType> stack_needed_binary_collections{
+    BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+    BinaryOpType::pow};
 class AdStackAllocaJudger : public BasicStmtVisitor {
  public:
-  inline static const std::set<TernaryOpType> stack_needed_ternary_collections{
-      TernaryOpType::select};
-  inline static const std::set<UnaryOpType> stack_needed_unary_collections{
-      UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-      UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-      UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-  inline static const std::set<BinaryOpType> stack_needed_binary_collections{
-      BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-      BinaryOpType::pow};
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
@@ -350,6 +348,18 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   bool local_loaded_ = false;
   bool load_only_ = true;
 };
+
+const std::set<TernaryOpType>
+    AdStackAllocaJudger::stack_needed_ternary_collections{
+        TernaryOpType::select};
+const std::set<UnaryOpType> AdStackAllocaJudger::stack_needed_unary_collections{
+    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+const std::set<BinaryOpType>
+    AdStackAllocaJudger::stack_needed_binary_collections{
+        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+        BinaryOpType::pow};
 
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
@@ -500,12 +510,6 @@ class MakeAdjoint : public IRVisitor {
  public:
   Block *current_block;
   Block *alloca_block;
-  // Backup the forward pass (the forward pass might be modified during the
-  // MakeAdjoint) for search whether a GlobalLoadStmt is inside a for-loop when
-  // allocating adjoint (see the function `adjoint`) Should be stored
-  // 1. Before entering a for-loop body
-  // 2. Before entering a if-stmt
-  // Should be restored after processing every statement in the two cases above
   Block *forward_backup;
   std::map<Stmt *, Stmt *> adjoint_stmt;
 
@@ -578,32 +582,10 @@ class MakeAdjoint : public IRVisitor {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
-
-      // We need to insert the alloca in the block of GlobalLoadStmt when the
+      // We need to insert the alloca to the block of GlobalLoadStmt when the
       // GlobalLoadStmt is not inside a range-for
-      // Code sample:
-      // a and b require grad
-      // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
-      // accumulate once, alloca history value is needed):
-      // for i in range(5):
-      //     p = a[i]
-      //     q = b[i]
-      //     for _ in range(5)
-      //         q += p
-
-      // Case 2 (GlobalLoadStmt is inside the for-loop, compute once and
-      // accumulate immediately, alloca history value can be discarded):
-      // for i in range(5):
-      //     q = b[i]
-      //     for _ in range(5)
-      //         q += a[i]
       if (stmt->is<GlobalLoadStmt>() &&
           stmt->parent->parent_stmt->is<RangeForStmt>()) {
-        // Check whether this GlobalLoadStmt is in the body of a for-loop by
-        // searching in the backup forward pass If not (Case 1), the alloca
-        // should not be clear every iteration, therefore, we need to insert the
-        // alloca in the block of the GlobalLoadStmt i.e., where GlobalLoadStmt
-        // is defined
         if (forward_backup->locate(stmt->as<GlobalLoadStmt>()) == -1) {
           stmt->as<GlobalLoadStmt>()->parent->insert(std::move(alloca), 0);
         } else {
@@ -739,14 +721,13 @@ class MakeAdjoint : public IRVisitor {
     if (if_stmt->true_statements) {
       new_if->set_true_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
-      // Backup forward pass
+
       forward_backup = if_stmt->true_statements.get();
 
       current_block = new_if->true_statements.get();
       for (int i = if_stmt->true_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->true_statements->statements[i]->accept(this);
-        // Restore forward pass
         forward_backup = if_stmt->true_statements.get();
       }
 
@@ -756,14 +737,12 @@ class MakeAdjoint : public IRVisitor {
       new_if->set_false_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
 
-      // Backup forward pass
       forward_backup = if_stmt->false_statements.get();
 
       current_block = new_if->false_statements.get();
       for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
            i--) {
         if_stmt->false_statements->statements[i]->accept(this);
-        // Restore forward pass
         forward_backup = if_stmt->false_statements.get();
       }
       current_block = old_current_block;
@@ -810,15 +789,12 @@ class MakeAdjoint : public IRVisitor {
     std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
     auto old_alloca_block = alloca_block;
     auto old_forward_backup =
-        forward_backup;  // store the block which is not inside the current IB,
-                         // such as outer most loop
-    // Backup the forward pass
+        forward_backup;  // store the block which is not inside the current IB
     forward_backup = for_stmt->body.get();
     for (auto stmt : statements) {
       alloca_block = new_for_ptr->body.get();
       current_block = new_for_ptr->body.get();
       stmt->accept(this);
-      // Restore the forward pass
       forward_backup = for_stmt->body.get();
     }
     forward_backup = old_forward_backup;

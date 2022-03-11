@@ -1080,16 +1080,26 @@ class Matrix(TaichiOperations):
         return _matrix_outer_product(self, other)
 
 
-def Vector(n, dt=None, **kwargs):
-    """Construct a `Vector` instance i.e. 1-D Matrix.
+def Vector(arr, dt=None, **kwargs):
+    """Construct a vector from given array.
+
+    A vector is a special 2-D matrix with the second dimension being equal to 1,
+    i.e. a vector has shape (n, 1).
 
     Args:
-        n (Union[int, list, tuple], np.ndarray): The desired number of entries of the Vector.
-        dt (DataType, optional): The desired data type of the Vector.
+        arr (Union[list, tuple], np.ndarray): array used to initialize the vector
+        dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
     Returns:
-        :class:`~taichi.lang.matrix.Matrix`: A Vector instance (1-D :class:`~taichi.lang.matrix.Matrix`).
-
+        :class:`~taichi.Matrix`: A vector instance.
+        
+    Example::
+        >>> u = ti.Vector([1, 2])
+        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n ,1)
+        2 1
+        >>> v = ti.Vector([3, 4])
+        >>> u + v
+        [4 6]
     """
     return Matrix(n, 1, dt=dt, **kwargs)
 

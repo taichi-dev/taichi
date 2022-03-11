@@ -345,6 +345,18 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   bool load_only_ = true;
 };
 
+const std::set<TernaryOpType>
+    AdStackAllocaJudger::stack_needed_ternary_collections{
+        TernaryOpType::select};
+const std::set<UnaryOpType> AdStackAllocaJudger::stack_needed_unary_collections{
+    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+const std::set<BinaryOpType>
+    AdStackAllocaJudger::stack_needed_binary_collections{
+        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+        BinaryOpType::pow};
+
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -385,18 +397,6 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
       stmt->replace_with(Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val));
   }
 };
-
-const std::set<TernaryOpType>
-    AdStackAllocaJudger::stack_needed_ternary_collections{
-        TernaryOpType::select};
-const std::set<UnaryOpType> AdStackAllocaJudger::stack_needed_unary_collections{
-    UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-    UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-    UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-const std::set<BinaryOpType>
-    AdStackAllocaJudger::stack_needed_binary_collections{
-        BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-        BinaryOpType::pow};
 
 class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;

@@ -33,12 +33,26 @@ class Matrix(TaichiOperations):
             than 30 elements.
         
     Example::
-    
+        
+        use a 2d list to initialize a matrix
+ 
         >>> @ti.kernel
         >>> def test():
         >>>     n = 5
-        >>>     m = ti.Matrix([[0] * n for _ in range(n)], ti.i32)
-        >>>     print(m)  # a 5x5 matrix with integer elements
+        >>>     M = ti.Matrix([[0] * n for _ in range(n)], ti.i32)
+        >>>     print(M)  # a 5x5 matrix with integer elements
+        
+        get the number of rows and columns via the `n`, `m` property:
+        
+        >>> M = ti.Matrix([[0, 1], [2, 3], [4, 5]], ti.i32)
+        >>> M.n  # number of rows
+        3
+        >>> M.m  # number of cols
+        >>> 2
+        
+        you can even initialize a matrix with an empty list:
+        
+        >>> M = ti.Matrix([[], []], ti.i32)
     """
     _is_taichi_class = True
 

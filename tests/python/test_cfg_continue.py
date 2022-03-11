@@ -1,6 +1,6 @@
 import taichi as ti
-
 from tests import test_utils
+
 
 @test_utils.test()
 def test_cfg_continue():

@@ -148,8 +148,10 @@ FunctionType LlvmProgramImpl::compile(Kernel *kernel,
     irpass::re_id(kernel->ir.get());
     irpass::print(kernel->ir.get(), &kernel_key);
     picosha2::hash256_hex_string(kernel_key, hashed_kernel_key);
-    if (kernel->grad) hashed_kernel_key.push_back('g');
-    else hashed_kernel_key.push_back('n');
+    if (kernel->grad)
+      hashed_kernel_key.push_back('g');
+    else
+      hashed_kernel_key.push_back('n');
     auto func = this->create_kernel_function_from_offline_cache(
         hashed_kernel_key, kernel);
     if (func) {

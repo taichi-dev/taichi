@@ -107,4 +107,49 @@ Expr::Expr(const Identifier &id) : Expr() {
 Expr expr_rand(DataType dt) {
   return Expr::make<RandExpression>(dt);
 }
+
+Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
+                                       val);
+}
+
+Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val) {
+  return snode_append(expr.snode(), indices, val);
+}
+
+Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
+}
+
+Expr snode_length(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
+}
+
+Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
+}
+
+Expr snode_length(const Expr &expr, const ExprGroup &indices) {
+  return snode_length(expr.snode(), indices);
+}
+
+Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {
+  return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
+}
+
+Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
+  return Expr::make<LoopUniqueExpression>(input, covers);
+}
+
+Expr global_new(Expr id_expr, DataType dt) {
+  TI_ASSERT(id_expr.is<IdExpression>());
+  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
+      dt, id_expr.cast<IdExpression>()->id));
+  return ret;
+}
+
+Expr global_new(DataType dt, std::string name) {
+  auto id_expr = std::make_shared<IdExpression>(name);
+  return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
+}
 TLANG_NAMESPACE_END

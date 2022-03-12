@@ -1,10 +1,8 @@
-#include <cstddef>
 #include "gtest/gtest.h"
 
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/expression_ops.h"
-#include "taichi/ir/frontend.h"
 
 namespace taichi {
 namespace lang {

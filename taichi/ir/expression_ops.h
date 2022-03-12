@@ -3,10 +3,18 @@
 #if defined(TI_EXPRESSION_IMPLEMENTATION)
 
 #undef DEFINE_EXPRESSION_OP_UNARY
-#undef DEFINE_EXPRESSION_OP_BINARY
 #undef DEFINE_EXPRESSION_FUNC_UNARY
+#undef DEFINE_EXPRESSION_OP_BINARY
 #undef DEFINE_EXPRESSION_FUNC_BINARY
 #undef DEFINE_EXPRESSION_FUNC_TERNARY
+
+#define DEFINE_EXPRESSION_OP_UNARY(op, opname)                       \
+  Expr expr_##opname(const Expr &expr) {                             \
+    return Expr::make<UnaryOpExpression>(UnaryOpType::opname, expr); \
+  }                                                                  \
+  Expr operator op(const Expr &expr) {                               \
+    return expr_##opname(expr);                                      \
+  }
 
 #define DEFINE_EXPRESSION_FUNC_UNARY(opname)                         \
   Expr opname(const Expr &expr) {                                    \
@@ -24,12 +32,12 @@
     return lhs op rhs;                                                     \
   }
 
-#define DEFINE_EXPRESSION_OP_UNARY(op, opname)                       \
-  Expr expr_##opname(const Expr &expr) {                             \
-    return Expr::make<UnaryOpExpression>(UnaryOpType::opname, expr); \
-  }                                                                  \
-  Expr operator op(const Expr &expr) {                               \
-    return expr_##opname(expr);                                      \
+#define DEFINE_EXPRESSION_FUNC_BINARY(opname)                              \
+  Expr opname(const Expr &lhs, const Expr &rhs) {                          \
+    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
+  }                                                                        \
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
+    return opname(lhs, rhs);                                               \
   }
 
 #define DEFINE_EXPRESSION_FUNC_TERNARY(opname)                               \
@@ -41,23 +49,7 @@
     return expr_##opname(cond, lhs, rhs);                                    \
   }
 
-#define DEFINE_EXPRESSION_FUNC_BINARY(opname)                              \
-  Expr opname(const Expr &lhs, const Expr &rhs) {                          \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
-  }                                                                        \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
-    return opname(lhs, rhs);                                               \
-  }
-
 #else
-
-#define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
-  Expr operator op(const Expr &lhs, const Expr &rhs); \
-  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
-
-#define DEFINE_EXPRESSION_FUNC_TERNARY(opname)                     \
-  Expr opname(const Expr &cond, const Expr &lhs, const Expr &rhs); \
-  Expr expr_##opname(const Expr &cond, const Expr &lhs, const Expr &rhs);
 
 #define DEFINE_EXPRESSION_OP_UNARY(op, opname) \
   Expr operator op(const Expr &expr);          \
@@ -67,9 +59,17 @@
   Expr opname(const Expr &expr);             \
   Expr expr_##opname(const Expr &expr);
 
+#define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
+  Expr operator op(const Expr &lhs, const Expr &rhs); \
+  Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+
 #define DEFINE_EXPRESSION_FUNC_BINARY(opname)    \
   Expr opname(const Expr &lhs, const Expr &rhs); \
   Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+
+#define DEFINE_EXPRESSION_FUNC_TERNARY(opname)                     \
+  Expr opname(const Expr &cond, const Expr &lhs, const Expr &rhs); \
+  Expr expr_##opname(const Expr &cond, const Expr &lhs, const Expr &rhs);
 
 #endif
 
@@ -115,8 +115,6 @@ DEFINE_EXPRESSION_OP_BINARY(>=, cmp_ge)
 DEFINE_EXPRESSION_OP_BINARY(==, cmp_eq)
 DEFINE_EXPRESSION_OP_BINARY(!=, cmp_ne)
 
-DEFINE_EXPRESSION_FUNC_TERNARY(select)
-
 DEFINE_EXPRESSION_FUNC_BINARY(min)
 DEFINE_EXPRESSION_FUNC_BINARY(max)
 DEFINE_EXPRESSION_FUNC_BINARY(atan2)
@@ -124,6 +122,8 @@ DEFINE_EXPRESSION_FUNC_BINARY(pow)
 DEFINE_EXPRESSION_FUNC_BINARY(truediv)
 DEFINE_EXPRESSION_FUNC_BINARY(floordiv)
 DEFINE_EXPRESSION_FUNC_BINARY(bit_shr)
+
+DEFINE_EXPRESSION_FUNC_TERNARY(select)
 
 }  // namespace lang
 }  // namespace taichi

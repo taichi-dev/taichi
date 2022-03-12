@@ -140,4 +140,24 @@ template <typename T>
 Expr expr_rand() {
   return taichi::lang::expr_rand(get_data_type<T>());
 }
+
+Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val);
+
+Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val);
+
+Expr snode_is_active(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(SNode *snode, const ExprGroup &indices);
+
+Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(const Expr &expr, const ExprGroup &indices);
+
+Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
+
+Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
+
+Expr global_new(Expr id_expr, DataType dt);
+
+Expr global_new(DataType dt, std::string name = "");
 TLANG_NAMESPACE_END

@@ -14,15 +14,12 @@
 #include "pybind11/numpy.h"
 
 #include "taichi/ir/expression_ops.h"
-#include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/program/ndarray.h"
-#include "taichi/common/interface.h"
 #include "taichi/python/export.h"
-#include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
@@ -267,16 +264,8 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_true", &ASTBuilder::begin_frontend_if_true)
       .def("pop_scope", &ASTBuilder::pop_scope)
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
-      .def("insert_deactivate",
-           [](ASTBuilder *ast_builder, SNode *snode,
-              const ExprGroup &expr_group) {
-             return ast_builder->insert(snode_deactivate(snode, expr_group));
-           })
-      .def("insert_activate",
-           [](ASTBuilder *ast_builder, SNode *snode,
-              const ExprGroup &expr_group) {
-             return ast_builder->insert(snode_activate(snode, expr_group));
-           })
+      .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
+      .def("insert_activate", &ASTBuilder::insert_snode_activate)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)

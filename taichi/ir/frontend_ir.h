@@ -446,7 +446,8 @@ class ExternalTensorExpression : public Expression {
   }
 
   void serialize(std::ostream &ss) override {
-    ss << fmt::format("{}d_ext_arr", dim);
+    ss << fmt::format("{}d_ext_arr (element_dim={}, dt={})", dim, element_dim,
+                      dt->to_string());
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -487,6 +488,10 @@ class GlobalVariableExpression : public Expression {
 
   void serialize(std::ostream &ss) override {
     ss << "#" << ident.name();
+    if (snode)
+      ss << fmt::format(" (snode={})", snode->get_node_type_name_hinted());
+    else
+      ss << fmt::format(" (dt={})", dt->to_string());
   }
 
   void flatten(FlattenContext *ctx) override;

@@ -72,6 +72,25 @@ class AotDataConverter {
                                       in.range_for_attribs->begin);
     }
     res.gpu_block_size = in.advisory_num_threads_per_group;
+    for (auto &buffer_bind : in.buffer_binds) {
+      if (buffer_bind.buffer.type == BufferType::Root) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Root, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::Rets) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Rets, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::GlobalTmps) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::GlobalTmps, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::Args) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Args, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      }
+    }
     return res;
   }
 };

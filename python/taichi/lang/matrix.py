@@ -1066,7 +1066,7 @@ def Vector(arr, dt=None, **kwargs):
     A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 
     Args:
-        arr (Union[list, tuple], np.ndarray): The initial values of the Vector.
+        arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
         dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
     Returns:

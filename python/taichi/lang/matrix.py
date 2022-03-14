@@ -938,15 +938,14 @@ class Matrix(TaichiOperations):
                     0].n, "Input vectors must share the same shape"
             # l-value copy:
             return Matrix([[row(i) for i in range(row.n)] for row in rows])
-        elif isinstance(rows[0], list):
+        if isinstance(rows[0], list):
             for row in rows:
                 assert len(row) == len(
                     rows[0]), "Input lists share the same shape"
             # l-value copy:
             return Matrix([[x for x in row] for row in rows])
-        else:
-            raise Exception(
-                "Cols/rows must be a list of lists, or a list of vectors")
+        raise Exception(
+            "Cols/rows must be a list of lists, or a list of vectors")
 
     @staticmethod
     def cols(cols):

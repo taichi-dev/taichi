@@ -516,9 +516,8 @@ def _parallelize(v):
         get_runtime().prog.current_ast_builder().strictly_serialize()
 
 
-parallelize = _parallelize
-
-serialize = lambda: parallelize(1)
+def _serialize():
+    _parallelize(1)
 
 
 def _block_dim(dim):
@@ -527,10 +526,7 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-block_dim = _block_dim
-
-
-def loop_config(block_dim=None, serialize=None, parallelize=None):  # pylint: disable=W0621
+def loop_config(block_dim=None, serialize=None, parallelize=None):
     if block_dim is not None:
         _block_dim(block_dim)
 
@@ -677,8 +673,8 @@ def get_host_arch_list():
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
-    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
-    'serialize', 'loop_config', 'block_dim', 'global_thread_idx', 'Tape',
-    'assume_in_range', 'block_local', 'cache_read_only', 'clear_all_gradients',
-    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
+    'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
+    'no_activate', 'reset', 'mesh_patch_idx'
 ]

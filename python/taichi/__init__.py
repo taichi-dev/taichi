@@ -41,6 +41,12 @@ __deprecated_names__ = {
     'type_factory': 'types.quantized_types.type_factory'
 }
 
+__customized_deprecations__ = {
+    'parallelize': ('loop_config(parallelize=...)', 'lang.misc._parallelize'),
+    'serialize': ('loop_config(serialize=True)', 'lang.misc._serialize'),
+    'block_dim': ('loop_config(block_dim=...)', 'lang.misc._block_dim')
+}
+
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():
         exec(f'{name} = {alter}')
@@ -58,6 +64,13 @@ else:
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
                 DeprecationWarning)
             exec(f'{attr} = {__deprecated_names__[attr]}')
+            return locals()[attr]
+        if attr in __customized_deprecations__:
+            msg, fun = __customized_deprecations__[attr]
+            warnings.warn(
+                f'ti.{attr} is deprecated. Please use ti.{msg} instead.',
+                DeprecationWarning)
+            exec(f'{attr} = {fun}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 

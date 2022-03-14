@@ -828,7 +828,7 @@ def static(x, *xs):
 def grouped(x):
     """Groups the indices in the iterator returned by `ndrange()` into a 1-D vector.
 
-    This is often used when you want to iterator over all indices returned by `ndrange()`
+    This is often used when you want to iterate over all indices returned by `ndrange()`
     in one `for` loop and a single index.
 
     Args:

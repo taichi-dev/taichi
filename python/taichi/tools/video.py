@@ -67,7 +67,7 @@ class VideoManager:
 
     Example::
 
-        >>> video_manager = ti.VideoManager(output_dir="./output", framerate=24, automatic_build=False)
+        >>> video_manager = ti.tools.VideoManager(output_dir="./output", framerate=24, automatic_build=False)
         >>> for i in range(50):
         >>>     render()
         >>>     img = pixels.to_numpy()
@@ -76,7 +76,7 @@ class VideoManager:
         >>> video_manager.make_video(gif=True, mp4=True)
 
     Returns:
-        An instance of :class:`taichi.VideoManager` class.
+        An instance of :class:`taichi.tools.VideoManager` class.
     """
     def __init__(self,
                  output_dir,

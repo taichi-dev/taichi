@@ -1,5 +1,7 @@
 import copy
 import os
+import pathlib
+import platform
 import sys
 from contextlib import contextmanager
 
@@ -77,6 +79,33 @@ special_init_cfgs = [
     'log_level',
     'gdb_trigger',
 ]
+
+
+@pytest.mark.skipif(
+    platform.system() == 'Windows',
+    reason="XDG Base Directory Specification is only supported on *nix.",
+)
+def test_xdg_basedir(tmpdir):
+    orig_cache = os.environ.get("XDG_CACHE_HOME", None)
+    try:
+        # Note: This test intentionally calls os.putenv instead of using the
+        # patch_os_environ_helper because we need to propagate the change in
+        # environment to the native C++ code.
+        os.putenv("XDG_CACHE_HOME", str(tmpdir))
+
+        ti_core = ti._lib.utils.import_ti_core()
+        repo_dir = ti_core.get_repo_dir()
+
+        repo_path = pathlib.Path(repo_dir).resolve()
+        expected_path = pathlib.Path(tmpdir / "taichi").resolve()
+
+        assert repo_path == expected_path
+
+    finally:
+        if orig_cache is None:
+            os.unsetenv("XDG_CACHE_HOME")
+        else:
+            os.environ["XDG_CACHE_HOME"] = orig_cache
 
 
 @pytest.mark.parametrize('key,values', init_args.items())

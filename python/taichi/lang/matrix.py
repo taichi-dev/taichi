@@ -9,7 +9,7 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -21,14 +21,15 @@ from taichi.types.compound_types import CompoundType
 class Matrix(TaichiOperations):
     """The matrix class.
 
-    A matrix is a 2-D rectangular array with scalar entries, it's row-major, and is aligned continously.
-    We recommend only use matrix with no more than 32 elements for efficiency considerations.
+    A matrix is a 2-D rectangular array with scalar entries, it's row-majored, and is
+    aligned continously. We recommend only use matrix with no more than 32 elements for
+    efficiency considerations.
 
     Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
 
     Args:
-        arr (Union[list, tuple, np.ndarray]): The data used to initialize the matrix.
-        dt (:mod:`~taichi.types.primitive_types`): matrix data type.
+        arr (Union[list, tuple, np.ndarray]): the initial values of a matrix.
+        dt (:mod:`~taichi.types.primitive_types`): the element data type.
         suppress_warning (bool): whether raise warning or not when the matrix contains more \
             than 32 elements.
 
@@ -60,118 +61,109 @@ class Matrix(TaichiOperations):
     """
     _is_taichi_class = True
 
-    def __init__(self, n=1, m=1, dt=None, suppress_warning=False):
+    def __init__(self, arr, dt=None, suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
         self.dynamic_index_stride = None
 
-        if isinstance(n, (list, tuple, np.ndarray)):
-            if len(n) == 0:
+        if not isinstance(arr, (list, tuple, np.ndarray)):
+            raise TaichiTypeError(
+                "An Matrix/Vector can only be initialized with an array-like object"
+            )
+        if len(arr) == 0:
+            mat = []
+        elif isinstance(arr[0], Matrix):
+            raise Exception('cols/rows required when using list of vectors')
+        elif not isinstance(arr[0], Iterable):  # now init a Vector
+            if in_python_scope():
+                mat = [[x] for x in arr]
+            elif not impl.current_cfg().dynamic_index:
+                mat = [[impl.expr_init(x)] for x in arr]
+            else:
+                if not ti_core.is_extension_supported(
+                        impl.current_cfg().arch,
+                        ti_core.Extension.dynamic_index):
+                    raise Exception(
+                        f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
+                    )
+                if dt is None:
+                    if isinstance(arr[0], (int, np.integer)):
+                        dt = impl.get_runtime().default_ip
+                    elif isinstance(arr[0], float):
+                        dt = impl.get_runtime().default_fp
+                    elif isinstance(arr[0], expr.Expr):
+                        dt = arr[0].ptr.get_ret_type()
+                        if dt == ti_core.DataType_unknown:
+                            raise TypeError(
+                                'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                            )
+                    else:
+                        raise Exception(
+                            'dt required when using dynamic_index for local tensor'
+                        )
+                self.local_tensor_proxy = impl.expr_init_local_tensor(
+                    [len(arr)], dt,
+                    expr.make_expr_group([expr.Expr(x) for x in arr]))
+                self.dynamic_index_stride = 1
                 mat = []
-            elif isinstance(n[0], Matrix):
-                raise Exception(
-                    'cols/rows required when using list of vectors')
-            elif not isinstance(n[0], Iterable):  # now init a Vector
-                if in_python_scope():
-                    mat = [[x] for x in n]
-                elif not impl.current_cfg().dynamic_index:
-                    mat = [[impl.expr_init(x)] for x in n]
-                else:
-                    if not ti_core.is_extension_supported(
-                            impl.current_cfg().arch,
-                            ti_core.Extension.dynamic_index):
-                        raise Exception(
-                            f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
-                        )
-                    if dt is None:
-                        if isinstance(n[0], (int, np.integer)):
-                            dt = impl.get_runtime().default_ip
-                        elif isinstance(n[0], float):
-                            dt = impl.get_runtime().default_fp
-                        elif isinstance(n[0], expr.Expr):
-                            dt = n[0].ptr.get_ret_type()
-                            if dt == ti_core.DataType_unknown:
-                                raise TypeError(
-                                    'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                                )
-                        else:
-                            raise Exception(
-                                'dt required when using dynamic_index for local tensor'
-                            )
-                    self.local_tensor_proxy = impl.expr_init_local_tensor(
-                        [len(n)], dt,
-                        expr.make_expr_group([expr.Expr(x) for x in n]))
-                    self.dynamic_index_stride = 1
-                    mat = []
-                    for i in range(len(n)):
-                        mat.append(
-                            list([
-                                impl.make_tensor_element_expr(
-                                    self.local_tensor_proxy, (expr.Expr(
-                                        i, dtype=primitive_types.i32), ),
-                                    (len(n), ), self.dynamic_index_stride)
-                            ]))
-            else:  # now init a Matrix
-                if in_python_scope():
-                    mat = [list(row) for row in n]
-                elif not impl.current_cfg().dynamic_index:
-                    mat = [[impl.expr_init(x) for x in row] for row in n]
-                else:
-                    if not ti_core.is_extension_supported(
-                            impl.current_cfg().arch,
-                            ti_core.Extension.dynamic_index):
-                        raise Exception(
-                            f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
-                        )
-                    if dt is None:
-                        if isinstance(n[0][0], (int, np.integer)):
-                            dt = impl.get_runtime().default_ip
-                        elif isinstance(n[0][0], float):
-                            dt = impl.get_runtime().default_fp
-                        elif isinstance(n[0][0], expr.Expr):
-                            dt = n[0][0].ptr.get_ret_type()
-                            if dt == ti_core.DataType_unknown:
-                                raise TypeError(
-                                    'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                                )
-                        else:
-                            raise Exception(
-                                'dt required when using dynamic_index for local tensor'
-                            )
-                    self.local_tensor_proxy = impl.expr_init_local_tensor(
-                        [len(n), len(n[0])], dt,
-                        expr.make_expr_group(
-                            [expr.Expr(x) for row in n for x in row]))
-                    self.dynamic_index_stride = 1
-                    mat = []
-                    for i in range(len(n)):
-                        mat.append([])
-                        for j in range(len(n[0])):
-                            mat[i].append(
-                                impl.make_tensor_element_expr(
-                                    self.local_tensor_proxy,
-                                    (expr.Expr(i, dtype=primitive_types.i32),
-                                     expr.Expr(j, dtype=primitive_types.i32)),
-                                    (len(n), len(n[0])),
-                                    self.dynamic_index_stride))
-            self.n = len(mat)
-            if len(mat) > 0:
-                self.m = len(mat[0])
+                for i in range(len(arr)):
+                    mat.append(
+                        list([
+                            impl.make_tensor_element_expr(
+                                self.local_tensor_proxy,
+                                (expr.Expr(i, dtype=primitive_types.i32), ),
+                                (len(arr), ), self.dynamic_index_stride)
+                        ]))
+        else:  # now init a Matrix
+            if in_python_scope():
+                mat = [list(row) for row in arr]
+            elif not impl.current_cfg().dynamic_index:
+                mat = [[impl.expr_init(x) for x in row] for row in arr]
             else:
-                self.m = 1
-            self.entries = [x for row in mat for x in row]
-
+                if not ti_core.is_extension_supported(
+                        impl.current_cfg().arch,
+                        ti_core.Extension.dynamic_index):
+                    raise Exception(
+                        f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
+                    )
+                if dt is None:
+                    if isinstance(arr[0][0], (int, np.integer)):
+                        dt = impl.get_runtime().default_ip
+                    elif isinstance(arr[0][0], float):
+                        dt = impl.get_runtime().default_fp
+                    elif isinstance(arr[0][0], expr.Expr):
+                        dt = arr[0][0].ptr.get_ret_type()
+                        if dt == ti_core.DataType_unknown:
+                            raise TypeError(
+                                'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                            )
+                    else:
+                        raise Exception(
+                            'dt required when using dynamic_index for local tensor'
+                        )
+                self.local_tensor_proxy = impl.expr_init_local_tensor(
+                    [len(arr), len(arr[0])], dt,
+                    expr.make_expr_group(
+                        [expr.Expr(x) for row in arr for x in row]))
+                self.dynamic_index_stride = 1
+                mat = []
+                for i in range(len(arr)):
+                    mat.append([])
+                    for j in range(len(arr[0])):
+                        mat[i].append(
+                            impl.make_tensor_element_expr(
+                                self.local_tensor_proxy,
+                                (expr.Expr(i, dtype=primitive_types.i32),
+                                 expr.Expr(j, dtype=primitive_types.i32)),
+                                (len(arr), len(arr[0])),
+                                self.dynamic_index_stride))
+        self.n = len(mat)
+        if len(mat) > 0:
+            self.m = len(mat[0])
         else:
-            if dt is None:
-                # create a local matrix with specific (n, m)
-                self.entries = [impl.expr_init(None) for i in range(n * m)]
-                self.n = n
-                self.m = m
-            else:
-                raise ValueError(
-                    "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. "
-                    "Use `ti.Matrix.field(n, m, dtype, shape)` instead.")
+            self.m = 1
+        self.entries = [x for row in mat for x in row]
 
         if self.n * self.m > 32 and not suppress_warning:
             warning(
@@ -612,15 +604,9 @@ class Matrix(TaichiOperations):
             The constructed diagonal square matrix.
 
         """
-        ret = Matrix(dim, dim)
-        for i in range(dim):
-            for j in range(dim):
-                if i == j:
-                    ret._set_entry(i, j, val)
-                else:
-                    ret._set_entry(i, j, 0 * val)
-                    # TODO: need a more systematic way to create a "0" with the right type
-        return ret
+        # TODO: need a more systematic way to create a "0" with the right type
+        return Matrix([[val if i == j else 0 * val for j in range(dim)]
+                       for i in range(dim)])
 
     def sum(self):
         """Return the sum of all elements."""
@@ -981,27 +967,21 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with the Vectors/lists row by row.
 
         """
-        mat = Matrix()
-        mat.n = len(rows)
         if isinstance(rows[0], Matrix):
             for row in rows:
                 assert row.m == 1, "Inputs must be vectors, i.e. m == 1"
                 assert row.n == rows[
                     0].n, "Input vectors must share the same shape"
-            mat.m = rows[0].n
             # l-value copy:
-            mat.entries = [row(i) for row in rows for i in range(row.n)]
-        elif isinstance(rows[0], list):
+            return Matrix([[row(i) for i in range(row.n)] for row in rows])
+        if isinstance(rows[0], list):
             for row in rows:
                 assert len(row) == len(
                     rows[0]), "Input lists share the same shape"
-            mat.m = len(rows[0])
             # l-value copy:
-            mat.entries = [x for row in rows for x in row]
-        else:
-            raise Exception(
-                "Cols/rows must be a list of lists, or a list of vectors")
-        return mat
+            return Matrix([[x for x in row] for row in rows])
+        raise Exception(
+            "Cols/rows must be a list of lists, or a list of vectors")
 
     @staticmethod
     def cols(cols):
@@ -1083,11 +1063,10 @@ class Matrix(TaichiOperations):
 def Vector(arr, dt=None, **kwargs):
     """Construct a vector from given array.
 
-    A vector is a special 2-D matrix with the second dimension being equal to 1,
-    i.e. a vector has shape (n, 1).
+    A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 
     Args:
-        arr (Union[list, tuple], np.ndarray): array used to initialize the vector
+        arr (Union[list, tuple], np.ndarray): The initial values of the Vector.
         dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
     Returns:
@@ -1101,7 +1080,7 @@ def Vector(arr, dt=None, **kwargs):
         >>> u + v
         [4 6]
     """
-    return Matrix(n, 1, dt=dt, **kwargs)
+    return Matrix(arr, dt=dt, **kwargs)
 
 
 Vector.field = Matrix._Vector_field

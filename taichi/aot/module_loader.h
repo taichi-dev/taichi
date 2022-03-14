@@ -72,9 +72,6 @@ class TI_DLL_EXPORT Module {
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
-
- private:
-  std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
 };
 
 // Only responsible for reporting device capabilities

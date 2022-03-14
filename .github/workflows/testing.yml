@@ -362,6 +362,7 @@ jobs:
           GPU_TEST: ON
           DISPLAY: :1
           TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
+          TI_DEVICE_MEMORY_GB: '0.7'
 
       - name: clean docker container
         if: always()
@@ -417,6 +418,7 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
           PYTHON: "3.7"
+          TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

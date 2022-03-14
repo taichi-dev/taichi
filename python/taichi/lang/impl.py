@@ -728,7 +728,7 @@ def zero(x):
 
 @taichi_scope
 def one(x):
-     """Return an array of ones with the same shape and type as the input. It's also a scalar
+    """Return an array of ones with the same shape and type as the input. It's also a scalar
     if the input is a scalar.
 
     Args:

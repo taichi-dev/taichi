@@ -18,7 +18,7 @@ class Struct(TaichiOperations):
     A struct is a dictionary-like data structure that stores members as
     (key, value) pairs. Valid data members of a struct can be scalars,
     matrices or other dictionary-like stuctures.
-    
+
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
             keys and values for struct members.

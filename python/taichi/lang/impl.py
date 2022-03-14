@@ -715,7 +715,7 @@ def zero(x):
         A new copy of the input but filled with zeros.
 
     Example::
-    
+
         >>> x = ti.Vector([1, 1])
         >>> @ti.kernel
         >>> def test():
@@ -738,7 +738,7 @@ def one(x):
         A new copy of the input but filled with ones.
 
     Example::
-    
+
         >>> x = ti.Vector([0, 0])
         >>> @ti.kernel
         >>> def test():
@@ -778,7 +778,7 @@ def static(x, *xs):
 
     Example:
         The most common usage of `static()` is for compile-time evaluation::
-            
+
             >>> cond = False
             >>>
             >>> @ti.kernel
@@ -827,7 +827,7 @@ def static(x, *xs):
 @taichi_scope
 def grouped(x):
     """Groups the indices in the iterator returned by `ndrange()` into a 1-D vector.
-    
+
     This is often used when you want to iterator over all indices returned by `ndrange()`
     in one `for` loop and a single index.
 

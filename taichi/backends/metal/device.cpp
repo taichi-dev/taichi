@@ -3,6 +3,7 @@
 #include "taichi/platform/mac/objc_api.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/metal/constants.h"
+#include "taichi/backends/metal/runtime_utils.h"
 
 namespace taichi {
 namespace lang {
@@ -215,7 +216,8 @@ class StreamImpl : public Stream {
 
 class DeviceImpl : public Device {
  public:
-  explicit DeviceImpl(MTLDevice *dev) : device_(dev) {
+  explicit DeviceImpl(const ComputeDeviceParams &params)
+      : device_(params.device), mem_pool_(params.mem_pool) {
     command_queue_ = new_command_queue(device_);
     TI_ASSERT(command_queue_ != nullptr);
     // TODO: thread local streams?
@@ -224,11 +226,20 @@ class DeviceImpl : public Device {
   }
 
   DeviceAllocation allocate_memory(const AllocParams &params) override {
-    TI_NOT_IMPLEMENTED;
-    return DeviceAllocation{};
+    DeviceAllocation res;
+    res.device = this;
+    res.alloc_id = allocations_.size();
+
+    AllocationInternal &ialloc =
+        allocations_[res.alloc_id];  // "i" for internal
+    auto mem = std::make_unique<BufferMemoryView>(params.size, mem_pool_);
+    ialloc.buffer = new_mtl_buffer_no_copy(device_, mem->ptr(), mem->size());
+    ialloc.buffer_mem = std::move(mem);
+    return res;
   }
 
   void dealloc_memory(DeviceAllocation handle) override {
+    allocations_.erase(handle.alloc_id);
     TI_NOT_IMPLEMENTED;
   }
 
@@ -250,19 +261,30 @@ class DeviceImpl : public Device {
   }
 
   void *map_range(DevicePtr ptr, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
+    auto *mem = find_buffer_mem(ptr.alloc_id);
+    if (!mem) {
+      return nullptr;
+    }
+    if ((ptr.offset + size) > mem->size()) {
+      TI_ERROR("Range exceeded");
+      return nullptr;
+    }
+    return (mem->ptr() + ptr.offset);
   }
+
   void *map(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
+    auto *mem = find_buffer_mem(alloc.alloc_id);
+    if (!mem) {
+      return nullptr;
+    }
+    return mem->ptr();
   }
 
   void unmap(DevicePtr ptr) override {
-    TI_NOT_IMPLEMENTED;
+    // No-op on Metal
   }
   void unmap(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
+    // No-op on Metal
   }
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
@@ -274,16 +296,31 @@ class DeviceImpl : public Device {
   }
 
  private:
+  const BufferMemoryView *find_buffer_mem(DeviceAllocationId id) const {
+    auto itr = allocations_.find(id);
+    if (itr == allocations_.end()) {
+      return nullptr;
+    }
+    return itr->second.buffer_mem.get();
+  }
+
+  struct AllocationInternal {
+    std::unique_ptr<BufferMemoryView> buffer_mem{nullptr};
+    nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
+  };
+
   MTLDevice *const device_;
+  MemoryPool *const mem_pool_;
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   std::unique_ptr<StreamImpl> stream_{nullptr};
+  std::unordered_map<DeviceAllocationId, AllocationInternal> allocations_;
 };
 
 }  // namespace
 
 std::unique_ptr<taichi::lang::Device> make_compute_device(
     const ComputeDeviceParams &params) {
-  return std::make_unique<DeviceImpl>(params.device);
+  return std::make_unique<DeviceImpl>(params);
 }
 
 #else

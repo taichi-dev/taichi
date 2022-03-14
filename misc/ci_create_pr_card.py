@@ -39,9 +39,13 @@ def get_project(repo: Repository, name: str) -> Project:
 
 
 def _create_pr_card(pr: dict, project: Project) -> None:
-    to_do_column = next(iter(project.get_columns()))
-    print(f"Creating card for PR #{pr['number']} in project {project.name}")
-    to_do_column.create_card(content_id=pr['id'], content_type="PullRequest")
+    dest_column = next(
+        (c for c in project.get_columns() if c.name == "In progress"), None)
+    if dest_column is None:
+        dest_column = next(iter(project.get_columns()))
+    print(f"Creating card for PR #{pr['number']} in column {dest_column.name} "
+          f"of project {project.name}")
+    dest_column.create_card(content_id=pr['id'], content_type="PullRequest")
 
 
 def _remove_pr_card(pr: dict, project: Project) -> None:

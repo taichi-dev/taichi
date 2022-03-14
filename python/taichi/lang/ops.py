@@ -586,13 +586,38 @@ def logical_not(a):
 
 
 def random(dtype=float):
-    """The random function.
+    """Return a single random float/integer according to the specified data type.
+    Must be called in taichi scope.
+
+    If the required `dtype` is float type, this function returns a random number
+    sampled from the uniform distribution in the half-open interval [0, 1).
+
+    For integer types this function returns a random integer in the
+    half-open interval [0, 2^32) if a 32-bit integer is required,
+    or a random integer in the half-open interval [0, 2^64) if a
+    64-bit integer is required.
 
     Args:
-        dtype (DataType): Type of the random variable.
+        dtype (:mod:`~taichi.types.primitive_types`): Type of the required random value.
 
     Returns:
-        A random variable whose type is `dtype`.
+        A random value with type `dtype`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.random(float)
+        >>>     print(x)  # 0.090257
+        >>>
+        >>>     y = ti.random(ti.f64)
+        >>>     print(y)  # 0.716101627301
+        >>>
+        >>>     i = ti.random(ti.i32)
+        >>>     print(i)  # -963722261
+        >>>
+        >>>     j = ti.random(ti.i64)
+        >>>     print(j)  # 73412986184350777
     """
     dtype = cook_dtype(dtype)
     x = expr.Expr(_ti_core.make_rand_expr(dtype))
@@ -645,15 +670,34 @@ def mul(a, b):
 
 
 @binary
-def mod(a, b):
-    """The remainder function.
+def mod(x1, x2):
+    """Returns the element-wise remainder of division.
+
+    This is equivalent to the Python modulus operator `x1 % x2` and
+    has the same sign as the divisor x2.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
+        x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Dividend scalar or matrix.
+
+        x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Divisor scalar or matrix. When both `x1` and `x2` are matrices they must have the same shape.
 
     Returns:
-        The remainder of `a` divided by `b`.
+        The element-wise remainder of the quotient `floordiv(x1, x2)`. This is a scalar \
+            if both `x1` and `x2` are scalars.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([3.0, 4.0, 5.0])
+        >>>     y = 3
+        >>>     z = ti.mod(y, x)
+        >>>     print(z)
+        >>>
+        >>> test()
+        [1.0, 0.0, 4.0]
     """
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
@@ -661,21 +705,39 @@ def mod(a, b):
         multiply = expr.Expr(_ti_core.expr_mul(b, quotient.ptr))
         return _ti_core.expr_sub(a, multiply.ptr)
 
-    return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
+    return _binary_operation(expr_python_mod, _bt_ops_mod.mod, x1, x2)
 
 
 @binary
-def pow(a, b):  # pylint: disable=W0622
-    """The power function.
+def pow(x, a):  # pylint: disable=W0622
+    """First array elements raised to powers from second array :math:`x^a`, element-wise.
+
+    Negative values raised to a non-integral value will return `nan`.
+    A zero value raised to a negative value will return `inf`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The bases.
+        a (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The exponents.
 
     Returns:
-        `a` to the `b`.
+        The bases in `x1` raised to the exponents in `x2`. This is a scalar if both \
+            `x1` and `x2` are scalars.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-2.0, 0.0, 2.0])
+        >>>     y = -2.2
+        >>>     z = ti.pow(x, y)
+        >>>     print(z)
+        >>>
+        >>> test()
+        [-nan, inf, 0.217638]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, x, a)
 
 
 @binary
@@ -736,53 +798,89 @@ def min_impl(a, b):
 
 
 @binary
-def atan2(a, b):
-    """The inverses of the tangent function.
+def atan2(x1, x2):
+    """Element-wise arc tangent of `x1/x2`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
+        x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            y-coordinates.
+        x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            x-coordinates.
 
     Returns:
-        The inverses function of tangent of `b/a`.
+        Angles in radians, in the range `[-pi, pi]`.
+        This is a scalar if both `x1` and `x2` are scalars.
+
+    Example::
+
+        >>> from math import pi
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Matrix([-1.0, 1.0, -1.0, 1.0])
+        >>>     y = ti.Matrix([-1.0, -1.0, 1.0, 1.0])
+        >>>     z = ti.atan2(y, x) * 180 / pi
+        >>>     print(z)
+        >>>
+        >>> test()
+        [-135.0, -45.0, 135.0, 45.0]
     """
-    return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
+    return _binary_operation(_ti_core.expr_atan2, math.atan2, x1, x2)
 
 
 @binary
-def raw_div(a, b):
-    """Raw_div function.
+def raw_div(x1, x2):
+    """Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
+        x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): Dividend.
+        x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): Divisor.
 
     Returns:
-        If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
+        Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     x = 5
+        >>>     y = 3
+        >>>     print(raw_div(x, y))  # 1
+        >>>     z = 4.0
+        >>>     print(raw_div(x, z))  # 1.25
     """
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
         return a / b
 
-    return _binary_operation(_ti_core.expr_div, c_div, a, b)
+    return _binary_operation(_ti_core.expr_div, c_div, x1, x2)
 
 
 @binary
-def raw_mod(a, b):
-    """Raw_mod function. Both `a` and `b` can be `float`.
+def raw_mod(x1, x2):
+    """Return the remainder of `x1/x2`, element-wise.
+    This is the C-style `mod` function.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
+        x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The dividend.
+        x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The divisor.
 
     Returns:
-        The remainder of `a` divided by `b`.
-    """
-    def c_mod(a, b):
-        return a - b * int(float(a) / b)
+        The remainder of `x1` divided by `x2`.
 
-    return _binary_operation(_ti_core.expr_mod, c_mod, a, b)
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     print(ti.mod(-4, 3))  # 2
+        >>>     print(ti.raw_mod(-4, 3))  # -1
+    """
+    def c_mod(x, y):
+        return x - y * int(float(x) / y)
+
+    return _binary_operation(_ti_core.expr_mod, c_mod, x1, x2)
 
 
 @binary
@@ -958,18 +1056,31 @@ def bit_sar(a, b):
 
 @taichi_scope
 @binary
-def bit_shr(a, b):
-    """Compute bitwise shift right (in taichi scope)
+def bit_shr(x1, x2):
+    """Elements in `x1` shifted to the right by number of bits in `x2`.
+    Both `x1`, `x2` must have integer type.
 
     Args:
-        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
-        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
+        x1 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Input data.
+        x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            Number of bits to remove at the right of `x1`.
 
     Returns:
-        Union[:class:`~taichi.lang.expr.Expr`, int]: LHS >> RHS
+        Return `x1` with bits shifted `x2` times to the right.
+        This is a scalar if both `x1` and `x2` are scalars.
 
+    Example::
+        >>> @ti.kernel
+        >>> def main():
+        >>>     x = ti.Matrix([7, 8])
+        >>>     y = ti.Matrix([1, 2])
+        >>>     print(ti.bit_shr(x, y))
+        >>>
+        >>> main()
+        [3, 2]
     """
-    return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
+    return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, x1, x2)
 
 
 # We don't have logic_and/or instructions yet:
@@ -978,56 +1089,256 @@ logical_and = bit_and
 
 
 @ternary
-def select(cond, a, b):
+def select(cond, x1, x2):
+    """Return an array drawn from elements in `x1` or `x2`,
+    depending on the conditions in `cond`.
+
+    Args:
+        cond (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The array of conditions.
+        x1, x2 (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The arrays where the output elements are taken from.
+
+    Returns:
+        The output at position `k` is the k-th element of `x1` if the k-th element
+        in `cond` is `True`, otherwise it's the k-th element of `x2`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def main():
+        >>>     cond = ti.Matrix([0, 1, 0, 1])
+        >>>     x = ti.Matrix([1, 2, 3, 4])
+        >>>     y = ti.Matrix([-1, -2, -3, -4])
+        >>>     print(ti.select(cond, x, y))
+        >>>
+        >>> main()
+        [-1, 2, -3, 4]
+    """
     # TODO: systematically resolve `-1 = True` problem by introducing u1:
     cond = logical_not(logical_not(cond))
 
-    def py_select(cond, a, b):
-        return a * cond + b * (1 - cond)
+    def py_select(cond, x1, x2):
+        return x1 * cond + x2 * (1 - cond)
 
-    return _ternary_operation(_ti_core.expr_select, py_select, cond, a, b)
-
-
-@writeback_binary
-def atomic_add(a, b):
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+    return _ternary_operation(_ti_core.expr_select, py_select, cond, x1, x2)
 
 
 @writeback_binary
-def atomic_sub(a, b):
+def atomic_add(x, y):
+    """Atomically compute `x + y`, store the result in `x`,
+    and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([0, 0, 0])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_add(x, y)
+        >>>     print(x)  # [1, 2, 3]  the new value of x
+        >>>     print(z)  # [0, 0, 0], the old value of x
+        >>>
+        >>>     ti.atomic_add(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_min(a, b):
+def atomic_sub(x, y):
+    """Atomically subtract `x` by `y`, store the result in `x`,
+    and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([0, 0, 0])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_sub(x, y)
+        >>>     print(x)  # [-1, -2, -3]  the new value of x
+        >>>     print(z)  # [0, 0, 0], the old value of x
+        >>>
+        >>>     ti.atomic_sub(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_max(a, b):
+def atomic_min(x, y):
+    """Atomically compute the minimum of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = 2
+        >>>     y = 1
+        >>>     z = ti.atomic_min(x, y)
+        >>>     print(x)  # 1  the new value of x
+        >>>     print(z)  # 2, the old value of x
+        >>>
+        >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_and(a, b):
+def atomic_max(x, y):
+    """Atomically compute the maximum of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = 1
+        >>>     y = 2
+        >>>     z = ti.atomic_max(x, y)
+        >>>     print(x)  # 2  the new value of x
+        >>>     print(z)  # 1, the old value of x
+        >>>
+        >>>     ti.atomic_max(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_or(a, b):
+def atomic_and(x, y):
+    """Atomically compute the bit-wise AND of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_and(x, y)
+        >>>     print(x)  # [1, 0, 1]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_and(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
-def atomic_xor(a, b):
+def atomic_or(x, y):
+    """Atomically compute the bit-wise OR of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_or(x, y)
+        >>>     print(x)  # [-1, 2, 3]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_or(1, x)  # will raise TaichiSyntaxError
+    """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
+
+
+@writeback_binary
+def atomic_xor(x, y):
+    """Atomically compute the bit-wise XOR of `x` and `y`, element-wise.
+    Store the result in `x`, and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input. When both are matrices they must have the same shape.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([-1, 0, 1])
+        >>>     y = ti.Vector([1, 2, 3])
+        >>>     z = ti.atomic_xor(x, y)
+        >>>     print(x)  # [-2, 2, 2]  the new value of x
+        >>>     print(z)  # [-1, 0, 1], the old value of x
+        >>>
+        >>>     ti.atomic_xor(1, x)  # will raise TaichiSyntaxError
+    """
+    return impl.expr_init(
+        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1038,6 +1349,28 @@ def assign(a, b):
 
 
 def max(*args):  # pylint: disable=W0622
+    """Compute the maximum of the arguments, element-wise.
+
+    This function takes no effect on a single argument, even it's array-like.
+    When there are both scalar and matrix arguments in `args`, the matrices
+    must have the same shape, and scalars will be broadcasted to the same shape as the matrix.
+
+    Args:
+        args: (List[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        Maximum of the inputs.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def foo():
+        >>>     x = ti.Vector([0, 1, 2])
+        >>>     y = ti.Vector([3, 4, 5])
+        >>>     z = ti.max(x, y, 4)
+        >>>     print(z)  # [4, 4, 5]
+    """
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:
@@ -1048,6 +1381,28 @@ def max(*args):  # pylint: disable=W0622
 
 
 def min(*args):  # pylint: disable=W0622
+    """Compute the minimum of the arguments, element-wise.
+
+    This function takes no effect on a single argument, even it's array-like.
+    When there are both scalar and matrix arguments in `args`, the matrices
+    must have the same shape, and scalars will be broadcasted to the same shape as the matrix.
+
+    Args:
+        args: (List[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        Minimum of the inputs.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def foo():
+        >>>     x = ti.Vector([0, 1, 2])
+        >>>     y = ti.Vector([3, 4, 5])
+        >>>     z = ti.min(x, y, 1)
+        >>>     print(z)  # [0, 1, 1]
+    """
     num_args = len(args)
     assert num_args >= 1
     if num_args == 1:

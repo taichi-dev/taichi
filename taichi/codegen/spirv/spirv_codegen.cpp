@@ -1517,8 +1517,6 @@ class TaskCodegen : public IRVisitor {
       task_attribs_.advisory_total_num_threads = total_num_cells;
       int num_cells = snode->num_cells_per_container;
 
-      int upper_level_cells = total_num_cells / num_cells;
-
       TI_INFO("ListGen {} * {}", total_num_cells / num_cells, num_cells);
 
       auto listgen_buffer =

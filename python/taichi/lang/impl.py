@@ -520,13 +520,9 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     Args:
         dtype (DataType): data type of the field.
-
         shape (Union[int, tuple[int]], optional): shape of the field.
-
         name (str, optional): name of the field.
-
         offset (Union[int, tuple[int]], optional): offset of the field domain.
-
         needs_grad (bool, optional): whether this field participates in autodiff
             and thus needs an adjoint field to store the gradients.
 

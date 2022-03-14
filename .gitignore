@@ -85,4 +85,3 @@ _build
 !docs/**/*.json
 imgui.ini
 /venv/
-__ticache__

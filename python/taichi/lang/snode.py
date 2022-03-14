@@ -335,7 +335,7 @@ def rescale_index(a, b, I):
     Args:
 
         a, b (Union[:class:`~taichi.Field`, :class:`~taichi.Vector.field`, \
-            :class:`~taichi.Matrix.field`): Input taichi fields or snodes.
+            :class:`~taichi.MatrixField`): Input taichi fields or snodes.
 
         I (Union[list, :class:`~taichi.Vector`]): grouped loop index.
 
@@ -437,7 +437,7 @@ def get_addr(f, indices):
 
     Args:
         f (Union[:class:`~taichi.Field`, :class:`~taichi.Vector.field`, \
-            :class:`~taichi.Matrix.field`]): Input taichi field for memory address query.
+            :class:`~taichi.MatrixField`]): Input taichi field for memory address query.
 
         indices (Union[int, :class:`~taichi.Vector`]): The specified field indices of the query.
 

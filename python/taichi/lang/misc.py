@@ -530,7 +530,7 @@ def _block_dim(dim):
 block_dim = _block_dim
 
 
-def loop_config(block_dim=None, serialize=None, parallelize=None):
+def loop_config(block_dim=None, serialize=None, parallelize=None):  # pylint: disable=W0621
     if block_dim is not None:
         _block_dim(block_dim)
 

@@ -34,12 +34,13 @@ class Matrix(TaichiOperations):
         self.dynamic_index_stride = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
-            raise TaichiTypeError("An Matrix/Vector can only be initialized with an array-like object")
+            raise TaichiTypeError(
+                "An Matrix/Vector can only be initialized with an array-like object"
+            )
         if len(arr) == 0:
             mat = []
         elif isinstance(arr[0], Matrix):
-            raise Exception(
-                'cols/rows required when using list of vectors')
+            raise Exception('cols/rows required when using list of vectors')
         elif not isinstance(arr[0], Iterable):  # now init a Vector
             if in_python_scope():
                 mat = [[x] for x in arr]
@@ -76,9 +77,9 @@ class Matrix(TaichiOperations):
                     mat.append(
                         list([
                             impl.make_tensor_element_expr(
-                                self.local_tensor_proxy, (expr.Expr(
-                                    i, dtype=primitive_types.i32), ),
-                                (len(arr),), self.dynamic_index_stride)
+                                self.local_tensor_proxy,
+                                (expr.Expr(i, dtype=primitive_types.i32), ),
+                                (len(arr), ), self.dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
             if in_python_scope():
@@ -570,7 +571,8 @@ class Matrix(TaichiOperations):
 
         """
         # TODO: need a more systematic way to create a "0" with the right type
-        return Matrix([[val if i == j else 0 * val for j in range(dim)] for i in range(dim)])
+        return Matrix([[val if i == j else 0 * val for j in range(dim)]
+                       for i in range(dim)])
 
     def sum(self):
         """Return the sum of all elements."""

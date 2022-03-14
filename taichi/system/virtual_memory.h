@@ -19,14 +19,8 @@ class VirtualMemoryAllocator {
   explicit VirtualMemoryAllocator(size_t size) : size(size) {
 // http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf Sec 3.1
 #if defined(TI_PLATFORM_UNIX)
-#if defined(TI_PLATFORM_LINUX)
-    ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
-               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-#else
-    // BSD does not have MAP_NONREVERSE
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#endif
     TI_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",
                 size);
 #else

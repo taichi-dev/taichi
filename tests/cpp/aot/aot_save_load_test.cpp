@@ -127,7 +127,7 @@ TEST(AotSaveLoad, Vulkan) {
       aot::Module::load(".", Arch::vulkan, mod_params);
   EXPECT_TRUE(vk_module);
 
-  // Retrieve kernels/fields/etc from AOT module to initialize runtime
+  // Retrieve kernels/fields/etc from AOT module
   auto root_size = vk_module->get_root_size();
   EXPECT_EQ(root_size, 64);
   vulkan_runtime->add_root_buffer(root_size);
@@ -146,8 +146,8 @@ TEST(AotSaveLoad, Vulkan) {
   ret_kernel->launch(&host_ctx);
   vulkan_runtime->synchronize();
 
-  // auto x_field = vk_module.get_field("x");
-  // EXPECT_TRUE(x_field);
-  // x_field.copy_to(/*dst=*/x.get());
+  // Retrieve data
+  auto x_field = vk_module->get_field("place");
+  EXPECT_NE(x_field, nullptr);
 }
 #endif

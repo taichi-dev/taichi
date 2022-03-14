@@ -446,7 +446,8 @@ class ExternalTensorExpression : public Expression {
   }
 
   void serialize(std::ostream &ss) override {
-    ss << fmt::format("{}d_ext_arr", dim);
+    ss << fmt::format("{}d_ext_arr (element_dim={}, dt={})", dim, element_dim,
+                      dt->to_string());
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -487,6 +488,10 @@ class GlobalVariableExpression : public Expression {
 
   void serialize(std::ostream &ss) override {
     ss << "#" << ident.name();
+    if (snode)
+      ss << fmt::format(" (snode={})", snode->get_node_type_name_hinted());
+    else
+      ss << fmt::format(" (dt={})", dt->to_string());
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -895,6 +900,8 @@ class ASTBuilder {
   void insert_break_stmt();
   void insert_continue_stmt();
   void insert_expr_stmt(const Expr &val);
+  void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
+  void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

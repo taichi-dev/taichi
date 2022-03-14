@@ -1074,7 +1074,7 @@ def Vector(arr, dt=None, **kwargs):
 
     Example::
         >>> u = ti.Vector([1, 2])
-        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n ,1)
+        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
         2 1
         >>> v = ti.Vector([3, 4])
         >>> u + v

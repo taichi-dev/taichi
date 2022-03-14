@@ -407,24 +407,9 @@ class Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
-  struct LlvmRuntimeAllocParams : AllocParams {
-    bool use_cached{true};
-    JITModule *runtime_jit{nullptr};
-    LLVMRuntime *runtime{nullptr};
-    uint64 *result_buffer{nullptr};
-  };
-
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
 
-  virtual DeviceAllocation allocate_memory_runtime(
-      const LlvmRuntimeAllocParams &params) {
-    TI_NOT_IMPLEMENTED
-  }
-
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
-
-  uint64_t *allocate_llvm_runtime_memory_jit(
-      const LlvmRuntimeAllocParams &params);
 
   virtual uint64_t get_memory_physical_pointer(DeviceAllocation handle) {
     TI_NOT_IMPLEMENTED

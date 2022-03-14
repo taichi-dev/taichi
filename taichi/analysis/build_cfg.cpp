@@ -51,7 +51,7 @@ namespace lang {
  * node_a {
  *   ...
  * } -> node_b, [node_c if "cond"];
- * means node_a has an edge to node_b, and node_a has an edge to node_b iff
+ * means node_a has an edge to node_b, and node_a has an edge to node_c iff
  * the condition "cond" is true.
  *
  * When there can be many CFGNodes in a Block, internal nodes are omitted for
@@ -390,11 +390,16 @@ class CFGBuilder : public IRVisitor {
         in_parallel_for_ = true;
       }
       stmt->body->accept(this);
+      auto block_begin = graph_->nodes[block_begin_index].get();
+      for (auto &node : continues_in_current_loop_) {
+        CFGNode::add_edge(node, block_begin);
+        prev_nodes_.push_back(node);
+      }
       in_parallel_for_ = false;
       prev_nodes_.push_back(graph_->back());
       // Container statements don't belong to any CFGNodes.
       begin_location_ = offload_stmt_id + 1;
-      CFGNode::add_edge(before_offload, graph_->nodes[block_begin_index].get());
+      CFGNode::add_edge(before_offload, block_begin);
     }
     if (stmt->bls_epilogue) {
       auto before_offload = new_node(-1);

@@ -907,6 +907,18 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
   this->insert(Stmt::make<FrontendExprStmt>(val));
 }
 
+void ASTBuilder::insert_snode_activate(SNode *snode,
+                                       const ExprGroup &expr_group) {
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
+                                               expr_group));
+}
+
+void ASTBuilder::insert_snode_deactivate(SNode *snode,
+                                         const ExprGroup &expr_group) {
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
+                                               expr_group));
+}
+
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   TI_ASSERT(list == nullptr);
   LoopState prev = loop_state_stack_.back();

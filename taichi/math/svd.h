@@ -1,6 +1,7 @@
 #include <functional>
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/expression_ops.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -170,8 +171,9 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Stmp5, Ss11 - Ss22);
     ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 >= Stiny_number,
-                                   Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+        Stmp1,
+        bit_cast<Tf>(expr_select(Stmp2 >= Stiny_number,
+                                 Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Stmp1, Ssh));
     ast_builder->insert_assignment(Sch, svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5));
     ast_builder->insert_assignment(
@@ -185,8 +187,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Sch, Stmp4 * Sch);
     ast_builder->insert_assignment(Stmp1, Sfour_gamma_squared * Stmp1);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))),
-                                   Expr(Ti(0)))));
+        Stmp1, bit_cast<Tf>(expr_select(
+                   Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(
         Stmp2, svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1));
     ast_builder->insert_assignment(
@@ -246,8 +248,9 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Stmp5, Ss22 - Ss33);
     ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 >= Stiny_number,
-                                   Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+        Stmp1,
+        bit_cast<Tf>(expr_select(Stmp2 >= Stiny_number,
+                                 Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Stmp1, Ssh));
     ast_builder->insert_assignment(Sch, svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5));
     ast_builder->insert_assignment(
@@ -261,8 +264,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Sch, Stmp4 * Sch);
     ast_builder->insert_assignment(Stmp1, Sfour_gamma_squared * Stmp1);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))),
-                                   Expr(Ti(0)))));
+        Stmp1, bit_cast<Tf>(expr_select(
+                   Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(
         Stmp2, svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1));
     ast_builder->insert_assignment(
@@ -322,8 +325,9 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Stmp5, Ss33 - Ss11);
     ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 >= Stiny_number,
-                                   Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+        Stmp1,
+        bit_cast<Tf>(expr_select(Stmp2 >= Stiny_number,
+                                 Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Stmp1, Ssh));
     ast_builder->insert_assignment(Sch, svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5));
     ast_builder->insert_assignment(
@@ -337,8 +341,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
     ast_builder->insert_assignment(Sch, Stmp4 * Sch);
     ast_builder->insert_assignment(Stmp1, Sfour_gamma_squared * Stmp1);
     ast_builder->insert_assignment(
-        Stmp1, bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))),
-                                   Expr(Ti(0)))));
+        Stmp1, bit_cast<Tf>(expr_select(
+                   Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
     ast_builder->insert_assignment(
         Stmp2, svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1));
     ast_builder->insert_assignment(
@@ -507,8 +511,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Stmp4, Sa33 * Sa33);
   ast_builder->insert_assignment(Stmp3, Stmp3 + Stmp4);
   ast_builder->insert_assignment(
-      Stmp4, bit_cast<Tf>(select(Stmp1 < Stmp2, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp4, bit_cast<Tf>(expr_select(
+                 Stmp1 < Stmp2, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_xor<Tf, Ti>(Sa11, Sa12));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4));
   ast_builder->insert_assignment(Sa11, svd_bitwise_xor<Tf, Ti>(Sa11, Stmp5));
@@ -548,8 +552,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Sv22, Sv22 * Stmp4);
   ast_builder->insert_assignment(Sv32, Sv32 * Stmp4);
   ast_builder->insert_assignment(
-      Stmp4, bit_cast<Tf>(select(Stmp1 < Stmp3, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp4, bit_cast<Tf>(expr_select(
+                 Stmp1 < Stmp3, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_xor<Tf, Ti>(Sa11, Sa13));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4));
   ast_builder->insert_assignment(Sa11, svd_bitwise_xor<Tf, Ti>(Sa11, Stmp5));
@@ -589,8 +593,8 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Sv21, Sv21 * Stmp4);
   ast_builder->insert_assignment(Sv31, Sv31 * Stmp4);
   ast_builder->insert_assignment(
-      Stmp4, bit_cast<Tf>(select(Stmp2 < Stmp3, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp4, bit_cast<Tf>(expr_select(
+                 Stmp2 < Stmp3, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_xor<Tf, Ti>(Sa12, Sa13));
   ast_builder->insert_assignment(Stmp5, svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4));
   ast_builder->insert_assignment(Sa12, svd_bitwise_xor<Tf, Ti>(Sa12, Stmp5));
@@ -640,16 +644,16 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Su33, Expr(Tf(1.0f)));
   ast_builder->insert_assignment(Ssh, Sa21 * Sa21);
   ast_builder->insert_assignment(
-      Ssh, bit_cast<Tf>(select(Ssh >= Ssmall_number,
-                               Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+      Ssh, bit_cast<Tf>(expr_select(Ssh >= Ssmall_number,
+                                    Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Ssh, Sa21));
   ast_builder->insert_assignment(Stmp5, Expr(Tf(0.0f)));
   ast_builder->insert_assignment(Sch, Stmp5 - Sa11);
   ast_builder->insert_assignment(Sch, max(Sch, Sa11));
   ast_builder->insert_assignment(Sch, max(Sch, Ssmall_number));
   ast_builder->insert_assignment(
-      Stmp5, bit_cast<Tf>(select(Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp5, bit_cast<Tf>(expr_select(
+                 Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp1, Sch * Sch);
   ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
   ast_builder->insert_assignment(Stmp2, Stmp1 + Stmp2);
@@ -725,16 +729,16 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Su32, Su32 - Stmp1);
   ast_builder->insert_assignment(Ssh, Sa31 * Sa31);
   ast_builder->insert_assignment(
-      Ssh, bit_cast<Tf>(select(Ssh >= Ssmall_number,
-                               Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+      Ssh, bit_cast<Tf>(expr_select(Ssh >= Ssmall_number,
+                                    Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Ssh, Sa31));
   ast_builder->insert_assignment(Stmp5, Expr(Tf(0.0f)));
   ast_builder->insert_assignment(Sch, Stmp5 - Sa11);
   ast_builder->insert_assignment(Sch, max(Sch, Sa11));
   ast_builder->insert_assignment(Sch, max(Sch, Ssmall_number));
   ast_builder->insert_assignment(
-      Stmp5, bit_cast<Tf>(select(Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp5, bit_cast<Tf>(expr_select(
+                 Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp1, Sch * Sch);
   ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
   ast_builder->insert_assignment(Stmp2, Stmp1 + Stmp2);
@@ -810,16 +814,16 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   ast_builder->insert_assignment(Su33, Su33 - Stmp1);
   ast_builder->insert_assignment(Ssh, Sa32 * Sa32);
   ast_builder->insert_assignment(
-      Ssh, bit_cast<Tf>(select(Ssh >= Ssmall_number,
-                               Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
+      Ssh, bit_cast<Tf>(expr_select(Ssh >= Ssmall_number,
+                                    Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Ssh, svd_bitwise_and<Tf, Ti>(Ssh, Sa32));
   ast_builder->insert_assignment(Stmp5, Expr(Tf(0.0f)));
   ast_builder->insert_assignment(Sch, Stmp5 - Sa22);
   ast_builder->insert_assignment(Sch, max(Sch, Sa22));
   ast_builder->insert_assignment(Sch, max(Sch, Ssmall_number));
   ast_builder->insert_assignment(
-      Stmp5, bit_cast<Tf>(select(Sa22 >= Stmp5, Expr(Ti(int32(0xffffffff))),
-                                 Expr(Ti(0)))));
+      Stmp5, bit_cast<Tf>(expr_select(
+                 Sa22 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0)))));
   ast_builder->insert_assignment(Stmp1, Sch * Sch);
   ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
   ast_builder->insert_assignment(Stmp2, Stmp1 + Stmp2);

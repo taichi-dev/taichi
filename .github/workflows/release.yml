@@ -1,13 +1,14 @@
 name: Publishing Release
 on:
-  release:
-    # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
-    types: [published]
-  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
-  # We use this to distinguish which taichi to release.
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
   workflow_dispatch:
+    # Manually trigger the release workflow, a version must be provided
+    inputs:
+      version:
+        description: 'The version to release (e.g. v0.8.0), or leave it empty for nightly build'
+        type: string
+        required: false
 
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
@@ -15,6 +16,7 @@ env:
   METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
+  RELEASE_VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   add_version_to_database:
@@ -25,16 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: set tag
-        id: tag
-        run: echo ::set-output name=version::${GITHUB_REF#refs/*/}
-
       - name: Save new version
         run: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Not a production release"
+            exit 0
+          fi
           python3 -m pip install requests==2.26
-          [ -z "${{ github.event.action }}" ] || python3 misc/save_new_version.py
-        env:
-          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+          python3 misc/save_new_version.py
 
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
@@ -46,20 +46,20 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [ -z "${{ github.event.action }}" ]; then
+          if [ !-z "$RELEASE_VERSION" ]; then
+            # For production release, we run on four python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
+
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
+          else
             # For nightly release, we only run on python 3.8
             echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38 and py39(conda), so change matrix.
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
-          else
-            # For production release, we run on four python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
-
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
           fi
 
-  build_and_upload_linux:
+  build_and_test_linux:
     name: Build and Upload (linux only)
     needs: matrix_prep
     strategy:
@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -84,7 +84,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
@@ -95,19 +95,19 @@ jobs:
           GPU_BUILD: ON
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: ":1"
+          DISPLAY: ':1'
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
+          name: dist
           path: shared/dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
@@ -118,22 +118,14 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: ":1"
-
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-        run: |
-          cd shared
-          pip install twine requests==2.26
-          python3 ../misc/upload_release.py
+          DISPLAY: ':1'
 
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
 
-  build_and_upload_mac:
+  build_and_test_mac:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
@@ -143,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -174,24 +166,18 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
       - name: Test
         run: .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
 
-      - name: Upload PyPI
-        env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROJECT_NAME: ${{ matrix.name }}
-        run: python misc/upload_release.py
-
-  build_and_upload_m1:
+  build_and_test_m1:
     name: Build and Upload (Apple M1)
     needs: matrix_prep
     strategy:
@@ -200,11 +186,11 @@ jobs:
     runs-on: [self-hosted, m1]
     defaults:
       run:
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -230,9 +216,9 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -241,19 +227,11 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,vulkan,cpu"
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PYTHON: ${{ matrix.python }}
           GPU_TEST: ON
 
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
-        run: |
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          python misc/upload_release.py
-
-  build_and_upload_macos_1014:
+  build_and_test_macos_1014:
     name: Build and Upload (macos 1014)
     needs: matrix_prep
     strategy:
@@ -263,7 +241,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -289,9 +267,9 @@ jobs:
           CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-1014.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -300,18 +278,10 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
           PYTHON: ${{ matrix.python }}
 
-      - name: Upload PyPI
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
-        run: |
-          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          python misc/upload_release.py
-
-  build_and_upload_windows:
+  build_and_test_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep
     strategy:
@@ -321,7 +291,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -351,7 +321,7 @@ jobs:
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -367,10 +337,83 @@ jobs:
         env:
           TI_SKIP_VERSION_CHECK: ON
 
-      - name: Upload PyPI
-        shell: powershell
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
+  upload_to_pypi:
+    name: Upload release to PyPI
+    needs: [build_and_test_linux, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Get dist files
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload to PyPI
         run: |
-          python -m pip install twine
-          venv\Scripts\python misc/upload_release.py
+          ls -l dist/
+          if [ -z "$RELEASE_VERSION" ]; then
+            export PROJECT_NAME="taichi-nightly"
+          else
+            export PROJECT_NAME="taichi"
+          fi
+          python -m pip install requests twine
+          python misc/upload_release.py
+
+  create_release:
+    name: Create tag and publish release
+    needs: upload_to_pypi
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          pip3 install gitpython
+          content=$(python3 misc/make_changelog.py)
+          echo $content
+          # Escape multiline strings:
+          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          echo "::set-output name=content::$content"
+
+      - name: Create tag
+        run: |
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
+          git tag -a ${RELEASE_VERSION} -m "Release ${RELEASE_VERSION}"
+          git push origin --tags
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog.outputs.content }}
+          tag_name: ${{ github.event.inputs.version }}
+
+      - name: Bump version
+        run: |
+          version_parts=(${RELEASE_VERSION//./ })
+          version_parts[2]=$(expr ${version_parts[2]} + 1)
+          next_version=$(IFS=.; echo "${version_parts[*]}")
+          # Update version.txt
+          git checkout -b "bump/$next_version"
+          echo "$next_version" > version.txt
+          git add version.txt
+          # Commit and push changes
+          git commit -m "Bump version to $next_version"
+          git push origin "bump/$next_version"
+          # Create pull request
+          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

@@ -895,6 +895,8 @@ class ASTBuilder {
   void insert_break_stmt();
   void insert_continue_stmt();
   void insert_expr_stmt(const Expr &val);
+  void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
+  void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

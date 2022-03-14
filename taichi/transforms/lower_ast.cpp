@@ -209,7 +209,7 @@ class LowerAST : public IRVisitor {
                                            detected_fors_with_break_.end();
       // #578: a good range for is a range for that doesn't contains a break
       // statement
-      if (is_good_range_for) {
+      if (is_good_range_for && !stmt->strictly_serialized) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin->stmt, end->stmt, std::move(stmt->body), stmt->bit_vectorize,
             stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized);

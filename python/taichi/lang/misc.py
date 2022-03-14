@@ -510,17 +510,34 @@ def loop_unique(val, covers=None):
     return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-def parallelize(v):
+def _parallelize(v):
     get_runtime().prog.current_ast_builder().parallelize(v)
+    if v == 1:
+        get_runtime().prog.current_ast_builder().strictly_serialize()
 
+
+parallelize = _parallelize
 
 serialize = lambda: parallelize(1)
 
 
-def block_dim(dim):
+def _block_dim(dim):
     """Set the number of threads in a block to `dim`.
     """
     get_runtime().prog.current_ast_builder().block_dim(dim)
+
+
+block_dim = _block_dim
+
+
+def loop_config(block_dim=None, serialize=None, parallelize=None):
+    if block_dim is not None:
+        _block_dim(block_dim)
+
+    if serialize:
+        _parallelize(1)
+    elif parallelize is not None:
+        _parallelize(parallelize)
 
 
 def global_thread_idx():
@@ -661,7 +678,7 @@ __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
-    'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
-    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
-    'no_activate', 'reset', 'mesh_patch_idx'
+    'serialize', 'loop_config', 'block_dim', 'global_thread_idx', 'Tape',
+    'assume_in_range', 'block_local', 'cache_read_only', 'clear_all_gradients',
+    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

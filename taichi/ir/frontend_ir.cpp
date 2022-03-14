@@ -857,10 +857,11 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &e) {
   auto stmt_unique =
       std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
-  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body, For);
+  this->create_scope(stmt->body,
+                     for_loop_dec_.config.strictly_serialized ? While : For);
+  for_loop_dec_.reset();
 }
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,

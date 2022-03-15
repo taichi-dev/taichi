@@ -9,6 +9,7 @@ import timeit
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
+import glob
 
 import numpy as np
 from colorama import Fore
@@ -134,6 +135,81 @@ class TaichiMain:
             return choice
 
         return support_choice_with_dot_py
+
+    @register
+    def gallery(self, argumets: list = sys.argv[2:]):
+        # load the gallery image
+        image_source = utils.package_root + '/assets/**/ti_gallery.png'
+        print(image_source)
+        gallery_image_path = glob.glob(image_source, recursive=True)[0]
+        gallery_image = ti.tools.imread(gallery_image_path)
+        width, height = gallery_image.shape[:2]
+
+        # create the gui, 2x4 tiles
+        gui = ti.GUI("Taichi Gallery", res=(width, height))
+        nrows = 2
+        ncols = 4
+
+        # set the spacing parameters in the gallery image
+        left_margin = 7
+        bottom_margin = 23
+        vertical_margin = 32
+        horizontal_margin = 11
+        tile_size = 128
+
+        # side length of a tile
+        dx = tile_size / width
+        dy = tile_size / height
+
+        examples = ["sdf_renderer", "cornell_box", "rasterizer", "euler",
+                    "fractal", "mpm128", "pbf2d", "mass_spring_game"]
+
+        def get_tile_from_mouse(mou_x, mou_y):
+            """Find the image tile of which the mouse is hovering over."""
+            x = int(mou_x * width)
+            y = int(mou_y * height)
+            rind = (y - bottom_margin) // (vertical_margin + tile_size)
+            cind = (x - left_margin) // (vertical_margin + tile_size)
+            valid =  (0 <= rind < nrows and 0 <= cind < ncols)
+            return valid, rind, cind
+
+        def draw_bounding_box(rind, cind):
+            x0 = cind * (horizontal_margin + tile_size) + left_margin
+            y0 = rind * (vertical_margin + tile_size) + bottom_margin
+            x0 /= width
+            y0 /= height
+            pts = [(x0, y0), (x0 + dx, y0), (x0 + dx, y0 + dy), (x0, y0 + dy), (x0, y0)]
+            for i in range(4):
+                gui.line(pts[i], pts[i + 1], radius=2, color=0x0000FF)
+
+        def on_mouse_click_callback(example_name):
+            examples_dir = TaichiMain._get_examples_dir()
+            script = list(examples_dir.rglob(f"{example_name}.py"))[0]
+            with open(script, "r") as f:
+                try:
+                    import rich.syntax, rich.console
+                    content = rich.syntax.Syntax.from_path(script, line_numbers=True)
+                    console = rich.console.Console()
+                    console.print(content)
+                except ImportError:
+                    content = f.readlines()
+                    print(content)
+
+            self._exec_python_file(script)
+
+        while gui.running:
+            gui.set_image(gallery_image)
+            if gui.get_events(gui.MOTION):
+                mou_x, mou_y = gui.get_cursor_pos()
+                valid, rind, cind = get_tile_from_mouse(mou_x, mou_y)
+                if valid:
+                    draw_bounding_box(rind, cind)
+                    if gui.get_event(ti.GUI.PRESS, ti.GUI.LMB):
+                        gui.close()
+                        index = cind + rind * ncols
+                        on_mouse_click_callback(examples[index])
+
+            gui.show()
 
     @register
     def example(self, arguments: list = sys.argv[2:]):

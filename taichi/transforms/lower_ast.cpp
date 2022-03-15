@@ -204,9 +204,8 @@ class LowerAST : public IRVisitor {
       auto end = stmt->end;
       flatten_rvalue(begin, &fctx);
       flatten_rvalue(end, &fctx);
-      bool is_good_range_for =
-          current_block_depth_ == 1 || detected_fors_with_break_.find(stmt) ==
-                                           detected_fors_with_break_.end();
+      bool is_good_range_for = detected_fors_with_break_.find(stmt) ==
+                               detected_fors_with_break_.end();
       // #578: a good range for is a range for that doesn't contains a break
       // statement
       if (is_good_range_for) {

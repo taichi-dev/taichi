@@ -189,7 +189,7 @@ class TaichiMain:
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
             with open(script, "r") as f:
                 try:
-                    import rich.console
+                    import rich.console  # pylint: disable=C0415
                     import rich.syntax  # pylint: disable=C0415
                     content = rich.syntax.Syntax.from_path(script,
                                                            line_numbers=True)

@@ -43,6 +43,8 @@ def check_version(cur_uuid):
         payload['python'] = 'cp310'
 
     payload['uuid'] = cur_uuid
+    if os.environ['TI_CI'] == '1':
+        payload['type'] = 'CI'
     # We do not want request exceptions break users' usage of Taichi.
     try:
         payload = json.dumps(payload)

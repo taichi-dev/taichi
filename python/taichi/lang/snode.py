@@ -381,7 +381,7 @@ def is_active(node, indices):
 
     Args:
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
-        indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
+        indices (Union[int, list, :class:`~taichi.Vector`]): the indices to visit.
 
     Returns:
         bool: the cell `node[indices]` is active or not.

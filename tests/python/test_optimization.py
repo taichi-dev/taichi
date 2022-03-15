@@ -1,5 +1,3 @@
-from taichi.lang.misc import serialize
-
 import taichi as ti
 from tests import test_utils
 
@@ -57,7 +55,7 @@ def test_local_store_in_nested_for_and_if():
 
     @ti.kernel
     def func():
-        serialize()
+        ti.loop_config(serialize=True)
         for i, j, k in val:
             if i < 2 and j < 2 and k < 2:
                 a = 0

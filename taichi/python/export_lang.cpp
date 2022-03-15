@@ -290,6 +290,7 @@ void export_lang(py::module &m) {
       .def("expr_var", &ASTBuilder::make_var)
       .def("bit_vectorize", &ASTBuilder::bit_vectorize)
       .def("parallelize", &ASTBuilder::parallelize)
+      .def("strictly_serialize", &ASTBuilder::strictly_serialize)
       .def("block_dim", &ASTBuilder::block_dim)
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);

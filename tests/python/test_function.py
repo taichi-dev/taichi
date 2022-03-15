@@ -205,12 +205,10 @@ def test_missing_return_annotation():
 def test_recursion():
     @ti.experimental.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:
-        ret = 0
         if l == r:
-            ret = f[l]
+            return f[l]
         else:
-            ret = sum(f, l, (l + r) // 2) + sum(f, (l + r) // 2 + 1, r)
-        return ret
+            return sum(f, l, (l + r) // 2) + sum(f, (l + r) // 2 + 1, r)
 
     f = ti.field(ti.i32, shape=100)
     for i in range(100):
@@ -221,3 +219,75 @@ def test_recursion():
         return sum(f, 0, 99)
 
     assert get_sum() == 99 * 50
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_multiple_return():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.experimental.real_func
+    def foo(val: ti.i32) -> ti.i32:
+        if x[None] > 10:
+            if x[None] > 20:
+                return 1
+            x[None] += 1
+        x[None] += val
+        return 0
+
+    @ti.kernel
+    def run():
+        assert foo(15) == 0
+        assert foo(10) == 0
+        assert foo(100) == 1
+
+    x[None] = 0
+    run()
+    assert x[None] == 26
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_for():
+    @ti.experimental.real_func
+    def foo() -> ti.i32:
+        for i in range(10):
+            return 42
+
+    @ti.kernel
+    def bar() -> ti.i32:
+        return foo()
+
+    assert bar() == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_while():
+    @ti.experimental.real_func
+    def foo() -> ti.i32:
+        i = 1
+        while i:
+            return 42
+
+    @ti.kernel
+    def bar() -> ti.i32:
+        return foo()
+
+    assert bar() == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_if_in_for():
+    @ti.experimental.real_func
+    def foo(a: ti.i32) -> ti.i32:
+        s = 0
+        for i in range(100):
+            if i == a + 1:
+                return s
+            s = s + i
+        return s
+
+    @ti.kernel
+    def bar(a: ti.i32) -> ti.i32:
+        return foo(a)
+
+    assert bar(10) == 11 * 5
+    assert bar(200) == 99 * 50

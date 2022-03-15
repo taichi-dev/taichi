@@ -138,6 +138,7 @@ class TaichiMain:
 
     @register
     def gallery(self, argumets: list = sys.argv[2:]):
+        """Use mouse to select and run taichi examples in an interactive gui."""
         # load the gallery image
         image_source = utils.package_root + '/assets/**/ti_gallery.png'
         gallery_image_path = glob.glob(image_source, recursive=True)[0]

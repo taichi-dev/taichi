@@ -436,9 +436,7 @@ def get_addr(f, indices):
     Currently, this function can only be called inside a taichi kernel.
 
     Args:
-        f (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`, \
-            :class:`~taichi.MatrixField`]): Input taichi field for memory address query.
-
+        f (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`]): Input taichi field for memory address query.
         indices (Union[int, :class:`~taichi.Vector`]): The specified field indices of the query.
 
     Returns:

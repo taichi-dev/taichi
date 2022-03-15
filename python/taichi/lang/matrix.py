@@ -9,7 +9,8 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -220,6 +221,7 @@ class Matrix(TaichiOperations):
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
+                    'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
                 )
         assert 0 <= args[0] < self.n, \
             f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
@@ -259,21 +261,42 @@ class Matrix(TaichiOperations):
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
         return Matrix([[self(i, j) for j in b] for i in a])
 
+    def _cal_slice(self, index, dim):
+        start, stop, step = index.start or 0, index.stop or (
+            self.n if dim == 0 else self.m), index.step or 1
+
+        def helper(x):
+            #  TODO(mzmzm): support variable in slice
+            if isinstance(x, expr.Expr):
+                raise TaichiCompilationError(
+                    "Taichi does not support variables in slice now, please use constant instead of it."
+                )
+            return x
+
+        start, stop, step = helper(start), helper(stop), helper(step)
+        return [_ for _ in range(start, stop, step)]
+
     @taichi_scope
     def _subscript(self, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
-        if isinstance(i, slice) or isinstance(j, slice):
-            for a in (i, j):
-                if isinstance(a, slice):
-                    if isinstance(a.start, expr.Expr) or isinstance(
-                            a.step, expr.Expr) or isinstance(
-                                a.stop, expr.Expr):
-                        raise TaichiSyntaxError(
-                            "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
-                        )
-            return self._get_slice(i, j)
+        has_slice = False
+        if isinstance(i, slice):
+            i = self._cal_slice(i, 0)
+            has_slice = True
+        if isinstance(j, slice):
+            j = self._cal_slice(j, 1)
+            has_slice = True
+
+        if has_slice:
+            if not isinstance(i, list):
+                i = [i]
+            if not isinstance(j, list):
+                j = [j]
+            if len(indices) == 1:
+                return Vector([self._subscript(a) for a in i])
+            return Matrix([[self._subscript(a, b) for b in j] for a in i])
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)

@@ -166,7 +166,7 @@ class TaichiMain:
         ]
 
         def get_tile_from_mouse(mou_x, mou_y):
-            """Find the image tile of which the mouse is hovering over."""
+            """Find the image tile that the mouse is hovering over."""
             x = int(mou_x * width)
             y = int(mou_y * height)
             rind = (y - bottom_margin) // (vertical_margin + tile_size)

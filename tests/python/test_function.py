@@ -201,6 +201,19 @@ def test_missing_return_annotation():
         run()
 
 
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_different_argument_type():
+    @ti.experimental.real_func
+    def add(a: ti.f32, b: ti.f32) -> ti.f32:
+        return a + b
+
+    @ti.kernel
+    def run() -> ti.i32:
+        return add(1, 2)
+
+    assert run() == 3
+
+
 @test_utils.test(arch=[ti.cpu, ti.gpu], cfg_optimization=False)
 def test_recursion():
     @ti.experimental.real_func

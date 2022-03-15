@@ -8,7 +8,7 @@ import textwrap
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, runtime_ops
+from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
@@ -203,7 +203,10 @@ class Func:
         non_template_args = []
         for i, anno in enumerate(self.argument_annotations):
             if not isinstance(anno, template):
-                non_template_args.append(args[i])
+                if id(anno) in primitive_types.type_ids:
+                    non_template_args.append(ops.cast(args[i], anno))
+                else:
+                    non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return Expr(
             _ti_core.make_func_call_expr(

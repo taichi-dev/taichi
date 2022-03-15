@@ -5,6 +5,8 @@ import os
 from errno import EEXIST
 from tempfile import mkstemp
 
+import pytest
+
 from taichi._lib import core as _ti_core
 from taichi.lang import cc, cpu, cuda, gpu, metal, opengl, vulkan
 from taichi.lang.misc import is_arch_supported
@@ -164,52 +166,51 @@ def test(arch=None, exclude=None, require=None, **options):
     if len(arch) == 0:
         arch = archs_expected
     else:
-        arch = list(filter(lambda x: x in archs_expected, arch))
+        arch = [v for v in arch if v in archs_expected]
+
+    marks = []  # A list of pytest.marks to apply on the test function
+    if len(arch) == 0:
+        marks.append(pytest.mark.skip(reason='No supported archs'))
+    else:
+        arch_params_sets = [arch, *_test_features.values()]
+        # List of (arch, options) to parametrize the test function
+        parameters = []
+        for req_arch, *req_params in itertools.product(*arch_params_sets):
+            if (req_arch not in arch) or (req_arch in exclude):
+                continue
+
+            if not all(
+                    _ti_core.is_extension_supported(req_arch, e)
+                    for e in require):
+                continue
+
+            skip = False
+            current_options = copy.deepcopy(options)
+            for feature, param in zip(_test_features, req_params):
+                value = param.value
+                required_extensions = param.required_extensions
+                if current_options.get(feature, value) != value or any(
+                        not _ti_core.is_extension_supported(req_arch, e)
+                        for e in required_extensions):
+                    skip = True
+                else:
+                    # Fill in the missing feature
+                    current_options[feature] = value
+            if not skip:
+                parameters.append((req_arch, current_options))
+        if not parameters:
+            marks.append(pytest.mark.skip(reason='No supported archs'))
+        else:
+            marks.append(
+                pytest.mark.parametrize(
+                    "req_arch,req_options",
+                    parameters,
+                    ids=[f"arch={arch.name}" for arch, _ in parameters]))
 
     def decorator(foo):
-        @functools.wraps(foo)
-        def wrapped(*args, **kwargs):
-            if len(arch) == 0:
-                print('No supported arch found. Skipping.')
-                return
-
-            arch_params_sets = [arch, *_test_features.values()]
-            arch_params_combinations = list(
-                itertools.product(*arch_params_sets))
-
-            for arch_params in arch_params_combinations:
-                req_arch, req_params = arch_params[0], arch_params[1:]
-
-                if (req_arch not in arch) or (req_arch in exclude):
-                    continue
-
-                if not all(
-                        _ti_core.is_extension_supported(req_arch, e)
-                        for e in require):
-                    continue
-
-                skip = False
-                current_options = copy.deepcopy(options)
-                for feature, param in zip(_test_features, req_params):
-                    value = param.value
-                    required_extensions = param.required_extensions
-                    if current_options.get(feature, value) != value or any(
-                            not _ti_core.is_extension_supported(req_arch, e)
-                            for e in required_extensions):
-                        skip = True
-                    else:
-                        # Fill in the missing feature
-                        current_options[feature] = value
-                if skip:
-                    continue
-
-                ti.init(arch=req_arch,
-                        enable_fallback=False,
-                        **current_options)
-                foo(*args, **kwargs)
-                ti.reset()
-
-        return wrapped
+        for mark in reversed(marks):  # Apply the marks in reverse order
+            foo = mark(foo)
+        return foo
 
     return decorator
 

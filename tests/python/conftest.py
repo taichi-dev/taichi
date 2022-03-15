@@ -1,9 +1,10 @@
-import os
-
 import pytest
 
+import taichi as ti
 
-@pytest.fixture(autouse=True,
-                params=("arch=" + os.getenv("TI_WANTED_ARCHS", ""), ))
-def wanted_arch(request):
-    return request.param
+
+@pytest.fixture(autouse=True)
+def wanted_arch(req_arch, req_options):
+    ti.init(arch=req_arch, enable_fallback=False, **req_options)
+    yield
+    ti.reset()

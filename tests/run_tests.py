@@ -17,8 +17,25 @@ def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+        env_used_by_taichi_core = [
+            'HOME',
+            'XDG_CACHE_HOME',
+            'PYTEST_CURRENT_TEST',
+            'TI_BENCHMARK_OUTPUT_DIR',
+            'TI_ENABLE_CUDA',
+            'TI_ENABLE_METAL',
+            'TI_USE_METAL_SIMDGROUP',
+            'TI_ENABLE_OPENGL',
+        ]
+        env_used_by_taichi_core = {
+            e: os.getenv(e)
+            for e in env_used_by_taichi_core
+        }
         subprocess.check_call(f'./{cpp_test_filename}',
-                              env={'TI_LIB_DIR': ti_lib_dir},
+                              env={
+                                  'TI_LIB_DIR': ti_lib_dir,
+                                  **env_used_by_taichi_core
+                              },
                               cwd=build_dir)
     else:
         warnings.warn(

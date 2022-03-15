@@ -221,6 +221,7 @@ class Matrix(TaichiOperations):
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
+                    'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
                 )
         assert 0 <= args[0] < self.n, \
             f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
@@ -263,6 +264,16 @@ class Matrix(TaichiOperations):
     def _cal_slice(self, index, dim):
         start, stop, step = index.start or 0, index.stop or (
             self.n if dim == 0 else self.m), index.step or 1
+
+        def helper(x):
+            #  TODO(mzmzm): support variable in slice
+            if isinstance(x, expr.Expr):
+                raise TaichiCompilationError(
+                    "Taichi does not support variables in slice now, please use constant instead of it."
+                )
+            return x
+
+        start, stop, step = helper(start), helper(stop), helper(step)
         return [_ for _ in range(start, stop, step)]
 
     @taichi_scope
@@ -283,12 +294,6 @@ class Matrix(TaichiOperations):
                 i = [i]
             if not isinstance(j, list):
                 j = [j]
-
-            if self.local_tensor_proxy is None:
-                if isinstance(i[0], expr.Expr) or isinstance(j[0], expr.Expr):
-                    raise TaichiCompilationError(
-                        "Please turn on ti.init(..., dynamic_index=True) to support indexing with variables!"
-                    )
             if len(indices) == 1:
                 return Vector([self._subscript(a) for a in i])
             return Matrix([[self._subscript(a, b) for b in j] for a in i])

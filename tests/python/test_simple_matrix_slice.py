@@ -55,6 +55,14 @@ def test_no_dyn():
     with pytest.raises(
             ti.TaichiCompilationError,
             match=
-            "Please turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!"
+            'The 0-th index of a Matrix/Vector must be a compile-time constant '
+            "integer, got <class 'taichi.lang.expr.Expr'>.\n"
+            'This is because matrix operations will be \*\*unrolled\*\* at compile-time '
+            'for performance reason.\n'
+            'If you want to \*iterate through matrix elements\*, use a static range:\n'
+            '  for i in ti.static\(range\(3\)\):\n'
+            '    print\(i, "-th component is", vec\[i\]\)\n'
+            'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
+            'Or turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!'
     ):
         test_one_col_slice()

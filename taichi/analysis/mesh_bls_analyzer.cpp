@@ -50,7 +50,7 @@ void MeshBLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
     }
     if (idx->is<MeshRelationAccessStmt>()) {
       if (!caches_->access(snode, element_type, conv_type, flag,
-                          idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
+                           idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
         analysis_ok_ = false;
         break;
       }

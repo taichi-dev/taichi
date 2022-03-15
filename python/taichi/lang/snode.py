@@ -403,8 +403,8 @@ def activate(node, indices):
 def deactivate(node, indices):
     """Explicitly deactivate a cell of `node` at location `indices`.
 
-    After deactivation,  the Taichi runtime automatically recycles
-    and zero-fills memory of the deactivated cell.
+    After deactivation, the Taichi runtime automatically recycles and zero-fills
+    the memory of the deactivated cell.
 
     Args:
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.

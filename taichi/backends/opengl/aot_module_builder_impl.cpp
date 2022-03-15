@@ -40,12 +40,15 @@ class AotDataConverter {
     aot::CompiledTaichiKernel res{};
     res.tasks.reserve(in.tasks.size());
     for (const auto &t : in.tasks) {
-      res.tasks.push_back(visit(t));
+      res.tasks.push_back(
+          visit(t, in.used.buf_data, in.used.buf_args, in.used.buf_gtmp));
     }
     res.args_count = in.arg_count;
     res.rets_count = in.ret_count;
     res.args_buffer_size = in.args_buf_size;
     res.rets_buffer_size = in.ret_buf_size;
+    res.scalar_args.reserve(res.args_count);
+    res.arr_args.reserve(res.args_count);
     for (const auto &[arg_id, val] : in.scalar_args) {
       res.scalar_args[arg_id] = visit(val);
     }
@@ -57,14 +60,26 @@ class AotDataConverter {
     return res;
   }
 
-  aot::CompiledOffloadedTask visit(
-      const opengl::CompiledOffloadedTask &in) const {
+  aot::CompiledOffloadedTask visit(const opengl::CompiledOffloadedTask &in,
+                                   bool used_root_buf,
+                                   bool used_args_buf,
+                                   bool used_gtmp_buf) const {
     aot::CompiledOffloadedTask res{};
     res.type = offloaded_task_type_name(in.type);
     res.name = in.name;
     res.source_path = in.src;
     res.range_hint = in.range_hint;
     res.gpu_block_size = in.workgroup_size;
+    // TODO: update ret_buffer_bind_id after Rets is split out of Args.
+    if (used_root_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::Root, 0}, static_cast<int>(GLBufId::Root)});
+    if (used_args_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::Args, -1}, static_cast<int>(GLBufId::Args)});
+    if (used_gtmp_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::GlobalTmps, -1}, static_cast<int>(GLBufId::Gtmp)});
     return res;
   }
 

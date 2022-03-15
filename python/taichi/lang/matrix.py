@@ -9,7 +9,8 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError, TaichiCompilationError
+from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -294,25 +295,14 @@ class Matrix(TaichiOperations):
             if not isinstance(j, list):
                 j = [j]
 
-            if self.local_tensor_proxy is not None:
-                assert self.dynamic_index_stride is not None
-                if len(indices) == 1:
-                    return Vector([
-                        impl.make_tensor_element_expr(
-                            self.local_tensor_proxy, (a, ), (self.n, ),
-                            self.dynamic_index_stride) for a in i
-                    ])
-                return Matrix([[
-                    impl.make_tensor_element_expr(self.local_tensor_proxy,
-                                                  (a, b), (self.n, self.m),
-                                                  self.dynamic_index_stride)
-                    for b in j
-                ] for a in i])
-            if isinstance(i[0], expr.Expr) or isinstance(j[0], expr.Expr):
-                raise TaichiCompilationError(
-                    "Please turn on ti.init(..., dynamic_index=True) to support indexing with variables!"
-                )
-            return Matrix([[self(a, b) for b in j] for a in i])
+            if self.local_tensor_proxy is None:
+                if isinstance(i[0], expr.Expr) or isinstance(j[0], expr.Expr):
+                    raise TaichiCompilationError(
+                        "Please turn on ti.init(..., dynamic_index=True) to support indexing with variables!"
+                    )
+            if len(indices) == 1:
+                return Vector([self._subscript(a) for a in i])
+            return Matrix([[self._subscript(a, b) for b in j] for a in i])
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)

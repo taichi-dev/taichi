@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(dynamic_index=True)
+@test_utils.test()
 def test_slice():
     b = 3
 
@@ -23,6 +23,9 @@ def test_slice():
     m1 = foo2()
     assert (m1 == ti.Matrix([[1, 3], [4, 6]])).all() == 1
 
+
+@test_utils.test(dynamic_index=True)
+def test_dyn():
     @ti.kernel
     def test_one_row_slice() -> ti.types.matrix(2, 1, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])

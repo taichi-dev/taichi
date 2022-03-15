@@ -1,4 +1,5 @@
 import argparse
+import glob
 import math
 import os
 import runpy
@@ -9,7 +10,6 @@ import timeit
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
-import glob
 
 import numpy as np
 from colorama import Fore
@@ -160,8 +160,10 @@ class TaichiMain:
         dx = tile_size / width
         dy = tile_size / height
 
-        examples = ["sdf_renderer", "cornell_box", "rasterizer", "euler",
-                    "fractal", "mpm128", "pbf2d", "mass_spring_game"]
+        examples = [
+            "sdf_renderer", "cornell_box", "rasterizer", "euler", "fractal",
+            "mpm128", "pbf2d", "mass_spring_game"
+        ]
 
         def get_tile_from_mouse(mou_x, mou_y):
             """Find the image tile of which the mouse is hovering over."""
@@ -169,7 +171,7 @@ class TaichiMain:
             y = int(mou_y * height)
             rind = (y - bottom_margin) // (vertical_margin + tile_size)
             cind = (x - left_margin) // (vertical_margin + tile_size)
-            valid =  (0 <= rind < nrows and 0 <= cind < ncols)
+            valid = (0 <= rind < nrows and 0 <= cind < ncols)
             return valid, rind, cind
 
         def draw_bounding_box(rind, cind):
@@ -177,7 +179,8 @@ class TaichiMain:
             y0 = rind * (vertical_margin + tile_size) + bottom_margin
             x0 /= width
             y0 /= height
-            pts = [(x0, y0), (x0 + dx, y0), (x0 + dx, y0 + dy), (x0, y0 + dy), (x0, y0)]
+            pts = [(x0, y0), (x0 + dx, y0), (x0 + dx, y0 + dy), (x0, y0 + dy),
+                   (x0, y0)]
             for i in range(4):
                 gui.line(pts[i], pts[i + 1], radius=2, color=0x0000FF)
 
@@ -186,8 +189,10 @@ class TaichiMain:
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
             with open(script, "r") as f:
                 try:
-                    import rich.syntax, rich.console  # pylint: disable=C0415
-                    content = rich.syntax.Syntax.from_path(script, line_numbers=True)
+                    import rich.console
+                    import rich.syntax  # pylint: disable=C0415
+                    content = rich.syntax.Syntax.from_path(script,
+                                                           line_numbers=True)
                     console = rich.console.Console()
                     console.print(content)
                 except ImportError:

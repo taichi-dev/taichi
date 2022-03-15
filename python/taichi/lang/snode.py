@@ -334,9 +334,7 @@ def rescale_index(a, b, I):
 
     Args:
 
-        a, b (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`, \
-            :class:`~taichi.MatrixField`): Input taichi fields or snodes.
-
+        a, b (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`): Input taichi fields or snodes.
         I (Union[list, :class:`~taichi.Vector`]): grouped loop index.
 
     Returns:

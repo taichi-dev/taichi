@@ -31,6 +31,10 @@ def _test_cpp():
             e: os.getenv(e)
             for e in env_used_by_taichi_core
         }
+        env_used_by_taichi_core = {
+            k: v
+            for k, v in env_used_by_taichi_core.items() if v is not None
+        }
         subprocess.check_call(f'./{cpp_test_filename}',
                               env={
                                   'TI_LIB_DIR': ti_lib_dir,

@@ -184,30 +184,34 @@ def test(arch=None, exclude=None, require=None, **options):
                     for e in require):
                 continue
 
-            skip = False
             current_options = copy.deepcopy(options)
             for feature, param in zip(_test_features, req_params):
                 value = param.value
                 required_extensions = param.required_extensions
-                if current_options.get(feature, value) != value or any(
+                if current_options.setdefault(feature, value) != value or any(
                         not _ti_core.is_extension_supported(req_arch, e)
                         for e in required_extensions):
-                    skip = True
-                else:
-                    # Fill in the missing feature
-                    current_options[feature] = value
-            if not skip:
+                    break
+            else:  # no break occurs, required extensions are supported
                 parameters.append((req_arch, current_options))
+
         if not parameters:
-            marks.append(pytest.mark.skip(reason='No supported archs'))
+            marks.append(
+                pytest.mark.skip(
+                    reason='No all required extensions are supported'))
         else:
             marks.append(
                 pytest.mark.parametrize(
                     "req_arch,req_options",
                     parameters,
-                    ids=[f"arch={arch.name}" for arch, _ in parameters]))
+                    ids=[
+                        f"arch={arch.name}-{i}"
+                        if len(parameters) > 1 else f"arch={arch.name}"
+                        for i, (arch, _) in enumerate(parameters)
+                    ]))
 
     def decorator(foo):
+        foo.__ti_test__ = True
         for mark in reversed(marks):  # Apply the marks in reverse order
             foo = mark(foo)
         return foo

@@ -262,18 +262,7 @@ class Matrix(TaichiOperations):
 
     def _cal_slice(self, index, dim):
         start, stop, step = index.start or 0, index.stop or (
-            self.n if dim is 0 else self.m), index.step or 1
-
-        def helper(x):
-            if isinstance(x, expr.Expr):
-                if isinstance(x.ptr, int):
-                    return x.ptr
-                raise TaichiSyntaxError(
-                    "The element type of slice of Matrix/Vector index must be a compile-time constant integer!"
-                )
-            return x
-
-        start, stop, step = helper(start), helper(stop), helper(step)
+            self.n if dim == 0 else self.m), index.step or 1
         return [_ for _ in range(start, stop, step)]
 
     @taichi_scope

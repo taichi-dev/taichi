@@ -55,6 +55,7 @@ def check_version(cur_uuid):
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
             return response
+        return None
     except:
         pass
 

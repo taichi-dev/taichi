@@ -199,8 +199,8 @@ class TaichiMain:
             try:
                 import rich.console  # pylint: disable=C0415
                 import rich.syntax  # pylint: disable=C0415
-                content = rich.syntax.Syntax.from_path(
-                    script, line_numbers=True)
+                content = rich.syntax.Syntax.from_path(script,
+                                                       line_numbers=True)
                 console = rich.console.Console()
                 console.print(content)
             except ImportError:

@@ -904,6 +904,35 @@ def test_multiple_ib_deeper():
 
 
 @test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_deeper_non_scalar():
+    N = 10
+    x = ti.field(float, shape=N, needs_grad=True)
+    y = ti.field(float, shape=N, needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(N):
+            for i in range(j):
+                y[j] += x[j]
+            for i in range(3):
+                for ii in range(j):
+                    y[j] += x[j]
+            for i in range(3):
+                for ii in range(2):
+                    for iii in range(j):
+                        y[j] += x[j]
+
+    x.fill(1.0)
+    for i in range(N):
+        y.grad[i] = 1.0
+    compute_y()
+    compute_y.grad()
+    for i in range(N):
+        assert y[i] == i * 10.0
+        assert x.grad[i] == i * 10.0
+
+
+@test_utils.test(require=ti.extension.adstack)
 def test_multiple_ib_inner_mixed():
     x = ti.field(float, (), needs_grad=True)
     y = ti.field(float, (), needs_grad=True)

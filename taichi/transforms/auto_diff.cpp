@@ -81,7 +81,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   bool is_inside_loop_ = false;
 };
 
-// Remove the duplicates IBs, remove blocks who are others' children because
+// Remove the duplicated IBs, remove blocks who are others' children because
 // each block should only be processed once
 class DuplicateIndependentBlocksCleaner : public BasicStmtVisitor {
  public:

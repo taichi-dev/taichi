@@ -139,23 +139,25 @@ class TaichiMain:
     @register
     def gallery(self, argumets: list = sys.argv[2:]):
         """Use mouse to select and run taichi examples in an interactive gui."""
+        # set the spacing parameters in the gallery image
+        top_margin = 14
+        left_margin = 7
+        bottom_margin = 23
+        vertical_margin = 32
+        horizontal_margin = 11
+        tile_size = 128
+
         # load the gallery image
         image_source = utils.package_root + '/assets/**/ti_gallery.png'
         gallery_image_path = glob.glob(image_source, recursive=True)[0]
         gallery_image = ti.tools.imread(gallery_image_path)
+        gallery_image = gallery_image[:, :-top_margin]  # crop the top bar in image
         width, height = gallery_image.shape[:2]
 
         # create the gui, 2x4 tiles
         gui = ti.GUI("Taichi Gallery", res=(width, height))
         nrows = 2
         ncols = 4
-
-        # set the spacing parameters in the gallery image
-        left_margin = 7
-        bottom_margin = 23
-        vertical_margin = 32
-        horizontal_margin = 11
-        tile_size = 128
 
         # side length of a tile
         dx = tile_size / width
@@ -171,7 +173,7 @@ class TaichiMain:
             x = int(mou_x * width)
             y = int(mou_y * height)
             rind = (y - bottom_margin) // (vertical_margin + tile_size)
-            cind = (x - left_margin) // (vertical_margin + tile_size)
+            cind = (x - left_margin) // (horizontal_margin + tile_size)
             valid = (0 <= rind < nrows and 0 <= cind < ncols)
             return valid, rind, cind
 
@@ -188,31 +190,30 @@ class TaichiMain:
         def on_mouse_click_callback(example_name):
             examples_dir = TaichiMain._get_examples_dir()
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
-            with open(script, "r") as f:
-                try:
-                    import rich.console  # pylint: disable=C0415
-                    import rich.syntax  # pylint: disable=C0415
-                    content = rich.syntax.Syntax.from_path(script,
-                                                           line_numbers=True)
-                    console = rich.console.Console()
-                    console.print(content)
-                except ImportError:
-                    content = f.readlines()
-                    print(content)
+            try:
+                import rich.console  # pylint: disable=C0415
+                import rich.syntax  # pylint: disable=C0415
+                content = rich.syntax.Syntax.from_path(
+                    script, line_numbers=True)
+                console = rich.console.Console()
+                console.print(content)
+            except ImportError:
+                with open(script, "r") as f:
+                    shutil.copyfileobj(f, sys.stdout)
 
             self._exec_python_file(script)
 
         while gui.running:
             gui.set_image(gallery_image)
-            if gui.get_events(gui.MOTION):
-                mou_x, mou_y = gui.get_cursor_pos()
-                valid, rind, cind = get_tile_from_mouse(mou_x, mou_y)
-                if valid:
-                    draw_bounding_box(rind, cind)
-                    if gui.get_event(ti.GUI.PRESS, ti.GUI.LMB):
-                        gui.close()
-                        index = cind + rind * ncols
-                        on_mouse_click_callback(examples[index])
+            mou_x, mou_y = gui.get_cursor_pos()
+            gui.get_event(ti.GUI.PRESS)
+            valid, rind, cind = get_tile_from_mouse(mou_x, mou_y)
+            if valid:
+                draw_bounding_box(rind, cind)
+                if gui.is_pressed(ti.GUI.LMB):
+                    gui.close()
+                    index = cind + rind * ncols
+                    on_mouse_click_callback(examples[index])
 
             gui.show()
 

@@ -43,7 +43,7 @@ def check_version(cur_uuid):
         payload['python'] = 'cp310'
 
     payload['uuid'] = cur_uuid
-    if os.environ['TI_CI'] == '1':
+    if os.getenv('TI_CI') == '1':
         payload['type'] = 'CI'
     # We do not want request exceptions break users' usage of Taichi.
     try:
@@ -55,8 +55,8 @@ def check_version(cur_uuid):
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
             return response
-    except:
-        return None
+    except Exception e:
+        print(e)
 
 
 def write_version_info(response, cur_uuid, version_info_path, cur_date):
@@ -76,6 +76,7 @@ def write_version_info(response, cur_uuid, version_info_path, cur_date):
 
 def try_check_version():
     try:
+        print("startingingingignigningign")
         os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
         version_info_path = os.path.join(_ti_core.get_repo_dir(),
                                          'version_info')
@@ -99,6 +100,7 @@ def try_check_version():
 
 
 def start_version_check_thread():
+        print("startingingingignigningign")
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
         # We don't join this thread because we do not wish to block users.

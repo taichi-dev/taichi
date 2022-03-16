@@ -171,7 +171,7 @@ class TaichiMain:
         def valid_mouse_position(mou_x, mou_y):
             xmin = left_margin / width
             xmax = 1 - xmin
-            ymin = bottom_margin / height
+            ymin = 0
             ymax = 1 - top_margin / height
             return (xmin <= mou_x <= xmax) and (ymin <= mou_y <= ymax)
 
@@ -179,7 +179,7 @@ class TaichiMain:
             """Find the image tile that the mouse is hovering over."""
             x = int(mou_x * width)
             y = int(mou_y * height)
-            rind = (y - bottom_margin) // (row_spacing + tile_size)
+            rind = y // (row_spacing + tile_size)
             cind = (x - left_margin) // (col_spacing + tile_size)
             return rind, cind
 

@@ -33,17 +33,17 @@ The language has broad applications spanning real-time physical simulation, numb
 
 # Why Taichi?
 
-- Fast development
+- **Fast development**
    - Simple syntax is elegance: No barrier to entry for Python users.
    - Naturally integrated into the Python ecosystem, including NumPy and PyTorch.
    - Automatic parallelization and differentiation spare you the implementation efforts.
    - Develop fancy computer graphics programs in less than 99 lines of code!
-- High performance
+- **High performance**
    - Born to harness parallelism in GPUs and multi-core CPUs 
    - Compiled Python just-in-time to binary executable kernels.
    - Spatially sparse data structures: No wasted computation in empty space.
    - Quantized computation optimizes performance on mobile devices.
-- Universal deployment
+- **Universal deployment**
    - Supports multiple backends including x64 and ARM CPUs, CUDA, Vulkan, Metal, and OpenGL Compute Shaders.
    - Ahead-of-time compilation enables deployment on platforms without Python, including PCs, mobile devices, and even web browsers.
 

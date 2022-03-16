@@ -169,7 +169,7 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 
 ### Contact us
 
-You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, and we'll follow up. 
+You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, and we'll follow up.
 
 ### Follow us on social media
 
@@ -183,8 +183,3 @@ The Taichi programming language is powered by Taichi Graphics. The team is rapid
 
 - [Taichi Graphics](https://taichi.graphics/)
 - [Careers at Taichi](https://taichi.graphics/careers/)
-
-
-
-
-

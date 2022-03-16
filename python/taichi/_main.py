@@ -156,8 +156,6 @@ class TaichiMain:
 
         # create the gui, 2x4 tiles
         gui = ti.GUI("Taichi Gallery", res=(width, height))
-        nrows = 2
-        ncols = 4
 
         # side length of a tile
         dx = tile_size / width

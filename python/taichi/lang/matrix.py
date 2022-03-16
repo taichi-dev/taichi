@@ -22,9 +22,43 @@ from taichi.types.compound_types import CompoundType
 class Matrix(TaichiOperations):
     """The matrix class.
 
+    A matrix is a 2-D rectangular array with scalar entries, it's row-majored, and is
+    aligned continously. We recommend only use matrix with no more than 32 elements for
+    efficiency considerations.
+
+    Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
+
     Args:
         arr (Union[list, tuple, np.ndarray]): the initial values of a matrix.
-        dt (DataType): the element data type.
+        dt (:mod:`~taichi.types.primitive_types`): the element data type.
+        suppress_warning (bool): whether raise warning or not when the matrix contains more \
+            than 32 elements.
+
+    Example::
+
+        use a 2d list to initialize a matrix
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     n = 5
+        >>>     M = ti.Matrix([[0] * n for _ in range(n)], ti.i32)
+        >>>     print(M)  # a 5x5 matrix with integer elements
+
+        get the number of rows and columns via the `n`, `m` property:
+
+        >>> M = ti.Matrix([[0, 1], [2, 3], [4, 5]], ti.i32)
+        >>> M.n  # number of rows
+        3
+        >>> M.m  # number of cols
+        >>> 2
+
+        you can even initialize a matrix with an empty list:
+
+        >>> M = ti.Matrix([[], []], ti.i32)
+        >>> M.n
+        2
+        >>> M.m
+        0
     """
     _is_taichi_class = True
 
@@ -1050,15 +1084,24 @@ class Matrix(TaichiOperations):
 
 
 def Vector(arr, dt=None, **kwargs):
-    """Construct a `Vector` instance i.e. 1-D Matrix.
+    """Construct a vector from given array.
+
+    A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 
     Args:
-        arr (Union[list, tuple, np.ndarray): The initial values of the Vector.
-        dt (DataType, optional): The desired data type of the Vector.
+        arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
+        dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
     Returns:
-        :class:`~taichi.lang.matrix.Matrix`: A Vector instance (1-D :class:`~taichi.lang.matrix.Matrix`).
+        :class:`~taichi.Matrix`: A vector instance.
 
+    Example::
+        >>> u = ti.Vector([1, 2])
+        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
+        2 1
+        >>> v = ti.Vector([3, 4])
+        >>> u + v
+        [4 6]
     """
     return Matrix(arr, dt=dt, **kwargs)
 

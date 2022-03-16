@@ -18,29 +18,28 @@ class Struct(TaichiOperations):
     A struct is a dictionary-like data structure that stores members as
     (key, value) pairs. Valid data members of a struct can be scalars,
     matrices or other dictionary-like stuctures.
+
+    Args:
+        entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
+            keys and values for struct members.
+
+    Returns:
+        An instance of this struct.
+
+    Example::
+
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
+        >>> print(a.items)
+        dict_items([('v', [0. 0. 0.]), ('t', 1.0)])
+        >>>
+        >>> B = ti.Struct(v=vec3([0., 0., 0.]), t=1.0, A=a)
+        >>> print(B.items)
+        dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
     """
     _is_taichi_class = True
 
     def __init__(self, *args, **kwargs):
-        """
-        Args:
-            entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
-                keys and values for struct members.
-
-        Returns:
-            An instance of this struct.
-
-        Example::
-
-            >>> vec3 = ti.types.vector(3, ti.f32)
-            >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
-            >>> print(a.items)
-            dict_items([('v', [0. 0. 0.]), ('t', 1.0)])
-            >>>
-            >>> B = ti.Struct(v=vec3([0., 0., 0.]), t=1.0, A=a)
-            >>> print(B.items)
-            dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
-        """
         # converts lists to matrices and dicts to structs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
             self.entries = args[0]

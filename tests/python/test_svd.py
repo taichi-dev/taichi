@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -61,18 +62,16 @@ def _test_svd(dt, n):
                 assert sigma[None][i, j] == test_utils.approx(0)
 
 
-def test_svd():
-    for fp in [ti.f32, ti.f64]:
-        for d in [2, 3]:
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32)
+def test_svd_f32(dim):
+    _test_svd(ti.f32, dim)
 
-            @test_utils.test(
-                require=ti.extension.data64 if fp == ti.f64 else [],
-                default_fp=fp,
-                fast_math=False)
-            def wrapped():
-                _test_svd(fp, d)
 
-            wrapped()
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+def test_svd_f64(dim):
+    _test_svd(ti.f64, dim)
 
 
 @test_utils.test()

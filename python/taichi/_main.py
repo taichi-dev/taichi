@@ -196,6 +196,8 @@ class TaichiMain:
         def on_mouse_click_callback(example_name):
             examples_dir = TaichiMain._get_examples_dir()
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
+            print("Demo source code:")
+            print()
             try:
                 import rich.console  # pylint: disable=C0415
                 import rich.syntax  # pylint: disable=C0415

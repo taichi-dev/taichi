@@ -65,6 +65,12 @@ class ProgramImpl {
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
 
+  /**
+   * Dump Offline-cache data to disk
+   */
+  virtual void dump_cache_data_to_disk() {
+  }
+
   virtual Device *get_compute_device() {
     return nullptr;
   }

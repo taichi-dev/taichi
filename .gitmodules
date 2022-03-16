@@ -56,3 +56,6 @@
 [submodule "external/FP16"]
 	path = external/FP16
 	url = https://github.com/Maratyszcza/FP16
+[submodule "external/PicoSHA2"]
+	path = external/PicoSHA2
+	url = https://github.com/okdshin/PicoSHA2.git

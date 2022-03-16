@@ -78,7 +78,7 @@ The language has broad applications spanning real-time physical simulation, numb
 <!--TODO: Precise OS versions-->
 
 - Operating systems
-  - Windows<sup>[1](#win-note)</sup>
+  - Windows
   - Linux
   - macOS
 - Python: 3.6 ~ 3.9 (64-bit only)

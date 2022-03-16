@@ -33,21 +33,11 @@ The language has broad applications spanning real-time physical simulation, numb
 
 # Why Taichi?
 
-- **Fast development**
-   - Simple syntax is elegance: No barrier to entry for Python users.
-   - Naturally integrated into the Python ecosystem, including NumPy and PyTorch.
-   - Automatic parallelization and differentiation spare you the implementation efforts.
-   - Develop fancy computer graphics programs in less than 99 lines of code!
-- **High performance**
-   - Born to harness parallelism in GPUs and multi-core CPUs 
-   - Compiled Python just-in-time to binary executable kernels.
-   - Spatially sparse data structures: No wasted computation in empty space.
-   - Quantized computation optimizes performance on mobile devices.
-- **Universal deployment**
-   - Supports multiple backends including x64 and ARM CPUs, CUDA, Vulkan, Metal, and OpenGL Compute Shaders.
-   - Ahead-of-time compilation enables deployment on platforms without Python, including PCs, mobile devices, and even web browsers.
-
-And there are a lot more great features for you to discover: SNode (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields, a cross-platform, Vulkan-based 3D visualizer, [spatially sparse computation](https://docs.taichi.graphics/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental)...
+- Built around Python: Taichi shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, such as NumPy and PyTorch.
+- Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi.graphics/lang/articles/advanced/sparse)).
+- Performance: Through the `@ti.kernel` decorator, Taichi's JIT compiler automatically compiles your Python functions into efficient GPU or CPU machine code for parallel execution.
+- Portability: Write your code once and run it everywhere. Currently, Taichi supports most mainstream GPU APIs, such as CUDA and Vulkan.
+- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
 # Getting Started
 
@@ -76,7 +66,7 @@ Use Python's package installer **pip** to install Taichi:
 pip install taichi
 ```
 
-> *We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untest features. *
+*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features.*
 
 ```bash
 pip install -i https://test.pypi.org/simple/ taichi-nightly
@@ -84,20 +74,67 @@ pip install -i https://test.pypi.org/simple/ taichi-nightly
 
 ### Run your "Hello, world!"
 
-See [Hello,world!](https://docs.taichi.graphics/#hello-world).
+Here's how you can program a 2D fractal in Taichi:
+
+```py
+# python/taichi/examples/simulation/fractal.py
+
+import taichi as ti
+
+ti.init(arch=ti.gpu)
+
+n = 320
+pixels = ti.field(dtype=float, shape=(n * 2, n))
+
+
+@ti.func
+def complex_sqr(z):
+    return ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2])
+
+
+@ti.kernel
+def paint(t: float):
+    for i, j in pixels:  # Parallelized over all pixels
+        c = ti.Vector([-0.8, ti.cos(t) * 0.2])
+        z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
+        iterations = 0
+        while z.norm() < 20 and iterations < 50:
+            z = complex_sqr(z) + c
+            iterations += 1
+        pixels[i, j] = 1 - iterations * 0.02
+
+
+gui = ti.GUI("Julia Set", res=(n * 2, n))
+
+for i in range(1000000):
+    paint(i * 0.03)
+    gui.set_image(pixels)
+    gui.show()
+```
+
+If Taichi is properly installed, you should get the first animation 🎉!
+
+See [Hello,world!](https://docs.taichi.graphics) for more information.
 
 ### Build from source
 
 If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
 
-# Reference
-
 ### Documentation
 
-- [Release information](https://github.com/taichi-dev/taichi/releases)
 - [Technical documents](https://docs.taichi.graphics/)
 - [API Reference](https://docs.taichi.graphics/api/)
 - [Blog](https://docs.taichi.graphics/blog)
+
+# Contributing
+
+Kudos to all of our amazing contributors! Taichi thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
+
+<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
+
+*Contributor avatars are randomly shuffled.*
+
+# Reference
 
 ### Demos
 
@@ -121,17 +158,11 @@ If you wish to try our our experimental features or build Taichi for your own en
 
 If you use Taichi in your research, please cite the corresponding papers:
 
-- [(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo)|[[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt)|[[Code]](https://github.com/taichi-dev/taichi)
-- [(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE)|[[BibTex]|[[Code]](https://github.com/yuanming-hu/difftaichi)
-- [(SIGGRAPH 2021) QuanTaichi: A Compiler for Quantized Simulations](https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf) [[Video]|[[BibTex]|[[Code]](https://github.com/taichi-dev/quantaichi)
+- [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
+- [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
+- [**(SIGGRAPH 2021) QuanTaichi: A Compiler for Quantized Simulations**](https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf) [[Video]](https://www.youtube.com/watch?v=0jdrAQOxJlY) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/quantaichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/quantaichi)
 
-# Contributing
 
-Kudos to all of our amazing contributors! Taichi thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
-
-<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
-
-*Contributor avatars are randomly shuffled.*
 
 # Community
 
@@ -148,16 +179,3 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 ### Contact us
 
 You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, and we'll follow up.
-
-### Follow us on social media
-
-- [Twitter](https://twitter.com/TaichiGraphics)
-- [LinkedIn](https://www.linkedin.com/company/taichi-graphics/)
-- [YouTube](https://www.youtube.com/channel/UCu-k1Wglo9Ll_o2j5Bxl4cw/featured)
-
-### Join us
-
-The Taichi programming language is powered by Taichi Graphics. The team is rapidly expanding. Find us from the following channels to get a taste of our *vibe*. If you feel you can fit in, welcome to join us!:-)
-
-- [Taichi Graphics](https://taichi.graphics/)
-- [Careers at Taichi](https://taichi.graphics/careers/)

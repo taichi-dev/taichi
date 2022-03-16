@@ -66,12 +66,15 @@ class TI_DLL_EXPORT Module {
   // Module metadata
   virtual Arch arch() const = 0;
   virtual uint64_t version() const = 0;
-  virtual std::unique_ptr<Kernel> get_kernel(const std::string &name) = 0;
-  virtual std::unique_ptr<Field> get_field(const std::string &name) = 0;
+  Kernel *get_kernel(const std::string &name);
+  Field *get_field(const std::string &name);
   virtual size_t get_root_size() const = 0;
 
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
+
+ private:
+  std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
 };
 
 // Only responsible for reporting device capabilities

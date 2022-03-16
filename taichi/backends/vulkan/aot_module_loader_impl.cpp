@@ -59,11 +59,7 @@ class AotModuleImpl : public aot::Module {
     }
   }
 
-  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override {
-    return make_new_kernel(name);
-  }
-
-  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
+  std::unique_ptr<aot::Field> get_field(const std::string &name) {
     aot::CompiledFieldData field;
     if (!get_field_data_by_name(name, field)) {
       TI_DEBUG("Failed to load field {}", name);

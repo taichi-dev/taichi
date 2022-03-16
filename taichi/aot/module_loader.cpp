@@ -23,7 +23,7 @@ std::unique_ptr<Module> Module::load(const std::string &path,
   }
 }
 
-Kernel* Module::get_kernel(const std::string &name) {
+Kernel *Module::get_kernel(const std::string &name) {
   auto itr = loaded_kernels_.find(name);
   if (itr != loaded_kernels_.end()) {
     return itr->second.get();

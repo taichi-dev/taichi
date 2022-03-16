@@ -4,6 +4,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 
+#include <typeinfo>
+#include <algorithm>
+
 TLANG_NAMESPACE_BEGIN
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
@@ -78,6 +81,51 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   bool is_inside_loop_ = false;
 };
 
+// Remove the duplicated IBs, remove blocks who are others' children because
+// each block should only be processed once
+class DuplicateIndependentBlocksCleaner : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void check_children_ib(Block *target_block) {
+    // Remove the block if it is the child of the block being visiting
+    if (independent_blocks_cleaned_.find(target_block) !=
+        independent_blocks_cleaned_.end()) {
+      independent_blocks_cleaned_.erase(target_block);
+    }
+  }
+
+  void visit(StructForStmt *stmt) override {
+    check_children_ib(stmt->body.get());
+    stmt->body->accept(this);
+  }
+  void visit(RangeForStmt *stmt) override {
+    check_children_ib(stmt->body.get());
+    stmt->body->accept(this);
+  }
+
+  static std::set<Block *> run(
+      const std::vector<std::pair<int, Block *>> &raw_IBs) {
+    DuplicateIndependentBlocksCleaner cleaner;
+    // Remove duplicate IBs
+    for (auto const &item : raw_IBs) {
+      cleaner.independent_blocks_cleaned_.insert(item.second);
+    }
+    // No clean is needed if only one IB exists
+    if (cleaner.independent_blocks_cleaned_.size() > 1) {
+      // Check from the block with smallest depth, ensure no duplicate visit
+      // happens
+      for (const auto &block : cleaner.independent_blocks_cleaned_) {
+        block->accept(&cleaner);
+      }
+    }
+    return cleaner.independent_blocks_cleaned_;
+  }
+
+ private:
+  std::set<Block *> independent_blocks_cleaned_;
+};
+
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
 // Independent Block (IB): blocks (i.e. loop bodies) whose iterations are
@@ -120,9 +168,21 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
   void visit_loop_body(Block *block) {
     if (is_independent_block(block)) {
       current_ib_ = block;
+      auto old_current_ib_ = current_ib_;
       block->accept(this);
+      // Lower level block is not an IB, therefore store the current block as an
+      // IB
+      if (old_current_ib_ == current_ib_) {
+        independent_blocks_.push_back({depth_, current_ib_});
+      }
     } else {
-      // No need to dive further
+      if (depth_ <= 1) {
+        TI_ASSERT(depth_ == 1);
+        // The top level block is already not an IB, store it
+        independent_blocks_.push_back({depth_ - 1, block});
+      } else {
+        independent_blocks_.push_back({depth_ - 1, block->parent_block()});
+      }
     }
   }
 
@@ -132,9 +192,6 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     current_ib_ = stmt->body.get();
     visit_loop_body(stmt->body.get());
     depth_--;
-    if (depth_ == 0) {
-      independent_blocks_.push_back(current_ib_);
-    }
   }
 
   void visit(RangeForStmt *stmt) override {
@@ -144,12 +201,9 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     depth_++;
     visit_loop_body(stmt->body.get());
     depth_--;
-    if (depth_ == 0) {
-      independent_blocks_.push_back(current_ib_);
-    }
   }
 
-  static std::vector<Block *> run(IRNode *root) {
+  static std::set<Block *> run(IRNode *root) {
     IdentifyIndependentBlocks pass;
     Block *block = root->as<Block>();
     bool has_for = false;
@@ -160,16 +214,23 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     }
     if (!has_for) {
       // The whole block is an IB
-      pass.independent_blocks_.push_back(block);
+      pass.independent_blocks_.push_back({0, block});
     } else {
       root->accept(&pass);
     }
+    // Sort the IBs by their depth from shallow to deep
+    std::sort(pass.independent_blocks_.begin(), pass.independent_blocks_.end(),
+              [](const std::pair<int, Block *> &a,
+                 const std::pair<int, Block *> &b) -> bool {
+                return a.first < b.first;
+              });
+
     TI_ASSERT(!pass.independent_blocks_.empty());
-    return pass.independent_blocks_;
+    return DuplicateIndependentBlocksCleaner::run(pass.independent_blocks_);
   }
 
  private:
-  std::vector<Block *> independent_blocks_;
+  std::vector<std::pair<int, Block *>> independent_blocks_;
   int depth_{0};
   Block *current_ib_{nullptr};
 };
@@ -393,7 +454,7 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(const std::vector<Block *> &IB) : loop_depth_(0), ib_(IB) {
+  ReverseOuterLoops(const std::set<Block *> &IB) : loop_depth_(0), ib_(IB) {
   }
 
   bool is_ib(Block *block) const {
@@ -418,10 +479,10 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   }
 
   int loop_depth_;
-  std::vector<Block *> ib_;
+  std::set<Block *> ib_;
 
  public:
-  static void run(IRNode *root, const std::vector<Block *> &IB) {
+  static void run(IRNode *root, const std::set<Block *> &IB) {
     ReverseOuterLoops pass(IB);
     root->accept(&pass);
   }

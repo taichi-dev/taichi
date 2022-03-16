@@ -214,16 +214,18 @@ class TaichiMain:
         while gui.running:
             gui.set_image(gallery_image)
             mou_x, mou_y = gui.get_cursor_pos()
+            gui.get_event(ti.GUI.PRESS)
             if valid_mouse_position(mou_x, mou_y):
                 rind, cind = get_tile_from_mouse(mou_x, mou_y)
                 draw_bounding_box(rind, cind)
-                gui.get_event(ti.GUI.PRESS)
                 if gui.is_pressed(ti.GUI.LMB):
                     gui.close()
                     index = cind + rind * ncols
-                    on_mouse_click_callback(examples[index])
+                    break
 
             gui.show()
+
+        on_mouse_click_callback(examples[index])
 
     @register
     def example(self, arguments: list = sys.argv[2:]):

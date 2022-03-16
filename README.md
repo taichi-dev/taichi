@@ -33,43 +33,21 @@ The language has broad applications spanning real-time physical simulation, numb
 
 # Why Taichi?
 
-<details>
-  <summary>Develop elegantly</summary>
-  <ul>
-    <li>Simple syntax is elegance: No barrier to entry for Python users.</li>
-    <li>Naturally integrated into the Python ecosystem, including NumPy and PyTorch.</li>
-    <li>Automatic parallelization and differentiation spare you the implementation efforts. </li>
-    <li>Develop fancy computer graphics programs in less than 99 lines of code!</li>
-  </ul>
-</details>
+- Fast development
+   - Simple syntax is elegance: No barrier to entry for Python users.
+   - Naturally integrated into the Python ecosystem, including NumPy and PyTorch.
+   - Automatic parallelization and differentiation spare you the implementation efforts.
+   - Develop fancy computer graphics programs in less than 99 lines of code!
+- High performance
+   - Born to harness parallelism in GPUs and multi-core CPUs 
+   - Compiled Python just-in-time to binary executable kernels.
+   - Spatially sparse data structures: No wasted computation in empty space.
+   - Quantized computation optimizes performance on mobile devices.
+- Universal deployment
+   - Supports multiple backends including x64 and ARM CPUs, CUDA, Vulkan, Metal, and OpenGL Compute Shaders.
+   - Ahead-of-time compilation enables deployment on platforms without Python, including PCs, mobile devices, and even web browsers.
 
-<details>
-  <summary>Run rapidly</summary>
-  <ul>
-    <li>Born to harness parallelism in GPUs and multi-core CPUs</li>
-    <li>Compiled Python just-in-time to binary executable kernels.</li>
-    <li>Spatially sparse data structures: No wasted computation in empty space.</li>
-    <li>Quantized computation optimizes performance on mobile devices.</li>
-  </ul>
-</details>
-
-<details>
-  <summary>Deploy universally</summary>
-  <ul>
-    <li>Supports multiple backends including x64 and ARM CPUs, CUDA, Vulkan, Metal, and OpenGL Compute Shaders.</li>
-    <li>Ahead-of-time compilation enables deployment on platforms without Python, including PCs, mobile devices, and even web browsers.</li>
-  </ul>
-</details>
-
-<details>
-  <summary>Openness from heart</summary>
-  <ul>
-    <li>With ~200 GitHub contributors from around the globe, Taichi thrives through open-source and would continue fostering its community in return.</li>
-    <li>Born from MIT, Taichi has a goal to solve the most head-scratching computer graphics and HPC issues not only for academia but also for industries. </li>
-  </ul>
-</details>
-
->  *And there are a lot more great features for you to discover: SNode (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields, a cross-platform, Vulkan-based 3D visualizer, [spatially sparse computation](https://docs.taichi.graphics/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental)...*
+And there are a lot more great features for you to discover: SNode (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields, a cross-platform, Vulkan-based 3D visualizer, [spatially sparse computation](https://docs.taichi.graphics/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental)...
 
 # Getting Started
 

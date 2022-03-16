@@ -99,7 +99,6 @@ def try_check_version():
 
 
 def start_version_check_thread():
-        print("startingingingignigningign")
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
         # We don't join this thread because we do not wish to block users.

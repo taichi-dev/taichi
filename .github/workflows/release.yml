@@ -241,6 +241,7 @@ jobs:
         run: .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: 'cpu'
+          TI_CI: 1
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)
@@ -295,6 +296,7 @@ jobs:
           TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PYTHON: ${{ matrix.python }}
           GPU_TEST: ON
+          TI_CI: 1
 
   build_and_test_macos_1014:
     name: Build and Upload (macos 1014)
@@ -345,6 +347,7 @@ jobs:
         env:
           TI_WANTED_ARCHS: 'cpu'
           PYTHON: ${{ matrix.python }}
+          TI_CI: 1
 
   build_and_test_windows:
     name: Build and Upload (Windows only)
@@ -401,6 +404,7 @@ jobs:
           python tests/run_tests.py -vr2 -t2
         env:
           TI_SKIP_VERSION_CHECK: ON
+          TI_CI: 1
 
   upload_to_pypi:
     name: Upload release to PyPI

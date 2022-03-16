@@ -131,14 +131,6 @@ void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   }
 }
 
-LlvmProgramImpl::~LlvmProgramImpl() {
-  if (config->offline_cache && this->supports_offline_cache()) {
-    LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
-    writer.set_data(std::move(cache_data_));
-    writer.dump();
-  }
-}
-
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
                                       OffloadedStmt *offloaded) {
   bool needs_cache = false;
@@ -727,6 +719,14 @@ void LlvmProgramImpl::cache_kernel(
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
   kernel_cache.offloaded_task_name_list = offloaded_task_name_list;
+}
+
+void LlvmProgramImpl::dump_cache_data_to_disk() {
+  if (config->offline_cache && this->supports_offline_cache()) {
+    LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
+    writer.set_data(std::move(cache_data_));
+    writer.dump();
+  }
 }
 
 }  // namespace lang

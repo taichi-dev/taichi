@@ -38,7 +38,6 @@ class CpuDevice;
 class LlvmProgramImpl : public ProgramImpl {
  public:
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
-  ~LlvmProgramImpl() override;
 
   void initialize_host();
 
@@ -172,6 +171,8 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
+
+  void dump_cache_data_to_disk() override;
 
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};

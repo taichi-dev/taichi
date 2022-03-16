@@ -25,7 +25,7 @@ class KernelTemplate:
                 key_p += '=' + ky + ','
                 return key_p
         raise RuntimeError('Arg type must be of type int/float/boolean' +
-                           'or taichi field. Type ' + str(type(v)) +
+                           ' or taichi field. Type ' + str(type(v)) +
                            ' is not supported')
 
     def instantiate(self, **kwargs):

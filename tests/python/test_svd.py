@@ -63,13 +63,15 @@ def _test_svd(dt, n):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@test_utils.test(default_fp=ti.f32)
+@test_utils.test(default_fp=ti.f32, fast_math=False)
 def test_svd_f32(dim):
     _test_svd(ti.f32, dim)
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False)
 def test_svd_f64(dim):
     _test_svd(ti.f64, dim)
 

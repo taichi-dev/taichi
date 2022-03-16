@@ -209,11 +209,11 @@ def test(arch=None, exclude=None, require=None, **options):
                         for i, (arch, _) in enumerate(parameters)
                     ]))
 
-    def decorator(foo):
-        foo.__ti_test__ = True
+    def decorator(func):
+        func.__ti_test__ = True  # Mark the function as a taichi test
         for mark in reversed(marks):  # Apply the marks in reverse order
-            foo = mark(foo)
-        return foo
+            func = mark(func)
+        return func
 
     return decorator
 

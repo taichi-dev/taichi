@@ -19,4 +19,4 @@ def pytest_generate_tests(metafunc):
         # For test functions not wrapped with @test_utils.test(),
         # fill with empty values to avoid undefined fixtures
         metafunc.parametrize('req_arch,req_options', [(None, None)],
-                             ids=[os.getenv('TI_WANTED_ARCHS', '')])
+                             ids=['none'])

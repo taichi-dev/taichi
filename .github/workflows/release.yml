@@ -125,6 +125,71 @@ jobs:
         run: |
           docker rm taichi_build taichi_test -f
 
+  build_and_test_manylinux2014:
+    name: Build and Upload (manylinux2014)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [self-hosted, cuda, cn, release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-manylinux-${{ github.sha }}
+          restore-keys: |
+            sccache-manylinux-
+
+      - name: Build
+        run: |
+          mkdir -m777 shared
+          docker create --user dev --name taichi_build --gpus all \
+            -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
+          docker start -a taichi_build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_BUILD: ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          PROJECT_NAME: ${{ matrix.name }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: shared/dist/*.whl
+          retention-days: 20
+
+      - name: Test
+        run: |
+          docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
+            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp shared/dist/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp tests/ taichi_test:/home/dev/
+          docker start -a taichi_test
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_TEST: ON
+          TI_WANTED_ARCHS: "cuda,cpu"
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
+
   build_and_test_mac:
     name: Build and Upload (macOS only)
     needs: matrix_prep
@@ -339,7 +404,7 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs: [build_and_test_linux, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
+    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

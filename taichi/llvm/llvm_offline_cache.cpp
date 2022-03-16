@@ -5,7 +5,8 @@
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/IR/Module.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
@@ -84,4 +85,5 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

@@ -4,7 +4,9 @@
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/io.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+
 struct LlvmOfflineCache {
   struct KernelCacheData {
     std::string kernel_key;
@@ -63,4 +65,5 @@ class LlvmOfflineCacheFileWriter {
   bool mangled_{false};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

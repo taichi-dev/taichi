@@ -151,7 +151,8 @@ class TaichiMain:
         image_source = utils.package_root + '/assets/**/ti_gallery.png'
         gallery_image_path = glob.glob(image_source, recursive=True)[0]
         gallery_image = ti.tools.imread(gallery_image_path)
-        gallery_image = gallery_image[:, :-top_margin]  # crop the top bar in image
+        gallery_image = gallery_image[:, :
+                                      -top_margin]  # crop the top bar in image
         width, height = gallery_image.shape[:2]
 
         # create the gui, 2x4 tiles
@@ -193,8 +194,8 @@ class TaichiMain:
             try:
                 import rich.console  # pylint: disable=C0415
                 import rich.syntax  # pylint: disable=C0415
-                content = rich.syntax.Syntax.from_path(
-                    script, line_numbers=True)
+                content = rich.syntax.Syntax.from_path(script,
+                                                       line_numbers=True)
                 console = rich.console.Console()
                 console.print(content)
             except ImportError:

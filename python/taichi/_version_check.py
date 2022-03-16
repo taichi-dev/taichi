@@ -55,8 +55,8 @@ def check_version(cur_uuid):
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
             return response
-    except Exception e:
-        print(e)
+    except:
+        pass
 
 
 def write_version_info(response, cur_uuid, version_info_path, cur_date):
@@ -76,7 +76,6 @@ def write_version_info(response, cur_uuid, version_info_path, cur_date):
 
 def try_check_version():
     try:
-        print("startingingingignigningign")
         os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
         version_info_path = os.path.join(_ti_core.get_repo_dir(),
                                          'version_info')

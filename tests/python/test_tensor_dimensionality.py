@@ -1,9 +1,12 @@
+import pytest
+
 import taichi as ti
 from tests import test_utils
 
 
+@pytest.mark.parametrize("d", range(2, ti._lib.core.get_max_num_indices() + 1))
 @test_utils.test()
-def _test_dimensionality(d):
+def test_dimensionality(d):
     x = ti.Vector.field(2, dtype=ti.i32, shape=(2, ) * d)
 
     @ti.kernel
@@ -25,8 +28,3 @@ def _test_dimensionality(d):
         for j in range(d):
             indices.append(i // (2**j) % 2)
         assert x.__getitem__(tuple(indices))[0] == sum(indices) * 3
-
-
-def test_dimensionality():
-    for i in range(2, ti._lib.core.get_max_num_indices() + 1):
-        _test_dimensionality(i)

@@ -54,6 +54,30 @@ def mp4_to_gif(input_fn, output_fn, framerate):
 
 
 class VideoManager:
+    """Utility class for exporting results to `mp4` and `gif` formats.
+    This class relies on `ffmpeg`.
+
+    Args:
+        output_dir (str): directory to save the frames.
+        width, height (int): resolution of the video.
+        post_processor (object): any object that implements the `process(img)` method, which accepts
+            an image as a numpy.ndarray and returns the process image.
+        framerate (int): frame rate of the video.
+        automatic_build (bool): automatically generate the resulting video or not.
+
+    Example::
+
+        >>> video_manager = ti.tools.VideoManager(output_dir="./output", framerate=24, automatic_build=False)
+        >>> for i in range(50):
+        >>>     render()
+        >>>     img = pixels.to_numpy()
+        >>>     video_manager.write_frame(img)
+        >>>
+        >>> video_manager.make_video(gif=True, mp4=True)
+
+    Returns:
+        An instance of :class:`taichi.tools.VideoManager` class.
+    """
     def __init__(self,
                  output_dir,
                  width=None,

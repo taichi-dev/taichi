@@ -68,7 +68,7 @@ build() {
 setup_sccache
 setup_python
 build
-cat "$SCCACHE_ERROR_LOG"
+cat "$SCCACHE_ERROR_LOG" || true
 NUM_WHL=$(ls dist/*.whl | wc -l)
 if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi
 

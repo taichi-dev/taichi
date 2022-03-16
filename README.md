@@ -120,7 +120,7 @@ See [Hello,world!](https://docs.taichi.graphics) for more information.
 
 If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
 
-### Documentation
+# Documentation
 
 - [Technical documents](https://docs.taichi.graphics/)
 - [API Reference](https://docs.taichi.graphics/api/)

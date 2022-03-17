@@ -4,10 +4,13 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/visitors.h"
-#include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
+
+static_assert(
+    sizeof(real) == sizeof(float32),
+    "Please build the taichi compiler with single precision (TI_USE_DOUBLE=0)");
 
 // "Type" here does not include vector width
 // Var lookup and Type inference

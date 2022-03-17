@@ -78,6 +78,32 @@ def test_aot_field_range_hint():
             assert range_hint == '64'
 
 
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
+def test_aot_bind_id():
+    density = ti.field(dtype=ti.f32, shape=(8, 8))
+    density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
+
+    @ti.kernel
+    def init(x: ti.f32, density1: ti.any_arr(field_dim=2, element_shape=())):
+        for i, j in density1:
+            density[i, j] = x
+            density1[i, j] = x + 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m.add_kernel(init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            buffer_binds = res['aot_data']['kernels']['init']['tasks'][0][
+                'buffer_binds']
+            for buffer_bind in buffer_binds:
+                if buffer_bind['buffer']['type'] == 0:  # Root
+                    assert buffer_bind['binding'] != -1
+                elif buffer_bind['buffer']['type'] == 2:  # Rets
+                    assert buffer_bind['binding'] != -1
+
+
 @test_utils.test(arch=ti.opengl)
 def test_aot_ndarray_range_hint():
     density = ti.ndarray(dtype=ti.f32, shape=(8, 8))

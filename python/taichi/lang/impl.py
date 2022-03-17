@@ -372,6 +372,21 @@ def static_print(*args, __p=print, **kwargs):
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
+    """Throw AssertionError when `cond` is False.
+    The bool value in `cond` must can be determined at compile time.
+
+    Args:
+        cond (bool): an expression with a bool value.
+        msg (str): assertion message.
+
+    Example::
+
+        >>> year = 2001
+        >>> @ti.kernel
+        >>> def test():
+        >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
+        AssertionError: the year must be a lunar year
+    """
     if msg is not None:
         assert cond, msg
     else:
@@ -494,7 +509,7 @@ def create_field_member(dtype, name):
 
 @python_scope
 def field(dtype, shape=None, name="", offset=None, needs_grad=False):
-    """Defines a Taichi field
+    """Defines a Taichi field.
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
     the complexity of how its underlying :class:`~taichi.lang.snode.SNode` are
@@ -505,13 +520,14 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     Args:
         dtype (DataType): data type of the field.
-        shape (Union[int, tuple[int]], optional): shape of the field
-        name (str, optional): name of the field
-        offset (Union[int, tuple[int]], optional): offset of the field domain
+        shape (Union[int, tuple[int]], optional): shape of the field.
+        name (str, optional): name of the field.
+        offset (Union[int, tuple[int]], optional): offset of the field domain.
         needs_grad (bool, optional): whether this field participates in autodiff
             and thus needs an adjoint field to store the gradients.
 
-    Example:
+    Example::
+
         The code below shows how a Taichi field can be declared and defined::
 
             >>> x1 = ti.field(ti.f32, shape=(16, 8))
@@ -685,28 +701,46 @@ def ti_float(_var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
-    """Fill the input field with zero.
+    """Return an array of zeros with the same shape and type as the input. It's also a scalar
+    if the input is a scalar.
 
     Args:
-        x (DataType): The input field to fill.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): The input.
 
     Returns:
-        DataType: The output field, which keeps the shape but filled with zero.
+        A new copy of the input but filled with zeros.
 
+    Example::
+
+        >>> x = ti.Vector([1, 1])
+        >>> @ti.kernel
+        >>> def test():
+        >>>     y = ti.zero(x)
+        >>>     print(y)
+        [0, 0]
     """
     return x * 0
 
 
 @taichi_scope
 def one(x):
-    """Fill the input field with one.
+    """Return an array of ones with the same shape and type as the input. It's also a scalar
+    if the input is a scalar.
 
     Args:
-        x (DataType): The input field to fill.
+        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): The input.
 
     Returns:
-        DataType: The output field, which keeps the shape but filled with one.
+        A new copy of the input but filled with ones.
 
+    Example::
+
+        >>> x = ti.Vector([0, 0])
+        >>> @ti.kernel
+        >>> def test():
+        >>>     y = ti.one(x)
+        >>>     print(y)
+        [1, 1]
     """
     return zero(x) + 1
 
@@ -730,7 +764,7 @@ def static(x, *xs):
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is
-    in many ways similar to ``constexpr`` in C++11.
+    in many ways similar to ``constexpr`` in C++.
 
     See also https://docs.taichi.graphics/lang/articles/advanced/meta.
 
@@ -741,14 +775,16 @@ def static(x, *xs):
     Example:
         The most common usage of `static()` is for compile-time evaluation::
 
+            >>> cond = False
+            >>>
             >>> @ti.kernel
             >>> def run():
-            >>>     if ti.static(FOO):
+            >>>     if ti.static(cond):
             >>>         do_a()
             >>>     else:
             >>>         do_b()
 
-        Depending on the value of ``FOO``, ``run()`` will be directly compiled
+        Depending on the value of ``cond``, ``run()`` will be directly compiled
         into either ``do_a()`` or ``do_b()``. Thus there won't be a runtime
         condition check.
 
@@ -759,7 +795,7 @@ def static(x, *xs):
             >>>     for i in ti.static(range(3)):
             >>>         print(i)
             >>>
-            >>> # The above is equivalent to:
+            >>> # The above will be unrolled to:
             >>> @ti.kernel
             >>> def run():
             >>>     print(0)
@@ -786,15 +822,24 @@ def static(x, *xs):
 
 @taichi_scope
 def grouped(x):
-    """Groups a list of independent loop indices into a :func:`~taichi.lang.matrix.Vector`.
+    """Groups the indices in the iterator returned by `ndrange()` into a 1-D vector.
+
+    This is often used when you want to iterate over all indices returned by `ndrange()`
+    in one `for` loop and a single index.
 
     Args:
-        x (Any): does the grouping only if `x` is a :class:`~taichi.lang.ndrange`.
+        x (:func:`~taichi.ndrange`): an iterator object returned by `ti.ndrange`.
 
     Example::
+        >>> # without ti.grouped
+        >>> for I in ti.ndrange(2, 3):
+        >>>     print(I)
+        prints 0, 1, 2, 3, 4, 5
 
-        >>> for I in ti.grouped(ndrange(8, 16)):
-        >>>     print(I[0] + I[1])
+        >>> # with ti.grouped
+        >>> for I in ti.grouped(ndrange(2, 3)):
+        >>>     print(I)
+        prints [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]
     """
     if isinstance(x, _Ndrange):
         return x.grouped()

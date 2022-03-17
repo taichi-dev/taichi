@@ -15,6 +15,9 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/MapVector.h"
+
 namespace taichi {
 namespace lang {
 
@@ -98,9 +101,12 @@ class Identifier {
   }
 };
 
+using stmt_vector = llvm::SmallVector<pStmt, 8>;
+// using stmt_vector = std::vector<pStmt>;
+
 class VecStatement {
  public:
-  std::vector<pStmt> stmts;
+  stmt_vector stmts;
 
   VecStatement() {
   }
@@ -113,7 +119,7 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
-  VecStatement(std::vector<pStmt> &&other_stmts) {
+  VecStatement(stmt_vector &&other_stmts) {
     stmts = std::move(other_stmts);
   }
 
@@ -586,7 +592,7 @@ class Stmt : public IRNode {
 class Block : public IRNode {
  public:
   Stmt *parent_stmt;
-  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
+  stmt_vector statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
 
@@ -604,16 +610,22 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
+  stmt_vector::iterator locate(int location);
+  stmt_vector::iterator find(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
+  void erase_range(stmt_vector::iterator begin, stmt_vector::iterator end);
+  void erase(std::unordered_set<Stmt *> stmts);
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   // Returns stmt.get()
   Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+  Stmt *insert_at(std::unique_ptr<Stmt> &&stmt, stmt_vector::iterator location);
 
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
+  Stmt *insert_at(VecStatement &&stmt, stmt_vector::iterator location);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);

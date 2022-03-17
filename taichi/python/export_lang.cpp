@@ -13,15 +13,13 @@
 #include "pybind11/eigen.h"
 #include "pybind11/numpy.h"
 
-#include "taichi/ir/frontend.h"
+#include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/program/ndarray.h"
-#include "taichi/common/interface.h"
 #include "taichi/python/export.h"
-#include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
@@ -217,7 +215,10 @@ void export_lang(py::module &m) {
       .def_readwrite("experimental_auto_mesh_local",
                      &CompileConfig::experimental_auto_mesh_local)
       .def_readwrite("auto_mesh_local_default_occupacy",
-                     &CompileConfig::auto_mesh_local_default_occupacy);
+                     &CompileConfig::auto_mesh_local_default_occupacy)
+      .def_readwrite("offline_cache", &CompileConfig::offline_cache)
+      .def_readwrite("offline_cache_file_path",
+                     &CompileConfig::offline_cache_file_path);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -268,8 +269,8 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_true", &ASTBuilder::begin_frontend_if_true)
       .def("pop_scope", &ASTBuilder::pop_scope)
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
-      .def("insert_deactivate", Deactivate)
-      .def("insert_activate", Activate)
+      .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
+      .def("insert_activate", &ASTBuilder::insert_snode_activate)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
@@ -292,6 +293,7 @@ void export_lang(py::module &m) {
       .def("expr_var", &ASTBuilder::make_var)
       .def("bit_vectorize", &ASTBuilder::bit_vectorize)
       .def("parallelize", &ASTBuilder::parallelize)
+      .def("strictly_serialize", &ASTBuilder::strictly_serialize)
       .def("block_dim", &ASTBuilder::block_dim)
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
@@ -591,15 +593,15 @@ void export_lang(py::module &m) {
 
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {
-          return Append(snode, indices, val);
+          return snode_append(snode, indices, val);
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
-    return is_active(snode, indices);
+    return snode_is_active(snode, indices);
   });
 
   m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
-    return Length(snode, indices);
+    return snode_length(snode, indices);
   });
 
   m.def("insert_internal_func_call",
@@ -642,61 +644,63 @@ void export_lang(py::module &m) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
-  m.def("expr_add", expr_add);
-  m.def("expr_sub", expr_sub);
-  m.def("expr_mul", expr_mul);
-  m.def("expr_div", expr_div);
-  m.def("expr_truediv", expr_truediv);
-  m.def("expr_floordiv", expr_floordiv);
-  m.def("expr_mod", expr_mod);
-  m.def("expr_max", expr_max);
-  m.def("expr_min", expr_min);
-  m.def("expr_atan2", expr_atan2);
-  m.def("expr_pow", expr_pow);
-
-  m.def("expr_bit_and", expr_bit_and);
-  m.def("expr_bit_or", expr_bit_or);
-  m.def("expr_bit_xor", expr_bit_xor);
-  m.def("expr_bit_shl", expr_bit_shl);
-  m.def("expr_bit_shr", expr_bit_shr);
-  m.def("expr_bit_sar", expr_bit_sar);
-  m.def("expr_bit_not", expr_bit_not);
-  m.def("expr_logic_not", expr_logic_not);
-
-  m.def("expr_cmp_le", expr_cmp_le);
-  m.def("expr_cmp_lt", expr_cmp_lt);
-  m.def("expr_cmp_ge", expr_cmp_ge);
-  m.def("expr_cmp_gt", expr_cmp_gt);
-  m.def("expr_cmp_ne", expr_cmp_ne);
-  m.def("expr_cmp_eq", expr_cmp_eq);
-
   m.def("expr_index", expr_index);
 
-  m.def("expr_assume_in_range", AssumeInRange);
+  m.def("expr_assume_in_range", assume_range);
 
-  m.def("expr_loop_unique", LoopUnique);
+  m.def("expr_loop_unique", loop_unique);
 
-  m.def("expr_select", expr_select);
+#define DEFINE_EXPRESSION_OP(x) m.def("expr_" #x, expr_##x);
 
-#define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
+  DEFINE_EXPRESSION_OP(neg)
+  DEFINE_EXPRESSION_OP(sqrt)
+  DEFINE_EXPRESSION_OP(round)
+  DEFINE_EXPRESSION_OP(floor)
+  DEFINE_EXPRESSION_OP(ceil)
+  DEFINE_EXPRESSION_OP(abs)
+  DEFINE_EXPRESSION_OP(sin)
+  DEFINE_EXPRESSION_OP(asin)
+  DEFINE_EXPRESSION_OP(cos)
+  DEFINE_EXPRESSION_OP(acos)
+  DEFINE_EXPRESSION_OP(tan)
+  DEFINE_EXPRESSION_OP(tanh)
+  DEFINE_EXPRESSION_OP(inv)
+  DEFINE_EXPRESSION_OP(rcp)
+  DEFINE_EXPRESSION_OP(rsqrt)
+  DEFINE_EXPRESSION_OP(exp)
+  DEFINE_EXPRESSION_OP(log)
 
-  m.def("expr_neg", [&](const Expr &e) { return -e; });
-  DEFINE_EXPRESSION_OP_UNARY(sqrt)
-  DEFINE_EXPRESSION_OP_UNARY(round)
-  DEFINE_EXPRESSION_OP_UNARY(floor)
-  DEFINE_EXPRESSION_OP_UNARY(ceil)
-  DEFINE_EXPRESSION_OP_UNARY(abs)
-  DEFINE_EXPRESSION_OP_UNARY(sin)
-  DEFINE_EXPRESSION_OP_UNARY(asin)
-  DEFINE_EXPRESSION_OP_UNARY(cos)
-  DEFINE_EXPRESSION_OP_UNARY(acos)
-  DEFINE_EXPRESSION_OP_UNARY(tan)
-  DEFINE_EXPRESSION_OP_UNARY(tanh)
-  DEFINE_EXPRESSION_OP_UNARY(inv)
-  DEFINE_EXPRESSION_OP_UNARY(rcp)
-  DEFINE_EXPRESSION_OP_UNARY(rsqrt)
-  DEFINE_EXPRESSION_OP_UNARY(exp)
-  DEFINE_EXPRESSION_OP_UNARY(log)
+  DEFINE_EXPRESSION_OP(select)
+
+  DEFINE_EXPRESSION_OP(cmp_le)
+  DEFINE_EXPRESSION_OP(cmp_lt)
+  DEFINE_EXPRESSION_OP(cmp_ge)
+  DEFINE_EXPRESSION_OP(cmp_gt)
+  DEFINE_EXPRESSION_OP(cmp_ne)
+  DEFINE_EXPRESSION_OP(cmp_eq)
+
+  DEFINE_EXPRESSION_OP(bit_and)
+  DEFINE_EXPRESSION_OP(bit_or)
+  DEFINE_EXPRESSION_OP(bit_xor)
+  DEFINE_EXPRESSION_OP(bit_shl)
+  DEFINE_EXPRESSION_OP(bit_shr)
+  DEFINE_EXPRESSION_OP(bit_sar)
+  DEFINE_EXPRESSION_OP(bit_not)
+  DEFINE_EXPRESSION_OP(logic_not)
+
+  DEFINE_EXPRESSION_OP(add)
+  DEFINE_EXPRESSION_OP(sub)
+  DEFINE_EXPRESSION_OP(mul)
+  DEFINE_EXPRESSION_OP(div)
+  DEFINE_EXPRESSION_OP(truediv)
+  DEFINE_EXPRESSION_OP(floordiv)
+  DEFINE_EXPRESSION_OP(mod)
+  DEFINE_EXPRESSION_OP(max)
+  DEFINE_EXPRESSION_OP(min)
+  DEFINE_EXPRESSION_OP(atan2)
+  DEFINE_EXPRESSION_OP(pow)
+
+#undef DEFINE_EXPRESSION_OP
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);

@@ -23,6 +23,28 @@ std::unique_ptr<Module> Module::load(const std::string &path,
   }
 }
 
+Kernel *Module::get_kernel(const std::string &name) {
+  auto itr = loaded_kernels_.find(name);
+  if (itr != loaded_kernels_.end()) {
+    return itr->second.get();
+  }
+  auto k = make_new_kernel(name);
+  auto *kptr = k.get();
+  loaded_kernels_[name] = std::move(k);
+  return kptr;
+}
+
+Field *Module::get_field(const std::string &name) {
+  auto itr = loaded_fields_.find(name);
+  if (itr != loaded_fields_.end()) {
+    return itr->second.get();
+  }
+  auto k = make_new_field(name);
+  auto *kptr = k.get();
+  loaded_fields_[name] = std::move(k);
+  return kptr;
+}
+
 }  // namespace aot
 }  // namespace lang
 }  // namespace taichi

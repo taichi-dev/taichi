@@ -21,7 +21,7 @@ DeviceObjVkCommandPool::~DeviceObjVkCommandPool() {
 }
 
 DeviceObjVkCommandBuffer::~DeviceObjVkCommandBuffer() {
-  if (this->level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) {
+  if (this->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY) {
     ref_pool->free_primary.push(buffer);
   } else {
     ref_pool->free_secondary.push(buffer);

@@ -518,6 +518,7 @@ void Program::finalize() {
 
   finalized_ = true;
   num_instances_ -= 1;
+  program_impl_->dump_cache_data_to_disk();
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 

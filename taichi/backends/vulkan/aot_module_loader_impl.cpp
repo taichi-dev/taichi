@@ -12,6 +12,17 @@ namespace {
 
 using KernelHandle = VkRuntime::KernelHandle;
 
+class FieldImpl : public aot::Field {
+ public:
+  explicit FieldImpl(VkRuntime *runtime, const aot::CompiledFieldData &field)
+      : runtime_(runtime), field_(field) {
+  }
+
+ private:
+  VkRuntime *const runtime_;
+  aot::CompiledFieldData field_;
+};
+
 class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
@@ -48,14 +59,6 @@ class AotModuleImpl : public aot::Module {
     }
   }
 
-  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override {
-    return make_new_kernel(name);
-  }
-
-  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
-    TI_NOT_IMPLEMENTED;
-  }
-
   size_t get_root_size() const override {
     return ti_aot_data_.root_buffer_size;
   }
@@ -69,6 +72,17 @@ class AotModuleImpl : public aot::Module {
   }
 
  private:
+  bool get_field_data_by_name(const std::string &name,
+                              aot::CompiledFieldData &field) {
+    for (int i = 0; i < ti_aot_data_.fields.size(); ++i) {
+      if (ti_aot_data_.fields[i].field_name.rfind(name, 0) == 0) {
+        field = ti_aot_data_.fields[i];
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool get_kernel_params_by_name(const std::string &name,
                                  VkRuntime::RegisterParams &kernel) {
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
@@ -97,6 +111,15 @@ class AotModuleImpl : public aot::Module {
     }
     auto handle = runtime_->register_taichi_kernel(kparams);
     return std::make_unique<KernelImpl>(runtime_, handle);
+  }
+
+  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+    aot::CompiledFieldData field;
+    if (!get_field_data_by_name(name, field)) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    return std::make_unique<FieldImpl>(runtime_, field);
   }
 
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,

@@ -1,14 +1,14 @@
 name: Publishing Release
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
   workflow_dispatch:
     # Manually trigger the release workflow, a version must be provided
     inputs:
       version:
-        description: "The version to release (e.g. v0.8.0)"
+        description: 'The version to release (e.g. v0.8.0), or leave it empty for nightly build'
         type: string
-        required: true
+        required: false
 
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
@@ -22,13 +22,17 @@ jobs:
   add_version_to_database:
     name: Add version to database
     # Skip running release workflow on forks
-    if: github.repository_owner == 'taichi-dev' && github.event_name == 'workflow_dispatch'
+    if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
       - name: Save new version
         run: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Not a production release"
+            exit 0
+          fi
           python3 -m pip install requests==2.26
           python3 misc/save_new_version.py
 
@@ -42,7 +46,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+          if [ !-z "$RELEASE_VERSION" ]; then
             # For production release, we run on four python versions.
             echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
 
@@ -65,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -81,17 +85,17 @@ jobs:
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
-            /home/dev/${{ github.event.repository.name }}/.github/workflows/scripts/unix_build.sh
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
-          docker cp taichi_build:/home/dev/${{ github.event.repository.name }}/dist shared/dist
-          docker cp taichi_build:/home/dev/${{ github.event.repository.name }}/build shared/build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
           PY: ${{ matrix.conda_python }}
           GPU_BUILD: ON
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: ":1"
+          DISPLAY: ':1'
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -114,7 +118,72 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: ":1"
+          DISPLAY: ':1'
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
+
+  build_and_test_manylinux2014:
+    name: Build and Upload (manylinux2014)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [self-hosted, cuda, cn, release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-manylinux-${{ github.sha }}
+          restore-keys: |
+            sccache-manylinux-
+
+      - name: Build
+        run: |
+          mkdir -m777 shared
+          docker create --user dev --name taichi_build --gpus all \
+            -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
+          docker start -a taichi_build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_BUILD: ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          PROJECT_NAME: ${{ matrix.name }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: shared/dist/*.whl
+          retention-days: 20
+
+      - name: Test
+        run: |
+          docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
+            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp shared/dist/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp tests/ taichi_test:/home/dev/
+          docker start -a taichi_test
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_TEST: ON
+          TI_WANTED_ARCHS: "cuda,cpu"
 
       - name: clean docker container
         if: always()
@@ -131,7 +200,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -171,7 +240,7 @@ jobs:
       - name: Test
         run: .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)
@@ -182,11 +251,11 @@ jobs:
     runs-on: [self-hosted, m1]
     defaults:
       run:
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -223,7 +292,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,vulkan,cpu"
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PYTHON: ${{ matrix.python }}
           GPU_TEST: ON
 
@@ -237,7 +306,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -274,7 +343,7 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: 'cpu'
           PYTHON: ${{ matrix.python }}
 
   build_and_test_windows:
@@ -287,7 +356,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -335,14 +404,7 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs:
-      [
-        build_and_test_linux,
-        build_and_test_mac,
-        build_and_test_m1,
-        build_and_test_macos_1014,
-        build_and_test_windows,
-      ]
+    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -371,7 +433,7 @@ jobs:
     name: Create tag and publish release
     needs: upload_to_pypi
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -417,6 +479,6 @@ jobs:
           git commit -m "Bump version to $next_version"
           git push origin "bump/$next_version"
           # Create pull request
-          gh pr create -B master -t "[misc] Bump version to $next_version"
+          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

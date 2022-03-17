@@ -7,8 +7,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#include "taichi/ir/expression_ops.h"
-
 // always a tree - used as rvalues
 class Expression {
  public:

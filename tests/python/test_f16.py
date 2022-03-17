@@ -87,7 +87,7 @@ def test_from_torch():
     n = 16
     y = ti.field(dtype=ti.f16, shape=n)
     # torch doesn't have rand implementation for float16 so we need to create float first and then convert
-    x = torch.range(0, n - 1).to(torch.float16)
+    x = torch.arange(0, n).to(torch.float16)
     y.from_torch(x)
 
     @ti.kernel

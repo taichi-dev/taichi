@@ -28,10 +28,10 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
         pixel_t.from_numpy(pixel)
     fn = test_utils.make_temp_file(suffix='.' + ext)
     if is_field:
-        ti.imwrite(pixel_t, fn)
+        ti.tools.imwrite(pixel_t, fn)
     else:
-        ti.imwrite(pixel, fn)
-    pixel_r = ti.imread(fn)
+        ti.tools.imwrite(pixel, fn)
+    pixel_r = ti.tools.imread(fn)
     if comp == 1:
         # from (resx, resy, 1) to (resx, resy)
         pixel_r = pixel_r.reshape((resx, resy))
@@ -49,8 +49,8 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
     fn = test_utils.make_temp_file(suffix='.' + ext)
-    ti.imwrite(pixel_t, fn)
-    pixel_r = (ti.imread(fn).astype(to_numpy_type(dt)) + 0.5) / 256.0
+    ti.tools.imwrite(pixel_t, fn)
+    pixel_r = (ti.tools.imread(fn).astype(to_numpy_type(dt)) + 0.5) / 256.0
     assert np.allclose(pixel_r, pixel, atol=2e-2)
     os.remove(fn)
 
@@ -69,8 +69,8 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
     fn = test_utils.make_temp_file(suffix='.' + ext)
-    ti.imwrite(pixel_t, fn)
-    pixel_r = ti.imread(fn).astype(np_type) * np_max
+    ti.tools.imwrite(pixel_t, fn)
+    pixel_r = ti.tools.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()
     os.remove(fn)
 
@@ -85,7 +85,7 @@ def test_image_resize_sum(resx, resy, comp, scale):
         shape = shape + (comp, )
     old_img = np.random.rand(*shape).astype(np.float32)
     if resx == resy:
-        new_img = ti.imresize(old_img, resx * scale)
+        new_img = ti.tools.imresize(old_img, resx * scale)
     else:
-        new_img = ti.imresize(old_img, resx * scale, resy * scale)
+        new_img = ti.tools.imresize(old_img, resx * scale, resy * scale)
     assert np.sum(old_img) * scale**2 == test_utils.approx(np.sum(new_img))

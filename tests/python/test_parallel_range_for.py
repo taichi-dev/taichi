@@ -10,8 +10,8 @@ def test_parallel_range_for():
 
     @ti.kernel
     def fill():
-        ti.parallelize(8)
-        ti.block_dim(8)
+        ti.loop_config(parallelize=8)
+        ti.loop_config(block_dim=8)
         for i in range(n):
             val[i] = i
 
@@ -27,7 +27,7 @@ def test_serial_for():
     @ti.kernel
     def foo() -> ti.i32:
         a = 0
-        ti.serialize()
+        ti.loop_config(serialize=True)
         for i in range(100):
             a = a + 1
             if a == 50:

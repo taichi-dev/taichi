@@ -335,7 +335,7 @@ def test_ternary_i(is_mat):
 
     @ti.kernel
     def func():
-        x[0] = z[None] if y[None] else w[None]
+        x[0] = ti.select(y[None], z[None], w[None])
 
     func()
     x = x.to_numpy()

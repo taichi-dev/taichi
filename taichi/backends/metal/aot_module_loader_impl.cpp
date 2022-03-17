@@ -41,9 +41,11 @@ class AotModuleImpl : public aot::Module {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
     read_from_binary_file(aot_data_, bin_path);
-    // Do we still need to load each individual kernel?
     for (const auto &k : aot_data_.kernels) {
       kernels_[k.kernel_name] = &k;
+    }
+    for (const auto &f : aot_data_.fields) {
+      fields_[f.field_name] = &f;
     }
   }
 
@@ -75,13 +77,19 @@ class AotModuleImpl : public aot::Module {
   }
 
   std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
+    auto itr = fields_.find(name);
+    if (itr == fields_.end()) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    auto *field_data = itr->second;
+    return std::make_unique<FieldImpl>(runtime_, *field_data);
   }
 
   KernelManager *const runtime_;
   TaichiAotData aot_data_;
   std::unordered_map<std::string, const CompiledKernelData *> kernels_;
+  std::unordered_map<std::string, const CompiledFieldData *> fields_;
 };
 
 }  // namespace

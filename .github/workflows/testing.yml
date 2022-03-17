@@ -221,6 +221,7 @@ jobs:
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp tests/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
@@ -354,6 +355,7 @@ jobs:
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
           docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test

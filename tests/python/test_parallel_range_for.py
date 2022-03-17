@@ -10,8 +10,7 @@ def test_parallel_range_for():
 
     @ti.kernel
     def fill():
-        ti.loop_config(parallelize=8)
-        ti.loop_config(block_dim=8)
+        ti.loop_config(parallelize=8, block_dim=8)
         for i in range(n):
             val[i] = i
 

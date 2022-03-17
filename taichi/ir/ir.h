@@ -591,9 +591,10 @@ class Stmt : public IRNode {
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt;
-  stmt_vector statements, trash_bin;
-  Stmt *mask_var;
+  Stmt *parent_stmt{nullptr};
+  stmt_vector statements;
+  stmt_vector trash_bin;
+  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop

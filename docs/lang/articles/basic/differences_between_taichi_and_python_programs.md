@@ -53,7 +53,7 @@ def discarded_after_first_return(a: ti.i32) -> ti.i32:
 
 discarded_after_first_return(0)  # OK: returns 1
 ```
-- If there are [compile-time evaluations](/lang/articles/advanced/meta#compile-time-evaluations) in the code, make sure there is a return statement under all circumstances.
+- If there are [compile-time evaluations](/lang/articles/advanced/meta.md#compile-time-evaluations) in the code, make sure there is a return statement under all circumstances.
 Otherwise, error occurs when a branch is chosen which does not have return statement.
 ```python {7-8,15-16,21,23-24}
 @ti.kernel

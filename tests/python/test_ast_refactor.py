@@ -171,7 +171,7 @@ def test_compare_fail():
 
         @ti.kernel
         def foo():
-            1 is [1]
+            None is None
 
         foo()
 

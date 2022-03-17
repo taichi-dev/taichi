@@ -41,6 +41,7 @@ class AotModuleImpl : public aot::Module {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
     read_from_binary_file(aot_data_, bin_path);
+    // Do we still need to load each individual kernel?
     for (const auto &k : aot_data_.kernels) {
       kernels_[k.kernel_name] = &k;
     }

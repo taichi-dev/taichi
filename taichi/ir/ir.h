@@ -99,6 +99,10 @@ class Identifier {
   bool operator==(const Identifier &o) const {
     return id == o.id;
   }
+
+  static void reset_counter() {
+    id_counter = 0;
+  }
 };
 
 using stmt_vector = llvm::SmallVector<pStmt, 8>;
@@ -587,6 +591,10 @@ class Stmt : public IRNode {
   }
 
   ~Stmt() override = default;
+
+  static void reset_counter() {
+    instance_id_counter = 0;
+  }
 };
 
 class Block : public IRNode {

@@ -59,19 +59,6 @@ class AotModuleImpl : public aot::Module {
     }
   }
 
-  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override {
-    return make_new_kernel(name);
-  }
-
-  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
-    aot::CompiledFieldData field;
-    if (!get_field_data_by_name(name, field)) {
-      TI_DEBUG("Failed to load field {}", name);
-      return nullptr;
-    }
-    return std::make_unique<FieldImpl>(runtime_, field);
-  }
-
   size_t get_root_size() const override {
     return ti_aot_data_.root_buffer_size;
   }
@@ -124,6 +111,15 @@ class AotModuleImpl : public aot::Module {
     }
     auto handle = runtime_->register_taichi_kernel(kparams);
     return std::make_unique<KernelImpl>(runtime_, handle);
+  }
+
+  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+    aot::CompiledFieldData field;
+    if (!get_field_data_by_name(name, field)) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    return std::make_unique<FieldImpl>(runtime_, field);
   }
 
   std::vector<uint32_t> read_spv_file(const std::string &output_dir,

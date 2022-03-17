@@ -47,14 +47,6 @@ class AotModuleImpl : public aot::Module {
     }
   }
 
-  std::unique_ptr<aot::Kernel> get_kernel(const std::string &name) override {
-    return make_new_kernel(name);
-  }
-
-  std::unique_ptr<aot::Field> get_field(const std::string &name) override {
-    TI_NOT_IMPLEMENTED;
-  }
-
   size_t get_root_size() const override {
     return aot_data_.metadata.root_buffer_size;
   }
@@ -80,6 +72,11 @@ class AotModuleImpl : public aot::Module {
                                      kernel_data->kernel_attribs,
                                      kernel_data->ctx_attribs);
     return std::make_unique<KernelImpl>(runtime_, name);
+  }
+
+  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
+    return nullptr;
   }
 
   KernelManager *const runtime_;

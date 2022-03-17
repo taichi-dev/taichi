@@ -43,6 +43,8 @@ The language has broad applications spanning real-time physical simulation, numb
 
 # Getting Started
 
+## Installation
+
 <details>
   <summary>Prerequisites</summary>
 
@@ -61,8 +63,6 @@ The language has broad applications spanning real-time physical simulation, numb
   - Apple Metal
   - WebAssembly (experiemental)
  </details>
-
-## Installation
 
 Use Python's package installer **pip** to install Taichi:
 
@@ -120,7 +120,7 @@ If Taichi is properly installed, you should get the animation below 🎉:
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> </a><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-See [Hello, world!](https://docs.taichi.graphics) for more information.
+See [Get started](https://docs.taichi.graphics) for more information.
 
 ## Build from source
 

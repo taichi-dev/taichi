@@ -74,6 +74,11 @@ class AotModuleImpl : public aot::Module {
     return std::make_unique<KernelImpl>(runtime_, name);
   }
 
+  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
+    return nullptr;
+  }
+
   KernelManager *const runtime_;
   TaichiAotData aot_data_;
   std::unordered_map<std::string, const CompiledKernelData *> kernels_;

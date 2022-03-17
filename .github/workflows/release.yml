@@ -17,6 +17,7 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
+  TI_CI: 1
 
 jobs:
   add_version_to_database:

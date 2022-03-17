@@ -351,6 +351,10 @@ class SNode {
 
   int get_snode_tree_id();
 
+  static void reset_counter() {
+    counter = 0;
+  }
+
  private:
   int snode_tree_id_{0};
   SNodeGlobalVarExprMap *snode_to_glb_var_exprs_{nullptr};

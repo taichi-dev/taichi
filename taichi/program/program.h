@@ -324,6 +324,9 @@ class TI_DLL_EXPORT Program {
   }
 
  private:
+  uint64 ndarray_writer_counter_{0};
+  uint64 ndarray_reader_counter_{0};
+
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

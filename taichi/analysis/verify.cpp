@@ -67,10 +67,6 @@ class IRVerifier : public BasicStmtVisitor {
     basic_verify(stmt);
   }
 
-  void visit(FuncCallStmt *stmt) override {
-    stmt->set_has_real_func();
-    basic_verify(stmt);
-  }
 
   void visit(Block *block) override {
     TI_ASSERT_INFO(

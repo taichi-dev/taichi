@@ -14,7 +14,6 @@
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
-#include "taichi/program/function.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/MapVector.h"
@@ -190,12 +189,10 @@ class IRVisitor {
 
 struct CompileConfig;
 class Kernel;
-class Function;
 
 class IRNode {
  public:
   Kernel *kernel;
-  Function *func;
 
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
@@ -207,11 +204,6 @@ class IRNode {
 
   IRNode *get_ir_root();
   Kernel *get_kernel() const;
-  Function *get_if_func() const;
-
-  bool has_real_func() const;
-
-  void set_has_real_func();
 
   virtual ~IRNode() = default;
 

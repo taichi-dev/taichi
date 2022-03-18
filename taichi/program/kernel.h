@@ -19,7 +19,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   bool is_accessor{false};
   bool is_evaluator{false};
-  bool has_real_func{false};
   bool grad{false};
 
   class LaunchContextBuilder {

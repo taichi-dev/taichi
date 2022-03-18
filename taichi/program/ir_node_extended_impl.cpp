@@ -35,7 +35,8 @@ void IRNode::set_has_real_func() {
     func->has_real_func = true;
   } else {
     auto kernel = get_kernel();
-    kernel->has_real_func = true;
+    if (kernel != nullptr)
+      kernel->has_real_func = true;
   }
 }
 

@@ -13,12 +13,13 @@ Function::Function(Program *program, const FunctionKey &func_key)
 void Function::set_function_body(const std::function<void()> &func) {
   context = std::make_unique<FrontendContext>(program->config.arch);
   ir = context->get_root();
+  ir->func = this;
   {
     // Note: this is not a mutex
     CurrentCallableGuard _(program, this);
     func();
   }
-  irpass::compile_inline_function(ir.get(), program->config, this,
+  irpass::compile_function(ir.get(), program->config, this,
                                   /*grad=*/false,
                                   /*verbose=*/program->config.print_ir,
                                   /*start_from_ast=*/true);
@@ -26,7 +27,7 @@ void Function::set_function_body(const std::function<void()> &func) {
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
   ir = std::move(func_body);
-  irpass::compile_inline_function(ir.get(), program->config, this,
+  irpass::compile_function(ir.get(), program->config, this,
                                   /*grad=*/false,
                                   /*verbose=*/program->config.print_ir,
                                   /*start_from_ast=*/false);

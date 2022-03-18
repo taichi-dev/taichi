@@ -121,6 +121,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // this position store the same data.
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
+    if (block->statements[i]->is<FuncCallStmt>()){
+      return nullptr;
+    }
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
@@ -417,6 +420,10 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
+    if (stmt->is<FuncCallStmt>()){
+      killed_in_this_node.clear();
+      live_load_in_this_node.clear();
+    }
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks

@@ -153,46 +153,6 @@ class CFGBuilder : public IRVisitor {
   /**
    * Structure:
    *
-   * block {
-   *   node {
-   *     ...
-   *   } -> node_func_begin;
-   *   foo();
-   *   (next node) {
-   *     ...
-   *   }
-   * }
-   *
-   * foo() {
-   *   node_func_begin {
-   *     ...
-   *   } -> ... -> node_func_end;
-   *   node_func_end {
-   *     ...
-   *   } -> (next node);
-   * }
-   */
-  void visit(FuncCallStmt *stmt) override {
-    auto node_before_func_call = new_node(-1);
-    CFGFuncKey func_key = {stmt->func->func_key, in_parallel_for_};
-    if (node_func_begin_.count(func_key) == 0) {
-      // Generate CFG for the function.
-      TI_ASSERT(stmt->func->ir->is<Block>());
-      auto func_begin_index = graph_->size();
-      stmt->func->ir->accept(this);
-      node_func_begin_[func_key] = graph_->nodes[func_begin_index].get();
-      node_func_end_[func_key] = graph_->nodes.back().get();
-    }
-    CFGNode::add_edge(node_before_func_call, node_func_begin_[func_key]);
-    prev_nodes_.push_back(node_func_end_[func_key]);
-
-    // Don't put FuncCallStmt in any CFGNodes.
-    begin_location_ = current_stmt_id_ + 1;
-  }
-
-  /**
-   * Structure:
-   *
    * node_before_if {
    *   ...
    * } -> node_true_branch_begin, node_false_branch_begin;

@@ -274,7 +274,7 @@ void compile_to_executable(IRNode *ir,
                         make_block_local);
 }
 
-void compile_inline_function(IRNode *ir,
+void compile_function(IRNode *ir,
                              const CompileConfig &config,
                              Function *func,
                              bool grad,

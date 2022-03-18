@@ -12,6 +12,8 @@ class Function : public Callable {
  public:
   FunctionKey func_key;
 
+  bool has_real_func{false};
+
   Function(Program *program, const FunctionKey &func_key);
 
   // Set the function body to a frontend Python function which generates the C++

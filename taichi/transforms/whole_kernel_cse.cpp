@@ -117,6 +117,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (!stmt->common_statement_eliminable())
       return;
+    if (stmt->has_real_func()&&stmt->is<GlobalLoadStmt>())
+      return;
     // container_statement does not need to be CSE-ed
     if (stmt->is_container_statement())
       return;

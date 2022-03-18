@@ -173,7 +173,7 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast = true);
 // Compile a function with some basic optimizations, so that the number of
 // statements is reduced before inlining.
-void compile_inline_function(IRNode *ir,
+void compile_function(IRNode *ir,
                              const CompileConfig &config,
                              Function *func,
                              bool grad,

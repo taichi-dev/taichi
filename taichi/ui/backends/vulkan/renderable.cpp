@@ -78,7 +78,7 @@ void Renderable::update_data(const RenderableInfo &info) {
     vbo_dev_ptr = get_device_ptr(prog, info.vbo.snode);
   }
 
-  uint64_t vbo_size = sizeof(Vertex) * num_vertices;
+  const uint64_t vbo_size = config_.vbo_size() * num_vertices;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
@@ -140,21 +140,35 @@ void Renderable::create_graphics_pipeline() {
   raster_params.depth_test = true;
   raster_params.depth_write = true;
 
-  std::vector<VertexInputBinding> vertex_inputs = {{0, sizeof(Vertex), false}};
+  std::vector<VertexInputBinding> vertex_inputs = {
+      {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};
   // TODO: consider using uint8 for colors and normals
   std::vector<VertexInputAttribute> vertex_attribs = {
-      {0, 0, BufferFormat::rgb32f, offsetof(Vertex, pos)},
-      // {1, 0, BufferFormat::rgb32f, offsetof(Vertex, normal)},
-      // {2, 0, BufferFormat::rg32f, offsetof(Vertex, texCoord)},
-      // {3, 0, BufferFormat::rgba32f, offsetof(Vertex, color)},
+      {/*location=*/0, /*binding=*/0, /*format=*/BufferFormat::rgb32f,
+       /*offset=*/offsetof(Vertex, pos)},
   };
+  if (config_.vbo_attrs != VboAttribes::kPos) {
+    vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
+                              /*format=*/BufferFormat::rgb32f,
+                              /*offset=*/offsetof(Vertex, normal)});
+  }
+  if (config_.vbo_attrs != VboAttribes::kPosNormal) {
+    vertex_attribs.push_back({/*location=*/2, /*binding=*/0,
+                              /*format=*/BufferFormat::rg32f,
+                              /*offset=*/offsetof(Vertex, texCoord)});
+  }
+  if (config_.vbo_attrs != VboAttribes::kPosNormalUv) {
+    vertex_attribs.push_back({/*location=*/3, /*binding=*/0,
+                              /*format=*/BufferFormat::rgba32f,
+                              /*offset=*/offsetof(Vertex, color)});
+  }
 
   pipeline_ = app_context_->device().create_raster_pipeline(
       source, raster_params, vertex_inputs, vertex_attribs);
 }
 
 void Renderable::create_vertex_buffer() {
-  size_t buffer_size = sizeof(Vertex) * config_.max_vertices_count;
+  const size_t buffer_size = config_.vbo_size() * config_.max_vertices_count;
 
   Device::AllocParams vb_params{buffer_size, false, false,
                                 app_context_->requires_export_sharing(),
@@ -182,7 +196,7 @@ void Renderable::create_index_buffer() {
 }
 
 void Renderable::create_uniform_buffers() {
-  size_t buffer_size = config_.ubo_size;
+  const size_t buffer_size = config_.ubo_size;
   if (buffer_size == 0) {
     return;
   }
@@ -193,7 +207,7 @@ void Renderable::create_uniform_buffers() {
 }
 
 void Renderable::create_storage_buffers() {
-  size_t buffer_size = config_.ssbo_size;
+  const size_t buffer_size = config_.ssbo_size;
   if (buffer_size == 0) {
     return;
   }

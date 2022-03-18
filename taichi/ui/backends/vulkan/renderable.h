@@ -20,20 +20,26 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 
-TI_UI_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace ui {
 namespace vulkan {
 
 struct RenderableConfig {
-  int max_vertices_count;
-  int max_indices_count;
-  int vertices_count;
-  int indices_count;
-  size_t ubo_size;
-  size_t ssbo_size;
+  int max_vertices_count{0};
+  int max_indices_count{0};
+  int vertices_count{0};
+  int indices_count{0};
+  size_t ubo_size{0};
+  size_t ssbo_size{0};
   std::string vertex_shader_path;
   std::string fragment_shader_path;
-  taichi::lang::TopologyType topology_type;
+  taichi::lang::TopologyType topology_type{
+      taichi::lang::TopologyType::Triangles};
+  VboAttribes vbo_attrs{VboAttribes::kAll};
+
+  size_t vbo_size() const {
+    return sizeof_vbo(vbo_attrs);
+  }
 };
 
 class Renderable {
@@ -95,5 +101,5 @@ class Renderable {
 };
 
 }  // namespace vulkan
-
-TI_UI_NAMESPACE_END
+}  // namespace ui
+}  // namespace taichi

@@ -20,10 +20,20 @@ struct Vertex {
     float y;
   };
   vec3 pos;
-  // vec3 normal;
-  // vec2 texCoord;
-  // vec4 color;
+  vec3 normal;
+  // FIXME: tex_coord
+  vec2 texCoord;
+  vec4 color;
 };
+
+enum class VboAttribes {
+  kAll,
+  kPos,
+  kPosNormal,
+  kPosNormalUv,
+};
+
+size_t sizeof_vbo(VboAttribes va);
 
 }  // namespace ui
 }  // namespace taichi

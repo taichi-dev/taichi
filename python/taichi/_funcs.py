@@ -458,7 +458,7 @@ def sym_eig(A, dt=None):
         dt = impl.get_runtime().default_fp
     if A.n == 2:
         return sym_eig2x2(A, dt)
-    elif A.n == 3:
+    if A.n == 3:
         return sym_eig3x3(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 

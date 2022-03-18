@@ -27,9 +27,9 @@ namespace vulkan {
 
 class Lines final : public Renderable {
  public:
-  Lines(AppContext *app_context);
+  Lines(AppContext *app_context, VboAttribes vbo_attrs);
 
-  void update_data(const LinesInfo &info, VboAttribes vbo_attrs);
+  void update_data(const LinesInfo &info);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

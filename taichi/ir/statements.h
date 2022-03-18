@@ -888,6 +888,7 @@ class FuncCallStmt : public Stmt {
   Function *func;
   std::vector<Stmt *> args;
   bool global_side_effect{true};
+
   FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
 
   bool has_global_side_effect() const override {

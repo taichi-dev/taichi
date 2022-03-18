@@ -67,7 +67,6 @@ class IRVerifier : public BasicStmtVisitor {
     basic_verify(stmt);
   }
 
-
   void visit(Block *block) override {
     TI_ASSERT_INFO(
         block->parent_stmt == current_container_stmt_,

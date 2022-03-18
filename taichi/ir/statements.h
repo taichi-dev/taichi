@@ -887,8 +887,13 @@ class FuncCallStmt : public Stmt {
  public:
   Function *func;
   std::vector<Stmt *> args;
+  bool global_side_effect{true};
 
   FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE

@@ -214,7 +214,7 @@ def test_different_argument_type():
     assert run() == 3
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], cfg_optimization=False)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_recursion():
     @ti.experimental.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:

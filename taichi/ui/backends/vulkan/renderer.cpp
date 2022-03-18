@@ -26,11 +26,11 @@ std::unique_ptr<Renderable> get_new_renderable(AppContext *app_context,
 template <typename T>
 T *Renderer::get_renderable_of_type(VboAttribes vbo_attrs) {
   if (next_renderable_ >= renderables_.size()) {
-    renderables_.push_back(get_new_renderable<T>(&app_context_, info));
+    renderables_.push_back(get_new_renderable<T>(&app_context_, vbo_attrs));
   } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
              nullptr) {
     renderables_.insert(renderables_.begin() + next_renderable_,
-                        get_new_renderable<T>(&app_context_, info));
+                        get_new_renderable<T>(&app_context_, vbo_attrs));
   }
 
   if (T *t = dynamic_cast<T *>(renderables_[next_renderable_].get())) {

@@ -275,11 +275,11 @@ void compile_to_executable(IRNode *ir,
 }
 
 void compile_function(IRNode *ir,
-                             const CompileConfig &config,
-                             Function *func,
-                             bool grad,
-                             bool verbose,
-                             bool start_from_ast) {
+                      const CompileConfig &config,
+                      Function *func,
+                      bool grad,
+                      bool verbose,
+                      bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, func->get_name(), ir);

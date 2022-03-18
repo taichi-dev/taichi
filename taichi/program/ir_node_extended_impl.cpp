@@ -15,27 +15,25 @@ Kernel *IRNode::get_kernel() const {
 }
 
 Function *IRNode::get_if_func() const {
-  if (const_cast<IRNode *>(this)->get_ir_root()->kernel == nullptr){
+  if (const_cast<IRNode *>(this)->get_ir_root()->kernel == nullptr) {
     return const_cast<IRNode *>(this)->get_ir_root()->func;
   }
   return nullptr;
 }
 
-bool IRNode::has_real_func() const{
-  if (auto func = get_if_func()){
+bool IRNode::has_real_func() const {
+  if (auto func = get_if_func()) {
     return func->has_real_func;
-  }
-  else {
+  } else {
     auto kernel = get_kernel();
     return kernel->has_real_func;
   }
 }
 
-void IRNode::set_has_real_func(){
-  if (auto func = get_if_func()){
+void IRNode::set_has_real_func() {
+  if (auto func = get_if_func()) {
     func->has_real_func = true;
-  }
-  else {
+  } else {
     auto kernel = get_kernel();
     kernel->has_real_func = true;
   }

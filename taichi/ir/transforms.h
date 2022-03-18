@@ -174,11 +174,11 @@ void compile_to_executable(IRNode *ir,
 // Compile a function with some basic optimizations, so that the number of
 // statements is reduced before inlining.
 void compile_function(IRNode *ir,
-                             const CompileConfig &config,
-                             Function *func,
-                             bool grad,
-                             bool verbose,
-                             bool start_from_ast);
+                      const CompileConfig &config,
+                      Function *func,
+                      bool grad,
+                      bool verbose,
+                      bool start_from_ast);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

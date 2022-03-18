@@ -306,6 +306,33 @@ def sym_eig2x2(A, dt):
     return eigenvalues, eigenvectors
 
 
+def sym_eig3x3(A, dt):
+    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 3x3 real symmetric matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+
+    Args:
+        A (ti.Matrix(3, 3)): input 3x3 symmetric matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        eigenvalues (ti.Vector(3)): The eigenvalues. Each entry store one eigen value.
+        eigenvectors (ti.Matrix(3, 3)): The eigenvectors. Each column stores one eigenvector.
+    """
+    assert A.n == 3 and A.m == 3
+    inputs = tuple([e.ptr for e in A.entries])
+    assert dt in [f32, f64]
+    if dt == f32:
+        rets = get_runtime().prog.current_ast_builder().eig_3x3_f32(*inputs)
+    else:
+        rets = get_runtime().prog.current_ast_builder().eig_3x3_f64(*inputs)
+    assert len(rets) == 3
+    D = expr_init(Matrix.zero(dt, 3, 1))
+    for i in range(3):
+        D(i)._assign(rets[i])
+    return D
+
+
 @func
 def _svd(A, dt):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
@@ -431,6 +458,8 @@ def sym_eig(A, dt=None):
         dt = impl.get_runtime().default_fp
     if A.n == 2:
         return sym_eig2x2(A, dt)
+    elif A.n == 3:
+        return sym_eig3x3(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 

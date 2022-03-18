@@ -29,9 +29,7 @@ Kernel *KernelTemplate::get_kernel(
   return kptr;
 }
 
-std::unique_ptr<Module> Module::load(const std::string &path,
-                                     Arch arch,
-                                     std::any mod_params) {
+std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
   if (arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
     return vulkan::make_aot_module(mod_params);

@@ -97,9 +97,7 @@ class TI_DLL_EXPORT Module {
   Module(Module &&) = default;
   Module &operator=(Module &&) = default;
 
-  static std::unique_ptr<Module> load(const std::string &path,
-                                      Arch arch,
-                                      std::any mod_params);
+  static std::unique_ptr<Module> load(Arch arch, std::any mod_params);
 
   // Module metadata
   // TODO: Instead of virtualize these simple properties, just store them as

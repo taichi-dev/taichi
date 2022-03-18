@@ -124,7 +124,7 @@ TEST(AotSaveLoad, Vulkan) {
   mod_params.runtime = vulkan_runtime.get();
 
   std::unique_ptr<aot::Module> vk_module =
-      aot::Module::load(".", Arch::vulkan, mod_params);
+      aot::Module::load(Arch::vulkan, mod_params);
   EXPECT_TRUE(vk_module);
 
   // Retrieve kernels/fields/etc from AOT module

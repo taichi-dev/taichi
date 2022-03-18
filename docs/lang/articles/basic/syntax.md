@@ -346,8 +346,8 @@ def test_sign(x):
 |                                                       | **Kernel**                          | **Taichi Function**                            |
 | ----------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
 | Call scope                                            | Python scope                        | Taichi scope                                   |
-| Type hint arguments                                   | Required                            | Optional but recommended                       |
-| Type hint return values                               | Required                            | Optional but recommended                       |
+| Type hint arguments                                   | Required                            | Recommended                                    |
+| Type hint return values                               | Required                            | Recommended                                    |
 | Return type                                           | Scalar/`ti.Vector`/`ti.Matrix`      | Scalar/`ti.Vector`/`ti.Matrix`/`ti.Struct`/... |
 | Maximum number of elements in arguments               | <ul><li>8 (for OpenGL)</li><li>64 (for others)</li></ul> | Unlimited                                      |
 | Maximum number of return values in a return statement | 1                                   | Unlimited                                      |

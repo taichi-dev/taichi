@@ -99,6 +99,10 @@ class Identifier {
   bool operator==(const Identifier &o) const {
     return id == o.id;
   }
+
+  static void reset_counter() {
+    id_counter = 0;
+  }
 };
 
 using stmt_vector = llvm::SmallVector<pStmt, 8>;
@@ -587,13 +591,18 @@ class Stmt : public IRNode {
   }
 
   ~Stmt() override = default;
+
+  static void reset_counter() {
+    instance_id_counter = 0;
+  }
 };
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt;
-  stmt_vector statements, trash_bin;
-  Stmt *mask_var;
+  Stmt *parent_stmt{nullptr};
+  stmt_vector statements;
+  stmt_vector trash_bin;
+  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop

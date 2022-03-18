@@ -200,7 +200,7 @@ def sort_stage(keys: template(), use_values: int, values: template(), N: int,
                p: int, k: int, invocations: int):
     for inv in range(invocations):
         j = k % p + inv * 2 * k
-        for i in range(0, min(k, N - j - k)):
+        for i in range(0, ops.min(k, N - j - k)):
             a = i + j
             b = i + j + k
             if int(a / (p * 2)) == int(b / (p * 2)):

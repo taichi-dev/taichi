@@ -171,11 +171,11 @@ def intersect_aabb(box_min, box_max, o, d):
             i1 = (box_min[i] - o[i]) / d[i]
             i2 = (box_max[i] - o[i]) / d[i]
 
-            new_far_t = max(i1, i2)
-            new_near_t = min(i1, i2)
+            new_far_t = ti.max(i1, i2)
+            new_near_t = ti.min(i1, i2)
             new_near_is_max = i2 < i1
 
-            far_t = min(new_far_t, far_t)
+            far_t = ti.min(new_far_t, far_t)
             if new_near_t > near_t:
                 near_t = new_near_t
                 near_face = int(i)
@@ -300,7 +300,7 @@ def visible_to_light(pos, ray_dir):
 
 @ti.func
 def dot_or_zero(n, l):
-    return max(0.0, n.dot(l))
+    return ti.max(0.0, n.dot(l))
 
 
 @ti.func
@@ -360,7 +360,7 @@ def sample_brdf(normal):
     v = normal.cross(u)
     costt, sintt = ti.cos(theta), ti.sin(theta)
     xy = (u * costt + v * sintt) * r
-    zlen = ti.sqrt(max(0.0, 1.0 - xy.dot(xy)))
+    zlen = ti.sqrt(ti.max(0.0, 1.0 - xy.dot(xy)))
     return xy + zlen * normal
 
 
@@ -410,7 +410,7 @@ def sample_ray_dir(indir, normal, hit_pos, mat):
     pdf = 1.0
     if mat == mat_lambertian:
         u = sample_brdf(normal)
-        pdf = max(eps, compute_brdf_pdf(normal, u))
+        pdf = ti.max(eps, compute_brdf_pdf(normal, u))
     elif mat == mat_specular:
         u = reflect(indir, normal)
     elif mat == mat_glass:

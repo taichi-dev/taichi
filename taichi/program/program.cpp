@@ -402,8 +402,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
-  static uint64 ndarray_reader_counter = 0;
-  auto kernel_name = fmt::format("ndarray_reader_{}", ndarray_reader_counter++);
+  auto kernel_name =
+      fmt::format("ndarray_reader_{}", ndarray_reader_counter_++);
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;
@@ -427,8 +427,8 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
 }
 
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
-  static uint64 ndarray_writer_counter = 0;
-  auto kernel_name = fmt::format("ndarray_writer_{}", ndarray_writer_counter++);
+  auto kernel_name =
+      fmt::format("ndarray_writer_{}", ndarray_writer_counter_++);
   NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;
@@ -515,6 +515,10 @@ void Program::finalize() {
     TI_NOT_IMPLEMENTED
 #endif
   }
+
+  Identifier::reset_counter();
+  Stmt::reset_counter();
+  TaskLaunchRecord::reset_counter();
 
   finalized_ = true;
   num_instances_ -= 1;

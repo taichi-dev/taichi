@@ -17,6 +17,7 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
+  TI_CI: 1
 
 jobs:
   add_version_to_database:
@@ -113,6 +114,7 @@ jobs:
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
@@ -178,6 +180,7 @@ jobs:
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:

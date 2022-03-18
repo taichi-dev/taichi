@@ -1,3 +1,11 @@
 [build-system]
 requires = ["setuptools", "wheel", "numpy", "pybind11", "cmake"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:Calling non-taichi function",
+    "ignore:`np.int` is a deprecated alias",
+    "ignore:Operator \"is\" in Taichi scope is deprecated",
+    "ignore:Operator \"is not\" in Taichi scope is deprecated"
+]

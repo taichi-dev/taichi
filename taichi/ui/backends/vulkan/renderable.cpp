@@ -39,6 +39,7 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
+  TI_ASSERT(info.vbo_attrs == config_.vbo_attrs);
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();

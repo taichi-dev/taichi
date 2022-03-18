@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Particles final : public Renderable {
  public:
-  Particles(AppContext *app_context);
+  Particles(AppContext *app_context, VboAttribes vbo_attrs);
 
   void update_data(const ParticlesInfo &info, const Scene &scene);
 

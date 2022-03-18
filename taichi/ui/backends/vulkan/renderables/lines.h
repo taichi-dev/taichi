@@ -29,7 +29,7 @@ class Lines final : public Renderable {
  public:
   Lines(AppContext *app_context);
 
-  void update_data(const LinesInfo &info);
+  void update_data(const LinesInfo &info, VboAttribes vbo_attrs);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

@@ -37,7 +37,7 @@ class SetImage final : public Renderable {
     float y_factor{1.0};
   };
 
-  SetImage(AppContext *app_context);
+  SetImage(AppContext *app_context, VboAttribes vbo_attrs);
 
   void update_data(const SetImageInfo &info);
 

@@ -18,18 +18,19 @@ void Renderer::init(Program *prog,
 }
 
 template <typename T>
-std::unique_ptr<Renderable> get_new_renderable(AppContext *app_context) {
-  return std::unique_ptr<Renderable>{new T(app_context)};
+std::unique_ptr<Renderable> get_new_renderable(AppContext *app_context,
+                                               VboAttribes vbo_attrs) {
+  return std::unique_ptr<Renderable>{new T(app_context, vbo_attrs)};
 }
 
 template <typename T>
-T *Renderer::get_renderable_of_type() {
+T *Renderer::get_renderable_of_type(VboAttribes vbo_attrs) {
   if (next_renderable_ >= renderables_.size()) {
-    renderables_.push_back(get_new_renderable<T>(&app_context_));
+    renderables_.push_back(get_new_renderable<T>(&app_context_, info));
   } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
              nullptr) {
     renderables_.insert(renderables_.begin() + next_renderable_,
-                        get_new_renderable<T>(&app_context_));
+                        get_new_renderable<T>(&app_context_, info));
   }
 
   if (T *t = dynamic_cast<T *>(renderables_[next_renderable_].get())) {
@@ -43,37 +44,40 @@ void Renderer::set_background_color(const glm::vec3 &color) {
 }
 
 void Renderer::set_image(const SetImageInfo &info) {
-  SetImage *s = get_renderable_of_type<SetImage>();
+  SetImage *s = get_renderable_of_type<SetImage>(VboAttribes::kAll);
   s->update_data(info);
   next_renderable_ += 1;
 }
 
 void Renderer::triangles(const TrianglesInfo &info) {
-  Triangles *triangles = get_renderable_of_type<Triangles>();
+  Triangles *triangles =
+      get_renderable_of_type<Triangles>(info.renderable_info.vbo_attrs);
   triangles->update_data(info);
   next_renderable_ += 1;
 }
 
 void Renderer::lines(const LinesInfo &info) {
-  Lines *lines = get_renderable_of_type<Lines>();
+  Lines *lines = get_renderable_of_type<Lines>(info.renderable_info.vbo_attrs);
   lines->update_data(info);
   next_renderable_ += 1;
 }
 
 void Renderer::circles(const CirclesInfo &info) {
-  Circles *circles = get_renderable_of_type<Circles>();
+  Circles *circles =
+      get_renderable_of_type<Circles>(info.renderable_info.vbo_attrs);
   circles->update_data(info);
   next_renderable_ += 1;
 }
 
 void Renderer::mesh(const MeshInfo &info, Scene *scene) {
-  Mesh *mesh = get_renderable_of_type<Mesh>();
+  Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info, *scene);
   next_renderable_ += 1;
 }
 
 void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
-  Particles *particles = get_renderable_of_type<Particles>();
+  Particles *particles =
+      get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info, *scene);
   next_renderable_ += 1;
 }

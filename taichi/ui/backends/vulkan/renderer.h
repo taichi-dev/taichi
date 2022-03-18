@@ -12,6 +12,8 @@
 #include <array>
 #include <optional>
 #include <set>
+#include <memory>
+
 #include "taichi/ui/utils/utils.h"
 #include "taichi/ui/backends/vulkan/vertex.h"
 #include "taichi/ui/backends/vulkan/scene.h"
@@ -21,7 +23,6 @@
 #include "taichi/ui/common/canvas_base.h"
 
 #include "gui.h"
-#include <memory>
 
 #include "renderables/set_image.h"
 #include "renderables/triangles.h"
@@ -80,7 +81,7 @@ class TI_DLL_EXPORT Renderer {
   AppContext app_context_;
 
   template <typename T>
-  T *get_renderable_of_type();
+  T *get_renderable_of_type(VboAttribes vbo_attrs);
 };
 
 }  // namespace vulkan

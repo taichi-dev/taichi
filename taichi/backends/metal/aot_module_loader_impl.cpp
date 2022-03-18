@@ -74,6 +74,12 @@ class AotModuleImpl : public aot::Module {
     return std::make_unique<KernelImpl>(runtime_, name);
   }
 
+  std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(
+      const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
+    return nullptr;
+  }
+
   std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
     TI_NOT_IMPLEMENTED;
     return nullptr;

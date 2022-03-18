@@ -15,7 +15,7 @@
 import taichi as ti
 ```
 
-# What is Taichi?
+## What is Taichi?
 
 Taichi is an open-source, imperative, parallel programming language for high-performance numerical computation. It is embedded in Python and uses just-in-time (JIT) compiler frameworks, for example LLVM, to offload the compute-intensive Python code to the native GPU or CPU instructions.
 
@@ -33,7 +33,7 @@ The language has broad applications spanning real-time physical simulation, numb
 
 [...More](#demos)
 
-# Why Taichi?
+## Why Taichi?
 
 - Built around Python: Taichi shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, including NumPy and PyTorch.
 - Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi.graphics/lang/articles/advanced/sparse)).
@@ -41,9 +41,9 @@ The language has broad applications spanning real-time physical simulation, numb
 - Portability: Write your code once and run it everywhere. Currently, Taichi supports most mainstream GPU APIs, such as CUDA and Vulkan.
 - ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
-# Getting Started
+## Getting Started
 
-## Installation
+### Installation
 
 <details>
   <summary>Prerequisites</summary>
@@ -76,7 +76,7 @@ pip install taichi
 pip install -i https://test.pypi.org/simple/ taichi-nightly
 ```
 
-## Run your "Hello, world!"
+### Run your "Hello, world!"
 
 Here is how you can program a 2D fractal in Taichi:
 
@@ -116,23 +116,23 @@ for i in range(1000000):
     gui.show()
 ```
 
-If Taichi is properly installed, you should get the animation below 🎉:
+*If Taichi is properly installed, you should get the animation below 🎉:*
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> </a><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
 See [Get started](https://docs.taichi.graphics) for more information.
 
-## Build from source
+### Build from source
 
 If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
 
-# Documentation
+## Documentation
 
 - [Technical documents](https://docs.taichi.graphics/)
 - [API Reference](https://docs.taichi.graphics/api/)
 - [Blog](https://docs.taichi.graphics/blog)
 
-# Contributing
+## Contributing
 
 Kudos to all of our amazing contributors! Taichi thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
 
@@ -140,25 +140,25 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 
 *Contributor avatars are randomly shuffled.*
 
-# Community
+## Community
 
-## Join our discussions
+### Join our discussions
 
 - [GitHub Discussions](https://github.com/taichi-dev/taichi/discussions)
 - [Taichi 中文论坛](https://forum.taichi.graphics/)
 
-## Report an issue
+### Report an issue
 
 - If you spot an technical or documentation issue, file an issue at [GitHub Issues](https://github.com/taichi-dev/taichi/issues)
 - If you spot any security issue, mail directly to <a href = "mailto:security@taichi.graphics?subject = Taichi Security Problem">security@taichi.graphics</a>.
 
-## Contact us
+### Contact us
 
 You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, and we'll follow up.
 
-# Reference
+## Reference
 
-## Demos
+### Demos
 
 - [Taichi examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi examples](https://github.com/taichi-dev/advanced_examples)
@@ -167,7 +167,7 @@ You can also join our community from Slack or WeChat. Drop us a message at <a hr
 - [Taichi Houdini](https://github.com/taichi-dev/taichi_houdini)
 - [More...](misc/links.md)
 
-## Lectures & talks
+### Lectures & talks
 
 - SIGGRAPH 2020 course on Taichi basics: [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](https://yuanming.taichi.graphics/publication/2020-taichi-tutorial/taichi-tutorial.pdf).
 - Chinagraph 2020 用太极编写物理引擎: [哔哩哔哩](https://www.bilibili.com/video/BV1gA411j7H5)
@@ -176,7 +176,7 @@ You can also join our community from Slack or WeChat. Drop us a message at <a hr
 - [TaichiCon](https://github.com/taichi-dev/taichicon): Taichi Developer Conferences
 - More to come...
 
-## Citations
+### Citations
 
 If you use Taichi in your research, please cite the corresponding papers:
 

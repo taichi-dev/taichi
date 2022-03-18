@@ -29,6 +29,7 @@ namespace vulkan {
 class SetImage final : public Renderable {
  public:
   int width, height;
+  uint64_t img_size; 
 
   struct UniformBufferObject {
     // in non_packed_mode,

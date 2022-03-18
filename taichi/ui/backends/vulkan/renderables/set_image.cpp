@@ -59,7 +59,7 @@ void SetImage::update_data(const SetImageInfo &info) {
     img_dev_ptr = get_device_ptr(prog, img.snode);
   }
 
-  uint64_t img_size = pixels * 16;
+  img_size = pixels * sizeof(img.dtype) * 4;
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
@@ -120,11 +120,13 @@ void SetImage::init_set_image(AppContext *app_context,
 }
 
 void SetImage::create_texture() {
-  size_t image_size = width * height * 16;
-
   ImageParams params;
   params.dimension = ImageDimension::d2D;
-  params.format = BufferFormat::rgba32f;
+  if (img_size == 16 * width * height) {
+    params.format = BufferFormat::rgba32f;
+  } else {
+    params.format = BufferFormat::rgba8;
+  }
   params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;
@@ -134,13 +136,13 @@ void SetImage::create_texture() {
 
   texture_ = app_context_->device().create_image(params);
 
-  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
+  Device::AllocParams cpu_staging_buffer_params{img_size, true, false, false,
                                                 AllocUsage::Uniform};
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
   Device::AllocParams gpu_staging_buffer_params{
-      image_size, false, false, app_context_->requires_export_sharing(),
+      img_size, false, false, app_context_->requires_export_sharing(),
       AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);

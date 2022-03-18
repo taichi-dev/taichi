@@ -17,8 +17,10 @@ def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+        env_copy = os.environ.copy()
+        env_copy['TI_LIB_DIR'] = ti_lib_dir
         subprocess.check_call(f'./{cpp_test_filename}',
-                              env={'TI_LIB_DIR': ti_lib_dir},
+                              env=env_copy,
                               cwd=build_dir)
     else:
         warnings.warn(

@@ -108,29 +108,27 @@ def _test_sym_eig2x2(dt):
     _eigen_vector_equal(w_ti[:, idx_ti[1]], w_np[:, idx_np[1]], tol)
 
 
-def test_eig2x2():
-    for func in [_test_eig2x2_real, _test_eig2x2_complex]:
-        for fp in [ti.f32, ti.f64]:
-
-            @test_utils.test(
-                require=ti.extension.data64 if fp == ti.f64 else [],
-                default_fp=fp,
-                fast_math=False)
-            def wrapped():
-                func(fp)
-
-            wrapped()
+@pytest.mark.parametrize("func", [_test_eig2x2_real, _test_eig2x2_complex])
+@test_utils.test(default_fp=ti.f32, fast_math=False)
+def test_eig2x2_f32(func):
+    func(ti.f32)
 
 
-def test_sym_eig2x2():
-    for func in [_test_sym_eig2x2]:
-        for fp in [ti.f32, ti.f64]:
+@pytest.mark.parametrize("func", [_test_eig2x2_real, _test_eig2x2_complex])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False)
+def test_eig2x2_f64(func):
+    func(ti.f64)
 
-            @test_utils.test(
-                require=ti.extension.data64 if fp == ti.f64 else [],
-                default_fp=fp,
-                fast_math=False)
-            def wrapped():
-                func(fp)
 
-            wrapped()
+@test_utils.test(default_fp=ti.f32, fast_math=False)
+def test_sym_eig2x2_f32():
+    _test_sym_eig2x2(ti.f32)
+
+
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False)
+def test_sym_eig2x2_f64():
+    _test_sym_eig2x2(ti.f64)

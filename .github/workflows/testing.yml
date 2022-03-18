@@ -221,6 +221,7 @@ jobs:
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp tests/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
@@ -297,6 +298,7 @@ jobs:
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+          TI_CI: 1
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -354,6 +356,7 @@ jobs:
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
           docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
@@ -362,6 +365,7 @@ jobs:
           GPU_TEST: ON
           DISPLAY: :1
           TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
+          TI_DEVICE_MEMORY_GB: '0.7'
 
       - name: clean docker container
         if: always()
@@ -416,7 +420,9 @@ jobs:
           TI_WANTED_ARCHS: cpu,cuda,opengl
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
+          TI_CI: 1
           PYTHON: "3.7"
+          TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -469,3 +475,4 @@ jobs:
           TI_WANTED_ARCHS: "metal,vulkan,cpu"
           PY: ${{ matrix.python }}
           PLATFORM: "m1"
+          TI_CI: 1

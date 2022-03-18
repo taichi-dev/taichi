@@ -1,5 +1,4 @@
 import pytest
-from taichi.lang.misc import serialize
 
 import taichi as ti
 from tests import test_utils
@@ -50,7 +49,7 @@ def test_dynamic_matrix():
 
     @ti.kernel
     def func():
-        serialize()
+        ti.loop_config(serialize=True)
         for i in range(n // 4):
             x[i * 4][1, 0] = i
 
@@ -152,7 +151,7 @@ def test_dense_dynamic():
 
     @ti.kernel
     def func():
-        serialize()
+        ti.loop_config(serialize=True)
         for i in range(n):
             for j in range(n):
                 ti.append(x.parent(), j, i)

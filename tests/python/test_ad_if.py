@@ -187,7 +187,7 @@ def test_ad_if_parallel_complex():
 
     @ti.kernel
     def func():
-        ti.parallelize(1)
+        ti.loop_config(parallelize=1)
         for i in range(2):
             t = 0.0
             if x[i] > 0:
@@ -216,7 +216,7 @@ def test_ad_if_parallel_complex_f64():
 
     @ti.kernel
     def func():
-        ti.parallelize(1)
+        ti.loop_config(parallelize=1)
         for i in range(2):
             t = 0.0
             if x[i] > 0:

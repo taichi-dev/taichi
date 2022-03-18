@@ -184,17 +184,16 @@ def _test_polar_decomp(dim, dt):
             assert D[None][i, j] == test_utils.approx(0, abs=tol)
 
 
-def test_polar_decomp():
-    for dim in [2, 3]:
-        for dt in [ti.f32, ti.f64]:
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32)
+def test_polar_decomp_f32(dim):
+    _test_polar_decomp(dim, ti.f32)
 
-            @test_utils.test(
-                require=ti.extension.data64 if dt == ti.f64 else [],
-                default_fp=dt)
-            def wrapped():
-                _test_polar_decomp(dim, dt)
 
-            wrapped()
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+def test_polar_decomp_f64(dim):
+    _test_polar_decomp(dim, ti.f64)
 
 
 @test_utils.test()
@@ -221,8 +220,9 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
+@pytest.mark.parametrize("n", range(1, 5))
 @test_utils.test()
-def _test_mat_inverse_size(n):
+def test_mat_inverse_size(n):
     m = ti.Matrix.field(n, n, dtype=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)
     for i in range(n):
@@ -240,11 +240,6 @@ def _test_mat_inverse_size(n):
 
     m_np = m.to_numpy(keep_dims=True)
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
-
-
-def test_mat_inverse():
-    for n in range(1, 5):
-        _test_mat_inverse_size(n)
 
 
 @test_utils.test()

@@ -48,6 +48,9 @@ class FunctionCreationGuard {
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
+ private:
+  bool needs_cache_{false};
+
  public:
   Kernel *kernel;
   IRNode *ir;
@@ -82,7 +85,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   CodeGenLLVM(Kernel *kernel,
               IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr);
+              std::unique_ptr<llvm::Module> &&module = nullptr,
+              bool needs_cache = false);
 
   Arch current_arch() {
     return kernel->arch;

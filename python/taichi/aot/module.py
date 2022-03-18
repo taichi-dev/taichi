@@ -24,8 +24,8 @@ class KernelTemplate:
             if val is v:
                 key_p += '=' + ky + ','
                 return key_p
-        raise RuntimeError('Arg type must be of type int/float/boolean' +
-                           'or taichi field. Type ' + str(type(v)) +
+        raise RuntimeError('Arg type must be of type int/float/boolean'
+                           f' or taichi field. Type {str(type(v))}'
                            ' is not supported')
 
     def instantiate(self, **kwargs):
@@ -151,8 +151,7 @@ class Module:
                     assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
                     if anno.element_dim == 0:
                         injected_args.append(
-                            ScalarNdarray(dtype=f32,
-                                          shape=(2, ) * anno.field_dim))
+                            ScalarNdarray(f32, (2, ) * anno.field_dim))
                     elif anno.element_dim == 1:
                         injected_args.append(
                             VectorNdarray(anno.element_shape[0],
@@ -168,10 +167,10 @@ class Module:
                                           layout=Layout.AOS))
                     else:
                         raise RuntimeError('')
+                i = i + 1
             else:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
-            i = i + 1
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(name, kernel.kernel_cpp)
 

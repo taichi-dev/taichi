@@ -2,6 +2,7 @@
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -106,8 +107,10 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       compile();
     }
 
-    for (auto &offloaded : ir->as<Block>()->statements) {
-      account_for_offloaded(offloaded->as<OffloadedStmt>());
+    if (!this->from_offline_cache_) {
+      for (auto &offloaded : ir->as<Block>()->statements) {
+        account_for_offloaded(offloaded->as<OffloadedStmt>());
+      }
     }
 
     compiled_(ctx_builder.get_context());

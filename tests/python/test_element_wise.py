@@ -288,8 +288,9 @@ def test_unary():
     assert test_utils.allclose(xf[3], np.sin(yf), rel=1e-4)
     assert test_utils.allclose(xf[4], np.cos(yf), rel=1e-4)
     assert test_utils.allclose(xf[5], np.tan(yf), rel=1e-4)
-    assert test_utils.allclose(xf[6], np.arcsin(yf), rel=1e-4)
-    assert test_utils.allclose(xf[7], np.arccos(yf), rel=1e-4)
+    # vulkan need 1e-3
+    assert test_utils.allclose(xf[6], np.arcsin(yf), rel=1e-3)
+    assert test_utils.allclose(xf[7], np.arccos(yf), rel=1e-3)
     assert test_utils.allclose(xf[8], np.tanh(yf), rel=1e-4)
     assert test_utils.allclose(xf[9], np.floor(yf), rel=1e-5)
     assert test_utils.allclose(xf[10], np.ceil(yf), rel=1e-5)
@@ -334,7 +335,7 @@ def test_ternary_i(is_mat):
 
     @ti.kernel
     def func():
-        x[0] = z[None] if y[None] else w[None]
+        x[0] = ti.select(y[None], z[None], w[None])
 
     func()
     x = x.to_numpy()

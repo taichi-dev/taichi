@@ -152,6 +152,7 @@ dx11 = _ti_core.dx11
 
 gpu = [cuda, metal, opengl, vulkan, dx11]
 """A list of GPU backends supported on the current system.
+Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -160,6 +161,7 @@ GPU is detected, Taichi falls back to the CPU backend.
 
 cpu = _ti_core.host_arch()
 """A list of CPU backends supported on the current system.
+Currently contains 'x64', 'x86_64', 'arm64', 'cc', 'wasm'.
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
@@ -510,17 +512,30 @@ def loop_unique(val, covers=None):
     return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-def parallelize(v):
+def _parallelize(v):
     get_runtime().prog.current_ast_builder().parallelize(v)
+    if v == 1:
+        get_runtime().prog.current_ast_builder().strictly_serialize()
 
 
-serialize = lambda: parallelize(1)
+def _serialize():
+    _parallelize(1)
 
 
-def block_dim(dim):
+def _block_dim(dim):
     """Set the number of threads in a block to `dim`.
     """
     get_runtime().prog.current_ast_builder().block_dim(dim)
+
+
+def loop_config(block_dim=None, serialize=None, parallelize=None):
+    if block_dim is not None:
+        _block_dim(block_dim)
+
+    if serialize:
+        _parallelize(1)
+    elif parallelize is not None:
+        _parallelize(parallelize)
 
 
 def global_thread_idx():
@@ -660,8 +675,8 @@ def get_host_arch_list():
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
-    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'parallelize',
-    'block_dim', 'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
+    'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
     'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
     'no_activate', 'reset', 'mesh_patch_idx'
 ]

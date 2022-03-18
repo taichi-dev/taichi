@@ -1,9 +1,12 @@
+import pytest
+
 import taichi as ti
 from tests import test_utils
 
 
+@pytest.mark.parametrize("round", range(10))
 @test_utils.test()
-def test_linear():
+def test_linear(round):
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
 
@@ -19,11 +22,6 @@ def test_linear():
     for i in range(n):
         assert x[i] == i
         assert y[i] == i + 123
-
-
-def test_linear_repeated():
-    for i in range(10):
-        test_linear()
 
 
 @test_utils.test()

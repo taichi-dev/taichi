@@ -21,6 +21,7 @@ struct AotModuleParams {
 };
 
 std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

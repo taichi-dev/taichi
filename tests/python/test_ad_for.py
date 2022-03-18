@@ -775,3 +775,188 @@ def test_large_for_loops_fixed_stack_size():
 
     assert loss[None] == 1e7
     assert x.grad[None] == 1e7
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 12.0
+    assert x.grad[None] == 12.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_multiple_outermost():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 24.0
+    assert x.grad[None] == 24.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_multiple_outermost_mixed():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+                for ii in range(3):
+                    y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 42.0
+    assert x.grad[None] == 42.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_mixed():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+                for k in range(2):
+                    y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 30.0
+    assert x.grad[None] == 30.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_deeper():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                for ii in range(2):
+                    y[None] += x[None]
+            for i in range(3):
+                for ii in range(2):
+                    for iii in range(2):
+                        y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 42.0
+    assert x.grad[None] == 42.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_deeper_non_scalar():
+    N = 10
+    x = ti.field(float, shape=N, needs_grad=True)
+    y = ti.field(float, shape=N, needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(N):
+            for i in range(j):
+                y[j] += x[j]
+            for i in range(3):
+                for ii in range(j):
+                    y[j] += x[j]
+            for i in range(3):
+                for ii in range(2):
+                    for iii in range(j):
+                        y[j] += x[j]
+
+    x.fill(1.0)
+    for i in range(N):
+        y.grad[i] = 1.0
+    compute_y()
+    compute_y.grad()
+    for i in range(N):
+        assert y[i] == i * 10.0
+        assert x.grad[i] == i * 10.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_multiple_ib_inner_mixed():
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                for ii in range(2):
+                    y[None] += x[None]
+                for iii in range(2):
+                    y[None] += x[None]
+                    for iiii in range(2):
+                        y[None] += x[None]
+            for i in range(3):
+                for ii in range(2):
+                    for iii in range(2):
+                        y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.Tape(y):
+        compute_y()
+
+    assert y[None] == 78.0
+    assert x.grad[None] == 78.0

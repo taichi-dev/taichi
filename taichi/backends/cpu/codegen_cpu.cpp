@@ -16,7 +16,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir, bool needs_cache)
+      : CodeGenLLVM(kernel, ir, nullptr, needs_cache) {
     TI_AUTO_PROF
   }
 
@@ -194,7 +195,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCPU(kernel, ir).gen();
+  return CodeGenLLVMCPU(kernel, ir, needs_cache_).gen();
 }
 
 TLANG_NAMESPACE_END

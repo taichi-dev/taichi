@@ -857,10 +857,11 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &e) {
   auto stmt_unique =
       std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
-  for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
-  this->create_scope(stmt->body, For);
+  this->create_scope(stmt->body,
+                     for_loop_dec_.config.strictly_serialized ? While : For);
+  for_loop_dec_.reset();
 }
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
@@ -905,6 +906,18 @@ void ASTBuilder::insert_continue_stmt() {
 
 void ASTBuilder::insert_expr_stmt(const Expr &val) {
   this->insert(Stmt::make<FrontendExprStmt>(val));
+}
+
+void ASTBuilder::insert_snode_activate(SNode *snode,
+                                       const ExprGroup &expr_group) {
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
+                                               expr_group));
+}
+
+void ASTBuilder::insert_snode_deactivate(SNode *snode,
+                                         const ExprGroup &expr_group) {
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
+                                               expr_group));
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

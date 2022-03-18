@@ -20,9 +20,9 @@ struct Vertex {
     float y;
   };
   vec3 pos;
-  vec3 normal;
-  vec2 texCoord;
-  vec4 color;
+  // vec3 normal;
+  // vec2 texCoord;
+  // vec4 color;
 };
 
 }  // namespace ui

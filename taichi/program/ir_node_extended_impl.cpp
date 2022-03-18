@@ -26,7 +26,10 @@ bool IRNode::has_real_func() const {
     return func->has_real_func;
   } else {
     auto kernel = get_kernel();
-    return kernel->has_real_func;
+    if (kernel != nullptr)
+      return kernel->has_real_func;
+    else
+      return false;
   }
 }
 

@@ -35,10 +35,10 @@ struct RenderableConfig {
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type{
       taichi::lang::TopologyType::Triangles};
-  VertexAttributes vbo_attrs{VboOps::all()};
+  VertexAttributes vbo_attrs{VboHelpers::all()};
 
   size_t vbo_size() const {
-    return VboOps::size(vbo_attrs);
+    return VboHelpers::size(vbo_attrs);
   }
 };
 

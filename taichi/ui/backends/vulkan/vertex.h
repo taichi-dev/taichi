@@ -41,8 +41,15 @@ inline VertexAttributes operator|(VertexAttributes src, VertexAttributes a) {
   return static_cast<VertexAttributes>(UT(src) | UT(a));
 }
 
-class VboOps {
+class VboHelpers {
  public:
+  constexpr static VertexAttributes kOrderedAttrs[] = {
+      VertexAttributes::kPos,
+      VertexAttributes::kNormal,
+      VertexAttributes::kUv,
+      VertexAttributes::kColor,
+  };
+
   constexpr static VertexAttributes empty() {
     return static_cast<VertexAttributes>(0);
   }

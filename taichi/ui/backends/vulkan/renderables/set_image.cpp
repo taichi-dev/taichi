@@ -83,8 +83,7 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_set_image(app_context, 1, 1);
 }
 
-void SetImage::init_set_image(AppContext *app_context,
-                              int img_width,
+void SetImage::init_set_image(AppContext *app_context, int img_width,
                               int img_height) {
   RenderableConfig config = {
       6,
@@ -156,21 +155,28 @@ void SetImage::update_vertex_buffer_() {
   };
   // Our actual VBO might only use the first several attributes in `Vertex`,
   // therefore this slicing & copying for each Vertex.
-  const size_t vbo_size = config_.vbo_size();
   {
     char *mapped_vbo =
         static_cast<char *>(app_context_->device().map(staging_vertex_buffer_));
     for (int i = 0; i < vertices.size(); ++i) {
       const char *src = reinterpret_cast<const char *>(&vertices[i]);
-      memcpy(mapped_vbo, src, vbo_size);
-      mapped_vbo += vbo_size;
+      for (auto a : VboHelpers::kOrderedAttrs) {
+        const auto a_sz = VboHelpers::size(a);
+        if (VboHelpers::has_attr(config_.vbo_attrs, a)) {
+          memcpy(mapped_vbo, src, a_sz);
+          mapped_vbo += a_sz;
+        }
+        // Pointer to the full Vertex attributes needs to be advanced
+        // unconditionally.
+        src += a_sz;
+      }
     }
     app_context_->device().unmap(staging_vertex_buffer_);
   }
 
-  app_context_->device().memcpy_internal(vertex_buffer_.get_ptr(0),
-                                         staging_vertex_buffer_.get_ptr(0),
-                                         config_.vertices_count * vbo_size);
+  app_context_->device().memcpy_internal(
+      vertex_buffer_.get_ptr(0), staging_vertex_buffer_.get_ptr(0),
+      config_.vertices_count * config_.vbo_size());
 }
 
 void SetImage::update_index_buffer_() {

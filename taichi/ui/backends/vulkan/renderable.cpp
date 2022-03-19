@@ -146,22 +146,22 @@ void Renderable::create_graphics_pipeline() {
       {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};
   // TODO: consider using uint8 for colors and normals
   std::vector<VertexInputAttribute> vertex_attribs;
-  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kPos)) {
+  if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kPos)) {
     vertex_attribs.push_back({/*location=*/0, /*binding=*/0,
                               /*format=*/BufferFormat::rgb32f,
                               /*offset=*/offsetof(Vertex, pos)});
   }
-  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kNormal)) {
+  if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kNormal)) {
     vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
                               /*format=*/BufferFormat::rgb32f,
                               /*offset=*/offsetof(Vertex, normal)});
   }
-  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kUv)) {
+  if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kUv)) {
     vertex_attribs.push_back({/*location=*/2, /*binding=*/0,
                               /*format=*/BufferFormat::rg32f,
                               /*offset=*/offsetof(Vertex, tex_coord)});
   }
-  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kColor)) {
+  if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kColor)) {
     vertex_attribs.push_back({/*location=*/3, /*binding=*/0,
                               /*format=*/BufferFormat::rgba32f,
                               /*offset=*/offsetof(Vertex, color)});

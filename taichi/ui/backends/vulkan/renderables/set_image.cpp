@@ -83,7 +83,8 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_set_image(app_context, 1, 1);
 }
 
-void SetImage::init_set_image(AppContext *app_context, int img_width,
+void SetImage::init_set_image(AppContext *app_context,
+                              int img_width,
                               int img_height) {
   RenderableConfig config = {
       6,

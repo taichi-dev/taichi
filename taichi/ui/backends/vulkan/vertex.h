@@ -36,7 +36,8 @@ enum class VertexAttributes : char {
   kColor = 0b1000,
 };
 
-inline VertexAttributes operator|(VertexAttributes src, VertexAttributes a) {
+constexpr inline VertexAttributes operator|(VertexAttributes src,
+                                            VertexAttributes a) {
   using UT = std::underlying_type_t<VertexAttributes>;
   return static_cast<VertexAttributes>(UT(src) | UT(a));
 }

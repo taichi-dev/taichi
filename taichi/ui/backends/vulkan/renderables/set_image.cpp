@@ -79,7 +79,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   stream->submit_synced(cmd_list.get());
 }
 
-SetImage::SetImage(AppContext *app_context, VboAttribes vbo_attrs) {
+SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_set_image(app_context, 1, 1);
 }
 

@@ -19,12 +19,12 @@ void Renderer::init(Program *prog,
 
 template <typename T>
 std::unique_ptr<Renderable> get_new_renderable(AppContext *app_context,
-                                               VboAttribes vbo_attrs) {
+                                               VertexAttributes vbo_attrs) {
   return std::unique_ptr<Renderable>{new T(app_context, vbo_attrs)};
 }
 
 template <typename T>
-T *Renderer::get_renderable_of_type(VboAttribes vbo_attrs) {
+T *Renderer::get_renderable_of_type(VertexAttributes vbo_attrs) {
   if (next_renderable_ >= renderables_.size()) {
     renderables_.push_back(get_new_renderable<T>(&app_context_, vbo_attrs));
   } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
@@ -44,7 +44,7 @@ void Renderer::set_background_color(const glm::vec3 &color) {
 }
 
 void Renderer::set_image(const SetImageInfo &info) {
-  SetImage *s = get_renderable_of_type<SetImage>(VboAttribes::kAll);
+  SetImage *s = get_renderable_of_type<SetImage>(VertexAttributes::kAll);
   s->update_data(info);
   next_renderable_ += 1;
 }

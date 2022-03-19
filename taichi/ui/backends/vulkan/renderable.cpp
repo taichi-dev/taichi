@@ -1,4 +1,5 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
+
 #include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
 
@@ -109,13 +110,9 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
 }
 
-Pipeline &Renderable::pipeline() {
-  return *(pipeline_.get());
-}
+Pipeline &Renderable::pipeline() { return *(pipeline_.get()); }
 
-const Pipeline &Renderable::pipeline() const {
-  return *(pipeline_.get());
-}
+const Pipeline &Renderable::pipeline() const { return *(pipeline_.get()); }
 
 void Renderable::create_bindings() {
   ResourceBinder *binder = pipeline_->resource_binder();
@@ -144,21 +141,23 @@ void Renderable::create_graphics_pipeline() {
   std::vector<VertexInputBinding> vertex_inputs = {
       {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};
   // TODO: consider using uint8 for colors and normals
-  std::vector<VertexInputAttribute> vertex_attribs = {
-      {/*location=*/0, /*binding=*/0, /*format=*/BufferFormat::rgb32f,
-       /*offset=*/offsetof(Vertex, pos)},
-  };
-  if (config_.vbo_attrs != VboAttribes::kPos) {
+  std::vector<VertexInputAttribute> vertex_attribs;
+  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kPos)) {
+    vertex_attribs.push_back({/*location=*/0, /*binding=*/0,
+                              /*format=*/BufferFormat::rgb32f,
+                              /*offset=*/offsetof(Vertex, pos)});
+  }
+  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kNormal)) {
     vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
                               /*format=*/BufferFormat::rgb32f,
                               /*offset=*/offsetof(Vertex, normal)});
   }
-  if (config_.vbo_attrs != VboAttribes::kPosNormal) {
+  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kUv)) {
     vertex_attribs.push_back({/*location=*/2, /*binding=*/0,
                               /*format=*/BufferFormat::rg32f,
-                              /*offset=*/offsetof(Vertex, texCoord)});
+                              /*offset=*/offsetof(Vertex, tex_coord)});
   }
-  if (config_.vbo_attrs != VboAttribes::kPosNormalUv) {
+  if (VboOps::has_attr(config_.vbo_attrs, VertexAttributes::kColor)) {
     vertex_attribs.push_back({/*location=*/3, /*binding=*/0,
                               /*format=*/BufferFormat::rgba32f,
                               /*offset=*/offsetof(Vertex, color)});

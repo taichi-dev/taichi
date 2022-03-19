@@ -5,19 +5,22 @@
 namespace taichi {
 namespace ui {
 
-size_t sizeof_vbo(VboAttribes va) {
-  switch (va) {
-    case VboAttribes::kAll:
-      return sizeof(Vertex);
-    case VboAttribes::kPos:
-      return offsetof(Vertex, normal);
-    case VboAttribes::kPosNormal:
-      return offsetof(Vertex, texCoord);
-    case VboAttribes::kPosNormalUv:
-      return offsetof(Vertex, color);
-    default:
-      break;
+// static
+size_t VboOps::size(VertexAttributes va) {
+  size_t res = 0;
+  if (VboOps::has_attr(va, VertexAttributes::kPos)) {
+    res += sizeof(Vertex::pos);
   }
+  if (VboOps::has_attr(va, VertexAttributes::kNormal)) {
+    res += sizeof(Vertex::normal);
+  }
+  if (VboOps::has_attr(va, VertexAttributes::kUv)) {
+    res += sizeof(Vertex::tex_coord);
+  }
+  if (VboOps::has_attr(va, VertexAttributes::kColor)) {
+    res += sizeof(Vertex::color);
+  }
+  return res;
 }
 
 }  // namespace ui

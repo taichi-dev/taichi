@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Circles final : public Renderable {
  public:
-  Circles(AppContext *app_context, VboAttribes vbo_attrs);
+  Circles(AppContext *app_context, VertexAttributes vbo_attrs);
   void update_data(const CirclesInfo &info);
 
  private:
@@ -39,7 +39,7 @@ class Circles final : public Renderable {
 
   void init_circles(AppContext *app_context,
                     int vertices_count,
-                    VboAttribes vbo_attrs);
+                    VertexAttributes vbo_attrs);
 
   void update_ubo(glm::vec3 color, bool use_per_vertex_color, float radius);
 

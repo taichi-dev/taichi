@@ -81,7 +81,7 @@ class TI_DLL_EXPORT Renderer {
   AppContext app_context_;
 
   template <typename T>
-  T *get_renderable_of_type(VboAttribes vbo_attrs);
+  T *get_renderable_of_type(VertexAttributes vbo_attrs);
 };
 
 }  // namespace vulkan

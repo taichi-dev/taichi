@@ -1,24 +1,24 @@
 #pragma once
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
 #include <algorithm>
-#include <chrono>
-#include <vector>
-#include <cstring>
-#include <cstdlib>
-#include <cstdint>
 #include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iostream>
 #include <optional>
 #include <set>
-#include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
+#include <stdexcept>
+#include <vector>
+
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
-
+#include "taichi/ui/backends/vulkan/vertex.h"
 #include "taichi/ui/common/renderable_info.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/ui/utils/utils.h"
 
 namespace taichi {
 namespace ui {
@@ -35,11 +35,9 @@ struct RenderableConfig {
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type{
       taichi::lang::TopologyType::Triangles};
-  VboAttribes vbo_attrs{VboAttribes::kAll};
+  VertexAttributes vbo_attrs{VboOps::all()};
 
-  size_t vbo_size() const {
-    return sizeof_vbo(vbo_attrs);
-  }
+  size_t vbo_size() const { return VboOps::size(vbo_attrs); }
 };
 
 class Renderable {

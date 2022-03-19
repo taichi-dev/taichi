@@ -38,7 +38,7 @@ void Lines::init_lines(AppContext *app_context,
   Renderable::init_render_resources();
 }
 
-Lines::Lines(AppContext *app_context, VboAttribes vbo_attrs) {
+Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_lines(app_context, 4, 6);
 }
 

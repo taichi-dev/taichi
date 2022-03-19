@@ -18,7 +18,7 @@ void Circles::update_data(const CirclesInfo &info) {
 
 void Circles::init_circles(AppContext *app_context,
                            int vertices_count,
-                           VboAttribes vbo_attrs) {
+                           VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       1,
@@ -36,7 +36,7 @@ void Circles::init_circles(AppContext *app_context,
   Renderable::init_render_resources();
 }
 
-Circles::Circles(AppContext *app_context, VboAttribes vbo_attrs) {
+Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_circles(app_context, /*vertices_count=*/1, vbo_attrs);
 }
 

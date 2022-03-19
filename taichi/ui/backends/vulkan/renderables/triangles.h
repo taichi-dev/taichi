@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Triangles final : public Renderable {
  public:
-  Triangles(AppContext *app_context, VboAttribes vbo_attrs);
+  Triangles(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const TrianglesInfo &info);
 

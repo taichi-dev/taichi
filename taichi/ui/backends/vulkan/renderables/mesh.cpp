@@ -9,7 +9,7 @@ namespace vulkan {
 
 using namespace taichi::lang;
 
-Mesh::Mesh(AppContext *app_context, VboAttribes vbo_attrs) {
+Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_mesh(app_context, 3, 3);
 }
 

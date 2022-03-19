@@ -10,7 +10,7 @@ struct RenderableInfo {
   FieldInfo vbo;
   FieldInfo indices;
   bool has_per_vertex_color{false};
-  VboAttribes vbo_attrs{VboAttribes::kAll};
+  VertexAttributes vbo_attrs{VertexAttributes::kAll};
 };
 
 TI_UI_NAMESPACE_END

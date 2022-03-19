@@ -259,6 +259,7 @@ void export_lang(py::module &m) {
 
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
+      .def("make_id_expr", &ASTBuilder::make_id_expr)
       .def("create_kernel_exprgroup_return",
            &ASTBuilder::create_kernel_exprgroup_return)
       .def("create_print", &ASTBuilder::create_print)

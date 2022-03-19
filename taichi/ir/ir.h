@@ -88,6 +88,9 @@ class Identifier {
     id = id_counter++;
   }
 
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
+  }
+
   std::string raw_name() const;
 
   std::string name() const {

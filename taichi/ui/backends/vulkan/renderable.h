@@ -37,7 +37,9 @@ struct RenderableConfig {
       taichi::lang::TopologyType::Triangles};
   VertexAttributes vbo_attrs{VboOps::all()};
 
-  size_t vbo_size() const { return VboOps::size(vbo_attrs); }
+  size_t vbo_size() const {
+    return VboOps::size(vbo_attrs);
+  }
 };
 
 class Renderable {

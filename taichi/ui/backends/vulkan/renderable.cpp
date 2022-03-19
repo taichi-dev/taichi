@@ -110,9 +110,13 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
 }
 
-Pipeline &Renderable::pipeline() { return *(pipeline_.get()); }
+Pipeline &Renderable::pipeline() {
+  return *(pipeline_.get());
+}
 
-const Pipeline &Renderable::pipeline() const { return *(pipeline_.get()); }
+const Pipeline &Renderable::pipeline() const {
+  return *(pipeline_.get());
+}
 
 void Renderable::create_bindings() {
   ResourceBinder *binder = pipeline_->resource_binder();

@@ -1,4 +1,5 @@
 #include "renderer.h"
+
 #include "taichi/ui/utils/utils.h"
 
 using taichi::lang::Program;
@@ -10,8 +11,7 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Renderer::init(Program *prog,
-                    TaichiWindow *window,
+void Renderer::init(Program *prog, TaichiWindow *window,
                     const AppConfig &config) {
   app_context_.init(prog, window, config);
   swap_chain_.init(&app_context_);
@@ -44,7 +44,7 @@ void Renderer::set_background_color(const glm::vec3 &color) {
 }
 
 void Renderer::set_image(const SetImageInfo &info) {
-  SetImage *s = get_renderable_of_type<SetImage>(VertexAttributes::kAll);
+  SetImage *s = get_renderable_of_type<SetImage>(VboHelpers::all());
   s->update_data(info);
   next_renderable_ += 1;
 }
@@ -119,9 +119,7 @@ void Renderer::cleanup() {
   app_context_.cleanup();
 }
 
-void Renderer::prepare_for_next_frame() {
-  next_renderable_ = 0;
-}
+void Renderer::prepare_for_next_frame() { next_renderable_ = 0; }
 
 void Renderer::draw_frame(Gui *gui) {
   auto stream = app_context_.device().get_graphics_stream();
@@ -157,21 +155,13 @@ void Renderer::draw_frame(Gui *gui) {
   stream->submit_synced(cmd_list.get());
 }
 
-const AppContext &Renderer::app_context() const {
-  return app_context_;
-}
+const AppContext &Renderer::app_context() const { return app_context_; }
 
-AppContext &Renderer::app_context() {
-  return app_context_;
-}
+AppContext &Renderer::app_context() { return app_context_; }
 
-const SwapChain &Renderer::swap_chain() const {
-  return swap_chain_;
-}
+const SwapChain &Renderer::swap_chain() const { return swap_chain_; }
 
-SwapChain &Renderer::swap_chain() {
-  return swap_chain_;
-}
+SwapChain &Renderer::swap_chain() { return swap_chain_; }
 
 }  // namespace vulkan
 

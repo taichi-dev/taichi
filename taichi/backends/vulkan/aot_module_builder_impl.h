@@ -40,8 +40,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                              const TaskAttributes &k,
                              const std::vector<uint32_t> &source_code) const;
 
-  uint32_t to_vk_dtype_enum(DataType dt);
-
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;
   std::unique_ptr<Device> aot_target_device_;

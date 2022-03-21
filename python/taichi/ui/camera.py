@@ -8,8 +8,9 @@ from .utils import euler_to_vec, vec_to_euler
 class Camera:
     """The Camera class.
 
-    You should not create an instance of this class by calling its `__init__`
-    function directly, please use :func:`~taichi.ui.make_camera()` instead.
+    You should not instantiate this class by calling the `__init__` method
+    directly, please use the helper function :func:`~taichi.ui.make_camera()`
+    instead.
 
     Args:
         ptr (:class:`~taichi._ti_core.PyCamera`): An instance of the `PyCamera` \

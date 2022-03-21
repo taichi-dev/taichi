@@ -67,7 +67,7 @@ def func(a: ti.f64) -> ti.i64:
 
 ### Explicit type casting
 
-In the Taichi scope, the type of a variable is *static* and *completely determined when it is initialized*. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit type casting:
+In the Taichi scope, the type of a variable is *statically typed* upon initialization. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit type casting:
 
 - You can use `ti.cast()` to convert a value to the target type:
 

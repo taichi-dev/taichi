@@ -9,7 +9,7 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-Particles::Particles(AppContext *app_context) {
+Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_particles(app_context, 1);
 }
 

@@ -714,7 +714,9 @@ void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
     std::vector<std::string> &&offloaded_task_name_list) {
-  if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end())
+  if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
+    return;
+  }
     return;
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;

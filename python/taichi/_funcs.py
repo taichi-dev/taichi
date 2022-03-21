@@ -306,10 +306,11 @@ def sym_eig2x2(A, dt):
     return eigenvalues, eigenvectors
 
 
+@func
 def sym_eig3x3(A, dt):
-    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 3x3 real symmetric matrix.
+    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 3x3 real symmetric matrix using Cardano's method.
 
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    Mathematical concept refers to https://www.mpi-hd.mpg.de/personalhomes/globes/3x3/.
 
     Args:
         A (ti.Matrix(3, 3)): input 3x3 symmetric matrix `A`.
@@ -319,18 +320,69 @@ def sym_eig3x3(A, dt):
         eigenvalues (ti.Vector(3)): The eigenvalues. Each entry store one eigen value.
         eigenvectors (ti.Matrix(3, 3)): The eigenvectors. Each column stores one eigenvector.
     """
-    assert A.n == 3 and A.m == 3
-    inputs = tuple([e.ptr for e in A.entries])
-    assert dt in [f32, f64]
-    if dt == f32:
-        rets = get_runtime().prog.current_ast_builder().eig_3x3_f32(*inputs)
+    M_SQRT3 = 1.73205080756887729352744634151
+    m = A.trace()
+    dd = A[0, 1] * A[0, 1]
+    ee = A[1, 2] * A[1, 2]
+    ff = A[0, 2] * A[0, 2]
+    c1 = A[0, 0] * A[1, 1] + A[0, 0] * A[2, 2] + A[1, 1] * A[2, 2] - (dd + ee +
+                                                                      ff)
+    c0 = A[2, 2] * dd + A[0, 0] * ee + A[1, 1] * ff - A[0, 0] * A[1, 1] * A[
+        2, 2] - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
+
+    p = m * m - 3.0 * c1
+    q = m * (p - 1.5 * c1) - 13.5 * c0
+    sqrt_p = ops.sqrt(ops.abs(p))
+    phi = 27.0 * (0.25 * c1 * c1 * (p - c1) + c0 * (q + 6.75 * c0))
+    phi = (1.0 / 3.0) * ops.atan2(ops.sqrt(ops.abs(phi)), q)
+
+    c = sqrt_p * ops.cos(phi)
+    s = (1.0 / M_SQRT3) * sqrt_p * ops.sin(phi)
+    eigenvalues = Vector([0.0, 0.0, 0.0], dt=dt)
+    eigenvalues[2] = (1.0 / 3.0) * (m - c)
+    eigenvalues[1] = eigenvalues[2] + s
+    eigenvalues[0] = eigenvalues[2] + c
+    eigenvalues[2] = eigenvalues[2] - s
+
+    t = ops.abs(eigenvalues[0])
+    u = ops.abs(eigenvalues[1])
+    if u > t:
+        t = u
+    u = ops.abs(eigenvalues[2])
+    if u > t:
+        t = u
+    if t < 1.0:
+        u = t
     else:
-        rets = get_runtime().prog.current_ast_builder().eig_3x3_f64(*inputs)
-    assert len(rets) == 3
-    D = expr_init(Matrix.zero(dt, 3, 1))
-    for i in range(3):
-        D(i)._assign(rets[i])
-    return D
+        u = t * t
+    Q = Matrix.zero(dt, 3, 3)
+    Q[0, 1] = A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
+    Q[1, 1] = A[0, 2] * A[0, 1] - A[1, 2] * A[0, 0]
+    Q[2, 1] = A[0, 1] * A[0, 1]
+
+    Q[0, 0] = Q[0, 1] + A[0, 2] * eigenvalues[0]
+    Q[1, 0] = Q[1, 1] + A[1, 2] * eigenvalues[0]
+    Q[2, 0] = (A[0, 0] - eigenvalues[0]) * (A[1, 1] - eigenvalues[0]) - Q[2, 1]
+    norm = Q[0, 0] * Q[0, 0] + Q[1, 0] * Q[1, 0] + Q[2, 0] * Q[2, 0]
+    norm = ops.sqrt(1.0 / norm)
+    Q[0, 0] *= norm
+    Q[1, 0] *= norm
+    Q[2, 0] *= norm
+
+    Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
+    Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
+    Q[2, 1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2, 1]
+    norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
+
+    norm = ops.sqrt(1.0 / norm)
+    Q[0, 1] *= norm
+    Q[1, 1] *= norm
+    Q[2, 1] *= norm
+
+    Q[0, 2] = Q[1, 0] * Q[2, 1] - Q[2, 0] * Q[1, 1]
+    Q[1, 2] = Q[2, 0] * Q[0, 1] - Q[0, 0] * Q[2, 1]
+    Q[2, 2] = Q[0, 0] * Q[1, 1] - Q[1, 0] * Q[0, 1]
+    return eigenvalues, Q
 
 
 @func

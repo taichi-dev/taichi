@@ -5,9 +5,10 @@ ti.init()
 
 @ti.kernel
 def test():
-    A = ti.Matrix([[3, 1, 1], [1, 2, 2], [1, 2, 2]])
-    diagnal = ti.sym_eig(A)
-    print(diagnal)
+    A = ti.Matrix([[3.0, 1.0, 1.0], [1.0, 2.0, 2.0], [1.0, 2.0, 2.0]],
+                  dt=ti.f32)
+    diagnal, Q = ti.sym_eig(A)
+    print(diagnal, Q)
 
 
 test()

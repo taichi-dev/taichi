@@ -21,7 +21,6 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
-#include "taichi/math/eig.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
@@ -288,8 +287,6 @@ void export_lang(py::module &m) {
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
-      .def("eig_3x3_f32", eig_3x3_export<float32, int32>)
-      .def("eig_3x3_f64", eig_3x3_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
       .def("bit_vectorize", &ASTBuilder::bit_vectorize)
       .def("parallelize", &ASTBuilder::parallelize)

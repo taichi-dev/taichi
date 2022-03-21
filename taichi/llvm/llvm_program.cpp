@@ -717,7 +717,6 @@ void LlvmProgramImpl::cache_kernel(
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
     return;
   }
-  return;
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);

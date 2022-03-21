@@ -260,8 +260,8 @@ Supported atomic operations on each backend:
 | ---- | ---- | ---- | ------ | ----- | -------- |
 | i32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
 | f32  |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
-| i64  |:heavy_check_mark:|:heavy_check_mark:|:large_orange_diamond:|:x:|:heavy_check_mark:|
-| f64  |:heavy_check_mark:|:heavy_check_mark:|:large_orange_diamond:|:x:|:heavy_check_mark:|
+| i64  |:heavy_check_mark:|:heavy_check_mark:|:o:|:x:|:heavy_check_mark:|
+| f64  |:heavy_check_mark:|:heavy_check_mark:|:o:|:x:|:heavy_check_mark:|
 
 (:large_orange_diamond: requires extension)
 :::

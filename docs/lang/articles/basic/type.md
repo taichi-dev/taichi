@@ -5,14 +5,14 @@ sidebar_position: 3
 
 # Type system
 
-Taichi supports two data types in the Taichi scope: primitive type and compound type.
+Taichi supports two data types in the [Taichi scope](./syntax.md#taichi-scope): primitive type and compound type.
 
-- Primitive types refer to the various commonly-used numerical data types.
-- Compound types are user-defined data types, which comprise multiple members.
+- Primitive types: Various commonly-used numerical data types, such as `int32`, `uint8`, and `float64`
+- Compound types: User-defined data types, which comprise multiple members.
 
 ## Primitive types
 
-Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The category can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
+Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
 
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
@@ -21,7 +21,7 @@ Each primitive type is denoted with a character indicating its category followed
 
 Not all primitive types are supported by your backend. Check out the following table for the supported types. Note that some backends may require extensions to support a specific primitive type.
 
-| Backend | `i8`               | `i16`              | `i32`              | `i64`              | u8                 | u16                | u32                | u64                | f16                | f32                | f64                |
+| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`                 | `u16`                | `u32`                | `u64`                | `f16`                | `f32`                | `f64`                |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
 | CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
@@ -47,7 +47,7 @@ ti.init(default_fp=ti.f64)  # Set the default floating-point type to ti.f64
 
 #### Set alias
 
-Taichi supports using`int` as an alias for the default integer type and `float` as an alias for the default floating-point type. In the following example, you change the default primitive types to `i64` and `f64` when initializing Taichi, then you can use `int` to represent `i64` and `float` to represent `f64`.
+Taichi supports using `int` as an alias for the default integer type and `float` as an alias for the default floating-point type. In the following example, you change the default primitive types to `i64` and `f64` when initializing Taichi, then you can use `int` to represent `i64` and `float` to represent `f64`.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
@@ -69,7 +69,7 @@ def func(a: ti.f64) -> ti.i64:
 
 In the Taichi scope, the type of a variable is *static* and *completely determined when it is initialized*. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit type casting:
 
-- You can use `ti.cast()` to convert a value to the default integer or to the default floating-point type:
+- You can use `ti.cast()` to convert a value to the target type:
 
   ```python
   @ti.kernel
@@ -131,11 +131,11 @@ When you assign a value to a variable of a different data type, Taichi implicitl
 
 ## Compound types
 
-Compound types are user-defined data types, which comprise multiple members. Supports compound types include vectors, metrics, and structs.
+Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, metrics, and structs.
 
 Taichi allows you to use all types supplied in the `ti.type` module as scaffolds to customize *higher-level* compound types.
 
-Suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, then you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`:
+Suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
 
 ```python
 # Define a compound type vec3 to represent a sphere's center
@@ -174,7 +174,7 @@ Just as you do with any other data type, you can call a compound type directly t
   :::note
 
   - In the definition of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.
-  - Vectors, matrices and structs can be created using GLSL-like broadcast syntax because their shapes are already known.
+  - You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
 
   :::
 

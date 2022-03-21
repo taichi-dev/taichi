@@ -459,23 +459,18 @@ class GlobalVariableExpression : public Expression {
   Identifier ident;
   DataType dt;
   std::string name;
-  SNode *snode;
-  bool has_ambient;
+  SNode *snode{nullptr};
+  bool has_ambient{false};
   TypedConstant ambient_value;
-  bool is_primal;
+  bool is_primal{true};
   Expr adjoint;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
-    snode = nullptr;
-    has_ambient = false;
-    is_primal = true;
   }
 
-  GlobalVariableExpression(SNode *snode) : snode(snode) {
-    dt = snode->dt;
-    has_ambient = false;
-    is_primal = true;
+  GlobalVariableExpression(SNode *snode, const Identifier &ident)
+      : ident(ident), dt(snode->dt), snode(snode) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -615,8 +610,7 @@ class LoopUniqueExpression : public Expression {
 class IdExpression : public Expression {
  public:
   Identifier id;
-  IdExpression(const std::string &name = "") : id(name) {
-  }
+
   IdExpression(const Identifier &id) : id(id) {
   }
 

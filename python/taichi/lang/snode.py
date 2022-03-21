@@ -236,7 +236,7 @@ class SNode:
         Returns:
             taichi_core.Expr: See above.
         """
-        return _ti_core.global_var_expr_from_snode(self.ptr)
+        return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
 
     @property
     def _name(self):

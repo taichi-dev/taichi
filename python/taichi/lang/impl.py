@@ -488,7 +488,7 @@ def create_field_member(dtype, name):
     dtype = cook_dtype(dtype)
 
     # primal
-    x = Expr(_ti_core.make_id_expr(""))
+    x = Expr(get_runtime().prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
@@ -498,7 +498,7 @@ def create_field_member(dtype, name):
     x_grad = None
     if _ti_core.needs_grad(dtype):
         # adjoint
-        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)

@@ -78,7 +78,8 @@ TEST(FrontendTypeInference, TernaryOp) {
 TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   auto snode = std::make_unique<SNode>(0, SNodeType::root);
   snode->dt = PrimitiveType::u8;
-  auto global_var = Expr::make<GlobalVariableExpression>(snode.get());
+  auto global_var =
+      Expr::make<GlobalVariableExpression>(snode.get(), Identifier(0));
   auto index = value<float32>(2);
   index->type_check(nullptr);
   auto global_ptr = global_var[ExprGroup(index)];

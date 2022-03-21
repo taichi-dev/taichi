@@ -403,8 +403,17 @@ void export_lang(py::module &m) {
              return program->current_callable->insert_arr_arg(dt, total_dim,
                                                               shape);
            })
-      .def("decl_ret", [&](Program *program, const DataType &dt) {
-        return program->current_callable->insert_ret(dt);
+      .def("decl_ret",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_ret(dt);
+           })
+      .def("make_id_expr",
+           [](Program *program, const std::string &name) {
+             return Expr::make<IdExpression>(program->get_next_global_id(name));
+           })
+      .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
+        return Expr::make<GlobalVariableExpression>(
+            snode, program->get_next_global_id());
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -715,8 +724,6 @@ void export_lang(py::module &m) {
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
 
-  m.def("make_id_expr", Expr::make<IdExpression, std::string>);
-
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
   m.def("make_const_expr_int",
@@ -841,9 +848,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("global_var_expr_from_snode", [](SNode *snode) {
-    return Expr::make<GlobalVariableExpression>(snode);
-  });
   m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });

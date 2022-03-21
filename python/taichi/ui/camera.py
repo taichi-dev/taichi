@@ -9,7 +9,7 @@ class Camera:
     """The Camera class.
 
     You should not create an instance of this class by calling its `__init__`
-    function directly, please use :func:`taichi.ui.make_camera()` instead.
+    function directly, please use :func:`~taichi.ui.make_camera()` instead.
 
     Args:
         ptr (:class:`~taichi._ti_core.PyCamera`): An instance of the `PyCamera` \

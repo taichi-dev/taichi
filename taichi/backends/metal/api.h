@@ -9,8 +9,8 @@
 #include "taichi/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
 
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace metal {
 
 // Expose these incomplete structs so that other modules (e.g. MetalRuntime)
@@ -149,6 +149,11 @@ inline void *mtl_buffer_contents(MTLBuffer *buffer) {
 
 void did_modify_range(MTLBuffer *buffer, size_t location, size_t length);
 
+void fill_buffer(MTLBlitCommandEncoder *encoder,
+                 MTLBuffer *buffer,
+                 mac::TI_NSRange range,
+                 uint8_t value);
+
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state);
 #endif  // TI_PLATFORM_OSX
@@ -156,5 +161,5 @@ size_t get_max_total_threads_per_threadgroup(
 bool is_metal_api_available();
 
 }  // namespace metal
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

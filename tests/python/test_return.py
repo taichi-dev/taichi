@@ -29,12 +29,11 @@ def test_const_func_ret():
     assert func2() == 3
 
 
-@pytest.mark.parametrize("dt1,dt2,dt3,castor", [
-    (ti.i32, ti.f32, ti.f32, float),
-    (ti.f32, ti.i32, ti.f32, float),
-    (ti.i32, ti.f32, ti.i32, int),
-    (ti.f32, ti.i32, ti.i32, int)
-])
+@pytest.mark.parametrize("dt1,dt2,dt3,castor",
+                         [(ti.i32, ti.f32, ti.f32, float),
+                          (ti.f32, ti.i32, ti.f32, float),
+                          (ti.i32, ti.f32, ti.i32, int),
+                          (ti.f32, ti.i32, ti.i32, int)])
 @test_utils.test()
 def test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel

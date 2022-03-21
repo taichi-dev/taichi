@@ -91,7 +91,8 @@ def try_check_version():
                                    cur_date)
         else:
             cur_uuid = str(uuid.uuid4())
-            write_version_info({'status':0}, cur_uuid, version_info_path, cur_date)
+            write_version_info({'status': 0}, cur_uuid, version_info_path,
+                               cur_date)
             response = check_version(cur_uuid)
             write_version_info(response, cur_uuid, version_info_path, cur_date)
     # Wildcard exception to catch potential file writing errors.

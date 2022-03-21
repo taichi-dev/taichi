@@ -263,7 +263,7 @@ Supported atomic operations on each backend:
 | i64  |:heavy_check_mark:|:heavy_check_mark:|:o:|:x:|:heavy_check_mark:|
 | f64  |:heavy_check_mark:|:heavy_check_mark:|:o:|:x:|:heavy_check_mark:|
 
-(:large_orange_diamond: requires extension)
+(:o: Requiring extensions for the backend.)
 :::
 
 

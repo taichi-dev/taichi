@@ -21,7 +21,7 @@ def test_exceed_max_eight():
     with pytest.raises(
             ti.TaichiRuntimeError,
             match=
-            f"The number of elements in kernel arguments is too big! Do not exceed 8 on {ti.lang._ti_core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
+            f"The number of elements in kernel arguments is too big! Do not exceed 8 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
     ):
         foo2(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
@@ -48,6 +48,6 @@ def test_exceed_max_64():
     with pytest.raises(
             ti.TaichiRuntimeError,
             match=
-            f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti.lang._ti_core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
+            f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
     ):
         foo2(A)

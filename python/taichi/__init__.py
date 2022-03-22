@@ -38,7 +38,9 @@ __deprecated_names__ = {
     'imshow': 'tools.imshow',
     'imwrite': 'tools.imwrite',
     'quant': 'types.quantized_types.quant',
-    'type_factory': 'types.quantized_types.type_factory'
+    'type_factory': 'types.quantized_types.type_factory',
+    'ext_arr': 'types.ndarray',
+    'any_arr': 'types.ndarray'
 }
 
 __customized_deprecations__ = {

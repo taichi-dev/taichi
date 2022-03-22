@@ -470,7 +470,7 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.any_arr\(\) - required element_dim=1, but .* is provided'
+            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim=1, but .* is provided'
     ):
         func1(x)
 
@@ -482,7 +482,7 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.any_arr\(\) - required element_dim=2, but .* is provided'
+            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim=2, but .* is provided'
     ):
         func2(x)
 
@@ -494,7 +494,7 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.AOS, but .* is provided'
+            r'Invalid argument into ti\.types\.ndarray\(\) - required layout=Layout\.AOS, but .* is provided'
     ):
         func3(x)
 
@@ -506,7 +506,7 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.SOA, but .* is provided'
+            r'Invalid argument into ti\.types\.ndarray\(\) - required layout=Layout\.SOA, but .* is provided'
     ):
         func4(x)
 
@@ -518,7 +518,7 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.any_arr\(\) - required element_dim'):
+            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim'):
         func5(x)
 
     with pytest.raises(
@@ -536,7 +536,7 @@ def _test_arg_not_match():
     x = ti.ndarray(ti.i32, shape=(3, ))
     with pytest.raises(
             ValueError,
-            match=r'Invalid argument into ti\.any_arr\(\) - required field_dim'
+            match=r'Invalid argument into ti\.types\.ndarray\(\) - required field_dim'
     ):
         func7(x)
 

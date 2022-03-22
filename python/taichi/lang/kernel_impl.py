@@ -18,7 +18,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
-from taichi.types import (any_arr, primitive_types, sparse_matrix_builder,
+from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
 from taichi import _logging
@@ -292,7 +292,7 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
-        if isinstance(anno, any_arr):
+        if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno._check_element_dim(arg, 0)
                 anno._check_element_shape(())
@@ -317,7 +317,7 @@ class TaichiCallableTemplateMapper:
             shape = tuple(arg.shape)
             if len(shape) < element_dim:
                 raise ValueError(
-                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, "
+                    f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
                     f"but the argument has only {len(shape)} dimensions")
             element_shape = (
             ) if element_dim == 0 else shape[:
@@ -428,7 +428,7 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, any_arr)):
+                if isinstance(annotation, (template, ndarray_type.NdarrayType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -568,12 +568,12 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
-                elif isinstance(needed, any_arr) and isinstance(
+                elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(
                         v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
-                elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
+                elif isinstance(needed, ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:

@@ -236,6 +236,36 @@ function taichi::test::voxel_editor {
     cd "${WORKDIR}"
 }
 
+function taichi::test::generate_videos {
+    local WORKDIR=${1}
+    local PATTERN="test_*.py"
+    local ORG="taichi-dev"
+    local REPO="taichi"
+
+    # divider
+    taichi::utils::line
+    taichi::utils::logger::info "Generating examples videos"
+    
+    # clone the repo
+    taichi::utils::git_clone "${ORG}" "${REPO}"
+    # mkdir "${REPO}/misc/output_videos"
+
+    # run tests
+    cd "${REPO}/tests/python/examples"
+    for directory in $(find ./ -mindepth 1 -maxdepth 1 -name "*" ! -name "__*" -type d); do
+        cd "${directory}"
+        for match in $(find ./ -maxdepth 1 -name "${PATTERN}" -type f); do
+            pytest -v "${match}"
+            taichi::utils::line
+            # taichi::utils::pause
+        done
+        cd ..
+    done
+
+    # go back to workdir
+    cd "${WORKDIR}"
+}
+
 function taichi::test::main {
     # set debugging flag
     DEBUG="false"
@@ -267,6 +297,9 @@ function taichi::test::main {
 
     # voxel editor tests 
     taichi::test::voxel_editor "${WORKDIR}"
+
+    # generating example videos
+    taichi::test::generate_videos "${WORKDIR}"
 }
 
 taichi::test::main

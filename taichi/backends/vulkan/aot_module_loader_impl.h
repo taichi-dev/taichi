@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <string>
 #include <vector>
 
@@ -15,12 +16,12 @@ namespace vulkan {
 
 class VkRuntime;
 
-struct AotModuleParams {
+struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
   VkRuntime *runtime{nullptr};
 };
 
-std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
+TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
 
 }  // namespace vulkan
 }  // namespace lang

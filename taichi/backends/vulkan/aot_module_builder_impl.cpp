@@ -46,12 +46,12 @@ class AotDataConverter {
     for (const auto &arg : in.ctx_attribs.args()) {
       if (!arg.is_array) {
         aot::ScalarArg scalar_arg{};
-        scalar_arg.dtype_name = arg.dt.to_string();
+        scalar_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
         scalar_arg.offset_in_args_buf = arg.offset_in_mem;
         res.scalar_args[arg.index] = scalar_arg;
       } else {
         aot::ArrayArg arr_arg{};
-        arr_arg.dtype_name = arg.dt.to_string();
+        arr_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
         arr_arg.field_dim = arg.field_dim;
         arr_arg.element_shape = arg.element_shape;
         arr_arg.shape_offset_in_args_buf = arg.index * sizeof(int32_t);
@@ -102,32 +102,6 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   aot_target_device_ = std::make_unique<aot::TargetDevice>(Arch::vulkan);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
-  }
-}
-
-uint32_t AotModuleBuilderImpl::to_vk_dtype_enum(DataType dt) {
-  if (dt == PrimitiveType::u64) {
-    return 0;
-  } else if (dt == PrimitiveType::i64) {
-    return 1;
-  } else if (dt == PrimitiveType::u32) {
-    return 2;
-  } else if (dt == PrimitiveType::i32) {
-    return 3;
-  } else if (dt == PrimitiveType::u16) {
-    return 4;
-  } else if (dt == PrimitiveType::i16) {
-    return 5;
-  } else if (dt == PrimitiveType::u8) {
-    return 6;
-  } else if (dt == PrimitiveType::i8) {
-    return 7;
-  } else if (dt == PrimitiveType::f64) {
-    return 8;
-  } else if (dt == PrimitiveType::f32) {
-    return 9;
-  } else {
-    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -194,7 +168,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   aot::CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_scalar = is_scalar;
-  field_data.dtype = to_vk_dtype_enum(dt);
+  field_data.dtype = static_cast<int>(dt->cast<PrimitiveType>()->type);
   field_data.dtype_name = dt.to_string();
   field_data.shape = shape;
   field_data.mem_offset_in_parent = dense_desc.mem_offset_in_parent_cell;

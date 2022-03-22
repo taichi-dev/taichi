@@ -16,7 +16,9 @@ void Circles::update_data(const CirclesInfo &info) {
              info.radius);
 }
 
-void Circles::init_circles(AppContext *app_context, int vertices_count) {
+void Circles::init_circles(AppContext *app_context,
+                           int vertices_count,
+                           VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       1,
@@ -27,14 +29,15 @@ void Circles::init_circles(AppContext *app_context, int vertices_count) {
       app_context->config.package_path + "/shaders/Circles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Circles_vk_frag.spv",
       TopologyType::Points,
+      vbo_attrs,
   };
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();
 }
 
-Circles::Circles(AppContext *app_context) {
-  init_circles(app_context, 1);
+Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
+  init_circles(app_context, /*vertices_count=*/1, vbo_attrs);
 }
 
 void Circles::update_ubo(glm::vec3 color,

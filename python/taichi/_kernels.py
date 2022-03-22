@@ -11,8 +11,6 @@ from taichi.types.annotations import template
 from taichi.types import ndarray_type
 from taichi.types.primitive_types import f16, f32, f64, u8
 
-from taichi import types
-
 
 # A set of helper (meta)functions
 @kernel

@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Lines final : public Renderable {
  public:
-  Lines(AppContext *app_context);
+  Lines(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const LinesInfo &info);
 

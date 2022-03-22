@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/common/camera.h"
@@ -17,14 +18,14 @@ struct MeshInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
   bool two_sided{false};
-  int object_id;
+  int object_id{0};
 };
 
 struct ParticlesInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
-  float radius;
-  int object_id;
+  float radius{0};
+  int object_id{0};
 };
 
 class SceneBase {

@@ -117,10 +117,11 @@ void ArgLoadExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
+//  ret_type.set_is_pointer(is_ptr);
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr);
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
 }
@@ -517,7 +518,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
   } else {
     TI_ASSERT(dest.is<GlobalPtrExpression>() ||
-              dest.is<TensorElementExpression>());
+              dest.is<TensorElementExpression>() || (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
     flatten_lvalue(dest, ctx);
     ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
   }
@@ -664,6 +665,16 @@ void MeshIndexConversionExpression::type_check(CompileConfig *) {
 void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
   flatten_rvalue(idx, ctx);
   ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx->stmt, conv_type);
+  stmt = ctx->back_stmt();
+}
+
+void ReferenceExpression::type_check(CompileConfig *) {
+  ret_type = var->ret_type;
+}
+
+void ReferenceExpression::flatten(FlattenContext *ctx) {
+  flatten_lvalue(var, ctx);
+  ctx->push_back<ReferenceStmt>(var->stmt);
   stmt = ctx->back_stmt();
 }
 
@@ -977,6 +988,8 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     else {
       TI_NOT_IMPLEMENTED
     }
+  } else if (ptr.is<ArgLoadExpression>() && ptr.cast<ArgLoadExpression>()->is_ptr) {
+    flatten_global_load(ptr, ctx);
   }
 }
 

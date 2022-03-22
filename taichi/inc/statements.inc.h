@@ -32,6 +32,7 @@ PER_STATEMENT(FuncCallStmt)
 PER_STATEMENT(ReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
+PER_STATEMENT(ReferenceStmt)
 PER_STATEMENT(ExternalPtrStmt)
 PER_STATEMENT(PtrOffsetStmt)
 PER_STATEMENT(ConstStmt)

@@ -900,6 +900,24 @@ class FuncCallStmt : public Stmt {
 };
 
 /**
+ * A reference to a variable.
+ */
+class ReferenceStmt : public Stmt {
+ public:
+  Stmt *var;
+  bool global_side_effect{false};
+
+  ReferenceStmt(Stmt *var): var(var) {}
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, var);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * Exit the kernel or function with a return value.
  */
 class ReturnStmt : public Stmt {

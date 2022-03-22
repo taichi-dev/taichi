@@ -276,8 +276,9 @@ class ArgLoadExpression : public Expression {
  public:
   int arg_id;
   DataType dt;
+  bool is_ptr;
 
-  ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
+  ArgLoadExpression(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -818,6 +819,22 @@ class MeshIndexConversionExpression : public Expression {
                                 mesh::ConvType conv_type)
       : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
   }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class ReferenceExpression : public Expression {
+ public:
+  Expr var;
+  void type_check(CompileConfig *config) override;
+
+  void serialize(std::ostream &ss) override {
+    ss << "ref(";
+    var->serialize(ss);
+    ss << ")";
+  }
+
+  ReferenceExpression(const Expr &expr) : var(expr) {}
 
   void flatten(FlattenContext *ctx) override;
 };

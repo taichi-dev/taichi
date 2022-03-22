@@ -7,8 +7,8 @@ from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
-from taichi.types.annotations import template
 from taichi.types import ndarray_type
+from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, u8
 
 
@@ -38,13 +38,15 @@ def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
 
 
 @kernel
-def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(), arr: ndarray_type.ndarray()):
+def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(),
+                       arr: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         arr[I] = ndarray[I]
 
 
 @kernel
-def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(), arr: ndarray_type.ndarray(),
+def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(),
+                              arr: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
@@ -112,19 +114,22 @@ def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
 
 
 @kernel
-def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(), other: ndarray_type.ndarray()):
+def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(),
+                       other: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = other[I]
 
 
 @kernel
-def ext_arr_to_ndarray(arr: ndarray_type.ndarray(), ndarray: ndarray_type.ndarray()):
+def ext_arr_to_ndarray(arr: ndarray_type.ndarray(),
+                       ndarray: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = arr[I]
 
 
 @kernel
-def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(), ndarray: ndarray_type.ndarray(),
+def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
+                              ndarray: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):

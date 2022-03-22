@@ -120,8 +120,6 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
-  uint32_t image_index = 0;
-
   auto stream = app_context_.device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
   bool color_clear = true;

@@ -488,10 +488,20 @@ class GlobalVariableExpression : public Expression {
 
   void serialize(std::ostream &ss) override {
     ss << "#" << ident.name();
-    if (snode)
-      ss << fmt::format(" (snode={})", snode->get_node_type_name_hinted());
-    else
+    if (snode) {
+      auto dim = snode->num_active_indices;
+      std::string shape_str;
+      for (int i = 0; i < dim; ++i) {
+        shape_str.append(std::to_string(snode->shape_along_axis(i)))
+            .append(",");
+      }
+      if (!shape_str.empty())
+        shape_str.pop_back();
+      ss << fmt::format(" (snode={}, dim={}, shape=({}))",
+                        snode->get_node_type_name_hinted(), dim, shape_str);
+    } else {
       ss << fmt::format(" (dt={})", dt->to_string());
+    }
   }
 
   void flatten(FlattenContext *ctx) override;

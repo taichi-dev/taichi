@@ -131,7 +131,7 @@ class GUI:
     @staticmethod
     def get_bool_environ(key, default):
         """Get an environment variable and cast it to `bool`.
-        
+
         Args:
             key (str): The environment variable key.
             default (bool): The default value.
@@ -244,7 +244,7 @@ class GUI:
         The image pixels are set from the values of `img[i, j]`, where `i` indicates
         the horizontal coordinates (from left to right) and `j` the vertical coordinates
         (from bottom to top).
-        
+
         If the window size is `(x, y)`, then `img` must be one of:
             - `ti.field(shape=(x, y))`, a gray-scale image
             - `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
@@ -254,14 +254,14 @@ class GUI:
             - `np.ndarray(shape=(x, y))`
             - `np.ndarray(shape=(x, y, 3))`
             - `np.ndarray(shape=(x, y, 2))`
-            
+
         The data type of `img` must be one of:
             - `uint8`, range `[0, 255]`
             - `uint16`, range `[0, 65535]`
             - `uint32`, range `[0, 4294967295]`
             - `float32`, range `[0, 1]`
             - `float64`, range `[0, 1]`
-        
+
         Args:
             img (Union[:class:`taichi.field`, `numpy.array`]): The color array \
                 representing the image to be drawn. Support greyscale, RG, RGB, \

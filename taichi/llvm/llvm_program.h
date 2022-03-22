@@ -117,7 +117,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
-                    std::vector<LlvmOfflineCache::OffloadedTaskCacheData> &&offloaded_task_list);
+                    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+                        &&offloaded_task_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(

@@ -77,7 +77,8 @@ void LlvmOfflineCacheFileWriter::dump() {
       std::ofstream os(filename, std::ios::out | std::ios::binary);
       TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
       for (const auto &task : v.offloaded_task_list) {
-        os << task.name << ' ' << task.block_dim << ' ' << task.grid_dim << '\n';
+        os << task.name << ' ' << task.block_dim << ' ' << task.grid_dim
+           << '\n';
       }
     }
   }

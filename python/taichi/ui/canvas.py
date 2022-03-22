@@ -4,7 +4,6 @@ from .utils import get_field_info
 
 
 class Canvas:
-
     """The Canvas class.
 
     This is the context manager for managing drawing commands on a window.

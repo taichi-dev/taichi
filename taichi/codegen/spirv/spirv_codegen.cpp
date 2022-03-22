@@ -502,7 +502,7 @@ class TaskCodegen : public IRVisitor {
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      const auto dt = arg_attribs.dt;
+      const auto dt = PrimitiveType::get(arg_attribs.dtype);
       const auto val_type = ir_->get_primitive_type(dt);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
@@ -1806,9 +1806,9 @@ class TaskCodegen : public IRVisitor {
                                         "arg_ptr" + std::to_string(arg.index),
                                         arg.offset_in_mem);
       } else {
-        struct_components_.emplace_back(ir_->get_primitive_type(arg.dt),
-                                        "arg" + std::to_string(arg.index),
-                                        arg.offset_in_mem);
+        struct_components_.emplace_back(
+            ir_->get_primitive_type(PrimitiveType::get(arg.dtype)),
+            "arg" + std::to_string(arg.index), arg.offset_in_mem);
       }
     }
     // A compromise for use in constants buffer
@@ -1833,7 +1833,8 @@ class TaskCodegen : public IRVisitor {
     // Now we only have one ret
     TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
-      if (auto tensor_type = ret.dt->cast<TensorType>()) {
+      if (auto tensor_type =
+              PrimitiveType::get(ret.dtype)->cast<TensorType>()) {
         struct_components_.emplace_back(
             ir_->get_array_type(
                 ir_->get_primitive_type(tensor_type->get_element_type()),
@@ -1841,7 +1842,8 @@ class TaskCodegen : public IRVisitor {
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
         struct_components_.emplace_back(
-            ir_->get_array_type(ir_->get_primitive_type(ret.dt), 1),
+            ir_->get_array_type(
+                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 1),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       }
     }

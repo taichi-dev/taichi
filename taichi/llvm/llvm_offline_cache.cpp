@@ -16,7 +16,7 @@ std::string get_offline_cache_key_of_kernel(Kernel *kernel) {
   irpass::re_id(kernel->ir.get());
   irpass::print(kernel->ir.get(), &kernel_ast_string);
   picosha2::hash256_hex_string(kernel_ast_string, res);
-  res.push_back(kernel->grad ? 'g' : 'n');
+  res.insert(res.begin(), kernel->grad ? 'g' : 'n');
   return res;
 }
 

@@ -8,6 +8,7 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
 from taichi.types.annotations import template
+from taichi.types import ndarray_type
 from taichi.types.primitive_types import f16, f32, f64, u8
 
 from taichi import types
@@ -21,31 +22,31 @@ def fill_tensor(tensor: template(), val: template()):
 
 
 @kernel
-def fill_ndarray(ndarray: types.ndarray(), val: template()):
+def fill_ndarray(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
         ndarray[I] = val
 
 
 @kernel
-def fill_ndarray_matrix(ndarray: types.ndarray(), val: template()):
+def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
         ndarray[I].fill(val)
 
 
 @kernel
-def tensor_to_ext_arr(tensor: template(), arr: types.ndarray()):
+def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
     for I in grouped(tensor):
         arr[I] = tensor[I]
 
 
 @kernel
-def ndarray_to_ext_arr(ndarray: types.ndarray(), arr: types.ndarray()):
+def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(), arr: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         arr[I] = ndarray[I]
 
 
 @kernel
-def ndarray_matrix_to_ext_arr(ndarray: types.ndarray(), arr: types.ndarray(),
+def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(), arr: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
@@ -57,7 +58,7 @@ def ndarray_matrix_to_ext_arr(ndarray: types.ndarray(), arr: types.ndarray(),
 
 
 @kernel
-def vector_to_fast_image(img: template(), out: types.ndarray()):
+def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
@@ -83,7 +84,7 @@ def vector_to_fast_image(img: template(), out: types.ndarray()):
 
 
 @kernel
-def tensor_to_image(tensor: template(), arr: types.ndarray()):
+def tensor_to_image(tensor: template(), arr: ndarray_type.ndarray()):
     for I in grouped(tensor):
         t = ops.cast(tensor[I], f32)
         arr[I, 0] = t
@@ -92,7 +93,7 @@ def tensor_to_image(tensor: template(), arr: types.ndarray()):
 
 
 @kernel
-def vector_to_image(mat: template(), arr: types.ndarray()):
+def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             arr[I, p] = ops.cast(mat[I][p], f32)
@@ -107,25 +108,25 @@ def tensor_to_tensor(tensor: template(), other: template()):
 
 
 @kernel
-def ext_arr_to_tensor(arr: types.ndarray(), tensor: template()):
+def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
     for I in grouped(tensor):
         tensor[I] = arr[I]
 
 
 @kernel
-def ndarray_to_ndarray(ndarray: types.ndarray(), other: types.ndarray()):
+def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(), other: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = other[I]
 
 
 @kernel
-def ext_arr_to_ndarray(arr: types.ndarray(), ndarray: types.ndarray()):
+def ext_arr_to_ndarray(arr: ndarray_type.ndarray(), ndarray: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = arr[I]
 
 
 @kernel
-def ext_arr_to_ndarray_matrix(arr: types.ndarray(), ndarray: types.ndarray(),
+def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(), ndarray: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
@@ -137,7 +138,7 @@ def ext_arr_to_ndarray_matrix(arr: types.ndarray(), ndarray: types.ndarray(),
 
 
 @kernel
-def matrix_to_ext_arr(mat: template(), arr: types.ndarray(),
+def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
                       as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
@@ -149,7 +150,7 @@ def matrix_to_ext_arr(mat: template(), arr: types.ndarray(),
 
 
 @kernel
-def ext_arr_to_matrix(arr: types.ndarray(), mat: template(),
+def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                       as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):

@@ -9,6 +9,7 @@ from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, u8
+
 from taichi import types
 
 
@@ -136,7 +137,8 @@ def ext_arr_to_ndarray_matrix(arr: types.ndarray(), ndarray: types.ndarray(),
 
 
 @kernel
-def matrix_to_ext_arr(mat: template(), arr: types.ndarray(), as_vector: template()):
+def matrix_to_ext_arr(mat: template(), arr: types.ndarray(),
+                      as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
@@ -147,7 +149,8 @@ def matrix_to_ext_arr(mat: template(), arr: types.ndarray(), as_vector: template
 
 
 @kernel
-def ext_arr_to_matrix(arr: types.ndarray(), mat: template(), as_vector: template()):
+def ext_arr_to_matrix(arr: types.ndarray(), mat: template(),
+                      as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):

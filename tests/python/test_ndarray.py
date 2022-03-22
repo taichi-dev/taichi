@@ -518,7 +518,8 @@ def _test_arg_not_match():
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim'):
+            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim'
+    ):
         func5(x)
 
     with pytest.raises(
@@ -536,7 +537,8 @@ def _test_arg_not_match():
     x = ti.ndarray(ti.i32, shape=(3, ))
     with pytest.raises(
             ValueError,
-            match=r'Invalid argument into ti\.types\.ndarray\(\) - required field_dim'
+            match=
+            r'Invalid argument into ti\.types\.ndarray\(\) - required field_dim'
     ):
         func7(x)
 

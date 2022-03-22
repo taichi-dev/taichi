@@ -428,7 +428,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, ndarray_type.NdarrayType)):
+                if isinstance(annotation,
+                              (template, ndarray_type.NdarrayType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -568,12 +569,15 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
-                elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(
-                        v, taichi.lang._ndarray.Ndarray):
+                elif isinstance(needed,
+                                ndarray_type.NdarrayType) and isinstance(
+                                    v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
-                elif isinstance(needed, ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
+                elif isinstance(
+                        needed,
+                        ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:

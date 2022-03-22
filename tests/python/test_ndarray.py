@@ -335,35 +335,32 @@ def test_ndarray_numpy_io():
     _test_ndarray_numpy_io()
 
 
-def _test_ndarray_matrix_numpy_io():
+def _test_ndarray_matrix_numpy_io(layout):
     n = 5
     m = 2
 
-    x = ti.Vector.ndarray(n, ti.i32, (m, ), ti.Layout.AOS)
-    x_np = 1 + np.arange(n * m).reshape(m, n).astype(np.int32)
-    x.from_numpy(x_np)
-    assert (x_np.flatten() == x.to_numpy().flatten()).all()
-
-    x = ti.Vector.ndarray(n, ti.i32, (m, ), ti.Layout.SOA)
-    x_np = 1 + np.arange(n * m).reshape(n, m).astype(np.int32)
+    x = ti.Vector.ndarray(n, ti.i32, (m, ), layout)
+    if layout == ti.Layout.AOS:
+        x_np = 1 + np.arange(n * m).reshape(m, n).astype(np.int32)
+    else:
+        x_np = 1 + np.arange(n * m).reshape(n, m).astype(np.int32)
     x.from_numpy(x_np)
     assert (x_np.flatten() == x.to_numpy().flatten()).all()
 
     k = 2
-    x = ti.Matrix.ndarray(m, k, ti.i32, n, ti.Layout.AOS)
-    x_np = 1 + np.arange(m * k * n).reshape(n, m, k).astype(np.int32)
+    x = ti.Matrix.ndarray(m, k, ti.i32, n, layout)
+    if layout == ti.Layout.AOS:
+        x_np = 1 + np.arange(m * k * n).reshape(n, m, k).astype(np.int32)
+    else:
+        x_np = 1 + np.arange(m * k * n).reshape(m, k, n).astype(np.int32)
     x.from_numpy(x_np)
     assert (x_np.flatten() == x.to_numpy().flatten()).all()
 
-    x = ti.Matrix.ndarray(m, k, ti.i32, n, ti.Layout.SOA)
-    x_np = 1 + np.arange(m * k * n).reshape(m, k, n).astype(np.int32)
-    x.from_numpy(x_np)
-    assert (x_np.flatten() == x.to_numpy().flatten()).all()
 
-
+@pytest.mark.parametrize('layout', layouts)
 @test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_matrix_numpy_io():
-    _test_ndarray_matrix_numpy_io()
+def test_ndarray_matrix_numpy_io(layout):
+    _test_ndarray_matrix_numpy_io(layout)
 
 
 def _test_matrix_ndarray_python_scope(layout):

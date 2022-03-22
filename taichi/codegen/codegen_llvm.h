@@ -20,8 +20,8 @@ class OffloadedTask {
   using task_fp_type = int32 (*)(void *);
   task_fp_type func;
 
-  int block_dim;
-  int grid_dim;
+  int block_dim{0};
+  int grid_dim{0};
 
   OffloadedTask(CodeGenLLVM *codegen);
 
@@ -48,9 +48,6 @@ class FunctionCreationGuard {
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
- private:
-  bool needs_cache_{false};
-
  public:
   Kernel *kernel;
   IRNode *ir;
@@ -86,8 +83,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   CodeGenLLVM(Kernel *kernel,
               IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr,
-              bool needs_cache = false);
+              std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -130,6 +126,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual FunctionType compile_module_to_executable();
 
   virtual FunctionType gen();
+
+  virtual bool supports_offline_cache() const {
+    return false;
+  }
 
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
@@ -391,6 +391,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~CodeGenLLVM() override = default;
+
+ private:
+  void cache_module(const std::string &kernel_key);
 };
 
 TLANG_NAMESPACE_END

@@ -31,10 +31,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       : CodeGenLLVM(kernel, ir) {
   }
 
+  bool supports_offline_cache() const override {
+    return true;
+  }
+
   FunctionType compile_module_to_executable() override {
 #ifdef TI_WITH_CUDA
-    eliminate_unused_functions();
-
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);

@@ -4,9 +4,21 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/IR/Module.h"
+#include "taichi/ir/transforms.h"
+
+#include "picosha2.h"
 
 namespace taichi {
 namespace lang {
+
+std::string get_offline_cache_key_of_kernel(Kernel *kernel) {
+  std::string res, kernel_ast_string;
+  irpass::re_id(kernel->ir.get());
+  irpass::print(kernel->ir.get(), &kernel_ast_string);
+  picosha2::hash256_hex_string(kernel_ast_string, res);
+  res.push_back(kernel->grad ? 'g' : 'n');
+  return res;
+}
 
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
@@ -32,7 +44,9 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       std::getline(in, line, '\n');
       if (line.empty())
         break;
-      res.offloaded_task_name_list.push_back(std::move(line));
+      std::istringstream iss(line);
+      auto &task = res.offloaded_task_list.emplace_back();
+      iss >> task.name >> task.block_dim >> task.grid_dim;
     }
   }
   return true;
@@ -49,11 +63,11 @@ void LlvmOfflineCacheFileWriter::dump() {
       llvm::LLVMContext ctx;
       llvm::raw_os_ostream llvm_os(os);
       if (v.module) {
-        mangle_offloaded_task_name(k, v.module, v.offloaded_task_name_list);
+        mangle_offloaded_task_name(k, v.module, v.offloaded_task_list);
         v.module->print(llvm_os, nullptr);
       } else if (v.owned_module) {
         mangle_offloaded_task_name(k, v.owned_module.get(),
-                                   v.offloaded_task_name_list);
+                                   v.offloaded_task_list);
         v.owned_module->print(llvm_os, nullptr);
       } else
         TI_ASSERT(false);
@@ -62,8 +76,8 @@ void LlvmOfflineCacheFileWriter::dump() {
       std::string filename = filename_prefix + "_otnl.txt";
       std::ofstream os(filename, std::ios::out | std::ios::binary);
       TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
-      for (const auto &name : v.offloaded_task_name_list) {
-        os << name << '\n';
+      for (const auto &task : v.offloaded_task_list) {
+        os << task.name << ' ' << task.block_dim << ' ' << task.grid_dim << '\n';
       }
     }
   }
@@ -72,15 +86,16 @@ void LlvmOfflineCacheFileWriter::dump() {
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
     llvm::Module *module,
-    std::vector<std::string> &offloaded_task_name_list) {
+    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+        &offloaded_task_list) {
   if (!mangled_) {
     std::size_t cnt = 0;
-    for (auto &e : offloaded_task_name_list) {
+    for (auto &e : offloaded_task_list) {
       std::string mangled_name = kernel_key + std::to_string(cnt++);
-      auto func = module->getFunction(e);
+      auto func = module->getFunction(e.name);
       TI_ASSERT(func != nullptr);
       func->setName(mangled_name);
-      e = mangled_name;
+      e.name = mangled_name;
     }
   }
 }

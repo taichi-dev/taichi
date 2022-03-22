@@ -339,12 +339,12 @@ def _test_ndarray_matrix_numpy_io():
     n = 5
     m = 2
 
-    x = ti.Vector.ndarray(n, ti.i32, (m,), ti.Layout.AOS)
+    x = ti.Vector.ndarray(n, ti.i32, (m, ), ti.Layout.AOS)
     x_np = 1 + np.arange(n * m).reshape(m, n).astype(np.int32)
     x.from_numpy(x_np)
     assert (x_np.flatten() == x.to_numpy().flatten()).all()
 
-    x = ti.Vector.ndarray(n, ti.i32, (m,), ti.Layout.SOA)
+    x = ti.Vector.ndarray(n, ti.i32, (m, ), ti.Layout.SOA)
     x_np = 1 + np.arange(n * m).reshape(n, m).astype(np.int32)
     x.from_numpy(x_np)
     assert (x_np.flatten() == x.to_numpy().flatten()).all()

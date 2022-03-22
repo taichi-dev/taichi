@@ -137,9 +137,11 @@ def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(),
         for p in static(range(ndarray[I].n)):
             for q in static(range(ndarray[I].m)):
                 if static(as_vector):
-                    ndarray[I][p] = arr[I, p] if layout_is_aos else arr[p, I] 
+                    ndarray[I][p] = arr[I, p] if layout_is_aos else arr[p, I]
                 else:
-                    ndarray[I][p, q] = arr[I, p, q] if layout_is_aos else arr[p, q, I]
+                    ndarray[I][p, q] = arr[I, p,
+                                           q] if layout_is_aos else arr[p, q,
+                                                                        I]
 
 
 @kernel

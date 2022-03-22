@@ -99,7 +99,7 @@ class Ndarray:
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
         from taichi._kernels import \
             ndarray_matrix_to_ext_arr  # pylint: disable=C0415
-        layout_is_aos = 1 if layout == Layout.AOS else 0 
+        layout_is_aos = 1 if layout == Layout.AOS else 0
         ndarray_matrix_to_ext_arr(self, arr, layout_is_aos, as_vector)
         impl.get_runtime().sync()
         return arr
@@ -140,7 +140,7 @@ class Ndarray:
 
         from taichi._kernels import \
             ext_arr_to_ndarray_matrix  # pylint: disable=C0415
-        layout_is_aos = 1 if layout == Layout.AOS else 0 
+        layout_is_aos = 1 if layout == Layout.AOS else 0
         ext_arr_to_ndarray_matrix(arr, self, layout_is_aos, as_vector)
         impl.get_runtime().sync()
 

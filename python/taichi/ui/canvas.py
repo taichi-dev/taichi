@@ -117,5 +117,9 @@ class Canvas:
         self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
 
     def scene(self, scene):
-        """Draw a 3D scene on the canvas"""
+        """Draw a 3D scene on the canvas
+
+        Args:
+            scene (:class:`~taichi.ui.Scene`): an instance of :class:`~taichi.ui.Scene`.
+        """
         self.canvas.scene(scene.scene)

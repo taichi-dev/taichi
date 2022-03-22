@@ -1,4 +1,5 @@
 #pragma once
+
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/scene_base.h"
 #include "taichi/ui/common/renderable_info.h"
@@ -18,13 +19,13 @@ struct TrianglesInfo {
 struct CirclesInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
-  float radius;
+  float radius{0};
 };
 
 struct LinesInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
-  float width;
+  float width{0};
 };
 
 class CanvasBase {

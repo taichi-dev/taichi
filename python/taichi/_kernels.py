@@ -47,14 +47,21 @@ def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(),
 @kernel
 def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(),
                               arr: ndarray_type.ndarray(),
+                              layout_is_aos: template(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             for q in static(range(ndarray[I].m)):
                 if static(as_vector):
-                    arr[I, p] = ndarray[I][p]
+                    if static(layout_is_aos):
+                        arr[I, p] = ndarray[I][p]
+                    else:
+                        arr[p, I] = ndarray[I][p]
                 else:
-                    arr[I, p, q] = ndarray[I][p, q]
+                    if static(layout_is_aos):
+                        arr[I, p, q] = ndarray[I][p, q]
+                    else:
+                        arr[p, q, I] = ndarray[I][p, q]
 
 
 @kernel
@@ -130,14 +137,21 @@ def ext_arr_to_ndarray(arr: ndarray_type.ndarray(),
 @kernel
 def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
                               ndarray: ndarray_type.ndarray(),
+                              layout_is_aos: template(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             for q in static(range(ndarray[I].m)):
                 if static(as_vector):
-                    ndarray[I][p] = arr[I, p]
+                    if static(layout_is_aos):
+                        ndarray[I][p] = arr[I, p]
+                    else:
+                        ndarray[I][p] = arr[p, I]
                 else:
-                    ndarray[I][p, q] = arr[I, p, q]
+                    if static(layout_is_aos):
+                        ndarray[I][p, q] = arr[I, p, q]
+                    else:
+                        ndarray[I][p, q] = arr[p, q, I]
 
 
 @kernel

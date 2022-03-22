@@ -50,6 +50,11 @@ struct RuntimeContext {
   void set_device_allocation(int i, bool is_device_allocation_) {
     is_device_allocation[i] = is_device_allocation_;
   }
+
+  template <typename T>
+  T get_ret(int i) {
+    return taichi_union_cast_with_different_sizes<T>(result_buffer[i]);
+  }
 #endif
 };
 

@@ -29,8 +29,13 @@ def test_const_func_ret():
     assert func2() == 3
 
 
+@pytest.mark.parametrize("dt1,dt2,dt3,castor",
+                         [(ti.i32, ti.f32, ti.f32, float),
+                          (ti.f32, ti.i32, ti.f32, float),
+                          (ti.i32, ti.f32, ti.i32, int),
+                          (ti.f32, ti.i32, ti.i32, int)])
 @test_utils.test()
-def _test_binary_func_ret(dt1, dt2, dt3, castor):
+def test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:
         return a * b
@@ -47,13 +52,6 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
 
     for x, y in zip(xs, ys):
         assert func(x, y) == test_utils.approx(castor(x * y))
-
-
-def test_binary_func_ret():
-    _test_binary_func_ret(ti.i32, ti.f32, ti.f32, float)
-    _test_binary_func_ret(ti.f32, ti.i32, ti.f32, float)
-    _test_binary_func_ret(ti.i32, ti.f32, ti.i32, int)
-    _test_binary_func_ret(ti.f32, ti.i32, ti.i32, int)
 
 
 @test_utils.test()

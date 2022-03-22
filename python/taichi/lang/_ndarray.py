@@ -90,7 +90,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-    def _ndarray_matrix_to_numpy(self, as_vector):
+    def _ndarray_matrix_to_numpy(self, layout, as_vector):
         """Converts matrix ndarray to a numpy array.
 
         Returns:
@@ -99,7 +99,8 @@ class Ndarray:
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
         from taichi._kernels import \
             ndarray_matrix_to_ext_arr  # pylint: disable=C0415
-        ndarray_matrix_to_ext_arr(self, arr, as_vector)
+        layout_is_aos = 1 if layout == Layout.AOS else 0
+        ndarray_matrix_to_ext_arr(self, arr, layout_is_aos, as_vector)
         impl.get_runtime().sync()
         return arr
 
@@ -122,7 +123,7 @@ class Ndarray:
         ext_arr_to_ndarray(arr, self)
         impl.get_runtime().sync()
 
-    def _ndarray_matrix_from_numpy(self, arr, as_vector):
+    def _ndarray_matrix_from_numpy(self, arr, layout, as_vector):
         """Loads all values from a numpy array.
 
         Args:
@@ -139,7 +140,8 @@ class Ndarray:
 
         from taichi._kernels import \
             ext_arr_to_ndarray_matrix  # pylint: disable=C0415
-        ext_arr_to_ndarray_matrix(arr, self, as_vector)
+        layout_is_aos = 1 if layout == Layout.AOS else 0
+        ext_arr_to_ndarray_matrix(arr, self, layout_is_aos, as_vector)
         impl.get_runtime().sync()
 
     @python_scope

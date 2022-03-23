@@ -48,7 +48,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
              scene);
 }
 
-void Particles::init_particles(AppContext *app_context, int vertices_count, VertexAttributes vbo_attrs) {
+void Particles::init_particles(AppContext *app_context,
+                               int vertices_count,
+                               VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       1,

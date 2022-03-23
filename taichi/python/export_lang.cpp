@@ -615,8 +615,10 @@ void export_lang(py::module &m) {
   });
 
   m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        [&](const std::string &func_name, const ExprGroup &args,
+            bool with_runtime_context) {
+          return Expr::make<InternalFuncCallExpression>(
+              func_name, args.exprs, with_runtime_context);
         });
 
   m.def("make_func_call_expr",

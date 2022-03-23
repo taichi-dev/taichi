@@ -387,10 +387,12 @@ class InternalFuncCallExpression : public Expression {
  public:
   std::string func_name;
   std::vector<Expr> args;
+  bool with_runtime_context;
 
   InternalFuncCallExpression(const std::string &func_name,
-                             const std::vector<Expr> &args_)
-      : func_name(func_name) {
+                             const std::vector<Expr> &args_,
+                             bool with_runtime_context)
+      : func_name(func_name), with_runtime_context(with_runtime_context) {
     for (auto &a : args_) {
       args.push_back(a);
     }
@@ -400,6 +402,9 @@ class InternalFuncCallExpression : public Expression {
 
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
+    if (with_runtime_context) {
+      ss << "runtime, ";
+    }
     std::string args_str;
     for (int i = 0; i < args.size(); i++) {
       if (i != 0) {

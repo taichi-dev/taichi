@@ -266,7 +266,8 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
     flatten_rvalue(args[i], ctx);
     args_stmts[i] = args[i]->stmt;
   }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
+  ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
+                                   with_runtime_context);
   stmt = ctx->back_stmt();
 }
 
@@ -739,7 +740,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
   return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
-                                                std::vector<Expr>{});
+                                                std::vector<Expr>{}, true);
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {

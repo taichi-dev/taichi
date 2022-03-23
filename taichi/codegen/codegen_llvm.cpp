@@ -1,7 +1,6 @@
-#include "taichi/llvm/llvm_offline_cache.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
-
+#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"

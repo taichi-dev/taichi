@@ -8,9 +8,9 @@ This article describes the syntax and semantics of the Taichi programming
 language.
 
 **To users**: If you have gone through user tutorials and still feel uncertain
-about your program behavior, then you are coming to the correct place. If you
-find the actual behavior different from the one described in this article, feel
-free to create an [issue](https://github.com/taichi-dev/taichi/issues/new/choose).
+about your program behavior, then you are in the right place. If you find the
+actual behavior different from the one described in this article, feel free to
+create an [issue](https://github.com/taichi-dev/taichi/issues/new/choose).
 Anything unspecified in this article is subject to change, so you should not
 rely on it in your programs.
 
@@ -32,21 +32,21 @@ subset of that of Python. To make life easier, this article is modeled after
 the [Python language reference](https://docs.python.org/3/reference/). The
 [notation](https://docs.python.org/3/reference/introduction.html#notation) and
 [lexical analysis](https://docs.python.org/3/reference/lexical_analysis.html)
-parts exactly follow Python, so familiarize yourself with them if you are new
-to them.
+parts exactly follow Python. Please familiarize yourself with them if they seem
+new.
 
 ## Basic concepts
 
-Before detailing syntax and semantics in the next few chapters, many important
-basic concepts and general evaluation principles unique to Taichi are
-introduced here.
+Before detailing syntax and semantics in the next few chapters, many basic but
+important concepts and general evaluation principles specific to Taichi are
+listed here.
 
 ### Values and types
 
-Like other programming languages, each expression in Taichi will be evaluated
-to a value, and each value has a type. Because Taichi provides easy interaction
-with Python and [meta-programming](advanced/meta.md) support, there are
-actually two kinds of evaluation: *compile-time evaluation* and *runtime
+Like many other programming languages, each expression in Taichi will be
+evaluated to a value, and each value has a type. Because Taichi provides easy
+interaction with Python and [meta-programming](advanced/meta.md) support, there
+are actually two kinds of evaluation: *compile-time evaluation* and *runtime
 evaluation*. There are also two kinds of values: *Python values* and *Taichi
 values*.
 
@@ -59,15 +59,14 @@ or [partial evaluation](https://en.wikipedia.org/wiki/Partial_evaluation).
 A Python value is simply a
 [Python object](https://docs.python.org/3/reference/datamodel.html),
 which directly comes from the following sources:
-- Free variables
-- Arguments passed via `ti.template()`
 - Literals
+- Arguments passed via `ti.template()`
+- Free variables
 
 Furthermore, as long as all the operands of an operation are Python values,
-compile-time evaluation will take place and a result Python value will be
-produced. For meta-programming purposes, Taichi provides an advanced
-environment for compile-time evaluation: `ti.static()`, where more operations
-are supported.
+compile-time evaluation will take place, producing a result Python value. For
+meta-programming purposes, Taichi provides an advanced environment for
+compile-time evaluation: `ti.static()`, where more operations are supported.
 
 A Python value only exists at compile time. After compile-time evaluation, all
 the remaining expressions will be evaluated to Taichi values at runtime.

@@ -94,13 +94,13 @@ print(f'The image has been saved to {filename}')
 :::note
 All Taichi fields have their own data types, such as `ti.u8` and
 `ti.f32`. Different data types can lead to different behaviors of
-`ti.imwrite`. Please check out [GUI system](../gui/gui.md) for
+`ti.imwrite`. Please check out [GUI system](../gui/gui_system.md) for
 more details.
 :::
 
 - Taichi offers other helper functions that read and show images in
   addition to `ti.imwrite`. They are also demonstrated in
-  [GUI system](../gui/gui.md).
+  [GUI system](../gui/gui_system.md).
 
 ## Export videos
 

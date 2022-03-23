@@ -58,7 +58,7 @@ def decl_sparse_matrix(dtype):
                              value_type)
 
 
-def decl_any_arr_arg(dtype, dim, element_shape, layout):
+def decl_ndarray_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
     arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, dim, element_shape)

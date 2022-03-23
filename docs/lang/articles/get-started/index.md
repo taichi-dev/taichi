@@ -318,7 +318,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a cpu-based [GUI system](../gui/gui.md) for users to render
+Taichi provides a cpu-based [GUI system](../gui/gui_system.md) for users to render
 their results on the screen.
 
 ```python

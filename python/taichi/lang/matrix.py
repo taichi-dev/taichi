@@ -1416,11 +1416,11 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self._ndarray_matrix_to_numpy(as_vector=0)
+        return self._ndarray_matrix_to_numpy(self.layout, as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
-        self._ndarray_matrix_from_numpy(arr, as_vector=0)
+        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
@@ -1474,11 +1474,11 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        return self._ndarray_matrix_to_numpy(as_vector=1)
+        return self._ndarray_matrix_to_numpy(self.layout, as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
-        self._ndarray_matrix_from_numpy(arr, as_vector=1)
+        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
 
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)

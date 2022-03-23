@@ -108,12 +108,12 @@ def _test_sym_eig2x2(dt):
     _eigen_vector_equal(w_ti[:, idx_ti[1]], w_np[:, idx_np[1]], tol)
 
 
-def _test_sym_eig3x3(dt):
+def _test_sym_eig3x3(dt, a00):
     A = ti.Matrix.field(3, 3, dtype=dt, shape=())
     v = ti.Vector.field(3, dtype=dt, shape=())
     w = ti.Matrix.field(3, 3, dtype=dt, shape=())
 
-    A[None] = [[3.0, 1.0, 1.0], [1.0, 2.0, 2.0], [1.0, 2.0, 2.0]]
+    A[None] = [[a00, 1.0, 1.0], [1.0, 2.0, 2.0], [1.0, 2.0, 2.0]]
 
     @ti.kernel
     def eigen_solve():
@@ -163,13 +163,15 @@ def test_sym_eig2x2_f64():
     _test_sym_eig2x2(ti.f64)
 
 
+@pytest.mark.parametrize('a00', [i for i in range(10)])
 @test_utils.test(default_fp=ti.f32, fast_math=False)
-def test_sym_eig3x3_f32():
-    _test_sym_eig3x3(ti.f32)
+def test_sym_eig3x3_f32(a00):
+    _test_sym_eig3x3(ti.f32, a00)
 
 
+@pytest.mark.parametrize('a00', [i for i in range(10)])
 @test_utils.test(require=ti.extension.data64,
                  default_fp=ti.f64,
                  fast_math=False)
-def test_sym_eig3x3_f64():
-    _test_sym_eig3x3(ti.f64)
+def test_sym_eig3x3_f64(a00):
+    _test_sym_eig3x3(ti.f64, a00)

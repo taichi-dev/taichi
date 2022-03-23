@@ -50,8 +50,8 @@ __customized_deprecations__ = {
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():
         exec(f'{name} = {alter}')
-    for attribute, (message, func) in __customized_deprecations__.items():
-        exec(f'{attribute} = {func}')
+    for _origin, (_msg, _replace) in __customized_deprecations__.items():
+        exec(f'{_origin} = {_replace}')
 else:
 
     def __getattr__(attr):

@@ -47,7 +47,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [ ! -z "$RELEASE_VERSION" ]; then
+          if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on four python versions.
             echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
 

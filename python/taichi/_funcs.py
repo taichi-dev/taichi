@@ -512,7 +512,7 @@ def sym_eig(A, dt=None):
         return sym_eig2x2(A, dt)
     if A.n == 3:
         return sym_eig3x3(A, dt)
-    raise Exception("Symmetric eigen solver only supports 2D matrices.")
+    raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']

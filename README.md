@@ -54,7 +54,7 @@ The language has broad applications spanning real-time physical simulation, numb
   - Windows
   - Linux
   - macOS
-- Python: 3.6 ~ 3.9 (64-bit only)
+- Python: 3.6 ~ 3.10 (64-bit only)
 - Compute backends
   - x64/ARM CPUs
   - CUDA

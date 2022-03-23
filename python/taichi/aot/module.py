@@ -6,7 +6,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
-from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.annotations import template
+from taichi.types.ndarray_type import NdarrayType
 from taichi.types.primitive_types import f32
 
 
@@ -126,7 +127,7 @@ class Module:
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example any_arr input.
+          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example ndarray input.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
@@ -137,14 +138,14 @@ class Module:
         injected_args = []
         num_arr = len([
             anno for anno in kernel.argument_annotations
-            if isinstance(anno, ArgAnyArray)
+            if isinstance(anno, NdarrayType)
         ])
         assert example_any_arrays is None or num_arr == len(
             example_any_arrays
-        ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
+        ), f'Need {num_arr} example ndarray inputs but got {len(example_any_arrays)}'
         i = 0
         for anno in kernel.argument_annotations:
-            if isinstance(anno, ArgAnyArray):
+            if isinstance(anno, NdarrayType):
                 if example_any_arrays:
                     injected_args.append(example_any_arrays[i])
                 else:

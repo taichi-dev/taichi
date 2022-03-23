@@ -15,7 +15,7 @@ from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
-from taichi.types import annotations, primitive_types
+from taichi.types import annotations, ndarray_type, primitive_types
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -461,10 +461,10 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_sparse_matrix(
                             to_taichi_type(ctx.arg_features[i])))
                 elif isinstance(ctx.func.argument_annotations[i],
-                                annotations.any_arr):
+                                ndarray_type.NdarrayType):
                     ctx.create_variable(
                         arg.arg,
-                        kernel_arguments.decl_any_arr_arg(
+                        kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))

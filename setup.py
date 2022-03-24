@@ -15,7 +15,8 @@ import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
 
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, find_packages
+from skbuild import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
 from setuptools.command.egg_info import egg_info
@@ -263,6 +264,33 @@ class Clean(clean):
                     os.remove(f)
 
 
+def get_cmake_args():
+    import shlex
+
+    cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
+
+    cmake_args += [
+        f'-DPYTHON_EXECUTABLE={get_python_executable()}',
+        f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
+        f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
+        f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
+    ]
+    emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
+    if emscriptened:
+        cmake_args += ['-DTI_EMSCRIPTENED=ON']
+
+    cfg = 'Release'
+    if (os.getenv('DEBUG', '0') in ('1', 'ON')):
+        cfg = 'Debug'
+    elif (os.getenv('RELWITHDEBINFO', '0') in ('1', 'ON')):
+        cfg = 'RelWithDebInfo'
+    elif (os.getenv('MINSIZEREL', '0') in ('1', 'ON')):
+        cfg = 'MinSizeRel'
+
+    cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
+    return cmake_args
+
+
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
@@ -287,8 +315,6 @@ setup(name=project_name,
       },
       classifiers=classifiers,
       ext_modules=[CMakeExtension('taichi_core')],
-      cmdclass=dict(egg_info=EggInfo,
-                    build_py=BuildPy,
-                    build_ext=CMakeBuild,
-                    clean=Clean),
+      cmake_args=get_cmake_args(),
+      cmdclass=dict(egg_info=EggInfo, clean=Clean),
       has_ext_modules=lambda: True)

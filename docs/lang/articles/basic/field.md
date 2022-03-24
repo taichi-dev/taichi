@@ -8,7 +8,7 @@ The term _field_ is borrowed from mathematics and physics. If you already know [
 
 Fields in Taichi are the global data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements. Each of its elements can be a scalar, vector, matrix, struct, or pointer.
 
-- You can use a field as a sparse data structure, with each of its elememt being a pointer pointing to a different field either sparse or dense. And this pattern can go on. See the [Sparse spatial data structures](/lang/articles/advanced/sparse.md) for more information. 
+- You can use a field as a sparse data structure, with each of its elememt being a pointer pointing to a different field either sparse or dense. And this pattern can go on. See the [Sparse spatial data structures](/lang/articles/advanced/sparse.md) for more information.
 - You can arrange fields using `ti.root` and `ti.axes`, for example stack one field on another or juxtapose them. All these are done at the memory level.
 
 ## Scalar fields
@@ -38,16 +38,16 @@ f_3d = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
 
 ### Access elements in a scalar field
 
-The initial value of elements in a scalar filed is zero. Always use explicit indexing to access elements in a scalar field. 
+The initial value of elements in a scalar filed is zero. Always use explicit indexing to access elements in a scalar field.
 
 :::note
 
-When accessing a 0-D field `x`, use `x[None] = 0`, *not* `x = 0`. 
+When accessing a 0-D field `x`, use `x[None] = 0`, *not* `x = 0`.
 
 :::
 
 ```python
-# For a 0D field, you are required to use the index None even though it has only one element 
+# For a 0D field, you are required to use the index None even though it has only one element
 f_0d[None] = 10.0
 f_1d[0] = 1
 f_2d[1, 2] = 255
@@ -70,16 +70,16 @@ def fill_image():
         gray_scale_image[i,j] = ti.random()
 
 fill_image()
-# Set a GUI of same size as the gray-scale image 
+# Set a GUI of same size as the gray-scale image
 gui = ti.GUI('gray-scale image with random values', (width, height))
 while gui.running:
     gui.set_image(gray_scale_image)
     gui.show()
 ```
 
-:::tip 
+:::tip
 
-With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. As of v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](/lang/articles/advanced/layout) for more information. 
+With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. As of v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](/lang/articles/advanced/layout) for more information.
 
 :::
 
@@ -94,9 +94,9 @@ f_3d.dtype  # f32
 
 ## Vector fields
 
-As the name suggests, vector fields are the fields whose elements are vectors. 
+As the name suggests, vector fields are the fields whose elements are vectors.
 
-- You can use a vector field to represent an RGB image. Then, each of its elements is an (r, g, b) triple. 
+- You can use a vector field to represent an RGB image. Then, each of its elements is an (r, g, b) triple.
 - You can use a vector field to represent a volumetric field. Then, each of its elements can be the velocity of the corresponding particle.
 
 ### Declaration
@@ -112,9 +112,9 @@ volumetric_field = ti.Vector.field(3, dtype=ti.f32, shape=box_size)
 
 ### Access elements in a vector field
 
-Accessing a vector field is similar to accessing a multi-dimensional array: You use an index operator `[]` to access an element in the field. The only difference is that, to access a specific component of an element (vector in this case), you need an *extra* index operator `[]`: 
+Accessing a vector field is similar to accessing a multi-dimensional array: You use an index operator `[]` to access an element in the field. The only difference is that, to access a specific component of an element (vector in this case), you need an *extra* index operator `[]`:
 
-- To access the velocity vector at a specific position of the volumetric field above: `volumetric_field[i,j,k]` 
+- To access the velocity vector at a specific position of the volumetric field above: `volumetric_field[i,j,k]`
 
 - To access the `l`-th component of the velocity vector: `volumetric_field[i, j, k][l]`
 
@@ -140,14 +140,14 @@ print(vec_field[w-1,h-1][n-1])
 ```
 
 :::note
-To access the `p`-th component of the 0D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())`: 
+To access the `p`-th component of the 0D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())`:
 
 `x[None][p]` (0 &le; p < n).
 :::
 
 ## Matrix fields
 
-As the name suggests, matrix fields are the fields whose elements are matrices. In continuum mechanics, at each infinitesimal point in a 3D material exists a strain and stress tensor. The strain and stress tensor is a 3 x 2 matrix. Then, you can use a matrix field to represent such a tensor field. 
+As the name suggests, matrix fields are the fields whose elements are matrices. In continuum mechanics, at each infinitesimal point in a 3D material exists a strain and stress tensor. The strain and stress tensor is a 3 x 2 matrix. Then, you can use a matrix field to represent such a tensor field.
 
 ### Declaration
 
@@ -163,9 +163,9 @@ tensor_field = ti.Matrix.field(n=3, m=2, dtype=ti.f32, shape=(300, 400, 500))
 
 ### Access elements in a matrix field
 
-Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second `[]` for matrix indexing. 
+Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second `[]` for matrix indexing.
 
-- To retrieve the `i, j` element of the matrix field `tensor_field`: 
+- To retrieve the `i, j` element of the matrix field `tensor_field`:
 
   `mat = tensor_field[i, j]`.
 
@@ -175,7 +175,7 @@ Accessing a matrix field is similar to accessing a vector field: You use an inde
 
 :::note
 
-To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())`:  
+To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())`:
 
 `x[None][p, q]` (0 &le; p < n, 0 &le; q < m)
 
@@ -201,19 +201,19 @@ When declaring the matrix field, leave large dimensions to the fields, rather th
 
 ## Struct fields
 
-Struct fields are fields that store user-defined structs. Members of a struct element can be: 
+Struct fields are fields that store user-defined structs. Members of a struct element can be:
 
 - Scalars
 - Vectors
 - Matrices
-- Other struct fields. 
+- Other struct fields.
 
 ### Declaration
 
 The following code snippet declares a 1D field of particle information (position, velocity, acceleration, and mass) using `ti.Struct.field()`. Note that:
 
-- Member variables `pos`, `vel`, `acc`, and `mass` are provided in the dictionary format. 
-- [Compound types](type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members. 
+- Member variables `pos`, `vel`, `acc`, and `mass` are provided in the dictionary format.
+- [Compound types](type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members.
 
 ```python
 import taichi as ti

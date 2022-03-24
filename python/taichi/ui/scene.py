@@ -73,7 +73,8 @@ def gen_normals(vertices, indices):
 
 
 class Scene:
-    """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
+    """The 3D scene class, which can contain meshes and particles,
+    and can be rendered on a canvas.
     """
     def __init__(self):
         check_ggui_availability()

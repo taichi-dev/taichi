@@ -16,6 +16,7 @@ option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 # projects.
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(TI_EMSCRIPTENED)
     set(TI_WITH_LLVM OFF)
@@ -90,6 +91,7 @@ file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp"
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
+file(GLOB TAICHI_EXTRA_BC_SOURCE "taichi/runtime/llvm/runtime_*.bc")
 
 
 file(GLOB TAICHI_GGUI_SOURCE
@@ -373,6 +375,7 @@ if (TI_WITH_VULKAN)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
+        install(FILES ${MOLTEN_VK} DESTINATION ${INSTALL_LIB_DIR}/runtime)
     endif()
 endif ()
 
@@ -424,7 +427,7 @@ if(NOT TI_EMSCRIPTENED)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
-        add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+        pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} ${TAICHI_PYBIND_SOURCE})
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()
@@ -446,6 +449,10 @@ if(NOT TI_EMSCRIPTENED)
         set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                 "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
     endif ()
+
+    install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
+            RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
+            LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
 endif()
 
 if(TI_EMSCRIPTENED)
@@ -474,3 +481,11 @@ endif()
     target_link_libraries(${CORE_LIBRARY_NAME} imgui)
 
 endif()
+
+if (NOT APPLE)
+    install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
+
+endif()
+install(FILES ${TAICHI_EXTRA_BC_SOURCE}
+        DESTINATION ${INSTALL_LIB_DIR}/runtime)

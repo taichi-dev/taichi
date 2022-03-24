@@ -984,7 +984,8 @@ class Matrix(TaichiOperations):
              [ 0.70710678  0.70710678]]
         """
         return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
-                       [ops_mod.sin(alpha), ops_mod.cos(alpha)]])
+                       [ops_mod.sin(alpha),
+                        ops_mod.cos(alpha)]])
 
     @classmethod
     @python_scope

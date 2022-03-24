@@ -28,8 +28,12 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
+  // We might not have a current program if GGUI is used in external apps to
+  // load AOT modules
   Program *prog = app_context_->prog();
-  prog->synchronize();
+  if (prog) {
+    prog->synchronize();
+  }
 
   const FieldInfo &img = info.img;
 
@@ -49,8 +53,14 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  DevicePtr img_dev_ptr = get_device_ptr(prog, img.snode);
   uint64_t img_size = pixels * 4;
+
+  // If there is no current program, VBO information should be provided directly
+  // instead of accessing through the current SNode
+  DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
+  if (prog) {
+    img_dev_ptr = get_device_ptr(prog, img.snode);
+  }
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);

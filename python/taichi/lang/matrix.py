@@ -1084,6 +1084,7 @@ class Matrix(TaichiOperations):
     @python_scope
     def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
         """Defines a Taichi ndarray with matrix elements.
+        This function must be called in Python scope, and after `ti.init` is called.
 
         Args:
             n (int): Number of rows of the matrix.

@@ -158,7 +158,7 @@ class CommandListImpl : public CommandList {
     mac::TI_NSRange range;
     range.location = ptr.offset;
     range.length = size;
-    fill_buffer(encoder.get(), buf, (data & 0xff));
+    fill_buffer(encoder.get(), buf, range, (data & 0xff));
     finish_encoder(encoder.get());
   }
 

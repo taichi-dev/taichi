@@ -1,10 +1,9 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
-import taichi as ti
+from math import pi, e
 
-pi = 3.1415926535897932
-e = 2.718281828459045
+import taichi as ti
 
 
 @ti.func

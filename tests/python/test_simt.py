@@ -15,13 +15,13 @@ def test_any():
 
 
 @test_utils.test(arch=ti.cuda)
-def test_ballot():
+def test_uni():
     # TODO
     pass
 
 
 @test_utils.test(arch=ti.cuda)
-def test_uni():
+def test_ballot():
     # TODO
     pass
 

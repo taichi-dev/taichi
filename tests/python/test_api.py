@@ -24,7 +24,7 @@ user_api[ti] = [
     'i', 'i16', 'i32', 'i64', 'i8', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl',
     'il', 'init', 'int16', 'int32', 'int64', 'int8', 'is_active',
     'is_logging_effective', 'j', 'jk', 'jkl', 'jl', 'k', 'kernel', 'kl', 'l',
-    'lang', 'length', 'linalg', 'log', 'loop_config', 'max', 'mesh_local',
+    'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max', 'mesh_local',
     'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange', 'no_activate',
     'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'randn', 'random',
     'raw_div', 'raw_mod', 'rescale_index', 'reset', 'rgb_to_hex', 'root',

@@ -1,9 +1,7 @@
 import taichi as ti
 
-
 pi = 3.1415926535897932
 e = 2.718281828459045
-
 
 # ---------------------------------
 vec2 = ti.types.vector(2, float)
@@ -66,6 +64,7 @@ mat4 = ti.types.matrix(4, 4, float)
 """
 
 # ---------------------------------
+
 
 @ti.func
 def mix(x, y, a):

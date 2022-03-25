@@ -123,6 +123,7 @@ void set_label(T *mtl_obj, const std::string &label) {
   // Set labels on Metal command buffer and encoders, so that they can be
   // tracked in Instrument - Metal System Trace
   if constexpr (std::is_same_v<T, MTLComputeCommandEncoder> ||
+                std::is_same_v<T, MTLBlitCommandEncoder> ||
                 std::is_same_v<T, MTLCommandBuffer>) {
     auto label_str = mac::wrap_string_as_ns_string(label);
     mac::call(mtl_obj, "setLabel:", label_str.get());

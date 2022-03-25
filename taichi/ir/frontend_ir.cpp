@@ -52,9 +52,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(loop_var.size());
+  loop_var_id.reserve(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
     loop_var[i].expr->ret_type = PrimitiveType::i32;
   }
 }
@@ -79,9 +79,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(loop_var.size());
+  loop_var_id.reserve(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
   }
 }
 
@@ -108,8 +108,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(1);
-  loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var_id.push_back(loop_var.cast<IdExpression>()->id);
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
@@ -702,18 +701,19 @@ void ASTBuilder::insert_assignment(Expr &lhs, const Expr &rhs) {
 }
 
 Expr ASTBuilder::make_var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  this->insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
+  auto var = this->expr_alloca();
   this->insert_assignment(var, x);
   return var;
+}
+
+Expr ASTBuilder::make_id_expr(const std::string &name) {
+  return Expr::make<IdExpression>(get_next_id(name));
 }
 
 void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
-  auto i = Expr(std::make_shared<IdExpression>());
+  auto i = Expr(std::make_shared<IdExpression>(get_next_id()));
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_,
                                                        for_loop_dec_.config);
   for_loop_dec_.reset();
@@ -805,7 +805,7 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
 }
 
 Expr ASTBuilder::expr_alloca() {
-  auto var = Expr(std::make_shared<IdExpression>());
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
@@ -815,7 +815,7 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements) {
-  auto var = Expr(std::make_shared<IdExpression>());
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       element_type));

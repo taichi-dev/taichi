@@ -78,7 +78,8 @@ TEST(FrontendTypeInference, TernaryOp) {
 TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   auto snode = std::make_unique<SNode>(0, SNodeType::root);
   snode->dt = PrimitiveType::u8;
-  auto global_var = Expr::make<GlobalVariableExpression>(snode.get());
+  auto global_var =
+      Expr::make<GlobalVariableExpression>(snode.get(), Identifier(0));
   auto index = value<float32>(2);
   index->type_check(nullptr);
   auto global_ptr = global_var[ExprGroup(index)];
@@ -100,9 +101,10 @@ TEST(FrontendTypeInference, TensorElement) {
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
+  auto ast_builder = prog->current_ast_builder();
   const std::vector<int> shape{3};
-  auto var = Expr(std::make_shared<IdExpression>());
-  prog->current_ast_builder()->insert(std::make_unique<FrontendAllocaStmt>(
+  auto var = Expr(std::make_shared<IdExpression>(ast_builder->get_next_id()));
+  ast_builder->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       PrimitiveType::u32));
   var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;

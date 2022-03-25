@@ -459,23 +459,18 @@ class GlobalVariableExpression : public Expression {
   Identifier ident;
   DataType dt;
   std::string name;
-  SNode *snode;
-  bool has_ambient;
+  SNode *snode{nullptr};
+  bool has_ambient{false};
   TypedConstant ambient_value;
-  bool is_primal;
+  bool is_primal{true};
   Expr adjoint;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
-    snode = nullptr;
-    has_ambient = false;
-    is_primal = true;
   }
 
-  GlobalVariableExpression(SNode *snode) : snode(snode) {
-    dt = snode->dt;
-    has_ambient = false;
-    is_primal = true;
+  GlobalVariableExpression(SNode *snode, const Identifier &ident)
+      : ident(ident), dt(snode->dt), snode(snode) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -615,8 +610,7 @@ class LoopUniqueExpression : public Expression {
 class IdExpression : public Expression {
  public:
   Identifier id;
-  IdExpression(const std::string &name = "") : id(name) {
-  }
+
   IdExpression(const Identifier &id) : id(id) {
   }
 
@@ -849,6 +843,7 @@ class ASTBuilder {
   std::vector<LoopState> loop_state_stack_;
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
+  int id_counter_{0};
 
  public:
   ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
@@ -867,6 +862,7 @@ class ASTBuilder {
                   const Expr &e,
                   const std::function<void(Expr)> &func);
 
+  Expr make_id_expr(const std::string &name);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
@@ -929,6 +925,10 @@ class ASTBuilder {
 
   void reset_snode_access_flag() {
     for_loop_dec_.reset();
+  }
+
+  Identifier get_next_id(const std::string &name = "") {
+    return Identifier(id_counter_++, name);
   }
 };
 

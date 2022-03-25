@@ -485,4 +485,3 @@ if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()
-

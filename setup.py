@@ -11,12 +11,12 @@ import os
 import shutil
 import subprocess
 import sys
-
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
+
 from setuptools import find_packages
-from skbuild.command.egg_info import egg_info
 from skbuild import setup
+from skbuild.command.egg_info import egg_info
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 

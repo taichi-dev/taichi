@@ -201,8 +201,6 @@ def normalize(v):
         >>> ti.normalize(v)
         [0.333333, 0.666667, 1.000000]
     """
-    if not isinstance(ti.Matrix):
-        raise ValueError("A Matrix or a Vector is expected")
     return v / v.norm()
 
 

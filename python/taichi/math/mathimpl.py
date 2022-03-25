@@ -397,5 +397,5 @@ def cross(x, y):
 
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "fract", "log2", "mix",
-    "normalize", "radians", "reflect", "refract", "sign", "smoothstep","step"
+    "normalize", "radians", "reflect", "refract", "sign", "smoothstep", "step"
 ]

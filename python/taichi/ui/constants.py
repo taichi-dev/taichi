@@ -1,3 +1,6 @@
+"""Key constants for :mod:`~taichi.ui`
+"""
+
 SHIFT = 'Shift'
 ALT = 'Alt'
 CTRL = 'Control'

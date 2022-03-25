@@ -86,15 +86,68 @@ An informal quick summary of evaluation rules:
 - Taichi value + Taichi value = Taichi value
 :::
 
-### Naming and scope
+### Variables and scope
+
+A variable contains a *name*, a *type* and a *value*. In Taichi, a variable can
+be created in the following ways:
+- A parameter. The name of the variable is the parameter name. The type of the
+variable is the parameter type annotation. The value of the variable is passed
+in at runtime.
+- An [assignment](#assignment-statements) statement, if the name on the
+left-hand side appears for the first time. The name of the variable is the name
+on the left-hand side. If there is a type annotation on the left-hand side, the
+type of the variable is the type annotation; otherwise, the type of the
+variable is inferred from the expression on the right-hand side. The value of
+the variable is the evaluation result of the expression on the right-hand side
+at runtime.
+
+Taichi is statically-typed. That is, you cannot change the type of a variable
+after its creation. However, you can change the value of a variable if there
+is another assignment statement after its creation.
+
+Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_science)).
+Therefore, if a variable is created in a [block](#compound-statements), it is
+invisible outside that block.
 
 ## Expressions
 
+The section explains the syntax and semantics of expressions in Taichi.
+
 ### Atoms
+
+Atoms are the most basic elements of expressions. The simplest atoms are
+identifiers or literals. Forms enclosed in parentheses, brackets or braces
+are also categorized syntactically as atoms.
+
+```
+atom      ::= identifier | literal | enclosure
+enclosure ::= parenth_form | list_display | dict_display | set_display
+```
 
 #### Identifiers (Names)
 
+Lexical definition of
+[identifiers](https://docs.python.org/3/reference/lexical_analysis.html#identifiers)
+(also referred to as names) in Taichi follows Python.
+
+There are three cases during evaluation:
+- The name is visible and corresponds to a variable created in Taichi. Then the
+evaluation result is the value of the variable at runtime.
+- The name is visible but in Python. Then compile-time evaluation is triggered,
+resulting in the Python value bound to that name.
+- The name is invisible. Then a `TaichiNameError` is thrown.
+
 #### Literals
+
+Taichi supports [integer](https://docs.python.org/3/reference/lexical_analysis.html#integer-literals)
+and [floating-point](https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals)
+literals, both of which lexically follow Python.
+
+```
+literal ::= integer | floatnumber
+```
+
+Literals are evaluated to Python values at compile time.
 
 #### Parenthesized forms
 
@@ -135,8 +188,6 @@ An informal quick summary of evaluation rules:
 #### Identity comparisons
 
 ### Boolean operations
-
-### Assignment expressions
 
 ### Conditional expressions
 

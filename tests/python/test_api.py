@@ -42,6 +42,10 @@ user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
+user_api[ti.math] = [
+    "clamp", "cross", "degrees", "distance", "dot", "fract", "log2", "mix",
+    "normalize", "radians", "reflect", "refract", "sign", "smoothstep", "step"
+]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
     'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray', 'norm',

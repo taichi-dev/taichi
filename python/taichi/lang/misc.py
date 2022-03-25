@@ -528,7 +528,7 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(block_dim=None, serialize=False, parallelize=None):
+def loop_config(*, block_dim=None, serialize=False, parallelize=None):
     """Sets directives for the next loop
 
     Args:

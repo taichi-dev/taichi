@@ -1,69 +1,10 @@
+"""
+Math functions for glsl-like functions and other stuff.
+"""
 import taichi as ti
 
 pi = 3.1415926535897932
 e = 2.718281828459045
-
-# ---------------------------------
-vec2 = ti.types.vector(2, float)
-"""2D float vector type.
-"""
-
-# ---------------------------------
-vec3 = ti.types.vector(3, float)
-"""3D float vector type.
-"""
-
-# ---------------------------------
-vec4 = ti.types.vector(4, float)
-"""4D float vector type.
-"""
-
-# ---------------------------------
-ivec2 = ti.types.vector(2, int)
-"""2D int vector type.
-"""
-
-# ---------------------------------
-ivec3 = ti.types.vector(3, float)
-"""3D int vector type.
-"""
-
-# ---------------------------------
-ivec4 = ti.types.vector(4, float)
-"""4D int vector type.
-"""
-
-# ---------------------------------
-uvec2 = ti.types.vector(2, ti.u32)
-"""2D unsigned int vector type.
-"""
-
-# ---------------------------------
-uvec3 = ti.types.vector(3, ti.u32)
-"""3D unsigned int vector type.
-"""
-
-# ---------------------------------
-uvec4 = ti.types.vector(4, ti.u32)
-"""4D unsigned int vector type.
-"""
-
-# ---------------------------------
-mat2 = ti.types.matrix(2, 2, float)
-"""2x2 float matrix type.
-"""
-
-# ---------------------------------
-mat3 = ti.types.matrix(3, 3, float)
-"""3x3 float matrix type.
-"""
-
-# ---------------------------------
-mat4 = ti.types.matrix(4, 4, float)
-"""4x4 float matrix type.
-"""
-
-# ---------------------------------
 
 
 @ti.func
@@ -376,9 +317,12 @@ def distance(x, y):
         >>> distance(x, y)
         1.732051
     """
+    result = 0.0
     if isinstance(x, ti.Matrix) or isinstance(y, ti.Matrix):
-        return (x - y).norm()
-    return ti.abs(x - y)
+        result = (x - y).norm()
+    else:
+        result = ti.abs(x - y)
+    return result
 
 
 @ti.func
@@ -454,3 +398,20 @@ def cross(x, y):
         [0., 0., 1.]
     """
     return x.cross(y)
+
+
+__all__ = ["clamp",
+           "cross",
+           "degrees",
+           "distance",
+           "dot",
+           "fract",
+           "log2",
+           "mix",
+           "normalize",
+           "radians",
+           "reflect",
+           "refract",
+           "sign",
+           "smoothstep",
+           "step"]

@@ -43,8 +43,8 @@ user_api[ti.FieldsBuilder] = [
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
-    "clamp", "cross", "degrees", "distance", "dot", "fract", "log2", "mix",
-    "normalize", "radians", "reflect", "refract", "sign", "smoothstep", "step"
+    "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2", "mix",
+    "normalize", "pi", "radians", "reflect", "refract", "sign", "smoothstep", "step"
 ]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',

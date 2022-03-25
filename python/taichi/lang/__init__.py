@@ -15,11 +15,6 @@ from taichi.lang.simt import *
 from taichi.lang.snode import *
 from taichi.lang.source_builder import *
 from taichi.lang.struct import *
-from taichi.lang.simt import *
-from taichi.types.annotations import any_arr, ext_arr, template
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
-
-from taichi import _logging, _snode
 
 __all__ = [
     s for s in dir() if not s.startswith('_') and s not in [

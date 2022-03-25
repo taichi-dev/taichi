@@ -858,7 +858,7 @@ def default_cfg():
     return _ti_core.default_compile_config()
 
 
-def call_internal(name, *args, with_runtime_context=False):
+def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
         _ti_core.insert_internal_func_call(name, make_expr_group(args),
                                            with_runtime_context))

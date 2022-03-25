@@ -528,7 +528,14 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(block_dim=None, serialize=None, parallelize=None):
+def loop_config(block_dim=None, serialize=False, parallelize=None):
+    """Sets directives for the next loop
+
+    Args:
+        block_dim (int): The number of threads in a block on GPU
+        serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
+        parallelize (int): The number of threads to use on CPU
+    """
     if block_dim is not None:
         _block_dim(block_dim)
 

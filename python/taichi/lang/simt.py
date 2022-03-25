@@ -1,5 +1,5 @@
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl
+from taichi.lang import expr
 
 
 def shfl_down_i32(mask, val, offset):

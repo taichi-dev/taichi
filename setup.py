@@ -100,6 +100,7 @@ class Clean(clean):
 
 def get_cmake_args():
     import shlex
+    import numpy
 
     num_threads = os.getenv('BUILD_NUM_THREADS', multiprocessing.cpu_count())
     cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
@@ -122,6 +123,7 @@ def get_cmake_args():
 
     cmake_args += [
         f'-DPYBIND11_CMAKE_DIR={pybind11_cmake_path}',
+        f'-DPython_NumPy_INCLUDE_DIRS={numpy.get_include()}',
         f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
         f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',

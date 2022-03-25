@@ -48,9 +48,10 @@ class FunctionCreationGuard {
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
- public:
-  static uint64 task_counter;
+ private:
+  bool needs_cache_{false};
 
+ public:
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -74,15 +75,19 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::vector<OffloadedTask> offloaded_tasks;
   llvm::BasicBlock *func_body_bb;
   std::set<std::string> linked_modules;
+  bool returned{false};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
+
+  std::unordered_map<Function *, llvm::Function *> func_map;
 
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
   CodeGenLLVM(Kernel *kernel,
               IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr);
+              std::unique_ptr<llvm::Module> &&module = nullptr,
+              bool needs_cache = false);
 
   Arch current_arch() {
     return kernel->arch;
@@ -171,6 +176,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
+
+  void visit(DecorationStmt *stmt) override;
 
   void visit(UnaryOpStmt *stmt) override;
 
@@ -377,6 +384,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       llvm::Value *dest,
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+
+  void visit(FuncCallStmt *stmt) override;
+
+  llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
+  llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~CodeGenLLVM() override = default;
 };

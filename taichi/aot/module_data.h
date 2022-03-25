@@ -28,6 +28,22 @@ struct CompiledFieldData {
             element_shape);
 };
 
+enum class BufferType { Root, GlobalTmps, Args, Rets };
+
+struct BufferInfo {
+  BufferType type;
+  int id{-1};  // only used if type==Root
+
+  TI_IO_DEF(type, id);
+};
+
+struct BufferBind {
+  BufferInfo buffer;
+  int binding{0};
+
+  TI_IO_DEF(buffer, binding);
+};
+
 struct CompiledOffloadedTask {
   std::string type;
   std::string range_hint;
@@ -36,7 +52,9 @@ struct CompiledOffloadedTask {
   std::string source_path;
   int gpu_block_size{0};
 
-  TI_IO_DEF(type, range_hint, name, source_path, gpu_block_size);
+  std::vector<BufferBind> buffer_binds;
+
+  TI_IO_DEF(type, range_hint, name, source_path, gpu_block_size, buffer_binds);
 };
 
 struct ScalarArg {

@@ -56,6 +56,21 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
+option(USE_LLD "Use lld (from llvm) linker" OFF)
+option(USE_MOLD "Use mold (A Modern Linker)" OFF)
+
+if (USE_LLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+endif()
+
+if (USE_MOLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+endif()
+
 # No support of Python for Android build
 if (NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
@@ -114,7 +129,7 @@ endmacro()
 
 if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "12")
+  set(CLANG_HIGHEST_VERSION "13")
 else()
   set(CLANG_HIGHEST_VERSION "11")
 endif()

@@ -2,7 +2,8 @@ import numpy as np
 
 import taichi as ti
 
-ti.init(ti.cuda)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 #dim, n_grid, steps, dt = 2, 128, 20, 2e-4
 #dim, n_grid, steps, dt = 2, 256, 32, 1e-4

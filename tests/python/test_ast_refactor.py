@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 from taichi.lang import impl
@@ -5,6 +7,10 @@ from taichi.lang.util import has_pytorch
 
 import taichi as ti
 from tests import test_utils
+
+if sys.version_info >= (3, 8):
+    # Import the test case only if the Python version is >= 3.8
+    from .py38_only import test_namedexpr  # noqa
 
 
 @test_utils.test()
@@ -161,11 +167,11 @@ def test_boolop():
 @test_utils.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
-                       match='"Is" is not supported in Taichi kernels.'):
+                       match='"Is" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def foo():
-            1 is [1]
+            None is None
 
         foo()
 
@@ -923,7 +929,7 @@ def test_sparse_matrix_builder():
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+    def fill(Abuilder: ti.types.sparse_matrix_builder()):
         for i, j in ti.static(ti.ndrange(n, n)):
             Abuilder[i, j] += i + j
 

@@ -3,12 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/vulkan/aot_utils.h"
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-
-#include "taichi/program/aot_module.h"
 
 namespace taichi {
 namespace lang {
@@ -40,8 +39,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   std::string write_spv_file(const std::string &output_dir,
                              const TaskAttributes &k,
                              const std::vector<uint32_t> &source_code) const;
-
-  uint32_t to_vk_dtype_enum(DataType dt);
 
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;

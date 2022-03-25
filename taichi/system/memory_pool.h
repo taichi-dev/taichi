@@ -9,7 +9,8 @@
 #include <memory>
 #include <thread>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 // A memory pool that runs on the host
 
@@ -53,4 +54,5 @@ class TI_DLL_EXPORT MemoryPool {
   Device *device_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

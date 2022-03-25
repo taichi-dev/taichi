@@ -50,7 +50,10 @@ SNode &SNode::create_node(std::vector<Axis> axes,
 
   auto &new_node = insert_children(type);
   for (int i = 0; i < (int)axes.size(); i++) {
-    TI_ASSERT(sizes[i] > 0);
+    if (sizes[i] <= 0) {
+      throw TaichiRuntimeError(
+          "Every dimension of a Taichi field should be positive");
+    }
     auto &ind = axes[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));

@@ -4,11 +4,11 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti.func
+    @ti.experimental.real_func
     def foo(val: ti.i32):
         x[None] += val
 
@@ -22,11 +22,11 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
 def test_function_with_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti.func
+    @ti.experimental.real_func
     def foo(val: ti.i32) -> ti.i32:
         x[None] += val
         return val
@@ -42,35 +42,11 @@ def test_function_with_return():
     assert x[None] == 42
 
 
-@test_utils.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
-def test_function_with_multiple_last_return():
-    x = ti.field(ti.i32, shape=())
-
-    @ti.func
-    def foo(val: ti.i32) -> ti.i32:
-        if x[None]:
-            x[None] += val * 2
-            return val * 2
-        else:
-            x[None] += val
-            return val
-
-    @ti.kernel
-    def run():
-        a = foo(40)
-        foo(1)
-        assert a == 40
-
-    x[None] = 0
-    run()
-    assert x[None] == 42
-
-
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_call_expressions():
     x = ti.field(ti.i32, shape=())
 
-    @ti.func
+    @ti.experimental.real_func
     def foo(val: ti.i32) -> ti.i32:
         if x[None] > 10:
             x[None] += 1
@@ -85,70 +61,6 @@ def test_call_expressions():
     x[None] = 0
     run()
     assert x[None] == 26
-
-
-@test_utils.test(arch=ti.cpu, experimental_real_function=True)
-def test_failing_multiple_return():
-    x = ti.field(ti.i32, shape=())
-
-    @ti.func
-    def foo(val: ti.i32) -> ti.i32:
-        if x[None] > 10:
-            if x[None] > 20:
-                return 1
-            x[None] += 1
-        x[None] += val
-        return 0
-
-    @ti.kernel
-    def run():
-        assert foo(15) == 0
-        assert foo(10) == 0
-        assert foo(100) == 1
-
-    with pytest.raises(AssertionError):
-        x[None] = 0
-        run()
-        assert x[None] == 26
-
-
-@test_utils.test(experimental_real_function=True)
-def test_python_function():
-    x = ti.field(ti.i32, shape=())
-
-    @ti.func
-    def inc(val: ti.i32):
-        x[None] += val
-
-    def identity(x):
-        return x
-
-    @ti.data_oriented
-    class A:
-        def __init__(self):
-            self.count = ti.field(ti.i32, shape=())
-            self.count[None] = 0
-
-        @ti.lang.kernel_impl.pyfunc
-        def dec(self, val: ti.i32) -> ti.i32:
-            self.count[None] += 1
-            x[None] -= val
-            return self.count[None]
-
-        @ti.kernel
-        def run(self) -> ti.i32:
-            a = self.dec(1)
-            identity(2)
-            inc(identity(3))
-            return a
-
-    a = A()
-    x[None] = 0
-    assert a.run() == 1
-    assert a.run() == 2
-    assert x[None] == 4
-    assert a.dec(4) == 3
-    assert x[None] == 0
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
@@ -218,7 +130,7 @@ def test_default_templates():
     run_func()
 
 
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_experimental_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())
@@ -238,7 +150,7 @@ def test_experimental_templates():
         assert x[None] == 11
         assert y[None] == 21
 
-    @ti.func
+    @ti.experimental.real_func
     def inc(x: ti.template()):
         x[None] += 1
 
@@ -264,21 +176,21 @@ def test_experimental_templates():
     verify()
 
 
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_missing_arg_annotation():
     with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
 
-        @ti.func
+        @ti.experimental.real_func
         def add(a, b: ti.i32) -> ti.i32:
             return a + b
 
 
-@test_utils.test(experimental_real_function=True)
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_missing_return_annotation():
     with pytest.raises(ti.TaichiCompilationError,
                        match='return value must be annotated'):
 
-        @ti.func
+        @ti.experimental.real_func
         def add(a: ti.i32, b: ti.i32):
             return a + b
 
@@ -287,3 +199,108 @@ def test_missing_return_annotation():
             add(30, 2)
 
         run()
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_different_argument_type():
+    @ti.experimental.real_func
+    def add(a: ti.f32, b: ti.f32) -> ti.f32:
+        return a + b
+
+    @ti.kernel
+    def run() -> ti.i32:
+        return add(1, 2)
+
+    assert run() == 3
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_recursion():
+    @ti.experimental.real_func
+    def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:
+        if l == r:
+            return f[l]
+        else:
+            return sum(f, l, (l + r) // 2) + sum(f, (l + r) // 2 + 1, r)
+
+    f = ti.field(ti.i32, shape=100)
+    for i in range(100):
+        f[i] = i
+
+    @ti.kernel
+    def get_sum() -> ti.i32:
+        return sum(f, 0, 99)
+
+    assert get_sum() == 99 * 50
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_multiple_return():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.experimental.real_func
+    def foo(val: ti.i32) -> ti.i32:
+        if x[None] > 10:
+            if x[None] > 20:
+                return 1
+            x[None] += 1
+        x[None] += val
+        return 0
+
+    @ti.kernel
+    def run():
+        assert foo(15) == 0
+        assert foo(10) == 0
+        assert foo(100) == 1
+
+    x[None] = 0
+    run()
+    assert x[None] == 26
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_for():
+    @ti.experimental.real_func
+    def foo() -> ti.i32:
+        for i in range(10):
+            return 42
+
+    @ti.kernel
+    def bar() -> ti.i32:
+        return foo()
+
+    assert bar() == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_while():
+    @ti.experimental.real_func
+    def foo() -> ti.i32:
+        i = 1
+        while i:
+            return 42
+
+    @ti.kernel
+    def bar() -> ti.i32:
+        return foo()
+
+    assert bar() == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_return_in_if_in_for():
+    @ti.experimental.real_func
+    def foo(a: ti.i32) -> ti.i32:
+        s = 0
+        for i in range(100):
+            if i == a + 1:
+                return s
+            s = s + i
+        return s
+
+    @ti.kernel
+    def bar(a: ti.i32) -> ti.i32:
+        return foo(a)
+
+    assert bar(10) == 11 * 5
+    assert bar(200) == 99 * 50

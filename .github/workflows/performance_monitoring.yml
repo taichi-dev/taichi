@@ -8,6 +8,8 @@ jobs:
   gpu_backends:
     name: Performance monitoring (NVIDIA GPU)
     timeout-minutes: 60
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     runs-on: [self-hosted, x64, cuda, linux, benchmark]
     steps:
       - uses: actions/checkout@v2

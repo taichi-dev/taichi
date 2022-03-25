@@ -1,6 +1,7 @@
 import taichi as ti
 
-ti.init(arch=ti.gpu)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 N = 12
 dt = 5e-5

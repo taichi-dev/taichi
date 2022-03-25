@@ -2,6 +2,7 @@
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -106,8 +107,10 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       compile();
     }
 
-    for (auto &offloaded : ir->as<Block>()->statements) {
-      account_for_offloaded(offloaded->as<OffloadedStmt>());
+    if (!this->from_offline_cache_) {
+      for (auto &offloaded : ir->as<Block>()->statements) {
+        account_for_offloaded(offloaded->as<OffloadedStmt>());
+      }
     }
 
     compiled_(ctx_builder.get_context());
@@ -285,64 +288,68 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
 #endif
+  ctx_->result_buffer = kernel_->program->result_buffer;
   return *ctx_;
+}
+
+template <typename T>
+T Kernel::fetch_ret(DataType dt, int i) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return (T)program->fetch_result<float32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return (T)program->fetch_result<float64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return (T)program->fetch_result<int32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return (T)program->fetch_result<int64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return (T)program->fetch_result<int8>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return (T)program->fetch_result<int16>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return (T)program->fetch_result<uint8>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return (T)program->fetch_result<uint16>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return (T)program->fetch_result<uint32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return (T)program->fetch_result<uint64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    return (T)program->fetch_result<float32>(i);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt->get_compute_type();
-  if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (float64)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (float64)program->fetch_result<float64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (float64)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (float64)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (float64)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (float64)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (float64)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (float64)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (float64)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (float64)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // use f32 to interact with python
-    return (float64)program->fetch_result<float32>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  return fetch_ret<float64>(dt, i);
 }
 
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt->get_compute_type();
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (int64)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (int64)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (int64)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (int64)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (int64)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (int64)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (int64)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (int64)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (int64)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (int64)program->fetch_result<float64>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
+  return fetch_ret<int64>(dt, i);
+}
+
+std::vector<int64> Kernel::get_ret_int_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<int64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<int64>(dt, j));
   }
+  return res;
+}
+
+std::vector<float64> Kernel::get_ret_float_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<float64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<float64>(dt, j));
+  }
+  return res;
 }
 
 void Kernel::set_arch(Arch arch) {

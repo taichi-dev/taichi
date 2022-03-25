@@ -8,7 +8,7 @@ from taichi.types.primitive_types import f32
 
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
                              copy_vertices_to_vbo, get_vbo_field)
-from .utils import get_field_info
+from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
 
@@ -72,11 +72,15 @@ def gen_normals(vertices, indices):
     return normals
 
 
-class Scene(_ti_core.PyScene):
+class Scene:
     """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
     """
+    def __init__(self):
+        check_ggui_availability()
+        self.scene = _ti_core.PyScene()
+
     def set_camera(self, camera):
-        super().set_camera(camera.ptr)
+        self.scene.set_camera(camera.ptr)
 
     def mesh(self,
              vertices,
@@ -106,8 +110,8 @@ class Scene(_ti_core.PyScene):
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
 
-        super().mesh(vbo_info, has_per_vertex_color, indices_info, color,
-                     two_sided)
+        self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
+                        two_sided)
 
     def particles(self,
                   centers,
@@ -128,7 +132,10 @@ class Scene(_ti_core.PyScene):
         if has_per_vertex_color:
             copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
-        super().particles(vbo_info, has_per_vertex_color, color, radius)
+        self.scene.particles(vbo_info, has_per_vertex_color, color, radius)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
-        super().point_light(pos, color)
+        self.scene.point_light(pos, color)
+
+    def ambient_light(self, color):
+        self.scene.ambient_light(color)

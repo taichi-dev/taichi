@@ -81,11 +81,6 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
-  if (irpass::inlining(ir, config, {})) {
-    print("Functions inlined");
-    irpass::analysis::verify(ir);
-  }
-
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
@@ -279,12 +274,12 @@ void compile_to_executable(IRNode *ir,
                         make_block_local);
 }
 
-void compile_inline_function(IRNode *ir,
-                             const CompileConfig &config,
-                             Function *func,
-                             bool grad,
-                             bool verbose,
-                             bool start_from_ast) {
+void compile_function(IRNode *ir,
+                      const CompileConfig &config,
+                      Function *func,
+                      bool grad,
+                      bool verbose,
+                      bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, func->get_name(), ir);
@@ -300,6 +295,17 @@ void compile_inline_function(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
+  irpass::lower_access(ir, config, {{}, true});
+  print("Access lowered");
+  irpass::analysis::verify(ir);
+
+  irpass::die(ir);
+  print("DIE");
+  irpass::analysis::verify(ir);
+
+  irpass::flag_access(ir);
+  print("Access flagged III");
+  irpass::analysis::verify(ir);
 
   irpass::type_check(ir, config);
   print("Typechecked");

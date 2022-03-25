@@ -1,4 +1,6 @@
 #pragma once
+#include "taichi/llvm/llvm_device.h"
+#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
@@ -87,6 +89,8 @@ class LlvmProgramImpl : public ProgramImpl {
       uint64 *result_buffer) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
+    get_llvm_context(host_arch())
+        ->delete_functions_of_snode_tree(snode_tree->id());
     snode_tree_buffer_manager_->destroy(snode_tree);
   }
 
@@ -110,6 +114,19 @@ class LlvmProgramImpl : public ProgramImpl {
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
                     uint32_t data);
+
+  bool supports_offline_cache() const {
+    auto arch = config->arch;
+    return arch_is_cpu(arch) && arch != Arch::wasm && !config->async_mode;
+  }
+
+  FunctionType create_kernel_function_from_offline_cache(
+      const std::string &kernel_key,
+      Kernel *kernel);
+
+  void cache_kernel(const std::string &kernel_key,
+                    llvm::Module *module,
+                    std::vector<std::string> &&offloaded_task_name_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -155,6 +172,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 
+  void dump_cache_data_to_disk() override;
+
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
@@ -169,9 +188,12 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
 
+  LlvmOfflineCache cache_data_;
+
   std::shared_ptr<Device> device_{nullptr};
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
+  LlvmDevice *llvm_device();
 };
 }  // namespace lang
 }  // namespace taichi

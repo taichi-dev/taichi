@@ -1,11 +1,12 @@
 #pragma once
+
+#include "taichi/aot/module_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/program/aot_module.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {
@@ -63,6 +64,12 @@ class ProgramImpl {
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
+
+  /**
+   * Dump Offline-cache data to disk
+   */
+  virtual void dump_cache_data_to_disk() {
+  }
 
   virtual Device *get_compute_device() {
     return nullptr;

@@ -26,6 +26,15 @@ class Field:
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
+        return self._snode
+
+    @property
+    def _snode(self):
+        """Gets representative SNode for info purposes.
+
+        Returns:
+            SNode: Representative SNode (SNode of first field member).
+        """
         return taichi.lang.snode.SNode(self.vars[0].ptr.snode())
 
     @property
@@ -35,7 +44,7 @@ class Field:
         Returns:
             Tuple[Int]: Field shape.
         """
-        return self.snode.shape
+        return self._snode.shape
 
     @property
     def dtype(self):
@@ -44,16 +53,16 @@ class Field:
         Returns:
             DataType: Data type of each individual value.
         """
-        return self.snode.dtype
+        return self._snode._dtype
 
     @property
-    def name(self):
+    def _name(self):
         """Gets field name.
 
         Returns:
             str: Field name.
         """
-        return self.snode._name
+        return self._snode._name
 
     def parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
@@ -66,7 +75,7 @@ class Field:
         """
         return self.snode.parent(n)
 
-    def get_field_members(self):
+    def _get_field_members(self):
         """Gets field members.
 
         Returns:
@@ -82,7 +91,7 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def set_grad(self, grad):
+    def _set_grad(self, grad):
         """Sets corresponding gradient field.
 
         Args:
@@ -187,11 +196,11 @@ class Field:
     def __str__(self):
         if taichi.lang.impl.inside_kernel():
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
-        if self.snode.ptr is None:
+        if self._snode.ptr is None:
             return '<Field: Definition of this field is incomplete>'
         return str(self.to_numpy())
 
-    def pad_key(self, key):
+    def _pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
@@ -199,7 +208,7 @@ class Field:
         assert len(key) == len(self.shape)
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
-    def initialize_host_accessors(self):
+    def _initialize_host_accessors(self):
         if self.host_accessors:
             return
         taichi.lang.impl.get_runtime().materialize()
@@ -207,7 +216,7 @@ class Field:
             SNodeHostAccessor(e.ptr.snode()) for e in self.vars
         ]
 
-    def host_access(self, key):
+    def _host_access(self, key):
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
 
@@ -266,13 +275,13 @@ class ScalarField(Field):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
-        self.host_accessors[0].setter(value, *self.pad_key(key))
+        self._initialize_host_accessors()
+        self.host_accessors[0].setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
-        return self.host_accessors[0].getter(*self.pad_key(key))
+        self._initialize_host_accessors()
+        return self.host_accessors[0].getter(*self._pad_key(key))
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization

@@ -118,6 +118,9 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
+              if (block->statements[j]->is<FuncCallStmt>()) {
+                has_store = true;
+              }
               if (!irpass::analysis::gather_statements(
                        block->statements[j].get(),
                        [&](Stmt *s) {
@@ -388,7 +391,7 @@ class BasicBlockSimplify : public IRVisitor {
     return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
   }
 
-  static bool is_atomic_value_used(const std::vector<pStmt> &clause,
+  static bool is_atomic_value_used(const stmt_vector &clause,
                                    int atomic_stmt_i) {
     // Cast type to check precondition
     const auto *stmt = clause[atomic_stmt_i]->as<AtomicOpStmt>();
@@ -412,7 +415,7 @@ class BasicBlockSimplify : public IRVisitor {
       modifier.mark_as_modified();
       return;
     }
-    auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
+    auto flatten = [&](stmt_vector &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 
       // Here we try to move statements outside the clause;
@@ -469,7 +472,7 @@ class BasicBlockSimplify : public IRVisitor {
             modifier.insert_before(if_stmt, std::move(clause[i]));
           }
         }
-        auto clean_clause = std::vector<pStmt>();
+        auto clean_clause = stmt_vector();
         bool reduced = false;
         for (auto &&stmt : clause) {
           if (stmt != nullptr) {
@@ -521,9 +524,9 @@ class BasicBlockSimplify : public IRVisitor {
     if (config.advanced_optimization) {
       // Merge adjacent if's with the identical condition.
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
-      if (current_stmt_id > 0 &&
-          block->statements[current_stmt_id - 1]->is<IfStmt>()) {
-        auto bstmt = block->statements[current_stmt_id - 1]->as<IfStmt>();
+      if (current_stmt_id < block->size() - 1 &&
+          block->statements[current_stmt_id + 1]->is<IfStmt>()) {
+        auto bstmt = block->statements[current_stmt_id + 1]->as<IfStmt>();
         if (bstmt->cond == if_stmt->cond) {
           auto concatenate = [](std::unique_ptr<Block> &clause1,
                                 std::unique_ptr<Block> &clause2) {
@@ -532,7 +535,7 @@ class BasicBlockSimplify : public IRVisitor {
               return;
             }
             if (clause2 != nullptr)
-              clause1->insert(VecStatement(std::move(clause2->statements)));
+              clause1->insert(VecStatement(std::move(clause2->statements)), 0);
           };
           concatenate(bstmt->true_statements, if_stmt->true_statements);
           concatenate(bstmt->false_statements, if_stmt->false_statements);

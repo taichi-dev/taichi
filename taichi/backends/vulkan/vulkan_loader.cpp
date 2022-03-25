@@ -69,11 +69,6 @@ bool VulkanLoader::check_vulkan_device() {
             found_device_with_compute = true;
           }
         }
-
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(physical_device, &properties);
-
-        TI_INFO("Found Vulkan Device {} ({})", i, properties.deviceName);
       }
     }
   } while (false);

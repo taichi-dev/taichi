@@ -1,6 +1,7 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda)  # Alternatively, ti.init(arch=ti.cpu)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 N = 128
 cell_size = 1.0 / N

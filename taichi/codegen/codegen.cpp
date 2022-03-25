@@ -32,10 +32,11 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
                                                      Kernel *kernel,
-                                                     Stmt *stmt) {
+                                                     Stmt *stmt,
+                                                     bool needs_cache) {
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
-    return std::make_unique<CodeGenCPU>(kernel, stmt);
+    return std::make_unique<CodeGenCPU>(kernel, stmt, needs_cache);
   } else if (arch == Arch::wasm) {
     return std::make_unique<CodeGenWASM>(kernel, stmt);
   } else if (arch == Arch::cuda) {

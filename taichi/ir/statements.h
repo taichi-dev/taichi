@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -97,6 +97,38 @@ class ContinueStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(scope);
   TI_DEFINE_ACCEPT_AND_CLONE;
+};
+
+/**
+ * A decoration statement. The decorated "operands" will keep this decoration.
+ */
+class DecorationStmt : public Stmt {
+ public:
+  enum class Decoration : uint32_t { kUnknown, kLoopUnique };
+
+  Stmt *operand;
+  std::vector<uint32_t> decoration;
+
+  DecorationStmt(Stmt *operand, const std::vector<uint32_t> &decoration);
+
+  bool same_operation(DecorationStmt *o) const {
+    return false;
+  }
+
+  bool is_cast() const {
+    return false;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(operand, decoration);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 /**
@@ -263,9 +295,18 @@ class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
   std::vector<Stmt *> indices;
+  std::vector<int> element_shape;
+  // AOS: element_dim < 0
+  // SOA: element_dim > 0
+  int element_dim;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices);
+
+  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                  const std::vector<Stmt *> &indices,
+                  const std::vector<int> &element_shape,
+                  int element_dim);
 
   bool has_global_side_effect() const override {
     return false;
@@ -846,8 +887,13 @@ class FuncCallStmt : public Stmt {
  public:
   Function *func;
   std::vector<Stmt *> args;
+  bool global_side_effect{true};
 
   FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE

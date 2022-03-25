@@ -1,5 +1,6 @@
 import ast
 import collections.abc
+import itertools
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -14,9 +15,7 @@ from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
-from taichi.types import annotations, primitive_types
-
-from taichi import linalg
+from taichi.types import annotations, ndarray_type, primitive_types
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -62,10 +61,7 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            if isinstance(value, expr.Expr):
-                var = ti_ops.cast(value, anno)
-            else:
-                var = impl.make_constant_expr(value, anno)
+            var = ti_ops.cast(value, anno)
             var = impl.expr_init(var)
             ctx.create_variable(target.id, var)
         else:
@@ -175,6 +171,26 @@ class ASTTransformer(Builder):
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = impl.subscript(node.value.ptr, *node.slice.ptr)
+        return node.ptr
+
+    @staticmethod
+    def build_Slice(ctx, node):
+        if node.lower is not None:
+            build_stmt(ctx, node.lower)
+        if node.upper is not None:
+            build_stmt(ctx, node.upper)
+        if node.step is not None:
+            build_stmt(ctx, node.step)
+
+        node.ptr = slice(node.lower.ptr if node.lower else None,
+                         node.upper.ptr if node.upper else None,
+                         node.step.ptr if node.step else None)
+        return node.ptr
+
+    @staticmethod
+    def build_ExtSlice(ctx, node):
+        build_stmts(ctx, node.dims)
+        node.ptr = tuple(dim.ptr for dim in node.dims)
         return node.ptr
 
     @staticmethod
@@ -346,6 +362,17 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
+    def build_call_if_is_type(ctx, node, args, keywords):
+        func = node.func.ptr
+        if id(func) in primitive_types.type_ids:
+            if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
+                raise TaichiSyntaxError(
+                    "Type annotation can only be given to a single literal.")
+            node.ptr = expr.Expr(args[0], dtype=func)
+            return True
+        return False
+
+    @staticmethod
     def warn_if_is_external_func(ctx, node):
         func = node.func.ptr
         if ctx.is_in_static_scope():  # allow external function in static scope
@@ -396,6 +423,9 @@ class ASTTransformer(Builder):
         if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
             return node.ptr
 
+        if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
+            return node.ptr
+
         node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
 
@@ -425,14 +455,16 @@ class ASTTransformer(Builder):
                               annotations.template):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
                 elif isinstance(ctx.func.argument_annotations[i],
-                                linalg.sparse_matrix_builder):
-                    ctx.create_variable(arg.arg,
-                                        kernel_arguments.decl_sparse_matrix())
-                elif isinstance(ctx.func.argument_annotations[i],
-                                annotations.any_arr):
+                                annotations.sparse_matrix_builder):
                     ctx.create_variable(
                         arg.arg,
-                        kernel_arguments.decl_any_arr_arg(
+                        kernel_arguments.decl_sparse_matrix(
+                            to_taichi_type(ctx.arg_features[i])))
+                elif isinstance(ctx.func.argument_annotations[i],
+                                ndarray_type.NdarrayType):
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
@@ -452,7 +484,7 @@ class ASTTransformer(Builder):
             transform_as_kernel()
 
         else:  # ti.func
-            if impl.get_runtime().experimental_real_function:
+            if ctx.is_real_function:
                 transform_as_kernel()
             else:
                 len_args = len(args.args)
@@ -494,12 +526,12 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Return(ctx, node):
-        if not impl.get_runtime().experimental_real_function:
+        if not ctx.is_real_function:
             if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
         build_stmt(ctx, node.value)
-        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
+        if ctx.is_kernel or ctx.is_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if ctx.func.return_type is None:
@@ -507,16 +539,27 @@ class ASTTransformer(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                ctx.ast_builder.create_kernel_exprgroup_return(
-                    expr.make_expr_group(
-                        ti_ops.cast(expr.Expr(node.value.ptr),
-                                    ctx.func.return_type).ptr))
+                if id(ctx.func.return_type) in primitive_types.type_ids:
+                    ctx.ast_builder.create_kernel_exprgroup_return(
+                        expr.make_expr_group(
+                            ti_ops.cast(expr.Expr(node.value.ptr),
+                                        ctx.func.return_type).ptr))
+                elif isinstance(ctx.func.return_type, MatrixType):
+                    ctx.ast_builder.create_kernel_exprgroup_return(
+                        expr.make_expr_group([
+                            ti_ops.cast(exp, ctx.func.return_type.dtype)
+                            for exp in itertools.chain.from_iterable(
+                                node.value.ptr.to_list())
+                        ]))
+                else:
+                    raise TaichiSyntaxError(
+                        "The return type is not supported now!")
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
         else:
             ctx.return_data = node.value.ptr
-        if not impl.get_runtime().experimental_real_function:
+        if not ctx.is_real_function:
             ctx.returned = True
         return None
 
@@ -679,6 +722,8 @@ class ASTTransformer(Builder):
         ops_static = {
             ast.In: lambda l, r: l in r,
             ast.NotIn: lambda l, r: l not in r,
+            ast.Is: lambda l, r: l is r,
+            ast.IsNot: lambda l, r: l is not r,
         }
         if ctx.is_in_static_scope():
             ops = {**ops, **ops_static}
@@ -689,6 +734,12 @@ class ASTTransformer(Builder):
             l = operands[i]
             r = operands[i + 1]
             op = ops.get(type(node_op))
+            if isinstance(node_op, (ast.Is, ast.IsNot)):
+                name = "is" if isinstance(node_op, ast.Is) else "is not"
+                warnings.warn_explicit(
+                    f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
+                    DeprecationWarning, ctx.file,
+                    node.lineno + ctx.lineno_offset)
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(
@@ -1059,16 +1110,14 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Expr(ctx, node):
-        if not isinstance(
-                node.value,
-                ast.Call) or not impl.get_runtime().experimental_real_function:
-            build_stmt(ctx, node.value)
+        build_stmt(ctx, node.value)
+        if not isinstance(node.value, ast.Call):
             return None
-
-        args = [build_stmt(ctx, node.value.func)
-                ] + [arg.ptr for arg in build_stmts(ctx, node.value.args)]
-        impl.insert_expr_stmt_if_ti_func(ctx.ast_builder, *args)
-
+        is_taichi_function = getattr(node.value.func.ptr,
+                                     '_is_taichi_function', False)
+        if is_taichi_function and node.value.func.ptr._is_real_function:
+            func_call_result = node.value.ptr
+            ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)
         return None
 
     @staticmethod

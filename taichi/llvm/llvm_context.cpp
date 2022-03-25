@@ -737,6 +737,22 @@ void TaichiLLVMContext::update_runtime_jit_module(
   runtime_jit_module = add_module(std::move(module));
 }
 
+void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
+  if (!snode_tree_funcs_.count(id)) {
+    return;
+  }
+  llvm::Module *module = get_this_thread_struct_module();
+  for (auto str : snode_tree_funcs_[id]) {
+    auto *func = module->getFunction(str);
+    func->eraseFromParent();
+  }
+  snode_tree_funcs_.erase(id);
+}
+
+void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
+  snode_tree_funcs_[id].push_back(func);
+}
+
 TI_REGISTER_TASK(make_slim_libdevice);
 
 }  // namespace lang

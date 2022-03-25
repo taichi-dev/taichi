@@ -11,6 +11,12 @@ UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
   TI_STMT_REG_FIELDS;
 }
 
+DecorationStmt::DecorationStmt(Stmt *operand,
+                               const std::vector<uint32_t> &decoration)
+    : operand(operand), decoration(decoration) {
+  TI_STMT_REG_FIELDS;
+}
+
 bool UnaryOpStmt::is_cast() const {
   return unary_op_is_cast(op_type);
 }
@@ -37,6 +43,15 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
   TI_ASSERT(base_ptrs.size() == 1);
   element_type() = dt;
   TI_STMT_REG_FIELDS;
+}
+
+ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                                 const std::vector<Stmt *> &indices,
+                                 const std::vector<int> &element_shape,
+                                 int element_dim)
+    : ExternalPtrStmt(base_ptrs, indices) {
+  this->element_shape = element_shape;
+  this->element_dim = element_dim;
 }
 
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
@@ -290,11 +305,11 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
                          int num_cpu_threads,
                          int block_dim)
     : mesh(mesh),
-      major_from_type(element_type),
       body(std::move(body)),
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
-      block_dim(block_dim) {
+      block_dim(block_dim),
+      major_from_type(element_type) {
   this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }

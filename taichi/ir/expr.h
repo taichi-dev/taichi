@@ -22,13 +22,15 @@ class Expr {
     atomic = false;
   }
 
-  Expr(int32 x);
+  explicit Expr(int16 x);
 
-  Expr(int64 x);
+  explicit Expr(int32 x);
 
-  Expr(float32 x);
+  explicit Expr(int64 x);
 
-  Expr(float64 x);
+  explicit Expr(float32 x);
+
+  explicit Expr(float64 x);
 
   Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;
@@ -45,7 +47,7 @@ class Expr {
     atomic = o.atomic;
   }
 
-  Expr(const Identifier &id);
+  explicit Expr(const Identifier &id);
 
   void set(const Expr &o) {
     expr = o.expr;
@@ -86,8 +88,6 @@ class Expr {
 
   Expr operator!();
 
-  Expr eval() const;
-
   template <typename T, typename... Args>
   static Expr make(Args &&... args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
@@ -113,12 +113,6 @@ class Expr {
   void type_check(CompileConfig *config);
 };
 
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
-
-Expr operator-(const Expr &expr);
-
-Expr operator~(const Expr &expr);
-
 // Value cast
 Expr cast(const Expr &input, DataType dt);
 
@@ -134,4 +128,36 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
+// like Expr::Expr, but allows to explicitly specify the type
+template <typename T>
+Expr value(const T &val) {
+  return Expr(val);
+}
+
+Expr expr_rand(DataType dt);
+
+template <typename T>
+Expr expr_rand() {
+  return taichi::lang::expr_rand(get_data_type<T>());
+}
+
+Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val);
+
+Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val);
+
+Expr snode_is_active(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(SNode *snode, const ExprGroup &indices);
+
+Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(const Expr &expr, const ExprGroup &indices);
+
+Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
+
+Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
+
+Expr global_new(Expr id_expr, DataType dt);
+
+Expr global_new(DataType dt, std::string name = "");
 TLANG_NAMESPACE_END

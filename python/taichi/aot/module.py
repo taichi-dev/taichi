@@ -6,7 +6,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
-from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.annotations import template
+from taichi.types.ndarray_type import NdarrayType
 from taichi.types.primitive_types import f32
 
 
@@ -24,8 +25,8 @@ class KernelTemplate:
             if val is v:
                 key_p += '=' + ky + ','
                 return key_p
-        raise RuntimeError('Arg type must be of type int/float/boolean' +
-                           'or taichi field. Type ' + str(type(v)) +
+        raise RuntimeError('Arg type must be of type int/float/boolean'
+                           f' or taichi field. Type {str(type(v))}'
                            ' is not supported')
 
     def instantiate(self, **kwargs):
@@ -126,7 +127,7 @@ class Module:
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example any_arr input.
+          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example ndarray input.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
@@ -137,22 +138,21 @@ class Module:
         injected_args = []
         num_arr = len([
             anno for anno in kernel.argument_annotations
-            if isinstance(anno, ArgAnyArray)
+            if isinstance(anno, NdarrayType)
         ])
         assert example_any_arrays is None or num_arr == len(
             example_any_arrays
-        ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
+        ), f'Need {num_arr} example ndarray inputs but got {len(example_any_arrays)}'
         i = 0
         for anno in kernel.argument_annotations:
-            if isinstance(anno, ArgAnyArray):
+            if isinstance(anno, NdarrayType):
                 if example_any_arrays:
                     injected_args.append(example_any_arrays[i])
                 else:
                     assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
                     if anno.element_dim == 0:
                         injected_args.append(
-                            ScalarNdarray(dtype=f32,
-                                          shape=(2, ) * anno.field_dim))
+                            ScalarNdarray(f32, (2, ) * anno.field_dim))
                     elif anno.element_dim == 1:
                         injected_args.append(
                             VectorNdarray(anno.element_shape[0],
@@ -168,10 +168,10 @@ class Module:
                                           layout=Layout.AOS))
                     else:
                         raise RuntimeError('')
+                i = i + 1
             else:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
-            i = i + 1
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(name, kernel.kernel_cpp)
 

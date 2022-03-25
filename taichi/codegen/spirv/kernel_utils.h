@@ -140,10 +140,18 @@ class KernelContextAttributes {
     size_t offset_in_mem{0};
     // Index of the input arg or the return value in the host `Context`
     int index{-1};
-    DataType dt;
+    PrimitiveTypeID dtype{PrimitiveTypeID::unknown};
     bool is_array{false};
+    std::vector<int> element_shape;
+    std::size_t field_dim{0};
 
-    TI_IO_DEF(stride, offset_in_mem, index, is_array);
+    TI_IO_DEF(stride,
+              offset_in_mem,
+              index,
+              dtype,
+              is_array,
+              element_shape,
+              field_dim);
   };
 
  public:

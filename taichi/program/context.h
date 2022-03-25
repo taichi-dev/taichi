@@ -24,6 +24,11 @@ struct RuntimeContext {
   int32 cpu_thread_id;
   // |is_device_allocation| is true iff args[i] is a DeviceAllocation*.
   bool is_device_allocation[taichi_max_num_args_total]{false};
+  // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
+  // because each real function need a place to store its result, but
+  // LLVMRuntime is shared among functions. So we moved the pointer to
+  // RuntimeContext which each function have one.
+  uint64 *result_buffer;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 
@@ -44,6 +49,11 @@ struct RuntimeContext {
 
   void set_device_allocation(int i, bool is_device_allocation_) {
     is_device_allocation[i] = is_device_allocation_;
+  }
+
+  template <typename T>
+  T get_ret(int i) {
+    return taichi_union_cast_with_different_sizes<T>(result_buffer[i]);
   }
 #endif
 };

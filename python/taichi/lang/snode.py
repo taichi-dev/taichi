@@ -144,7 +144,7 @@ class SNode:
 
         for arg in args:
             if isinstance(arg, Field):
-                for var in arg.get_field_members():
+                for var in arg._get_field_members():
                     self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
@@ -201,7 +201,7 @@ class SNode:
         return res
 
     @property
-    def dtype(self):
+    def _dtype(self):
         """Gets the data type of `self`.
 
         Returns:
@@ -248,21 +248,12 @@ class SNode:
         return self.ptr.name()
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets `self`.
         Returns:
             SNode: `self`.
         """
         return self
-
-    @property
-    def needs_grad(self):
-        """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-
-        Returns:
-            bool: Whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-        """
-        return self.ptr.has_grad()
 
     def _get_children(self):
         """Gets all children components of `self`.
@@ -339,22 +330,15 @@ class SNode:
 
 
 def rescale_index(a, b, I):
-    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'
+    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'.
 
-    Parameters
-    ----------
-    a: ti.field(), ti.Vector.field, ti.Matrix.field()
-        input taichi field or snode
-    b: ti.field(), ti.Vector.field, ti.Matrix.field()
-        output taichi field or snode
-    I: ti.Vector()
-        grouped loop index
+    Args:
 
-    Returns
-    -------
-    Ib: ti.Vector()
-        rescaled grouped loop index
+        a, b (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`): Input taichi fields or snodes.
+        I (Union[list, :class:`~taichi.Vector`]): grouped loop index.
 
+    Returns:
+        Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
@@ -375,31 +359,73 @@ def rescale_index(a, b, I):
     return matrix.Vector(entries)
 
 
-def append(l, indices, val):
+def append(node, indices, val):
+    """Append a value `val` to a SNode `node` at index `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): Input SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
+        val (:mod:`~taichi.types`): the data to be appended.
+    """
     a = impl.expr_init(
-        _ti_core.insert_append(l.snode.ptr, expr.make_expr_group(indices),
+        _ti_core.insert_append(node._snode.ptr, expr.make_expr_group(indices),
                                expr.Expr(val).ptr))
     return a
 
 
-def is_active(l, indices):
+def is_active(node, indices):
+    """Explicitly query whether a cell in a SNode `node` at location
+    `indices` is active or not.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, list, :class:`~taichi.Vector`]): the indices to visit.
+
+    Returns:
+        bool: the cell `node[indices]` is active or not.
+    """
     return expr.Expr(
-        _ti_core.insert_is_active(l.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.insert_is_active(node._snode.ptr,
+                                  expr.make_expr_group(indices)))
 
 
-def activate(l, indices):
+def activate(node, indices):
+    """Explicitly activate a cell of `node` at location `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
+    """
     impl.get_runtime().prog.current_ast_builder().insert_activate(
-        l.snode.ptr, expr.make_expr_group(indices))
+        node._snode.ptr, expr.make_expr_group(indices))
 
 
-def deactivate(l, indices):
+def deactivate(node, indices):
+    """Explicitly deactivate a cell of `node` at location `indices`.
+
+    After deactivation, the Taichi runtime automatically recycles and zero-fills
+    the memory of the deactivated cell.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
+    """
     impl.get_runtime().prog.current_ast_builder().insert_deactivate(
-        l.snode.ptr, expr.make_expr_group(indices))
+        node._snode.ptr, expr.make_expr_group(indices))
 
 
-def length(l, indices):
+def length(node, indices):
+    """Return the length of the dynamic SNode `node` at index `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): a dynamic SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to query.
+
+    Returns:
+        int: the length of cell `node[indices]`.
+    """
     return expr.Expr(
-        _ti_core.insert_len(l.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.insert_len(node._snode.ptr, expr.make_expr_group(indices)))
 
 
 def get_addr(f, indices):
@@ -408,15 +434,14 @@ def get_addr(f, indices):
     Currently, this function can only be called inside a taichi kernel.
 
     Args:
-        f (Union[ti.field, ti.Vector.field, ti.Matrix.field]): Input taichi field for memory address query.
-        indices (Union[int, ti.Vector()]): The specified field indices of the query.
+        f (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`]): Input taichi field for memory address query.
+        indices (Union[int, :class:`~taichi.Vector`]): The specified field indices of the query.
 
     Returns:
-        ti.u64:  The memory address of `f[indices]`.
-
+        ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_get_addr(f.snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_get_addr(f._snode.ptr, expr.make_expr_group(indices)))
 
 
 __all__ = [

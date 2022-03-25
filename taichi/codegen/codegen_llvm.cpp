@@ -72,9 +72,12 @@ FunctionCreationGuard::FunctionCreationGuard(
 }
 
 FunctionCreationGuard::~FunctionCreationGuard() {
-  mb->builder->CreateRetVoid();
+  if (!mb->returned) {
+    mb->builder->CreateRetVoid();
+  }
   mb->func = old_func;
   mb->builder->restoreIP(ip);
+  mb->returned = false;
 
   {
     llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
@@ -82,6 +85,7 @@ FunctionCreationGuard::~FunctionCreationGuard() {
     mb->builder->CreateBr(entry);
     mb->entry_block = old_entry;
   }
+  TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
 namespace {
@@ -124,12 +128,12 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 }  // namespace
 
 // CodeGenLLVM
-
-uint64 CodeGenLLVM::task_counter = 0;
-
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
+    if (returned) {
+      break;
+    }
   }
 }
 
@@ -300,7 +304,8 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&module)
+                         std::unique_ptr<llvm::Module> &&module,
+                         bool needs_cache)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
           module == nullptr ? kernel->program->get_llvm_program_impl()
@@ -309,6 +314,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                             : std::move(module),
           kernel->program->get_llvm_program_impl()->get_llvm_context(
               kernel->arch)),
+      needs_cache_(needs_cache),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -342,6 +348,9 @@ llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
   } else {
     return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
   }
+}
+
+void CodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
@@ -728,12 +737,20 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(false_block);
   if (if_stmt->false_statements) {
     if_stmt->false_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(after_if);
 }
 
@@ -904,7 +921,11 @@ void CodeGenLLVM::visit(WhileStmt *stmt) {
 
   stmt->body->accept(this);
 
-  builder->CreateBr(body);  // jump to head
+  if (!returned) {
+    builder->CreateBr(body);  // jump to head
+  } else {
+    returned = false;
+  }
 
   builder->SetInsertPoint(after_loop);
 }
@@ -999,8 +1020,11 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
 
       for_stmt->body->accept(this);
     }
-
-    builder->CreateBr(loop_inc);
+    if (!returned) {
+      builder->CreateBr(loop_inc);
+    } else {
+      returned = false;
+    }
     builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
@@ -1019,6 +1043,54 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
   create_naive_range_for(for_stmt);
 }
 
+llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
+  llvm::Type *dest_ty = nullptr;
+  TI_ASSERT(!type->is<PointerType>());
+  if (auto cit = type->cast<CustomIntType>()) {
+    if (cit->get_is_signed())
+      dest_ty = tlctx->get_data_type(PrimitiveType::i32);
+    else
+      dest_ty = tlctx->get_data_type(PrimitiveType::u32);
+  } else {
+    dest_ty = tlctx->get_data_type(type);
+  }
+  auto dest_bits = dest_ty->getPrimitiveSizeInBits();
+  if (dest_ty == llvm::Type::getHalfTy(*llvm_context)) {
+    // if dest_ty == half, CreateTrunc will only keep low 16bits of mantissa
+    // which doesn't mean anything.
+    // So we truncate to 32 bits first and then fptrunc to half if applicable
+    auto truncated =
+        builder->CreateTrunc(val, llvm::Type::getIntNTy(*llvm_context, 32));
+    auto casted = builder->CreateBitCast(truncated,
+                                         llvm::Type::getFloatTy(*llvm_context));
+    return builder->CreateFPTrunc(casted, llvm::Type::getHalfTy(*llvm_context));
+  } else {
+    auto truncated = builder->CreateTrunc(
+        val, llvm::Type::getIntNTy(*llvm_context, dest_bits));
+
+    return builder->CreateBitCast(truncated, dest_ty);
+  }
+}
+
+llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
+  auto intermediate_bits = 0;
+  if (auto cit = type->cast<CustomIntType>()) {
+    intermediate_bits = data_type_bits(cit->get_compute_type());
+  } else {
+    intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
+  }
+  llvm::Type *dest_ty = tlctx->get_data_type<int64>();
+  llvm::Type *intermediate_type = nullptr;
+  if (val->getType() == llvm::Type::getHalfTy(*llvm_context)) {
+    val = builder->CreateFPExt(val, tlctx->get_data_type<float>());
+    intermediate_type = tlctx->get_data_type<int32>();
+  } else {
+    intermediate_type = llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
+  }
+  return builder->CreateZExt(builder->CreateBitCast(val, intermediate_type),
+                             dest_ty);
+}
+
 void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
   auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
                       tlctx->get_constant(stmt->arg_id));
@@ -1029,67 +1101,27 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
         llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
-    TI_ASSERT(!stmt->ret_type->is<PointerType>());
-    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
-      if (cit->get_is_signed())
-        dest_ty = tlctx->get_data_type(PrimitiveType::i32);
-      else
-        dest_ty = tlctx->get_data_type(PrimitiveType::u32);
-    } else {
-      dest_ty = tlctx->get_data_type(stmt->ret_type);
-    }
-    auto dest_bits = dest_ty->getPrimitiveSizeInBits();
-    if (dest_ty == llvm::Type::getHalfTy(*llvm_context)) {
-      // if dest_ty == half, CreateTrunc will only keep low 16bits of mantissa
-      // which doesn't mean anything.
-      // So we truncate to 32 bits first and then fptrunc to half if applicable
-      auto truncated = builder->CreateTrunc(
-          raw_arg, llvm::Type::getIntNTy(*llvm_context, 32));
-      auto casted = builder->CreateBitCast(
-          truncated, llvm::Type::getFloatTy(*llvm_context));
-      llvm_val[stmt] =
-          builder->CreateFPTrunc(casted, llvm::Type::getHalfTy(*llvm_context));
-    } else {
-      auto truncated = builder->CreateTrunc(
-          raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
-
-      llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
-    }
+    llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
   }
 }
 
 void CodeGenLLVM::visit(ReturnStmt *stmt) {
-  if (stmt->ret_type.is_pointer()) {
+  auto types = stmt->element_types();
+  if (std::any_of(types.begin(), types.end(),
+                  [](const DataType &t) { return t.is_pointer(); })) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
-    auto intermediate_bits = 0;
-    if (stmt->values.size() == 1) {
-      if (auto cit = stmt->values[0]->ret_type->cast<CustomIntType>()) {
-        intermediate_bits = data_type_bits(cit->get_compute_type());
-      } else {
-        intermediate_bits = tlctx->get_data_type(stmt->values[0]->ret_type)
-                                ->getPrimitiveSizeInBits();
-      }
-      llvm::Type *dest_ty = tlctx->get_data_type<int64>();
-      llvm::Type *intermediate_type = nullptr;
-      if (llvm_val[stmt->values[0]]->getType() ==
-          llvm::Type::getHalfTy(*llvm_context)) {
-        llvm_val[stmt->values[0]] = builder->CreateFPExt(
-            llvm_val[stmt->values[0]], tlctx->get_data_type<float>());
-        intermediate_type = tlctx->get_data_type<int32>();
-      } else {
-        intermediate_type =
-            llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
-      }
-      auto extended = builder->CreateZExt(
-          builder->CreateBitCast(llvm_val[stmt->values[0]], intermediate_type),
-          dest_ty);
-      create_call("LLVMRuntime_store_result", {get_runtime(), extended});
-    } else {
-      TI_NOT_IMPLEMENTED;
+    int idx{0};
+    for (auto &value : stmt->values) {
+      create_call(
+          "RuntimeContext_store_result",
+          {get_context(), bitcast_to_u64(llvm_val[value], value->ret_type),
+           tlctx->get_constant<int32>(idx++)});
     }
   }
+  builder->CreateRetVoid();
+  returned = true;
 }
 
 void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
@@ -1617,9 +1649,9 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
-  auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
-                                      stmt->task_name(), suffix);
-  task_counter += 1;
+  auto task_kernel_name =
+      fmt::format("{}_{}_{}{}", kernel_name, kernel->get_next_task_id(),
+                  stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
@@ -1645,7 +1677,11 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 }
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
-  builder->CreateRetVoid();
+  if (!returned) {
+    builder->CreateRetVoid();
+  } else {
+    returned = false;
+  }
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);
@@ -2234,6 +2270,16 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
   eliminate_unused_functions();
 
+  auto *llvm_prog = prog->get_llvm_program_impl();
+  if (needs_cache_) {
+    std::vector<std::string> offloaded_task_name_list;
+    for (auto &task : offloaded_tasks) {
+      offloaded_task_name_list.push_back(task.name);
+    }
+    llvm_prog->cache_kernel(this->kernel->get_key(), this->module.get(),
+                            std::move(offloaded_task_name_list));
+  }
+
   tlctx->add_module(std::move(module));
 
   for (auto &task : offloaded_tasks) {
@@ -2374,6 +2420,35 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   }
 
   return xlogue;
+}
+
+void CodeGenLLVM::visit(FuncCallStmt *stmt) {
+  if (!func_map.count(stmt->func)) {
+    auto guard = get_function_creation_guard(
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+    func_map.insert({stmt->func, guard.body});
+    stmt->func->ir->accept(this);
+  }
+  llvm::Function *llvm_func = func_map[stmt->func];
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  call("RuntimeContext_set_runtime", new_ctx, get_runtime());
+  for (int i = 0; i < stmt->args.size(); i++) {
+    auto *val =
+        bitcast_to_u64(llvm_val[stmt->args[i]], stmt->args[i]->ret_type);
+    call("RuntimeContext_set_args", new_ctx,
+         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
+  }
+  llvm::Value *result_buffer = nullptr;
+  if (stmt->ret_type->is<PrimitiveType>() &&
+      !stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    result_buffer = builder->CreateAlloca(tlctx->get_data_type<uint64>());
+    call("RuntimeContext_set_result_buffer", new_ctx, result_buffer);
+    create_call(llvm_func, {new_ctx});
+    auto *ret_val_u64 = builder->CreateLoad(result_buffer);
+    llvm_val[stmt] = bitcast_from_u64(ret_val_u64, stmt->ret_type);
+  } else {
+    create_call(llvm_func, {new_ctx});
+  }
 }
 
 TLANG_NAMESPACE_END

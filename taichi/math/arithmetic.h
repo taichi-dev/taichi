@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "taichi/common/trait.h"
 
 namespace taichi {

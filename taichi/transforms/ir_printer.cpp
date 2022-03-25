@@ -117,7 +117,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *assert) override {
-    print("{} : assert {}", assert->id, assert->cond.serialize());
+    print("{} : assert {}", assert->name(), assert->cond.serialize());
   }
 
   void visit(AssertStmt *assert) override {
@@ -185,6 +185,18 @@ class IRPrinter : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     print("{}{} = rand()", stmt->type_hint(), stmt->name());
+  }
+
+  void visit(DecorationStmt *stmt) override {
+    if (stmt->decoration.size() == 2 &&
+        stmt->decoration[0] ==
+            uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
+      print("decorate {} : Loop-unique {}", stmt->operand->name(),
+            stmt->decoration[0], stmt->decoration[1]);
+    } else {
+      print("decorate {} : ... size = {}", stmt->operand->name(),
+            stmt->decoration.size());
+    }
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -522,6 +534,16 @@ class IRPrinter : public IRVisitor {
       }
     }
     s += "]";
+    if (stmt->element_shape.size()) {
+      s += ", (";
+      for (int i = 0; i < (int)stmt->element_shape.size(); i++) {
+        s += fmt::format("{}", stmt->element_shape[i]);
+        if (i + 1 < (int)stmt->element_shape.size()) {
+          s += ", ";
+        }
+      }
+      s += ")";
+    }
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));

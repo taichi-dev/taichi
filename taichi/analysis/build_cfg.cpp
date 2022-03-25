@@ -51,7 +51,7 @@ namespace lang {
  * node_a {
  *   ...
  * } -> node_b, [node_c if "cond"];
- * means node_a has an edge to node_b, and node_a has an edge to node_b iff
+ * means node_a has an edge to node_b, and node_a has an edge to node_c iff
  * the condition "cond" is true.
  *
  * When there can be many CFGNodes in a Block, internal nodes are omitted for
@@ -148,46 +148,6 @@ class CFGBuilder : public IRVisitor {
     auto node = new_node(current_stmt_id_ + 1);
     breaks_in_current_loop_.push_back(node);
     prev_nodes_.push_back(node);
-  }
-
-  /**
-   * Structure:
-   *
-   * block {
-   *   node {
-   *     ...
-   *   } -> node_func_begin;
-   *   foo();
-   *   (next node) {
-   *     ...
-   *   }
-   * }
-   *
-   * foo() {
-   *   node_func_begin {
-   *     ...
-   *   } -> ... -> node_func_end;
-   *   node_func_end {
-   *     ...
-   *   } -> (next node);
-   * }
-   */
-  void visit(FuncCallStmt *stmt) override {
-    auto node_before_func_call = new_node(-1);
-    CFGFuncKey func_key = {stmt->func->func_key, in_parallel_for_};
-    if (node_func_begin_.count(func_key) == 0) {
-      // Generate CFG for the function.
-      TI_ASSERT(stmt->func->ir->is<Block>());
-      auto func_begin_index = graph_->size();
-      stmt->func->ir->accept(this);
-      node_func_begin_[func_key] = graph_->nodes[func_begin_index].get();
-      node_func_end_[func_key] = graph_->nodes.back().get();
-    }
-    CFGNode::add_edge(node_before_func_call, node_func_begin_[func_key]);
-    prev_nodes_.push_back(node_func_end_[func_key]);
-
-    // Don't put FuncCallStmt in any CFGNodes.
-    begin_location_ = current_stmt_id_ + 1;
   }
 
   /**
@@ -390,11 +350,16 @@ class CFGBuilder : public IRVisitor {
         in_parallel_for_ = true;
       }
       stmt->body->accept(this);
+      auto block_begin = graph_->nodes[block_begin_index].get();
+      for (auto &node : continues_in_current_loop_) {
+        CFGNode::add_edge(node, block_begin);
+        prev_nodes_.push_back(node);
+      }
       in_parallel_for_ = false;
       prev_nodes_.push_back(graph_->back());
       // Container statements don't belong to any CFGNodes.
       begin_location_ = offload_stmt_id + 1;
-      CFGNode::add_edge(before_offload, graph_->nodes[block_begin_index].get());
+      CFGNode::add_edge(before_offload, block_begin);
     }
     if (stmt->bls_epilogue) {
       auto before_offload = new_node(-1);

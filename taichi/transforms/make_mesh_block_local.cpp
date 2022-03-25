@@ -400,7 +400,7 @@ void MakeMeshBlockLocal::fetch_mapping(
 
 MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
                                        const CompileConfig &config)
-    : offload_(offload), config_(config) {
+    : config_(config), offload_(offload) {
   // Step 0: simplify l2g + g2r -> l2r
   simplify_nested_conversion();
 
@@ -561,7 +561,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
           offload);  // Equivalent to CUDA threadIdx
       Stmt *total_element_num =
           offload->total_num_local.find(element_type)->second;
-      Stmt *total_element_offset =
+      [[maybe_unused]] Stmt *total_element_offset =
           offload->total_offset_local.find(element_type)->second;
       create_xlogue(
           thread_idx_stmt, total_element_num, [&](Block *body, Stmt *idx_val) {

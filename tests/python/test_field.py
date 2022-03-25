@@ -141,14 +141,14 @@ def test_field_name():
     a = ti.field(dtype=ti.f32, shape=(2, 3), name='a')
     b = ti.Vector.field(3, dtype=ti.f32, shape=(2, 3), name='b')
     c = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(5, 4), name='c')
-    assert a.name == 'a'
-    assert b.name == 'b'
-    assert c.name == 'c'
+    assert a._name == 'a'
+    assert b._name == 'b'
+    assert c._name == 'c'
     assert b.snode._name == 'b'
     d = []
     for i in range(10):
         d.append(ti.field(dtype=ti.f32, shape=(2, 3), name=f'd{i}'))
-        assert d[i].name == f'd{i}'
+        assert d[i]._name == f'd{i}'
 
 
 @test_utils.test()
@@ -181,3 +181,11 @@ def test_field_copy_from_with_non_filed_object():
     other = np.zeros((2, 3))
     with pytest.raises(TypeError):
         x.copy_from(other)
+
+
+@test_utils.test()
+def test_field_shape_0():
+    with pytest.raises(
+            ti._lib.core.TaichiRuntimeError,
+            match="Every dimension of a Taichi field should be positive"):
+        x = ti.field(dtype=ti.f32, shape=0)

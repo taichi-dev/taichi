@@ -1,9 +1,10 @@
 #pragma once
 
-#include "arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 struct CompileConfig {
   Arch arch;
@@ -103,6 +104,10 @@ struct CompileConfig {
   bool demote_no_access_mesh_fors{true};
   bool experimental_auto_mesh_local{false};
   int auto_mesh_local_default_occupacy{4};
+
+  // Offline cache options
+  bool offline_cache{false};
+  std::string offline_cache_file_path{get_repo_dir() + "ticache"};
 
   CompileConfig();
 };

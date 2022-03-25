@@ -1,6 +1,6 @@
 # Optional environment variables supported by setup.py:
-#   DEBUG
-#     build the C++ taichi_core extension with debug symbols.
+#   {DEBUG, RELWITHDEBINFO, MINSIZEREL}
+#     build the C++ taichi_core extension with various build types.
 #
 #   TAICHI_CMAKE_ARGS
 #     extra cmake args for C++ taichi_core extension.
@@ -32,13 +32,23 @@ classifiers = [
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
 ]
 
+
+def get_version():
+    if os.getenv("RELEASE_VERSION"):
+        version = os.environ["RELEASE_VERSION"]
+    else:
+        version_file = os.path.join(os.path.dirname(__file__), 'version.txt')
+        with open(version_file, 'r') as f:
+            version = f.read().strip()
+    return version.lstrip("v")
+
+
 project_name = os.getenv('PROJECT_NAME', 'taichi')
-TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 9
-TI_VERSION_PATCH = 0
-version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
+version = get_version()
+TI_VERSION_MAJOR, TI_VERSION_MINOR, TI_VERSION_PATCH = version.split('.')
 
 data_files = glob.glob('python/_lib/runtime/*')
 print(data_files)
@@ -143,8 +153,14 @@ class CMakeBuild(build_ext):
         if shutil.which('ninja'):
             cmake_args += ['-GNinja']
 
-        self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
-        cfg = 'Debug' if self.debug else 'Release'
+        cfg = 'Release'
+        if (os.getenv('DEBUG', '0') in ('1', 'ON')):
+            cfg = 'Debug'
+        elif (os.getenv('RELWITHDEBINFO', '0') in ('1', 'ON')):
+            cfg = 'RelWithDebInfo'
+        elif (os.getenv('MINSIZEREL', '0') in ('1', 'ON')):
+            cfg = 'MinSizeRel'
+
         build_args = ['--config', cfg]
 
         cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
@@ -255,7 +271,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
-      python_requires=">=3.6,<3.10",
+      python_requires=">=3.6,<3.11",
       install_requires=[
           'numpy', 'sourceinspect>=0.0.4', 'colorama', 'astor',
           'astunparse;python_version<"3.9"'
@@ -266,7 +282,7 @@ setup(name=project_name,
       include_package_data=True,
       entry_points={
           'console_scripts': [
-              'ti=taichi.main:main',
+              'ti=taichi._main:main',
           ],
       },
       classifiers=classifiers,

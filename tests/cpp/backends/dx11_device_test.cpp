@@ -2,8 +2,12 @@
 
 #ifdef TI_WITH_DX11
 
+#include "taichi/ir/ir_builder.h"
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
+#include "taichi/backends/dx/dx_program.h"
+#include "taichi/system/memory_pool.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace taichi {
 namespace lang {
@@ -40,6 +44,21 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
     // Should have allocated an UAV and a Buffer, so 2 more objects.
     EXPECT_EQ(count1 - count0, 2);
   }
+
+  // Map to CPU, write some values, then check those values
+  void *mapped = device->map(device_alloc);
+  int *mapped_int = reinterpret_cast<int *>(mapped);
+  for (int i = 0; i < 100; i++) {
+    mapped_int[i] = i;
+  }
+  device->unmap(device_alloc);
+
+  mapped = device->map(device_alloc);
+  mapped_int = reinterpret_cast<int *>(mapped);
+  for (int i = 0; i < 100; i++) {
+    EXPECT_EQ(mapped_int[i], i);
+  }
+  device->unmap(device_alloc);
 
   // The 2 objects should have been released.
   device->dealloc_memory(device_alloc);
@@ -85,6 +104,47 @@ TEST(Dx11InfoQueueTest, ParseReferenceCount) {
   std::vector<directx11::Dx11InfoQueue::Entry> entries =
       directx11::Dx11InfoQueue::parse_reference_count(messages);
   EXPECT_EQ(entries.size(), 8);
+}
+
+TEST(Dx11StreamTest, CommandListTest) {
+  std::unique_ptr<directx11::Dx11Device> device =
+      std::make_unique<directx11::Dx11Device>();
+  std::unique_ptr<Dx11Stream> stream =
+      std::make_unique<Dx11Stream>(device.get());
+  stream->new_command_list();
+}
+
+TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
+  std::unique_ptr<directx11::Dx11Device> device =
+      std::make_unique<directx11::Dx11Device>();
+  std::unique_ptr<MemoryPool> pool =
+      std::make_unique<MemoryPool>(Arch::dx11, device.get());
+  std::unique_ptr<Dx11ProgramImpl> program =
+      std::make_unique<Dx11ProgramImpl>(default_compile_config);
+  /*
+  This test needs allocate_memory because of the call stack here:
+  Dx11ProgramImpl::materialize_runtime
+  - VkRuntime::VkRuntime
+     - VkRuntime::init_buffers
+        - Dx11Device::allocate_memory_unique
+        - Dx11Device::get_compute_stream
+        - Dx11Stream::new_command_list
+        - Dx11Stream::buffer_fill
+        - Dx11Stream::submit_synced
+  */
+  uint64_t *result_buffer;
+  program->materialize_runtime(pool.get(), nullptr, &result_buffer);
+
+  TestProgram test_prog;
+  test_prog.setup();
+
+  IRBuilder builder;
+  auto *lhs = builder.get_int32(42);
+
+  auto block = builder.extract_ir();
+  test_prog.prog()->config.arch = Arch::dx11;
+  auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
+  program->compile(ker.get(), nullptr);
 }
 
 }  // namespace directx11

@@ -1,6 +1,7 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 spring_Y = ti.field(dtype=ti.f32, shape=())  # Young's modulus
 paused = ti.field(dtype=ti.i32, shape=())

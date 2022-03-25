@@ -3,7 +3,8 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiTypeError
-from taichi.lang.util import is_taichi_class
+from taichi.lang.util import is_taichi_class, to_numpy_type, to_taichi_type
+from taichi.types.primitive_types import integer_types, real_types
 
 
 # Scalar, basic data type
@@ -30,7 +31,7 @@ class Expr(TaichiOperations):
                             "Only 0-dimensional numpy array can be used to initialize a scalar expression"
                         )
                     arg = arg.dtype.type(arg)
-                self.ptr = impl.make_constant_expr(arg, dtype).ptr
+                self.ptr = make_constant_expr(arg, dtype).ptr
         else:
             assert False
         if self.tb:
@@ -45,6 +46,50 @@ class Expr(TaichiOperations):
 
     def __repr__(self):
         return '<ti.Expr>'
+
+
+def _check_in_range(npty, val):
+    iif = np.iinfo(npty)
+    if not iif.min <= val <= iif.max:
+        # This isn't the case we want to deal with: |val| does't fall into the valid range of either
+        # the signed or the unsigned type.
+        raise TaichiTypeError(
+            f'Constant {val} has exceeded the range of {to_taichi_type(npty)}: [{iif.min}, {iif.max}]'
+        )
+
+
+def _clamp_unsigned_to_range(npty, val):
+    # npty: np.int32 or np.int64
+    iif = np.iinfo(npty)
+    if iif.min <= val <= iif.max:
+        return val
+    cap = (1 << iif.bits)
+    assert 0 <= val < cap
+    new_val = val - cap
+    return new_val
+
+
+def make_constant_expr(val, dtype):
+    if isinstance(val, (int, np.integer)):
+        constant_dtype = impl.get_runtime(
+        ).default_ip if dtype is None else dtype
+        if constant_dtype not in integer_types:
+            raise TaichiTypeError(
+                'Integer literals must be annotated with a integer type. For type casting, use `ti.cast`.'
+            )
+        _check_in_range(to_numpy_type(constant_dtype), val)
+        return Expr(
+            _ti_core.make_const_expr_int(
+                constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
+    if isinstance(val, (float, np.floating)):
+        constant_dtype = impl.get_runtime(
+        ).default_fp if dtype is None else dtype
+        if constant_dtype not in real_types:
+            raise TaichiTypeError(
+                'Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`.'
+            )
+        return Expr(_ti_core.make_const_expr_fp(constant_dtype, val))
+    raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 
 
 def make_var_list(size):

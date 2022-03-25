@@ -30,12 +30,14 @@ using high_res_clock = std::chrono::high_resolution_clock;
 using InputBuffersMap =
     std::unordered_map<BufferInfo, DeviceAllocation *, BufferInfoHasher>;
 
+class SNodeTreeManager;
+
 class CompiledTaichiKernel {
  public:
   struct Params {
     const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
     std::vector<std::vector<uint32_t>> spirv_bins;
-    std::vector<CompiledSNodeStructs> compiled_structs;
+    std::size_t num_snode_trees{0};
 
     Device *device{nullptr};
     std::vector<DeviceAllocation *> root_buffers;
@@ -62,7 +64,7 @@ class CompiledTaichiKernel {
   TaichiKernelAttributes ti_kernel_attribs_;
   std::vector<TaskAttributes> tasks_attribs_;
 
-  Device *device_;
+  [[maybe_unused]] Device *device_;
 
   InputBuffersMap input_buffers_;
 
@@ -91,31 +93,29 @@ class TI_DLL_EXPORT VkRuntime {
   struct RegisterParams {
     TaichiKernelAttributes kernel_attribs;
     std::vector<std::vector<uint32_t>> task_spirv_source_codes;
+    std::size_t num_snode_trees{0};
   };
 
   KernelHandle register_taichi_kernel(RegisterParams params);
 
   void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
 
-  void materialize_snode_tree(SNodeTree *tree);
-
-  void destroy_snode_tree(SNodeTree *snode_tree);
-
   void synchronize();
 
   Device *get_ti_device() const;
 
-  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const;
-
-  DevicePtr get_snode_tree_device_ptr(int tree_id);
-
   void add_root_buffer(size_t root_buffer_size);
 
+  DeviceAllocation *get_root_buffer(int id) const;
+
+  size_t get_root_buffer_size(int id) const;
+
  private:
-  void init_buffers();
+  friend class taichi::lang::vulkan::SNodeTreeManager;
 
-  Device *device_;
+  void init_nonroot_buffers();
 
+  Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
@@ -130,7 +130,7 @@ class TI_DLL_EXPORT VkRuntime {
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
 
-  std::vector<CompiledSNodeStructs> compiled_snode_structs_;
+  std::unordered_map<DeviceAllocation *, size_t> root_buffers_size_map_;
 };
 
 VkRuntime::RegisterParams run_codegen(

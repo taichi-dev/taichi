@@ -44,7 +44,19 @@ class AotDataConverter {
     res.args_buffer_size = in.ctx_attribs.args_bytes();
     res.rets_buffer_size = in.ctx_attribs.rets_bytes();
     for (const auto &arg : in.ctx_attribs.args()) {
-      res.scalar_args[arg.index] = visit(arg);
+      if (!arg.is_array) {
+        aot::ScalarArg scalar_arg{};
+        scalar_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
+        scalar_arg.offset_in_args_buf = arg.offset_in_mem;
+        res.scalar_args[arg.index] = scalar_arg;
+      } else {
+        aot::ArrayArg arr_arg{};
+        arr_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
+        arr_arg.field_dim = arg.field_dim;
+        arr_arg.element_shape = arg.element_shape;
+        arr_arg.shape_offset_in_args_buf = arg.index * sizeof(int32_t);
+        res.arr_args[arg.index] = arr_arg;
+      }
     }
     return res;
   }
@@ -60,14 +72,25 @@ class AotDataConverter {
                                       in.range_for_attribs->begin);
     }
     res.gpu_block_size = in.advisory_num_threads_per_group;
-    return res;
-  }
-
-  aot::ScalarArg visit(
-      const spirv::KernelContextAttributes::ArgAttributes &in) const {
-    aot::ScalarArg res{};
-    res.dtype_name = in.dt.to_string();
-    res.offset_in_args_buf = in.offset_in_mem;
+    for (auto &buffer_bind : in.buffer_binds) {
+      if (buffer_bind.buffer.type == BufferType::Root) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Root, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::Rets) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Rets, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::GlobalTmps) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::GlobalTmps, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      } else if (buffer_bind.buffer.type == BufferType::Args) {
+        res.buffer_binds.push_back(
+            {{aot::BufferType::Args, buffer_bind.buffer.root_id},
+             buffer_bind.binding});
+      }
+    }
     return res;
   }
 };
@@ -76,35 +99,9 @@ class AotDataConverter {
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
-  aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
+  aot_target_device_ = std::make_unique<aot::TargetDevice>(Arch::vulkan);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
-  }
-}
-
-uint32_t AotModuleBuilderImpl::to_vk_dtype_enum(DataType dt) {
-  if (dt == PrimitiveType::u64) {
-    return 0;
-  } else if (dt == PrimitiveType::i64) {
-    return 1;
-  } else if (dt == PrimitiveType::u32) {
-    return 2;
-  } else if (dt == PrimitiveType::i32) {
-    return 3;
-  } else if (dt == PrimitiveType::u16) {
-    return 4;
-  } else if (dt == PrimitiveType::i16) {
-    return 5;
-  } else if (dt == PrimitiveType::u8) {
-    return 6;
-  } else if (dt == PrimitiveType::i8) {
-    return 7;
-  } else if (dt == PrimitiveType::f64) {
-    return 8;
-  } else if (dt == PrimitiveType::f32) {
-    return 9;
-  } else {
-    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -171,7 +168,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   aot::CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_scalar = is_scalar;
-  field_data.dtype = to_vk_dtype_enum(dt);
+  field_data.dtype = static_cast<int>(dt->cast<PrimitiveType>()->type);
   field_data.dtype_name = dt.to_string();
   field_data.shape = shape;
   field_data.mem_offset_in_parent = dense_desc.mem_offset_in_parent_cell;
@@ -184,7 +181,13 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  TI_ERROR("Templated kernels are not yet supported on vulkan aot.");
+  spirv::lower(kernel);
+  auto compiled =
+      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+
+  compiled.kernel_attribs.name = identifier + "|" + key;
+  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
 }  // namespace vulkan

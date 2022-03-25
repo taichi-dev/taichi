@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -26,7 +27,7 @@ def mat_equal(A, B, tol=1e-6):
 
 def _test_svd(dt, n):
     print(
-        f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp} fast_math={ti.cfg.fast_math} dim={n}'
+        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp} fast_math={ti.lang.impl.current_cfg().fast_math} dim={n}'
     )
     A = ti.Matrix.field(n, n, dtype=dt, shape=())
     A_reconstructed = ti.Matrix.field(n, n, dtype=dt, shape=())
@@ -61,18 +62,18 @@ def _test_svd(dt, n):
                 assert sigma[None][i, j] == test_utils.approx(0)
 
 
-def test_svd():
-    for fp in [ti.f32, ti.f64]:
-        for d in [2, 3]:
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32, fast_math=False)
+def test_svd_f32(dim):
+    _test_svd(ti.f32, dim)
 
-            @test_utils.test(
-                require=ti.extension.data64 if fp == ti.f64 else [],
-                default_fp=fp,
-                fast_math=False)
-            def wrapped():
-                _test_svd(fp, d)
 
-            wrapped()
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False)
+def test_svd_f64(dim):
+    _test_svd(ti.f64, dim)
 
 
 @test_utils.test()

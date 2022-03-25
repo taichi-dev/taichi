@@ -2,6 +2,8 @@
 
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
+#include "taichi/ir/type_utils.h"
+
 #include "Eigen/Sparse"
 
 namespace taichi {
@@ -11,9 +13,7 @@ class SparseMatrix;
 
 class SparseMatrixBuilder {
  public:
-  SparseMatrixBuilder(int rows, int cols, int max_num_triplets);
-
-  void *get_data_base_ptr();
+  SparseMatrixBuilder(int rows, int cols, int max_num_triplets, DataType dtype);
 
   void print_triplets();
 
@@ -22,13 +22,20 @@ class SparseMatrixBuilder {
   void clear();
 
  private:
+  template <typename T, typename G>
+  void print_template();
+
+  template <typename T, typename G>
+  SparseMatrix build_template();
+
+ private:
   uint64 num_triplets_{0};
-  void *data_base_ptr_{nullptr};
-  std::vector<uint32> data_;
+  std::unique_ptr<uchar[]> data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
+  DataType dtype_{PrimitiveType::f32};
 };
 
 class SparseMatrix {

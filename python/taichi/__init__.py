@@ -9,7 +9,7 @@ from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
-from taichi import ad, tools
+from taichi import ad, experimental, linalg, tools
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
@@ -38,21 +38,43 @@ __deprecated_names__ = {
     'imshow': 'tools.imshow',
     'imwrite': 'tools.imwrite',
     'quant': 'types.quantized_types.quant',
-    'type_factory': 'types.quantized_types.type_factory'
+    'type_factory': 'types.quantized_types.type_factory',
+    'ext_arr': 'types.ndarray',
+    'any_arr': 'types.ndarray'
+}
+
+__customized_deprecations__ = {
+    'parallelize': ('loop_config(parallelize=...)', 'lang.misc._parallelize'),
+    'serialize': ('loop_config(serialize=True)', 'lang.misc._serialize'),
+    'block_dim': ('loop_config(block_dim=...)', 'lang.misc._block_dim')
 }
 
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():
         exec(f'{name} = {alter}')
+    for _origin, (_msg, _replace) in __customized_deprecations__.items():
+        exec(f'{_origin} = {_replace}')
 else:
 
     def __getattr__(attr):
+        # There's no easy way to hook accessing attribute with function calls in python3.6.
+        # So let's skip it for now.
+        import warnings  # pylint: disable=C0415,W0621
+        if attr == 'cfg':
+            return None if lang.impl.get_runtime(
+            ).prog is None else lang.impl.current_cfg()
         if attr in __deprecated_names__:
-            lang.util.warning(
+            warnings.warn(
                 f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
-                DeprecationWarning,
-                stacklevel=2)
+                DeprecationWarning)
             exec(f'{attr} = {__deprecated_names__[attr]}')
+            return locals()[attr]
+        if attr in __customized_deprecations__:
+            msg, fun = __customized_deprecations__[attr]
+            warnings.warn(
+                f'ti.{attr} is deprecated. Please use ti.{msg} instead.',
+                DeprecationWarning)
+            exec(f'{attr} = {fun}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 

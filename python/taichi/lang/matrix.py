@@ -1,5 +1,6 @@
 import numbers
 from collections.abc import Iterable
+from functools import partial
 
 import numpy as np
 from taichi._lib import core as ti_core
@@ -1678,6 +1679,81 @@ class VectorNdarray(Ndarray):
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
+
+
+class VectorType(Matrix):
+
+    _KEYMAP_SET = ["xyzw", "rgba", "uvw"]
+    _DIM = 3
+    _DTYPE = float
+
+    def __init__(self, *data):
+        assert len(data) == self._DIM, "Dimension not match"
+        super().__init__(data, self._DTYPE)
+        self._add_swizzle_attrs()
+
+    def _add_swizzle_attrs(self):
+        """Create and bind properties for vector swizzles.
+        """
+        def getter_template(instance, index):
+            return instance[index]
+
+        def setter_template(instance, index, value):
+            instance[index] = value
+
+        for key_group in VectorType._KEYMAP_SET:
+            for index, key in enumerate(key_group):
+                prop = property(
+                    partial(getter_template, index),
+                    partial(setter_template, index)
+                )
+                setattr(type(self), key, prop)
+
+    def __getattr__(self, attr_name):
+        for key_group in VectorType._KEYMAP_SET:
+            if any(x not in key_group for x in attr_name):
+                continue
+
+            result = []
+            for key in attr_name:
+                result.append(
+                    self[key_group.index(key)]
+                )
+            if result:
+                return globals()[f"vec{len(result)}"](*result)
+
+        raise AttributeError(f"Cannot get attribute: {attr_name}")
+
+    def __setattr__(self, attr_name, values):
+        if len(attr_name) > 1:
+            for key_group in VectorType._KEYMAP_SET:
+                if any(x not in key_group for x in attr_name):
+                    continue
+
+                if len(attr_name) != len(values):
+                    raise Exception("values does not match the attribute")
+
+                was_valid = False
+                for key, value in zip(attr_name, values):
+                    self[key_group.index(key)] = value
+                    was_valid = True
+
+                if was_valid:
+                    return
+
+        super().__setattr__(attr_name, values)
+
+
+def generate_vectorND_classes():
+    for dim in [2, 3, 4]:
+        vec_class_name = f"vec{dim}"
+        vec_class = type(vec_class_name, (VectorType,), {"_DIM": dim, "_DTYPE": float})
+        module = __import__(__package__)
+        setattr(module, vec_class_name, vec_class)
+        globals()[vec_class_name] = vec_class
+
+
+generate_vectorND_classes()
 
 
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

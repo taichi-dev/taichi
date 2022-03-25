@@ -160,6 +160,11 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
 endforeach()
 
+file(GLOB LLVM_RUNTIME_BYTECODE ${PROJECT_SOURCE_DIR}/taichi/runtime/llvm/runtime_*.bc)
+message(STATUS "LLVM runtime bytecode: ${LLVM_RUNTIME_BYTECODE}")
+install(FILES ${LLVM_RUNTIME_BYTECODE}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
+
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 

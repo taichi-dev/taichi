@@ -485,7 +485,4 @@ if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()
-file(GLOB TAICHI_EXTRA_BC_SOURCE "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_*.bc")
-message("Extra BC files to install:", ${TAICHI_EXTRA_BC_SOURCE})
-install(FILES ${TAICHI_EXTRA_BC_SOURCE}
-        DESTINATION ${INSTALL_LIB_DIR}/runtime)
+

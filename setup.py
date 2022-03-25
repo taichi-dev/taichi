@@ -130,7 +130,8 @@ def get_cmake_args():
     if emscriptened:
         cmake_args += ['-DTI_EMSCRIPTENED=ON']
 
-    os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
+    if sys.platform != 'win32':
+        os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
     return cmake_args
 
 

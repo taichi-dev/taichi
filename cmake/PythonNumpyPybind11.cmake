@@ -1,18 +1,16 @@
 # Python, numpy, and pybind11
-# Currently, Scikit-build does not support FindPython, so we convert the
-# provided hints ourselves.
-if(SKBUILD)
-  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
-  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
-  set(Python_LIBRARY "${PYTHON_LIBRARY}")
-endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pybind11 --cmake
+                OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy;print(numpy.get_include())"
+                OUTPUT_VARIABLE NUMPY_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-find_package(Python REQUIRED COMPONENTS Development.Module NumPy)
-set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
+message("-- Python: Using ${PYTHON_EXECUTABLE} as the interpreter")
+message("    version: ${PYTHON_VERSION_STRING}")
+message("    include: ${PYTHON_INCLUDE_DIR}")
+message("    library: ${PYTHON_LIBRARY}")
+message("    numpy include: ${NUMPY_INCLUDE_DIR}")
+
+
+include_directories(${NUMPY_INCLUDE_DIR})
+
 find_package(pybind11 CONFIG REQUIRED)
-
-message("-- Python: Using ${Python_EXECUTABLE} as the interpreter")
-message("    version: ${Python_VERSION}")
-message("    include: ${Python_INCLUDE_DIRS}")
-message("    library: ${Python_LIBRARIES}")
-message("    numpy include: ${Python_NumPy_INCLUDE_DIRS}")

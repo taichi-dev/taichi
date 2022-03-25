@@ -101,15 +101,8 @@ class Clean(clean):
 def get_cmake_args():
     import shlex
 
-    import numpy
-
     num_threads = os.getenv('BUILD_NUM_THREADS', multiprocessing.cpu_count())
     cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
-    try:
-        pybind11_cmake_path = subprocess.check_output(
-            ['pybind11-config', '--cmake']).decode('utf-8').strip()
-    except subprocess.CalledProcessError:
-        raise RuntimeError('pybind11 must be installed to build taichi')
 
     if (os.getenv('DEBUG', '0') in ('1', 'ON')):
         cfg = 'Debug'
@@ -123,8 +116,6 @@ def get_cmake_args():
         sys.argv[2:2] = ['--build-type', cfg]
 
     cmake_args += [
-        f'-DPYBIND11_CMAKE_DIR={pybind11_cmake_path}',
-        f'-DPython_NumPy_INCLUDE_DIRS={numpy.get_include()}',
         f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
         f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',

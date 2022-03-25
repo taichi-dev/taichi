@@ -15,4 +15,5 @@ twine
 wheel
 astunparse
 scikit-build
+numpy
 ninja; platform_system != 'Windows'

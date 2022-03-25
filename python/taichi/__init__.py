@@ -9,7 +9,7 @@ from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
-from taichi import ad, experimental, linalg, tools
+from taichi import ad, experimental, linalg, math, tools
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
@@ -38,9 +38,7 @@ __deprecated_names__ = {
     'imshow': 'tools.imshow',
     'imwrite': 'tools.imwrite',
     'quant': 'types.quantized_types.quant',
-    'type_factory': 'types.quantized_types.type_factory',
-    'ext_arr': 'types.ndarray',
-    'any_arr': 'types.ndarray'
+    'type_factory': 'types.quantized_types.type_factory'
 }
 
 __customized_deprecations__ = {
@@ -52,8 +50,6 @@ __customized_deprecations__ = {
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():
         exec(f'{name} = {alter}')
-    for _origin, (_msg, _replace) in __customized_deprecations__.items():
-        exec(f'{_origin} = {_replace}')
 else:
 
     def __getattr__(attr):

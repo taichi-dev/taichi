@@ -100,6 +100,7 @@ class Clean(clean):
 
 def get_cmake_args():
     import shlex
+
     import numpy
 
     num_threads = os.getenv('BUILD_NUM_THREADS', multiprocessing.cpu_count())

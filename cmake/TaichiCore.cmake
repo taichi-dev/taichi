@@ -91,7 +91,6 @@ file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp"
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-file(GLOB TAICHI_EXTRA_BC_SOURCE "taichi/runtime/llvm/runtime_*.bc")
 
 
 file(GLOB TAICHI_GGUI_SOURCE
@@ -375,7 +374,7 @@ if (TI_WITH_VULKAN)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
-        install(FILES ${MOLTEN_VK} DESTINATION ${INSTALL_LIB_DIR}/runtime)
+        install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
     endif()
 endif ()
 
@@ -485,7 +484,8 @@ endif()
 if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
-
 endif()
+file(GLOB TAICHI_EXTRA_BC_SOURCE "taichi/runtime/llvm/runtime_*.bc")
+message("Extra BC files to install:", ${TAICHI_EXTRA_BC_SOURCE})
 install(FILES ${TAICHI_EXTRA_BC_SOURCE}
         DESTINATION ${INSTALL_LIB_DIR}/runtime)

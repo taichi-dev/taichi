@@ -14,3 +14,5 @@ requests==2.26
 twine
 wheel
 astunparse
+scikit-build
+ninja; platform_system != 'Windows'

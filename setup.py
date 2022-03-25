@@ -15,7 +15,7 @@ import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
 from setuptools import find_packages
-from setuptools.command.egg_info import egg_info
+from skbuild.command.egg_info import egg_info
 from skbuild import setup
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -81,7 +81,7 @@ class Clean(clean):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
                              'python/taichi/_lib/runtime',
-                             'python/taichi.egg-info')
+                             'python/taichi.egg-info', 'build')
         for d in generated_folders:
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)
@@ -135,7 +135,11 @@ def get_cmake_args():
 
 
 def exclude_paths(manifest_files):
-    return [f for f in manifest_files if f.endswith('.so')]
+    return [
+        f for f in manifest_files
+        if f.endswith(('.so', 'pyd',
+                       '.bc')) or os.path.basename(f) == 'libMoltenVK.dylib'
+    ]
 
 
 setup(name=project_name,
@@ -154,11 +158,7 @@ setup(name=project_name,
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
       license='MIT',
-      package_data={
-          'taichi': ['*.md'],
-          'taichi._lib':
-          ['core/*.so', 'core/*.pyd', 'runtime/*.dylib', 'runtime/*.bc']
-      },
+      include_package_data=True,
       entry_points={
           'console_scripts': [
               'ti=taichi._main:main',
@@ -167,5 +167,8 @@ setup(name=project_name,
       classifiers=classifiers,
       cmake_args=get_cmake_args(),
       cmake_process_manifest_hook=exclude_paths,
-      cmdclass={'egg_info': EggInfo},
+      cmdclass={
+          'egg_info': EggInfo,
+          'clean': Clean
+      },
       has_ext_modules=lambda: True)

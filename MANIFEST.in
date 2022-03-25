@@ -1,7 +1,3 @@
-include MANIFEST.in
-include version.txt
-include python/*.txt
-include *.cfg
 include python/taichi/*.md
 recursive-include python/taichi/assets *
 recursive-include python/taichi/examples *.py

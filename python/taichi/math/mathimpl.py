@@ -317,12 +317,7 @@ def distance(x, y):
         >>> distance(x, y)
         1.732051
     """
-    result = 0.0
-    if isinstance(x, ti.Matrix) or isinstance(y, ti.Matrix):
-        result = (x - y).norm()
-    else:
-        result = ti.abs(x - y)
-    return result
+    return (x - y).norm()
 
 
 @ti.func
@@ -400,18 +395,7 @@ def cross(x, y):
     return x.cross(y)
 
 
-__all__ = ["clamp",
-           "cross",
-           "degrees",
-           "distance",
-           "dot",
-           "fract",
-           "log2",
-           "mix",
-           "normalize",
-           "radians",
-           "reflect",
-           "refract",
-           "sign",
-           "smoothstep",
-           "step"]
+__all__ = [
+    "clamp", "cross", "degrees", "distance", "dot", "fract", "log2", "mix",
+    "normalize", "radians", "reflect", "refract", "sign", "smoothstep","step"
+]

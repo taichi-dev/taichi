@@ -2111,7 +2111,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  std::vector<llvm::Value *> args{get_context()};
+  std::vector<llvm::Value *> args;
+
+  if (stmt->with_runtime_context)
+    args.push_back(get_context());
+
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }

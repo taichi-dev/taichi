@@ -28,7 +28,7 @@ user_api[ti] = [
     'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange', 'no_activate',
     'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'randn', 'random',
     'raw_div', 'raw_mod', 'rescale_index', 'reset', 'rgb_to_hex', 'root',
-    'round', 'rsqrt', 'select', 'set_logging_level', 'sin',
+    'round', 'rsqrt', 'select', 'set_logging_level', 'simt', 'sin',
     'sparse_matrix_builder', 'sqrt', 'static', 'static_assert', 'static_print',
     'stop_grad', 'svd', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
     'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',

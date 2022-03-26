@@ -6,7 +6,7 @@ sidebar_position: 4
 
 The term _field_ is borrowed from mathematics and physics. If you already know [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (for example heat field), or vector field (for example [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)), then it is straightforward for you to understand fields in Taichi.
 
-Fields in Taichi are the _global_ data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct. 
+Fields in Taichi are the _global_ data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
 
 :::note
 A 0D (one-dimensional) field contains *only* one element.
@@ -103,7 +103,7 @@ As the name suggests, vector fields are the fields whose elements are vectors.
 
 ### Declaration
 
-The following code snippet declares a 3D field of 2D vectors: 
+The following code snippet declares a 3D field of 2D vectors:
 
 ```python
 # Declare a 1x2x3 vector field, whose vector dimension is n=2
@@ -122,12 +122,12 @@ volumetric_field = ti.Vector.field(n=3, dtype=ti.f32, shape=box_size)
 
 Accessing a vector field is similar to accessing a multi-dimensional array: You use an index operator `[]` to access an element in the field. The only difference is that, to access a specific component of an element (vector in this case), you need an *extra* index operator `[]`:
 
-- To access the velocity vector at a specific position of the volumetric field above:  
+- To access the velocity vector at a specific position of the volumetric field above:
 
   `volumetric_field[i,j,k]`
 
-- To access the `l`-th component of the velocity vector: 
-  
+- To access the `l`-th component of the velocity vector:
+
   `volumetric_field[i, j, k][l]`
 
 The following code snippet generates and prints a random vector field:

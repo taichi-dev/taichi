@@ -96,7 +96,7 @@ def test_shfl_up_f32():
 
     foo()
 
-    for i in range(1, 31):
+    for i in range(1, 32):
         assert a[i] == approx((i - 1) * (i - 1) * 0.9, abs=1e-4)
 
 

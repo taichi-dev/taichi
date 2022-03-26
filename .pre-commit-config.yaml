@@ -1,3 +1,6 @@
+ci:
+  autoupdate_schedule: quarterly
+
 exclude: ^((tests/python/test_exception|.*/examples/.*)\.py$|external/)
 repos:
   - repo: https://github.com/google/yapf

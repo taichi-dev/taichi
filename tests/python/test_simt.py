@@ -57,6 +57,8 @@ def test_shfl_down_i32():
     for i in range(31):
         assert a[i] == b[i + 1]
 
+    # TODO: make this test case stronger
+
 
 @test_utils.test(arch=ti.cuda)
 def test_match_any():

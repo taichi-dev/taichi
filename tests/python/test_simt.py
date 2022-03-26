@@ -77,7 +77,7 @@ def test_shfl_up_i32():
 
     foo()
 
-    for i in range(1, 31):
+    for i in range(1, 32):
         assert a[i] == (i - 1) * (i - 1)
 
 

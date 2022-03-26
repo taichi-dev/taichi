@@ -1,3 +1,3 @@
-import taichi.lang.simt.warp as warp
+from taichi.lang.simt import warp
 
 __all__ = ['warp']

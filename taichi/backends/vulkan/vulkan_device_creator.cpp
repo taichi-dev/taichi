@@ -156,7 +156,7 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
   return indices;
 }
 
-size_t is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
   auto indices = find_queue_families(device, surface);
   VkPhysicalDeviceFeatures features{};
   vkGetPhysicalDeviceFeatures(device, &features);
@@ -363,7 +363,7 @@ void VulkanDeviceCreator::pick_physical_device() {
         (id >= 0) && (id < device_count),
         "TI_VISIBLE_DEVICE={} is not valid, found {} devices available", id,
         device_count);
-    if (is_device_suitable(devices[id], surface_)) {
+    if (get_device_score(devices[id], surface_)) {
       physical_device_ = devices[id];
       has_visible_device = 1;
     }
@@ -373,7 +373,7 @@ void VulkanDeviceCreator::pick_physical_device() {
     // could not find a user defined visible device, use the first one suitable
     size_t max_score = 0;
     for (const auto &device : devices) {
-      size_t score = is_device_suitable(device, surface_);
+      size_t score = get_device_score(device, surface_);
       if (score > max_score) {
         physical_device_ = device;
         max_score = score;

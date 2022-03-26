@@ -174,7 +174,8 @@ size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
   score += features.wideLines * 100;
   score +=
-      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) * 500;
+      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) *
+      500;
   score +=
       size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) *
       1000;

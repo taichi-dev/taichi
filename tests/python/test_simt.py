@@ -3,19 +3,19 @@ from tests import test_utils
 
 
 @test_utils.test(arch=ti.cuda)
-def test_all():
+def test_all_nonzero():
     # TODO
     pass
 
 
 @test_utils.test(arch=ti.cuda)
-def test_any():
+def test_any_nonzero():
     # TODO
     pass
 
 
 @test_utils.test(arch=ti.cuda)
-def test_uni():
+def test_unique():
     # TODO
     pass
 

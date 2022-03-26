@@ -2,17 +2,17 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr
 
 
-def all():
+def all_nonzero():
     # TODO
     pass
 
 
-def any():
+def any_nonzero():
     # TODO
     pass
 
 
-def uni():
+def unique():
     # TODO
     pass
 
@@ -65,9 +65,9 @@ def sync():
 
 
 __all__ = [
-    'all',
-    'any',
-    'uni',
+    'all_nonzero',
+    'any_nonzero',
+    'unique',
     'ballot',
     'shfl_i32',
     'shfl_up_i32',

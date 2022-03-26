@@ -515,4 +515,70 @@ def sym_eig(A, dt=None):
     raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
+@func
+def forward_elimination(Ab):
+    nrow, ncol = static(Ab.n, Ab.m)
+    for i in static(range(nrow)):
+        max_row = i
+        max_v = ops.abs(Ab[i, i])
+        for j in range(i + 1, nrow):
+            if ops.abs(Ab[j, i]) > max_v:
+                max_row = j
+                max_v = ops.abs(Ab[j, i])
+        if max_v == 0:
+            return i
+        if i != max_row:
+            Ab[[i, max_row], :] = Ab[[max_row, i], :]
+
+        for j in range(i + 1, nrow):
+            scale = Ab[j, i] / Ab[i, i]
+            Ab[j, i] = 0.0
+            for k in range(i + 1, ncol):
+                Ab[j, k] -= Ab[i, k] * scale
+    return -1
+
+
+@func
+def gauss_elimination(Ab, dt):
+    nrow, ncol = static(Ab.n, Ab.m)
+    singular_flag = forward_elimination(Ab)
+    x = Vector.zeros(dt, nrow)
+    if singular_flag != -1:
+        return x
+    # TODO: more clearly error messages
+    # if singular_flag != -1:
+    #     print("Singular Matrix.")
+    #     if Ab[singular_flag][ncol-1]:
+    #         print("This is an inconsistent System.")
+    #     else:
+    #         print("The linear system has infinitely many solutions")
+
+    # back substitution
+    for i in reversed(range(nrow)):
+        x[i] = Ab[i][ncol - 1]
+        for j in range(i + 1, nrow):
+            x[i] -= Ab[i][j] * x[j]
+        x[i] = x[i] / Ab[i][i]
+    return x
+
+
+def _matrix_solve(A, b, dt=None):
+    assert A.n == A.m, "Only sqaure matrix is supported"
+    assert A.n < 4, "Only 2D and 3D matrices are supported"
+    assert A.m == b.n, "Dimension dismatch"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    nrow, ncol = static(A.n, A.n + 1)
+    Ab = expr_init(Matrix.zero(dt, nrow, ncol))
+    lhs = tuple([e.ptr for e in A.entries])
+    rhs = tuple([e.ptr for e in b.entries])
+    for i in range(nrow):
+        for j in range(nrow):
+            Ab(i, j)._assign(lhs[nrow * i + j])
+    for i in range(nrow):
+        Ab(i, nrow)._assign(rhs[i])
+
+    return gauss_elimination(Ab, dt)
+
+
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']

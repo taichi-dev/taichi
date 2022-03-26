@@ -170,7 +170,7 @@ TEST(FrontendTypeInference, LoopUnique) {
 
 TEST(FrontendTypeInference, InternalFuncCall) {
   auto internal_func_call = Expr::make<InternalFuncCallExpression>(
-      "do_nothing", std::vector<Expr>{}, true);
+      "do_nothing", std::vector<Expr>{}, /*with_runtime_context=*/true);
   internal_func_call->type_check(nullptr);
   EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }

@@ -28,7 +28,8 @@ def shfl_i32(mask, val, offset):
 
 
 def shfl_down_i32(mask, val, offset):
-    # we use 31 as the last argument since 32 (warp size) does not work
+    # Here we use 31 as the last argument since 32 (warp size) does not work
+    # for some reason. Using 31 leads to the desired behavior.
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_down_sync_i32",

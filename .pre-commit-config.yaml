@@ -20,6 +20,11 @@ repos:
     rev: v4.0.1
     hooks:
       - id: trailing-whitespace
-        exclude: ^tests/(toml-test|toml-spec-tests)/.*
       - id: end-of-file-fixer
-        exclude: ^tests/(toml-test|toml-spec-tests)/.*
+
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.13.1
+    hooks:
+      - id: pylint
+        args: ['-rn', '-sn']
+        files: ^python/taichi/

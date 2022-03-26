@@ -1,6 +1,7 @@
+from pytest import approx
+
 import taichi as ti
 from tests import test_utils
-from pytest import approx
 
 
 @test_utils.test(arch=ti.cuda)
@@ -72,12 +73,12 @@ def test_shfl_up_i32():
             a[i] = ti.simt.warp.shfl_up_i32(ti.u32(0xFFFFFFFF), a[i], 1)
 
     for i in range(32):
-        a[i] = i*i
+        a[i] = i * i
 
     foo()
 
     for i in range(1, 31):
-        assert a[i] == (i-1)*(i-1)
+        assert a[i] == (i - 1) * (i - 1)
 
 
 @test_utils.test(arch=ti.cuda)
@@ -91,12 +92,12 @@ def test_shfl_up_f32():
             a[i] = ti.simt.warp.shfl_up_f32(ti.u32(0xFFFFFFFF), a[i], 1)
 
     for i in range(32):
-        a[i] = i*i*0.9
+        a[i] = i * i * 0.9
 
     foo()
 
     for i in range(1, 31):
-        assert a[i] == approx((i-1)*(i-1)*0.9, abs=1e-4)
+        assert a[i] == approx((i - 1) * (i - 1) * 0.9, abs=1e-4)
 
 
 @test_utils.test(arch=ti.cuda)

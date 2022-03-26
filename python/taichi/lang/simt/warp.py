@@ -41,6 +41,7 @@ def shfl_up_i32(mask, val, offset):
             "cuda_shfl_up_sync_i32",
             expr.make_expr_group(mask, val, offset, 32), False))
 
+
 def shfl_up_f32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(

@@ -13,3 +13,4 @@ requests==2.26
 twine
 wheel
 astunparse
+pre-commit

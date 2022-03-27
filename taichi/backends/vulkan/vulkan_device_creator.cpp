@@ -156,16 +156,32 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
   return indices;
 }
 
-bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
   auto indices = find_queue_families(device, surface);
+  VkPhysicalDeviceFeatures features{};
+  vkGetPhysicalDeviceFeatures(device, &features);
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device, &properties);
+
+  size_t score = 0;
+
   if (surface != VK_NULL_HANDLE) {
     // this means we need ui
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(device, &features);
-    return indices.is_complete_for_ui();
+    score = size_t(indices.is_complete_for_ui()) * 1000;
   } else {
-    return indices.is_complete();
+    score = size_t(indices.is_complete()) * 1000;
   }
+
+  score += features.wideLines * 100;
+  score +=
+      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) *
+      500;
+  score +=
+      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) *
+      1000;
+  score += VK_API_VERSION_MINOR(properties.driverVersion) * 100;
+
+  return score;
 }
 
 }  // namespace
@@ -348,7 +364,7 @@ void VulkanDeviceCreator::pick_physical_device() {
         (id >= 0) && (id < device_count),
         "TI_VISIBLE_DEVICE={} is not valid, found {} devices available", id,
         device_count);
-    if (is_device_suitable(devices[id], surface_)) {
+    if (get_device_score(devices[id], surface_)) {
       physical_device_ = devices[id];
       has_visible_device = 1;
     }
@@ -356,10 +372,12 @@ void VulkanDeviceCreator::pick_physical_device() {
 
   if (!has_visible_device) {
     // could not find a user defined visible device, use the first one suitable
+    size_t max_score = 0;
     for (const auto &device : devices) {
-      if (is_device_suitable(device, surface_)) {
+      size_t score = get_device_score(device, surface_);
+      if (score > max_score) {
         physical_device_ = device;
-        break;
+        max_score = score;
       }
     }
   }

@@ -22,9 +22,19 @@ def test_unique():
 
 @test_utils.test(arch=ti.cuda)
 def test_ballot():
-    # TODO
-    pass
-
+    a = ti.field(dtype=ti.i32, shape=32)
+    
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range (32):
+            a[i] = ti.simt.warp.ballot(ti.u32(0xFFFFFFFF),i%2)
+    
+    foo()
+    
+    for i in range(32):
+        assert a[i] == 2863311530
+    # TODO: this test case may not strong enough
 
 @test_utils.test(arch=ti.cuda)
 def test_shfl_i32():

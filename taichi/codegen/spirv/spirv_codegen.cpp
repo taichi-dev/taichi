@@ -919,13 +919,15 @@ class TaskCodegen : public IRVisitor {
 
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
-    
-    const std::unordered_set<std::string> reduction_ops {
-      "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax", "subgroupAnd", "subgroupOr", "subgroupXor"
-    };
+
+    const std::unordered_set<std::string> reduction_ops{
+        "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
+        "subgroupAnd", "subgroupOr",  "subgroupXor"};
 
     if (stmt->func_name == "subgroupElect") {
-      val = ir_->make_value(spv::OpGroupNonUniformElect, ir_->bool_type(), ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
+      val = ir_->make_value(
+          spv::OpGroupNonUniformElect, ir_->bool_type(),
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
       val = ir_->cast(ir_->i32_type(), val);
     } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end()) {
       auto arg = ir_->query_value(stmt->args[0]->raw_name());
@@ -936,13 +938,13 @@ class TaskCodegen : public IRVisitor {
         if (is_integral(stmt->args[0]->ret_type)) {
           spv_op = spv::OpGroupNonUniformIAdd;
         } else {
-          spv_op = spv::OpGroupNonUniformFAdd;          
+          spv_op = spv::OpGroupNonUniformFAdd;
         }
       } else if (stmt->func_name == "subgroupMul") {
         if (is_integral(stmt->args[0]->ret_type)) {
           spv_op = spv::OpGroupNonUniformIMul;
         } else {
-          spv_op = spv::OpGroupNonUniformFMul;          
+          spv_op = spv::OpGroupNonUniformFMul;
         }
       } else if (stmt->func_name == "subgroupMin") {
         if (is_integral(stmt->args[0]->ret_type)) {
@@ -952,7 +954,7 @@ class TaskCodegen : public IRVisitor {
             spv_op = spv::OpGroupNonUniformUMin;
           }
         } else {
-          spv_op = spv::OpGroupNonUniformFMin;          
+          spv_op = spv::OpGroupNonUniformFMin;
         }
       } else if (stmt->func_name == "subgroupMax") {
         if (is_integral(stmt->args[0]->ret_type)) {
@@ -962,7 +964,7 @@ class TaskCodegen : public IRVisitor {
             spv_op = spv::OpGroupNonUniformUMax;
           }
         } else {
-          spv_op = spv::OpGroupNonUniformFMax;          
+          spv_op = spv::OpGroupNonUniformFMax;
         }
       } else if (stmt->func_name == "subgroupAnd") {
         spv_op = spv::OpGroupNonUniformBitwiseAnd;
@@ -972,7 +974,10 @@ class TaskCodegen : public IRVisitor {
         spv_op = spv::OpGroupNonUniformBitwiseXor;
       }
 
-      val = ir_->make_value(spv_op, stype, ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup), spv::GroupOperationReduce, arg);
+      val = ir_->make_value(
+          spv_op, stype,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          spv::GroupOperationReduce, arg);
     }
     ir_->register_value(stmt->raw_name(), val);
   }

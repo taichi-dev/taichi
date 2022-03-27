@@ -1,11 +1,10 @@
+import numpy as np
 from pytest import approx
+from taichi.lang.simt import subgroup
 
 import taichi as ti
-from taichi.lang.simt import subgroup
 from tests import test_utils
 
-from pytest import approx
-import numpy as np
 
 @test_utils.test(arch=ti.cuda)
 def test_all_nonzero():
@@ -126,6 +125,7 @@ def test_sync():
     # TODO
     pass
 
+
 # Higher level primitives test
 def _test_subgroup_reduce(op, group_op, np_op, size, initial_value, dtype):
     field = ti.field(dtype, (size))
@@ -147,33 +147,45 @@ def _test_subgroup_reduce(op, group_op, np_op, size, initial_value, dtype):
         return sum
 
     if dtype == ti.i32 or dtype == ti.i64:
-        assert(reduce_all() == np_op(rand_values))
+        assert (reduce_all() == np_op(rand_values))
     else:
-        assert(reduce_all() == approx(np_op(rand_values), 3e-4))
+        assert (reduce_all() == approx(np_op(rand_values), 3e-4))
+
 
 # We use 2677 as size because it is a prime number
 # i.e. any device other than a subgroup size of 1 should have one non active group
 
+
 @test_utils.test(arch=ti.vulkan)
 def test_subgroup_reduction_add_i32():
-    _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_add, np.sum, 2677, 0, ti.i32)
+    _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_add, np.sum, 2677, 0,
+                          ti.i32)
+
 
 @test_utils.test(arch=ti.vulkan)
 def test_subgroup_reduction_add_f32():
-    _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_add, np.sum, 2677, 0, ti.f32)
+    _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_add, np.sum, 2677, 0,
+                          ti.f32)
+
 
 # @test_utils.test(arch=ti.vulkan)
 # def test_subgroup_reduction_mul_i32():
 #     _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_mul, np.prod, 8, 1, ti.f32)
 
+
 @test_utils.test(arch=ti.vulkan)
 def test_subgroup_reduction_max_i32():
-    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0, ti.i32)
+    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0,
+                          ti.i32)
+
 
 @test_utils.test(arch=ti.vulkan)
 def test_subgroup_reduction_max_f32():
-    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0, ti.f32)
+    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0,
+                          ti.f32)
+
 
 @test_utils.test(arch=ti.vulkan)
 def test_subgroup_reduction_min_f32():
-    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0, ti.f32)
+    _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0,
+                          ti.f32)

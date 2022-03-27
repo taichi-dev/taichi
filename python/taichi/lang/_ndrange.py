@@ -18,6 +18,8 @@ class _Ndrange:
 
         self.dimensions = [None] * len(args)
         for i, bound in enumerate(self.bounds):
+            if not (isinstance(bound[0], int) and isinstance(bound[1], int)):
+                raise TypeError("Float object cannot be interpreted as an integer in ndrange")
             self.dimensions[i] = bound[1] - bound[0]
 
         self.acc_dimensions = self.dimensions.copy()

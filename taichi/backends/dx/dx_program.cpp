@@ -9,7 +9,7 @@ namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel,
                                    vulkan::VkRuntime *runtime,
-                                   vulkan::SNodeTreeManager snode_tree_mgr) {
+                                   vulkan::SNodeTreeManager* snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
       std::move(vulkan::run_codegen(kernel, runtime->get_ti_device(),
                                     snode_tree_mgr->get_compiled_structs())));

@@ -423,7 +423,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
 
   ```shell
-  python3 examples/simulation/mpm128.py
+  python3 python/taichi/examples/simulation/mpm128.py
   ```
 
 :::note

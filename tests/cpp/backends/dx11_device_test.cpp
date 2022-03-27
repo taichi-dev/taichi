@@ -39,6 +39,10 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   params.size = 1048576;
   const taichi::lang::DeviceAllocation device_alloc =
       device->allocate_memory(params);
+
+  // The purpose of the device_alloc_guard is to rule out double free
+  const taichi::lang::DeviceAllocationGuard device_alloc_guard(
+    device_alloc);
   if (kD3d11DebugEnabled) {
     count1 = device->live_dx11_object_count();
     // Should have allocated an UAV and a Buffer, so 2 more objects.
@@ -145,6 +149,10 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   test_prog.prog()->config.arch = Arch::dx11;
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   program->compile(ker.get(), nullptr);
+}
+
+TEST(Dx11ProgramTest, MemoryFillTest) {
+
 }
 
 }  // namespace directx11

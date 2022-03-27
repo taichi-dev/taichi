@@ -36,7 +36,7 @@ void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-  device_ = std::make_unique<directx11::Dx11Device>();
+  device_ = std::make_shared<directx11::Dx11Device>();
 
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;

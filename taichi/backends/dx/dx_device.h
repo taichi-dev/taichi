@@ -63,9 +63,12 @@ class Dx11Pipeline : public Pipeline {
                Dx11Device *device);
   ~Dx11Pipeline() override;
   ResourceBinder *resource_binder() override;
+  ID3D11ComputeShader *get_program() {
+    return compute_shader_;
+  }
 
  private:
-  std::shared_ptr<Dx11Device> device_{};
+  Dx11Device* device_{}; // Can't use shared_ptr b/c this can cause device_ to be deallocated pre-maturely
   ID3D11ComputeShader *compute_shader_{};
   Dx11ResourceBinder binder_{};
 };
@@ -147,6 +150,28 @@ class Dx11CommandList : public CommandList {
     ID3D11UnorderedAccessView *uav{nullptr};
     size_t offset{0}, size{0};
     uint32_t data{0};
+    void execute() override;
+  };
+
+  struct CmdBindPipeline : public Cmd {
+    explicit CmdBindPipeline(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
+    }
+    ID3D11ComputeShader *compute_shader_{nullptr};
+    void execute() override;
+  };
+
+  struct CmdBindBufferToIndex : public Cmd {
+    explicit CmdBindBufferToIndex(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
+    }
+    ID3D11UnorderedAccessView *uav;  // UAV of the buffer
+    uint32_t binding;                // U register; UAV slot
+    void execute() override;
+  };
+
+  struct CmdDispatch : public Cmd {
+    explicit CmdDispatch(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
+    }
+    uint32_t x{0}, y{0}, z{0};
     void execute() override;
   };
 

@@ -27,7 +27,7 @@ void Dx11ResourceBinder::rw_buffer(uint32_t set,
 void Dx11ResourceBinder::rw_buffer(uint32_t set,
                                    uint32_t binding,
                                    DeviceAllocation alloc) {
-  TI_NOT_IMPLEMENTED;
+  binding_to_alloc_id_[binding] = alloc.alloc_id;
 }
 
 void Dx11ResourceBinder::buffer(uint32_t set,
@@ -40,7 +40,7 @@ void Dx11ResourceBinder::buffer(uint32_t set,
 void Dx11ResourceBinder::buffer(uint32_t set,
                                 uint32_t binding,
                                 DeviceAllocation alloc) {
-  TI_NOT_IMPLEMENTED;
+  rw_buffer(set, binding, alloc);
 }
 
 void Dx11ResourceBinder::image(uint32_t set,
@@ -68,12 +68,25 @@ Dx11CommandList::~Dx11CommandList() {
 }
 
 void Dx11CommandList::bind_pipeline(Pipeline *p) {
-  TI_NOT_IMPLEMENTED;
+  Dx11Pipeline *pipeline = static_cast<Dx11Pipeline *>(p);
+  std::unique_ptr<CmdBindPipeline> cmd = std::make_unique<CmdBindPipeline>(this);
+  cmd->compute_shader_ = pipeline->get_program();
+  recorded_commands_.push_back(std::move(cmd));
 }
 
-void Dx11CommandList::bind_resources(ResourceBinder *binder) {
-  TI_NOT_IMPLEMENTED;
+void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
+  Dx11ResourceBinder *binder = static_cast<Dx11ResourceBinder *>(binder_);
+  for (auto &[binding, alloc_id] : binder->binding_to_alloc_id()) {
+    std::unique_ptr<CmdBindBufferToIndex> cmd =
+        std::make_unique<CmdBindBufferToIndex>(this);
+    ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(alloc_id);
+    cmd->binding = binding;
+    cmd->uav = uav;
+    recorded_commands_.push_back(std::move(cmd));
+  }
 }
+
+
 
 void Dx11CommandList::bind_resources(ResourceBinder *binder,
                                      ResourceBinder::Bindings *bindings) {
@@ -89,7 +102,7 @@ void Dx11CommandList::buffer_barrier(DeviceAllocation alloc) {
 }
 
 void Dx11CommandList::memory_barrier() {
-  TI_NOT_IMPLEMENTED;
+  // Not needed for DX11
 }
 
 void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
@@ -114,8 +127,25 @@ void Dx11CommandList::CmdBufferFill::execute() {
   context->ClearUnorderedAccessViewUint(uav, values);
 }
 
+void Dx11CommandList::CmdBindPipeline::execute() {
+  ID3D11DeviceContext *context = cmdlist_->device_->d3d11_context();
+  context->CSSetShader(compute_shader_, nullptr, 0);
+}
+
+void Dx11CommandList::CmdBindBufferToIndex::execute() {
+  cmdlist_->device_->d3d11_context()->CSSetUnorderedAccessViews(binding, 1, &uav, nullptr);
+}
+
+void Dx11CommandList::CmdDispatch::execute() {
+  cmdlist_->device_->d3d11_context()->Dispatch(x, y, z);
+}
+
 void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
-  TI_NOT_IMPLEMENTED;
+  std::unique_ptr<CmdDispatch> cmd = std::make_unique<CmdDispatch>(this);
+  cmd->x = x;
+  cmd->y = y;
+  cmd->z = z;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void Dx11CommandList::begin_renderpass(int x0,
@@ -412,6 +442,8 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   uint32_t alloc_id = handle.alloc_id;
+  if (alloc_id_to_buffer_.count(alloc_id) == 0)
+    return;
   ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   buf->Release();
   alloc_id_to_buffer_.erase(alloc_id);
@@ -539,7 +571,8 @@ std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
 }
 
 void Dx11Stream::submit(CommandList *cmdlist) {
-  TI_NOT_IMPLEMENTED;
+  Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
+  dx_cmd_list->run_commands();
 }
 
 // No difference for DX11
@@ -567,6 +600,7 @@ Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
   std::vector<uint32_t> spirv_binary(
       (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
   spirv_cross::CompilerHLSL hlsl(std::move(spirv_binary));
+  hlsl.remap_num_workgroups_builtin();
   spirv_cross::CompilerHLSL::Options options;
   options.shader_model = 40;
   hlsl.set_hlsl_options(options);
@@ -595,7 +629,7 @@ Dx11Pipeline::~Dx11Pipeline() {
 }
 
 ResourceBinder *Dx11Pipeline::resource_binder() {
-  return nullptr;
+  return &binder_;
 }
 
 }  // namespace directx11

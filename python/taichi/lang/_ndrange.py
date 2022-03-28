@@ -19,7 +19,7 @@ class _Ndrange:
 
         self.dimensions = [None] * len(args)
         for i, bound in enumerate(self.bounds):
-            if not (isinstance(bound[0], (int, expr.Expr.dtype)) and isinstance(bound[1], (int, expr.Expr.dtype))):
+            if not (isinstance(bound[0], (int, expr.Expr)) and isinstance(bound[1], (int, expr.Expr))):
                 raise TaichiTypeError(
                     f"Float object cannot be interpreted as an integer in ndrange: {bound}"
                 )

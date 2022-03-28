@@ -1,3 +1,4 @@
+import collections.abc
 import numbers
 from collections.abc import Iterable
 from functools import partial
@@ -1688,6 +1689,10 @@ class VectorType(Matrix):
     _DTYPE = float
 
     def __init__(self, *data):
+        if len(data) == 1 and isinstance(data[0], collections.abc.Sequence):
+            data = data[0]
+        assert not isinstance(
+            data[0], collections.abc.Sequence), "Matrix is not accepted"
         assert len(data) == self._DIM, "Dimension not match"
         super().__init__(data, self._DTYPE)
         self._add_swizzle_attrs()
@@ -1703,10 +1708,8 @@ class VectorType(Matrix):
 
         for key_group in VectorType._KEYMAP_SET:
             for index, key in enumerate(key_group):
-                prop = property(
-                    partial(getter_template, index),
-                    partial(setter_template, index)
-                )
+                prop = property(partial(getter_template, index),
+                                partial(setter_template, index))
                 setattr(type(self), key, prop)
 
     def __getattr__(self, attr_name):
@@ -1716,9 +1719,7 @@ class VectorType(Matrix):
 
             result = []
             for key in attr_name:
-                result.append(
-                    self[key_group.index(key)]
-                )
+                result.append(self(key_group.index(key)))
             if result:
                 return globals()[f"vec{len(result)}"](*result)
 
@@ -1743,17 +1744,27 @@ class VectorType(Matrix):
 
         super().__setattr__(attr_name, values)
 
+    def to_list(self):
+        """Return this matrix as a 1D `list`.
+
+        This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
+        but this function always returns a new list.
+        """
+        return [self(i) for i in range(self.n)]
+
 
 def generate_vectorND_classes():
     for dim in [2, 3, 4]:
         vec_class_name = f"vec{dim}"
-        vec_class = type(vec_class_name, (VectorType,), {"_DIM": dim, "_DTYPE": float})
+        vec_class = type(vec_class_name, (VectorType, ), {
+            "_DIM": dim,
+            "_DTYPE": float
+        })
         module = __import__(__package__)
         setattr(module, vec_class_name, vec_class)
         globals()[vec_class_name] = vec_class
 
 
 generate_vectorND_classes()
-
 
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

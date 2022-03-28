@@ -37,7 +37,7 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix):
-        return Matrix(rhs.to_list())
+        return type(rhs)(rhs.to_list())
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict())
     if isinstance(rhs, list):

@@ -185,7 +185,28 @@ To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape
 
 ### Considerations: Matrix size
 
-Matrix operations are unrolled during the compile time. Operating on large matrices (for example `32x128`) can lead to long compilation time and poor performance. For performance reasons, it is recommended that you keep your matrices small:
+Matrix operations are unrolled during compile time. Take a look at the following example: 
+
+```python
+import taichi as ti
+ti.init()
+
+a = ti.Matrix.field(n=2, m=3, dtype=ti.f32, shape=(2, 2))
+@ti.kernel
+def test():
+    for i in ti.grouped(a):
+        # a[i] is a 2x3 matrix
+        a[i] = [[1, 1, 1], [1, 1, 1]]
+        # The assignment is unrolled to the following during compile time:
+        # a[i][0, 0] = 1
+        # a[i][0, 1] = 1
+        # a[i][0, 2] = 1
+        # a[i][1, 0] = 1
+        # a[i][1, 1] = 1
+        # a[i][1, 2] = 1
+```
+
+Operating on large matrices (for example `32x128`) can lead to long compilation time and poor performance. For performance reasons, it is recommended that you keep your matrices small:
 
 - `2x1`, `3x3`, and `4x4` matrices work fine.
 - `32x6` is a bit too large.

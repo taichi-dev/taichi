@@ -4,6 +4,16 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
+"""
+The symmetric positive definite matrix is created in matlab using the following script:
+    A = diag([1,2,3,4]);
+    OrthM = [1 0 1 0; -1 -2 0 1; 0 1 -1 0; 0, 1, 0 1];
+    U = orth(OrthM);
+    Aarray = U * A * U';
+    b = [1,2,3,4]';
+    res = inv(A) * b;
+""" # yapf: disable
+
 Aarray = np.array([[
     2.73999501130921, 0.518002544441220, 0.745119303009342, 0.0508907745638859
 ], [0.518002544441220, 1.45111665837647, 0.757997555750432, 0.290885785873098],
@@ -15,15 +25,6 @@ Aarray = np.array([[
                        0.0508907745638859, 0.290885785873098,
                        -0.518002544441220, 2.84177656043698
                    ]])
-"""
-The symmetric positive definite matrix is created in matlab using the following script:
-    A = diag([1,2,3,4]);
-    OrthM = [1 0 1 0; -1 -2 0 1; 0 1 -1 0; 0, 1, 0 1];
-    U = orth(OrthM);
-    Aarray = U * A * U';
-    b = [1,2,3,4]';
-    res = inv(A) * b;
-"""
 
 res = np.array([
     -0.0754984396447588, 0.469972700892492, 1.18527357933586, 1.57686870529319

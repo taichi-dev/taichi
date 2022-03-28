@@ -940,7 +940,7 @@ void export_lang(py::module &m) {
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def("to_string", &SparseMatrix::to_string)
-      .def(py::self += py::self, py::return_value_policy::take_ownership)
+      .def(py::self += py::self)
       // .def(py::self + py::self, py::return_value_policy::reference_internal)
       // .def(py::self - py::self, py::return_value_policy::reference_internal)
       // .def(float() * py::self, py::return_value_policy::reference_internal)
@@ -955,6 +955,10 @@ void export_lang(py::module &m) {
       // .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
+
+  py::class_<EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::ColMajor>>,
+             SparseMatrix>(m, "EigenSparseMatrix")
+      .def(py::self += py::self);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

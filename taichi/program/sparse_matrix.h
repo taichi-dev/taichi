@@ -70,7 +70,6 @@ class SparseMatrix {
   // void set_element(int row, int col, float32 value);
 
   virtual SparseMatrix operator+=(const SparseMatrix &other) {
-    std::cout << "Addition happended parent class " << std::endl;
     return *this;
   }
 
@@ -119,7 +118,7 @@ class EigenSparseMatrix : public SparseMatrix {
   };
 
   virtual EigenSparseMatrix operator+=(const EigenSparseMatrix &other) {
-    std::cout << "Addition happened in derived class" << std::endl;
+    this->matrix_ += other.matrix_;
     return *this;
   };
 

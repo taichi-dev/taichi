@@ -461,6 +461,8 @@ def init(arch=None,
 
 
 def no_activate(*args):
+    """Deactivate a SNode pointer.
+    """
     for v in args:
         get_runtime().prog.no_activate(v._snode.ptr)
 
@@ -498,6 +500,29 @@ def cache_read_only(*args):
 
 
 def assume_in_range(val, base, low, high):
+    """Hint the compiler that a value is between a specified range,
+    for the compiler to perform scatchpad optimization, and return the
+    value untouched.
+
+    The assumed range is `[base + low, base + high)`.
+
+    Args:
+
+        val (Number): The input value.
+        base (Number): The base point for the range interval.
+        low (Number): The lower offset relative to `base` (included).
+        high (Number): The higher offset relative to `base` (excluded).
+
+    Returns:
+        Return the input `value` untouched.
+
+    Example::
+
+        >>> # hint the compiler that x is in range [8, 12).
+        >>> x = ti.assume_in_range(x, 10, -2, 2)
+        >>> x
+        10
+    """
     return _ti_core.expr_assume_in_range(
         Expr(val).ptr,
         Expr(base).ptr, low, high)
@@ -513,12 +538,16 @@ def loop_unique(val, covers=None):
 
 
 def _parallelize(v):
+    """Sets the number of threads to use on CPU.
+    """
     get_runtime().prog.current_ast_builder().parallelize(v)
     if v == 1:
         get_runtime().prog.current_ast_builder().strictly_serialize()
 
 
 def _serialize():
+    """Sets the number of threads to 1.
+    """
     _parallelize(1)
 
 
@@ -539,6 +568,22 @@ def loop_config(block_dim=None, serialize=None, parallelize=None):
 
 
 def global_thread_idx():
+    """Return the global thread id of this running thread,
+    only available for cpu and cuda backends.
+
+    For cpu backends this is equal to the cpu thread id,
+    For cuda backends this is equal to `block_id * block_dim + thread_id`.
+
+    Example::
+
+        >>> f = ti.field(ti.f32, shape=(16, 16))
+        >>> @ti.kernel
+        >>> def test():
+        >>>     for i in ti.grouped(f):
+        >>>         print(ti.global_thread_idx())
+        >>>
+        test()
+    """
     return impl.get_runtime().prog.current_ast_builder(
     ).insert_thread_idx_expr()
 

@@ -17,7 +17,7 @@ class SparseMatrixBuilder {
 
   void print_triplets();
 
-  SparseMatrix build();
+  std::unique_ptr<SparseMatrix> build();
 
   void clear();
 
@@ -26,7 +26,7 @@ class SparseMatrixBuilder {
   void print_template();
 
   template <typename T, typename G>
-  SparseMatrix build_template();
+  void build_template(std::unique_ptr<SparseMatrix> &);
 
  private:
   uint64 num_triplets_{0};
@@ -41,32 +41,63 @@ class SparseMatrixBuilder {
 class SparseMatrix {
  public:
   SparseMatrix() = delete;
-  SparseMatrix(int rows, int cols);
-  SparseMatrix(Eigen::SparseMatrix<float32> &matrix);
+  SparseMatrix(int rows, int cols) : rows_{rows}, cols_(cols){};
+  virtual ~SparseMatrix() = default;
 
-  const int num_rows() const;
-  const int num_cols() const;
-  const std::string to_string() const;
-  Eigen::SparseMatrix<float32> &get_matrix();
-  const Eigen::SparseMatrix<float32> &get_matrix() const;
-  float32 get_element(int row, int col);
-  void set_element(int row, int col, float32 value);
+  virtual void build_triplets(void *triplets_adr){};
 
-  friend SparseMatrix operator+(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  friend SparseMatrix operator-(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
-  friend SparseMatrix operator*(const SparseMatrix &sm, float scale);
-  friend SparseMatrix operator*(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  SparseMatrix matmul(const SparseMatrix &sm);
-  Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+  inline const int num_rows() const {
+    return rows_;
+  }
+  inline const int num_cols() const {
+    return cols_;
+  }
+  virtual const std::string to_string() const {
+    return nullptr;
+  }
+  // Eigen::SparseMatrix<float32> &get_matrix();
+  // const Eigen::SparseMatrix<float32> &get_matrix() const;
+  // float32 get_element(int row, int col);
+  // void set_element(int row, int col, float32 value);
 
-  SparseMatrix transpose();
+  // friend SparseMatrix operator+(const SparseMatrix &sm1,
+  //                               const SparseMatrix &sm2);
+  // friend SparseMatrix operator-(const SparseMatrix &sm1,
+  //                               const SparseMatrix &sm2);
+  // friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
+  // friend SparseMatrix operator*(const SparseMatrix &sm, float scale);
+  // friend SparseMatrix operator*(const SparseMatrix &sm1,
+  //                               const SparseMatrix &sm2);
+  // SparseMatrix matmul(const SparseMatrix &sm);
+  // Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+
+  // SparseMatrix transpose();
 
  private:
-  Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;
+  int rows_{0};
+  int cols_{0};
 };
+
+template <class EigenMatrix>
+class EigenSparseMatrix : public SparseMatrix {
+ public:
+  EigenSparseMatrix(int rows, int cols, DataType dt)
+      : SparseMatrix(rows, cols), matrix_(rows, cols), dtype_(dt) {
+  }
+
+  virtual ~EigenSparseMatrix() override = default;
+  virtual void build_triplets(void *triplets_adr) override;
+  virtual const std::string to_string() const override;
+
+ private:
+  EigenMatrix matrix_;
+  DataType dtype_;
+};
+
+std::unique_ptr<SparseMatrix> make_sparse_matrix(
+    int rows,
+    int cols,
+    DataType dt,
+    const std::string &storage_format);
 }  // namespace lang
 }  // namespace taichi

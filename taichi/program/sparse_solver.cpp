@@ -30,7 +30,7 @@ namespace lang {
 
 template <class EigenSolver>
 bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
-  solver_.compute(sm.get_matrix());
+  // solver_.compute(sm.get_matrix());
   if (solver_.info() != Eigen::Success) {
     return false;
   } else
@@ -38,12 +38,12 @@ bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
 }
 template <class EigenSolver>
 void EigenSparseSolver<EigenSolver>::analyze_pattern(const SparseMatrix &sm) {
-  solver_.analyzePattern(sm.get_matrix());
+  // solver_.analyzePattern(sm.get_matrix());
 }
 
 template <class EigenSolver>
 void EigenSparseSolver<EigenSolver>::factorize(const SparseMatrix &sm) {
-  solver_.factorize(sm.get_matrix());
+  // solver_.factorize(sm.get_matrix());
 }
 
 template <class EigenSolver>

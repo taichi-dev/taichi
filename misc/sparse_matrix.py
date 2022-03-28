@@ -33,32 +33,32 @@ A = K.build()
 print(">>>> A = K.build()")
 print(A)
 
-print(">>>> Summation: C = A + A")
-C = A + A
-print(C)
+# print(">>>> Summation: C = A + A")
+# C = A + A
+# print(C)
 
-print(">>>> Subtraction: D = A - A")
-D = A - A
-print(D)
+# print(">>>> Subtraction: D = A - A")
+# D = A - A
+# print(D)
 
-print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
-E = A * 3.0
-print(E)
+# print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
+# E = A * 3.0
+# print(E)
 
-print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
-E = 3.0 * A
-print(E)
+# print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
+# E = 3.0 * A
+# print(E)
 
-print(">>>> Transpose: F = A.transpose()")
-F = A.transpose()
-print(F)
+# print(">>>> Transpose: F = A.transpose()")
+# F = A.transpose()
+# print(F)
 
-print(">>>> Matrix multiplication: G = E @ A")
-G = E @ A
-print(G)
+# print(">>>> Matrix multiplication: G = E @ A")
+# G = E @ A
+# print(G)
 
-print(">>>> Element-wise multiplication: H = E * A")
-H = E * A
-print(H)
+# print(">>>> Element-wise multiplication: H = E * A")
+# H = E * A
+# print(H)
 
-print(f">>>> Element Access: A[0,0] = {A[0,0]}")
+# print(f">>>> Element Access: A[0,0] = {A[0,0]}")

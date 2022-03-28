@@ -1,8 +1,10 @@
+import random
+
 from pytest import approx
 
 import taichi as ti
 from tests import test_utils
-import random
+
 
 @test_utils.test(arch=ti.cuda)
 def test_all_nonzero():
@@ -26,22 +28,23 @@ def test_unique():
 def test_ballot():
     a = ti.field(dtype=ti.u32, shape=32)
     b = ti.field(dtype=ti.u32, shape=32)
-    
+
     @ti.kernel
     def foo():
         ti.loop_config(block_dim=32)
-        for i in range (32):
+        for i in range(32):
             a[i] = ti.simt.warp.ballot(b[i])
-    
+
     key = 0
     for i in range(32):
-        b[i] = random.randint(1,100) % 2
+        b[i] = random.randint(1, 100) % 2
         key += b[i] * pow(2, i)
 
     foo()
-    
+
     for i in range(32):
         assert a[i] == key
+
 
 @test_utils.test(arch=ti.cuda)
 def test_shfl_i32():

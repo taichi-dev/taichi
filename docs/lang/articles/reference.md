@@ -89,7 +89,7 @@ An informal quick summary of evaluation rules:
 ### Variables and scope
 
 A variable contains a *name*, a *type* and a *value*. In Taichi, a variable can
-be created in the following ways:
+be defined in the following ways:
 - A parameter. The name of the variable is the parameter name. The type of the
 variable is the parameter type annotation. The value of the variable is passed
 in at runtime.
@@ -102,11 +102,11 @@ the variable is the evaluation result of the expression on the right-hand side
 at runtime.
 
 Taichi is statically-typed. That is, you cannot change the type of a variable
-after its creation. However, you can change the value of a variable if there
-is another assignment statement after its creation.
+after its definition. However, you can change the value of a variable if there
+is another assignment statement after its definition.
 
 Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_science)).
-Therefore, if a variable is created in a [block](#compound-statements), it is
+Therefore, if a variable is defined in a [block](#compound-statements), it is
 invisible outside that block.
 
 ## Expressions
@@ -131,17 +131,18 @@ Lexical definition of
 (also referred to as names) in Taichi follows Python.
 
 There are three cases during evaluation:
-- The name is visible and corresponds to a variable created in Taichi. Then the
+- The name is visible and corresponds to a variable defined in Taichi. Then the
 evaluation result is the value of the variable at runtime.
-- The name is visible but in Python. Then compile-time evaluation is triggered,
-resulting in the Python value bound to that name.
+- The name is only visible in Python, i.e., the name binding is outside Taichi.
+Then compile-time evaluation is triggered, resulting in the Python value bound
+to that name.
 - The name is invisible. Then a `TaichiNameError` is thrown.
 
 #### Literals
 
 Taichi supports [integer](https://docs.python.org/3/reference/lexical_analysis.html#integer-literals)
 and [floating-point](https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals)
-literals, both of which lexically follow Python.
+literals, whose lexical definitions follow Python.
 
 ```
 literal ::= integer | floatnumber

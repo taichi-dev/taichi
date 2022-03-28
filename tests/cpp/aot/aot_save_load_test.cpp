@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
+#include "taichi/inc/constants.h"
 #include "taichi/program/program.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
@@ -29,7 +30,24 @@ using namespace lang;
 
   auto aot_builder = program.make_aot_module_builder(Arch::vulkan);
 
-  std::unique_ptr<Kernel> kernel_init, kernel_ret;
+  std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_simple_ret;
+
+  {
+    /*
+    @ti.kernel
+    def ret() -> ti.f32:
+      sum = 0.2
+      return sum
+    */
+    IRBuilder builder;
+    auto *sum = builder.create_local_var(PrimitiveType::f32);
+    builder.create_local_store(sum, builder.get_float32(0.2));
+    builder.create_return(builder.create_local_load(sum));
+
+    kernel_simple_ret =
+        std::make_unique<Kernel>(program, builder.extract_ir(), "simple_ret");
+    kernel_simple_ret->insert_ret(PrimitiveType::f32);
+  }
 
   {
     /*
@@ -79,6 +97,7 @@ using namespace lang;
     kernel_ret->insert_ret(PrimitiveType::i32);
   }
 
+  aot_builder->add("simple_ret", kernel_simple_ret.get());
   aot_builder->add_field("place", place, true, place->dt, {n}, 1, 1);
   aot_builder->add("init", kernel_init.get());
   aot_builder->add("ret", kernel_ret.get());
@@ -103,6 +122,7 @@ TEST(AotSaveLoad, Vulkan) {
       std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
+  host_ctx.result_buffer = result_buffer;
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
@@ -124,13 +144,20 @@ TEST(AotSaveLoad, Vulkan) {
   mod_params.runtime = vulkan_runtime.get();
 
   std::unique_ptr<aot::Module> vk_module =
-      aot::Module::load(".", Arch::vulkan, mod_params);
+      aot::Module::load(Arch::vulkan, mod_params);
   EXPECT_TRUE(vk_module);
 
   // Retrieve kernels/fields/etc from AOT module
   auto root_size = vk_module->get_root_size();
   EXPECT_EQ(root_size, 64);
   vulkan_runtime->add_root_buffer(root_size);
+
+  auto simple_ret_kernel = vk_module->get_kernel("simple_ret");
+  EXPECT_TRUE(simple_ret_kernel);
+
+  simple_ret_kernel->launch(&host_ctx);
+  vulkan_runtime->synchronize();
+  EXPECT_FLOAT_EQ(host_ctx.get_ret<float>(0), 0.2);
 
   auto init_kernel = vk_module->get_kernel("init");
   EXPECT_TRUE(init_kernel);

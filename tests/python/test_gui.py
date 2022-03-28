@@ -26,7 +26,7 @@ def test_save_image_without_window(dtype):
         gui.set_image(pixels)
         image_path = test_utils.make_temp_file(suffix='.png')
         gui.show(image_path)
-        image = ti.imread(image_path)
+        image = ti.tools.imread(image_path)
         delta = (image - i).sum()
         assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
             delta)

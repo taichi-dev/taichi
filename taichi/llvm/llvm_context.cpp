@@ -365,6 +365,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
     patch_intrinsic("cuda_shfl_down_sync_f32",
                     Intrinsic::nvvm_shfl_sync_down_f32);
 
+    patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
+    patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
+
     patch_intrinsic("cuda_match_any_sync_i32",
                     Intrinsic::nvvm_match_any_sync_i32);
 

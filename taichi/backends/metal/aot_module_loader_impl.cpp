@@ -45,6 +45,9 @@ class AotModuleImpl : public aot::Module {
     for (const auto &k : aot_data_.kernels) {
       kernels_[k.kernel_name] = &k;
     }
+    for (const auto &f : aot_data_.fields) {
+      fields_[f.field_name] = &f;
+    }
   }
 
   size_t get_root_size() const override {
@@ -74,14 +77,26 @@ class AotModuleImpl : public aot::Module {
     return std::make_unique<KernelImpl>(runtime_, name);
   }
 
-  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+  std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(
+      const std::string &name) override {
     TI_NOT_IMPLEMENTED;
     return nullptr;
+  }
+
+  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
+    auto itr = fields_.find(name);
+    if (itr == fields_.end()) {
+      TI_DEBUG("Failed to load field {}", name);
+      return nullptr;
+    }
+    auto *field_data = itr->second;
+    return std::make_unique<FieldImpl>(runtime_, *field_data);
   }
 
   KernelManager *const runtime_;
   TaichiAotData aot_data_;
   std::unordered_map<std::string, const CompiledKernelData *> kernels_;
+  std::unordered_map<std::string, const CompiledFieldData *> fields_;
 };
 
 }  // namespace

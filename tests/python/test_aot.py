@@ -417,8 +417,8 @@ def test_mpm99_aot():
             for d in ti.static(range(2)):
                 new_sig = sig[d, d]
                 if material[p] == 2:  # Snow
-                    new_sig = min(max(sig[d, d], 1 - 2.5e-2),
-                                  1 + 4.5e-3)  # Plasticity
+                    new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2),
+                                     1 + 4.5e-3)  # Plasticity
                 Jp[p] *= sig[d, d] / new_sig
                 sig[d, d] = new_sig
                 J *= new_sig

@@ -15,7 +15,7 @@ from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
-from taichi.types import annotations, primitive_types
+from taichi.types import annotations, ndarray_type, primitive_types
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -461,10 +461,10 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_sparse_matrix(
                             to_taichi_type(ctx.arg_features[i])))
                 elif isinstance(ctx.func.argument_annotations[i],
-                                annotations.any_arr):
+                                ndarray_type.NdarrayType):
                     ctx.create_variable(
                         arg.arg,
-                        kernel_arguments.decl_any_arr_arg(
+                        kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
@@ -825,7 +825,7 @@ class ASTTransformer(Builder):
         with ctx.variable_scope_guard():
             loop_name = node.target.id
             ctx.check_loop_var(loop_name)
-            loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             if len(node.iter.args) not in [1, 2]:
                 raise TaichiSyntaxError(
@@ -857,7 +857,7 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
                                                      ndrange_end.ptr)
@@ -888,7 +888,7 @@ class ASTTransformer(Builder):
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
-            ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
                                                      ndrange_end.ptr)
@@ -935,7 +935,8 @@ class ASTTransformer(Builder):
                     )
                 target = targets[0]
                 loop_var = build_stmt(ctx, node.iter)
-                loop_indices = expr.make_var_list(size=len(loop_var.shape))
+                loop_indices = expr.make_var_list(size=len(loop_var.shape),
+                                                  ast_builder=ctx.ast_builder)
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)
@@ -947,7 +948,7 @@ class ASTTransformer(Builder):
             else:
                 _vars = []
                 for name in targets:
-                    var = expr.Expr(_ti_core.make_id_expr(""))
+                    var = expr.Expr(ctx.ast_builder.make_id_expr(""))
                     _vars.append(var)
                     ctx.create_variable(name, var)
                 loop_var = node.iter.ptr
@@ -967,7 +968,7 @@ class ASTTransformer(Builder):
         target = targets[0]
 
         with ctx.variable_scope_guard():
-            var = expr.Expr(_ti_core.make_id_expr(""))
+            var = expr.Expr(ctx.ast_builder.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh,
@@ -994,7 +995,7 @@ class ASTTransformer(Builder):
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
             loop_name = node.target.id + '_index__'
-            loop_var = expr.Expr(_ti_core.make_id_expr(''))
+            loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
             end = node.iter.ptr.size

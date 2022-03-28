@@ -323,7 +323,15 @@ class TI_DLL_EXPORT Program {
     return current_callable ? &current_callable->context->builder() : nullptr;
   }
 
+  Identifier get_next_global_id(const std::string &name = "") {
+    return Identifier(global_id_counter_++, name);
+  }
+
  private:
+  uint64 ndarray_writer_counter_{0};
+  uint64 ndarray_reader_counter_{0};
+  int global_id_counter_{0};
+
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

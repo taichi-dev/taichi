@@ -30,6 +30,11 @@ void set_python_package_dir(const std::string &dir) {
 std::string get_repo_dir() {
 #if defined(TI_PLATFORM_WINDOWS)
   return "C:/taichi_cache/";
+#elif defined(TI_PLATFORM_ANDROID)
+  // @FIXME: Not supported on Android. A possibility would be to return the
+  // application cache directory. This feature is not used yet on this OS so
+  // it should not break anything (yet!)
+  return "";
 #else
   auto xdg_cache = std::getenv("XDG_CACHE_HOME");
 

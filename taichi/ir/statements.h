@@ -887,8 +887,13 @@ class FuncCallStmt : public Stmt {
  public:
   Function *func;
   std::vector<Stmt *> args;
+  bool global_side_effect{true};
 
   FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -1400,11 +1405,15 @@ class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
   std::vector<Stmt *> args;
+  bool with_runtime_context;
 
   explicit InternalFuncStmt(const std::string &func_name,
                             const std::vector<Stmt *> &args,
-                            Type *ret_type = nullptr)
-      : func_name(func_name), args(args) {
+                            Type *ret_type = nullptr,
+                            bool with_runtime_context = true)
+      : func_name(func_name),
+        args(args),
+        with_runtime_context(with_runtime_context) {
     if (ret_type == nullptr) {
       this->ret_type =
           TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
@@ -1414,7 +1423,7 @@ class InternalFuncStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, func_name, args);
+  TI_STMT_DEF_FIELDS(ret_type, func_name, args, with_runtime_context);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

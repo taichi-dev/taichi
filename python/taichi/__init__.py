@@ -38,7 +38,9 @@ __deprecated_names__ = {
     'imshow': 'tools.imshow',
     'imwrite': 'tools.imwrite',
     'quant': 'types.quantized_types.quant',
-    'type_factory': 'types.quantized_types.type_factory'
+    'type_factory': 'types.quantized_types.type_factory',
+    'ext_arr': 'types.ndarray',
+    'any_arr': 'types.ndarray'
 }
 
 __customized_deprecations__ = {
@@ -50,6 +52,8 @@ __customized_deprecations__ = {
 if sys.version_info.minor < 7:
     for name, alter in __deprecated_names__.items():
         exec(f'{name} = {alter}')
+    for _origin, (_msg, _replace) in __customized_deprecations__.items():
+        exec(f'{_origin} = {_replace}')
 else:
 
     def __getattr__(attr):

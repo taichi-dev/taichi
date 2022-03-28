@@ -32,7 +32,7 @@ class MPMSolver:
 
     @ti.kernel
     def build_pid(self):
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         for p in self.x:
             base = ti.floor(self.x[p] * self.inv_dx - 0.5).cast(int) + 1
             ti.append(self.pid.parent(), base, p)

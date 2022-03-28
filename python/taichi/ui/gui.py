@@ -130,12 +130,14 @@ class GUI:
 
     @staticmethod
     def get_bool_environ(key, default):
-        """Get an environment variable and cast to bool.
+        """Get an environment variable and cast it to `bool`.
+
         Args:
             key (str): The environment variable key.
             default (bool): The default value.
         Return:
-            The environment variable value cast to bool. If the value is not found, directly return argument 'default'.
+            The environment variable value cast to bool. \
+            If the value is not found, directly return argument 'default'.
         """
         if key not in os.environ:
             return default
@@ -146,13 +148,12 @@ class GUI:
 
         Args:
             text (str): The title of slider.
-            minimum (Number): The minimum value of slider.
-            maximum (Number): The maximum value of slider.
-            step (Number, optional): The changing step of slider. Default is 1.
+            minimum (int, float): The minimum value of slider.
+            maximum (int, float): The maximum value of slider.
+            step (int, float): The changing step of slider. Optional and default to 1.
 
         Return:
             :class:`~taichi.misc.gui.GUI.WidgetValue` :The created slider object.
-
         """
         wid = self.core.make_slider(text, minimum, minimum, maximum, step)
         return GUI.WidgetValue(self, wid)
@@ -228,11 +229,10 @@ class GUI:
         return np.ascontiguousarray(img)
 
     def get_image(self):
-        """Get the image data.
+        """Return the window content as an `numpy.ndarray`.
 
         Returns:
             :class:`numpy.array` :The image data in numpy contiguous array type.
-
         """
         self.img = np.ascontiguousarray(self.img)
         self.core.get_img(self.img.ctypes.data)
@@ -241,27 +241,31 @@ class GUI:
     def set_image(self, img):
         """Sets an image to display on the window.
 
-            The image pixels are set from the values of `img[i, j]`, where `i` indicates the horizontal coordinates (from left to right) and `j` the vertical coordinates (from bottom to top).
-            If the window size is `(x, y)`, then `img` must be one of:
-                - `ti.field(shape=(x, y))`, a gray-scale image
-                - `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
-                - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
-                - `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each component
-                - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
-                - `np.ndarray(shape=(x, y))`
-                - `np.ndarray(shape=(x, y, 3))`
-                - `np.ndarray(shape=(x, y, 2))`
-            The data type of `img` must be one of:
-                - `uint8`, range `[0, 255]`
-                - `uint16`, range `[0, 65535]`
-                - `uint32`, range `[0, 4294967295]`
-                - `float32`, range `[0, 1]`
-                - `float64`, range `[0, 1]`
-        Args:
-            img (Union[ti.field, numpy.array]): The color array representing the
-                image to be drawn. Support greyscale, RG, RGB, and RGBA color
-                representations. Its shape must match GUI resolution.
+        The image pixels are set from the values of `img[i, j]`, where `i` indicates
+        the horizontal coordinates (from left to right) and `j` the vertical coordinates
+        (from bottom to top).
 
+        If the window size is `(x, y)`, then `img` must be one of:
+            - `ti.field(shape=(x, y))`, a gray-scale image
+            - `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
+            - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
+            - `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each component
+            - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
+            - `np.ndarray(shape=(x, y))`
+            - `np.ndarray(shape=(x, y, 3))`
+            - `np.ndarray(shape=(x, y, 2))`
+
+        The data type of `img` must be one of:
+            - `uint8`, range `[0, 255]`
+            - `uint16`, range `[0, 65535]`
+            - `uint32`, range `[0, 4294967295]`
+            - `float32`, range `[0, 1]`
+            - `float64`, range `[0, 1]`
+
+        Args:
+            img (Union[:class:`taichi.field`, `numpy.array`]): The color array \
+                representing the image to be drawn. Support greyscale, RG, RGB, \
+                and RGBA color representations. Its shape must match GUI resolution.
         """
 
         if self.fast_gui:
@@ -312,13 +316,12 @@ class GUI:
         self.core.set_img(self.img.ctypes.data)
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
-        """Draw a single circle on canvas.
+        """Draw a circle on canvas.
 
         Args:
             pos (Union[List[int], numpy.array]): The position of the circle.
             color (int, Optional): The color of the circle. Default is 0xFFFFFF.
             radius (Number, Optional): The radius of the circle in pixel. Default is 1.
-
         """
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
@@ -466,7 +469,6 @@ class GUI:
             b (List[Number]): The position of the second point of triangle. Shape must be 2.
             c (List[Number]): The position of the third point of triangle. Shape must be 2.
             color (int, optional): The color of the triangle. Default is 0xFFFFFF.
-
         """
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
@@ -669,12 +671,13 @@ class GUI:
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        """Show the frame or save current frame as a picture.
+        """Show the frame content in the gui window, or save the content to an
+        image file.
 
         Args:
-            file (str, optional): The path & name of the picture to be saved.
-                Default is None.
-
+            file (str, optional): output filename. The default is `None`, and
+                the frame content is displayed in the gui window. If it's a valid
+                image filename the frame will be saved as the specified image.
         """
         self.core.update()
         if file:
@@ -703,23 +706,21 @@ class GUI:
             return False
 
     def has_key_event(self):
-        """Check if there are any key event registered.
+        """Check if there is any key event registered.
 
         Returns:
-            Bool to indicate whether there is any key event registered.
-
+            bool: whether or not there is any key event registered.
         """
         return self.core.has_key_event()
 
     def get_event(self, *e_filter):
-        """Check if the specific event is triggered.
+        """Check if the specified event is triggered.
 
         Args:
             *e_filter (ti.GUI.EVENT): The specific event to be checked.
 
         Returns:
-            Bool to indicate whether the specific event is triggered.
-
+            bool: whether or not the specified event is triggered.
         """
         for e in self.get_events(*e_filter):
             self.event = e
@@ -734,8 +735,7 @@ class GUI:
             *e_filter (List[ti.GUI.EVENT]): The type of events to be filtered.
 
         Returns:
-            :class:`~taichi.misc.gui.GUI.EVENT` :A list of events that are triggered.
-
+            :class:`~taichi.misc.gui.GUI.EVENT`: A list of events that are triggered.
         """
         e_filter = e_filter and GUI.EventFilter(*e_filter) or None
 
@@ -750,8 +750,7 @@ class GUI:
         """Get keyboard triggered event.
 
         Returns:
-            :class:`~taichi.misc.gui.GUI.EVENT` :The keyboard triggered event.
-
+            :class:`~taichi.misc.gui.GUI.EVENT`: The keyboard triggered event.
         """
         self.core.wait_key_event()
 
@@ -782,14 +781,13 @@ class GUI:
         return e
 
     def is_pressed(self, *keys):
-        """Check if the specific key or keys are pressed.
+        """Check if any key among a set of specified keys is pressed.
 
         Args:
-            *keys (Union[str, List[str]]): The string that stands for keys in keyboard.
+            *keys (Union[str, List[str]]): The keys to be listened to.
 
         Returns:
-            Bool to indicate whether the key or keys are pressed.
-
+            bool: whether or not any key among the specified keys is pressed.
         """
         for key in keys:
             if key in ['Shift', 'Alt', 'Control']:
@@ -801,27 +799,36 @@ class GUI:
             return False
 
     def get_cursor_pos(self):
-        """Get the current position of mouse.
+        """Return the current position of mouse as a pair of floats
+        in the range `[0, 1] x [0, 1]`.
+
+        The origin of the coordinates system is located at the lower left
+        corner, with `+x` direction points to the right, and `+y` direcntion
+        points upward.
 
         Returns:
             The current position of mouse.
-
         """
         pos = self.core.get_cursor_pos()
         return pos[0], pos[1]
 
     @property
     def running(self):
-        """Get the property of whether the gui is running.
+        """Return whether this gui is running or not.
 
         Returns:
-            The running property of gui(bool).
-
+            bool: whether this gui is running or not.
         """
         return not self.core.should_close
 
     @running.setter
     def running(self, value):
+        """Set the running status of this gui. `True` for running
+        and `False` for stop.
+
+        Args:
+            value (bool): `True/False` for running/stop.
+        """
         if value:
             self.core.should_close = 0
         elif not self.core.should_close:
@@ -829,11 +836,10 @@ class GUI:
 
     @property
     def fps_limit(self):
-        """Get the property of fps limit.
+        """Get the maximum fps of this gui.
 
         Returns:
-            The property of fps limit of gui.
-
+            int: the maximum fps.
         """
         if self.core.frame_delta_limit == 0:
             return None
@@ -841,6 +847,12 @@ class GUI:
 
     @fps_limit.setter
     def fps_limit(self, value):
+        """Set the maximum fps for the gui. This is the maximum number of
+        frames that the gui can show in one second.
+
+        Args:
+            value (int): maximum fps.
+        """
         if value is None:
             self.core.frame_delta_limit = 0
         else:
@@ -855,7 +867,6 @@ def rgb_to_hex(c):
 
     Returns:
         The hex representation of color.
-
     """
     def to255(x):
         return np.clip(np.int32(x * 255), 0, 255)
@@ -871,7 +882,6 @@ def hex_to_rgb(color):
 
     Returns:
         The rgb representation of color.
-
     """
     r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
     return r / 255, g / 255, b / 255

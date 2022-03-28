@@ -15,8 +15,10 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
+#ifdef TI_WITH_LLVM
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/MapVector.h"
+#endif
 
 namespace taichi {
 namespace lang {
@@ -76,14 +78,13 @@ class MemoryAccessOptions {
 
 class Identifier {
  public:
-  static int id_counter;
   std::string name_;
+  int id{0};
 
-  int id;
+  // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(const std::string &name_ = "") : name_(name_) {
-    id = id_counter++;
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -101,8 +102,11 @@ class Identifier {
   }
 };
 
+#ifdef TI_WITH_LLVM
 using stmt_vector = llvm::SmallVector<pStmt, 8>;
-// using stmt_vector = std::vector<pStmt>;
+#else
+using stmt_vector = std::vector<pStmt>;
+#endif
 
 class VecStatement {
  public:
@@ -587,13 +591,18 @@ class Stmt : public IRNode {
   }
 
   ~Stmt() override = default;
+
+  static void reset_counter() {
+    instance_id_counter = 0;
+  }
 };
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt;
-  stmt_vector statements, trash_bin;
-  Stmt *mask_var;
+  Stmt *parent_stmt{nullptr};
+  stmt_vector statements;
+  stmt_vector trash_bin;
+  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop

@@ -46,7 +46,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category                     | Prerequisites                                                                                                                                                                            |
 |:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
-| Python                       | 3.6/3.7/3.8/3.9 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
+| Python                       | 3.6/3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
 | Clang++                      | 8&leq; Clang++ <12                                                                                                                                                                       |
 | LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
@@ -58,7 +58,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category      | Prerequisites                                                                                                                                                                            |
 |:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS            | Windows 7/8/10/11                                                                                                       |
-| Python        | 3.6/3.7/3.8/3.9  |
+| Python        | 3.6/3.7/3.8/3.9/3.10  |
 | Clang++       | 8&leq; Clang++ <12 (We provide pre-built versions in the clang section)                                            |
 | LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
@@ -423,7 +423,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
 
   ```shell
-  python3 examples/simulation/mpm128.py
+  python3 python/taichi/examples/simulation/mpm128.py
   ```
 
 :::note

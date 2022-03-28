@@ -53,10 +53,13 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
+  // TODO: We should be able to limit Kernel args and rets to be primitive types
+  // as well but let's leave that as a followup up PR.
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;
-    aa.dt = ka.dt;
-    const size_t dt_bytes = data_type_size(aa.dt);
+    TI_ASSERT(ka.dt->is<PrimitiveType>());
+    aa.dtype = ka.dt->cast<PrimitiveType>()->type;
+    const size_t dt_bytes = data_type_size(ka.dt);
     aa.is_array = ka.is_array;
     if (aa.is_array) {
       aa.field_dim = ka.total_dim - ka.element_shape.size();
@@ -70,13 +73,16 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     RetAttributes ra;
     size_t dt_bytes{0};
     if (auto tensor_type = kr.dt->cast<TensorType>()) {
-      ra.dt = tensor_type->get_element_type();
-      dt_bytes = data_type_size(ra.dt);
+      auto tensor_dtype = tensor_type->get_element_type();
+      TI_ASSERT(tensor_dtype->is<PrimitiveType>());
+      ra.dtype = tensor_dtype->cast<PrimitiveType>()->type;
+      dt_bytes = data_type_size(tensor_dtype);
       ra.is_array = true;
       ra.stride = tensor_type->get_num_elements() * dt_bytes;
     } else {
-      ra.dt = kr.dt;
-      dt_bytes = data_type_size(ra.dt);
+      TI_ASSERT(kr.dt->is<PrimitiveType>());
+      ra.dtype = kr.dt->cast<PrimitiveType>()->type;
+      dt_bytes = data_type_size(kr.dt);
       ra.is_array = false;
       ra.stride = dt_bytes;
     }
@@ -88,9 +94,10 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = (attribs.is_array && !is_ret)
-                                  ? sizeof(uint64_t)
-                                  : data_type_size(attribs.dt);
+      const size_t dt_bytes =
+          (attribs.is_array && !is_ret)
+              ? sizeof(uint64_t)
+              : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;

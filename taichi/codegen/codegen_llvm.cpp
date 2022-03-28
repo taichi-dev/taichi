@@ -72,9 +72,12 @@ FunctionCreationGuard::FunctionCreationGuard(
 }
 
 FunctionCreationGuard::~FunctionCreationGuard() {
-  mb->builder->CreateRetVoid();
+  if (!mb->returned) {
+    mb->builder->CreateRetVoid();
+  }
   mb->func = old_func;
   mb->builder->restoreIP(ip);
+  mb->returned = false;
 
   {
     llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
@@ -82,6 +85,7 @@ FunctionCreationGuard::~FunctionCreationGuard() {
     mb->builder->CreateBr(entry);
     mb->entry_block = old_entry;
   }
+  TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
 namespace {
@@ -127,6 +131,9 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
+    if (returned) {
+      break;
+    }
   }
 }
 
@@ -730,12 +737,20 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(false_block);
   if (if_stmt->false_statements) {
     if_stmt->false_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(after_if);
 }
 
@@ -906,7 +921,11 @@ void CodeGenLLVM::visit(WhileStmt *stmt) {
 
   stmt->body->accept(this);
 
-  builder->CreateBr(body);  // jump to head
+  if (!returned) {
+    builder->CreateBr(body);  // jump to head
+  } else {
+    returned = false;
+  }
 
   builder->SetInsertPoint(after_loop);
 }
@@ -1001,8 +1020,11 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
 
       for_stmt->body->accept(this);
     }
-
-    builder->CreateBr(loop_inc);
+    if (!returned) {
+      builder->CreateBr(loop_inc);
+    } else {
+      returned = false;
+    }
     builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
@@ -1098,6 +1120,8 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
            tlctx->get_constant<int32>(idx++)});
     }
   }
+  builder->CreateRetVoid();
+  returned = true;
 }
 
 void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
@@ -1653,7 +1677,11 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 }
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
-  builder->CreateRetVoid();
+  if (!returned) {
+    builder->CreateRetVoid();
+  } else {
+    returned = false;
+  }
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);
@@ -2083,7 +2111,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  std::vector<llvm::Value *> args{get_context()};
+  std::vector<llvm::Value *> args;
+
+  if (stmt->with_runtime_context)
+    args.push_back(get_context());
+
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }

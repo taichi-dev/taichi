@@ -67,16 +67,15 @@ class HostDeviceContextBlitter {
     char *const device_base =
         reinterpret_cast<char *>(device_->map(*device_args_buffer_));
 
-#define TO_DEVICE(short_type, type)                    \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
-    auto d = host_ctx_->get_arg<type>(i);              \
-    reinterpret_cast<type *>(device_ptr)[0] = d;       \
-    break;                                             \
+#define TO_DEVICE(short_type, type)               \
+  if (arg.dtype == PrimitiveTypeID::short_type) { \
+    auto d = host_ctx_->get_arg<type>(i);         \
+    reinterpret_cast<type *>(device_ptr)[0] = d;  \
+    break;                                        \
   }
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      const auto dt = arg.dt;
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
@@ -118,13 +117,14 @@ class HostDeviceContextBlitter {
           TO_DEVICE(f64, float64)
         }
         if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
-          if (dt->is_primitive(PrimitiveTypeID::f16)) {
+          if (arg.dtype == PrimitiveTypeID::f16) {
             auto d = fp16_ieee_from_fp32_value(host_ctx_->get_arg<float>(i));
             reinterpret_cast<uint16 *>(device_ptr)[0] = d;
             break;
           }
         }
-        TI_ERROR("Vulkan does not support arg type={}", data_type_name(arg.dt));
+        TI_ERROR("Vulkan does not support arg type={}",
+                 PrimitiveType::get(arg.dtype).to_string());
       } while (0);
     }
 
@@ -196,8 +196,8 @@ class HostDeviceContextBlitter {
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = device_base + ret.offset_in_mem;
-      const auto dt = ret.dt;
-      const auto num = ret.stride / data_type_size(ret.dt);
+      const auto dt = PrimitiveType::get(ret.dtype);
+      const auto num = ret.stride / data_type_size(dt);
       for (int j = 0; j < num; ++j) {
         if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
           TO_HOST(i8, int8, j)
@@ -227,7 +227,7 @@ class HostDeviceContextBlitter {
           }
         }
         TI_ERROR("Vulkan does not support return value type={}",
-                 data_type_name(ret.dt));
+                 data_type_name(PrimitiveType::get(ret.dtype)));
       }
     }
 #undef TO_HOST

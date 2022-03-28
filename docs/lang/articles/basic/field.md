@@ -8,7 +8,7 @@ In general, fields are global data containers that can be read and written from 
 
 A field has its own data type and shape and can be considered as a multi-dimensional array of elements.
 An element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
-The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse spatial data structures](/lang/articles/advanced/sparse).
+The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse spatial data structures](/lang/articles/advanced/sparse.md).
 
 :::note
 The term **field** is borrowed from mathematics and physics.
@@ -78,7 +78,7 @@ while gui.running:
 ```
 
 :::tip
-In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
+In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout.md).
 :::
 
 ## Vector fields

@@ -40,7 +40,7 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
     VecStatement block;
     if (stmt->conv_type == mesh::ConvType::g2r) {
       // E.g, v_reordered = v_g2r[v_global]
-      Stmt *val = get_load(mapping, stmt->idx, block);
+      [[maybe_unused]] Stmt *val = get_load(mapping, stmt->idx, block);
     } else {
       // E.g, v_global = v_l2g[v_local + total_vertices_offset]
       Stmt *offset = offload->total_offset_local.find(stmt->idx_type)->second;

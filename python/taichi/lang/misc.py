@@ -528,7 +528,38 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(block_dim=None, serialize=None, parallelize=None):
+def loop_config(*, block_dim=None, serialize=False, parallelize=None):
+    """Sets directives for the next loop
+
+    Args:
+        block_dim (int): The number of threads in a block on GPU
+        serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
+        parallelize (int): The number of threads to use on CPU
+
+    Examples::
+
+        @ti.kernel
+        def break_in_serial_for() -> ti.i32:
+            a = 0
+            ti.loop_config(serialize=True)
+            for i in range(100):  # This loop runs serially
+                a += i
+                if i == 10:
+                    break
+            return a
+
+        break_in_serial_for()  # returns 55
+
+        n = 128
+        val = ti.field(ti.i32, shape=n)
+        @ti.kernel
+        def fill():
+            ti.loop_config(parallelize=8, block_dim=16)
+            # If the kernel is run on the CPU backend, 8 threads will be used to run it
+            # If the kernel is run on the CUDA backend, each block will have 16 threads.
+            for i in range(n):
+                val[i] = i
+    """
     if block_dim is not None:
         _block_dim(block_dim)
 

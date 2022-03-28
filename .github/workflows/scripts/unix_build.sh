@@ -49,7 +49,7 @@ setup_python() {
     python3 -m pip install -r requirements_dev.txt
 }
 
-build() {
+build_taichi_wheel() {
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""
@@ -69,9 +69,37 @@ build() {
     sccache -s
 }
 
+build_libtaichi_export() {
+    git fetch origin master
+    python3 setup.py build_ext
+}
+
+install_android_ndk() {
+  # TODO: install this in the Dockerfile instead
+  ANDROID_NDK_VERSION=r22b
+  mkdir ~/android-ndk-tmp
+  pushd ~/android-ndk-tmp
+  wget -q https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip
+
+  unzip -q android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip
+  mv android-ndk-${ANDROID_NDK_VERSION} "${ANDROID_NDK_HOME}"
+  popd
+}
+
 setup_sccache
 setup_python
-build
+
+# macos 10.15 on github actions seems to have android toolchain installed by default.
+if [[ "$IN_DOCKER" == "true" && ! -z "$ANDROID_NDK_HOME" ]]; then
+   install_android_ndk
+fi
+
+if [ "$EXPORT_CORE" == "1"]; then
+    build_libtaichi_export
+else
+    build_taichi_wheel
+fi
+
 cat "$SCCACHE_ERROR_LOG" || true
 NUM_WHL=$(ls dist/*.whl | wc -l)
 if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi

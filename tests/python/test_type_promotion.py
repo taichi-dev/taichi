@@ -8,8 +8,8 @@ from tests import test_utils
 @test_utils.test()
 def test_log():
     N = 16
-    x = ti.field(ti.i32, shape=(N,))
-    y = ti.field(ti.f32, shape=(N,))
+    x = ti.field(ti.i32, shape=(N, ))
+    y = ti.field(ti.f32, shape=(N, ))
 
     @ti.kernel
     def func():
@@ -27,8 +27,8 @@ def test_log():
 @test_utils.test()
 def test_exp():
     N = 16
-    x = ti.field(ti.i32, shape=(N,))
-    y = ti.field(ti.f32, shape=(N,))
+    x = ti.field(ti.i32, shape=(N, ))
+    y = ti.field(ti.f32, shape=(N, ))
 
     @ti.kernel
     def func():
@@ -42,11 +42,12 @@ def test_exp():
 
     assert np.allclose(y.to_numpy(), np.exp(x.to_numpy()))
 
+
 @test_utils.test()
 def test_sqrt():
     N = 16
-    x = ti.field(ti.i32, shape=(N,))
-    y = ti.field(ti.f32, shape=(N,))
+    x = ti.field(ti.i32, shape=(N, ))
+    y = ti.field(ti.f32, shape=(N, ))
 
     @ti.kernel
     def func():

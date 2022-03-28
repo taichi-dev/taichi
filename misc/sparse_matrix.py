@@ -37,17 +37,17 @@ print(">>>> Summation: C = A + A")
 C = A + A
 print(C)
 
-# print(">>>> Subtraction: D = A - A")
-# D = A - A
-# print(D)
+print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
+E = A * 3.0
+print(E)
 
-# print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
-# E = A * 3.0
-# print(E)
+print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
+E = 3.0 * A
+print(E)
 
-# print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
-# E = 3.0 * A
-# print(E)
+print(">>>> Subtraction: D = A - A")
+D = A - A
+print(D)
 
 # print(">>>> Transpose: F = A.transpose()")
 # F = A.transpose()

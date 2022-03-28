@@ -940,17 +940,18 @@ void export_lang(py::module &m) {
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def("to_string", &SparseMatrix::to_string)
-      .def(py::self += py::self)
-      // .def(py::self + py::self, py::return_value_policy::reference_internal)
-      // .def(py::self - py::self, py::return_value_policy::reference_internal)
-      // .def(float() * py::self, py::return_value_policy::reference_internal)
-      // .def(py::self * float(), py::return_value_policy::reference_internal)
-      // .def(py::self * py::self, py::return_value_policy::reference_internal)
-      // .def("matmul", &SparseMatrix::matmul,
-      //      py::return_value_policy::reference_internal)
+      // .def(py::self += py::self)
+      // .def(py::self -= py::self)
+      // .def(py::self *= py::self)
+      // .def(py::self *= float())
+      // .def(py::self + py::self)
+      // .def(py::self - py::self)
+      // .def(float() * py::self)
+      // .def(py::self * float())
+      // .def(py::self * py::self)
+      // .def("matmul", &SparseMatrix::matmul)
       // .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
-      // .def("transpose", &SparseMatrix::transpose,
-      //      py::return_value_policy::reference_internal)
+      // .def("transpose", &SparseMatrix::transpose)
       // .def("get_element", &SparseMatrix::get_element)
       // .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
@@ -958,7 +959,9 @@ void export_lang(py::module &m) {
 
   py::class_<EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::ColMajor>>,
              SparseMatrix>(m, "EigenSparseMatrix")
-      .def(py::self += py::self);
+      .def(py::self += py::self)
+      .def(py::self -= py::self)
+      .def(py::self *= float());
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

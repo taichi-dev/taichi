@@ -112,10 +112,6 @@ const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
 //   return matrix_;
 // }
 
-// SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-//   Eigen::SparseMatrix<float32> res(sm1.matrix_ + sm2.matrix_);
-//   return SparseMatrix(res);
-// }
 
 // SparseMatrix operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
 //   Eigen::SparseMatrix<float32> res(sm1.matrix_ - sm2.matrix_);

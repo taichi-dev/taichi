@@ -48,8 +48,8 @@ class SparseMatrix:
              The result sparse matrix of the subtraction.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-        sm = self.matrix - other.matrix
-        return SparseMatrix(sm=sm)
+        self.matrix -= other.matrix
+        return SparseMatrix(sm=self.matrix)
 
     def __mul__(self, other):
         """Sparse matrix's multiplication against real numbers or the hadamard product against another matrix
@@ -60,8 +60,8 @@ class SparseMatrix:
             The result of multiplication.
         """
         if isinstance(other, float):
-            sm = self.matrix * other
-            return SparseMatrix(sm=sm)
+            self.matrix *= other
+            return SparseMatrix(sm=self.matrix)
         if isinstance(other, SparseMatrix):
             assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
@@ -78,8 +78,8 @@ class SparseMatrix:
             The result of multiplication.
         """
         if isinstance(other, float):
-            sm = other * self.matrix
-            return SparseMatrix(sm=sm)
+            self.matrix *= other
+            return SparseMatrix(sm=self.matrix)
 
         return None
 

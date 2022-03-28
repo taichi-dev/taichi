@@ -60,7 +60,6 @@ class SparseMatrix {
     return cols_;
   }
   virtual const std::string to_string() const {
-    std::cout << "Print happended in parent class " << std::endl;
     return nullptr;
   }
   virtual const void *get_matrix() const {
@@ -69,9 +68,15 @@ class SparseMatrix {
   // float32 get_element(int row, int col);
   // void set_element(int row, int col, float32 value);
 
-  virtual SparseMatrix operator+=(const SparseMatrix &other) {
-    return *this;
-  }
+  // virtual SparseMatrix& operator+=(const SparseMatrix &other) {
+  //   return *this;
+  // }
+  // virtual SparseMatrix& operator-=(const SparseMatrix &other) {
+  //   return *this;
+  // }
+  // virtual SparseMatrix& operator*=(float scale) {
+  //   return *this;
+  // }
 
   // friend SparseMatrix operator+(const SparseMatrix &sm1,
   //                               const SparseMatrix &sm2);
@@ -117,11 +122,18 @@ class EigenSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
-  virtual EigenSparseMatrix operator+=(const EigenSparseMatrix &other) {
+  virtual EigenSparseMatrix &operator+=(const EigenSparseMatrix &other) {
     this->matrix_ += other.matrix_;
     return *this;
   };
-
+  virtual EigenSparseMatrix &operator-=(const EigenSparseMatrix &other) {
+    this->matrix_ -= other.matrix_;
+    return *this;
+  }
+  virtual EigenSparseMatrix &operator*=(float scale) {
+    this->matrix_ *= scale;
+    return *this;
+  }
  private:
   EigenMatrix matrix_;
 };

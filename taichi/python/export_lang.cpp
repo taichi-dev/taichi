@@ -369,7 +369,7 @@ void export_lang(py::module &m) {
              return SparseMatrixBuilder(n, m, max_num_entries, dtype);
            })
       .def("create_sparse_matrix",
-           [](Program *program, int n, int m, Datatype dtype) {
+           [](Program *program, int n, int m, DataType dtype) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
              return SparseMatrix(n, m, dtype);

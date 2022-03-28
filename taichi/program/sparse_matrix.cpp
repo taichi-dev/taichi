@@ -86,12 +86,6 @@ void SparseMatrixBuilder::clear() {
   num_triplets_ = 0;
 }
 
-// SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {
-//   this->matrix_ = matrix;
-// }
-
-// SparseMatrix::SparseMatrix(int rows, int cols) : matrix_(rows, cols) {
-// }
 template <class EigenMatrix>
 const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");

@@ -111,6 +111,15 @@ class GUI:
         self.close()
 
     def close(self):
+        """Close this GUI.
+
+        Example::
+
+            >>> while gui.running:
+            >>>     if gui.get_event(gui.PRESS, ti.GUI.ESCAPE):
+            >>>         gui.close()
+            >>>     gui.show()
+        """
         self.core = None  # dereference to call GUI::~GUI()
 
     # Widget system

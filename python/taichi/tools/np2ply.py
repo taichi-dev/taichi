@@ -5,6 +5,14 @@ import numpy as np
 
 
 class PLYWriter:
+    """Write `numpy.array` data to `ply` files.
+
+    Args:
+        num_vertices (int): number of vertices.
+        num_faces (int, optional): number of faces.
+        face_type (str): `tri` or `quad`.
+        comment (str): comment message.
+    """
     def __init__(self,
                  num_vertices: int,
                  num_faces=0,

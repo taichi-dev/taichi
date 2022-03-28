@@ -15,11 +15,17 @@ class SparseMatrix:
         m (int): the second dimension of a sparse matrix.
         sm (SparseMatrix): another sparse matrix that will be built from.
     """
-    def __init__(self, n=None, m=None, sm=None, dtype=f32):
+    def __init__(self,
+                 n=None,
+                 m=None,
+                 sm=None,
+                 dtype=f32,
+                 storage_format="col_major"):
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = get_runtime().prog.create_sparse_matrix(n, m, dtype)
+            self.matrix = get_runtime().prog.create_sparse_matrix(
+                n, m, dtype, storage_format)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -32,8 +38,8 @@ class SparseMatrix:
             The result sparse matrix of the addition.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-        sm = self.matrix + other.matrix
-        return SparseMatrix(sm=sm)
+        self.matrix += other.matrix
+        return SparseMatrix(sm=self.matrix)
 
     def __sub__(self, other):
         """Subtraction operation for sparse matrix.

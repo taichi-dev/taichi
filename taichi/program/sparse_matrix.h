@@ -46,6 +46,9 @@ class SparseMatrix {
   SparseMatrix(SparseMatrix &sm)
       : rows_(sm.rows_), cols_(sm.cols_), dtype_(sm.dtype_) {
   }
+  SparseMatrix(SparseMatrix &&sm)
+      : rows_(sm.rows_), cols_(sm.cols_), dtype_(sm.dtype_) {
+  }
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr){};
@@ -57,15 +60,19 @@ class SparseMatrix {
     return cols_;
   }
   virtual const std::string to_string() const {
+    std::cout << "Print happended in parent class " << std::endl;
     return nullptr;
   }
   virtual const void *get_matrix() const {
     return nullptr;
   }
-  // Eigen::SparseMatrix<float32> &get_matrix();
-  // const Eigen::SparseMatrix<float32> &get_matrix() const;
   // float32 get_element(int row, int col);
   // void set_element(int row, int col, float32 value);
+
+  virtual SparseMatrix operator+=(const SparseMatrix &other) {
+    std::cout << "Addition happended parent class " << std::endl;
+    return *this;
+  }
 
   // friend SparseMatrix operator+(const SparseMatrix &sm1,
   //                               const SparseMatrix &sm2);
@@ -96,12 +103,24 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
+  EigenSparseMatrix(EigenSparseMatrix &&sm)
+      : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
+        matrix_(sm.matrix_) {
+  }
+  EigenSparseMatrix(EigenMatrix &em) : matrix_(em) {
+  }
+
   virtual ~EigenSparseMatrix() override = default;
   virtual void build_triplets(void *triplets_adr) override;
   virtual const std::string to_string() const override;
 
   virtual const void *get_matrix() const override {
     return &matrix_;
+  };
+
+  virtual EigenSparseMatrix operator+=(const EigenSparseMatrix &other) {
+    std::cout << "Addition happened in derived class" << std::endl;
+    return *this;
   };
 
  private:

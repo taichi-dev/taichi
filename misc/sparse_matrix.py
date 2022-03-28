@@ -33,9 +33,9 @@ A = K.build()
 print(">>>> A = K.build()")
 print(A)
 
-# print(">>>> Summation: C = A + A")
-# C = A + A
-# print(C)
+print(">>>> Summation: C = A + A")
+C = A + A
+print(C)
 
 # print(">>>> Subtraction: D = A - A")
 # D = A - A

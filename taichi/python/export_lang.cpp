@@ -369,10 +369,11 @@ void export_lang(py::module &m) {
              return SparseMatrixBuilder(n, m, max_num_entries, dtype);
            })
       .def("create_sparse_matrix",
-           [](Program *program, int n, int m, DataType dtype) {
+           [](Program *program, int n, int m, DataType dtype,
+              std::string storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrix(n, m, dtype);
+             return make_sparse_matrix(n, m, dtype, storage_format);
            })
       .def(
           "dump_dot",
@@ -939,6 +940,7 @@ void export_lang(py::module &m) {
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def("to_string", &SparseMatrix::to_string)
+      .def(py::self += py::self, py::return_value_policy::take_ownership)
       // .def(py::self + py::self, py::return_value_policy::reference_internal)
       // .def(py::self - py::self, py::return_value_policy::reference_internal)
       // .def(float() * py::self, py::return_value_policy::reference_internal)

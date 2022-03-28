@@ -88,6 +88,7 @@ void SparseMatrixBuilder::clear() {
 
 template <class EigenMatrix>
 const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
+  std::cout << "print happended in derived class " << std::endl;
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
@@ -172,7 +173,8 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int cols,
     DataType dt,
     const std::string &storage_format) {
-  if (taichi::lang::data_type_name(dt) == "f32" && storage_format == "cm") {
+  if (taichi::lang::data_type_name(dt) == "f32" &&
+      storage_format == "col_major") {
     using FC = Eigen::SparseMatrix<float, Eigen::ColMajor>;
     return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);
   }

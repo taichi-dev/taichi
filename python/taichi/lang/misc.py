@@ -539,6 +539,12 @@ def loop_config(block_dim=None, serialize=None, parallelize=None):
 
 
 def global_thread_idx():
+    """Return the global thread id of this running thread,
+    only available for cpu and cuda backends.
+
+    For cpu backends this is equal to the cpu thread id,
+    For cuda backends this is equal to `block_id * block_dim + thread_id`.
+    """
     return impl.get_runtime().prog.current_ast_builder(
     ).insert_thread_idx_expr()
 

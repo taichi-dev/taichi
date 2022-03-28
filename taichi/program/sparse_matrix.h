@@ -41,7 +41,8 @@ class SparseMatrixBuilder {
 class SparseMatrix {
  public:
   SparseMatrix() = delete;
-  SparseMatrix(int rows, int cols) : rows_{rows}, cols_(cols){};
+  SparseMatrix(int rows, int cols, DataType dt = PrimitiveType::f32)
+      : rows_{rows}, cols_(cols), dtype_(dt){};
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr){};
@@ -73,25 +74,29 @@ class SparseMatrix {
 
   // SparseMatrix transpose();
 
- private:
+ protected:
   int rows_{0};
   int cols_{0};
+  DataType dtype_;
 };
 
 template <class EigenMatrix>
 class EigenSparseMatrix : public SparseMatrix {
  public:
   EigenSparseMatrix(int rows, int cols, DataType dt)
-      : SparseMatrix(rows, cols), matrix_(rows, cols), dtype_(dt) {
+      : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
 
   virtual ~EigenSparseMatrix() override = default;
   virtual void build_triplets(void *triplets_adr) override;
   virtual const std::string to_string() const override;
 
+  EigenMatrix &get_matrix() {
+    return matrix_;
+  };
+
  private:
   EigenMatrix matrix_;
-  DataType dtype_;
 };
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(

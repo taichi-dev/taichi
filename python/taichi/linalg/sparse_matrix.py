@@ -19,7 +19,7 @@ class SparseMatrix:
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = get_runtime().prog.create_sparse_matrix(n, m)
+            self.matrix = get_runtime().prog.create_sparse_matrix(n, m, dtype)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()

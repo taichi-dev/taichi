@@ -185,7 +185,7 @@ To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape
 
 ### Considerations: Matrix size
 
-Matrix operations are unrolled during compile time. Take a look at the following example: 
+Matrix operations are unrolled during compile time. Take a look at the following example:
 
 ```python
 import taichi as ti

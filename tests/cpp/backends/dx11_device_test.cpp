@@ -151,10 +151,6 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   program->compile(ker.get(), nullptr);
 }
 
-TEST(Dx11ProgramTest, MemoryFillTest) {
-
-}
-
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi

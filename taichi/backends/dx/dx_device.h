@@ -12,9 +12,9 @@ namespace directx11 {
 constexpr bool kD3d11DebugEnabled = true;
 constexpr bool kD3d11ForceRef = false;  // Force REF device. May be used to
                                         // force software rendering.
+// Enable to spawn a debug window and swapchain
+//#define TAICHI_DX11_DEBUG_WINDOW
 
-void debug_enabled(bool);
-void force_ref(bool);
 void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceBinder : public ResourceBinder {
@@ -46,12 +46,18 @@ class Dx11ResourceBinder : public ResourceBinder {
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
-  const std::unordered_map<uint32_t, uint32_t> &binding_to_alloc_id() {
-    return binding_to_alloc_id_;
+  const std::unordered_map<uint32_t, uint32_t> &uav_binding_to_alloc_id() {
+    return uav_binding_to_alloc_id_;
+  }
+
+  const std::unordered_map<uint32_t, uint32_t> &cb_binding_to_alloc_id() {
+    return cb_binding_to_alloc_id_;
   }
 
  private:
-  std::unordered_map<uint32_t, uint32_t> binding_to_alloc_id_;
+  std::unordered_map<uint32_t, uint32_t> uav_binding_to_alloc_id_;
+  std::unordered_map<uint32_t, uint32_t> cb_binding_to_alloc_id_;
+
 };
 
 class Dx11Device;
@@ -160,11 +166,21 @@ class Dx11CommandList : public CommandList {
     void execute() override;
   };
 
-  struct CmdBindBufferToIndex : public Cmd {
-    explicit CmdBindBufferToIndex(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
+  struct CmdBindUAVBufferToIndex : public Cmd {
+    explicit CmdBindUAVBufferToIndex(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
     }
     ID3D11UnorderedAccessView *uav;  // UAV of the buffer
     uint32_t binding;                // U register; UAV slot
+    void execute() override;
+  };
+
+  struct CmdBindConstantBufferToIndex : public Cmd {
+    explicit CmdBindConstantBufferToIndex(Dx11CommandList *cmdlist)
+        : Cmd(cmdlist) {
+    }
+    ID3D11Buffer *buffer;    // Original buffer, can't be bound to CB slot
+    ID3D11Buffer *cb_buffer; // Constant buffer-version of buffer, for binding to CB slots
+    uint32_t binding; // CB register; constant buffer slot
     void execute() override;
   };
 
@@ -229,6 +245,7 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Device *d3d11_device() {
     return device_;
   }
+  ID3D11Buffer *create_or_get_cb_buffer(uint32_t alloc_id);
 
  private:
   void create_dx11_device();
@@ -242,8 +259,13 @@ class Dx11Device : public GraphicsDevice {
       alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
   std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
       alloc_id_to_uav_;  // binding ID to UAV
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+    alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
   int alloc_serial_;
   Dx11Stream *stream_;
+
+  // temporary debug use
+  std::unordered_map<uint32_t, void *> mapped_;
 };
 
 }  // namespace directx11

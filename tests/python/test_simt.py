@@ -1,3 +1,4 @@
+import random
 import taichi as ti
 from tests import test_utils
 
@@ -22,19 +23,24 @@ def test_unique():
 
 @test_utils.test(arch=ti.cuda)
 def test_ballot():
-    a = ti.field(dtype=ti.i32, shape=32)
+    a = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
     
     @ti.kernel
     def foo():
         ti.loop_config(block_dim=32)
         for i in range (32):
-            a[i] = ti.simt.warp.ballot(ti.u32(0xFFFFFFFF),i%2)
+            a[i] = ti.simt.warp.ballot(b[i])
     
+    key = 0
+    for i in range(32):
+        b[i] = random.randint(1,100) % 2
+        key += b[i] * pow(2, i)
+
     foo()
     
     for i in range(32):
-        assert a[i] == 2863311530
-    # TODO: this test case may not strong enough
+        assert a[i] == key
 
 @test_utils.test(arch=ti.cuda)
 def test_shfl_i32():

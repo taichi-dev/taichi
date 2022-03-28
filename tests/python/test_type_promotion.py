@@ -17,7 +17,7 @@ def test_log():
             u = ti.log(x[i])
             y[i] = u
 
-    x.from_numpy(np.arange(1, N + 1))
+    x.from_numpy(np.arange(1, N + 1, dtype=np.int32))
 
     func()
 
@@ -36,7 +36,7 @@ def test_exp():
             u = ti.exp(x[i])
             y[i] = u
 
-    x.from_numpy(np.arange(1, N + 1))
+    x.from_numpy(np.arange(1, N + 1, dtype=np.int32))
 
     func()
 
@@ -54,7 +54,7 @@ def test_sqrt():
             u = ti.sqrt(x[i])
             y[i] = u
 
-    x.from_numpy(np.arange(1, N + 1))
+    x.from_numpy(np.arange(1, N + 1, dtype=np.int32))
 
     func()
 

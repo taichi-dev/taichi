@@ -1,4 +1,4 @@
-"""Taichi auto differentiation module.
+"""Taichi automatic differentiation module.
 This module supplies two decorators for users to customize their
 gradient computation task.
 """

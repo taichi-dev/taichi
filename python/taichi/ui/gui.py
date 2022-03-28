@@ -34,6 +34,16 @@ class GUI:
 
     """
     class Event:
+        """Class for holding a gui event.
+
+        An event is represented by:
+
+        + type (PRESS, MOTION, RELEASE)
+        + modifier (modifier keys like ctrl, shift, etc)
+        + pos (mouse position)
+        + key (event key)
+        + delta (for holding mouse wheel)
+        """
         def __init__(self):
             self.type = None
             self.modifier = None
@@ -125,6 +135,8 @@ class GUI:
     # Widget system
 
     class WidgetValue:
+        """Class for maintaining id of gui widgets.
+        """
         def __init__(self, gui, wid):
             self.gui = gui
             self.wid = wid
@@ -702,6 +714,8 @@ class GUI:
     # Event system
 
     class EventFilter:
+        """A set to store detected user events.
+        """
         def __init__(self, *e_filter):
             self.filter = set()
             for ent in e_filter:
@@ -711,6 +725,8 @@ class GUI:
                 self.filter.add(ent)
 
         def match(self, e):
+            """Check if a specified event `e` is among the detected events.
+            """
             if (e.type, e.key) in self.filter:
                 return True
             if e.type in self.filter:

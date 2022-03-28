@@ -211,6 +211,11 @@ class GUI:
         self.canvas.clear(color)
 
     def cook_image(self, img):
+        """Convert an img to range [0, 1] for display.
+        The input image is stored in a `numpy.ndarray`, if it's dtype
+        is `int` it will be rescaled and mapped into range [0, 1]. If
+        the dtype is `float` it will be directly casted to 32-bit float type.
+        """
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float16, np.float32, np.float64]:

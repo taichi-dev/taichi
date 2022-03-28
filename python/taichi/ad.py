@@ -1,3 +1,7 @@
+"""Taichi auto differentiation module.
+This module supplies two decorators for users to customize their
+gradient computation task.
+"""
 from taichi.lang import impl
 
 

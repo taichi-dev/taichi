@@ -481,7 +481,7 @@ class Kernel:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
                 if not ctx.is_real_function:
-                    if self.return_type and not ctx.returned != ReturnStatus.ReturnedValue:
+                    if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                         raise TaichiSyntaxError(
                             "Kernel has a return type but does not have a return statement"
                         )

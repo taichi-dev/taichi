@@ -10,7 +10,8 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
-from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus, ReturnStatus
+from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
+                                                   ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
@@ -551,9 +552,8 @@ class ASTTransformer(Builder):
             elif isinstance(ctx.func.return_type, MatrixType):
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
-                        ti_ops.cast(exp, ctx.func.return_type.dtype)
-                        for exp in itertools.chain.from_iterable(
-                            node.value.ptr.to_list())
+                        ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in
+                        itertools.chain.from_iterable(node.value.ptr.to_list())
                     ]))
             else:
                 raise TaichiSyntaxError(
@@ -1236,7 +1236,8 @@ build_stmt = ASTTransformer()
 def build_stmts(ctx, stmts):
     with ctx.variable_scope_guard():
         for stmt in stmts:
-            if ctx.returned != ReturnStatus.NoReturn or ctx.loop_status() != LoopStatus.Normal:
+            if ctx.returned != ReturnStatus.NoReturn or ctx.loop_status(
+            ) != LoopStatus.Normal:
                 break
             else:
                 build_stmt(ctx, stmt)

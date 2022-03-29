@@ -1354,7 +1354,8 @@ class MatrixField(Field):
         self.dynamic_index_stride = None
 
     def get_scalar_field(self, *indices):
-        """Creates a ScalarField using a specific field member. Only used for quant.
+        """Creates a ScalarField using a specific field member.
+        Only used for quant.
 
         Args:
             indices (Tuple[Int]): Specified indices of the field member.
@@ -1400,10 +1401,11 @@ class MatrixField(Field):
 
     @python_scope
     def fill(self, val):
-        """Fills `self` with specific values.
+        """Fills this matrix field with specified values.
 
         Args:
-            val (Union[Number, List, Tuple, Matrix]): Values to fill, which should have dimension consistent with `self`.
+            val (Union[Number, List, Tuple, Matrix]): Values to fill,
+                should have consistent dimension consistent with `self`.
         """
         if isinstance(val, numbers.Number):
             val = tuple(
@@ -1570,6 +1572,10 @@ class MatrixNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
         layout (Layout): Memory layout.
+
+    Example::
+
+        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
@@ -1649,6 +1655,14 @@ class VectorNdarray(Ndarray):
 
     @property
     def element_shape(self):
+        """Get the dimension of the vector of this ndarray.
+
+        Example::
+
+            >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+            >>> a.element_shape
+            (3,)
+        """
         arr_shape = tuple(self.arr.shape)
         return arr_shape[:1] if self.layout == Layout.SOA else arr_shape[-1:]
 
@@ -1668,10 +1682,33 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
+        """Convert this vector ndarray to a `numpy.ndarray`.
+
+        Example::
+
+            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2), layout=Layout.SOA)
+            >>> a.to_numpy()
+            array([[[0., 0., 0.],
+                    [0., 0., 0.]],
+
+                   [[0., 0., 0.],
+                    [0., 0., 0.]]], dtype=float32)
+        """
         return self._ndarray_matrix_to_numpy(self.layout, as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
+        """Copy the data from a `numpy.ndarray` into this ndarray.
+
+        The shape and data type of `arr` must match this ndarray.
+
+        Example::
+
+            >>> import numpy as np
+            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2), 0)
+            >>> b = np.ones((2, 2, 3), dtype=np.float32)
+            >>> a.from_numpy(b)
+        """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
 
     def __deepcopy__(self, memo=None):

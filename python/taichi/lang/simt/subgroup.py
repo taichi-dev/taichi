@@ -1,5 +1,6 @@
 from taichi._lib import core as _ti_core
 from taichi.lang import expr
+from taichi.types import i32
 
 
 def barrier():
@@ -43,25 +44,29 @@ def broadcast_first(value):
 def group_size():
     return expr.Expr(
         _ti_core.insert_internal_func_call("subgroupSize",
-                                           expr.make_expr_group(), False))
+                                           expr.make_expr_group(), False),
+                                           dtype=i32)
 
 
 def invocation_id():
     return expr.Expr(
         _ti_core.insert_internal_func_call("subgroupInvocationId",
-                                           expr.make_expr_group(), False))
+                                           expr.make_expr_group(), False),
+                                           dtype=i32)
 
 
 def reduce_add(value):
     return expr.Expr(
         _ti_core.insert_internal_func_call("subgroupAdd",
-                                           expr.make_expr_group(value), False))
+                                           expr.make_expr_group(value), False),
+                                           dtype=value.dtype)
 
 
 def reduce_mul(value):
     return expr.Expr(
         _ti_core.insert_internal_func_call("subgroupMul",
-                                           expr.make_expr_group(value), False))
+                                           expr.make_expr_group(value), False),
+                                           dtype=value.dtype)
 
 
 def reduce_min(value):

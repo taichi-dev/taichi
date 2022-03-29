@@ -635,6 +635,7 @@ Value IRBuilder::get_subgroup_invocation_id() {
     this->decorate(spv::OpDecorate, subgroup_local_invocation_id_,
                    spv::DecorationBuiltIn,
                    spv::BuiltInSubgroupLocalInvocationId);
+    global_values.push_back(subgroup_local_invocation_id_);
   }
 
   return this->make_value(spv::OpLoad, t_uint32_,
@@ -650,6 +651,7 @@ Value IRBuilder::get_subgroup_size() {
         .commit(&global_);
     this->decorate(spv::OpDecorate, subgroup_size_, spv::DecorationBuiltIn,
                    spv::BuiltInSubgroupSize);
+    global_values.push_back(subgroup_size_);
   }
 
   return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);

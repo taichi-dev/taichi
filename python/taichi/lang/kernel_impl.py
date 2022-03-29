@@ -794,7 +794,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/lang/articles/basic/syntax#kernels.
+    See also https://docs.taichi.graphics/lang/articles/syntax#kernel.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -843,7 +843,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/lang/articles/advanced/odop
+    See also https://docs.taichi.graphics/lang/articles/odop
 
     Example::
 

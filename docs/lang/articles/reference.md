@@ -241,12 +241,50 @@ The extended form, `assert expression1, expression2`, raises `TaichiAssertionErr
 with `expression2` as the error message.
 
 ### The `pass` statement
+```
+pass_stmt ::=  "pass"
+```
+
+`pass` is a null operation — when it is executed, nothing happens.
+It is useful as a placeholder when a statement is required syntactically, but no code needs to be executed.
 
 ### The `return` statement
+```
+return_stmt ::=  "return" [expression_list]
+```
+
+The return statement may only occur once in a Taichi kernel or a Taichi function,
+and it must be at the bottom of the function body.
+
+If a Taichi kernel or Taichi function has a return type hint,
+it must have a return statement that returns a value other than `None`.
+
+If a Taichi kernel has a return statement that returns a value other than `None`, it must have a return type hint.
+The return type hint for Taichi function is optional but recommended.
+
+A kernel can have at most one return value, which can be a scalar, ti.Matrix, or ti.Vector,
+and the number of elements in the return value does not exceed 30.
+
+A Taichi function can have multiple return values in a return statement,
+and the return values can be scalar, ti.Matrix, ti.Vector, ti.Struct, and more.
 
 ### The `break` statement
+```
+break_stmt ::=  "break"
+```
+
+The break statement may only occur syntactically nested in a for or while loop, and it terminates the nearest enclosing loop.
+
+Break statement is not allowed when the nearest enclosing loop is a parallel range/ndrange for loop,
+a struct for loop, or a mesh for loop.
 
 ### The `continue` statement
+```
+continue_stmt ::=  "continue"
+```
+
+The continue statement may only occur syntactically nested in a for or while loop,
+and it continues with the next cycle of the nearest enclosing loop.
 
 ## Compound statements
 

@@ -38,9 +38,11 @@ class TaichiAssertionError(TaichiRuntimeError, AssertionError):
 
 
 class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
-    def __init__(self, pos, needed, provided):
-        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
-        super().__init__(message)
+    @staticmethod
+    def get(pos, needed, provided):
+        return TaichiRuntimeTypeError(
+            f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        )
 
 
 def handle_exception_from_cpp(exc):

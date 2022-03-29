@@ -559,13 +559,13 @@ class Kernel:
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, int):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
@@ -602,7 +602,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], (int, float)):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_float(
@@ -612,7 +612,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], int):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_int(actual_argument_slot,

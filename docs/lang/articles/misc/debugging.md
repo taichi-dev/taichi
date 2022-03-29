@@ -171,7 +171,7 @@ parallelization-related issues such as data races.
 ## Runtime `assert` in Taichi-scope
 
 Programmers may use `assert` statements in Taichi-scope. When the
-assertion condition fails, a `RuntimeError` will be raised to indicate
+assertion condition fails, a `TaichiAssertionError` will be raised to indicate
 the error.
 
 :::note

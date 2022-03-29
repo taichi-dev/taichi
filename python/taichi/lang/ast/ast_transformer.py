@@ -5,7 +5,6 @@ import warnings
 from collections import ChainMap
 from sys import version_info
 
-import astor
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
@@ -1200,7 +1199,7 @@ class ASTTransformer(Builder):
                 raise ValueError(
                     f"assert info must be constant, not {ast.dump(node.msg)}")
         else:
-            msg = astor.to_source(node.test)
+            msg = unparse(node.test)
         test = build_stmt(ctx, node.test)
         impl.ti_assert(test, msg.strip(), extra_args)
         return None

@@ -223,6 +223,22 @@ is evaluated to the value of that expression.
 #### Annotated assignment statements
 
 ### The `assert` statement
+Assert statements are a convenient way to insert debugging assertions into a program:
+
+```
+assert_stmt ::=  "assert" expression ["," expression]
+```
+
+Assert statements are currently supported on the CPU, CUDA, and Metal backends.
+
+Assert statements only work in debug mode (when `debug=True` is set in the arguments of `ti.init()`),
+otherwise they are equivalent to no-op.
+
+The simple form, `assert expression`, raises `TaichiAssertionError` (which is a subclass of `AssertionError`)
+when `expression` is equal to `False`, with the code of `expression` as the error message.
+
+The extended form, `assert expression1, expression2`, raises `TaichiAssertionError` when `expression1` is equal to `False`,
+with `expression2` as the error message.
 
 ### The `pass` statement
 

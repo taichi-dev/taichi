@@ -17,6 +17,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
+#include "taichi/common/exceptions.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -1013,7 +1014,7 @@ class KernelManager::Impl {
     // As a workaround, we put [didModifyRange:] before sync, where the program
     // is still executing normally.
     // asst_rec->flag = 0;
-    TI_ERROR("Assertion failure: {}", err_str);
+    throw TaichiAssertionError(err_str);
   }
 
   void flush_print_buffers() {

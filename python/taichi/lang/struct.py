@@ -76,8 +76,7 @@ class Struct(TaichiOperations):
 
     @property
     def items(self):
-        """Return the items in this struct in a list
-        of (name, value) pairs.
+        """Return the items in this struct.
 
         Example::
 
@@ -257,6 +256,38 @@ class Struct(TaichiOperations):
               offset=None,
               needs_grad=False,
               layout=Layout.AOS):
+        """Create a :class:`~taichi.StructField` with each element
+        has this struct as its type.
+
+        Args:
+            members (dict): a dict, each item is like `name: type`.
+            shape (Tuple[int]): width and height of the field.
+            offset (Tuple[int]): offset of the indices of the created field.
+                For example if `offset=(-10, -10)` the indices of the field
+                will start at `(-10, -10)`, not `(0, 0)`.
+            needs_grad (bool): enabling gradient field or not.
+            layout: AOS or SOA.
+
+        Example:
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = {"center": vec3, "radius": float}
+            >>> F = ti.Struct.field(sphere, shape=(3, 3))
+            >>> F
+            {'center': array([[[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]]], dtype=float32), 'radius': array([[0., 0., 0.],
+               [0., 0., 0.],
+               [0., 0., 0.]], dtype=float32)}
+        """
 
         if shape is None and offset is not None:
             raise TaichiSyntaxError(

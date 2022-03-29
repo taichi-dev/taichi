@@ -46,8 +46,8 @@ user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
     'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray', 'norm',
     'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product', 'rotation2d',
-    'rows', 'sum', 'to_list', 'to_numpy', 'trace', 'transpose', 'unit', 'w',
-    'x', 'y', 'z', 'zero'
+    'rows', 'solve', 'sum', 'to_list', 'to_numpy', 'trace', 'transpose',
+    'unit', 'w', 'x', 'y', 'z', 'zero'
 ]
 user_api[ti.MatrixField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',

@@ -1200,7 +1200,7 @@ class ASTTransformer(Builder):
                 raise ValueError(
                     f"assert info must be constant, not {ast.dump(node.msg)}")
         else:
-            msg = astor.to_source(node.test)
+            msg = unparse(node.test)
         test = build_stmt(ctx, node.test)
         impl.ti_assert(test, msg.strip(), extra_args)
         return None

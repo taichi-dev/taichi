@@ -505,7 +505,7 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
             return fetch_result<uint64>(taichi_result_buffer_error_id,
                                         result_buffer);
           });
-      TI_ERROR("Assertion failure: {}", error_message_formatted);
+      throw TaichiAssertionError(error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
     }

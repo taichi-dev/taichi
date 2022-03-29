@@ -13,7 +13,8 @@ from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
-                                   TaichiRuntimeTypeError, TaichiSyntaxError)
+                                   TaichiRuntimeTypeError, TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
@@ -647,7 +648,11 @@ class Kernel:
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
-            t_kernel(launch_ctx)
+            try:
+                t_kernel(launch_ctx)
+            except Exception as e:
+                e = handle_exception_from_cpp(e)
+                raise e from None
 
             ret = None
             ret_dt = self.return_type
@@ -772,7 +777,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         def wrapped(*args, **kwargs):
             try:
                 return primal(*args, **kwargs)
-            except TaichiCompilationError as e:
+            except (TaichiCompilationError, TaichiRuntimeError) as e:
                 raise type(e)('\n' + str(e)) from None
 
         wrapped.grad = adjoint

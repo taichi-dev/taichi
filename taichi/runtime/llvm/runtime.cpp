@@ -1040,6 +1040,14 @@ int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
 
+int32 cuda_ballot_i32(int32 predicate) {
+  return cuda_ballot_sync(UINT32_MAX, (bool)predicate);
+}
+
+int32 cuda_ballot_sync_i32(u32 mask, int32 predicate) {
+  return cuda_ballot_sync(mask, (bool)predicate);
+}
+
 i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
   return 0;
 }

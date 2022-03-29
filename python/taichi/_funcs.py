@@ -516,56 +516,80 @@ def sym_eig(A, dt=None):
 
 
 @func
-def forward_elimination(Ab):
+def _swap_row(A, i, j):
+    """Swap two rows of a matrix.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        i (int): row index to be swapped.
+        j (int): row index to be swapped.
+
+    Returns:
+        A (ti.Matrix(n, n)): input nxn matrix `A` after swapping.
+    """
+    irow, jrow, nrow, ncol = static(i, j, A.n, A.m)
+    assert i < nrow and j < nrow, "Index out of bound"
+    for col in static(range(ncol)):
+        A[irow, col], A[jrow, col] = A[jrow, col], A[irow, col]
+    return A
+
+
+@func
+def _forward_elimination(Ab):
+    res = -1
     nrow, ncol = static(Ab.n, Ab.m)
     for i in static(range(nrow)):
         max_row = i
         max_v = ops.abs(Ab[i, i])
-        for j in range(i + 1, nrow):
+        for j in static(range(i + 1, nrow)):
             if ops.abs(Ab[j, i]) > max_v:
                 max_row = j
                 max_v = ops.abs(Ab[j, i])
         if max_v == 0:
-            return i
+            res = i
         if i != max_row:
-            Ab[[i, max_row], :] = Ab[[max_row, i], :]
+            Ab = _swap_row(Ab, i, max_row)
 
-        for j in range(i + 1, nrow):
+        for j in static(range(i + 1, nrow)):
             scale = Ab[j, i] / Ab[i, i]
             Ab[j, i] = 0.0
             for k in range(i + 1, ncol):
                 Ab[j, k] -= Ab[i, k] * scale
-    return -1
+    return res
 
 
 @func
-def gauss_elimination(Ab, dt):
+def _gauss_elimination(Ab, dt):
     nrow, ncol = static(Ab.n, Ab.m)
-    singular_flag = forward_elimination(Ab)
+    singular_flag = _forward_elimination(Ab)
     x = Vector.zeros(dt, nrow)
     if singular_flag != -1:
         return x
-    # TODO: more clearly error messages
-    # if singular_flag != -1:
-    #     print("Singular Matrix.")
-    #     if Ab[singular_flag][ncol-1]:
-    #         print("This is an inconsistent System.")
-    #     else:
-    #         print("The linear system has infinitely many solutions")
-
-    # back substitution
-    for i in reversed(range(nrow)):
-        x[i] = Ab[i][ncol - 1]
-        for j in range(i + 1, nrow):
-            x[i] -= Ab[i][j] * x[j]
-        x[i] = x[i] / Ab[i][i]
+    assert singular_flag != -1, "Matrix is singular"
+    # Back substitution
+    for i in static(range(nrow)):
+        j = nrow - i - 1
+        x[j] = Ab[j][ncol - 1]
+        for k in static(range(i + 1, nrow)):
+            x[j] -= Ab[j][k] * x[k]
+        x[j] = x[j] / Ab[j][j]
     return x
 
 
 def _matrix_solve(A, b, dt=None):
+    """Solve a matrix using Gauss elimination method.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        b (ti.Vector(n, 1)): input nx1 vector `b`.
+        dt (DataType): The datatype for the `A` and `b`.
+        
+    Returns:
+        x (ti.Vector(n, 1)): the solution of Ax=b.
+    """
     assert A.n == A.m, "Only sqaure matrix is supported"
-    assert A.n < 4, "Only 2D and 3D matrices are supported"
-    assert A.m == b.n, "Dimension dismatch"
+    assert A.n >= 2 and A.n <= 3, "Only 2D and 3D matrices are supported"
+    assert A.m == b.n, "Matrix and Vector dimension dismatch"
     if dt is None:
         dt = impl.get_runtime().default_fp
     nrow, ncol = static(A.n, A.n + 1)
@@ -578,7 +602,7 @@ def _matrix_solve(A, b, dt=None):
     for i in range(nrow):
         Ab(i, nrow)._assign(rhs[i])
 
-    return gauss_elimination(Ab, dt)
+    return _gauss_elimination(Ab, dt)
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']

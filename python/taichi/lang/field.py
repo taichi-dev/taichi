@@ -231,11 +231,15 @@ class ScalarField(Field):
 
     @python_scope
     def fill(self, val):
+        """Fill this scalar field with a specified value.
+        """
         from taichi._kernels import fill_tensor  # pylint: disable=C0415
         fill_tensor(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
+        """Convert this field to a `numpy.ndarray`.
+        """
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415
@@ -247,6 +251,8 @@ class ScalarField(Field):
 
     @python_scope
     def to_torch(self, device=None):
+        """Convert this field to a `torch.tensor`.
+        """
         import torch  # pylint: disable=C0415
 
         # pylint: disable=E1101
@@ -260,6 +266,8 @@ class ScalarField(Field):
 
     @python_scope
     def from_numpy(self, arr):
+        """Copy the data from a `numpy.ndarray` into this field.
+        """
         if len(self.shape) != len(arr.shape):
             raise ValueError(f"ti.field shape {self.shape} does not match"
                              f" the numpy array shape {arr.shape}")

@@ -121,7 +121,7 @@ are also categorized syntactically as atoms.
 
 ```
 atom      ::= identifier | literal | enclosure
-enclosure ::= parenth_form | list_display | dict_display | set_display
+enclosure ::= parenth_form | list_display | dict_display
 ```
 
 #### Identifiers (Names)
@@ -152,11 +152,17 @@ Literals are evaluated to Python values at compile time.
 
 #### Parenthesized forms
 
-#### Displays for lists, sets and dictionaries
+```
+parenth_form ::= "(" [expression_list] ")"
+```
+
+A parenthesized expression list is evaluated to whatever the expression list is
+evaluated to. An empty pair of parentheses is evaluated to an empty tuple at
+compile time.
+
+#### Displays for lists and dictionaries
 
 #### List displays
-
-#### Set displays
 
 #### Dictionary displays
 
@@ -193,6 +199,18 @@ Literals are evaluated to Python values at compile time.
 ### Conditional expressions
 
 ### Expression lists
+
+```
+expression_list ::= expression ("," expression)* [","]
+```
+
+Except when part of a list display, an expression list containing at least one
+comma is evaluated to a tuple at compile time. The component expressions are
+evaluated from left to right.
+
+The trailing comma is required only to create a tuple with length 1; it is
+optional in all other cases. A single expression without a trailing comma
+is evaluated to the value of that expression.
 
 ## Simple statements
 

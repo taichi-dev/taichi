@@ -917,8 +917,9 @@ class TaskCodegen : public IRVisitor {
     ir_->register_value(tri->raw_name(), tri_val);
   }
 
-  inline bool ends_with(std::string const & value, std::string const & ending) {
-    if (ending.size() > value.size()) return false;
+  inline bool ends_with(std::string const &value, std::string const &ending) {
+    if (ending.size() > value.size())
+      return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
   }
 
@@ -930,8 +931,9 @@ class TaskCodegen : public IRVisitor {
         "subgroupAnd", "subgroupOr",  "subgroupXor"};
 
     const std::unordered_set<std::string> inclusive_scan_ops{
-        "subgroupInclusiveAdd", "subgroupInclusiveMul", "subgroupInclusiveMin", "subgroupInclusiveMax",
-        "subgroupInclusiveAnd", "subgroupInclusiveOr",  "subgroupInclusiveXor"};
+        "subgroupInclusiveAdd", "subgroupInclusiveMul", "subgroupInclusiveMin",
+        "subgroupInclusiveMax", "subgroupInclusiveAnd", "subgroupInclusiveOr",
+        "subgroupInclusiveXor"};
 
     if (stmt->func_name == "subgroupElect") {
       val = ir_->make_value(
@@ -939,22 +941,25 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
       val = ir_->cast(ir_->i32_type(), val);
     } else if (stmt->func_name == "subgroupBarrier") {
-      ir_->make_inst(spv::OpControlBarrier,
-        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
-        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
-        ir_->const_i32_zero_);
+      ir_->make_inst(
+          spv::OpControlBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->const_i32_zero_);
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "subgroupMemoryBarrier") {
-      ir_->make_inst(spv::OpMemoryBarrier,
-        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
-        ir_->const_i32_zero_);
+      ir_->make_inst(
+          spv::OpMemoryBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->const_i32_zero_);
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "subgroupSize") {
       val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_size());
     } else if (stmt->func_name == "subgroupInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_invocation_id());
     } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end() ||
-        inclusive_scan_ops.find(stmt->func_name) != inclusive_scan_ops.end()) {
+               inclusive_scan_ops.find(stmt->func_name) !=
+                   inclusive_scan_ops.end()) {
       auto arg = ir_->query_value(stmt->args[0]->raw_name());
       auto stype = ir_->get_primitive_type(stmt->args[0]->ret_type);
       spv::Op spv_op;
@@ -1003,7 +1008,8 @@ class TaskCodegen : public IRVisitor {
 
       if (reduction_ops.find(stmt->func_name) != reduction_ops.end()) {
         group_op = spv::GroupOperationReduce;
-      } else if (inclusive_scan_ops.find(stmt->func_name) != inclusive_scan_ops.end()) {
+      } else if (inclusive_scan_ops.find(stmt->func_name) !=
+                 inclusive_scan_ops.end()) {
         group_op = spv::GroupOperationInclusiveScan;
       }
 

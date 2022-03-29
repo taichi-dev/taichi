@@ -644,19 +644,15 @@ Value IRBuilder::get_subgroup_invocation_id() {
 Value IRBuilder::get_subgroup_size() {
   if (subgroup_size_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
-    subgroup_size_ =
-        new_value(ptr_type, ValueKind::kVariablePtr);
+    subgroup_size_ = new_value(ptr_type, ValueKind::kVariablePtr);
     ib_.begin(spv::OpVariable)
-        .add_seq(ptr_type, subgroup_size_,
-                 spv::StorageClassInput)
+        .add_seq(ptr_type, subgroup_size_, spv::StorageClassInput)
         .commit(&global_);
-    this->decorate(spv::OpDecorate, subgroup_size_,
-                   spv::DecorationBuiltIn,
+    this->decorate(spv::OpDecorate, subgroup_size_, spv::DecorationBuiltIn,
                    spv::BuiltInSubgroupSize);
   }
 
-  return this->make_value(spv::OpLoad, t_uint32_,
-                          subgroup_size_);
+  return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);
 }
 
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \

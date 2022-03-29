@@ -368,6 +368,16 @@ class StructField(Field):
 
     @property
     def keys(self):
+        """Return the list of names of the field members.
+
+        Example::
+
+            >>> f1 = ti.Vector.field(3, ti.f32, shape=(3, 3))
+            >>> f2 = ti.field(ti.f32, shape=(3, 3))
+            >>> F = ti.StructField({"center": f1, "radius": f2})
+            >>> F.keys
+            ['center', 'radius']
+        """
         return list(self.field_dict.keys())
 
     @property
@@ -448,7 +458,7 @@ class StructField(Field):
 
     @python_scope
     def fill(self, val):
-        """Fills `self` with a specific value.
+        """Fills this struct field with a specified value.
 
         Args:
             val (Union[int, float]): Value to fill.
@@ -473,20 +483,29 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
+        """Copy the data from a set of `numpy.array` into this field.
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
         for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
+        """Copy the data from a set of `torch.tensor` into this field.
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
         for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
     def to_numpy(self):
-        """Converts the Struct field instance to a dictionary of NumPy arrays. The dictionary may be nested when converting
-           nested structs.
+        """Converts the Struct field instance to a dictionary of NumPy arrays.
+        The dictionary may be nested when converting nested structs.
 
-        Args:
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
@@ -494,13 +513,16 @@ class StructField(Field):
 
     @python_scope
     def to_torch(self, device=None):
-        """Converts the Struct field instance to a dictionary of PyTorch tensors. The dictionary may be nested when converting
-           nested structs.
+        """Converts the Struct field instance to a dictionary of PyTorch tensors.
+        The dictionary may be nested when converting nested structs.
 
         Args:
-            device (torch.device, optional): The desired device of returned tensor.
+            device (torch.device, optional): The
+                desired device of returned tensor.
+
         Returns:
-            Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
+            Dict[str, Union[torch.Tensor, Dict]]: The result
+                PyTorch tensor.
         """
         return {k: v.to_torch(device=device) for k, v in self._items}
 

@@ -87,12 +87,6 @@ class LoopScopeAttribute:
         self.status = LoopStatus.Normal
 
 
-class ReturnStatus(Enum):
-    NoReturn = 0
-    ReturnedVoid = 1
-    ReturnedValue = 2
-
-
 class LoopScopeGuard:
     def __init__(self, scopes, non_static_guard=None):
         self.scopes = scopes
@@ -107,6 +101,12 @@ class LoopScopeGuard:
         self.scopes.pop()
         if self.non_static_guard:
             self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
+
+
+class ReturnStatus(Enum):
+    NoReturn = 0
+    ReturnedVoid = 1
+    ReturnedValue = 2
 
 
 class ASTTransformerContext:

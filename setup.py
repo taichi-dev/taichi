@@ -273,7 +273,7 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'astor',
+          'numpy', 'sourceinspect>=0.0.4', 'colorama',
           'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],

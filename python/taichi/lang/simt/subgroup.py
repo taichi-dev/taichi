@@ -3,13 +3,15 @@ from taichi.lang import expr
 
 
 def barrier():
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupBarrier",
+                                           expr.make_expr_group(), False))
 
 
 def memory_barrier():
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupMemoryBarrier",
+                                           expr.make_expr_group(), False))
 
 
 def elect():
@@ -36,6 +38,18 @@ def all_equal(value):
 def broadcast_first(value):
     # TODO
     pass
+
+
+def group_size():
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupSize",
+                                           expr.make_expr_group(), False))
+
+
+def invocation_id():
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInvocationId",
+                                           expr.make_expr_group(), False))
 
 
 def reduce_add(value):
@@ -81,38 +95,45 @@ def reduce_xor(value):
 
 
 def inclusive_add(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveAdd",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_mul(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveMul",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_min(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveMin",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_max(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveMax",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_and(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveAnd",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_or(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveOr",
+                                           expr.make_expr_group(value), False))
 
 
 def inclusive_xor(value):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupInclusiveXor",
+                                           expr.make_expr_group(value), False))
 
 
 def exclusive_add(value):

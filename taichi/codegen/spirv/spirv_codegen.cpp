@@ -917,6 +917,11 @@ class TaskCodegen : public IRVisitor {
     ir_->register_value(tri->raw_name(), tri_val);
   }
 
+  inline bool ends_with(std::string const & value, std::string const & ending) {
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+  }
+
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
 
@@ -924,29 +929,49 @@ class TaskCodegen : public IRVisitor {
         "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
         "subgroupAnd", "subgroupOr",  "subgroupXor"};
 
+    const std::unordered_set<std::string> inclusive_scan_ops{
+        "subgroupInclusiveAdd", "subgroupInclusiveMul", "subgroupInclusiveMin", "subgroupInclusiveMax",
+        "subgroupInclusiveAnd", "subgroupInclusiveOr",  "subgroupInclusiveXor"};
+
     if (stmt->func_name == "subgroupElect") {
       val = ir_->make_value(
           spv::OpGroupNonUniformElect, ir_->bool_type(),
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
       val = ir_->cast(ir_->i32_type(), val);
-    } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end()) {
+    } else if (stmt->func_name == "subgroupBarrier") {
+      ir_->make_inst(spv::OpControlBarrier,
+        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+        ir_->const_i32_zero_);
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "subgroupMemoryBarrier") {
+      ir_->make_inst(spv::OpMemoryBarrier,
+        ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+        ir_->const_i32_zero_);
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "subgroupSize") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_size());
+    } else if (stmt->func_name == "subgroupInvocationId") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_invocation_id());
+    } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end() ||
+        inclusive_scan_ops.find(stmt->func_name) != inclusive_scan_ops.end()) {
       auto arg = ir_->query_value(stmt->args[0]->raw_name());
       auto stype = ir_->get_primitive_type(stmt->args[0]->ret_type);
       spv::Op spv_op;
 
-      if (stmt->func_name == "subgroupAdd") {
+      if (ends_with(stmt->func_name, "Add")) {
         if (is_integral(stmt->args[0]->ret_type)) {
           spv_op = spv::OpGroupNonUniformIAdd;
         } else {
           spv_op = spv::OpGroupNonUniformFAdd;
         }
-      } else if (stmt->func_name == "subgroupMul") {
+      } else if (ends_with(stmt->func_name, "Mul")) {
         if (is_integral(stmt->args[0]->ret_type)) {
           spv_op = spv::OpGroupNonUniformIMul;
         } else {
           spv_op = spv::OpGroupNonUniformFMul;
         }
-      } else if (stmt->func_name == "subgroupMin") {
+      } else if (ends_with(stmt->func_name, "Min")) {
         if (is_integral(stmt->args[0]->ret_type)) {
           if (is_signed(stmt->args[0]->ret_type)) {
             spv_op = spv::OpGroupNonUniformSMin;
@@ -956,7 +981,7 @@ class TaskCodegen : public IRVisitor {
         } else {
           spv_op = spv::OpGroupNonUniformFMin;
         }
-      } else if (stmt->func_name == "subgroupMax") {
+      } else if (ends_with(stmt->func_name, "Max")) {
         if (is_integral(stmt->args[0]->ret_type)) {
           if (is_signed(stmt->args[0]->ret_type)) {
             spv_op = spv::OpGroupNonUniformSMax;
@@ -966,18 +991,26 @@ class TaskCodegen : public IRVisitor {
         } else {
           spv_op = spv::OpGroupNonUniformFMax;
         }
-      } else if (stmt->func_name == "subgroupAnd") {
+      } else if (ends_with(stmt->func_name, "And")) {
         spv_op = spv::OpGroupNonUniformBitwiseAnd;
-      } else if (stmt->func_name == "subgroupOr") {
+      } else if (ends_with(stmt->func_name, "Or")) {
         spv_op = spv::OpGroupNonUniformBitwiseOr;
-      } else if (stmt->func_name == "subgroupXor") {
+      } else if (ends_with(stmt->func_name, "Xor")) {
         spv_op = spv::OpGroupNonUniformBitwiseXor;
+      }
+
+      spv::GroupOperation group_op;
+
+      if (reduction_ops.find(stmt->func_name) != reduction_ops.end()) {
+        group_op = spv::GroupOperationReduce;
+      } else if (inclusive_scan_ops.find(stmt->func_name) != inclusive_scan_ops.end()) {
+        group_op = spv::GroupOperationInclusiveScan;
       }
 
       val = ir_->make_value(
           spv_op, stype,
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
-          spv::GroupOperationReduce, arg);
+          group_op, arg);
     }
     ir_->register_value(stmt->raw_name(), val);
   }

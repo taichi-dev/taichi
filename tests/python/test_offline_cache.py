@@ -8,7 +8,7 @@ from genericpath import exists
 import taichi as ti
 from tests import test_utils
 
-supported_archs_offline_cache = [ti.cpu]
+supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
     if v in test_utils.expected_archs()
@@ -17,7 +17,6 @@ tmp_offline_cache_file_path = './_temp_ticache'
 ext_init_options = {
     'offline_cache': True,
     'offline_cache_file_path': tmp_offline_cache_file_path,
-    'print_preprocessed_ir': True
 }
 cache_files_num_per_kernel = 2
 

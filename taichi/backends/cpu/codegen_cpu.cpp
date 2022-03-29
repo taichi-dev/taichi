@@ -16,9 +16,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir, bool needs_cache)
-      : CodeGenLLVM(kernel, ir, nullptr, needs_cache) {
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
+      : CodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
+  }
+
+  bool supports_offline_cache() const override {
+    return true;
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
@@ -195,7 +199,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCPU(kernel, ir, needs_cache_).gen();
+  return CodeGenLLVMCPU(kernel, ir).gen();
 }
 
 TLANG_NAMESPACE_END

@@ -515,7 +515,6 @@ def sym_eig(A, dt=None):
     raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
-
 @func
 def _forward_elimination(Ab):
     res = -1
@@ -544,22 +543,21 @@ def _forward_elimination(Ab):
             Ab[j, i] = 0.0
             for k in static(range(i + 1, ncol)):
                 Ab[j, k] -= Ab[i, k] * scale
-    return res
+    return res, Ab
 
 
 @func
 def _gauss_elimination(Ab, dt):
     nrow, ncol = static(Ab.n, Ab.m)
-    singular_flag = _forward_elimination(Ab)
+    singular_flag, Ab = _forward_elimination(Ab)
     x = Vector.zero(dt, nrow)
-    assert singular_flag != -1, "Matrix is singular"
+    assert singular_flag != -1, "Matrix is singular."
     # Back substitution
-    for i in static(range(nrow)):
-        j = nrow - i - 1
-        x[j] = Ab[j][ncol - 1]
+    for i in static(range(nrow - 1, -1, -1)):
+        x[i] = Ab[i, nrow]
         for k in static(range(i + 1, nrow)):
-            x[j] -= Ab[j][k] * x[k]
-        x[j] = x[j] / Ab[j][j]
+            x[i] -= Ab[i, k] * x[k]
+        x[i] = x[i] / Ab[i, i]
     return x
 
 

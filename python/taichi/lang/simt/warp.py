@@ -19,9 +19,9 @@ def unique():
 
 def ballot(predicate):
     return expr.Expr(
-        _ti_core.insert_internal_func_call(
-            "cuda_ballot_i32",
-            expr.make_expr_group(predicate), False))
+        _ti_core.insert_internal_func_call("cuda_ballot_i32",
+                                           expr.make_expr_group(predicate),
+                                           False))
 
 
 def shfl_i32(mask, val, offset):
@@ -30,6 +30,8 @@ def shfl_i32(mask, val, offset):
 
 
 def shfl_down_i32(mask, val, offset):
+    # Here we use 31 as the last argument since 32 (warp size) does not work
+    # for some reason. Using 31 leads to the desired behavior.
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_down_sync_i32",
@@ -37,8 +39,17 @@ def shfl_down_i32(mask, val, offset):
 
 
 def shfl_up_i32(mask, val, offset):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_up_sync_i32",
+            expr.make_expr_group(mask, val, offset, 32), False))
+
+
+def shfl_up_f32(mask, val, offset):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_up_sync_f32",
+            expr.make_expr_group(mask, val, offset, 32), False))
 
 
 def shfl_xor_i32(mask, val, offset):

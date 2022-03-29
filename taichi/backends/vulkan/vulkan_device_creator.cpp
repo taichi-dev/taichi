@@ -590,8 +590,9 @@ void VulkanDeviceCreator::create_logical_device() {
     VkPhysicalDeviceFeatures2KHR features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-#define CHECK_EXTENSION(ext)                                              \
-  std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
+#define CHECK_EXTENSION(ext)                                          \
+  std::find_if(enabled_extensions.begin(), enabled_extensions.end(),  \
+               [=](const char *o) { return strcmp(ext, o) == 0; }) != \
       enabled_extensions.end()
 
 #define CHECK_VERSION(major, minor)        \

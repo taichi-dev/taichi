@@ -17,7 +17,7 @@ def test_cpu_debug_snode_reader():
 def test_cpu_debug_snode_writer_out_of_bound():
     x = ti.field(ti.f32, shape=3)
 
-    with pytest.raises(ti.TaichiAssertionError):
+    with pytest.raises(AssertionError):
         x[3] = 10.0
 
 

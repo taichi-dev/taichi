@@ -515,24 +515,6 @@ def sym_eig(A, dt=None):
     raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
-@func
-def _swap_row(A, i, j):
-    """Swap two rows of a matrix.
-
-    Args:
-        A (ti.Matrix(n, n)): input nxn matrix `A`.
-        i (int): row index to be swapped.
-        j (int): row index to be swapped.
-
-    Returns:
-        A (ti.Matrix(n, n)): input nxn matrix `A` after swapping.
-    """
-    irow, jrow, nrow, ncol = static(i, j, A.n, A.m)
-    assert i < nrow and j < nrow, "Index out of bound"
-    for col in static(range(ncol)):
-        A[irow, col], A[jrow, col] = A[jrow, col], A[irow, col]
-    return A
-
 
 @func
 def _forward_elimination(Ab):
@@ -548,12 +530,19 @@ def _forward_elimination(Ab):
         if max_v == 0:
             res = i
         if i != max_row:
-            Ab = _swap_row(Ab, i, max_row)
-
+            if max_row == 0:
+                for col in static(range(ncol)):
+                    Ab[i, col], Ab[0, col] = Ab[0, col], Ab[i, col]
+            elif max_row == 1:
+                for col in static(range(ncol)):
+                    Ab[i, col], Ab[1, col] = Ab[1, col], Ab[i, col]
+            else:
+                for col in static(range(ncol)):
+                    Ab[i, col], Ab[2, col] = Ab[2, col], Ab[i, col]
         for j in static(range(i + 1, nrow)):
             scale = Ab[j, i] / Ab[i, i]
             Ab[j, i] = 0.0
-            for k in range(i + 1, ncol):
+            for k in static(range(i + 1, ncol)):
                 Ab[j, k] -= Ab[i, k] * scale
     return res
 
@@ -562,9 +551,7 @@ def _forward_elimination(Ab):
 def _gauss_elimination(Ab, dt):
     nrow, ncol = static(Ab.n, Ab.m)
     singular_flag = _forward_elimination(Ab)
-    x = Vector.zeros(dt, nrow)
-    if singular_flag != -1:
-        return x
+    x = Vector.zero(dt, nrow)
     assert singular_flag != -1, "Matrix is singular"
     # Back substitution
     for i in static(range(nrow)):

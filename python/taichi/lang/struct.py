@@ -59,6 +59,15 @@ class Struct(TaichiOperations):
 
     @property
     def keys(self):
+        """Return the list of member names in string format.
+
+        Example::
+
+           >>> vec3 = ti.types.vector(3, ti.f32)
+           >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+           >>> a.keys
+           ['center', 'radius']
+        """
         return list(self.entries.keys())
 
     @property
@@ -67,6 +76,16 @@ class Struct(TaichiOperations):
 
     @property
     def items(self):
+        """Return the items in this struct in a list
+        of (name, value) pairs.
+
+        Example::
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+            >>> sphere.items
+            dict_items([('center', 2), ('radius', 1.0)])
+        """
         return self.entries.items()
 
     def _register_members(self):

@@ -548,7 +548,7 @@ def _forward_elimination(Ab):
 
 @func
 def _gauss_elimination(Ab, dt):
-    nrow, ncol = static(Ab.n, Ab.m)
+    nrow = static(Ab.n)
     singular_flag, Ab = _forward_elimination(Ab)
     x = Vector.zero(dt, nrow)
     assert singular_flag != -1, "Matrix is singular."

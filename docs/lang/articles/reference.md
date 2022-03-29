@@ -153,7 +153,7 @@ Literals are evaluated to Python values at compile time.
 #### Parenthesized forms
 
 ```
-parenth_form ::=  "(" [expression_list] ")"
+parenth_form ::= "(" [expression_list] ")"
 ```
 
 A parenthesized expression list is evaluated to whatever the expression list is

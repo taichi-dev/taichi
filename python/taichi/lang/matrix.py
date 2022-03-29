@@ -254,7 +254,7 @@ class Matrix(TaichiOperations):
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
-                    'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
+                    'See https://docs.taichi.graphics/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
                     'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
                 )
         assert 0 <= args[0] < self.n, \

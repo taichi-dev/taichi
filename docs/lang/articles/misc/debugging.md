@@ -205,7 +205,7 @@ ti.static_assert(cond, msg=None)
 Like `ti.static_print`, Taichi also provides a static version of `assert`:
 `ti.static_assert`. It can be useful to make assertions on data types,
 dimensionality, and shapes. It works whether `debug=True` is specified
-or not. When an assertion fails, it will raise an `TaichiAssertionError`, just
+or not. When an assertion fails, it will raise an `AssertionError`, just
 like a Python-scope `assert`.
 
 For example:

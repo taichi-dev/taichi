@@ -1475,6 +1475,8 @@ class MatrixField(Field):
 
     @python_scope
     def from_numpy(self, arr):
+        """Copy an `numpy.ndarray` into this field.
+        """
         if len(arr.shape) == len(self.shape) + 1:
             as_vector = True
             assert self.m == 1, "This is not a vector field"
@@ -1579,6 +1581,8 @@ class MatrixNdarray(Ndarray):
 
     @property
     def element_shape(self):
+        """Return the shape of each element (a 2D matrix) in this ndarray.
+        """
         arr_shape = tuple(self.arr.shape)
         return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
 
@@ -1602,10 +1606,14 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
+        """Convert this ndarray to a `numpy.ndarray`.
+        """
         return self._ndarray_matrix_to_numpy(self.layout, as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
+        """Copy the data of a `numpy.ndarray` into this array.
+        """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
     def __deepcopy__(self, memo=None):

@@ -468,7 +468,7 @@ class Matrix(TaichiOperations):
         """Return this matrix as a 1D `list`.
 
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
-        but this function always returns a new list.
+        the difference is that this function always returns a new list.
         """
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
@@ -1478,6 +1478,12 @@ class MatrixField(Field):
     @python_scope
     def from_numpy(self, arr):
         """Copy an `numpy.ndarray` into this field.
+
+        Example::
+
+            >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
+            >>> arr = numpp.ones((3, 3, 2, 2))
+            >>> m.from_numpy(arr)
         """
         if len(arr.shape) == len(self.shape) + 1:
             as_vector = True
@@ -1575,7 +1581,7 @@ class MatrixNdarray(Ndarray):
 
     Example::
 
-        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+        >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
@@ -1588,6 +1594,12 @@ class MatrixNdarray(Ndarray):
     @property
     def element_shape(self):
         """Return the shape of each element (a 2D matrix) in this ndarray.
+
+        Example::
+
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
+            >>> arr.element_shape
+            (2, 2)
         """
         arr_shape = tuple(self.arr.shape)
         return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
@@ -1613,12 +1625,28 @@ class MatrixNdarray(Ndarray):
     @python_scope
     def to_numpy(self):
         """Convert this ndarray to a `numpy.ndarray`.
+
+        Example::
+
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1), layout=Layout.SOA)
+            >>> arr.to_numpy()
+            [[[[0. 0.]
+               [0. 0.]]]
+
+             [[[0. 0.]
+               [0. 0.]]]]
         """
         return self._ndarray_matrix_to_numpy(self.layout, as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
         """Copy the data of a `numpy.ndarray` into this array.
+
+        Example::
+
+            >>> m = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1), layout=0)
+            >>> arr = np.ones((2, 1, 2, 2))
+            >>> m.from_numpy(arr)
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
@@ -1645,6 +1673,10 @@ class VectorNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
         layout (Layout): Memory layout.
+
+    Example::
+
+        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout

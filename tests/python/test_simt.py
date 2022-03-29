@@ -1,8 +1,10 @@
+import random
+
 from pytest import approx
 
 import taichi as ti
 from tests import test_utils
-import random
+
 
 @test_utils.test(arch=ti.cuda)
 def test_all_nonzero():

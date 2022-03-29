@@ -568,7 +568,7 @@ def _matrix_solve(A, b, dt=None):
         A (ti.Matrix(n, n)): input nxn matrix `A`.
         b (ti.Vector(n, 1)): input nx1 vector `b`.
         dt (DataType): The datatype for the `A` and `b`.
-        
+
     Returns:
         x (ti.Vector(n, 1)): the solution of Ax=b.
     """

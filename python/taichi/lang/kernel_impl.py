@@ -11,6 +11,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
+from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError)
@@ -191,7 +192,7 @@ class Func:
             is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
         if not self.is_real_function:
-            if self.return_type and not ctx.returned:
+            if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                 raise TaichiSyntaxError(
                     "Function has a return type but does not have a return statement"
                 )
@@ -480,7 +481,7 @@ class Kernel:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
                 if not ctx.is_real_function:
-                    if self.return_type and not ctx.returned:
+                    if self.return_type and not ctx.returned != ReturnStatus.ReturnedValue:
                         raise TaichiSyntaxError(
                             "Kernel has a return type but does not have a return statement"
                         )

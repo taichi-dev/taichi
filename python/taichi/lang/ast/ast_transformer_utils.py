@@ -87,6 +87,12 @@ class LoopScopeAttribute:
         self.status = LoopStatus.Normal
 
 
+class ReturnStatus(Enum):
+    NoReturn = 0
+    ReturnedVoid = 1
+    ReturnedValue = 2
+
+
 class LoopScopeGuard:
     def __init__(self, scopes, non_static_guard=None):
         self.scopes = scopes
@@ -138,7 +144,7 @@ class ASTTransformerContext:
         self.raised = False
         self.non_static_control_flow_status = NonStaticControlFlowStatus()
         self.static_scope_status = StaticScopeStatus()
-        self.returned = False
+        self.returned = ReturnStatus.NoReturn
         self.ast_builder = ast_builder
         self.visited_funcdef = False
         self.is_real_function = is_real_function

@@ -282,11 +282,9 @@ class ArgLoadExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class RandExpression : public Expression {
@@ -298,11 +296,9 @@ class RandExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << fmt::format("rand<{}>()", data_type_name(dt));
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class UnaryOpExpression : public Expression {
@@ -324,9 +320,9 @@ class UnaryOpExpression : public Expression {
 
   bool is_cast() const;
 
-  void serialize(std::ostream &ss) override;
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class BinaryOpExpression : public Expression {
@@ -340,17 +336,9 @@ class BinaryOpExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << '(';
-    lhs->serialize(ss);
-    ss << ' ';
-    ss << binary_op_type_symbol(type);
-    ss << ' ';
-    rhs->serialize(ss);
-    ss << ')';
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class TernaryOpExpression : public Expression {
@@ -370,17 +358,9 @@ class TernaryOpExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << ternary_type_name(type) << '(';
-    op1->serialize(ss);
-    ss << ' ';
-    op2->serialize(ss);
-    ss << ' ';
-    op3->serialize(ss);
-    ss << ')';
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class InternalFuncCallExpression : public Expression {
@@ -400,22 +380,9 @@ class InternalFuncCallExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << "internal call " << func_name << '(';
-    if (with_runtime_context) {
-      ss << "runtime, ";
-    }
-    std::string args_str;
-    for (int i = 0; i < args.size(); i++) {
-      if (i != 0) {
-        ss << ", ";
-      }
-      args[i]->serialize(ss);
-    }
-    ss << ')';
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 // TODO: Make this a non-expr
@@ -450,12 +417,9 @@ class ExternalTensorExpression : public Expression {
   void type_check(CompileConfig *config) override {
   }
 
-  void serialize(std::ostream &ss) override {
-    ss << fmt::format("{}d_ext_arr (element_dim={}, dt={})", dim, element_dim,
-                      dt->to_string());
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 // TODO: Make this a non-expr
@@ -486,15 +450,9 @@ class GlobalVariableExpression : public Expression {
     set_attribute("dim", std::to_string(snode->num_active_indices));
   }
 
-  void serialize(std::ostream &ss) override {
-    ss << "#" << ident.name();
-    if (snode)
-      ss << fmt::format(" (snode={})", snode->get_node_type_name_hinted());
-    else
-      ss << fmt::format(" (dt={})", dt->to_string());
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class GlobalPtrExpression : public Expression {
@@ -513,13 +471,13 @@ class GlobalPtrExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override;
-
   void flatten(FlattenContext *ctx) override;
 
   bool is_lvalue() const override {
     return true;
   }
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class TensorElementExpression : public Expression {
@@ -543,29 +501,13 @@ class TensorElementExpression : public Expression {
 
   bool is_global_tensor() const;
 
-  void serialize(std::ostream &ss) override {
-    var.serialize(ss);
-    ss << '[';
-    for (int i = 0; i < (int)indices.size(); i++) {
-      indices.exprs[i]->serialize(ss);
-      if (i + 1 < (int)indices.size())
-        ss << ", ";
-    }
-    ss << "] (";
-    for (int i = 0; i < (int)shape.size(); i++) {
-      ss << std::to_string(shape[i]);
-      if (i + 1 < (int)shape.size())
-        ss << ", ";
-    }
-    ss << ", stride = " + std::to_string(stride);
-    ss << ')';
-  }
-
   void flatten(FlattenContext *ctx) override;
 
   bool is_lvalue() const override {
     return true;
   }
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class RangeAssumptionExpression : public Expression {
@@ -582,18 +524,9 @@ class RangeAssumptionExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << "assume_in_range({";
-    base.serialize(ss);
-    ss << fmt::format("{:+d}", low);
-    ss << " <= (";
-    input.serialize(ss);
-    ss << ")  < ";
-    base.serialize(ss);
-    ss << fmt::format("{:+d})", high);
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class LoopUniqueExpression : public Expression {
@@ -607,9 +540,9 @@ class LoopUniqueExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override;
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class IdExpression : public Expression {
@@ -622,10 +555,6 @@ class IdExpression : public Expression {
   void type_check(CompileConfig *config) override {
   }
 
-  void serialize(std::ostream &ss) override {
-    ss << id.name();
-  }
-
   void flatten(FlattenContext *ctx) override;
 
   Stmt *flatten_noload(FlattenContext *ctx) {
@@ -635,6 +564,8 @@ class IdExpression : public Expression {
   bool is_lvalue() const override {
     return true;
   }
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 // ti.atomic_*() is an expression with side effect.
@@ -649,9 +580,9 @@ class AtomicOpExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override;
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class SNodeOpExpression : public Expression {
@@ -674,9 +605,9 @@ class SNodeOpExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override;
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class ConstExpression : public Expression {
@@ -694,23 +625,15 @@ class ConstExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << val.stringify();
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class ExternalTensorShapeAlongAxisExpression : public Expression {
  public:
   Expr ptr;
   int axis;
-
-  void serialize(std::ostream &ss) override {
-    ss << "external_tensor_shape_along_axis(";
-    ptr->serialize(ss);
-    ss << ", " << axis << ')';
-  }
 
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
@@ -719,6 +642,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   void type_check(CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class FuncCallExpression : public Expression {
@@ -728,13 +653,13 @@ class FuncCallExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override;
-
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
   }
 
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 // Mesh related.
@@ -746,11 +671,9 @@ class MeshPatchIndexExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << fmt::format("mesh_patch_idx()");
-  }
-
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class MeshRelationAccessExpression : public Expression {
@@ -761,20 +684,6 @@ class MeshRelationAccessExpression : public Expression {
   Expr neighbor_idx;
 
   void type_check(CompileConfig *config) override;
-
-  void serialize(std::ostream &ss) override {
-    if (neighbor_idx) {
-      ss << "mesh_relation_access(";
-      mesh_idx->serialize(ss);
-      ss << ", " << mesh::element_type_name(to_type) << "[";
-      neighbor_idx->serialize(ss);
-      ss << "])";
-    } else {
-      ss << "mesh_relation_size(";
-      mesh_idx->serialize(ss);
-      ss << ", " << mesh::element_type_name(to_type) << ")";
-    }
-  }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
@@ -793,6 +702,8 @@ class MeshRelationAccessExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class MeshIndexConversionExpression : public Expression {
@@ -804,13 +715,6 @@ class MeshIndexConversionExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "
-       << mesh::element_type_name(idx_type) << ", ";
-    idx->serialize(ss);
-    ss << ")";
-  }
-
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
@@ -819,6 +723,8 @@ class MeshIndexConversionExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class ASTBuilder {

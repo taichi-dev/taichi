@@ -185,6 +185,7 @@ class IRVisitor {
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
+#undef DEFINE_VISIT
 };
 
 struct CompileConfig;

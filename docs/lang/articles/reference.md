@@ -255,15 +255,18 @@ return_stmt ::=  "return" [expression_list]
 
 The return statement may only occur once in a Taichi kernel or a Taichi function,
 and it must be at the bottom of the function body.
+Note that this is subject to change, and Taichi might relax it in the future.
 
 If a Taichi kernel or Taichi function has a return type hint,
 it must have a return statement that returns a value other than `None`.
 
 If a Taichi kernel has a return statement that returns a value other than `None`, it must have a return type hint.
 The return type hint for Taichi function is optional but recommended.
+Note that this is subject to change, and Taichi might enforce it in the future.
 
-A kernel can have at most one return value, which can be a scalar, ti.Matrix, or ti.Vector,
-and the number of elements in the return value does not exceed 30.
+A kernel can have at most one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`,
+and the number of elements in the return value must not exceed 30.
+Note that this number is an implementation detail, and Taichi might relax it in the future.
 
 A Taichi function can have multiple return values in a return statement,
 and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and more.

@@ -1,0 +1,39 @@
+# escape=`
+    
+# Use the latest Windows Server Core image with .NET Framework 4.8.
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+    
+SHELL ["powershell", "-command"]
+    
+RUN Invoke-WebRequest "https://aka.ms/vs/16/release/vs_buildtools.exe" -OutFile "$env:TEMP\vs_buildtools.exe" -UseBasicParsing
+    
+# NOTE: Use this script instead of the one listed on MS website (https://docs.microsoft.com/en-us/visualstudio/install/build-tools-container?view=vs-2019)
+# This avoids the issue of unfinished installation without reporting errors.
+# Related issue here: https://docs.microsoft.com/en-us/answers/questions/698664/sample-to-install-build-tools-into-a-container-don.html
+# Script is based on the post and modified for Taichi build and test
+RUN Write-Host "Update the installer" ; `
+    & "$env:TEMP\vs_buildtools.exe" --quiet --wait --norestart --installPath 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools' ; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -eq $Null) {Write-Host "no vs_buildtools"; Start-Sleep -Seconds 10;} ; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for vs_buildtools"; wait-process vs_buildtools 2>$null;} ; `
+    while((get-process "setup" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for setup"; wait-process setup 2>$null;} ; `
+    `
+    Write-Host "Basic install of VS BuildTools 2019. Adding workload here mostly fails." ; `
+    & "$env:TEMP\vs_buildtools.exe" --quiet --wait --norestart --installPath 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools' ; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -eq $Null) {Write-Host "no vs_buildtools"; Start-Sleep -Seconds 10;} ; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for vs_buildtools"; wait-process vs_buildtools 2>$null;} ; `
+    while((get-process "setup" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for setup"; wait-process setup 2>$null;} ; `
+    `
+    Write-Host "Workload installation." ; `
+    & "$env:TEMP\vs_buildtools.exe" --quiet --wait --norestart --installPath 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools'  --includeRecommended --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Llvm.Clang --add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang --add Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -eq $Null) {Write-Host "no vs_buildtools"; Start-Sleep -Seconds 120} ; `
+    while((get-process "vs_buildtools" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for vs_buildtools"; wait-process vs_buildtools 2>$null;} ; `
+    while((get-process "vs_setup_bootstrapper" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for vs_setup_bootstrapper"; wait-process vs_setup_bootstrapper 2>$null;} ; `
+    while((get-process "setup" -ea SilentlyContinue) -ne $Null) {Write-Host "waiting for setup"; wait-process setup 2>$null;} ; `
+    Write-Host "Installation should be complete!" ;
+    
+    
+# Define the entry point for the docker container.
+SHELL ["cmd", "/S", "/C"]
+    
+# This entry point starts the developer command prompt and launches the PowerShell shell.
+ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]

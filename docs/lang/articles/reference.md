@@ -259,21 +259,73 @@ stride) inside have to be evaluated to Python values.
 
 #### Calls
 
+```
+call          ::=  primary '(' argument_list ')'
+argument_list ::=  args
+args          ::=  [arg (',' arg)*]
+arg           ::=  identifier
+```
+
+To favour simplicity, Taichi language doesn't support keyword arguments like Python.
+
 ### The power operator
+
+```
+power ::= 'ti.pow(' primary ',' primary ')' | primary ['**' u_expr]
+```
+
+Taichi predefines its own exponentiation function 'ti.pow()'. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
+Applying Python '**' operator inside Taichi scope is equivalent. In such case, the power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
 
 ### Unary arithmetic and bitwise operations
 
+```
+u_expr ::=  power | '-' power | '~' power
+```
+The unary - operator yields the negation of its argument. The unary ~ operator yields the bitwise inversion of its argument. - can be used with all scalar and tensor. ~ can only be used with integer scalar (i32, i64, etc.) and interrelated tensor.
+
 ### Binary arithmetic operations
+
+```
+m_expr ::=  u_expr | m_expr '*' u_expr | m_expr '@' m_expr | m_expr '//' u_expr | m_expr '/' u_expr | m_expr '%' u_expr
+a_expr ::=  m_expr | a_expr '+' m_expr | a_expr '-' m_expr
+```
+The binary arithmetic operators can operate on scalar and tensor. For tensor-tensor ops, both arguments must have the same shape. For scalar-tensor or tensor-scalar ops, the scalar is usually broadcast to the size of the tensor. The @ operator is for matrix multiplication and only operates on Tensor arguments.
 
 ### Shifting operations
 
+```
+shift_expr ::=  a_expr | shift_expr ( '<<' | '>>' ) a_expr
+```
+These operators accept integer scalar (i32, i64, etc.) and interrelated tensor for both arguments. When both arguments are tensors, they must have the same shape. When one is a scalar and the other is a tensor, the scalar is logically broadcast to match the size of the tensor.
+
 ### Binary bitwise operations
+
+```
+and_expr ::=  shift_expr | and_expr '&' shift_expr
+xor_expr ::=  and_expr | xor_expr '^' and_expr
+or_expr  ::=  xor_expr | or_expr '|' xor_expr
+```
+The & operator computes the bitwise AND of its arguments, the ^ the bitwise XOR, and the | the bitwise OR. The types requirements and broadcast logic are the same as shifting operations.
+
 
 ### Comparisons
 
+```
+comparison    ::=  or_expr (comp_operator or_expr)*
+comp_operator ::=  '<' | '>' | '==' | '>=' | '<=' | '!=' | 'is' ['not'] | ['not'] 'in'
+```
+A comparison yields a boolean value (True or False), or if one of the operands is a Tensor, a boolean Tensor. Comparisons can be chained arbitrarily as long as they do not yield boolean Tensors that have more than one element. a op1 b op2 c ... is equivalent to a op1 b and b op2 c and ....
+
 #### Value comparisons
 
+The operators <, >, ==, >=, <=, and != compare the values of two objects. The two objects generally need to be of the same type, unless there is an implicit type conversion available between the objects. Built-in Python types like strings, lists, tuples are not supported. They need to be converted into Taichi scalar or tensor in advance.
+
 #### Membership test operations
+
+List, dicts and tuples types along with 'in' operations are not supported in Taichi scope. The only execption is to put the whole expression into 'ti.static()' which degenerates into Python expression. More details refer to Python's specification.
+
+#### Identity comparisons
 
 ### Boolean operations
 

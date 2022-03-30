@@ -194,7 +194,27 @@ compile time.
 
 #### Identity comparisons
 
+The operators `is` and `is not` test for an object’s identity: 
+`x is y` is `true` if and only if `x` and `y` are the same object. 
+An Object’s identity is determined using the [id()](https://docs.python.org/3/library/functions.html#id) function. 
+`x is not y` yields the inverse truth value.
+
+:::note
+Operator `is` or `is not` in Taichi scope is deprecated. Please avoid using it.
+:::
+
 ### Boolean operations
+
+```
+or_test  ::=  and_test | or_test "or" and_test
+and_test ::=  not_test | and_test "and" not_test
+not_test ::=  comparison | "not" not_test
+```
+
+User-defined objects can customize their conversion to bool by implementing a `__bool__` method. 
+The operator not yields `True` if its operand is false, `False` otherwise. 
+The expression `x and y` first evaluates `x`; if it is `False`, its value (`False`) is returned; otherwise, `y` is evaluated and its value is returned (`False` or `True`). 
+The expression `x or y` first evaluates `x`; if it is `True`, its value (`True`) is returned; otherwise, `y` is evaluated and its value is returned (`False` or `True`).
 
 ### Conditional expressions
 

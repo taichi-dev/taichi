@@ -40,6 +40,8 @@ However, this is likely subject to change, so that all SNodes can share the same
 Layout of a `dense` SNode:
 
 ```sh
++- node
+|
 +------------+------------+------------+------------+
 |            |            |            |            |
 |   cell-0   |   cell-1   |   cell-2   |   cell-3   |
@@ -54,24 +56,54 @@ Layout of a `dense` SNode:
 Layout of a `pointer` SNode:
 
 ```sh
-+------------+------------+------------+------------+
-|  nullptr   |  *cell-1   |  *cell-2   |  nullptr   |
-+------------+------------+------------+------------+
-             |            |
-             |            +> +------------+
-             |               |            |
-             |               |   cell-2   |
-             |               |            |
-             |               +------------+
-             |
-             +-------------> +------------+
-                             |            |
-                             |   cell-1   |
-                             |            |
-                             +------------+
++- node
+|
++------------+------------+------------+------------+------------+------------+------------+------------+
+|  c0-lock   |  c1-lock   |  c2-lock   |  c3-lock   |  nullptr   |  *cell-1   |  *cell-2   |  nullptr   |
++------------+------------+------------+------------+------------+------------+------------+------------+
+                                                                 |            |
+                                                                 |            +> +------------+
+                                                                 |               |            |
+                                                                 |               |   cell-2   |
+                                                                 |               |            |
+                                                                 |               +------------+
+                                                                 |
+                                                                 +-------------> +------------+
+                                                                                 |            |
+                                                                                 |   cell-1   |
+                                                                                 |            |
+                                                                                 +------------+
 ```
 
+We can follow [`Pointer_activate`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_pointer.h#L41-L65) to see how `pointer` SNode is implemented using the sparse runtime infrastructure.
 
+```cpp
+void Pointer_activate(Ptr meta_, Ptr node, int i) {
+  auto meta = (StructMeta *)meta_;
+  auto num_elements = Pointer_get_num_elements(meta_, node);
+  volatile Ptr lock = node + 8 * i;
+  volatile Ptr *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
+
+  if (*data_ptr == nullptr) {
+    // The cuda_ calls will return 0 or do noop on CPUs
+    u32 mask = cuda_active_mask();
+    if (is_representative(mask, (u64)lock)) {
+      locked_task(
+          lock,
+          [&] {
+            auto rt = meta->context->runtime;
+            auto alloc = rt->node_allocators[meta->snode_id];
+            auto allocated = (u64)alloc->allocate();
+            // TODO: Not sure if we really need atomic_exchange here,
+            // just to be safe.
+            atomic_exchange_u64((u64 *)data_ptr, allocated);
+          },
+          [&]() { return *data_ptr == nullptr; });
+    }
+    warp_barrier(mask);
+  }
+}
+```
 
 # Runtime
 

@@ -4,11 +4,11 @@ sidebar_position: 1
 
 # GUI system
 
-Taichi has a built-in GUI system for visualizing simulation data in data containers Taichi fields or NumPy ndarrays. It also has limited support for drawing primitive geometries.
+Taichi has a built-in GUI system for visualizing simulation data in data containers like Taichi fields or NumPy ndarrays. It also has limited support for drawing primitive geometries.
 
 ## Create and display a window
 
-The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling`gui.show()`:
+The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling `gui.show()`:
 
 ```python
 gui = ti.GUI('Hello World!', (640, 360))

@@ -1,7 +1,7 @@
 import functools
 import math
-from os import listdir, path, remove, rmdir
 import threading
+from os import listdir, path, remove, rmdir
 
 import pytest
 from genericpath import exists

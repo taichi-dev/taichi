@@ -8,7 +8,7 @@ Taichi has a built-in GUI system for visualizing simulation data in data contain
 
 ## Create and display a window
 
-The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling`gui.show()`: 
+The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling`gui.show()`:
 
 ```python
 gui = ti.GUI('Hello World!', (640, 360))
@@ -59,7 +59,7 @@ Ensure that the shape of the input matches the resolution of the GUI window.
 
 ### Zero-copying frame buffer
 
-In each loop of the `gui.set_image()` method call, the GUI system converts the image data to a displayable format and copies the result to the window buffer. This causes huge overload when the window size is large, making it hard to achieve high FPS (frames per second). 
+In each loop of the `gui.set_image()` method call, the GUI system converts the image data to a displayable format and copies the result to the window buffer. This causes huge overload when the window size is large, making it hard to achieve high FPS (frames per second).
 
 If you only need to call the `set_image()` method without using any drawing command, you can enable `fast_gui` mode for better performance. This mode allows Taichi GUI to write the image data directly to the frame buffer without additional copying, and significantly increases FPS.
 
@@ -67,11 +67,11 @@ If you only need to call the `set_image()` method without using any drawing comm
 gui = ti.GUI(res, title, fast_gui=True)
 ```
 
-For this mode to work, ensure that the data passed into `gui.set_imag``e()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following: 
+For this mode to work, ensure that the data passed into `gui.set_imag``e()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
 
 - A scalar field `ti.field(dtype, shape) `
 - a vector field  `ti.field(3, dtype, shape)` compatible with RGB format
-- a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format. 
+- a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format.
 
 Note that `dtype` must be `ti.f32`, `ti.f64`, or `ti.u8`.
 
@@ -79,12 +79,12 @@ Note that `dtype` must be `ti.f32`, `ti.f64`, or `ti.u8`.
 
 Taichi's GUI system supports drawing simple geometries, such as lines, triangles, rectangles, circles, and texts.
 
-The `pos` parameter of every drawing method accepts Taichi fields or NumPy arrays, *not* Python primitive lists. Each element of the array is a pair of floats ranging from `0.0` to `1.0`, which represent the relative positions of the geometries. For example:  
+The `pos` parameter of every drawing method accepts Taichi fields or NumPy arrays, *not* Python primitive lists. Each element of the array is a pair of floats ranging from `0.0` to `1.0`, which represent the relative positions of the geometries. For example:
 
 - `(0.0, 0.0)`: the lower-left corner of the window.
-- `(1.0, 1.0)`: the upper-right corner of the window. 
+- `(1.0, 1.0)`: the upper-right corner of the window.
 
-The following code draws 50 circles with a radius of `1.5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`. 
+The following code draws 50 circles with a radius of `1.5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
 
 ```python
 import numpy as np
@@ -133,7 +133,7 @@ gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
 
 ## Event handling
 
-Taichi's GUI system also provides a set of methods for mouse and keyboard control. Input events are classified into three types: 
+Taichi's GUI system also provides a set of methods for mouse and keyboard control. Input events are classified into three types:
 
 ```python
 ti.GUI.RELEASE  # key up or mouse button up
@@ -228,7 +228,7 @@ mouse_x, mouse_y = gui.get_cursor_pos()
 
 ## GUI Widgets
 
-Taichi's GUI system also provides widgets, including `slider()`, `label()`, and `button()`, for you to customize your control interface. Take a look at the following code snippet: 
+Taichi's GUI system also provides widgets, including `slider()`, `label()`, and `button()`, for you to customize your control interface. Take a look at the following code snippet:
 
 ```python
 import taichi as ti
@@ -260,4 +260,4 @@ while gui.running:
     gui.show()
 ```
 
-## 
+##

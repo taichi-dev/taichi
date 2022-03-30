@@ -188,6 +188,17 @@ The semantics of list and dict displays in Taichi mainly follow Python. Note
 that they are evaluated at compile time, so all expressions in `comp_for`,
 as well as keys in `key_datum`, are required to be evaluated to Python values.
 
+For example, in the following code snippet, `a` can be successfully defined
+while `b` cannot because `p` cannot be evaluated to a Python value at compile
+time.
+
+```python
+@ti.kernel
+def test(p: ti.i32):
+    a = ti.Matrix([i * p for i in range(10)])  # valid
+    b = ti.Matrix([i * p for i in range(p)])  # compile error
+```
+
 ### Primaries
 
 #### Attribute references

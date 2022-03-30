@@ -67,7 +67,7 @@ class Container(BenchmarkItem):
 class MathOps(BenchmarkItem):
     name = 'math_op'
 
-    #reference: https://docs.taichi.graphics/lang/articles/basic/operator
+    #reference: https://docs.taichi.graphics/lang/articles/operator
     def __init__(self):
         self._items = {
             # Trigonometric

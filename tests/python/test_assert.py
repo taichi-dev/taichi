@@ -15,9 +15,9 @@ def test_assert_minimal():
     def func2():
         assert False
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func2()
 
 
@@ -28,7 +28,7 @@ def test_assert_basic():
         x = 20
         assert 10 <= x < 20
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func()
 
 
@@ -39,7 +39,7 @@ def test_assert_message():
         x = 20
         assert 10 <= x < 20, 'Foo bar'
 
-    with pytest.raises(RuntimeError, match='Foo bar'):
+    with pytest.raises(AssertionError, match='Foo bar'):
         func()
 
 
@@ -58,11 +58,11 @@ def test_assert_message_formatted():
         y = 0.5
         assert y < 0, 'y = %f' % y
 
-    with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
+    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
         assert_formatted()
     # TODO: note that we are not fully polished to be able to recover from
     # assertion failures...
-    with pytest.raises(RuntimeError, match=r'y = 0.5'):
+    with pytest.raises(AssertionError, match=r'y = 0.5'):
         assert_float()
 
     # success case

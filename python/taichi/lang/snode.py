@@ -11,7 +11,7 @@ class SNode:
     For more information on Taichi's SNode system, please check out
     these references:
 
-    * https://docs.taichi.graphics/lang/articles/advanced/sparse
+    * https://docs.taichi.graphics/lang/articles/sparse
     * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
 
     Arg:

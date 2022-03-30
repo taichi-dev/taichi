@@ -1,7 +1,7 @@
 class Template:
     """Type annotation for template kernel parameter.
 
-    See also https://docs.taichi.graphics/lang/articles/advanced/meta.
+    See also https://docs.taichi.graphics/lang/articles/meta.
 
     Args:
         tensor (Any): unused

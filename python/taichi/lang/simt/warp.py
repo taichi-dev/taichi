@@ -17,9 +17,11 @@ def unique():
     pass
 
 
-def ballot():
-    # TODO
-    pass
+def ballot(predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("cuda_ballot_i32",
+                                           expr.make_expr_group(predicate),
+                                           False))
 
 
 def shfl_i32(mask, val, offset):

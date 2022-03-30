@@ -1040,6 +1040,14 @@ int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
 
+int32 cuda_ballot_i32(int32 predicate) {
+  return cuda_ballot_sync(UINT32_MAX, (bool)predicate);
+}
+
+int32 cuda_ballot_sync_i32(u32 mask, int32 predicate) {
+  return cuda_ballot_sync(mask, (bool)predicate);
+}
+
 i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
   return 0;
 }
@@ -1089,17 +1097,17 @@ f32 op_add_f32(f32 a, f32 b) {
 }
 
 i32 op_min_i32(i32 a, i32 b) {
-  return fmin(a, b);
+  return std::min(a, b);
 }
 f32 op_min_f32(f32 a, f32 b) {
-  return fmin(a, b);
+  return std::min(a, b);
 }
 
 i32 op_max_i32(i32 a, i32 b) {
-  return fmax(a, b);
+  return std::max(a, b);
 }
 f32 op_max_f32(f32 a, f32 b) {
-  return fmax(a, b);
+  return std::max(a, b);
 }
 
 i32 op_and_i32(i32 a, i32 b) {

@@ -81,21 +81,23 @@ We can follow [`Pointer_activate`](https://github.com/taichi-dev/taichi/blob/0f4
 void Pointer_activate(Ptr meta_, Ptr node, int i) {
   auto meta = (StructMeta *)meta_;
   auto num_elements = Pointer_get_num_elements(meta_, node);
+  // 1
   volatile Ptr lock = node + 8 * i;
   volatile Ptr *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
-
+  // 2
   if (*data_ptr == nullptr) {
+    // 3
     // The cuda_ calls will return 0 or do noop on CPUs
     u32 mask = cuda_active_mask();
     if (is_representative(mask, (u64)lock)) {
+      // 4
       locked_task(
           lock,
           [&] {
+            // 5
             auto rt = meta->context->runtime;
             auto alloc = rt->node_allocators[meta->snode_id];
             auto allocated = (u64)alloc->allocate();
-            // TODO: Not sure if we really need atomic_exchange here,
-            // just to be safe.
             atomic_exchange_u64((u64 *)data_ptr, allocated);
           },
           [&]() { return *data_ptr == nullptr; });
@@ -104,6 +106,104 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   }
 }
 ```
+
+1. Retrieves both the lock and the pointer for the `i`-th cell. Note that the pointer width is assumed to be 8-byte wide. Locks are simple 64-bit integers. According to the layout, there are `max_num_elements` number of locks, followed by `max_num_elements` number of pointer to cells.
+2. Checks whether the content of `data_ptr` is `nullptr` without any lock. This is the classical [double-checked locking](https://en.wikipedia.org/wiki/Double-checked_locking) pattern.
+3. If 2 is true, pick one thread within a CUDA warp to acquire the lock. This is a small optimization to prevent lock contention.
+4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/locked_task.h).
+5. Retrieves the memory allocator (`node_allocators`) for this particular SNode, allocates a new cell, and stores the address of the allocated cell into `data_pointer`. Because the cell size of each SNode is different, the runtime has a dedicated allocator for each SNode, which knows how much space to allocate per cell.
+
+The deactivation and the checking-for-active procedures are quite similar. We omit them for brevity.
+
+## `dynamic` SNode
+
+`dynamic` is a special kind of SNodes in a few things:
+
+* It must be a 1-D, terminating SNode. By terminating, it means `dynamic` can only be followed by `place`-ing a Taichi field.
+* The axis of `dynamic` must be different from those of all its predecessors. For example:
+  * `dense(ti.ij, (2, 4)).dynammic(ti.k, 8)`: This is OK, because `dynamic`'s axis is unique.
+  * `dense(ti.ij, (2, 4)).dynammic(ti.j, 8)`: This results in an error, because `dynamic`'s axis and `dense`'s overlaps on axis `j`.
+* `dynamic` can only store 32-bit integers. However, this is not an API contract, and is subject to change.
+
+Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode can be viewed as `std::vector<int32_t>`. However, `dynamic` is implemented as a single linked list of *chunks*.
+
+```sh
++- node
+|
++------------+------------+------------+
+|    lock    |     n      |    ptr     |
++------------+------------+------------+
+                          |
+                          +-+------------+  # chunk-0, chunk_start = 0
+                            |     x------|--+
+                            +------------+  |
+                            |     0      |  |
+                            +------------+  |
+                            |     1      |  |
+                            +------------+  |
+                            |     2      |  |
+                            +------------+  |
+                            |     3      |  |
+                            +------------+  |
+                                            |
+                                            +-+------------+  # chunk-1, chunk_start = 4
+                                              |   nullptr  |
+                                              +------------+
+                                              |     4      |
+                                              +------------+
+                                              |     5      |
+                                              +------------+
+                                              |     6      |
+                                              +------------+
+                                              |     7      |
+                                              +------------+
+```
+
+The activation/deacctivation process is no different from that of `pointer`. We can trace through [`Dynamic_append`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_dynamic.h#L61-L87) to better understand the layout.
+
+```cpp
+i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
+  auto meta = (DynamicMeta *)(meta_);
+  auto node = (DynamicNode *)(node_);
+  auto chunk_size = meta->chunk_size;
+  // 1
+  auto i = atomic_add_i32(&node->n, 1);
+  // 2
+  int chunk_start = 0;
+  auto p_chunk_ptr = &node->ptr;
+  while (true) {
+    // 3
+    if (*p_chunk_ptr == nullptr) {
+      locked_task(Ptr(&node->lock), [&] {
+        if (*p_chunk_ptr == nullptr) {
+          auto rt = meta->context->runtime;
+          auto alloc = rt->node_allocators[meta->snode_id];
+          *p_chunk_ptr = alloc->allocate();
+        }
+      });
+    }
+    // 4
+    if (i < chunk_start + chunk_size) {
+      // 4-1
+      *(i32 *)(*p_chunk_ptr + sizeof(Ptr) +
+               (i - chunk_start) * meta->element_size) = data;
+      break;
+    }
+    // 4-2
+    p_chunk_ptr = (Ptr *)(*p_chunk_ptr);
+    chunk_start += chunk_size;
+  }
+  return i;
+}
+```
+
+1. Uses the current length `n` as the index (`i`) to store `data`. 
+2. `chunk_strat` tracks the starting index of a given chunk, and always starts at `0` . `p_chunk_ptr` is initialized to the pointer to the first chunk.
+3. Inside the `while` loop, checks if the given chunk slot is empty first, and allocates a new chunk if so.
+4. Compares if the determined index `i` falls within the current chunk.
+   1. If so, stores `data` into the corresponding slot in this chunk. Note that the first `sizeof(Ptr)` bytes are skiped: they are reserved to store the address of the next chunk.
+   2. Otherwise, jumps to the next chunk.
+
 
 # Runtime
 

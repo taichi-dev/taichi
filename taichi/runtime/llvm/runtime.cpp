@@ -1100,14 +1100,14 @@ i32 op_min_i32(i32 a, i32 b) {
   return fmin(a, b);
 }
 f32 op_min_f32(f32 a, f32 b) {
-  return fmin(a, b);
+  return fminf(a, b);
 }
 
 i32 op_max_i32(i32 a, i32 b) {
   return fmax(a, b);
 }
 f32 op_max_f32(f32 a, f32 b) {
-  return fmax(a, b);
+  return fmaxf(a, b);
 }
 
 i32 op_and_i32(i32 a, i32 b) {

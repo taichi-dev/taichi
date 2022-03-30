@@ -145,3 +145,21 @@ def test_func_no_return():
             return bar()
 
         foo()
+
+
+@test_utils.test()
+def test_void_return():
+    @ti.kernel
+    def foo():
+        return
+
+    foo()
+
+
+@test_utils.test()
+def test_return_none():
+    @ti.kernel
+    def foo():
+        return None
+
+    foo()

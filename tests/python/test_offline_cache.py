@@ -152,7 +152,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-def test_closing_offline_cache(curr_arch):
+def _test_closing_offline_cache(curr_arch):
     for kernel, args, get_res in simple_kernels_to_test:
         _test_closing_offline_cache_for_a_kernel(curr_arch=curr_arch,
                                                  kernel=kernel,

@@ -266,7 +266,7 @@ A kernel can have at most one return value, which can be a scalar, ti.Matrix, or
 and the number of elements in the return value does not exceed 30.
 
 A Taichi function can have multiple return values in a return statement,
-and the return values can be scalar, ti.Matrix, ti.Vector, ti.Struct, and more.
+and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and more.
 
 ### The `break` statement
 ```

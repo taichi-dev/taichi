@@ -851,6 +851,11 @@ def grouped(x):
 
 
 def stop_grad(x):
+    """Stop computing gradients during back propagation.
+
+    Args:
+        x (:class:`~taichi.Field`): A field.
+    """
     get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
 
 

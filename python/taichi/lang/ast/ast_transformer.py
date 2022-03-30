@@ -9,7 +9,8 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
-from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
+from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
+                                                   ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
@@ -529,37 +530,40 @@ class ASTTransformer(Builder):
             if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
-        build_stmt(ctx, node.value)
+        if node.value is not None:
+            build_stmt(ctx, node.value)
+        if node.value is None or node.value.ptr is None:
+            if not ctx.is_real_function:
+                ctx.returned = ReturnStatus.ReturnedVoid
+            return None
         if ctx.is_kernel or ctx.is_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
-            if node.value is not None:
-                if ctx.func.return_type is None:
-                    raise TaichiSyntaxError(
-                        f'A {"kernel" if ctx.is_kernel else "function"} '
-                        'with a return value must be annotated '
-                        'with a return type, e.g. def func() -> ti.f32')
-                if id(ctx.func.return_type) in primitive_types.type_ids:
-                    ctx.ast_builder.create_kernel_exprgroup_return(
-                        expr.make_expr_group(
-                            ti_ops.cast(expr.Expr(node.value.ptr),
-                                        ctx.func.return_type).ptr))
-                elif isinstance(ctx.func.return_type, MatrixType):
-                    ctx.ast_builder.create_kernel_exprgroup_return(
-                        expr.make_expr_group([
-                            ti_ops.cast(exp, ctx.func.return_type.dtype)
-                            for exp in itertools.chain.from_iterable(
-                                node.value.ptr.to_list())
-                        ]))
-                else:
-                    raise TaichiSyntaxError(
-                        "The return type is not supported now!")
-                # For args[0], it is an ast.Attribute, because it loads the
-                # attribute, |ptr|, of the expression |ret_expr|. Therefore we
-                # only need to replace the object part, i.e. args[0].value
+            if ctx.func.return_type is None:
+                raise TaichiSyntaxError(
+                    f'A {"kernel" if ctx.is_kernel else "function"} '
+                    'with a return value must be annotated '
+                    'with a return type, e.g. def func() -> ti.f32')
+            if id(ctx.func.return_type) in primitive_types.type_ids:
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(
+                        ti_ops.cast(expr.Expr(node.value.ptr),
+                                    ctx.func.return_type).ptr))
+            elif isinstance(ctx.func.return_type, MatrixType):
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group([
+                        ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in
+                        itertools.chain.from_iterable(node.value.ptr.to_list())
+                    ]))
+            else:
+                raise TaichiSyntaxError(
+                    "The return type is not supported now!")
+            # For args[0], it is an ast.Attribute, because it loads the
+            # attribute, |ptr|, of the expression |ret_expr|. Therefore we
+            # only need to replace the object part, i.e. args[0].value
         else:
             ctx.return_data = node.value.ptr
         if not ctx.is_real_function:
-            ctx.returned = True
+            ctx.returned = ReturnStatus.ReturnedValue
         return None
 
     @staticmethod
@@ -1231,7 +1235,8 @@ build_stmt = ASTTransformer()
 def build_stmts(ctx, stmts):
     with ctx.variable_scope_guard():
         for stmt in stmts:
-            if ctx.returned or ctx.loop_status() != LoopStatus.Normal:
+            if ctx.returned != ReturnStatus.NoReturn or ctx.loop_status(
+            ) != LoopStatus.Normal:
                 break
             else:
                 build_stmt(ctx, stmt)

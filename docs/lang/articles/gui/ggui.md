@@ -84,7 +84,7 @@ scene.set_camera(camera)
 
 #### Add a point light
 
-Call `point_light()` to add a point light to the scene. 
+Call `point_light()` to add a point light to the scene.
 
 ```python
 scene.point_light(pos, color)
@@ -107,7 +107,7 @@ The positions/centers of geometries should be in the world-space coordinates.
 
 If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a shape of `num * 3`, *not* a vector field.
 
-`normals` is an optional parameter for `scene.mesh()`. 
+`normals` is an optional parameter for `scene.mesh()`.
 
 :::
 
@@ -134,7 +134,7 @@ window.GUI.end()
 
 ## Show a window
 
-Call `show()` to show a window. 
+Call `show()` to show a window.
 
 ```python
 ...
@@ -200,7 +200,7 @@ Note that you must call `window.write_image()` before calling `window.show()`.
 
 ## Off-screen rendering
 
-GGUI supports saving frames to images without showing the window. This is also known as "headless" rendering. To enable this mode, set the argument `show_window` to `False` when initializing a window. 
+GGUI supports saving frames to images without showing the window. This is also known as "headless" rendering. To enable this mode, set the argument `show_window` to `False` when initializing a window.
 
 ```python
 window = ti.ui.Window('Window Title', (640, 360), show_window = False)

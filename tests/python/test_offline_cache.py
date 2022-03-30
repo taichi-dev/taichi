@@ -1,6 +1,7 @@
 import functools
 import math
 from os import listdir, path, remove, rmdir
+import threading
 
 import pytest
 from genericpath import exists
@@ -8,6 +9,7 @@ from genericpath import exists
 import taichi as ti
 from tests import test_utils
 
+mutex = threading.Lock()
 supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
@@ -81,6 +83,7 @@ def is_offline_cache_file(filename):
 def _test_offline_cache_dec(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
+        mutex.acquire(True)
         file_path_exists = True
         old_file_list = []
         if not exists(tmp_offline_cache_file_path):
@@ -100,6 +103,7 @@ def _test_offline_cache_dec(func):
                     remove(path.join(tmp_offline_cache_file_path, f))
             if not file_path_exists:
                 rmdir(tmp_offline_cache_file_path)
+            mutex.release()
         return ret
 
     return wrapped
@@ -152,7 +156,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-def _test_closing_offline_cache(curr_arch):
+def test_closing_offline_cache(curr_arch):
     for kernel, args, get_res in simple_kernels_to_test:
         _test_closing_offline_cache_for_a_kernel(curr_arch=curr_arch,
                                                  kernel=kernel,

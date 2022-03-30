@@ -190,6 +190,19 @@ Literals are evaluated to Python values at compile time.
 
 ### Boolean operations
 
+### Assignment expressions
+
+```
+assignment_expression ::=  [identifier ":="] expression
+```
+
+An assignment expression (sometimes also called a “named expression” or “walrus”) assigns an expression to an identifier,
+while also returning the value of the expression.
+
+:::note
+This operator is supported in Python 3.8, see [PEP 572](https://www.python.org/dev/peps/pep-0572) for more details about assignment expressions
+:::
+
 ### Conditional expressions
 
 ### Expression lists

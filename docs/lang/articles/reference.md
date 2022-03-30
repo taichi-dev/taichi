@@ -171,7 +171,7 @@ display is one of:
 compute the container items.
 
 ```
-list_display ::=  "[" [expression_list | list_comprehension] "]"
+list_display       ::= "[" [expression_list | list_comprehension] "]"
 list_comprehension ::= assignment_expression comp_for
 
 dict_display       ::= "{" [key_datum_list | dict_comprehension] "}"

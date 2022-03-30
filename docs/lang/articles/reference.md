@@ -266,7 +266,7 @@ args          ::=  [arg (',' arg)*]
 arg           ::=  identifier
 ```
 
-To favour simplicity, Taichi language doesn't support keyword arguments like Python.
+To favor simplicity, Taichi language doesn't support keyword arguments like Python.
 
 ### The power operator
 
@@ -275,7 +275,7 @@ power ::= 'ti.pow(' primary ',' primary ')' | primary ['**' u_expr]
 ```
 
 Taichi predefines its own exponentiation function 'ti.pow()'. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
-Applying Python '**' operator inside Taichi scope is equivalent. In such case, the power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
+Applying Python '**' operator inside Taichi scope is equivalent. In such cases, the power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
 
 ### Unary arithmetic and bitwise operations
 
@@ -323,7 +323,7 @@ The operators <, >, ==, >=, <=, and != compare the values of two objects. The tw
 
 #### Membership test operations
 
-List, dicts and tuples types along with 'in' operations are not supported in Taichi scope. The only execption is to put the whole expression into 'ti.static()' which degenerates into Python expression. More details refer to Python's specification.
+List, dict and tuple types along with 'in' operations, are not supported in Taichi scope. The only exception is to put the whole expression into 'ti.static()' which degenerates into Python expression. More details refer to Python's specifications.
 
 #### Identity comparisons
 

@@ -15,7 +15,7 @@ supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
     if v in test_utils.expected_archs()
 ]
-tmp_offline_cache_file_path = './_temp_ticache'
+tmp_offline_cache_file_path = './__temp_ticache'
 ext_init_options = {
     'offline_cache': True,
     'offline_cache_file_path': tmp_offline_cache_file_path,

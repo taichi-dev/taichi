@@ -291,7 +291,7 @@ statement     ::=  stmt_list NEWLINE | compound_stmt
 stmt_list     ::=  simple_stmt (";" simple_stmt)* [";"]
 ```
 
-Note that statements always end in a NEWLINE possibly followed by a DEDENT.
+Note that statements always end in a NEWLINE, possibly followed by a DEDENT.
 Also note that optional continuation clauses always begin with a keyword that cannot start a statement,
 thus there are no ambiguities
 (the ‘dangling else’ problem is solved in Python by requiring nested if statements to be indented).

@@ -20,7 +20,8 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_pytorch, to_taichi_type
+from taichi.lang.util import (has_paddle, has_pytorch, to_paddle_type,
+                              to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
@@ -28,6 +29,9 @@ from taichi import _logging
 
 if has_pytorch():
     import torch
+
+if has_paddle():
+    import paddle
 
 
 def func(fn, is_real_function=False):
@@ -585,6 +589,7 @@ class Kernel:
             callbacks = []
             has_external_arrays = False
             has_torch = has_pytorch()
+            has_pp = has_paddle()
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -618,6 +623,7 @@ class Kernel:
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
+                    is_torch = isinstance(v, torch.Tensor)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
@@ -625,7 +631,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, v.shape)
-                    else:
+                    elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
                             v, has_torch, is_ndarray)
@@ -633,6 +639,12 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)
+                    else:
+                        # Only support PaddlePaddle on develop branch
+                        tmp = v.value().get_tensor()
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp._ptr()),
+                            v.element_size() * v.size(), v.shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
@@ -725,6 +737,8 @@ class Kernel:
         has_array = isinstance(v, np.ndarray)
         if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
+        if not has_array and has_paddle():
+            has_array = isinstance(v, paddle.Tensor)
         return has_array
 
     def ensure_compiled(self, *args):

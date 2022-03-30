@@ -10,12 +10,21 @@ from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
                                           u16, u32, u64)
 
 _has_pytorch = False
+_has_paddle = False
 
 _env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
 if not _env_torch or int(_env_torch):
     try:
         import torch
         _has_pytorch = True
+    except:
+        pass
+
+_env_paddle = os.environ.get('TI_ENABLE_PADDLE', '1')
+if not _env_paddle or int(_env_paddle):
+    try:
+        import paddle
+        _has_paddle = True
     except:
         pass
 
@@ -28,16 +37,6 @@ def has_pytorch():
 
     """
     return _has_pytorch
-
-_has_paddle = False
-
-_env_paddle = os.environ.get('TI_ENABLE_PADDLE', '1')
-if not _env_paddle or int(_env_paddle):
-    try:
-        import paddle
-        _has_paddle = True
-    except:
-        pass
 
 
 def has_paddle():
@@ -177,8 +176,9 @@ def to_paddle_type(dt):
             f'Paddle doesn\'t support {dt.to_string()} data type.')
     assert False
 
+
 def to_taichi_type(dt):
-    """Convert numpy or torch data type to its counterpart in taichi.
+    """Convert numpy or torch or paddle data type to its counterpart in taichi.
 
     Args:
         dt (DataType): The desired data type to convert.

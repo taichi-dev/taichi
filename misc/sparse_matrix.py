@@ -13,8 +13,8 @@ def fill(A: ti.types.sparse_matrix_builder(),
          b: ti.types.sparse_matrix_builder(), interval: ti.i32):
     for i in range(n):
         if i > 0:
-            A[i - 1, i] += -1.0
-            A[i, i] += 1
+            A[i - 1, i] += -2.0
+            A[i, i] += 1.0
         if i < n - 1:
             A[i + 1, i] += -1.0
             A[i, i] += 1.0
@@ -33,32 +33,36 @@ A = K.build()
 print(">>>> A = K.build()")
 print(A)
 
-print(">>>> Summation: C = A + A")
-C = A + A
+print(">>>> Summation: B = A + A")
+B = A + A
+print(B)
+
+print(">>>> Summation: B += A")
+B += A
+print(B)
+
+print(">>>> Subtraction: C = B - A")
+C = B - A
 print(C)
 
-print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
-E = A * 3.0
-print(E)
+print(">>>> Subtraction: C -= A")
+C -= A
+print(C)
 
-print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
-E = 3.0 * A
-print(E)
-
-print(">>>> Subtraction: D = A - A")
-D = A - A
+print(">>>> Multiplication with a scalar on the right: D = A * 3.0")
+D = A * 3.0
 print(D)
 
-# print(">>>> Transpose: F = A.transpose()")
-# F = A.transpose()
-# print(F)
+print(">>>> Multiplication with a scalar on the left: D = 3.0 * A")
+D = 3.0 * A
+print(D)
 
-# print(">>>> Matrix multiplication: G = E @ A")
-# G = E @ A
-# print(G)
+print(">>>> Transpose: E = D.transpose()")
+E = D.transpose()
+print(E)
 
-# print(">>>> Element-wise multiplication: H = E * A")
-# H = E * A
-# print(H)
+print(">>>> Matrix multiplication: F= E @ A")
+F = E @ A
+print(F)
 
-# print(f">>>> Element Access: A[0,0] = {A[0,0]}")
+print(f">>>> Element Access: F[0,0] = {F[0,0]}")

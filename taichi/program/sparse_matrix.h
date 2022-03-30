@@ -40,7 +40,7 @@ class SparseMatrixBuilder {
 
 class SparseMatrix {
  public:
-  SparseMatrix() = delete;
+  SparseMatrix() : rows_(0), cols_(0), dtype_(PrimitiveType::f32){};
   SparseMatrix(int rows, int cols, DataType dt = PrimitiveType::f32)
       : rows_{rows}, cols_(cols), dtype_(dt){};
   SparseMatrix(SparseMatrix &sm)
@@ -56,45 +56,25 @@ class SparseMatrix {
   inline const int num_rows() const {
     return rows_;
   }
+
   inline const int num_cols() const {
     return cols_;
   }
+
   virtual const std::string to_string() const {
     return nullptr;
   }
+
   virtual const void *get_matrix() const {
     return nullptr;
   }
-  // float32 get_element(int row, int col);
-  // void set_element(int row, int col, float32 value);
 
-  // virtual SparseMatrix& operator+=(const SparseMatrix &other) {
-  //   return *this;
-  // }
-  // virtual SparseMatrix& operator-=(const SparseMatrix &other) {
-  //   return *this;
-  // }
-  // virtual SparseMatrix& operator*=(float scale) {
-  //   return *this;
-  // }
-
-  // friend SparseMatrix operator+(const SparseMatrix &sm1,
-  //                               const SparseMatrix &sm2);
-  // friend SparseMatrix operator-(const SparseMatrix &sm1,
-  //                               const SparseMatrix &sm2);
-  // friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
-  // friend SparseMatrix operator*(const SparseMatrix &sm, float scale);
-  // friend SparseMatrix operator*(const SparseMatrix &sm1,
-  //                               const SparseMatrix &sm2);
-  // SparseMatrix matmul(const SparseMatrix &sm);
   // Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
-
-  // SparseMatrix transpose();
 
  protected:
   int rows_{0};
   int cols_{0};
-  DataType dtype_;
+  DataType dtype_{PrimitiveType::f32};
 };
 
 template <class EigenMatrix>
@@ -103,7 +83,7 @@ class EigenSparseMatrix : public SparseMatrix {
   EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
-  EigenSparseMatrix(EigenSparseMatrix &sm)
+  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
@@ -111,7 +91,8 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  EigenSparseMatrix(EigenMatrix &em) : matrix_(em) {
+  explicit EigenSparseMatrix(const EigenMatrix &em)
+      : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
   }
 
   virtual ~EigenSparseMatrix() override = default;
@@ -126,14 +107,51 @@ class EigenSparseMatrix : public SparseMatrix {
     this->matrix_ += other.matrix_;
     return *this;
   };
+
+  friend EigenSparseMatrix operator+(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_ + rhs.matrix_);
+  };
+
   virtual EigenSparseMatrix &operator-=(const EigenSparseMatrix &other) {
     this->matrix_ -= other.matrix_;
     return *this;
   }
+
+  friend EigenSparseMatrix operator-(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_ - rhs.matrix_);
+  };
+
   virtual EigenSparseMatrix &operator*=(float scale) {
     this->matrix_ *= scale;
     return *this;
   }
+
+  friend EigenSparseMatrix operator*(const EigenSparseMatrix &sm, float scale) {
+    return EigenSparseMatrix(sm.matrix_ * scale);
+  }
+
+  friend EigenSparseMatrix operator*(float scale, const EigenSparseMatrix &sm) {
+    return EigenSparseMatrix(sm.matrix_ * scale);
+  }
+
+  EigenSparseMatrix transpose() {
+    return EigenSparseMatrix(matrix_.transpose());
+  }
+
+  EigenSparseMatrix matmul(const EigenSparseMatrix &sm) {
+    return EigenSparseMatrix(matrix_ * sm.matrix_);
+  }
+
+  float32 get_element(int row, int col) {
+    return matrix_.coeff(row, col);
+  }
+
+  void set_element(int row, int col, float32 value) {
+    matrix_.coeffRef(row, col) = value;
+  }
+
  private:
   EigenMatrix matrix_;
 };

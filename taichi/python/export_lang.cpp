@@ -939,29 +939,34 @@ void export_lang(py::module &m) {
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def(py::init<>())
+      .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
+           py::arg("dt") = PrimitiveType::f32)
+      .def(py::init<SparseMatrix &>())
       .def("to_string", &SparseMatrix::to_string)
-      // .def(py::self += py::self)
-      // .def(py::self -= py::self)
-      // .def(py::self *= py::self)
-      // .def(py::self *= float())
-      // .def(py::self + py::self)
-      // .def(py::self - py::self)
-      // .def(float() * py::self)
-      // .def(py::self * float())
-      // .def(py::self * py::self)
-      // .def("matmul", &SparseMatrix::matmul)
       // .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
-      // .def("transpose", &SparseMatrix::transpose)
       // .def("get_element", &SparseMatrix::get_element)
       // .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 
-  py::class_<EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::ColMajor>>,
-             SparseMatrix>(m, "EigenSparseMatrix")
+  using EigenMatrix = Eigen::SparseMatrix<float32, Eigen::ColMajor>;
+  py::class_<EigenSparseMatrix<EigenMatrix>, SparseMatrix>(m,
+                                                           "EigenSparseMatrix")
+      .def(py::init<int, int, DataType>())
+      .def(py::init<EigenSparseMatrix<EigenMatrix> &>())
+      .def(py::init<const EigenMatrix &>())
       .def(py::self += py::self)
+      .def(py::self + py::self)
       .def(py::self -= py::self)
-      .def(py::self *= float());
+      .def(py::self - py::self)
+      .def(py::self *= float())
+      .def(py::self * float())
+      .def(float() * py::self)
+      .def("matmul", &EigenSparseMatrix<EigenMatrix>::matmul)
+      .def("transpose", &EigenSparseMatrix<EigenMatrix>::transpose)
+      .def("get_element", &EigenSparseMatrix<EigenMatrix>::get_element)
+      .def("set_element", &EigenSparseMatrix<EigenMatrix>::set_element);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

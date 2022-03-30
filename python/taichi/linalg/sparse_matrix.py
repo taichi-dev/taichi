@@ -31,7 +31,7 @@ class SparseMatrix:
             self.m = sm.num_cols()
             self.matrix = sm
 
-    def __add__(self, other):
+    def __iadd__(self, other):
         """Addition operation for sparse matrix.
 
         Returns:
@@ -39,7 +39,27 @@ class SparseMatrix:
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         self.matrix += other.matrix
-        return SparseMatrix(sm=self.matrix)
+        return self
+
+    def __add__(self, other):
+        """Addition operation for sparse matrix.
+
+        Returns:
+            The result sparse matrix of the addition.
+        """
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
+        sm = self.matrix + other.matrix
+        return SparseMatrix(sm=sm)
+
+    def __isub__(self, other):
+        """Subtraction operation for sparse matrix.
+
+        Returns:
+             The result sparse matrix of the subtraction.
+        """
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
+        self.matrix -= other.matrix
+        return self
 
     def __sub__(self, other):
         """Subtraction operation for sparse matrix.
@@ -48,8 +68,8 @@ class SparseMatrix:
              The result sparse matrix of the subtraction.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-        self.matrix -= other.matrix
-        return SparseMatrix(sm=self.matrix)
+        sm = self.matrix - other.matrix
+        return SparseMatrix(sm=sm)
 
     def __mul__(self, other):
         """Sparse matrix's multiplication against real numbers or the hadamard product against another matrix
@@ -60,8 +80,8 @@ class SparseMatrix:
             The result of multiplication.
         """
         if isinstance(other, float):
-            self.matrix *= other
-            return SparseMatrix(sm=self.matrix)
+            sm = other * self.matrix
+            return SparseMatrix(sm=sm)
         if isinstance(other, SparseMatrix):
             assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
@@ -78,8 +98,8 @@ class SparseMatrix:
             The result of multiplication.
         """
         if isinstance(other, float):
-            self.matrix *= other
-            return SparseMatrix(sm=self.matrix)
+            sm = self.matrix * other
+            return SparseMatrix(sm=sm)
 
         return None
 

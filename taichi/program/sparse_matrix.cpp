@@ -97,64 +97,6 @@ const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
   return ostr.str();
 }
 
-// const int SparseMatrix::num_rows() const {
-//   return matrix_.rows();
-// }
-// const int SparseMatrix::num_cols() const {
-//   return matrix_.cols();
-// }
-
-// Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
-//   return matrix_;
-// }
-
-// const Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() const {
-//   return matrix_;
-// }
-
-
-// SparseMatrix operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-//   Eigen::SparseMatrix<float32> res(sm1.matrix_ - sm2.matrix_);
-//   return SparseMatrix(res);
-// }
-
-// SparseMatrix operator*(float scale, const SparseMatrix &sm) {
-//   Eigen::SparseMatrix<float32> res(scale * sm.matrix_);
-//   return SparseMatrix(res);
-// }
-
-// SparseMatrix operator*(const SparseMatrix &sm, float scale) {
-//   return scale * sm;
-// }
-
-// SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-//   Eigen::SparseMatrix<float32> res(sm1.matrix_.cwiseProduct(sm2.matrix_));
-//   return SparseMatrix(res);
-// }
-
-// SparseMatrix SparseMatrix::matmul(const SparseMatrix &sm) {
-//   Eigen::SparseMatrix<float32> res(matrix_ * sm.matrix_);
-//   return SparseMatrix(res);
-// }
-
-// Eigen::VectorXf SparseMatrix::mat_vec_mul(
-//     const Eigen::Ref<const Eigen::VectorXf> &b) {
-//   return matrix_ * b;
-// }
-
-// SparseMatrix SparseMatrix::transpose() {
-//   Eigen::SparseMatrix<float32> res(matrix_.transpose());
-//   return SparseMatrix(res);
-// }
-
-// float32 SparseMatrix::get_element(int row, int col) {
-//   return matrix_.coeff(row, col);
-// }
-
-// void SparseMatrix::set_element(int row, int col, float32 value) {
-//   matrix_.coeffRef(row, col) = value;
-// }
-
 template <class EigenMatrix>
 void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
   if (taichi::lang::data_type_name(dtype_) == "f32") {

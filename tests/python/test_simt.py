@@ -1,5 +1,4 @@
 import numpy as np
-
 from pytest import approx
 from taichi.lang.simt import subgroup
 

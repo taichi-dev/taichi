@@ -37,7 +37,7 @@ The following table lists the supported operating systems and the backends that 
 |    Linux     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
 |    macOS     | :heavy_check_mark: |        N/A         |        N/A         | :heavy_check_mark: |        N/A         |
 
-- :heavy_check_mark:: supported; 
+- :heavy_check_mark:: supported;
 - N/A: not available
 
 ## Installation
@@ -148,9 +148,9 @@ ti.init(arch=ti.cpu)
 
 When running on the CUDA backend on Windows or ARM devices (for example NVIDIA Jetson), Taichi allocates 1 GB GPU memory for field storage by default.
 
-To override this behavior, do either of the following: 
+To override this behavior, do either of the following:
 
-- Initialize Taichi using `ti.init(arch=ti.cuda, device_memory_GB=3.4)` to allocate `3.4` GB GPU memory, 
+- Initialize Taichi using `ti.init(arch=ti.cuda, device_memory_GB=3.4)` to allocate `3.4` GB GPU memory,
 - Initialize Taichi using `ti.init(arch=ti.cuda, device_memory_fraction=0.3)` to allocate `30%` of the GPU memory.
 
 On platforms other than Windows or ARM devices, Taichi relies on its on-demand memory allocator to allocate memory adaptively.
@@ -186,7 +186,7 @@ Everything else is in the Python scope. They are simply Python native code.
 
 :::caution
 
-- Taichi kernels must be called from the Python-scope. 
+- Taichi kernels must be called from the Python-scope.
 - Taichi functions must be called from the Taichi-scope.
   :::
 
@@ -209,7 +209,7 @@ For those who come from the world of CUDA, `ti.func` corresponds to `__device__`
 
 For loops at the outermost scope in a Taichi kernel is *automatically parallelized*. For loops can have two forms:
 
-- _range-for loops_ 
+- _range-for loops_
 - _struct-for loops_.
 
 *Range-for loops* are no different from the Python for loops, except that they are parallelized when used at the outermost scope. Range-for loops can be nested.

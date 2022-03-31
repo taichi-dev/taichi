@@ -32,7 +32,7 @@ user_api[ti] = [
     'sparse_matrix_builder', 'sqrt', 'static', 'static_assert', 'static_print',
     'stop_grad', 'svd', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
     'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
-    'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+    'uint8', 'vec2', 'vec3', 'vec4', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',

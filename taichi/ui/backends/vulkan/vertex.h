@@ -4,6 +4,8 @@
 
 #include <type_traits>
 
+#include "taichi/common/platform_macros.h"
+
 namespace taichi {
 namespace ui {
 
@@ -42,7 +44,7 @@ constexpr inline VertexAttributes operator|(VertexAttributes src,
   return static_cast<VertexAttributes>(UT(src) | UT(a));
 }
 
-class VboHelpers {
+class TI_DLL_EXPORT VboHelpers {
  public:
   constexpr static VertexAttributes kOrderedAttrs[] = {
       VertexAttributes::kPos,

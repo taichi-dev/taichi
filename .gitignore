@@ -85,3 +85,5 @@ _build
 !docs/**/*.json
 imgui.ini
 /venv/
+/cpp_examples/android/.gradle/
+/cpp_examples/android/app/.cxx/

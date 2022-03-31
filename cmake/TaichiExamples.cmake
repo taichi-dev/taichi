@@ -9,8 +9,11 @@ file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
 "cpp_examples/run_snode.cpp"
 "cpp_examples/autograd.cpp"
 "cpp_examples/aot_save.cpp"
-"cpp_examples/aot_load.cpp"
 )
+
+# This should never be build by this CMake, Android has its own build system (Gradle)
+file(GLOB_RECURSE TAICHI_ANDROID_EXAMPLE_SOURCE "cpp_examples/android/**/*.cpp")
+list(REMOVE_ITEM TAICHI_EXAMPLES_SOURCE ${TAICHI_ANDROID_EXAMPLE_SOURCE})
 
 include_directories(
     ${PROJECT_SOURCE_DIR},

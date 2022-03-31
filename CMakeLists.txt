@@ -87,7 +87,8 @@ endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 
-if (TI_BUILD_EXAMPLES)
+# Examples are only for Desktop
+if (TI_BUILD_EXAMPLES AND NOT ANDROID)
   include(cmake/TaichiExamples.cmake)
 endif()
 

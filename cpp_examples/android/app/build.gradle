@@ -1,0 +1,51 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdk 31
+    ndkVersion '23.1.7779620'
+    signingConfigs {
+        'default' {
+            storeFile file('keystores/upload.jks')
+            storePassword 'abcd1234'
+            keyAlias 'key0'
+            keyPassword 'abcd1234'
+        }
+    }
+
+    defaultConfig {
+        applicationId = 'com.taichi.native_activity'
+        minSdkVersion 29
+        targetSdkVersion 31
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++17'
+            }
+        }
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        signingConfig signingConfigs.'default'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
+    implementation 'androidx.databinding:databinding-runtime:4.1.3'
+    implementation "androidx.startup:startup-runtime:1.0.0"
+}

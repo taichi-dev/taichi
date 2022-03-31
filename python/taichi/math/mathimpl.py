@@ -2,6 +2,7 @@
 Math functions for glsl-like functions and other stuff.
 """
 from math import e, pi
+
 import taichi as ti
 
 

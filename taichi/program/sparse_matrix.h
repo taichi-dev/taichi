@@ -40,7 +40,7 @@ class SparseMatrixBuilder {
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
-  std::string storage_format{"col_major"};
+  std::string storage_format_{"col_major"};
 };
 
 class SparseMatrix {

@@ -47,7 +47,7 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       cols_(cols),
       max_num_triplets_(max_num_triplets),
       dtype_(dtype),
-      storage_format(storage_format) {
+      storage_format_(storage_format) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
   data_base_ptr_ =
@@ -97,7 +97,7 @@ void SparseMatrixBuilder::build_template(std::unique_ptr<SparseMatrix> &m) {
 std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build() {
   TI_ASSERT(built_ == false);
   built_ = true;
-  auto sm = make_sparse_matrix(rows_, cols_, dtype_, storage_format);
+  auto sm = make_sparse_matrix(rows_, cols_, dtype_, storage_format_);
   auto element_size = data_type_size(dtype_);
   switch (element_size) {
     case 4:

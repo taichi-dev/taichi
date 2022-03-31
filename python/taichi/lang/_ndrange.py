@@ -1,8 +1,8 @@
 import collections.abc
 
+from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import _IntermediateMatrix
-from taichi.lang import ops
 
 
 class _Ndrange:

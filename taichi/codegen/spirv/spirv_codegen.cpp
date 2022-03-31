@@ -50,7 +50,7 @@ std::string buffer_instance_name(BufferInfo b) {
     case BufferType::ListGen:
       return kListgenBufferName;
     case BufferType::ExtArr:
-      return kExtArrBufferName;
+      return std::string(kExtArrBufferName) + "_" + std::to_string(b.root_id);
     default:
       TI_NOT_IMPLEMENTED;
       break;

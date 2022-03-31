@@ -161,18 +161,21 @@ class SparseMatrixBuilder:
         num_rows (int): the first dimension of a sparse matrix.
         num_cols (int): the second dimension of a sparse matrix.
         max_num_triplets (int): the maximum number of triplets.
+        dtype (ti.dtype): the data type of the sparse matrix.
+        storage_format (str): the storage format of the sparse matrix.
     """
     def __init__(self,
                  num_rows=None,
                  num_cols=None,
                  max_num_triplets=0,
-                 dtype=f32):
+                 dtype=f32,
+                 storage_format="col_major"):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         self.dtype = dtype
         if num_rows is not None:
             self.ptr = get_runtime().prog.create_sparse_matrix_builder(
-                num_rows, num_cols, max_num_triplets, dtype)
+                num_rows, num_cols, max_num_triplets, dtype, storage_format)
 
     def _get_addr(self):
         """Get the address of the sparse matrix"""

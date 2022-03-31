@@ -13,7 +13,11 @@ class SparseMatrix;
 
 class SparseMatrixBuilder {
  public:
-  SparseMatrixBuilder(int rows, int cols, int max_num_triplets, DataType dtype);
+  SparseMatrixBuilder(int rows,
+                      int cols,
+                      int max_num_triplets,
+                      DataType dtype,
+                      const std::string &storage_format);
 
   void print_triplets();
 
@@ -36,6 +40,7 @@ class SparseMatrixBuilder {
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
+  std::string storage_format{"col_major"};
 };
 
 class SparseMatrix {
@@ -69,7 +74,13 @@ class SparseMatrix {
     return nullptr;
   }
 
-  // Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+  virtual float32 get_element(int row, int col) {
+    return 0;
+  }
+
+  virtual void set_element(int row, int col, float32 value) {
+    return;
+  }
 
  protected:
   int rows_{0};
@@ -144,12 +155,17 @@ class EigenSparseMatrix : public SparseMatrix {
     return EigenSparseMatrix(matrix_ * sm.matrix_);
   }
 
-  float32 get_element(int row, int col) {
+  virtual float32 get_element(int row, int col) override {
     return matrix_.coeff(row, col);
   }
 
-  void set_element(int row, int col, float32 value) {
+  void set_element(int row, int col, float32 value) override {
     matrix_.coeffRef(row, col) = value;
+  }
+
+  template <class VT>
+  VT mat_vec_mul(const Eigen::Ref<const VT> &b) {
+    return matrix_ * b;
   }
 
  private:

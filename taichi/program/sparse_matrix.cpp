@@ -1,9 +1,39 @@
 #include "taichi/program/sparse_matrix.h"
 
 #include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "Eigen/Dense"
 #include "Eigen/SparseLU"
+
+#define BUILD(TYPE)                                                         \
+  {                                                                         \
+    using T = Eigen::Triplet<float##TYPE>;                                  \
+    std::vector<T> *triplets = static_cast<std::vector<T> *>(triplets_adr); \
+    matrix_.setFromTriplets(triplets->begin(), triplets->end());            \
+  }
+
+#define MAKE_MATRIX(TYPE, STORAGE)                                             \
+  {                                                                            \
+    Pair("f" #TYPE, #STORAGE),                                                 \
+        [](int cols, int rows, DataType dt) -> std::unique_ptr<SparseMatrix> { \
+          using FC = Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;         \
+          return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);      \
+        }                                                                      \
+  }
+
+namespace {
+using Pair = std::pair<std::string, std::string>;
+struct key_hash {
+  std::size_t operator()(const Pair &k) const {
+    auto h1 = std::hash<std::string>{}(k.first);
+    auto h2 = std::hash<std::string>{}(k.second);
+    return h1 ^ h2;
+  }
+};
+}  // namespace
 
 namespace taichi {
 namespace lang {
@@ -11,11 +41,13 @@ namespace lang {
 SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
-                                         DataType dtype)
+                                         DataType dtype,
+                                         const std::string &storage_format)
     : rows_(rows),
       cols_(cols),
       max_num_triplets_(max_num_triplets),
-      dtype_(dtype) {
+      dtype_(dtype),
+      storage_format(storage_format) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
   data_base_ptr_ =
@@ -65,7 +97,7 @@ void SparseMatrixBuilder::build_template(std::unique_ptr<SparseMatrix> &m) {
 std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build() {
   TI_ASSERT(built_ == false);
   built_ = true;
-  auto sm = make_sparse_matrix(rows_, cols_, dtype_, "col");
+  auto sm = make_sparse_matrix(rows_, cols_, dtype_, storage_format);
   auto element_size = data_type_size(dtype_);
   switch (element_size) {
     case 4:
@@ -88,21 +120,23 @@ void SparseMatrixBuilder::clear() {
 
 template <class EigenMatrix>
 const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
-  std::cout << "print happended in derived class " << std::endl;
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
   std::ostringstream ostr;
-  ostr << Eigen::MatrixXf(matrix_).format(clean_fmt);
+  ostr << Eigen::MatrixXf(matrix_.template cast<float>()).format(clean_fmt);
   return ostr.str();
 }
 
 template <class EigenMatrix>
 void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
-  if (taichi::lang::data_type_name(dtype_) == "f32") {
-    using T = Eigen::Triplet<float32>;
-    std::vector<T> *triplets = static_cast<std::vector<T> *>(triplets_adr);
-    matrix_.setFromTriplets(triplets->begin(), triplets->end());
+  std::string sdtype = taichi::lang::data_type_name(dtype_);
+  if (sdtype == "f32") {
+    BUILD(32)
+  } else if (sdtype == "f64") {
+    BUILD(64)
+  } else {
+    TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
   }
 }
 
@@ -110,12 +144,22 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
     int cols,
     DataType dt,
-    const std::string &storage_format) {
-  if (taichi::lang::data_type_name(dt) == "f32" &&
-      storage_format == "col_major") {
-    using FC = Eigen::SparseMatrix<float, Eigen::ColMajor>;
-    return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);
-  }
+    const std::string &storage_format = "col_major") {
+  using func_type = std::unique_ptr<SparseMatrix> (*)(int, int, DataType);
+  static const std::unordered_map<Pair, func_type, key_hash> map = {
+      MAKE_MATRIX(32, ColMajor), MAKE_MATRIX(32, RowMajor),
+      MAKE_MATRIX(64, ColMajor), MAKE_MATRIX(64, RowMajor)};
+  std::unordered_map<std::string, std::string> format_map = {
+      {"col_major", "ColMajor"}, {"row_major", "RowMajor"}};
+  std::string tdt = taichi::lang::data_type_name(dt);
+  Pair key = std::make_pair(tdt, format_map.at(storage_format));
+  auto it = map.find(key);
+  if (it != map.end()) {
+    auto func = map.at(key);
+    return func(rows, cols, dt);
+  } else
+    TI_ERROR("Unsupported sparse matrix data type: {}, storage format: {}", tdt,
+             storage_format);
 }
 
 }  // namespace lang

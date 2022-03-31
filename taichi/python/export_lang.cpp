@@ -363,10 +363,11 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype) {
+              DataType dtype, const std::string &storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype);
+             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
+                                        storage_format);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
@@ -944,9 +945,8 @@ void export_lang(py::module &m) {
            py::arg("dt") = PrimitiveType::f32)
       .def(py::init<SparseMatrix &>())
       .def("to_string", &SparseMatrix::to_string)
-      // .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
-      // .def("get_element", &SparseMatrix::get_element)
-      // .def("set_element", &SparseMatrix::set_element)
+      .def("get_element", &SparseMatrix::get_element)
+      .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 
@@ -966,7 +966,9 @@ void export_lang(py::module &m) {
       .def("matmul", &EigenSparseMatrix<EigenMatrix>::matmul)
       .def("transpose", &EigenSparseMatrix<EigenMatrix>::transpose)
       .def("get_element", &EigenSparseMatrix<EigenMatrix>::get_element)
-      .def("set_element", &EigenSparseMatrix<EigenMatrix>::set_element);
+      .def("set_element", &EigenSparseMatrix<EigenMatrix>::set_element)
+      .def("mat_vec_mul",
+           &EigenSparseMatrix<EigenMatrix>::mat_vec_mul<Eigen::VectorXf>);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

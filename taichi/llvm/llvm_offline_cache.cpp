@@ -11,7 +11,8 @@
 namespace taichi {
 namespace lang {
 
-static TI_FORCE_INLINE std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(CompileConfig *config) {
+static TI_FORCE_INLINE std::vector<std::uint8_t>
+get_offline_cache_key_of_compile_config(CompileConfig *config) {
   TI_ASSERT(config);
   BinaryOutputSerializer serializer;
   serializer.initialize();
@@ -39,7 +40,7 @@ static TI_FORCE_INLINE std::vector<std::uint8_t> get_offline_cache_key_of_compil
   serializer(config->default_fp->to_string());
   serializer(config->default_ip.to_string());
   serializer(config->extra_flags);
-  if(arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch)) {
     serializer(config->default_cpu_block_dim);
     serializer(config->cpu_max_num_threads);
   } else if (arch_is_gpu(config->arch)) {

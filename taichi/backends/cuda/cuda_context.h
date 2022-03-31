@@ -15,6 +15,7 @@ TLANG_NAMESPACE_BEGIN
 // cases such as unit testing where many Taichi programs are created/destroyed.
 
 class CUDADriver;
+class CUSPARSEDriver;
 
 class CUDAContext {
  private:
@@ -26,6 +27,7 @@ class CUDAContext {
   std::mutex lock_;
   KernelProfilerBase *profiler_;
   CUDADriver &driver_;
+  CUSPARSEDriver & cusparse_driver_;
   bool debug_;
 
  public:

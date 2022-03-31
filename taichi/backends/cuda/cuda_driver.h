@@ -127,4 +127,15 @@ class CUDADriver {
   bool cuda_version_valid_{false};
 };
 
+class CUSPARSEDriver {
+public:
+  static CUSPARSEDriver &get_instance();
+
+private:
+  CUSPARSEDriver* instance;
+  CUSPARSEDriver();
+
+};
+
+
 TLANG_NAMESPACE_END

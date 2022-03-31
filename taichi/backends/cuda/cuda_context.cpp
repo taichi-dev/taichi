@@ -13,7 +13,8 @@
 TLANG_NAMESPACE_BEGIN
 
 CUDAContext::CUDAContext()
-    : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()) {
+    : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()), 
+                            cusparse_driver_(CUSPARSEDriver::get_instance()) {
   // CUDA initialization
   dev_count_ = 0;
   driver_.init(0);

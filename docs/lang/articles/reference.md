@@ -198,6 +198,16 @@ compile time.
 
 ### Conditional expressions
 
+```
+conditional_expression ::=  or_test ["if" or_test "else" expression]
+expression             ::=  conditional_expression | lambda_expr
+```
+
+Conditional expressions (sometimes called a “ternary operator”) have the lowest priority of all Python operations.
+
+The expression `x if C else y` first evaluates the condition, `C` rather than `x`. 
+If `C` is `true`, `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+
 ### Expression lists
 
 ```
@@ -214,13 +224,69 @@ is evaluated to the value of that expression.
 
 ## Simple statements
 
+A simple statement is comprised within a single logical line. Several simple statements may occur on a single line separated by semicolons. The syntax for simple statements is:
+
+```
+simple_stmt ::=  expression_stmt
+                 | assert_stmt
+                 | assignment_stmt
+                 | augmented_assignment_stmt
+                 | annotated_assignment_stmt
+                 | pass_stmt
+                 | return_stmt
+                 | break_stmt
+                 | continue_stmt
+```
+
+The following section describes the syntax of simple statements that are supported in Taichi.
+It is modeled after [the simple statements chapter of the Python language reference](https://docs.python.org/3/reference/simple_stmts.html).
+
 ### Expression statements
 
-### Assignment statements
+```
+expression_stmt    ::=  starred_expression
+starred_expression ::=  expression | (starred_item ",")* [starred_item]
+starred_item       ::=  assignment_expression | "*" or_expr
+```
+
+An expression statement evaluates the expression list (which may be a single expression).
+
+### Assignment statements {#assignment-statements}
+
+```
+assignment_stmt ::=  (target_list "=")+ (starred_expression)
+target_list     ::=  target ("," target)* [","]
+target          ::=  identifier
+                     | "(" [target_list] ")"
+                     | "[" [target_list] "]"
+                     | attributeref
+                     | subscription
+                     | "*" target
+```
+
+An assignment statement evaluates the expression list (remember that this can be a single expression or a comma-separated list, 
+the latter yielding a tuple) and assigns the single resulting object to each of the target lists, from left to right.
 
 #### Augmented assignment statements
 
+```
+augmented_assignment_stmt ::= augtarget augop (expression_list)
+augtarget                 ::= identifier | attributeref | subscription
+augop                     ::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" |
+                              "**="| ">>=" | "<<=" | "&=" | "^=" | "|="
+```
+
+In Taichi, some augmented assignments (e.g., `x[i] += 1`) are automatically atomic. 
+See [supported-atomic-operations](https://docs.taichi.graphics/lang/articles/operator#supported-atomic-operations) for more details.
+
 #### Annotated assignment statements
+
+```
+annotated_assignment_stmt ::= augtarget ":" expression
+                              ["=" (starred_expression)]
+```
+
+The difference from normal [Assignment statements](#assignment-statements) is that only single target is allowed.
 
 ### The `assert` statement
 Assert statements are a convenient way to insert debugging assertions into a program:

@@ -19,7 +19,7 @@ def check_version(cur_uuid):
 
     system = platform.system()
     if system == 'Linux':
-        payload['platform'] = 'manylinux1_x86_64'
+        payload['platform'] = 'manylinux_2_27_x86_64'
     elif system == 'Windows':
         payload['platform'] = 'win_amd64'
     elif system == 'Darwin':

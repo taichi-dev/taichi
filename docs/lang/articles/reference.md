@@ -266,7 +266,7 @@ Taichi does not support `else` clause in `for` statements.
 
 The `for` loops can iterate in parallel if they are in the outermost scope.
 When a `for` loop is parallelized, the order of iteration is not determined,
-and it cannot be terminated by `break` statements. 
+and it cannot be terminated by `break` statements.
 
 Taichi uses `ti.loop_config` function to set directives for the loop right after it.
 You can write `ti.loop_config(serialize=True)` before a range/ndrange `for` loop to let it run serially,
@@ -281,8 +281,8 @@ There are four kinds of `for` statements:
 
 #### The range `for` statement
 
-The `expression` of range `for` statement must be like `range(begin, end)` or `range(end)`, 
-and they mean the same as the python `range` function, 
+The `expression` of range `for` statement must be like `range(begin, end)` or `range(end)`,
+and they mean the same as the python `range` function,
 except that the `step` argument is not supported.
 
 The `target_list` of range `for` statement must be an identifier which
@@ -327,7 +327,7 @@ are not occupied in the current scope, and the k-th identifier is assigned an in
 The `target_list` of a grouped ndrange `for` statement on an n-dimensional field must be one identifier which
 is not occupied in the current scope, and the identifier is assigned a `ti.Vector` with length n, which contains the loop variables of all n dimensions.
 
-The struct `for` statement must be at the outermost scope of the kernel, 
+The struct `for` statement must be at the outermost scope of the kernel,
 and it cannot be terminated by a `break` statement even when it is run serially.
 
 #### The static `for` statement
@@ -336,12 +336,12 @@ every variable inside `expression` must be a compile-time constant.
 
 The static `for` statement unrolls the range/ndrange `for` loop at compile time.
 
-For example, 
+For example,
 ```python
 for i in ti.static(range(5)):
     print(i)
 ```
-is unrolled to 
+is unrolled to
 ```python
 print(0)
 print(1)
@@ -350,4 +350,3 @@ print(3)
 print(4)
 ```
 at compile time.
-

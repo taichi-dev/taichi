@@ -9,6 +9,7 @@ file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
 "cpp_examples/run_snode.cpp"
 "cpp_examples/autograd.cpp"
 "cpp_examples/aot_save.cpp"
+"cpp_examples/aot_load.cpp"
 )
 
 include_directories(
@@ -25,6 +26,7 @@ if (WIN32)
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${EXAMPLES_OUTPUT_DIR})
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${EXAMPLES_OUTPUT_DIR})
 endif()
+target_include_directories(${EXAMPLES_NAME} PRIVATE external/VulkanMemoryAllocator/include)
 target_link_libraries(${EXAMPLES_NAME} taichi_isolated_core)
 
 endif()

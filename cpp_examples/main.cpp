@@ -5,10 +5,12 @@
 void run_snode();
 void autograd();
 void aot_save();
+void aot_load();
 
 int main() {
   run_snode();
   autograd();
   aot_save();
+  aot_load();
   return 0;
 }

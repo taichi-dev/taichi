@@ -205,7 +205,7 @@ expression             ::=  conditional_expression | lambda_expr
 
 Conditional expressions (sometimes called a “ternary operator”) have the lowest priority of all Python operations.
 
-The expression `x if C else y` first evaluates the condition, `C` rather than `x`. 
+The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
 If `C` is `true`, `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
 
 ### Expression lists
@@ -264,7 +264,7 @@ target          ::=  identifier
                      | "*" target
 ```
 
-An assignment statement evaluates the expression list (remember that this can be a single expression or a comma-separated list, 
+An assignment statement evaluates the expression list (remember that this can be a single expression or a comma-separated list,
 the latter yielding a tuple) and assigns the single resulting object to each of the target lists, from left to right.
 
 #### Augmented assignment statements
@@ -276,7 +276,7 @@ augop                     ::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" |
                               "**="| ">>=" | "<<=" | "&=" | "^=" | "|="
 ```
 
-In Taichi, some augmented assignments (e.g., `x[i] += 1`) are automatically atomic. 
+In Taichi, some augmented assignments (e.g., `x[i] += 1`) are automatically atomic.
 See [supported-atomic-operations](https://docs.taichi.graphics/lang/articles/operator#supported-atomic-operations) for more details.
 
 #### Annotated assignment statements

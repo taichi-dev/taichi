@@ -160,11 +160,44 @@ A parenthesized expression list is evaluated to whatever the expression list is
 evaluated to. An empty pair of parentheses is evaluated to an empty tuple at
 compile time.
 
-#### Displays for lists and dictionaries
+#### List and dictionary displays
 
-#### List displays
+Taichi supports
+[displays](https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries)
+for container (list and dictionary only) construction. Like in Python, a
+display is one of:
+- listing the container items explicitly;
+- providing a *comprehension* (a set of looping and filtering instructions) to
+compute the container items.
 
-#### Dictionary displays
+```
+list_display       ::= "[" [expression_list | list_comprehension] "]"
+list_comprehension ::= assignment_expression comp_for
+
+dict_display       ::= "{" [key_datum_list | dict_comprehension] "}"
+key_datum_list     ::= key_datum ("," key_datum)* [","]
+key_datum          ::= expression ":" expression
+dict_comprehension ::= key_datum comp_for
+
+comp_for           ::= "for" target_list "in" or_test [comp_iter]
+comp_iter          ::= comp_for | comp_if
+comp_if            ::= "if" or_test [comp_iter]
+```
+
+The semantics of list and dict displays in Taichi mainly follow Python. Note
+that they are evaluated at compile time, so all expressions in `comp_for`,
+as well as keys in `key_datum`, are required to be evaluated to Python values.
+
+For example, in the following code snippet, `a` can be successfully defined
+while `b` cannot because `p` cannot be evaluated to a Python value at compile
+time.
+
+```python
+@ti.kernel
+def test(p: ti.i32):
+    a = ti.Matrix([i * p for i in range(10)])  # valid
+    b = ti.Matrix([i * p for i in range(p)])  # compile error
+```
 
 ### Primaries
 

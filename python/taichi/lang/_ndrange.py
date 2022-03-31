@@ -1,6 +1,7 @@
 import collections.abc
 
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang import expr
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.matrix import _IntermediateMatrix
 
 
@@ -18,6 +19,10 @@ class _Ndrange:
 
         self.dimensions = [None] * len(args)
         for i, bound in enumerate(self.bounds):
+            if not (isinstance(bound[0], (int, expr.Expr)) and isinstance(bound[1], (int, expr.Expr))):
+                raise TaichiTypeError(
+                    f"Float object cannot be interpreted as an integer in ndrange: {bound}"
+                )
             self.dimensions[i] = bound[1] - bound[0]
 
         self.acc_dimensions = self.dimensions.copy()

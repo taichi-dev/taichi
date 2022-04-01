@@ -6,7 +6,7 @@ sidebar_position: 2
 
 | **Category** | **Prerequisites**                                            |
 | ------------ | ------------------------------------------------------------ |
-| OS           | Windows / Linux                                              |
+| OS           | Windows / Linux / Mac OS X                                   |
 | Backend      | x64 / CUDA                                                   |
 | Vulkan       | Install [the Vulkan environment](https://vulkan.lunarg.com/sdk/home). |
 | LLVM         | 10.0.0 (Taichi customized version)                           |

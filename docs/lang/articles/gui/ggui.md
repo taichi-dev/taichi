@@ -17,9 +17,7 @@ If you choose Vulkan as backend, ensure that you [install the Vulkan environment
 
 
 :::note
-
 It is recommended that you familiarize yourself with GGUI through the examples in `examples/ggui_examples`.
-
 :::
 
 ## Create a window
@@ -33,9 +31,7 @@ window = ti.ui.Window('Window Title', (640, 360))
 The following three types of objects can be displayed on a `ti.ui.Window`:
 
 - 2D Canvas, which can be used to draw simple 2D geometries such as circles and triangles.
-
 - 3D Scene, which can be used to render 3D meshes and particles, with a configurable camera and light sources.
-
 - Immediate mode GUI components, for example buttons and textboxes.
 
 ## 2D Canvas

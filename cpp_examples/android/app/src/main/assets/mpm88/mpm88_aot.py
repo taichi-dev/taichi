@@ -72,7 +72,7 @@ def substep(pos: ti.any_arr(element_dim=1)):
         v[p] = new_v
         x[p] += dt * v[p]
         # VBO Attributes: all (pos, normal, tex, color)
-        pos[p] = [x[p][0], x[p][1], 0,0,0,0,0,0,0,0,0,0]
+        pos[p] = [x[p][0], x[p][1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         J[p] *= 1 + dt * new_C.trace()
         C[p] = new_C
 
@@ -87,6 +87,7 @@ def init(pos: ti.any_arr(element_dim=1)):
         v[i] = [0, -1]
         J[i] = 1
 
+
 #init(pos)
 #gui = ti.GUI('MPM88')
 #while gui.running and not gui.get_event(gui.ESCAPE):
@@ -97,6 +98,6 @@ def init(pos: ti.any_arr(element_dim=1)):
 #    gui.show()
 
 m = ti.aot.Module(ti.vulkan)
-m.add_kernel(init, (pos,))
-m.add_kernel(substep, (pos,))
+m.add_kernel(init, (pos, ))
+m.add_kernel(substep, (pos, ))
 m.save('.', 'mpm88')

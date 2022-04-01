@@ -1,7 +1,7 @@
 Configuration
 =============
 
-In order to build and run the Android C++ Example, it is requires to build the exported Taichi library for Android (see Build section) and update the following file with the proper path *if needed*: `app/src/main/cpp/CMakeLists.txt`  
+In order to build and run the Android C++ Example, it is requires to build the exported Taichi library for Android (see Build section) and update the following file with the proper path *if needed*: `app/src/main/cpp/CMakeLists.txt`
 By default, the library is set to use the `build` directory from the root directory of Taichi.
 
 
@@ -16,7 +16,7 @@ This C++ example requires a specific version of Taichi cross-compiled for Androi
 The next steps is to make sure to compile the Python AOT module located here:
 
     android/app/src/main/assets/mpm88
-    
+
 This needs to be compiled with the Desktop version of Taichi by running the command:
 
     python3 mpm88_aot.py

@@ -950,25 +950,36 @@ void export_lang(py::module &m) {
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 
-  using EigenMatrix = Eigen::SparseMatrix<float32, Eigen::ColMajor>;
-  py::class_<EigenSparseMatrix<EigenMatrix>, SparseMatrix>(m,
-                                                           "EigenSparseMatrix")
-      .def(py::init<int, int, DataType>())
-      .def(py::init<EigenSparseMatrix<EigenMatrix> &>())
-      .def(py::init<const EigenMatrix &>())
-      .def(py::self += py::self)
-      .def(py::self + py::self)
-      .def(py::self -= py::self)
-      .def(py::self - py::self)
-      .def(py::self *= float())
-      .def(py::self * float())
-      .def(float() * py::self)
-      .def("matmul", &EigenSparseMatrix<EigenMatrix>::matmul)
-      .def("transpose", &EigenSparseMatrix<EigenMatrix>::transpose)
-      .def("get_element", &EigenSparseMatrix<EigenMatrix>::get_element)
-      .def("set_element", &EigenSparseMatrix<EigenMatrix>::set_element)
-      .def("mat_vec_mul",
-           &EigenSparseMatrix<EigenMatrix>::mat_vec_mul<Eigen::VectorXf>);
+#define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
+  using STORAGE##TYPE##EigenMatrix =                                         \
+      Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;                      \
+  py::class_<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>, SparseMatrix>(   \
+      m, #VTYPE #STORAGE "_EigenSparseMatrix")                               \
+      .def(py::init<int, int, DataType>())                                   \
+      .def(py::init<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> &>())      \
+      .def(py::init<const STORAGE##TYPE##EigenMatrix &>())                   \
+      .def(py::self += py::self)                                             \
+      .def(py::self + py::self)                                              \
+      .def(py::self -= py::self)                                             \
+      .def(py::self - py::self)                                              \
+      .def(py::self *= float##TYPE())                                        \
+      .def(py::self *float##TYPE())                                          \
+      .def(float##TYPE() * py::self)                                         \
+      .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
+      .def("transpose",                                                      \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
+      .def("get_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element)      \
+      .def("set_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element)      \
+      .def("mat_vec_mul",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
+               Eigen::VectorX##VTYPE>);
+
+  MAKE_SPARSE_MATRIX(32, ColMajor, f);
+  MAKE_SPARSE_MATRIX(32, RowMajor, f);
+  MAKE_SPARSE_MATRIX(64, ColMajor, d);
+  MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

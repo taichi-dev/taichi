@@ -238,7 +238,8 @@ The simple form, `assert expression`, raises `TaichiAssertionError` (which is a 
 when `expression` is equal to `False`, with the code of `expression` as the error message.
 
 The extended form, `assert expression1, expression2`, raises `TaichiAssertionError` when `expression1` is equal to `False`,
-with `expression2` as the error message.
+with `expression2` as the error message. `expression2` must be a constant or a formatted string. The variables in the 
+formatted string must be scalars.
 
 ### The `pass` statement
 

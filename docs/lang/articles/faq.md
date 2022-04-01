@@ -2,7 +2,7 @@
 sidebar_position: 9999
 ---
 
-# Frequently Asked Questions            
+# Frequently Asked Questions
 
 ### Why does my `pip` complain `package not found` when installing Taichi?
 

@@ -142,7 +142,7 @@ class ASTTransformer(Builder):
                     var = target.ptr = getattr(obj, target.attr)
                 else:
                     setattr(obj, target.attr, impl.expr_init(value))
-                    return None
+                    return getattr(obj, target.attr)
             else:
                 var = build_stmt(ctx, target)
 
@@ -152,7 +152,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(
                     f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
                 )
-        return None
+        return var
 
     @staticmethod
     def build_NamedExpr(ctx, node):

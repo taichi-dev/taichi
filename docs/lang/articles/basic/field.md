@@ -3,74 +3,70 @@ sidebar_position: 4
 ---
 
 # Fields
-Taichi fields are used to store data.
-In general, fields are global data containers that can be read and written from both the Python scope and the Taichi scope.
 
-A field has its own data type and shape and can be considered as a multi-dimensional array of elements.
-An element of a field can be a **scalar**, a **vector**, a **matrix**, or a **struct**.
-The sparsity of a field element is **dense** by default, but it can also be **sparse**, as detailed described in [Sparse spatial data structures](/lang/articles/advanced/sparse.md).
+The term _field_ is borrowed from mathematics and physics. If you already know [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (for example heat field), or vector field (for example [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)), then it is straightforward for you to understand fields in Taichi.
+
+Fields in Taichi are the _global_ data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
 
 :::note
-The term **field** is borrowed from mathematics and physics.
-If you have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics,
-it will be straightforward to understand the fields in Taichi.
+A 0D (zero-dimensional) field contains *only* one element.
 :::
 
 ## Scalar fields
-We start introducing fields from this very basic type, the elements of scalar fields are simply scalars.
-* A 0D scalar field is a single scalar.
-* A 1D scalar field is an array.
-* A 2D scalar field can be used to represent a 2D regular grid of values.
-* A 3D scalar field can be used for volumetric data.
+
+Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar.
+
 
 ### Declaration
-``` python
+
+```python
 import taichi as ti
 ti.init(arch=ti.cpu)
 
-energy           = ti.field(ti.f32, shape=())           # 0-D
-linear_array     = ti.field(ti.i32, shape=128)          # 1-D
-gray_scale_image = ti.field(ti.u8,  shape=(640, 480))   # 2-D
-volumetric_data  = ti.field(ti.f32, shape=(32, 32, 32)) # 3-D
+# Declare a 0D scalar field whose data type is f32
+f_0d = ti.field(ti.f32, shape=())           # 0D
+# Declare a 1D scalar field whose shape is (128)
+f_1d = ti.field(ti.i32, shape=128)          # 1D
+# Declare a 2D scalar field whose shape is (640, 480)
+f_2d = ti.field(ti.u8,  shape=(640, 480))   # 2D
+# Declare a 3D scalar field whose data type is f32
+f_3d = ti.field(ti.f32, shape=(32, 32, 32)) # 3D
 ```
 
-### Access elements of scalar fields
-``` python
-energy[None]           = 10.0
-linear_array[0]        = 1
-gray_scale_image[1,2]  = 255
-volumetric_data[3,3,3] = 2.0
-```
+### Access elements in a scalar field
 
-### Meta data
-``` python
-linear_array.shape     # (128,)
-volumetric_data.dtype  # f32
-```
+The initial value of elements in a scalar filed is zero. Always use explicit indexing to access elements in a scalar field.
 
 :::note
-* Field values are initially zero.
-* Fields are **always** accessed by indices. When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`.
+When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 :::
 
-### Example
-An example might help you understand scalar fields.
-Assume you have a gray-scale image. At each point in the image, there would be a pixel value. The width and height of the image are similar to the `shape` of the Taichi scalar field. The pixel value (0-D scalar) is like the element of the Taichi scalar field. We could use the following code to generate a gray-scale image with random pixel values:
+```python
+# For a 0D field, you are required to use the index None even though it has only one element
+f_0d[None] = 10.0
+f_1d[0] = 1
+f_2d[1, 2] = 255
+f_3d[3, 3, 3] = 2.0
+```
 
-``` python {5}
+As mentioned above, you can use a 2D scalar field to represent a 2D grid of values. The following code snippet creates and displays a 640&times;480 image with randomly-generated gray scales:
+
+```python
 import taichi as ti
-
 ti.init(arch=ti.cpu)
+
 width, height = 640,480
+# Create a 640x480 scalar field, each of its elements representing a pixel value (f32)
 gray_scale_image = ti.field(dtype=ti.f32, shape=(width, height))
 
 @ti.kernel
 def fill_image():
+  	# Fill the image with random gray
     for i,j in gray_scale_image:
         gray_scale_image[i,j] = ti.random()
 
 fill_image()
-
+# Create a GUI of same size as the gray-scale image
 gui = ti.GUI('gray-scale image with random values', (width, height))
 while gui.running:
     gui.set_image(gray_scale_image)
@@ -78,28 +74,62 @@ while gui.running:
 ```
 
 :::tip
-In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout.md).
+With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](/lang/articles/advanced/layout.md) for more information.
 :::
 
-## Vector fields
-We are all living in a gravitational field, which is a vector field. At each position in 3D space, there is a gravity force vector. The gravitational field could be represented by:
+:::caution WARNING
+Taichi does not support slicing on a Taichi field. For example, with the 2D scalar field `f_2d`, you can do `f_2d[1, 2]`, but *not* `f_2d[1]`.
+:::
+
+### Metadata
+
+Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` property:
+
 ```python
-gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
+f_1d.shape  # (128)
+f_3d.dtype  # f32
 ```
-`x, y, z` are the sizes of each dimension of the 3D space respectively. `n` is the number of elements of the gravity force vector.
 
-### Access elements of vector fields
-There are **two** indexing operators `[]` when you access a member of a vector field: the first is for field indexing, and the second is for vector indexing.
-- The gravity force vector could be accessed by `gravitational_field[i, j, k]` (`0 <= i < x, 0 <= j < y, 0 <= k < z`).
-- The `p`-th member of the gravity force vector could be accessed by `gravitational_field[i, j, k][p]` (`0 <= p < n`).
-- The 0-D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]` (`0 <= p < n`).
+## Vector fields
 
-### Example
-This example helps you understand how to access vector fields:
-``` python
-import taichi as ti
-ti.init(arch=ti.cpu)
+As the name suggests, vector fields are the fields whose elements are vectors.
 
+- You can use a vector field to represent an RGB image. Then, each of its elements is an (r, g, b) triple.
+- You can use a vector field to represent a volumetric field. Then, each of its elements can be the velocity of the corresponding particle.
+
+### Declaration
+
+The following code snippet declares a 3D field of 2D vectors:
+
+```python
+# Declare a 1x2x3 vector field, whose vector dimension is n=2
+f = ti.Vector(ti.f32, n=2).field(shape=(1,2,3))
+```
+
+The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 3:
+
+```python
+box_size = (300, 300, 300)  # A 300x300x300 grid in a 3D space
+# Declare a 300x300x300 vector field, whose vector dimension is n=3
+volumetric_field = ti.Vector.field(n=3, dtype=ti.f32, shape=box_size)
+```
+
+### Access elements in a vector field
+
+Accessing a vector field is similar to accessing a multi-dimensional array: You use an index operator `[]` to access an element in the field. The only difference is that, to access a specific component of an element (vector in this case), you need an *extra* index operator `[]`:
+
+- To access the velocity vector at a specific position of the volumetric field above:
+
+  `volumetric_field[i,j,k]`
+
+- To access the `l`-th component of the velocity vector:
+
+  `volumetric_field[i, j, k][l]`
+
+The following code snippet generates and prints a random vector field:
+
+```python
+# n: vector dimension; w: width; h: height
 n,w,h = 3,128,64
 vec_field = ti.Vector.field(n, dtype=ti.f32, shape=(w,h))
 
@@ -114,56 +144,100 @@ fill_vector()
 print(vec_field[w-1,h-1][n-1])
 ```
 
-## Matrix fields
-Field elements can also be matrices. In continuum mechanics, each
-infinitesimal point in a material exists a strain and a stress tensor. The strain and stress tensor is a 3 by 3 matrix in the 3D space. To represent this tensor field we could use:
-```python
-strain_tensor_field = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=(x, y, z))
-```
-`x, y, z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
+:::note
+To access the `p`-th component of the 0D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())`:
 
-In a general case, suppose you have a `128 x 64` field called `A`, and each element is
-a `3 x 2` matrix, you can define it with `A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
-
-### Access elements of matrix fields
-There are **two** indexing operators `[]` when you access a member of a matrix from a matrix field:
-the first is for field indexing, and the second is for matrix indexing.
-- If you want to get the element `i, j` of the matrix field, please use `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
-- To get the member on the first row and second column of that element `mat`, use `mat[0, 1]` or `A[i, j][0, 1]`.
-- The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
-- `ti.Vector` is simply an alias of `ti.Matrix`.
-
-### Example
-This example helps you understand element and member in matrix fields:
-``` python
-matrix_field = ti.Matrix.field(n = 2, m = 3, dtype = ti.f32, shape = (2, 2))
-Element = matrix_field[0, 0]
-Member = matrix_field[0, 1][1,1]
-```
-![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/matrix_field.jpg)
-
-### Matrix size
-For performance reasons, matrix operations will be unrolled during the compile stage.
-Therefore we suggest using only small matrices. For example, `2x1`, `3x3`, `4x4`
-matrices are fine, yet `32x6` is probably too big as a matrix size.
-
-If you have a dimension that is too large (e.g. `64`), it's better to
-declare a field of size `64`. E.g., instead of declaring
-`ti.Matrix.field(64, 32, dtype=ti.f32, shape=(3, 2))`, declare
-`ti.Matrix.field(3, 2, dtype=ti.f32, shape=(64, 32))`. Try to put large
-dimensions to fields instead of matrices.
-
-:::caution
-Due to the unrolling mechanism, operating on large matrices (e.g.
-`32x128`) can lead to a very long compilation time and low performance.
+`x[None][p]` (0 &le; p < n).
 :::
 
-## Struct fields
-Field elements can be user-defined structs.
-Struct fields are created by providing the name and data type of each member variable in a dictionary format.
-Member variables of struct fields might be scalars, vectors, matrices, or other struct fields.
-For example, a 1-D field of particles with position, velocity, acceleration, and mass can be declared as:
+## Matrix fields
+
+As the name suggests, matrix fields are the fields whose elements are matrices. In continuum mechanics, at each infinitesimal point in a 3D material exists a strain and stress tensor. The strain and stress tensor is a 3 x 2 matrix. Then, you can use a matrix field to represent such a tensor field.
+
+### Declaration
+
+The following code snippet declares a tensor field:
+
 ```python
+# Declare a 300x400x500 matrix field, each of its elements being a 3x2 matrix
+tensor_field = ti.Matrix.field(n=3, m=2, dtype=ti.f32, shape=(300, 400, 500))
+```
+
+### Access elements in a matrix field
+
+Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second `[]` for matrix indexing.
+
+- To retrieve the `i, j` element of the matrix field `tensor_field`:
+
+  `mat = tensor_field[i, j]`
+
+- To retrieve the member on the first row and second column of the element `mat`:
+
+  `mat[0, 1]` or `tensor_field[i, j][0, 1]`
+
+:::note
+
+To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())`:
+
+`x[None][p, q]` (0 &le; p < n, 0 &le; q < m)
+
+:::
+
+### Considerations: Matrix size
+
+Matrix operations are unrolled during compile time. Take a look at the following example:
+
+```python
+import taichi as ti
+ti.init()
+
+a = ti.Matrix.field(n=2, m=3, dtype=ti.f32, shape=(2, 2))
+@ti.kernel
+def test():
+    for i in ti.grouped(a):
+        # a[i] is a 2x3 matrix
+        a[i] = [[1, 1, 1], [1, 1, 1]]
+        # The assignment is unrolled to the following during compile time:
+        # a[i][0, 0] = 1
+        # a[i][0, 1] = 1
+        # a[i][0, 2] = 1
+        # a[i][1, 0] = 1
+        # a[i][1, 1] = 1
+        # a[i][1, 2] = 1
+```
+
+Operating on large matrices (for example `32x128`) can lead to long compilation time and poor performance. For performance reasons, it is recommended that you keep your matrices small:
+
+- `2x1`, `3x3`, and `4x4` matrices work fine.
+- `32x6` is a bit too large.
+
+**Workaround:**
+
+When declaring the matrix field, leave large dimensions to the fields, rather than to the matrices. If you have a `3x2` field of `64x32` matrices:
+
+- Not recommended:
+  `ti.Matrix.field(64, 32, dtype=ti.f32, shape=(3, 2))`
+- Recommended:
+  `ti.Matrix.field(3, 2, dtype=ti.f32, shape=(64, 32))`
+
+## Struct fields
+
+Struct fields are fields that store user-defined structs. Members of a struct element can be:
+
+- Scalars
+- Vectors
+- Matrices
+- Other struct fields.
+
+### Declaration
+
+The following code snippet declares a 1D field of particle information (position, velocity, acceleration, and mass) using `ti.Struct.field()`. Note that:
+
+- Member variables `pos`, `vel`, `acc`, and `mass` are provided in the dictionary format.
+- [Compound types](type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members.
+
+```python
+# Declare a 1D struct field using the ti.Struct.field() method
 particle_field = ti.Struct.field({
     "pos": ti.types.vector(3, ti.f32),
     "vel": ti.types.vector(3, ti.f32),
@@ -172,25 +246,30 @@ particle_field = ti.Struct.field({
   }, shape=(n,))
 ```
 
-[Compound types](type.md#compound-types) (`ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`) are used to declare vectors, matrices, or structs as field members. Apart from using `ti.Struct.field`, the above particle field can also be declared by using the field of compound types:
+Alternatively, besides *directly* using `ti.Struct.field()`, you can first declare a compound type `particle` and then create a field of it:
+
 ```python
+# Declare a compound type vec3f to represent position, velocity, and acceleration.
 vec3f = ti.types.vector(3, ti.f32)
+# Declare a struct composed of three vectors and one f32 floating-point number
 particle = ti.types.struct(
   pos=vec3f, vel=vec3f, acc=vec3f, mass=ti.f32,
 )
+# Declare a 1D field of the struct particle using field()
 particle_field = particle.field(shape=(n,))
 ```
 
-Members of a struct field can be accessed either locally (i.e., member of a struct field element) or globally (i.e., member field of a struct field):
+### Access elements in a struct field
+
+You can access members of elements in a struct field either one by one or universally:
+
 ```python
-# set the position of the first particle to origin
-particle_field[0] # local ti.Struct
-particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
+# Set the position of the first particle in the field to origin [0.0, 0.0, 0.0]
+particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0]) # pos is a 3D vector
 
-# set the first member of the second position to 1.0
-particle_field[1].pos[0] = 1.0
+# Set the second particle's pos[0] in the field to 1.0
+particle_field[1].pos[0] = 1.0 # pos[0] is the first member of pos
 
-# make the mass of all particles be 1
-particle_field.mass # global ti.Vector.field
+# Universally set the mass of all particles to 1.0
 particle_field.mass.fill(1.0)
 ```

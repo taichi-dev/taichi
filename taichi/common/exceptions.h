@@ -28,5 +28,9 @@ class TaichiRuntimeError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 };
 
+class TaichiAssertionError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
 }  // namespace lang
 }  // namespace taichi

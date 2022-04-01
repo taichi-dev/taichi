@@ -474,7 +474,7 @@ class _Root:
 root = _Root()
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
-See also https://docs.taichi.graphics/lang/articles/advanced/layout
+See also https://docs.taichi.graphics/lang/articles/layout
 
 Example::
 
@@ -516,7 +516,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     actually defined. The data in a Taichi field can be directly accessed by
     a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
 
-    See also https://docs.taichi.graphics/lang/articles/basic/field
+    See also https://docs.taichi.graphics/lang/articles/field
 
     Args:
         dtype (DataType): data type of the field.
@@ -766,7 +766,7 @@ def static(x, *xs):
     `static()` is what enables the so-called metaprogramming in Taichi. It is
     in many ways similar to ``constexpr`` in C++.
 
-    See also https://docs.taichi.graphics/lang/articles/advanced/meta.
+    See also https://docs.taichi.graphics/lang/articles/meta.
 
     Args:
         x (Any): an expression to be evaluated
@@ -858,9 +858,10 @@ def default_cfg():
     return _ti_core.default_compile_config()
 
 
-def call_internal(name, *args):
+def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
-        _ti_core.insert_internal_func_call(name, make_expr_group(args)))
+        _ti_core.insert_internal_func_call(name, make_expr_group(args),
+                                           with_runtime_context))
 
 
 @taichi_scope

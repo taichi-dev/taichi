@@ -8,7 +8,7 @@ from genericpath import exists
 import taichi as ti
 from tests import test_utils
 
-supported_archs_offline_cache = [ti.cpu]
+supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
     if v in test_utils.expected_archs()
@@ -17,7 +17,6 @@ tmp_offline_cache_file_path = './_temp_ticache'
 ext_init_options = {
     'offline_cache': True,
     'offline_cache_file_path': tmp_offline_cache_file_path,
-    'print_preprocessed_ir': True
 }
 cache_files_num_per_kernel = 2
 
@@ -153,7 +152,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-def test_closing_offline_cache(curr_arch):
+def _test_closing_offline_cache(curr_arch):
     for kernel, args, get_res in simple_kernels_to_test:
         _test_closing_offline_cache_for_a_kernel(curr_arch=curr_arch,
                                                  kernel=kernel,

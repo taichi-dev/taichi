@@ -37,6 +37,16 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   const FieldInfo &img = info.img;
 
+  // Support configuring the internal image based on the data type of the field
+  // info.  We assume that the internal image is 4 channels and allow the user
+  // to configure either a classic RGBA8 (u8) or RGBA32F (f32). The latter is
+  // useful for target that support this texture type as it allows to re-use the
+  // result of a kernel directly without normalizing the value from [0; 1] to
+  // [0; 255]
+  //
+  // @TODO: Make the number of channel configurable?
+  texture_dtype_ = img.dtype;
+
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
 
@@ -53,7 +63,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  uint64_t img_size = pixels * 4;
+  uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
 
   // If there is no current program, VBO information should be provided directly
   // instead of accessing through the current SNode
@@ -122,11 +132,14 @@ void SetImage::init_set_image(AppContext *app_context,
 }
 
 void SetImage::create_texture() {
-  size_t image_size = width * height * 4;
+  size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
 
   ImageParams params;
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
+  if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
+    params.format = BufferFormat::rgba32f;
+  }
   params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;

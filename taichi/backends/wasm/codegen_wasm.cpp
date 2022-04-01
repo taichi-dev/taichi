@@ -212,6 +212,10 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 
   FunctionType gen() override {
     TI_AUTO_PROF
+    // lower kernel
+    if (!kernel->lowered()) {
+      kernel->lower();
+    }
     // emit_to_module
     stat.add("codegen_taichi_kernel_function");
     auto offloaded_task_name = init_taichi_kernel_function();

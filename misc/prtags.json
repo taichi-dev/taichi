@@ -44,6 +44,7 @@
   "blender"         : "Blender intergration",
   "export"          : "Exporting kernels",
   "type"            : "Type system",
+  "simt"            : "SIMT programming",
   "release"         : "Release",
   "build"           : "Build system"
 }

@@ -17,7 +17,7 @@ def test_io_devices():
     x = ti.field(dtype=ti.i32, shape=n)
 
     @ti.kernel
-    def load(y: ti.ext_arr()):
+    def load(y: ti.types.ndarray()):
         for i in x:
             x[i] = y[i] + 10
 
@@ -27,7 +27,7 @@ def test_io_devices():
             x[i] += i
 
     @ti.kernel
-    def store(y: ti.ext_arr()):
+    def store(y: ti.types.ndarray()):
         for i in x:
             y[i] = x[i] * 2
 
@@ -53,13 +53,13 @@ def test_io():
     n = 32
 
     @ti.kernel
-    def torch_kernel(t: ti.ext_arr(), o: ti.ext_arr()):
+    def torch_kernel(t: ti.types.ndarray(), o: ti.types.ndarray()):
         for i in range(n):
             o[i] = t[i] * t[i]
 
     @ti.kernel
-    def torch_kernel_2(t_grad: ti.ext_arr(), t: ti.ext_arr(),
-                       o_grad: ti.ext_arr()):
+    def torch_kernel_2(t_grad: ti.types.ndarray(), t: ti.types.ndarray(),
+                       o_grad: ti.types.ndarray()):
         for i in range(n):
             t_grad[i] = 2 * t[i] * o_grad[i]
 
@@ -93,7 +93,7 @@ def test_io_2d():
     n = 32
 
     @ti.kernel
-    def torch_kernel(t: ti.ext_arr(), o: ti.ext_arr()):
+    def torch_kernel(t: ti.types.ndarray(), o: ti.types.ndarray()):
         for i in range(n):
             for j in range(n):
                 o[i, j] = t[i, j] * t[i, j]
@@ -117,7 +117,7 @@ def test_io_3d():
     n = 16
 
     @ti.kernel
-    def torch_kernel(t: ti.ext_arr(), o: ti.ext_arr()):
+    def torch_kernel(t: ti.types.ndarray(), o: ti.types.ndarray()):
         for i in range(n):
             for j in range(n):
                 for k in range(n):
@@ -264,7 +264,7 @@ def test_shape_vector():
 @test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_torch_zero():
     @ti.kernel
-    def test_torch(arr: ti.ext_arr()):
+    def test_torch(arr: ti.types.ndarray()):
         pass
 
     test_torch(torch.zeros((0), dtype=torch.int32))
@@ -276,7 +276,7 @@ def test_torch_zero():
 @test_utils.test(exclude=[ti.opengl, ti.vulkan])
 def test_torch_view():
     @ti.kernel
-    def copy(x: ti.any_arr(), y: ti.any_arr()):
+    def copy(x: ti.types.ndarray(), y: ti.types.ndarray()):
         for i, j in x:
             y[i, j] = x[i, j]
 

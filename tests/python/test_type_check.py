@@ -51,11 +51,11 @@ def test_subscript():
     a = ti.ndarray(ti.i32, shape=(10, 10))
 
     @ti.kernel
-    def any_array(x: ti.any_arr()):
+    def ndarray(x: ti.types.ndarray()):
         b = x[3, 1.1]
 
     with pytest.raises(ti.TaichiTypeError, match="indices must be integers"):
-        any_array(a)
+        ndarray(a)
 
 
 @test_utils.test()

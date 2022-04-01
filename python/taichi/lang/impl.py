@@ -73,7 +73,7 @@ def expr_init_func(
 def begin_frontend_struct_for(ast_builder, group, loop_range):
     if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
         raise TypeError(
-            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
+            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via types.ndarray)'
         )
     if group.size() != len(loop_range.shape):
         raise IndexError(

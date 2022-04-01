@@ -42,7 +42,7 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             InputArray: ti.ext_arr(), b: ti.template()):
+             InputArray: ti.types.ndarray(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += InputArray[i, j]
         for i in range(n):

@@ -53,14 +53,14 @@ def test_arg_load_f64():
 
 
 @test_utils.test()
-def test_ext_arr():
+def test_ndarray():
     N = 128
     x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, N).place(x)
 
     @ti.kernel
-    def set_f32(v: ti.ext_arr()):
+    def set_f32(v: ti.types.ndarray()):
         for i in range(N):
             x[i] = v[i] + i
 

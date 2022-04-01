@@ -11,7 +11,7 @@ End users who *only* wish to quickly set up Taichi for simulation or high-perfor
 
 :::caution IMPORTANT
 
-For developers who are interested in the compiler, computer graphics, or high-performance computing, and would like to contribute new features or bug fixes to the [Taichi programming language](https://github.com/taichi-dev/taichi), see the [Developer installation](../contribution/dev_install.md) for more information on building Taichi from source. Doing both at the same time may cause unnecessary conflicts.
+For developers who are interested in the compiler, computer graphics, or high-performance computing, and would like to contribute new features or bug fixes to the [Taichi programming language](https://github.com/taichi-dev/taichi), see the [Developer installation](../contribution/dev_install.md) for more information on building Taichi from source. 
 
 :::
 
@@ -132,16 +132,17 @@ You can even use your favorite Python package management system, Python IDEs and
 # Initialize Taichi and run it on CPU (default)
 # - `arch=ti.gpu`: Run Taichi on GPU and has Taichi automatically detect the suitable backend
 # - `arch=ti.cuda`: For the NVIDIA CUDA backend
-# - `arch=ti.opengl`: For the OpenGL backend
 # - `arch=ti.metal`: [macOS] For the Apple Metal backend
-# - `arch=
+# - `arch=ti.opengl`: For the OpenGL backend
+# - `arch=ti.vulkan`: For the Vulkan backend
+# - `arch=ti.dx11`: For the DX11 backend
 ti.init(arch=ti.cpu)
 ```
 
 :::info
 
-- With `arch=ti.gpu`, Taichi first tries to run on CUDA. If CUDA is not supported on your machine, Taichi falls back on Metal or OpenGL.
-- If no GPU backend (CUDA, Metal, or OpenGL) is supported, Taichi falls back on CPU.
+- With `arch=ti.gpu`, Taichi first tries to run on CUDA. If CUDA is not supported on your machine, Taichi falls back on Metal, OpenGL, Vulkan, or DX11.
+- If no GPU backend (CUDA, Metal, OpenGL, Vulkan, or DX11) is supported, Taichi falls back to the CPU backend.
   :::
 
 :::note

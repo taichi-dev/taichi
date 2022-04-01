@@ -10,7 +10,7 @@ Developers who are interested in the compiler, computer graphics, or high-perfor
 
 :::danger IMPORTANT
 
-This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts.
+This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. 
 
 See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users.
 

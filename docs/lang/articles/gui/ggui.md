@@ -164,7 +164,7 @@ To check if a key is pressed:
 
 - `window.is_pressed(key)`
 
-The following is a user input processing example from **mpm128**:
+The following is a user input processing example from [**mpm128**](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/ggui_examples/mpm128_ggui.py):
 
 ```python
 while window.running:

@@ -6,6 +6,19 @@ from math import e, pi
 import taichi as ti
 
 
+mat2 = ti.types.matrix(2, 2, float)
+"""2x2 float matrix type
+"""
+
+mat3 = ti.types.matrix(3, 3, float)
+"""3x3 float matrix type
+"""
+
+mat4 = ti.types.matrix(4, 4, float)
+"""4x4 float matrix type
+"""
+
+
 @ti.func
 def mix(x, y, a):
     """Performs a linear interpolation between `x` and `y` using
@@ -394,6 +407,6 @@ def cross(x, y):
 
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2",
-    "mix", "normalize", "pi", "radians", "reflect", "refract", "sign",
-    "smoothstep", "step"
+    'mat2', 'mat3', 'mat4', "mix", "normalize", "pi", "radians", "reflect",
+    "refract", "sign", "smoothstep", "step"
 ]

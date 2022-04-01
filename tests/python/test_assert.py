@@ -71,6 +71,33 @@ def test_assert_message_formatted():
 
 
 @test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+def test_assert_message_formatted_fstring():
+    x = ti.field(dtype=int, shape=16)
+    x[10] = 42
+
+    @ti.kernel
+    def assert_formatted():
+        for i in x:
+            assert x[i] == 0, f'x[{i}] expect={0} got={x[i]}'
+
+    @ti.kernel
+    def assert_float():
+        y = 0.5
+        assert y < 0, f'y = {y}'
+
+    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
+        assert_formatted()
+    # TODO: note that we are not fully polished to be able to recover from
+    # assertion failures...
+    with pytest.raises(AssertionError, match=r'y = 0.5'):
+        assert_float()
+
+    # success case
+    x[10] = 0
+    assert_formatted()
+
+
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_ok():
     @ti.kernel
     def func():

@@ -201,11 +201,60 @@ def test(p: ti.i32):
 
 ### Primaries
 
+Primaries represent the most tightly bound operations.
+
+```
+primary ::= atom | attributeref | subscription | slicing | call
+```
+
 #### Attribute references
+
+```
+attributeref ::= primary "." identifier
+```
+
+Attribute references are evaluated at compile time. The `primary` must be
+evaluated to a Python value with an attribute named `identifier`. Common use
+cases in Taichi include metadata queries of
+[field](https://docs.taichi.graphics/lang/articles/meta#field-metadata) and
+[matrices](https://docs.taichi.graphics/lang/articles/meta#matrix--vector-metadata).
 
 #### Subscriptions
 
+```
+subscription ::=  primary "[" expression_list "]"
+```
+
+If `primary` is evaluated to a Python value (e.g., a list or a dictionary),
+then all expressions in `expression_list` are required to be evaluated to
+Python values, and the subscription is evaluated at compile time following
+[Python](https://docs.python.org/3/reference/expressions.html#subscriptions).
+
+Otherwise, `primary` has a Taichi type. All Taichi types excluding primitive
+types support subscriptions. You can refer to documentation of these types
+for subscription usage.
+
+:::note
+When `primary` has a Taichi matrix type, all expressions in `expression_list`
+are required to be evaluated to Python values. This restriction can be got rid
+of by setting `ti.init(dynamic_index=True)`.
+:::
+
 #### Slicings
+
+```
+slicing      ::= primary "[" slice_list "]"
+slice_list   ::= slice_item ("," slice_item)* [","]
+slice_item   ::= expression | proper_slice
+proper_slice ::= [expression] ":" [expression] [ ":" [expression] ]
+```
+
+Currently, slicings are only supported when `primary` has a Taichi matrix type.
+When `slice_item` is in the form of:
+- a single `expression`: it is required to be evaluated to a Python value
+unless `ti.init(dynamic_index=True)` is set.
+- `proper_slice`: all expressions (the lower bound, the upper bound, and the
+stride) inside have to be evaluated to Python values.
 
 #### Calls
 

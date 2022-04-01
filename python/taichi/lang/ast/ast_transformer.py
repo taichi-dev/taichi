@@ -1200,7 +1200,8 @@ class ASTTransformer(Builder):
                 elif ty in primitive_types.integer_types:
                     msg += "%d"
                 else:
-                    raise TaichiSyntaxError(f"Unsupported data type: {type(ty)}")
+                    raise TaichiSyntaxError(
+                        f"Unsupported data type: {type(ty)}")
                 args.append(entry)
             else:
                 raise TaichiSyntaxError(f"Unsupported type: {type(entry)}")
@@ -1219,11 +1220,14 @@ class ASTTransformer(Builder):
                     msg = str(msg)
                 elif isinstance(msg, ast.Str):
                     pass
-                elif isinstance(msg, collections.abc.Sequence) and len(msg) > 0 and msg[0] == "__ti_format__":
-                    msg, extra_args = ASTTransformer.ti_format_list_to_assert_msg(msg)
+                elif isinstance(msg, collections.abc.Sequence) and len(
+                        msg) > 0 and msg[0] == "__ti_format__":
+                    msg, extra_args = ASTTransformer.ti_format_list_to_assert_msg(
+                        msg)
                 else:
                     raise TaichiSyntaxError(
-                        f"assert info must be constant or formatted string, not {type(msg)}")
+                        f"assert info must be constant or formatted string, not {type(msg)}"
+                    )
         else:
             msg = unparse(node.test)
         test = build_stmt(ctx, node.test)

@@ -647,10 +647,6 @@ class Matrix(TaichiOperations):
         invlen = 1 / (self.norm() + eps)
         return invlen * self
 
-    def solve(self, b):
-        from taichi._funcs import _matrix_solve  # pylint: disable=C0415
-        return _matrix_solve(self, b)
-
     def transpose(self):
         """Return the transpose of a matrix.
 

@@ -517,7 +517,6 @@ def sym_eig(A, dt=None):
 
 @func
 def _forward_elimination(Ab):
-    res = -1
     nrow, ncol = static(Ab.n, Ab.m)
     for i in static(range(nrow)):
         max_row = i
@@ -526,8 +525,7 @@ def _forward_elimination(Ab):
             if ops.abs(Ab[j, i]) > max_v:
                 max_row = j
                 max_v = ops.abs(Ab[j, i])
-        if max_v == 0:
-            res = i
+        assert max_v != 0.0, "Matrix is singular in linear solve."
         if i != max_row:
             if max_row == 0:
                 for col in static(range(ncol)):
@@ -538,20 +536,20 @@ def _forward_elimination(Ab):
             else:
                 for col in static(range(ncol)):
                     Ab[i, col], Ab[2, col] = Ab[2, col], Ab[i, col]
+        assert Ab[i, i] != 0.0, "Matrix is singular in linear solve."
         for j in static(range(i + 1, nrow)):
             scale = Ab[j, i] / Ab[i, i]
             Ab[j, i] = 0.0
             for k in static(range(i + 1, ncol)):
                 Ab[j, k] -= Ab[i, k] * scale
-    return res, Ab
+    return Ab
 
 
 @func
 def _gauss_elimination(Ab, dt):
     nrow = static(Ab.n)
-    singular_flag, Ab = _forward_elimination(Ab)
+    Ab = _forward_elimination(Ab)
     x = Vector.zero(dt, nrow)
-    assert singular_flag != -1, "Matrix is singular."
     # Back substitution
     for i in static(range(nrow - 1, -1, -1)):
         x[i] = Ab[i, nrow]
@@ -561,7 +559,7 @@ def _gauss_elimination(Ab, dt):
     return x
 
 
-def _matrix_solve(A, b, dt=None):
+def solve(A, b, dt=None):
     """Solve a matrix using Gauss elimination method.
 
     Args:
@@ -590,4 +588,4 @@ def _matrix_solve(A, b, dt=None):
     return _gauss_elimination(Ab, dt)
 
 
-__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']
+__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

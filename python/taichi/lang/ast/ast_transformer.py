@@ -1216,9 +1216,9 @@ class ASTTransformer(Builder):
                     ctx, node.msg)
             else:
                 msg = build_stmt(ctx, node.msg)
-                if isinstance(msg, ast.Constant):
+                if isinstance(node.msg, ast.Constant):
                     msg = str(msg)
-                elif isinstance(msg, ast.Str):
+                elif isinstance(node.msg, ast.Str):
                     pass
                 elif isinstance(msg, collections.abc.Sequence) and len(
                         msg) > 0 and msg[0] == "__ti_format__":

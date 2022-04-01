@@ -246,3 +246,18 @@ def test_ndrange_three_arguments():
             r"Every argument of ndrange should be a scalar or a tuple/list like \(begin, end\)"
     ):
         foo()
+
+
+@test_utils.test()
+def test_ndrange_start_greater_than_end():
+    @ti.kernel
+    def ndrange_test(i1: ti.i32, i2: ti.i32, j1: ti.i32, j2: ti.i32) -> ti.i32:
+        n: ti.i32 = 0
+        for i, j in ti.ndrange((i1, i2), (j1, j2)):
+            n += 1
+        return n
+
+    assert ndrange_test(0, 10, 0, 20) == 200
+    assert ndrange_test(0, 10, 20, 0) == 0
+    assert ndrange_test(10, 0, 0, 20) == 0
+    assert ndrange_test(10, 0, 20, 0) == 0

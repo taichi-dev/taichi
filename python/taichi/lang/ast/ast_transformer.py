@@ -82,9 +82,11 @@ class ASTTransformer(Builder):
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
+        values = node.value.ptr if is_static_assign else impl.expr_init(
+            node.value.ptr)
+
         for node_target in node.targets:
-            ASTTransformer.build_assign_unpack(ctx, node_target,
-                                               node.value.ptr,
+            ASTTransformer.build_assign_unpack(ctx, node_target, values,
                                                is_static_assign)
         return None
 
@@ -104,11 +106,22 @@ class ASTTransformer(Builder):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
         targets = node_target.elts
-        tmp_tuple = values if is_static_assign else impl.expr_init_list(
-            values, len(targets))
+
+        if isinstance(values, matrix.Matrix):
+            if not values.m == 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+            values = values.entries
+
+        if not isinstance(values, collections.abc.Sequence):
+            raise TaichiSyntaxError(f'Cannot unpack type: {type(values)}')
+
+        if len(values) != len(targets):
+            raise TaichiSyntaxError(
+                "The number of targets is not equal to value length")
 
         for i, target in enumerate(targets):
-            ASTTransformer.build_assign_basic(ctx, target, tmp_tuple[i],
+            ASTTransformer.build_assign_basic(ctx, target, values[i],
                                               is_static_assign)
 
         return None

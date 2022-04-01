@@ -8,10 +8,13 @@ sidebar_position: 2
 | ------------ | ------------------------------------------------------------ |
 | OS           | Windows / Linux / Mac OS X                                   |
 | Backend      | x64 / CUDA / Vulkan                                          |
-| Vulkan       | Install [the Vulkan environment](https://vulkan.lunarg.com/sdk/home). |
-| LLVM         | 10.0.0 (Taichi customized version)                           |
 
 Starting from v0.8.0, Taichi adds a new UI system GGUI. The new system uses GPU for rendering, making it much faster to render 3D scenes. That is why this new system gets its name as GGUI. This document describes the APIs that it provides.
+
+:::caution IMPORTANT
+If you choose Vulkan as backend, ensure that you [install the Vulkan environment](https://vulkan.lunarg.com/sdk/home).
+:::
+
 
 :::note
 

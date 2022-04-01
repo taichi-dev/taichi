@@ -40,7 +40,7 @@ Each window is built on a coordinate system: the origin is located in the lower-
 
 ## Display a field or ndarray
 
-To display a Taichi field or a NumPy ndarray, call `gui.set_imag``e()`. The method accepts both types as input.
+To display a Taichi field or a NumPy ndarray, call `gui.set_image()`. The method accepts both types as input.
 
 ```python
 image = ti.Vector.field(3, ti.f32, shape=(640, 480))
@@ -67,7 +67,7 @@ If you only need to call the `set_image()` method without using any drawing comm
 gui = ti.GUI(res, title, fast_gui=True)
 ```
 
-For this mode to work, ensure that the data passed into `gui.set_imag``e()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
+For this mode to work, ensure that the data passed into `gui.set_image()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
 
 - A scalar field `ti.field(dtype, shape) `
 - a vector field  `ti.field(3, dtype, shape)` compatible with RGB format

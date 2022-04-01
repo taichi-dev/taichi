@@ -5,7 +5,6 @@ from math import e, pi
 
 import taichi as ti
 
-
 mat2 = ti.types.matrix(2, 2, float)
 """2x2 float matrix type
 """

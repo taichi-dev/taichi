@@ -222,7 +222,7 @@ cases in Taichi include metadata queries of
 #### Subscriptions
 
 ```
-subscription ::=  primary "[" expression_list "]"
+subscription ::= primary "[" expression_list "]"
 ```
 
 If `primary` is evaluated to a Python value (e.g., a list or a dictionary),
@@ -249,7 +249,8 @@ slice_item   ::= expression | proper_slice
 proper_slice ::= [expression] ":" [expression] [ ":" [expression] ]
 ```
 
-Currently, slicings are only supported when `primary` has a Taichi matrix type.
+Currently, slicings are only supported when `primary` has a Taichi matrix type,
+and the evaluation happens at compile time.
 When `slice_item` is in the form of:
 - a single `expression`: it is required to be evaluated to a Python value
 unless `ti.init(dynamic_index=True)` is set.

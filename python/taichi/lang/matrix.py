@@ -237,6 +237,10 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+
+        if isinstance(other, VectorType):
+            return type(other)(*[x for x, in entries])
+
         return Matrix(entries)
 
     def _linearize_entry_id(self, *args):

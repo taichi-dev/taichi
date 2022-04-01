@@ -166,7 +166,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 @test_utils.test()
 def test_matrix_non_constant_index_numpy():
     @ti.kernel
-    def func1(a: ti.any_arr(element_dim=2)):
+    def func1(a: ti.types.ndarray(element_dim=2)):
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -179,7 +179,7 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.any_arr(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j

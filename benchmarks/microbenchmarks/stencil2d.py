@@ -32,7 +32,7 @@ def stencil_2d_default(arch, repeat, scatter, bls, container, dtype, dsize_2d,
                 y[I] = s
 
     @ti.kernel
-    def stencil_2d_array(y: ti.any_arr(), x: ti.any_arr()):
+    def stencil_2d_array(y: ti.types.ndarray(), x: ti.types.ndarray()):
         for I in ti.grouped(x):
             if ti.static(scatter):
                 for offset in ti.static(stencil_common):

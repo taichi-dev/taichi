@@ -21,7 +21,7 @@ def saxpy_default(arch, repeat, container, dtype, dsize, get_metric):
             z[i] = 17 * x[i] + y[i]
 
     @ti.kernel
-    def saxpy_array(z: ti.any_arr(), x: ti.any_arr(), y: ti.any_arr()):
+    def saxpy_array(z: ti.types.ndarray(), x: ti.types.ndarray(), y: ti.types.ndarray()):
         for i in z:
             z[i] = 17 * x[i] + y[i]
 

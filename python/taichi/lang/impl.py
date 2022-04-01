@@ -367,17 +367,19 @@ def reset():
 
 @taichi_scope
 def static_print(*args, __p=print, **kwargs):
-    """The print function in Taichi scope. This function is called
-    at compile time and has no runtime overhead.
+    """The print function in Taichi scope.
+
+    This function is called at compile time and has no runtime overhead.
     """
     __p(*args, **kwargs)
 
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
-    """Throw AssertionError when `cond` is False. This function is called
-    at compile time and has no runtime overhead. The bool value in `cond`
-    must can be determined at compile time.
+    """Throw AssertionError when `cond` is False.
+
+    This function is called at compile time and has no runtime overhead.
+    The bool value in `cond` must can be determined at compile time.
 
     Args:
         cond (bool): an expression with a bool value.

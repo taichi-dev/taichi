@@ -168,7 +168,7 @@ endif()
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
-option(TI_EXPORT_CORE "export taichi core" OFF)
+option(TI_EXPORT_CORE "export taichi core" ON)
 
 if(ANDROID)
     set(TI_EXPORT_CORE ON)

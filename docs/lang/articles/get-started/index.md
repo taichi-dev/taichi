@@ -11,7 +11,7 @@ End users who *only* wish to quickly set up Taichi for simulation or high-perfor
 
 :::caution IMPORTANT
 
-For developers who are interested in the compiler, computer graphics, or high-performance computing, and would like to contribute new features or bug fixes to the [Taichi programming language](https://github.com/taichi-dev/taichi), see the [Developer installation](../contribution/dev_install.md) for more information on building Taichi from source. 
+For developers who are interested in the compiler, computer graphics, or high-performance computing, and would like to contribute new features or bug fixes to the [Taichi programming language](https://github.com/taichi-dev/taichi), see the [Developer installation](../contribution/dev_install.md) for more information on building Taichi from source.
 
 :::
 

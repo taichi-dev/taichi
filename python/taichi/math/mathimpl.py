@@ -5,15 +5,15 @@ from math import e, pi
 
 import taichi as ti
 
-mat2 = ti.types.matrix(2, 2, float)
+mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
 """
 
-mat3 = ti.types.matrix(3, 3, float)
+mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
 """3x3 float matrix type
 """
 
-mat4 = ti.types.matrix(4, 4, float)
+mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
 """4x4 float matrix type
 """
 

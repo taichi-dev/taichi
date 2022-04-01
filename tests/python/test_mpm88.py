@@ -142,9 +142,11 @@ def test_mpm88_numpy_and_ndarray():
     E = 400
 
     @ti.kernel
-    def substep(x: ti.types.ndarray(element_dim=1), v: ti.types.ndarray(element_dim=1),
+    def substep(x: ti.types.ndarray(element_dim=1),
+                v: ti.types.ndarray(element_dim=1),
                 C: ti.types.ndarray(element_dim=2), J: ti.types.ndarray(),
-                grid_v: ti.types.ndarray(element_dim=1), grid_m: ti.types.ndarray()):
+                grid_v: ti.types.ndarray(element_dim=1),
+                grid_m: ti.types.ndarray()):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)

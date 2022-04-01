@@ -29,7 +29,7 @@ If we can leverage such "spatial sparsity" and focus computation on the regions 
 we will significantly save storage and computing power.
 
 :::note
-The key to leverage spatial sparsity is to replace *dense* grids with *sparse* grids.
+The key to leveraging spatial sparsity is replacing *dense* grids with *sparse* grids.
 :::
 
 The traditional sparse spatial data stuctures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
@@ -96,7 +96,7 @@ def print_active():
 ```
 The code snippet above creates an 8x8 sparse grid, with the top-level being a 4x4 pointer array (line 2 of `pointer.py`),
 and each pointer pointing to a 2x2 dense block.
-You can write and read the sparse field like a dense field using indices. The below figure shows the active blocks and pixels in green.
+Just as you do with a dense field, you can use indices to write and read the sparse field. The following figure shows the active blocks and pixels in green.
 
 <center>
 
@@ -106,7 +106,7 @@ You can write and read the sparse field like a dense field using indices. The be
 
 Executing the `activate()` function automatically activates `block[1,1]`, which includes `x[2,3]`, and `block[1,2]`, which includes `x[2,4]`. Other pixels of `block[1,1]` (`x[2,2], x[3,2], x[3,3]`) and `block[1,2]` (`x[2,5], x[3,4], x[3,5]`) are also implicitly activated because all pixels in the dense block share the same activity value.
 
-In fact, the sparse field is a SNode tree shown in the following figure. You could use the struct-for loop to loop over the different levels of the SNode tree like the `print_active()` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` SNodes. `for i, j in pixel` would loop over all active `dense` SNodes.
+In fact, the sparse field is an SNode tree shown in the following figure. You can use the struct-for loop to loop over the different levels of the SNode tree like the `print_active()` function in `pointer.py`. `for i, j in block` would loop over all active `pointer` SNodes. `for i, j in pixel` would loop over all active `dense` SNodes.
 
 <center>
 
@@ -260,7 +260,7 @@ When deactivation happens, the Taichi runtime automatically recycles and zero-fi
 
 :::note
 For performance reasons, `ti.activate(snode, index)` only activates `snode[index]`.
-The programmer must ensure all ancestor containers of `snode[index]` is already active.
+The programmer must ensure that all ancestor containers of `snode[index]` is already active.
 Otherwise, this operation results in undefined behavior.
 
 Similarly, `ti.deactivate` ...

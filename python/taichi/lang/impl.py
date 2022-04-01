@@ -13,7 +13,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, _IntermediateMatrix,
-                                _MatrixFieldElement)
+                                _MatrixFieldElement, VectorType)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -36,8 +36,10 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
+    if isinstance(rhs, VectorType):
+        return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
-        return type(rhs)(rhs.to_list())
+        return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict())
     if isinstance(rhs, list):

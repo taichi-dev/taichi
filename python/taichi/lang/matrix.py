@@ -1686,11 +1686,9 @@ class VectorType(Matrix):
 
     _KEYMAP_SET = ["xyzw", "rgba", "uvw"]
     _DIM = 3
-    _DTYPE = float
+    _DTYPE = primitive_types.f32
 
     def __init__(self, *data):
-        if len(data) == 1 and isinstance(data[0], collections.abc.Sequence):
-            data = data[0]
         assert not isinstance(
             data[0], collections.abc.Sequence), "Matrix is not accepted"
         assert len(data) == self._DIM, "Dimension not match"
@@ -1700,10 +1698,11 @@ class VectorType(Matrix):
     def _add_swizzle_attrs(self):
         """Create and bind properties for vector swizzles.
         """
-        def getter_template(instance, index):
-            return instance[index]
+        def getter_template(index, instance):
+            return instance(index)
 
-        def setter_template(instance, index, value):
+        @python_scope
+        def setter_template(index, instance, value):
             instance[index] = value
 
         for key_group in VectorType._KEYMAP_SET:
@@ -1736,7 +1735,10 @@ class VectorType(Matrix):
 
                 was_valid = False
                 for key, value in zip(attr_name, values):
-                    self[key_group.index(key)] = value
+                    if in_python_scope():
+                        self[key_group.index(key)] = value
+                    else:
+                        self(key_group.index(key))._assign(value)
                     was_valid = True
 
                 if was_valid:
@@ -1758,7 +1760,7 @@ def generate_vectorND_classes():
         vec_class_name = f"vec{dim}"
         vec_class = type(vec_class_name, (VectorType, ), {
             "_DIM": dim,
-            "_DTYPE": float
+            "_DTYPE": primitive_types.f32
         })
         module = __import__(__package__)
         setattr(module, vec_class_name, vec_class)

@@ -153,7 +153,6 @@ events = window.get_events()
 Each `event` in `events` is an instance of `ti.ui.Event`. It has the following properties:
 
 - `event.action`, which can be `ti.ui.PRESS`, `ti.ui.RELEASE`, or `ti.ui.MOTION`.
-
 - `event.key`: the key related to this event.
 
 To retrieve the mouse position:

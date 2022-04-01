@@ -1755,18 +1755,38 @@ class VectorType(Matrix):
         return [self(i) for i in range(self.n)]
 
 
-def generate_vectorND_classes():
+def wrap_ops(cls):
+    def wrapped(parent):
+        return lambda instance, other: cls(*parent(instance, other))
+
+    methods = [
+        '__neg__', '__abs__', '__add__', '__radd__', '__sub__', '__rsub__',
+        '__mul__', '__rmul__', '__truediv__', '__rtruediv__', '__floordiv__',
+        '__rfloordiv__', '__mod__', '__rmod__', '__pow__', '__rpow__',
+        '_atomic_add', '_atomic_sub', '_atomic_and', '_atomic_xor', '_atomic_or',
+        '__iadd__', '__isub__', '__iand__', '__ixor__', '__ior__', '__imul__',
+        '__itruediv__', '__ifloordiv__', '__imod__', '__ilshift__', '__irshift__',
+        '__ipow__', '_assign', '_augassign', '__ti_float__'
+    ]
+    for op in methods:
+        func = wrapped(getattr(cls, op))
+        setattr(cls, op, func)
+
+
+def _generate_vectorND_classes():
+    module = __import__(__package__)
     for dim in [2, 3, 4]:
-        vec_class_name = f"vec{dim}"
-        vec_class = type(vec_class_name, (VectorType, ), {
-            "_DIM": dim,
-            "_DTYPE": primitive_types.f32
-        })
-        module = __import__(__package__)
-        setattr(module, vec_class_name, vec_class)
-        globals()[vec_class_name] = vec_class
+        for dt, prefix in zip([float, int], ["", "i"]):
+            vec_class_name = f"{prefix}vec{dim}"
+            vec_class = type(vec_class_name, (VectorType, ), {
+                "_DIM": dim,
+                "_DTYPE": dt
+            })
+            wrap_ops(vec_class)
+            setattr(module, vec_class_name, vec_class)
+            globals()[vec_class_name] = vec_class
 
 
-generate_vectorND_classes()
+_generate_vectorND_classes()
 
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

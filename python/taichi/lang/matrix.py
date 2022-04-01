@@ -1763,10 +1763,11 @@ def wrap_ops(cls):
         '__neg__', '__abs__', '__add__', '__radd__', '__sub__', '__rsub__',
         '__mul__', '__rmul__', '__truediv__', '__rtruediv__', '__floordiv__',
         '__rfloordiv__', '__mod__', '__rmod__', '__pow__', '__rpow__',
-        '_atomic_add', '_atomic_sub', '_atomic_and', '_atomic_xor', '_atomic_or',
-        '__iadd__', '__isub__', '__iand__', '__ixor__', '__ior__', '__imul__',
-        '__itruediv__', '__ifloordiv__', '__imod__', '__ilshift__', '__irshift__',
-        '__ipow__', '_assign', '_augassign', '__ti_float__'
+        '_atomic_add', '_atomic_sub', '_atomic_and', '_atomic_xor',
+        '_atomic_or', '__iadd__', '__isub__', '__iand__', '__ixor__',
+        '__ior__', '__imul__', '__itruediv__', '__ifloordiv__', '__imod__',
+        '__ilshift__', '__irshift__', '__ipow__', '_assign', '_augassign',
+        '__ti_float__'
     ]
     for op in methods:
         func = wrapped(getattr(cls, op))

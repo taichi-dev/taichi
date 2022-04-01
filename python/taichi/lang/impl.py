@@ -63,25 +63,6 @@ def expr_init(rhs):
 
 
 @taichi_scope
-def expr_init_list(xs, expected):
-    if not isinstance(xs, (list, tuple, Matrix)):
-        raise TypeError(f'Cannot unpack type: {type(xs)}')
-    if isinstance(xs, Matrix):
-        if not xs.m == 1:
-            raise ValueError(
-                'Matrices with more than one columns cannot be unpacked')
-        xs = xs.entries
-    if expected != len(xs):
-        raise ValueError(
-            f'Tuple assignment size mismatch: {expected} != {len(xs)}')
-    if isinstance(xs, list):
-        return [expr_init(e) for e in xs]
-    if isinstance(xs, tuple):
-        return tuple(expr_init(e) for e in xs)
-    raise ValueError(f'Cannot unpack from {type(xs)}')
-
-
-@taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
     if isinstance(rhs, Field):

@@ -583,6 +583,11 @@ def ndarray(dtype, shape):
 
 @taichi_scope
 def ti_format_list_to_content_entries(raw):
+    def entry2content(_var):
+        if isinstance(_var, str):
+            return _var
+        return Expr(_var).ptr
+
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintainance cost
         for i, v in enumerate(_var):
@@ -622,15 +627,7 @@ def ti_format_list_to_content_entries(raw):
         if accumated:
             yield accumated
 
-    def entry2content(_var):
-        if isinstance(_var, str):
-            return _var
-        return Expr(_var).ptr
-
-    print(raw)
     entries = vars2entries(raw)
-    entries = list(entries)
-    print(entries)
     entries = fused_string(entries)
     return [entry2content(entry) for entry in entries]
 

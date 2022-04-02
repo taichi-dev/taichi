@@ -559,7 +559,7 @@ def _gauss_elimination(Ab, dt):
     return x
 
 
-def ge_solve(A, b, dt=None):
+def solve(A, b, dt=None):
     """Solve a matrix using Gauss elimination method.
 
     Args:
@@ -588,4 +588,4 @@ def ge_solve(A, b, dt=None):
     return _gauss_elimination(Ab, dt)
 
 
-__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'ge_solve']
+__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

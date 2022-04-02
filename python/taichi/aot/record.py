@@ -18,7 +18,7 @@ def record_action_config(key, value):
 
 
 def start_recording(filename):
-    """Start recording kernel information to a `yml` file.
+    """Starts recording kernel information to a `yml` file.
 
     Args:
         filename (str): output `yml` file.

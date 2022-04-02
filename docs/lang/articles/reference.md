@@ -195,9 +195,9 @@ compile time.
 ### Boolean operations
 
 ```
-or_test  ::=  and_test | or_test "or" and_test
-and_test ::=  not_test | and_test "and" not_test
-not_test ::=  comparison | "not" not_test
+or_test  ::= and_test | or_test "or" and_test
+and_test ::= not_test | and_test "and" not_test
+not_test ::= comparison | "not" not_test
 ```
 
 User-defined objects can customize their conversion to bool by implementing a `__bool__` method. 
@@ -235,7 +235,7 @@ is evaluated to the value of that expression.
 Assert statements are a convenient way to insert debugging assertions into a program:
 
 ```
-assert_stmt ::=  "assert" expression ["," expression]
+assert_stmt ::= "assert" expression ["," expression]
 ```
 
 Assert statements are currently supported on the CPU, CUDA, and Metal backends.

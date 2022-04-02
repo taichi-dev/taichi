@@ -1,4 +1,5 @@
 """Taichi automatic differentiation module.
+
 This module supplies two decorators for users to customize their
 gradient computation task.
 """
@@ -8,6 +9,7 @@ from taichi.lang import impl
 def grad_replaced(func):
     """A decorator for python function to customize gradient with Taichi's autodiff
     system, e.g. `ti.Tape()` and `kernel.grad()`.
+
     This decorator forces Taichi's autodiff system to use a user-defined gradient
     function for the decorated function. Its customized gradient must be decorated
     by :func:`~taichi.ad.grad_for`.
@@ -53,6 +55,7 @@ def grad_replaced(func):
 
 def grad_for(primal):
     """Generates a decorator to decorate `primal`'s customized gradient function.
+
     See :func:`~taichi.lang.grad_replaced` for examples.
 
     Args:

@@ -200,12 +200,12 @@ and_test ::= not_test | and_test "and" not_test
 not_test ::= comparison | "not" not_test
 ```
 
-When all operands of the operator are evaluated to Python values, 
+When all operands of the operator are evaluated to Python values,
 the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations)
 Otherwise, there are different behaviours:
 - There is no short circuit by default in Taichi. It means `x and y` will evaluate both the expression of `x` and `y` rather than only evaluates `x` when `x` is `False`. It also means `x or y` will evaluate both the expression of `x` and `y` rather than only evaluates `x` when `x` is `True`.
 - The type of operator can be `int` and `Matrix`
-- Currently, the type of result value is i32 (Taichi dose not have bool type). So `and` will be `bit-and`, and `or` will be `bit-or`. 
+- Currently, the type of result value is i32 (Taichi dose not have bool type). So `and` will be `bit-and`, and `or` will be `bit-or`.
 
 ### Conditional expressions
 

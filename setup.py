@@ -278,7 +278,8 @@ setup(name=project_name,
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
-      license='Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)',
+      license=
+      'Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)',
       include_package_data=True,
       entry_points={
           'console_scripts': [
@@ -292,4 +293,3 @@ setup(name=project_name,
                     build_ext=CMakeBuild,
                     clean=Clean),
       has_ext_modules=lambda: True)
-

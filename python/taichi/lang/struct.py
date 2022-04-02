@@ -59,7 +59,7 @@ class Struct(TaichiOperations):
 
     @property
     def keys(self):
-        """Return the list of member names in string format.
+        """Returns the list of member names in string format.
 
         Example::
 
@@ -76,7 +76,7 @@ class Struct(TaichiOperations):
 
     @property
     def items(self):
-        """Return the items in this struct.
+        """Returns the items in this struct.
 
         Example::
 
@@ -256,7 +256,7 @@ class Struct(TaichiOperations):
               offset=None,
               needs_grad=False,
               layout=Layout.AOS):
-        """Create a :class:`~taichi.StructField` with each element
+        """Creates a :class:`~taichi.StructField` with each element
         has this struct as its type.
 
         Args:
@@ -353,6 +353,7 @@ class _IntermediateStruct(Struct):
 
 class StructField(Field):
     """Taichi struct field with SNode implementation.
+
        Instead of directly contraining Expr entries, the StructField object
        directly hosts members as `Field` instances to support nested structs.
 
@@ -368,7 +369,7 @@ class StructField(Field):
 
     @property
     def keys(self):
-        """Return the list of names of the field members.
+        """Returns the list of names of the field members.
 
         Example::
 
@@ -414,7 +415,7 @@ class StructField(Field):
                 ))
 
     def _get_field_members(self):
-        """Get A flattened list of all struct elements.
+        """Gets A flattened list of all struct elements.
 
         Returns:
             A list of struct elements.
@@ -483,7 +484,8 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
-        """Copy the data from a set of `numpy.array` into this field.
+        """Copies the data from a set of `numpy.array` into this field.
+
         The argument `array_dict` must be a dictionay-like object, it
         contains all the keys in this field and the copying process
         between corresponding items can be performed.
@@ -493,7 +495,8 @@ class StructField(Field):
 
     @python_scope
     def from_torch(self, array_dict):
-        """Copy the data from a set of `torch.tensor` into this field.
+        """Copies the data from a set of `torch.tensor` into this field.
+
         The argument `array_dict` must be a dictionay-like object, it
         contains all the keys in this field and the copying process
         between corresponding items can be performed.
@@ -504,6 +507,7 @@ class StructField(Field):
     @python_scope
     def to_numpy(self):
         """Converts the Struct field instance to a dictionary of NumPy arrays.
+
         The dictionary may be nested when converting nested structs.
 
         Returns:
@@ -514,6 +518,7 @@ class StructField(Field):
     @python_scope
     def to_torch(self, device=None):
         """Converts the Struct field instance to a dictionary of PyTorch tensors.
+
         The dictionary may be nested when converting nested structs.
 
         Args:

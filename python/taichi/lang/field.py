@@ -251,7 +251,7 @@ class ScalarField(Field):
 
     @python_scope
     def to_torch(self, device=None):
-        """Convert this field to a `torch.tensor`.
+        """Converts this field to a `torch.tensor`.
         """
         import torch  # pylint: disable=C0415
 
@@ -266,7 +266,7 @@ class ScalarField(Field):
 
     @python_scope
     def from_numpy(self, arr):
-        """Copy the data from a `numpy.ndarray` into this field.
+        """Copies the data from a `numpy.ndarray` into this field.
         """
         if len(self.shape) != len(arr.shape):
             raise ValueError(f"ti.field shape {self.shape} does not match"

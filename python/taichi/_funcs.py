@@ -516,44 +516,51 @@ def sym_eig(A, dt=None):
 
 
 @func
-def _forward_elimination(Ab):
-    nrow, ncol = static(Ab.n, Ab.m)
-    for i in static(range(nrow)):
+def _gauss_elimination_2x2(Ab, dt):
+    if ops.abs(Ab[0, 0]) < ops.abs(Ab[1, 0]):
+        Ab[0, 0], Ab[1, 0] = Ab[1, 0], Ab[0, 0]
+        Ab[0, 1], Ab[1, 1] = Ab[1, 1], Ab[0, 1]
+        Ab[0, 2], Ab[1, 2] = Ab[1, 2], Ab[0, 2]
+    assert Ab[0, 0] != 0.0, "Matrix is singular in linear solve."
+    scale = Ab[1, 0] / Ab[0, 0]
+    Ab[1, 0] = 0.0
+    for k in static(range(1, 3)):
+        Ab[1, k] -= Ab[0, k] * scale
+    x = Vector.zero(dt, 2)
+    # Back substitution
+    x[1] = Ab[1, 2] / Ab[1, 1]
+    x[0] = (Ab[0, 2] - Ab[0, 1] * x[1]) / Ab[0, 0]
+    return x
+
+
+@func
+def _gauss_elimination_3x3(Ab, dt):
+    for i in static(range(3)):
         max_row = i
         max_v = ops.abs(Ab[i, i])
-        for j in static(range(i + 1, nrow)):
+        for j in static(range(i + 1, 3)):
             if ops.abs(Ab[j, i]) > max_v:
                 max_row = j
                 max_v = ops.abs(Ab[j, i])
         assert max_v != 0.0, "Matrix is singular in linear solve."
         if i != max_row:
-            if max_row == 0:
-                for col in static(range(ncol)):
-                    Ab[i, col], Ab[0, col] = Ab[0, col], Ab[i, col]
-            elif max_row == 1:
-                for col in static(range(ncol)):
+            if max_row == 1:
+                for col in static(range(4)):
                     Ab[i, col], Ab[1, col] = Ab[1, col], Ab[i, col]
             else:
-                for col in static(range(ncol)):
+                for col in static(range(4)):
                     Ab[i, col], Ab[2, col] = Ab[2, col], Ab[i, col]
         assert Ab[i, i] != 0.0, "Matrix is singular in linear solve."
-        for j in static(range(i + 1, nrow)):
+        for j in static(range(i + 1, 3)):
             scale = Ab[j, i] / Ab[i, i]
             Ab[j, i] = 0.0
-            for k in static(range(i + 1, ncol)):
+            for k in static(range(i + 1, 4)):
                 Ab[j, k] -= Ab[i, k] * scale
-    return Ab
-
-
-@func
-def _gauss_elimination(Ab, dt):
-    nrow = static(Ab.n)
-    Ab = _forward_elimination(Ab)
-    x = Vector.zero(dt, nrow)
     # Back substitution
-    for i in static(range(nrow - 1, -1, -1)):
-        x[i] = Ab[i, nrow]
-        for k in static(range(i + 1, nrow)):
+    x = Vector.zero(dt, 3)
+    for i in static(range(2, -1, -1)):
+        x[i] = Ab[i, 3]
+        for k in static(range(i + 1, 3)):
             x[i] -= Ab[i, k] * x[k]
         x[i] = x[i] / Ab[i, i]
     return x
@@ -584,8 +591,11 @@ def solve(A, b, dt=None):
             Ab(i, j)._assign(lhs[nrow * i + j])
     for i in range(nrow):
         Ab(i, nrow)._assign(rhs[i])
-
-    return _gauss_elimination(Ab, dt)
+    if A.n == 2:
+        return _gauss_elimination_2x2(Ab, dt)
+    if A.n == 3:
+        return _gauss_elimination_3x3(Ab, dt)
+    raise Exception("Solver only supports 2D and 3D matrices.")
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

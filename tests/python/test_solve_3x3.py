@@ -49,7 +49,7 @@ def _test_solve_3x3(dt, a00):
         A[None] = ti.Matrix([[a00, 2.0, -4.0], [2.0, 3.0, 3.0], [5.0, -3,
                                                                  1.0]])
         b[None] = ti.Vector([3.0, 15.0, 14.0])
-        x[None] = ti.ge_solve(A[None], b[None])
+        x[None] = ti.solve(A[None], b[None])
 
     solve_3x3()
 

@@ -45,10 +45,10 @@ def upload_artifact(is_taichi):
         sys.exit(f'Missing password env var {pwd_env}')
     command = [sys.executable, '-m', 'twine', 'upload']
     if not is_taichi:
-        command.extend(['--repository-url', 'https://pypi.taichi.graphics/simple/'])
+        command.extend(
+            ['--repository-url', 'https://pypi.taichi.graphics/simple/'])
     uname = '__token__' if is_taichi else 'admin'
-    command.extend(
-        ['--verbose', '-u', uname, '-p', twine_password, 'dist/*'])
+    command.extend(['--verbose', '-u', uname, '-p', twine_password, 'dist/*'])
 
     try:
         subprocess.check_call(command)

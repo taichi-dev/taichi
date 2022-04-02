@@ -48,7 +48,7 @@ def start_recording(filename):
 
 
 def stop_recording():
-    """Stop recording kernel information. Should be called in pair with
+    """Stops recording kernel information. Should be called in pair with
     :func:`~ti.aot.start_recording`.
     """
     ti_core.stop_recording()

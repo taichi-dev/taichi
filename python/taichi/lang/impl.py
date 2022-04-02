@@ -707,7 +707,7 @@ def ti_float(_var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
-    """Return an array of zeros with the same shape and type as the input. It's also a scalar
+    """Returns an array of zeros with the same shape and type as the input. It's also a scalar
     if the input is a scalar.
 
     Args:
@@ -730,7 +730,7 @@ def zero(x):
 
 @taichi_scope
 def one(x):
-    """Return an array of ones with the same shape and type as the input. It's also a scalar
+    """Returns an array of ones with the same shape and type as the input. It's also a scalar
     if the input is a scalar.
 
     Args:
@@ -853,7 +853,7 @@ def grouped(x):
 
 
 def stop_grad(x):
-    """Stop computing gradients during back propagation.
+    """Stops computing gradients during back propagation.
 
     Args:
         x (:class:`~taichi.Field`): A field.

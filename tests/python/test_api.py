@@ -32,8 +32,7 @@ user_api[ti] = [
     'simt', 'sin', 'sparse_matrix_builder', 'sqrt', 'static', 'static_assert',
     'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync', 'tan', 'tanh',
     'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16',
-    'uint32', 'uint64', 'uint8', 'vec2', 'vec3', 'vec4', 'vulkan', 'wasm',
-    'x64', 'x86_64', 'zero'
+    'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
@@ -44,9 +43,9 @@ user_api[ti.FieldsBuilder] = [
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
-    "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2",
-    "mix", "normalize", "pi", "radians", "reflect", "refract", "sign",
-    "smoothstep", "step"
+    'clamp', 'cross', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2',
+    'ivec3', 'ivec4', 'log2', 'mix', 'normalize', 'pi', 'radians', 'reflect',
+    'refract', 'sign', 'smoothstep', 'step', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
@@ -77,7 +76,7 @@ user_api[ti.ScalarNdarray] = [
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
-    'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
+'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
     'to_torch'
 ]
 user_api[ti.VectorNdarray] = [

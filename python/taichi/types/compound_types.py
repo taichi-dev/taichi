@@ -7,7 +7,7 @@ class CompoundType:
 
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?
 def matrix(n, m, dtype):
-    """Create a matrix type with given shape and data type.
+    """Creates a matrix type with given shape and data type.
 
     Args:
         n (int): number of rows of the matrix.
@@ -26,7 +26,7 @@ def matrix(n, m, dtype):
 
 
 def vector(n, dtype):
-    """Create a vector type with given shape and data type.
+    """Creates a vector type with given shape and data type.
 
     Args:
         n (int): dimension of the vector.
@@ -44,7 +44,7 @@ def vector(n, dtype):
 
 
 def struct(**kwargs):
-    """Create a struct type with given members.
+    """Creates a struct type with given members.
 
     Args:
         kwargs (dict): a dictionay contains the names and types of the

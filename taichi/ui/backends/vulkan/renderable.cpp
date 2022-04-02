@@ -96,7 +96,10 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   if (info.indices.valid) {
     indexed_ = true;
-    DevicePtr ibo_dev_ptr = get_device_ptr(prog, info.indices.snode);
+    DevicePtr ibo_dev_ptr = info.indices.dev_alloc.get_ptr();
+    if (prog) {
+      ibo_dev_ptr = get_device_ptr(prog, info.indices.snode);
+    }
     uint64_t ibo_size = num_indices * sizeof(int);
     if (memcpy_cap == Device::MemcpyCapability::Direct) {
       Device::memcpy_direct(index_buffer_.get_ptr(), ibo_dev_ptr, ibo_size);

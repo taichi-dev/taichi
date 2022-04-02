@@ -148,7 +148,7 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
 
 @ti.kernel
 def apply_impulse(vf: ti.template(), dyef: ti.template(),
-                  imp_data: ti.ext_arr()):
+                  imp_data: ti.types.ndarray()):
     g_dir = -ti.Vector([0, 9.8]) * 300
     for i, j in vf:
         omx, omy = imp_data[2], imp_data[3]
@@ -245,7 +245,7 @@ def copy_divergence(div_in: ti.template(), div_out: ti.template()):
 
 
 @ti.kernel
-def apply_pressure(p_in: ti.ext_arr(), p_out: ti.template()):
+def apply_pressure(p_in: ti.types.ndarray(), p_out: ti.template()):
     for I in ti.grouped(p_out):
         p_out[I] = p_in[I[0] * res + I[1]]
 

@@ -112,13 +112,13 @@ def test_bit_struct():
         ti.root.bit_struct(num_bits=physical_type).place(a, b, c)
 
         @ti.kernel
-        def set_val(test_val: ti.ext_arr()):
+        def set_val(test_val: ti.types.ndarray()):
             a[None] = test_val[0]
             b[None] = test_val[1]
             c[None] = test_val[2]
 
         @ti.kernel
-        def verify_val(test_val: ti.ext_arr()):
+        def verify_val(test_val: ti.types.ndarray()):
             assert a[None] == test_val[0]
             assert b[None] == test_val[1]
             assert c[None] == test_val[2]

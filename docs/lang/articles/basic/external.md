@@ -131,7 +131,7 @@ field.from_numpy(array_dict) # the input array must have the same keys as the fi
 
 ## Using external arrays as Taichi kernel arguments
 
-Use type hint `ti.ext_arr()` or `ti.any_arr()` to pass external arrays as kernel
+Use type hint `ti.types.ndarray()` to pass external arrays as kernel
 arguments. For example:
 
 ```python {10}
@@ -144,7 +144,7 @@ n, m = 4, 7
 
 
 @ti.kernel
-def test_numpy(arr: ti.ext_arr()):
+def test_numpy(arr: ti.types.ndarray()):
     for i in range(n):
         for j in range(m):
             arr[i, j] += i + j
@@ -167,7 +167,7 @@ Note that the elements in an external array must be indexed using a single squar
 This contrasts with a Taichi vector or matrix field where field and matrix indices are indexed separately:
 ```python
 @ti.kernel
-def copy_vector(x: ti.template(), y: ti.ext_arr()):
+def copy_vector(x: ti.template(), y: ti.types.ndarray()):
     for i, j in ti.ndrange(n, m):
         for k in ti.static(range(3)):
             y[i, j, k] = x[i, j][k] # correct
@@ -179,7 +179,7 @@ this implies that the PyTorch tensor [needs to be made contiguous](https://pytor
 before being passed into a Taichi kernel:
 ```python
 @ti.kernel
-def copy_scalar(x: ti.template(), y: ti.ext_arr()):
+def copy_scalar(x: ti.template(), y: ti.types.ndarray()):
     for i, j in x:
         y[i, j] = x[i, j]
 

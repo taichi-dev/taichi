@@ -200,10 +200,9 @@ and_test ::= not_test | and_test "and" not_test
 not_test ::= comparison | "not" not_test
 ```
 
-User-defined objects can customize their conversion to bool by implementing a `__bool__` method. 
-The operator not yields `True` if its operand is false, `False` otherwise. 
-The expression `x and y` first evaluates `x`; if it is `False`, its value (`False`) is returned; otherwise, `y` is evaluated and its value is returned (`False` or `True`). 
-The expression `x or y` first evaluates `x`; if it is `True`, its value (`True`) is returned; otherwise, `y` is evaluated and its value is returned (`False` or `True`).
+When all operands of the operator are evaluated to Python values, 
+the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations)
+Otherwise, 
 
 ### Conditional expressions
 

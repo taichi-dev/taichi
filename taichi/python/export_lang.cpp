@@ -549,8 +549,7 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference);
 
   py::class_<Expr> expr(m, "Expr");
-  expr.def("serialize", [](Expr *expr) { return expr->serialize(); })
-      .def("snode", &Expr::snode, py::return_value_policy::reference)
+  expr.def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
@@ -594,8 +593,7 @@ void export_lang(py::module &m) {
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
-      .def("push_back", &ExprGroup::push_back)
-      .def("serialize", [](ExprGroup *eg) { eg->serialize(); });
+      .def("push_back", &ExprGroup::push_back);
 
   py::class_<Stmt>(m, "Stmt");
 

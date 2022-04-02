@@ -207,6 +207,7 @@ Conditional expressions (sometimes called a “ternary operator”) have the low
 
 The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
 If `C` is `true`, `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+In Taichi, `or_test` in conditional expression will be expanded to `or_test != 0` automatically.
 
 ### Expression lists
 

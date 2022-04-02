@@ -192,17 +192,6 @@ compile time.
 
 #### Membership test operations
 
-#### Identity comparisons
-
-The operators `is` and `is not` test for an object’s identity: 
-`x is y` is `true` if and only if `x` and `y` are the same object. 
-An Object’s identity is determined using the [id()](https://docs.python.org/3/library/functions.html#id) function. 
-`x is not y` yields the inverse truth value.
-
-:::note
-Operator `is` or `is not` in Taichi scope is deprecated. Please avoid using it.
-:::
-
 ### Boolean operations
 
 ```

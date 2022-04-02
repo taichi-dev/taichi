@@ -216,9 +216,10 @@ predefined_cupti_metrics = {
 
 
 def get_predefined_cupti_metrics(name=''):
-    """Return the specified cupti metric. Accepted arguments are
-    'global_access', 'shared_access', 'atomic_access', 'cache_hit_rate',
-    'device_utilization'.
+    """Returns the specified cupti metric.
+
+    Accepted arguments are 'global_access', 'shared_access', 'atomic_access',
+    'cache_hit_rate', 'device_utilization'.
 
     Args:
         name (str): cupti metri name.

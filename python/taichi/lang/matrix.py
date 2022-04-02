@@ -571,7 +571,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def inverse(self):
-        """Return the inverse of this matrix.
+        """Returns the inverse of this matrix.
 
         Note:
             The matrix dimension should be less than or equal to 4.
@@ -648,7 +648,7 @@ class Matrix(TaichiOperations):
         return invlen * self
 
     def transpose(self):
-        """Return the transpose of a matrix.
+        """Returns the transpose of a matrix.
 
         Returns:
             :class:`~taichi.Matrix`: The transpose of this matrix.
@@ -664,7 +664,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def determinant(a):
-        """Return the determinant of this matrix.
+        """Returns the determinant of this matrix.
 
         Note:
             The matrix dimension should be less than or equal to 4.
@@ -703,7 +703,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def diag(dim, val):
-        """Return a diagonal square matrix with the diagonals filled
+        """Returns a diagonal square matrix with the diagonals filled
         with `val`.
 
         Args:
@@ -739,7 +739,7 @@ class Matrix(TaichiOperations):
         return ret
 
     def norm(self, eps=0):
-        """Return the square root of the sum of the absolute squares
+        """Returns the square root of the sum of the absolute squares
         of its elements.
 
         Args:
@@ -768,15 +768,15 @@ class Matrix(TaichiOperations):
         return ops_mod.rsqrt(self.norm_sqr() + eps)
 
     def norm_sqr(self):
-        """Return the sum of the absolute squares of its elements."""
+        """Returns the sum of the absolute squares of its elements."""
         return (self * self).sum()
 
     def max(self):
-        """Return the maximum element value."""
+        """Returns the maximum element value."""
         return ops_mod.max(*self.entries)
 
     def min(self):
-        """Return the minimum element value."""
+        """Returns the minimum element value."""
         return ops_mod.min(*self.entries)
 
     def any(self):
@@ -895,7 +895,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def zero(dt, n, m=None):
-        """Construct a Matrix filled with zeros.
+        """Constructs a Matrix filled with zeros.
 
         Args:
             dt (DataType): The desired data type.
@@ -914,7 +914,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def one(dt, n, m=None):
-        """Construct a Matrix filled with ones.
+        """Constructs a Matrix filled with ones.
 
         Args:
             dt (DataType): The desired data type.
@@ -933,7 +933,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def unit(n, i, dt=None):
-        """Construct a n-D vector with the `i`-th entry being equal to one and
+        """Constructs a n-D vector with the `i`-th entry being equal to one and
         the remaining entries are all zeros.
 
         Args:
@@ -958,7 +958,7 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def identity(dt, n):
-        """Construct an identity Matrix with shape (n, n).
+        """Constructs an identity Matrix with shape (n, n).
 
         Args:
             dt (DataType): The desired data type.
@@ -972,7 +972,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def rotation2d(alpha):
-        """Return the matrix representation of the 2D
+        """Returns the matrix representation of the 2D
         anti-clockwise rotation of angle `alpha`. The angle `alpha`
         is in radians.
 
@@ -1126,7 +1126,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def rows(rows):
-        """Construct a matrix by concatenating a list of
+        """Constructs a matrix by concatenating a list of
         vectors/lists row by row. Must be called in Taichi scope.
 
         Args:
@@ -1165,7 +1165,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cols(cols):
-        """Construct a Matrix instance by concatenating Vectors/lists column by column.
+        """Constructs a Matrix instance by concatenating Vectors/lists column by column.
 
         Args:
             cols (List): A list of Vector (1-D Matrix) or a list of list.
@@ -1194,7 +1194,7 @@ class Matrix(TaichiOperations):
         return id(self)
 
     def dot(self, other):
-        """Perform the dot product of two vectors.
+        """Performs the dot product of two vectors.
 
         To call this method, both multiplicatives must be vectors.
 
@@ -1226,7 +1226,7 @@ class Matrix(TaichiOperations):
         return _matrix_cross2d(self, other)
 
     def cross(self, other):
-        """Perform the cross product with the input vector (1-D Matrix).
+        """Performs the cross product with the input vector (1-D Matrix).
 
         Both two vectors must have the same dimension <= 3.
 
@@ -1252,7 +1252,7 @@ class Matrix(TaichiOperations):
             "Cross product is only supported between pairs of 2D/3D vectors")
 
     def outer_product(self, other):
-        """Perform the outer product with the input Vector (1-D Matrix).
+        """Performs the outer product with the input Vector (1-D Matrix).
 
         The outer_product of two vectors `v = (x1, x2, ..., xn)`,
         `w = (y1, y2, ..., yn)` is a `n` times `n` square matrix, and its `(i, j)`
@@ -1270,7 +1270,7 @@ class Matrix(TaichiOperations):
 
 
 def Vector(arr, dt=None, **kwargs):
-    """Construct a vector from given array.
+    """Constructs a vector from given array.
 
     A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 

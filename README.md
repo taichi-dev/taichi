@@ -73,7 +73,7 @@ pip install taichi
 *We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features.*
 
 ```bash
-pip install -i https://test.pypi.org/simple/ taichi-nightly
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 ```
 
 ### Run your "Hello, world!"

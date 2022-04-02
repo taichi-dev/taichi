@@ -65,25 +65,6 @@ def expr_init(rhs):
 
 
 @taichi_scope
-def expr_init_list(xs, expected):
-    if not isinstance(xs, (list, tuple, Matrix)):
-        raise TypeError(f'Cannot unpack type: {type(xs)}')
-    if isinstance(xs, Matrix):
-        if not xs.m == 1:
-            raise ValueError(
-                'Matrices with more than one columns cannot be unpacked')
-        xs = xs.entries
-    if expected != len(xs):
-        raise ValueError(
-            f'Tuple assignment size mismatch: {expected} != {len(xs)}')
-    if isinstance(xs, list):
-        return [expr_init(e) for e in xs]
-    if isinstance(xs, tuple):
-        return tuple(expr_init(e) for e in xs)
-    raise ValueError(f'Cannot unpack from {type(xs)}')
-
-
-@taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
     if isinstance(rhs, Field):
@@ -94,7 +75,7 @@ def expr_init_func(
 def begin_frontend_struct_for(ast_builder, group, loop_range):
     if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
         raise TypeError(
-            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
+            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via types.ndarray)'
         )
     if group.size() != len(loop_range.shape):
         raise IndexError(
@@ -584,7 +565,7 @@ def ndarray(dtype, shape):
 
 
 @taichi_scope
-def ti_print(*_vars, sep=' ', end='\n'):
+def ti_format_list_to_content_entries(raw):
     def entry2content(_var):
         if isinstance(_var, str):
             return _var
@@ -616,13 +597,6 @@ def ti_print(*_vars, sep=' ', end='\n'):
             for v in vars2entries(res):
                 yield v
 
-    def add_separators(_vars):
-        for i, _var in enumerate(_vars):
-            if i:
-                yield sep
-            yield _var
-        yield end
-
     def fused_string(entries):
         accumated = ''
         for entry in entries:
@@ -636,11 +610,23 @@ def ti_print(*_vars, sep=' ', end='\n'):
         if accumated:
             yield accumated
 
-    _vars = add_separators(_vars)
-    entries = vars2entries(_vars)
+    entries = vars2entries(raw)
     entries = fused_string(entries)
-    contentries = [entry2content(entry) for entry in entries]
-    get_runtime().prog.current_ast_builder().create_print(contentries)
+    return [entry2content(entry) for entry in entries]
+
+
+@taichi_scope
+def ti_print(*_vars, sep=' ', end='\n'):
+    def add_separators(_vars):
+        for i, _var in enumerate(_vars):
+            if i:
+                yield sep
+            yield _var
+        yield end
+
+    _vars = add_separators(_vars)
+    entries = ti_format_list_to_content_entries(_vars)
+    get_runtime().prog.current_ast_builder().create_print(entries)
 
 
 @taichi_scope
@@ -683,7 +669,7 @@ def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
     get_runtime().prog.current_ast_builder().create_assert_stmt(
-        Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
+        Expr(cond).ptr, msg, extra_args)
 
 
 @taichi_scope

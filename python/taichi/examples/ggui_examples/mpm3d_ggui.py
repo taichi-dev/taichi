@@ -197,7 +197,7 @@ def init_vols(vols):
 
 
 @ti.kernel
-def set_color_by_material(material_colors: ti.ext_arr()):
+def set_color_by_material(material_colors: ti.types.ndarray()):
     for i in range(n_particles):
         mat = materials[i]
         colors[i] = ti.Vector([

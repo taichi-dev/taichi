@@ -1685,5 +1685,4 @@ class VectorNdarray(Ndarray):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
 
 
-
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

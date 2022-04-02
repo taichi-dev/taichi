@@ -4,135 +4,162 @@ sidebar_position: 1
 
 # GUI system
 
-Taichi has a built-in cpu-based GUI system to help users visualize results.
+Taichi has a built-in GUI system for visualizing simulation data in data containers like Taichi fields or NumPy ndarrays. It also has limited support for drawing primitive geometries.
 
-## Create a window
+## Create and display a window
 
-The following code show how to create a window of resolution `640x360`:
+The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling `gui.show()`:
+
+```python
+gui = ti.GUI('Hello World!', (640, 360))
+while gui.running:
+    gui.show()
+```
+
+:::note
+
+Call `gui.show()` inside a `while` loop. Otherwise, the window would flash once and disappear.
+
+:::
+
+## Close the window
+
+You can set `gui.running=False` in the `while` loop to close the GUI:
 
 ```python
 gui = ti.GUI('Window Title', (640, 360))
-```
-
-:::note
-
-If you are running Taichi on a machine without a GUI environment, consider setting `show_gui` to `False`:
-
-```python
-gui = ti.GUI('Window Title', (640, 360), show_gui=False)
-
 while gui.running:
-    ...
-    gui.show(f'{gui.frame:06d}.png')  # save current frame to local file
+    if some_events_happend:
+        gui.running = False
+    gui.show()
 ```
 
-:::
+## Coordinate system
 
-## Display a window
+Each window is built on a coordinate system: the origin is located in the lower-left corner, with the `+x` direction stretching to the right and the `+y` direction stretching upward.
 
-The following code snippet display frame of the current windows:
+## Display a field or ndarray
+
+To display a Taichi field or a NumPy ndarray, call `gui.set_image()`. The method accepts both types as input.
 
 ```python
-    for frame in range(10000):
-        ...
-        gui.show() # display current frame
+image = ti.Vector.field(3, ti.f32, shape=(640, 480))
+while gui.running:
+    gui.set_image(image)
+    gui.show()
 ```
 
-:::note
-Current FPS will show besides the title of the window. By default, FPS is limited to 60.
-We can change this number by setting `gui.fps_limit = the_number_we_want`.
-:::
+Because Taichi field is a *global* data container, if the vector field `image` is updated between the `while` loops, the GUI window refreshes to display the latest image.
 
+:::caution IMPORTANT
 
-## Paint on a window
-Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
-
-:::note
-
-The position parameter of every drawing API expects input of 2-element tuples,
-whose values are the relative position of the object range from 0.0 to 1.0.
-(0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
-
-Acceptable input for positions are Taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
-
-To convert Taichi field to numpy array, use `to_numpy()` on Taichi fields. By doing this, we can also use data
-from Taichi program in other visualization APIs such as matplotlib.
-:::
-
-:::tip
-
-Here we only list the most commonly-used APIs. For a full list of APIs and the detailed API descriptions, please
-see the [API docs](https://api-docs.taichi.graphics/autoapi/taichi/ui/gui/index.html#module-taichi.ui.gui).
+Ensure that the shape of the input matches the resolution of the GUI window.
 
 :::
+
+### Zero-copying frame buffer
+
+In each loop of the `gui.set_image()` method call, the GUI system converts the image data to a displayable format and copies the result to the window buffer. This causes huge overload when the window size is large, making it hard to achieve high FPS (frames per second).
+
+If you only need to call the `set_image()` method without using any drawing command, you can enable `fast_gui` mode for better performance. This mode allows Taichi GUI to write the image data directly to the frame buffer without additional copying, and significantly increases FPS.
 
 ```python
-gui.circles(pos, radius=3, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
+gui = ti.GUI(res, title, fast_gui=True)
 ```
-draws circles with radius of 1.5 and three different colors differed by `material`, an integer array with the same size as
-`pos`. Each integer in `material` indicates which color the associated circle use (i.e. array [0, 1, 2] indicates these three
-circles are colored separately by the first, second, and third color in `palette`.
 
-![circles](../static/assets/colored_circles.png)
+For this mode to work, ensure that the data passed into `gui.set_image()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
+
+- A scalar field `ti.field(dtype, shape) `
+- a vector field  `ti.field(3, dtype, shape)` compatible with RGB format
+- a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format.
+
+Note that `dtype` must be `ti.f32`, `ti.f64`, or `ti.u8`.
+
+## Draw on a window
+
+Taichi's GUI system supports drawing simple geometries, such as lines, triangles, rectangles, circles, and texts.
+
+The `pos` parameter of every drawing method accepts Taichi fields or NumPy arrays, *not* Python primitive lists. Each element of the array is a pair of floats ranging from `0.0` to `1.0`, which represent the relative positions of the geometries. For example:
+
+- `(0.0, 0.0)`: the lower-left corner of the window.
+- `(1.0, 1.0)`: the upper-right corner of the window.
+
+The following code draws 50 circles with a radius of `1.5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
 
 ```python
+import numpy as np
+pos = np.random.random((50, 2))
+# Create an array of 50 integer elements whose values are randomly 0, 1, 2
+# 0 corresponds to 0x068587
+# 1 corresponds to 0xED553B
+# 2 corresponds to 0xEEEEF0
+indices = np.random.randint(0, 2, size=(50,))
+gui = ti.GUI("lines", res=(400, 400))
+while gui.running:
+    gui.circles(pos, radius=1.5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=indices)
+    gui.show()
+```
+
+
+
+![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=N2Y2M2YxMWZlZGM2NGM1ZGQ3Y2JlZmU3NzgyMjRmZWRfSEprR1JLempxWkVSOFllRnBkS1hMZGlGeFI3SWVNN0RfVG9rZW46Ym94Y25EZFhiUmwzeWxjakllME1SSXhNMjlnXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
+
+The following code draws five blue line segments whose width is 2, with `X` and `Y` representing the five starting points and the five ending points.
+
+```python
+import numpy as np
+X = np.random.random((5, 2))
+Y = np.random.random((5, 2))
 gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
-draws line segments from X positions to Y positions with width of 2 and color in light blue.
 
-![lines](../static/assets/lines.png)
+![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=NDlhNDgxOTViYmNmNTBhZDQ2YjJhMmYxZjQxMWY4MDBfVjd6WURPM2d1M05TOW9FUk9tVHpIQlFtVVJMNjdudGlfVG9rZW46Ym94Y254dTk5dFI1ZEwzSTFHUGJKOWl2dG5mXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
+
+The following code draws two orange triangles orange, with `X`, `Y`, and `Z` representing the three points of the triangles.
 
 ```python
+import numpy as np
+X = np.random.random((2, 2))
+Y = np.random.random((2, 2))
+Z = np.random.random((2, 2))
 gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
 ```
-draws triangles with color in red and three points positioned at X, Y, and Z.
 
-![triangles](../static/assets/triangles.png)
 
-## RGB & Hex conversion.
 
-A handy tool for converting colors from RGB to hex and vice versa.
+![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=N2JkMDNmNWYxYTBiMTliNDVjNWRhNGNmNWMxY2Y4ZjlfQURQSTlIYVVjTWEyYjVIWThjVmxtNmFZNlI4QzJDWUJfVG9rZW46Ym94Y252bkpSeDVEUkhRY1pmanRpZ2hDY1lkXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
+
+
+
+## Event handling
+
+Taichi's GUI system also provides a set of methods for mouse and keyboard control. Input events are classified into three types:
 
 ```python
-rgb = (0.4, 0.8, 1.0)
-hex = ti.rgb_to_hex(rgb)  # 0x66ccff
-
-rgb = ti.hex_to_rgb(0x007fff) # (0.0, 0.5, 1.0)
-
-rgb = np.array([[0.4, 0.8, 1.0], [0.0, 0.5, 1.0]])
-hex = ti.rgb_to_hex(rgb)  # np.array([0x66ccff, 0x007fff])
+ti.GUI.RELEASE  # key up or mouse button up
+ti.GUI.PRESS    # key down or mouse button down
+ti.GUI.MOTION   # mouse motion or mouse wheel
 ```
 
-The return values can be used in GUI drawing APIs.
+*Event key* is the key that you press from your keyboard or mouse. It can be one of:
 
+```python
+# for ti.GUI.PRESS and ti.GUI.RELEASE event:
+ti.GUI.ESCAPE  # Esc
+ti.GUI.SHIFT   # Shift
+ti.GUI.LEFT    # Left Arrow
+'a'            # we use lowercase for alphabet
+'b'
+...
+ti.GUI.LMB     # Left Mouse Button
+ti.GUI.RMB     # Right Mouse Button
 
-## Event processing
+# for ti.GUI.MOTION event:
+ti.GUI.MOVE    # Mouse Moved
+ti.GUI.WHEEL   # Mouse Wheel Scrolling
+```
 
-Every event have a key and type.
-
-_Event type_ is the type of event, for now, there are just three type of event:
-
-    ti.GUI.RELEASE  # key up or mouse button up
-    ti.GUI.PRESS    # key down or mouse button down
-    ti.GUI.MOTION   # mouse motion or mouse wheel
-
-_Event key_ is the key that you pressed on keyboard or mouse, can be one of:
-
-    # for ti.GUI.PRESS and ti.GUI.RELEASE event:
-    ti.GUI.ESCAPE  # Esc
-    ti.GUI.SHIFT   # Shift
-    ti.GUI.LEFT    # Left Arrow
-    'a'            # we use lowercase for alphabet
-    'b'
-    ...
-    ti.GUI.LMB     # Left Mouse Button
-    ti.GUI.RMB     # Right Mouse Button
-
-    # for ti.GUI.MOTION event:
-    ti.GUI.MOVE    # Mouse Moved
-    ti.GUI.WHEEL   # Mouse Wheel Scrolling
-
-A _event filter_ is a list combined of _key_, _type_ and _(type, key)_ tuple, e.g.:
+An *event filter* is a combined list of *key*, *type*, and *(type, key)* tuple. For example:
 
 ```python
 # if ESC pressed or released:
@@ -141,58 +168,42 @@ gui.get_event(ti.GUI.ESCAPE)
 # if any key is pressed:
 gui.get_event(ti.GUI.PRESS)
 
-# if ESC pressed or SPACE released:
+# if ESC is pressed or SPACE is released:
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-`gui.running` checks the state of the window. `ti.GUI.EXIT` occurs when
-you click on the close (X) button of a window. `gui.running` will obtain
-`False` when the GUI is being closed.
 
-For example, loop until the close button is clicked:
 
-    while gui.running:
-        render()
-        gui.set_image(pixels)
-        gui.show()
+`gui.get_event()` pops an event from the queue and saves it to `gui.event`. For example:
 
-You can also close the window by manually setting `gui.running` to`False`:
+```python
+if gui.get_event():
+    print('Got event, key =', gui.event.key)
+```
 
-    while gui.running:
-        if gui.get_event(ti.GUI.ESCAPE):
-            gui.running = False
+The following code defines that the `while` loop goes on until **ESC** is pressed:
 
-        render()
-        gui.set_image(pixels)
-        gui.show()
+```python
+gui = ti.GUI('Title', (640, 480))
+while not gui.get_event(ti.GUI.ESCAPE):
+    gui.set_image(img)
+    gui.show()
+```
 
-`gui.get_event(a, ...)` tries to pop an event from the queue, and stores it into `gui.event`.
+`gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated. For example:
 
-For example:
-
-    if gui.get_event():
-        print('Got event, key =', gui.event.key)
-
-For example, loop until ESC is pressed:
-
-    gui = ti.GUI('Title', (640, 480))
-    while not gui.get_event(ti.GUI.ESCAPE):
-        gui.set_image(img)
-        gui.show()
-
-`gui.is_pressed(key, ...)` detects the keys you pressed. You must use it
-together with `gui.get_event`. Otherwise, it is not updated. For example:
-
-    while True:
-        gui.get_event()  # must be called before is_pressed
-        if gui.is_pressed('a', ti.GUI.LEFT):
-            print('Go left!')
-        elif gui.is_pressed('d', ti.GUI.RIGHT):
-            print('Go right!')
+```python
+while True:
+    gui.get_event()  # must be called before is_pressed
+    if gui.is_pressed('a', ti.GUI.LEFT):
+        print('Go left!')
+    elif gui.is_pressed('d', ti.GUI.RIGHT):
+        print('Go right!')
+```
 
 :::caution
 
-`gui.is_pressed()` must be used together with `gui.get_event()`, or it won't be updated!
+Call `gui.get_event()` before calling `gui.is_pressed()`. Otherwise, `gui.is_pressed()` does not take effect.
 
 :::
 
@@ -207,18 +218,20 @@ while True:
         print('Go right!')
 ```
 
-`gui.get_cursor_pos()` retrieves the current cursor position on the window. For example:
+#### Retrieve cursor position
 
-    mouse_x, mouse_y = gui.get_cursor_pos()
+`gui.get_cursor_pos()` returns the cursor's current position in the window. The return value is a pair of floats in the range `[0.0, 1.0]`. For example:
 
+```python
+mouse_x, mouse_y = gui.get_cursor_pos()
+```
 
 ## GUI Widgets
 
-Sometimes it's more intuitive to use widgets like slider or button to control the program variables instead of using chaotic keyboard bindings. Taichi GUI provides a set of widgets for that reason:
+Taichi's GUI system also provides widgets, including `slider()`, `label()`, and `button()`, for you to customize your control interface. Take a look at the following code snippet:
 
 ```python
 import taichi as ti
-
 gui = ti.GUI('GUI widgets')
 
 radius = gui.slider('Radius', 1, 50, step=1)
@@ -247,102 +260,4 @@ while gui.running:
     gui.show()
 ```
 
-
-
-## Image I/O
-
-`ti.imwrite(img, filename)` exports an `np.ndarray` or a Taichi field
-(`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a file with a specified `filename`.
-
-Same as `ti.GUI.show(filename)`, the format of the exported image is determined by **the suffix of** `filename` as well. Now `ti.imwrite` supports exporting images to `png`, `img` and `jpg` and we recommend using `png`.
-
-Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of field should be `(height, weight)` or `(height, weight, 1)`. For example:
-
-```python
-import taichi as ti
-
-ti.init()
-
-shape = (512, 512)
-type = ti.u8
-pixels = ti.field(dtype=type, shape=shape)
-
-@ti.kernel
-def draw():
-    for i, j in pixels:
-        pixels[i, j] = ti.random() * 255    # integers between [0, 255] for ti.u8
-
-draw()
-
-ti.imwrite(pixels, f"export_u8.png")
-```
-
-Besides, for RGB or RGBA images, `ti.imwrite` needs to receive a field which has shape `(height, width, 3)` and `(height, width, 4)` individually.
-
-Generally the value of the pixels on each channel of a `png` image is an integer in \[0, 255\]. For this reason, `ti.imwrite` will **cast fields** which has different data types all **into integers between \[0, 255\]**. As a result, `ti.imwrite` has the following requirements for different data types of input fields:
-
-- For float-type (`ti.f16`, `ti.f32`, etc.) input fields, **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]. Then they are multiplied by 256 and cast to integers ranging from \[0, 255\].
-- For int-type (`ti.u8`, `ti.u16`, etc.) input fields, **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
-
-Here is another example:
-
-```python
-import taichi as ti
-
-ti.init()
-
-shape = (512, 512)
-channels = 3
-type = ti.f32
-pixels = ti.Matrix.field(channels, dtype=type, shape=shape)
-
-@ti.kernel
-def draw():
-    for i, j in pixels:
-        for k in ti.static(range(channels)):
-            pixels[i, j][k] = ti.random()   # floats between [0, 1] for ti.f32
-
-draw()
-
-ti.imwrite(pixels, f"export_f32.png")
-```
-
-## Zero-copying frame buffer
-When the GUI resolution (window size) is large, it sometimes becomes difficult to achieve 60 FPS even without any kernel
-invocations between two frames.
-
-This is mainly due to the copy overhead, where Taichi GUI needs to copy the image buffer from one place to another.
-This process is necessary for the 2D drawing functions, such as `gui.circles`, to work. The larger the image shape is,
-the larger the overhead.
-
-Fortunately, sometimes your program only needs `gui.set_image` alone. In such cases, you can enable the `fast_gui` option
-for better performance. This mode allows Taichi GUI to directly write the image data to the frame buffer without additional
-copying, resulting in a much better FPS.
-
-```python
-gui = ti.GUI(res, title, fast_gui=True)
-```
-
-:::note
-
-Because of the zero-copying mechanism, the image passed into `gui.set_image` must already be in the display-compatible
-format. That is, this field must either be a `ti.Vector(3)` (RGB) or a `ti.Vector(4)` (RGBA). In addition, each channel
-must be of type `ti.f32`, `ti.f64` or `ti.u8`.
-
-:::
-
-:::note
-
-If possible, consider enabling this option, especially when `fullscreen=True`.
-
-:::
-
-:::caution
-
-Despite the performance boost, it has many limitations as trade off:
-
-`gui.set_image` is the only available paint API in this mode.
-
-`gui.set_image` will only take Taichi 3D or 4D vector fields (RGB or RGBA) as input.
-
-:::
+##

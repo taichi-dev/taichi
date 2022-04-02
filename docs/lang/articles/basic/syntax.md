@@ -104,7 +104,7 @@ def error_too_many_arguments(u: ti.i32, v: ti.i64, w: ti.types.matrix(7, 9, ti.i
 A kernel can also take the following two types of advanced arguments:
 
 - Template arguments: Use `ti.template()` as their type hints. See [Template metaprogramming](../advanced/meta.md#template-metaprogramming).
-- External array arguments: Use `ti.ext_arr()` as their type hints. See [Interacting with external arrays](./external.md).
+- External array arguments: Use `ti.types.ndarray()` as their type hints. See [Interacting with external arrays](./external.md).
 
 </details>
 

@@ -82,9 +82,11 @@ class ASTTransformer(Builder):
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
+        values = node.value.ptr if is_static_assign else impl.expr_init(
+            node.value.ptr)
+
         for node_target in node.targets:
-            ASTTransformer.build_assign_unpack(ctx, node_target,
-                                               node.value.ptr,
+            ASTTransformer.build_assign_unpack(ctx, node_target, values,
                                                is_static_assign)
         return None
 
@@ -104,11 +106,22 @@ class ASTTransformer(Builder):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
         targets = node_target.elts
-        tmp_tuple = values if is_static_assign else impl.expr_init_list(
-            values, len(targets))
+
+        if isinstance(values, matrix.Matrix):
+            if not values.m == 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+            values = values.entries
+
+        if not isinstance(values, collections.abc.Sequence):
+            raise TaichiSyntaxError(f'Cannot unpack type: {type(values)}')
+
+        if len(values) != len(targets):
+            raise TaichiSyntaxError(
+                "The number of targets is not equal to value length")
 
         for i, target in enumerate(targets):
-            ASTTransformer.build_assign_basic(ctx, target, tmp_tuple[i],
+            ASTTransformer.build_assign_basic(ctx, target, values[i],
                                               is_static_assign)
 
         return None
@@ -1196,22 +1209,52 @@ class ASTTransformer(Builder):
         args = build_stmt(ctx, node.right)
         if not isinstance(args, collections.abc.Sequence):
             args = (args, )
+        args = [expr.Expr(x).ptr for x in args]
+        return msg, args
+
+    @staticmethod
+    def ti_format_list_to_assert_msg(raw):
+        entries = impl.ti_format_list_to_content_entries([raw])
+        msg = ""
+        args = []
+        for entry in entries:
+            if isinstance(entry, str):
+                msg += entry
+            elif isinstance(entry, _ti_core.Expr):
+                ty = entry.get_ret_type()
+                if ty in primitive_types.real_types:
+                    msg += "%f"
+                elif ty in primitive_types.integer_types:
+                    msg += "%d"
+                else:
+                    raise TaichiSyntaxError(
+                        f"Unsupported data type: {type(ty)}")
+                args.append(entry)
+            else:
+                raise TaichiSyntaxError(f"Unsupported type: {type(entry)}")
         return msg, args
 
     @staticmethod
     def build_Assert(ctx, node):
         extra_args = []
         if node.msg is not None:
-            if isinstance(node.msg, ast.Constant):
-                msg = node.msg.value
-            elif isinstance(node.msg, ast.Str):
-                msg = node.msg.s
-            elif ASTTransformer._is_string_mod_args(node.msg):
+            if ASTTransformer._is_string_mod_args(node.msg):
                 msg, extra_args = ASTTransformer._handle_string_mod_args(
                     ctx, node.msg)
             else:
-                raise ValueError(
-                    f"assert info must be constant, not {ast.dump(node.msg)}")
+                msg = build_stmt(ctx, node.msg)
+                if isinstance(node.msg, ast.Constant):
+                    msg = str(msg)
+                elif isinstance(node.msg, ast.Str):
+                    pass
+                elif isinstance(msg, collections.abc.Sequence) and len(
+                        msg) > 0 and msg[0] == "__ti_format__":
+                    msg, extra_args = ASTTransformer.ti_format_list_to_assert_msg(
+                        msg)
+                else:
+                    raise TaichiSyntaxError(
+                        f"assert info must be constant or formatted string, not {type(msg)}"
+                    )
         else:
             msg = unparse(node.test)
         test = build_stmt(ctx, node.test)

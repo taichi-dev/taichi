@@ -64,6 +64,8 @@ void export_lang(py::module &m) {
                                             PyExc_SyntaxError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
+  py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
+                                               PyExc_AssertionError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -615,8 +617,10 @@ void export_lang(py::module &m) {
   });
 
   m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        [&](const std::string &func_name, const ExprGroup &args,
+            bool with_runtime_context) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
+                                                        with_runtime_context);
         });
 
   m.def("make_func_call_expr",

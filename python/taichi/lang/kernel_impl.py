@@ -11,9 +11,11 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
+from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
-                                   TaichiRuntimeTypeError, TaichiSyntaxError)
+                                   TaichiRuntimeTypeError, TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
@@ -191,7 +193,7 @@ class Func:
             is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
         if not self.is_real_function:
-            if self.return_type and not ctx.returned:
+            if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                 raise TaichiSyntaxError(
                     "Function has a return type but does not have a return statement"
                 )
@@ -480,7 +482,7 @@ class Kernel:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
                 if not ctx.is_real_function:
-                    if self.return_type and not ctx.returned:
+                    if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                         raise TaichiSyntaxError(
                             "Kernel has a return type but does not have a return statement"
                         )
@@ -558,13 +560,13 @@ class Kernel:
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, int):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
@@ -601,7 +603,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], (int, float)):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_float(
@@ -611,7 +613,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], int):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_int(actual_argument_slot,
@@ -647,7 +649,11 @@ class Kernel:
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
-            t_kernel(launch_ctx)
+            try:
+                t_kernel(launch_ctx)
+            except Exception as e:
+                e = handle_exception_from_cpp(e)
+                raise e from None
 
             ret = None
             ret_dt = self.return_type
@@ -772,7 +778,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         def wrapped(*args, **kwargs):
             try:
                 return primal(*args, **kwargs)
-            except TaichiCompilationError as e:
+            except (TaichiCompilationError, TaichiRuntimeError) as e:
                 raise type(e)('\n' + str(e)) from None
 
         wrapped.grad = adjoint
@@ -794,7 +800,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/lang/articles/basic/syntax#kernels.
+    See also https://docs.taichi.graphics/lang/articles/syntax#kernel.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -843,7 +849,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/lang/articles/advanced/odop
+    See also https://docs.taichi.graphics/lang/articles/odop
 
     Example::
 

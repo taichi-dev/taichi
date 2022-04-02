@@ -122,12 +122,12 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, example_any_arrays=None, name=None):
+    def add_kernel(self, kernel_fn, example_ndarrays=None, name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example ndarray input.
+          example_ndarrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example ndarray input.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
@@ -140,14 +140,14 @@ class Module:
             anno for anno in kernel.argument_annotations
             if isinstance(anno, NdarrayType)
         ])
-        assert example_any_arrays is None or num_arr == len(
-            example_any_arrays
-        ), f'Need {num_arr} example ndarray inputs but got {len(example_any_arrays)}'
+        assert example_ndarrays is None or num_arr == len(
+            example_ndarrays
+        ), f'Need {num_arr} example ndarray inputs but got {len(example_ndarrays)}'
         i = 0
         for anno in kernel.argument_annotations:
             if isinstance(anno, NdarrayType):
-                if example_any_arrays:
-                    injected_args.append(example_any_arrays[i])
+                if example_ndarrays:
+                    injected_args.append(example_ndarrays[i])
                 else:
                     assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
                     if anno.element_dim == 0:

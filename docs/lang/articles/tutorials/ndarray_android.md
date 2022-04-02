@@ -81,7 +81,7 @@ substepping = 10
 
 # Define Taichi kernels
 @ti.kernel
-def initialize(pos: ti.any_arr(element_dim=1), vel: ti.any_arr(element_dim=1)):
+def initialize(pos: ti.types.ndarray(element_dim=1), vel: ti.types.ndarray(element_dim=1)):
     center=ti.Vector([0.5, 0.5])
     for i in pos:
         theta = ti.random() * 2 * PI
@@ -92,7 +92,7 @@ def initialize(pos: ti.any_arr(element_dim=1), vel: ti.any_arr(element_dim=1)):
         vel[i] *= init_vel
 
 @ti.kernel
-def compute_force(pos: ti.any_arr(element_dim=1), vel: ti.any_arr(element_dim=1), force: ti.any_arr(element_dim=1)):
+def compute_force(pos: ti.types.ndarray(element_dim=1), vel: ti.types.ndarray(element_dim=1), force: ti.types.ndarray(element_dim=1)):
     for i in pos:
         force[i] = ti.Vector([0.0, 0.0])
     for i in pos:

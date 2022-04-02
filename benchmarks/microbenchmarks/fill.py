@@ -13,7 +13,7 @@ def fill_default(arch, repeat, container, dtype, dsize, get_metric):
             dst[I] = ti.cast(0.7, dtype)
 
     @ti.kernel
-    def fill_array(dst: ti.any_arr()):
+    def fill_array(dst: ti.types.ndarray()):
         for i in dst:
             dst[i] = ti.cast(0.7, dtype)
 

@@ -89,7 +89,7 @@ function taichi::test::ggui {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running GGUI examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}/python/taichi/examples/ggui_examples"
@@ -114,7 +114,7 @@ function taichi::test::difftaichi {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running DiffTaichi examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}/examples"
@@ -139,7 +139,7 @@ function taichi::test::taichi_elements {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running Taichi Elements examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}"
@@ -148,7 +148,7 @@ function taichi::test::taichi_elements {
     python "download_ply.py"
 
     # run tests
-    cd "${REPO}/demo" 
+    cd "${REPO}/demo"
     for match in $(find ./ -name "${PATTERN}"); do
         python "${match}"
         taichi::utils::line
@@ -179,7 +179,7 @@ function taichi::test::stannum {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running Stannum examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}"
@@ -199,7 +199,7 @@ function taichi::test::sandyfluid {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running SandyFluid examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}"
@@ -224,7 +224,7 @@ function taichi::test::voxel_editor {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Running Voxel Editor examples"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     cd "${REPO}"
@@ -245,7 +245,7 @@ function taichi::test::generate_videos {
     # divider
     taichi::utils::line
     taichi::utils::logger::info "Generating examples videos"
-    
+
     # clone the repo
     taichi::utils::git_clone "${ORG}" "${REPO}"
     # mkdir "${REPO}/misc/output_videos"
@@ -282,7 +282,7 @@ function taichi::test::main {
 
     # ggui examples
     taichi::test::ggui "${WORKDIR}"
-    
+
     # difftaichi examples
     taichi::test::difftaichi "${WORKDIR}"
 
@@ -292,10 +292,10 @@ function taichi::test::main {
     # stannum tests
     taichi::test::stannum "${WORKDIR}"
 
-    # sandyfluid tests 
+    # sandyfluid tests
     taichi::test::sandyfluid "${WORKDIR}"
 
-    # voxel editor tests 
+    # voxel editor tests
     taichi::test::voxel_editor "${WORKDIR}"
 
     # generating example videos

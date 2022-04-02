@@ -461,7 +461,7 @@ def init(arch=None,
 
 
 def no_activate(*args):
-    """Deactivate a SNode pointer.
+    """Deactivates a SNode pointer.
     """
     for v in args:
         get_runtime().prog.no_activate(v._snode.ptr)
@@ -500,7 +500,7 @@ def cache_read_only(*args):
 
 
 def assume_in_range(val, base, low, high):
-    """Hint the compiler that a value is between a specified range,
+    """Hints the compiler that a value is between a specified range,
     for the compiler to perform scatchpad optimization, and return the
     value untouched.
 
@@ -568,7 +568,7 @@ def loop_config(block_dim=None, serialize=None, parallelize=None):
 
 
 def global_thread_idx():
-    """Return the global thread id of this running thread,
+    """Returns the global thread id of this running thread,
     only available for cpu and cuda backends.
 
     For cpu backends this is equal to the cpu thread id,
@@ -594,7 +594,7 @@ def mesh_patch_idx():
 
 
 def Tape(loss, clear_gradients=True):
-    """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
+    """Returns a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
     context manager would catching all of the callings of functions that
     decorated by :func:`~taichi.lang.kernel_impl.kernel` or
     :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
@@ -640,7 +640,7 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
-    """Set the gradients of all fields to zero.
+    """Sets the gradients of all fields to zero.
     """
     impl.get_runtime().materialize()
 

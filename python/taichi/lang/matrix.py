@@ -237,7 +237,7 @@ class Matrix(TaichiOperations):
                 entries[i].append(acc)
         # A hack way to check if this is a VectorType object from `math`` module,
         # but avoid importing a deleted name from other modules.
-        if isinstance(other, Matrix) and hasattr(other, "_DIM"):
+        if isinstance(other, Matrix) and (self.__class__ != other.__class__):
             return type(other)(*[x for x, in entries])
 
         return Matrix(entries)

@@ -36,7 +36,7 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
-    if isinstance(rhs, Matrix) and hasattr(rhs, "_DIM"):
+    if isinstance(rhs, Matrix) and (rhs.__class__ != Matrix):
         return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())

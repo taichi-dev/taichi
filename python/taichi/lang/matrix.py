@@ -1477,7 +1477,7 @@ class MatrixField(Field):
 
     @python_scope
     def from_numpy(self, arr):
-        """Copy an `numpy.ndarray` into this field.
+        """Copies an `numpy.ndarray` into this field.
 
         Example::
 
@@ -1593,7 +1593,7 @@ class MatrixNdarray(Ndarray):
 
     @property
     def element_shape(self):
-        """Return the shape of each element (a 2D matrix) in this ndarray.
+        """Returns the shape of each element (a 2D matrix) in this ndarray.
 
         Example::
 
@@ -1624,7 +1624,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        """Convert this ndarray to a `numpy.ndarray`.
+        """Converts this ndarray to a `numpy.ndarray`.
 
         Example::
 
@@ -1640,7 +1640,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def from_numpy(self, arr):
-        """Copy the data of a `numpy.ndarray` into this array.
+        """Copies the data of a `numpy.ndarray` into this array.
 
         Example::
 
@@ -1687,7 +1687,7 @@ class VectorNdarray(Ndarray):
 
     @property
     def element_shape(self):
-        """Get the dimension of the vector of this ndarray.
+        """Gets the dimension of the vector of this ndarray.
 
         Example::
 
@@ -1714,7 +1714,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def to_numpy(self):
-        """Convert this vector ndarray to a `numpy.ndarray`.
+        """Converts this vector ndarray to a `numpy.ndarray`.
 
         Example::
 
@@ -1730,7 +1730,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def from_numpy(self, arr):
-        """Copy the data from a `numpy.ndarray` into this ndarray.
+        """Copies the data from a `numpy.ndarray` into this ndarray.
 
         The shape and data type of `arr` must match this ndarray.
 

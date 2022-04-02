@@ -231,14 +231,14 @@ class ScalarField(Field):
 
     @python_scope
     def fill(self, val):
-        """Fill this scalar field with a specified value.
+        """Fills this scalar field with a specified value.
         """
         from taichi._kernels import fill_tensor  # pylint: disable=C0415
         fill_tensor(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
-        """Convert this field to a `numpy.ndarray`.
+        """Converts this field to a `numpy.ndarray`.
         """
         if dtype is None:
             dtype = to_numpy_type(self.dtype)

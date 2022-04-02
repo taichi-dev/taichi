@@ -44,9 +44,9 @@ user_api[ti.FieldsBuilder] = [
 ]
 user_api[ti.math] = [
     'clamp', 'cross', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2',
-    'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize',
-    'pi', 'radians', 'reflect', 'refract', 'sign', 'smoothstep', 'step',
-    'vec2', 'vec3', 'vec4'
+    'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize', 'pi',
+    'radians', 'reflect', 'refract', 'sign', 'smoothstep', 'step', 'vec2',
+    'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
@@ -77,7 +77,7 @@ user_api[ti.ScalarNdarray] = [
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
-'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
+    'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
     'to_torch'
 ]
 user_api[ti.VectorNdarray] = [

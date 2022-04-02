@@ -1,8 +1,9 @@
 import collections
 import functools
+
 from taichi.lang.matrix import Matrix
-from taichi.lang.util import python_scope, in_python_scope
-from taichi.types.primitive_types import i32, f32
+from taichi.lang.util import in_python_scope, python_scope
+from taichi.types.primitive_types import f32, i32
 
 
 class _VectorType(Matrix):
@@ -17,14 +18,14 @@ class _VectorType(Matrix):
         x = data[0]
         assert not isinstance(
             x, collections.abc.Sequence), "Matrix is not accepted"
-        
+
         assert len(data) in [1, self._DIM], "Dimension not match"
-        
+
         if len(data) == 1:
             data = [x] * self._DIM
-        
+
         super().__init__(data, self._DTYPE)
-        
+
         self._add_swizzle_attrs()
 
     def _add_swizzle_attrs(self):
@@ -124,6 +125,5 @@ def _generate_vectorND_classes():
 
 
 _generate_vectorND_classes()
-
 
 __all__ = ['ivec2', 'ivec3', 'ivec4', 'vec2', 'vec3', 'vec4']

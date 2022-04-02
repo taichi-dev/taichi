@@ -26,5 +26,5 @@ def test_vector_swizzle_taichi():
         assert all((a + b).rgb == (4, 4, 3))
         M = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         assert all((M @ b) == (1, 1, 1))
-    
+
     foo()

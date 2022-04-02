@@ -237,7 +237,7 @@ class Matrix(TaichiOperations):
                 entries[i].append(acc)
         # A hack way to check if this is a vector from `taichi.math`,
         # to avoid importing a deleted name across modules.
-        if isinstance(other, Matrix) and (self.__class__ != other.__class__):
+        if isinstance(other, Matrix) and (hasattr(other, "_DIM")):
             return type(other)(*[x for x, in entries])
 
         return Matrix(entries)

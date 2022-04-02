@@ -1,5 +1,6 @@
 import collections
 import functools
+import sys
 
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import in_python_scope, python_scope
@@ -55,8 +56,8 @@ class _VectorType(Matrix):
             if result:
                 if self._DTYPE == f32:
                     return globals()[f"vec{len(result)}"](*result)
-                else:
-                    return globals()[f"ivec{len(result)}"](*result)
+
+                return globals()[f"ivec{len(result)}"](*result)
 
         raise AttributeError(f"Cannot get attribute: {attr_name}")
 
@@ -110,7 +111,6 @@ def _wrap_ops(cls):
 
 
 def _generate_vectorND_classes():
-    import sys
     module = sys.modules[__name__]
     for dim in [2, 3, 4]:
         for dt, prefix in zip([f32, i32], ["", "i"]):

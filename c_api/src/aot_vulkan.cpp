@@ -5,16 +5,8 @@
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 
 namespace {
-// Don't directly using namespace to avoid conflicting symbols.
-namespace tvk = taichi::lang::vulkan;
 
-tvk::VulkanDeviceCreator *cppcast(EmbeddedVulkanDevice *ptr) {
-  return reinterpret_cast<tvk::VulkanDeviceCreator *>(ptr);
-}
-
-tvk::VkRuntime *cppcast(VulkanRuntime *ptr) {
-  return reinterpret_cast<tvk::VkRuntime *>(ptr);
-}
+#include "c_api/src/inc/vulkan_casts.inc.h"
 
 }  // namespace
 

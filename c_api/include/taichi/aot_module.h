@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-typedef struct AotModule;
+typedef struct AotModule AotModule;
 
 TI_DLL_EXPORT TaichiKernel *get_taichi_kernel(AotModule *m, const char *name);
 
-TI_DLL_EXPORT size_t get_aot_module_root_size(AotModule *m);
+TI_DLL_EXPORT size_t get_root_size_from_aot_module(AotModule *m);
 
 #ifdef __cplusplus
 }  // extern "C"

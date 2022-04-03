@@ -10,9 +10,10 @@
 extern "C" {
 #endif
 
-typedef struct EmbeddedVulkanDevice;
-typedef struct VulkanDevice;
-typedef struct VulkanRuntime;
+typedef struct EmbeddedVulkanDevice EmbeddedVulkanDevice;
+typedef struct VulkanRuntime VulkanRuntime;
+// TODO(k-ye): Should just use a general Device type.
+typedef struct VulkanDevice VulkanDevice;
 
 TI_DLL_EXPORT EmbeddedVulkanDevice *make_embedded_vulkan_device(
     uint32_t api_version, const char **instance_extensions,
@@ -39,8 +40,12 @@ TI_DLL_EXPORT DeviceAllocation *vulkan_allocate_memory(
 TI_DLL_EXPORT void vulkan_dealloc_memory(VulkanDevice *dev,
                                          DeviceAllocation *da);
 
+TI_DLL_EXPORT void *vulkan_map_memory(VulkanDevice *dev, DeviceAllocation *da);
+
+TI_DLL_EXPORT void vulkan_unmap_memory(VulkanDevice *dev, DeviceAllocation *da);
+
 TI_DLL_EXPORT AotModule *make_vulkan_aot_module(const char *module_path,
-                                                VulkanRuntime runtime);
+                                                VulkanRuntime *runtime);
 
 TI_DLL_EXPORT void destroy_vulkan_aot_module(AotModule *m);
 

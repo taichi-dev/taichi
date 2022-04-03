@@ -11,9 +11,10 @@ namespace {
 TaichiKernel *get_taichi_kernel(AotModule *m, const char *name) {
   auto *mod = cppcast(m);
   auto *k = mod->get_kernel(name);
+  printf("Found cpp_kernel=%llu\n", (uint64_t)k);
   return reinterpret_cast<TaichiKernel *>(k);
 }
 
-size_t get_aot_module_root_size(AotModule *m) {
+size_t get_root_size_from_aot_module(AotModule *m) {
   return cppcast(m)->get_root_size();
 }

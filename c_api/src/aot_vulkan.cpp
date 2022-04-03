@@ -82,11 +82,21 @@ void vulkan_dealloc_memory(VulkanDevice *dev, DeviceAllocation *da) {
   delete alloc;
 }
 
+void *vulkan_map_memory(VulkanDevice *dev, DeviceAllocation *da) {
+  tl::DeviceAllocation *alloc = cppcast(da);
+  return cppcast(dev)->map(*alloc);
+}
+
+void vulkan_unmap_memory(VulkanDevice *dev, DeviceAllocation *da) {
+  tl::DeviceAllocation *alloc = cppcast(da);
+  cppcast(dev)->unmap(*alloc);
+}
+
 AotModule *make_vulkan_aot_module(const char *module_path,
                                   VulkanRuntime *runtime) {
   tl::vulkan::AotModuleParams params;
   params.module_path = module_path;
-  params.runtime = reinterpret_cast<tl::vulkan::VkRuntime *>(runtime);
+  params.runtime = cppcast(runtime);
   auto mod = tvk::make_aot_module(params);
   return reinterpret_cast<AotModule *>(mod.release());
 }

@@ -32,23 +32,42 @@ void destroy_runtime_context(TaichiRuntimeContext *ctx) {
 }
 
 void set_runtime_context_arg_i32(TaichiRuntimeContext *ctx,
-                                 int i,
+                                 int param_i,
                                  int32_t val) {
-  cppcast(ctx)->set_arg(i, val);
+  cppcast(ctx)->set_arg(param_i, val);
 }
 
 void set_runtime_context_arg_float(TaichiRuntimeContext *ctx,
-                                   int i,
+                                   int param_i,
                                    float val) {
-  cppcast(ctx)->set_arg(i, val);
+  cppcast(ctx)->set_arg(param_i, val);
 }
 
-TI_DLL_EXPORT void set_runtime_context_arg_devalloc(
-    TaichiRuntimeContext *ctx,
-    int i,
-    DeviceAllocation *dev_alloc) {
-  cppcast(ctx)->set_arg(i, cppcast(dev_alloc));
-  cppcast(ctx)->set_device_allocation(i, /*is_device_allocation=*/true);
+void set_runtime_context_arg_ndarray(TaichiRuntimeContext *ctx,
+                                     int param_i,
+                                     DeviceAllocation *arr,
+                                     const NdShape *shape,
+                                     const NdShape *elem_shape) {
+  tl::RuntimeContext *rctx = cppcast(ctx);
+  rctx->set_arg(param_i, cppcast(arr));
+  rctx->set_device_allocation(param_i, /*is_device_allocation=*/true);
+  int extra_arg_i = 0;
+  for (int i = 0; i < shape->length; ++i) {
+    rctx->extra_args[param_i][extra_arg_i++] = shape->data[i];
+  }
+  if (elem_shape) {
+    for (int i = 0; i < elem_shape->length; ++i) {
+      rctx->extra_args[param_i][extra_arg_i++] = elem_shape->data[i];
+    }
+  }
+}
+
+void set_runtime_context_arg_scalar_ndarray(TaichiRuntimeContext *ctx,
+                                            int param_i,
+                                            DeviceAllocation *arr,
+                                            const NdShape *shape) {
+  set_runtime_context_arg_ndarray(ctx, param_i, arr, shape,
+                                  /*elem_shape=*/NULL);
 }
 
 #undef TI_RUNTIME_HOST

@@ -32,4 +32,3 @@ TI_DLL_EXPORT void set_runtime_context_arg_devalloc(
 #ifdef __cplusplus
 }  // extern "C"
 #endif
-

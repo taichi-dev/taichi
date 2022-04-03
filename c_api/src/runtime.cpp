@@ -6,7 +6,6 @@
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
 
-
 namespace {
 
 #include "c_api/src/inc/runtime_casts.inc.h"
@@ -16,7 +15,6 @@ tl::RuntimeContext *cppcast(TaichiRuntimeContext *ctx) {
 }
 
 }  // namespace
-
 
 void launch_taichi_kernel(TaichiKernel *k, TaichiRuntimeContext *ctx) {
   auto *kn = reinterpret_cast<tl::aot::Kernel *>(k);
@@ -34,14 +32,14 @@ void destroy_runtime_context(TaichiRuntimeContext *ctx) {
 }
 
 void set_runtime_context_arg_i32(TaichiRuntimeContext *ctx,
-                                               int i,
-                                               int32_t val) {
+                                 int i,
+                                 int32_t val) {
   cppcast(ctx)->set_arg(i, val);
 }
 
 void set_runtime_context_arg_float(TaichiRuntimeContext *ctx,
-                                                 int i,
-                                                 float val) {
+                                   int i,
+                                   float val) {
   cppcast(ctx)->set_arg(i, val);
 }
 

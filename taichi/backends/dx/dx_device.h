@@ -57,7 +57,6 @@ class Dx11ResourceBinder : public ResourceBinder {
  private:
   std::unordered_map<uint32_t, uint32_t> uav_binding_to_alloc_id_;
   std::unordered_map<uint32_t, uint32_t> cb_binding_to_alloc_id_;
-
 };
 
 class Dx11Device;
@@ -72,11 +71,16 @@ class Dx11Pipeline : public Pipeline {
   ID3D11ComputeShader *get_program() {
     return compute_shader_;
   }
+  const std::string &name() {
+    return name_;
+  }
 
  private:
-  Dx11Device* device_{}; // Can't use shared_ptr b/c this can cause device_ to be deallocated pre-maturely
+  Dx11Device *device_{};  // Can't use shared_ptr b/c this can cause device_ to
+                          // be deallocated pre-maturely
   ID3D11ComputeShader *compute_shader_{};
   Dx11ResourceBinder binder_{};
+  std::string name_;
 };
 
 class Dx11Stream : public Stream {
@@ -178,9 +182,10 @@ class Dx11CommandList : public CommandList {
     explicit CmdBindConstantBufferToIndex(Dx11CommandList *cmdlist)
         : Cmd(cmdlist) {
     }
-    ID3D11Buffer *buffer;    // Original buffer, can't be bound to CB slot
-    ID3D11Buffer *cb_buffer; // Constant buffer-version of buffer, for binding to CB slots
-    uint32_t binding; // CB register; constant buffer slot
+    ID3D11Buffer *buffer;     // Original buffer, can't be bound to CB slot
+    ID3D11Buffer *cb_buffer;  // Constant buffer-version of buffer, for binding
+                              // to CB slots
+    uint32_t binding;         // CB register; constant buffer slot
     void execute() override;
   };
 
@@ -188,11 +193,15 @@ class Dx11CommandList : public CommandList {
     explicit CmdDispatch(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
     }
     uint32_t x{0}, y{0}, z{0};
+    // Constant Buffer slot for SPIRV_Cross_NumWorkgroups
+    uint32_t spirv_cross_num_wg_cb_slot_{0};
     void execute() override;
   };
 
   std::vector<std::unique_ptr<Cmd>> recorded_commands_;
   Dx11Device *device_;
+  int cb_slot_watermark_{-1};
+  int cb_count();
 };
 
 class Dx11Device : public GraphicsDevice {
@@ -247,6 +256,14 @@ class Dx11Device : public GraphicsDevice {
   }
   ID3D11Buffer *create_or_get_cb_buffer(uint32_t alloc_id);
 
+  // cb_slot should be 1 after pre-occupied buffers
+  // example: in the presence of args_t, cb_slot will be cb0
+  // in the absence of args_t, cb_slot will be cb0
+  void set_spirv_cross_numworkgroups(uint32_t x,
+                                     uint32_t y,
+                                     uint32_t z,
+                                     int cb_slot);
+
  private:
   void create_dx11_device();
   void destroy_dx11_device();
@@ -260,9 +277,11 @@ class Dx11Device : public GraphicsDevice {
   std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
       alloc_id_to_uav_;  // binding ID to UAV
   std::unordered_map<uint32_t, ID3D11Buffer *>
-    alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
+      alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
   int alloc_serial_;
   Dx11Stream *stream_;
+
+  ID3D11Buffer *spirv_cross_numworkgroups_{}, *spirv_cross_numworkgroups_cb_{};
 
   // temporary debug use
   std::unordered_map<uint32_t, void *> mapped_;

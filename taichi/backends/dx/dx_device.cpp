@@ -11,9 +11,15 @@ namespace directx11 {
 IDXGISwapChain *g_swapchain = nullptr;
 #endif
 
+// For debugging purposes only. Dumps the first nchars bytes of a buffer to
+// terminal.
+void dump_buffer(ID3D11Device *device,
+                 ID3D11DeviceContext *ctx,
+                 ID3D11Buffer *buf,
+                 int nchars);
+
 void check_dx_error(HRESULT hr, const char *msg) {
   if (!SUCCEEDED(hr)) {
-    printf("%X\n", hr);
     TI_ERROR("Error in {}: {}", msg, hr);
   }
 }
@@ -45,9 +51,10 @@ void Dx11ResourceBinder::buffer(uint32_t set,
 void Dx11ResourceBinder::buffer(uint32_t set,
                                 uint32_t binding,
                                 DeviceAllocation alloc) {
-  // Cannot use rw_buffer, b/c args are currently passed in using a constant
-  // buffer cbuffer args_t : register(b0) int args_arg0 : packoffset(c0); float
-  // args_arg1 : packoffset(c0.y);
+  // args_t now use constant buffers.
+  // Example:
+  // cbuffer args_t : register(b0)
+  // { ... }
   cb_binding_to_alloc_id_[binding] = alloc.alloc_id;
 }
 
@@ -104,6 +111,8 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
     cmd->cb_buffer = device_->create_or_get_cb_buffer(alloc_id);
     cmd->buffer = device_->alloc_id_to_buffer(alloc_id);
     recorded_commands_.push_back(std::move(cmd));
+
+    cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
   }
 }
 
@@ -173,6 +182,8 @@ void Dx11CommandList::CmdBindConstantBufferToIndex::execute() {
 }
 
 void Dx11CommandList::CmdDispatch::execute() {
+  cmdlist_->device_->set_spirv_cross_numworkgroups(x, y, z,
+                                                   spirv_cross_num_wg_cb_slot_);
   cmdlist_->device_->d3d11_context()->Dispatch(x, y, z);
 }
 
@@ -181,6 +192,13 @@ void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
   cmd->x = x;
   cmd->y = y;
   cmd->z = z;
+
+  // Set SPIRV_Cross_NumWorkgroups's CB slot based on the watermark
+  cmd->spirv_cross_num_wg_cb_slot_ = cb_slot_watermark_ + 1;
+
+  // Reset watermark
+  cb_slot_watermark_ = -1;
+
   recorded_commands_.push_back(std::move(cmd));
 }
 
@@ -245,6 +263,16 @@ void Dx11CommandList::run_commands() {
   }
 }
 
+int Dx11CommandList::cb_count() {
+  int ret = 0;
+  for (const auto &cmd : recorded_commands_) {
+    if (dynamic_cast<CmdBindConstantBufferToIndex *>(cmd.get()) != nullptr) {
+      ret++;
+    }
+  }
+  return ret;
+}
+
 namespace {
 LRESULT CALLBACK WindowProc(HWND hWnd,
                             UINT message,
@@ -294,46 +322,46 @@ HRESULT create_compute_device(ID3D11Device **out_device,
     attempt_idx = 2;
   }
 
+// Define this macro to make it easier to attach graphics debuggers.
 #ifdef TAICHI_DX11_DEBUG_WINDOW
   HWND hWnd{};
-    // stolen from win32.cpp;
-    int width = 320, height = 240;
-    std::wstring window_name = L"Taichi DX test window";
-    auto CLASS_NAME = L"Taichi Win32 Window";
 
-    WNDCLASS wc = {};
+  int width = 320, height = 240;
+  std::wstring window_name = L"Taichi DX test window";
+  auto CLASS_NAME = L"Taichi Win32 Window";
 
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = GetModuleHandle(0);
-    wc.lpszClassName = CLASS_NAME;
+  WNDCLASS wc = {};
 
-    RegisterClass(&wc);
+  wc.lpfnWndProc = WindowProc;
+  wc.hInstance = GetModuleHandle(0);
+  wc.lpszClassName = CLASS_NAME;
 
-    RECT window_rect;
-    window_rect.left = 0;
-    window_rect.right = width;
-    window_rect.top = 0;
-    window_rect.bottom = height;
+  RegisterClass(&wc);
 
-    AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
+  RECT window_rect;
+  window_rect.left = 0;
+  window_rect.right = width;
+  window_rect.top = 0;
+  window_rect.bottom = height;
 
-    hWnd = CreateWindowEx(0,           // Optional window styles.
-                          CLASS_NAME,  // Window class
-                          std::wstring(window_name.begin(), window_name.end())
-                              .data(),          // Window text
-                          WS_OVERLAPPEDWINDOW,  // Window style
-                          // Size and position
-                          CW_USEDEFAULT, CW_USEDEFAULT,
-                          window_rect.right - window_rect.left,
-                          window_rect.bottom - window_rect.top,
-                          NULL,                // Parent window
-                          NULL,                // Menu
-                          GetModuleHandle(0),  // Instance handle
-                          NULL                 // Additional application data
-    );
-    TI_ERROR_IF(hWnd == NULL, "Window creation failed");
-    ShowWindow(hWnd, SW_SHOWDEFAULT);
-  }
+  AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
+
+  hWnd = CreateWindowEx(0,           // Optional window styles.
+                        CLASS_NAME,  // Window class
+                        std::wstring(window_name.begin(), window_name.end())
+                            .data(),          // Window text
+                        WS_OVERLAPPEDWINDOW,  // Window style
+                        // Size and position
+                        CW_USEDEFAULT, CW_USEDEFAULT,
+                        window_rect.right - window_rect.left,
+                        window_rect.bottom - window_rect.top,
+                        NULL,                // Parent window
+                        NULL,                // Menu
+                        GetModuleHandle(0),  // Instance handle
+                        NULL                 // Additional application data
+  );
+  TI_ERROR_IF(hWnd == NULL, "Window creation failed");
+  ShowWindow(hWnd, SW_SHOWDEFAULT);
 #endif
 
   for (; attempt_idx < num_types; attempt_idx++) {
@@ -500,6 +528,23 @@ HRESULT create_constant_buffer_copy(ID3D11Device *device,
 }
 
 }  // namespace
+
+void dump_buffer(ID3D11Device *device,
+                 ID3D11DeviceContext *ctx,
+                 ID3D11Buffer *buf,
+                 int nchars) {
+  ID3D11Buffer *tmp;
+  create_cpu_accessible_buffer_copy(device, buf, &tmp);
+  D3D11_MAPPED_SUBRESOURCE mapped;
+  ctx->Map(tmp, 0, D3D11_MAP_READ, 0, &mapped);
+  char *ch = reinterpret_cast<char *>(mapped.pData);
+  std::stringstream ss;
+  for (int i = 0; i < nchars; i++) {
+    ss << fmt::format("%02X ", ch[i]);
+  }
+  tmp->Release();
+  TI_TRACE(ss.str());
+}
 
 Dx11Device::Dx11Device() {
   create_dx11_device();
@@ -720,6 +765,35 @@ ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
   return cb_buf;
 }
 
+void Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
+                                               uint32_t y,
+                                               uint32_t z,
+                                               int cb_slot) {
+  if (spirv_cross_numworkgroups_ == nullptr) {
+    ID3D11Buffer *temp;
+    create_raw_buffer(device_, 16, nullptr, &temp);
+    create_cpu_accessible_buffer_copy(device_, temp,
+                                      &spirv_cross_numworkgroups_);
+    temp->Release();
+  }
+  if (spirv_cross_numworkgroups_cb_ == nullptr) {
+    create_constant_buffer_copy(device_, spirv_cross_numworkgroups_,
+                                &spirv_cross_numworkgroups_cb_);
+  }
+
+  D3D11_MAPPED_SUBRESOURCE mapped;
+  context_->Map(spirv_cross_numworkgroups_, 0, D3D11_MAP_WRITE, 0, &mapped);
+  uint32_t *u = reinterpret_cast<uint32_t *>(mapped.pData);
+  u[0] = x;
+  u[1] = y;
+  u[2] = z;
+  context_->Unmap(spirv_cross_numworkgroups_, 0);
+
+  context_->CopyResource(spirv_cross_numworkgroups_cb_,
+                         spirv_cross_numworkgroups_);
+  context_->CSSetConstantBuffers(cb_slot, 1, &spirv_cross_numworkgroups_cb_);
+}
+
 Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
 }
 
@@ -748,7 +822,7 @@ void Dx11Stream::command_sync() {
 Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
                            const std::string &name,
                            Dx11Device *device)
-    : device_(device) {
+    : name_(name), device_(device) {
   // TODO: Currently, PipelineSourceType::hlsl_src still returns SPIRV binary.
   // Will need to update this section when that changes
   TI_ASSERT(desc.type == PipelineSourceType::hlsl_src ||

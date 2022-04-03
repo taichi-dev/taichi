@@ -55,6 +55,10 @@ void destroy_vulkan_runtime(VulkanRuntime *vr) {
   delete cppcast(vr);
 }
 
+void vulkan_add_root_buffer(VulkanRuntime *vr, size_t root_buffer_size) {
+  cppcast(vr)->add_root_buffer(root_buffer_size);
+}
+
 void vulkan_synchronize(VulkanRuntime *vr) {
   cppcast(vr)->synchronize();
 }

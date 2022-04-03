@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "taichi/common/platform_macros.h"
@@ -11,6 +12,14 @@ extern "C" {
 typedef struct TaichiKernel;
 typedef struct TaichiRuntimeContext;
 typedef struct DeviceAllocation;
+
+typedef struct {
+  uint64_t size;
+  bool host_write;
+  bool host_read;
+  bool export_sharing;
+  // AllocUsage is an enum class, so not exported to C yet
+} DeviceAllocParams;
 
 TI_DLL_EXPORT void launch_taichi_kernel(TaichiKernel *k,
                                         TaichiRuntimeContext *ctx);

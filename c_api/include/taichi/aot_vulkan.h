@@ -29,11 +29,9 @@ TI_DLL_EXPORT VulkanRuntime *make_vulkan_runtime(uint64_t *host_result_buffer,
 TI_DLL_EXPORT void destroy_vulkan_runtime(VulkanRuntime *vr);
 TI_DLL_EXPORT void vulkan_synchronize(VulkanRuntime *vr);
 
-
 TI_DLL_EXPORT AotModule *make_vulkan_aot_module(const char *module_path,
                                                 VulkanRuntime runtime);
 TI_DLL_EXPORT void destroy_vulkan_aot_module(AotModule *m);
-
 
 #ifdef __cplusplus
 }  // extern "C"

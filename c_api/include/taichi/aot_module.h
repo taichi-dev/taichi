@@ -16,4 +16,3 @@ TI_DLL_EXPORT TaichiKernel *get_taichi_kernel(AotModule *m, const char *name);
 #ifdef __cplusplus
 }  // extern "C"
 #endif
-

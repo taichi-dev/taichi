@@ -13,3 +13,7 @@ TaichiKernel *get_taichi_kernel(AotModule *m, const char *name) {
   auto *k = mod->get_kernel(name);
   return reinterpret_cast<TaichiKernel *>(k);
 }
+
+size_t get_aot_module_root_size(AotModule *m) {
+  return cppcast(m)->get_root_size();
+}

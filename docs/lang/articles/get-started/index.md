@@ -236,9 +236,7 @@ def fill_3d():
         x[i, j, k] = i + j + k
 ```
 
-:::caution
-
-Struct-for loops must live at the outer-most scope of kernels.
+:::note
 
 It is the loop **at the outermost scope** that gets parallelized, not
 the outermost loop.
@@ -270,6 +268,30 @@ Taichi, as it will only loop over active elements in a sparse field. In
 dense fields, all elements are active.
 :::
 
+:::caution
+
+Struct-for loops must live at the outer-most scope of kernels.
+
+It is the loop **at the outermost scope** that gets parallelized, not
+the outermost loop.
+
+```python
+x = [1, 2, 3]
+
+@ti.kernel
+def foo():
+    for i in x: # Parallelized :-)
+        ...
+
+@ti.kernel
+def bar(k: ti.i32):
+    # The outermost scope is a `if` statement
+    if k > 42:
+        for i in x: # Not allowed. Struct-fors must live in the outermost scope.
+            ...
+```
+
+:::
 
 :::caution
 

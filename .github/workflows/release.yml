@@ -137,7 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -186,7 +186,7 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          TI_WANTED_ARCHS: "cuda,cpu"
+          TI_WANTED_ARCHS: 'cuda,cpu'
 
       - name: clean docker container
         if: always()
@@ -475,12 +475,15 @@ jobs:
           version_parts[2]=$(expr ${version_parts[2]} + 1)
           next_version=$(IFS=.; echo "${version_parts[*]}")
           # Update version.txt
-          git checkout -b "bump/$next_version"
+          if [[ "$GITHUB_REF_NAME" == "master" ]]; then
+              branch="bump/$next_version"
+              git checkout -b "$branch"
+          fi
           echo "$next_version" > version.txt
           git add version.txt
           # Commit and push changes
           git commit -m "Bump version to $next_version"
-          git push origin "bump/$next_version"
+          git push origin $branch
           # Create pull request
           gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
         env:

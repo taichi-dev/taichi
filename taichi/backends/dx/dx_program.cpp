@@ -1,3 +1,5 @@
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_program.h"
 
 #include "taichi/backends/dx/dx_device.h"
@@ -66,3 +68,5 @@ void Dx11ProgramImpl::destroy_snode_tree(SNodeTree *snode_tree) {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif

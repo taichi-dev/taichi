@@ -1,11 +1,14 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/device.h"
 #include <d3d11.h>
 
 namespace taichi {
 namespace lang {
 namespace directx11 {
+
 
 class Dx11InfoQueue {
  public:
@@ -31,6 +34,9 @@ class Dx11InfoQueue {
   int last_message_count_;
 };
 
+
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

@@ -1,4 +1,5 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
+#include "taichi/backends/dx/dx_device.h"
 
 namespace taichi {
 namespace lang {
@@ -1168,17 +1169,37 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   store_var(rand_y_, _362436069u);
   store_var(rand_z_, _521288629u);
   store_var(rand_w_, _88675123u);
-  // Yes, this is not an atomic operation, but just fine since no matter
-  // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
-  // us to set different seeds for different threads.
-  // Discussion:
-  // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
-  Value tmp9 = load_var(rand_gtmp_, t_uint32_);
-  Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
-  ib_.begin(spv::OpIAdd)
-      .add_seq(t_uint32_, tmp10, tmp9, _1)
-      .commit(&func_header_);
-  store_var(rand_gtmp_, tmp10);
+
+  enum spv::Op add_op = spv::OpIAdd;
+  bool use_atomic_increment = false;
+
+  // use atomic increment for DX API to avoid error X3694
+  #ifdef TI_WITH_DX11
+  if (dynamic_cast<const taichi::lang::directx11::Dx11Device *>(device_)) {
+    use_atomic_increment = true;
+  }
+  #endif
+  
+  if (use_atomic_increment) {
+    Value tmp9 = new_value(t_uint32_, ValueKind::kNormal);
+    ib_.begin(spv::Op::OpAtomicIIncrement)
+        .add_seq(t_uint32_, tmp9, rand_gtmp_,
+                 /*scope_id*/ const_i32_one_,
+                 /*semantics*/ const_i32_zero_)
+        .commit(&func_header_);
+  } else {
+    // Yes, this is not an atomic operation, but just fine since no matter
+    // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
+    // us to set different seeds for different threads.
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
+    Value tmp9 = load_var(rand_gtmp_, t_uint32_);
+    Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
+    ib_.begin(spv::Op::OpIAdd)
+        .add_seq(t_uint32_, tmp10, tmp9, _1)
+        .commit(&func_header_);
+    store_var(rand_gtmp_, tmp10);
+  }
 
   init_rand_ = true;
 }

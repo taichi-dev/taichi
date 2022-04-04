@@ -1,3 +1,5 @@
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_device.h"
 
 #include "spirv_hlsl.hpp"
@@ -410,7 +412,6 @@ HRESULT create_compute_device(ID3D11Device **out_device,
 
 #ifdef TAICHI_DX11_DEBUG_WINDOW
     if (g_swapchain) {
-      g_swapchain->Present(0, 0);
       g_swapchain->Present(0, 0);
     }
 #endif
@@ -869,3 +870,5 @@ ResourceBinder *Dx11Pipeline::resource_binder() {
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

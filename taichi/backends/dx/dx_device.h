@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
 #include <d3d11.h>
@@ -9,9 +11,12 @@ namespace lang {
 namespace directx11 {
 
 // Only enable debug layer when the corresponding testing facility is enabled
-constexpr bool kD3d11DebugEnabled = true;
-constexpr bool kD3d11ForceRef = false;  // Force REF device. May be used to
-                                        // force software rendering.
+constexpr bool kD3d11DebugEnabled = false;
+// Verbose outputs, prints the contents of command lists
+constexpr bool kD3d11Verbose = false;
+// Force REF device. May be used to
+// force software rendering.
+constexpr bool kD3d11ForceRef = false;
 // Enable to spawn a debug window and swapchain
 //#define TAICHI_DX11_DEBUG_WINDOW
 
@@ -290,3 +295,5 @@ class Dx11Device : public GraphicsDevice {
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

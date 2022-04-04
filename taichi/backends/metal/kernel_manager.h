@@ -52,7 +52,8 @@ class KernelManager {
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs);
+                              const KernelContextAttributes &ctx_attribs,
+                              const Kernel *kernel);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid
@@ -72,7 +73,7 @@ class KernelManager {
 
   // FIXME(k-ye): This is a temporary workaround since Metal has not switched to
   // Unified Device API yet.
-  DeviceAllocation allocate_memory(const Device::AllocParams &params);
+  DeviceAllocation allocate_memory(const Device::AllocParams& params);
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally

@@ -180,6 +180,7 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
 DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
+  // FIXME: Why is host R/W set to false?
   auto &ndarray =
       ref_ndarry_.emplace_back(get_compute_device()->allocate_memory_unique(
           {alloc_size, /*host_write=*/false, /*host_read=*/false,

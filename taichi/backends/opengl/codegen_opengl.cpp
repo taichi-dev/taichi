@@ -483,11 +483,11 @@ class KernelGen : public IRVisitor {
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     const int num_indices = stmt->indices.size();
-    auto element_shape = stmt->element_shape;
+    const auto &element_shape = stmt->element_shape;
     std::vector<std::string> size_var_names;
     std::vector<std::string> element_shape_size_var_names;
     enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
-    auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
+    const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
 
     if (element_shape.size() > 0) {
       int elem_beg = 0;

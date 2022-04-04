@@ -73,74 +73,74 @@ def reduce_mul(value):
 
 
 def reduce_min(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupMin",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupMin", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def reduce_max(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupMax",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupMax", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def reduce_and(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupAnd",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupAnd", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def reduce_or(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupOr",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupOr", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def reduce_xor(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupXor",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupXor", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_add(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveAdd",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveAdd", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_mul(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveMul",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveMul", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_min(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveMin",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveMin", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_max(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveMax",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveMax", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_and(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveAnd",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveAnd", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_or(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveOr",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveOr", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 
 def inclusive_xor(value):
-    return expr.Expr(_ti_core.insert_internal_func_call("subgroupInclusiveXor",
-        expr.make_expr_group(value), False),
+    return expr.Expr(_ti_core.insert_internal_func_call(
+        "subgroupInclusiveXor", expr.make_expr_group(value), False),
                      dtype=value.ptr.get_ret_type())
 
 

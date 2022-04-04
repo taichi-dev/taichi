@@ -84,7 +84,7 @@ The `pos` parameter of every drawing method accepts Taichi fields or NumPy array
 - `(0.0, 0.0)`: the lower-left corner of the window.
 - `(1.0, 1.0)`: the upper-right corner of the window.
 
-The following code draws 50 circles with a radius of `1.5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
+The following code draws 50 circles with a radius of `5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
 
 ```python
 import numpy as np

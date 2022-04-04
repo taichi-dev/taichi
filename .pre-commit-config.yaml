@@ -4,29 +4,29 @@ ci:
 exclude: ^((tests/python/test_exception|.*/examples/.*)\.py$|external/)
 repos:
   - repo: https://github.com/google/yapf
-    rev: v0.31.0
+    rev: v0.32.0
     hooks:
       - id: yapf
         additional_dependencies: [toml]
 
-  - repo: https://github.com/timothycrosley/isort
+  - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:
       - id: isort
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v10.0.1
+    rev: v13.0.1
     hooks:
       - id: clang-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v2.13.1
+    rev: v2.13.4
     hooks:
       - id: pylint
         args: ['-rn', '-sn']

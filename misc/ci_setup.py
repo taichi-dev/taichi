@@ -184,7 +184,6 @@ class Installer:
             "yapf",
             "distro",
             "autograd",
-            "astor",
             "sourceinspect",
             "pytest",
             "pytest-xdist",

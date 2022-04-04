@@ -17,14 +17,14 @@ def test_cpu_debug_snode_reader():
 def test_cpu_debug_snode_writer_out_of_bound():
     x = ti.field(ti.f32, shape=3)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         x[3] = 10.0
 
 
 @test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_cpu_debug_snode_writer_out_of_bound_negative():
     x = ti.field(ti.f32, shape=3)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         x[-1] = 10.0
 
 
@@ -32,14 +32,14 @@ def test_cpu_debug_snode_writer_out_of_bound_negative():
 def test_cpu_debug_snode_reader_out_of_bound():
     x = ti.field(ti.f32, shape=3)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         a = x[3]
 
 
 @test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_cpu_debug_snode_reader_out_of_bound_negative():
     x = ti.field(ti.f32, shape=3)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         a = x[-1]
 
 

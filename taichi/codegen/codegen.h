@@ -19,8 +19,7 @@ class KernelCodeGen {
 
   static std::unique_ptr<KernelCodeGen> create(Arch arch,
                                                Kernel *kernel,
-                                               Stmt *stmt = nullptr,
-                                               bool needs_cache = false);
+                                               Stmt *stmt = nullptr);
 
   virtual FunctionType codegen() = 0;
 };

@@ -413,7 +413,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
   python3 -m pip install --user -r requirements_dev.txt
 
-  # Exports CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
+  # export CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
 
   # export DEBUG=1 #Uncomment it if you wish to keep debug information.
 

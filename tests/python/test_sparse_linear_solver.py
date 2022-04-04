@@ -12,7 +12,8 @@ The symmetric positive definite matrix is created in matlab using the following 
     Aarray = U * A * U';
     b = [1,2,3,4]';
     res = inv(A) * b;
-"""
+""" # yapf: disable
+
 Aarray = np.array([[
     2.73999501130921, 0.518002544441220, 0.745119303009342, 0.0508907745638859
 ], [0.518002544441220, 1.45111665837647, 0.757997555750432, 0.290885785873098],

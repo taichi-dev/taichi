@@ -26,8 +26,24 @@ def test_unique():
 
 @test_utils.test(arch=ti.cuda)
 def test_ballot():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.ballot(b[i])
+
+    key = 0
+    for i in range(32):
+        b[i] = i % 2
+        key += b[i] * pow(2, i)
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == key
 
 
 @test_utils.test(arch=ti.cuda)

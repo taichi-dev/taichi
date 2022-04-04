@@ -47,6 +47,7 @@ class SetImage final : public Renderable {
   taichi::lang::DeviceAllocation cpu_staging_buffer_;
   taichi::lang::DeviceAllocation gpu_staging_buffer_;
 
+  taichi::lang::DataType texture_dtype_{taichi::lang::PrimitiveType::u8};
   taichi::lang::DeviceAllocation texture_;
 
  private:

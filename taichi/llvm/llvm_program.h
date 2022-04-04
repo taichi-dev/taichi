@@ -115,18 +115,10 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::size_t size,
                     uint32_t data);
 
-  bool supports_offline_cache() const {
-    auto arch = config->arch;
-    return arch_is_cpu(arch) && arch != Arch::wasm && !config->async_mode;
-  }
-
-  FunctionType create_kernel_function_from_offline_cache(
-      const std::string &kernel_key,
-      Kernel *kernel);
-
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
-                    std::vector<std::string> &&offloaded_task_name_list);
+                    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+                        &&offloaded_task_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(

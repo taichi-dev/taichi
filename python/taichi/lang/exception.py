@@ -31,10 +31,18 @@ class TaichiRuntimeError(RuntimeError):
     pass
 
 
+class TaichiAssertionError(TaichiRuntimeError, AssertionError):
+    """Thrown when assertion fails at runtime.
+    """
+    pass
+
+
 class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
-    def __init__(self, pos, needed, provided):
-        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
-        super().__init__(message)
+    @staticmethod
+    def get(pos, needed, provided):
+        return TaichiRuntimeTypeError(
+            f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        )
 
 
 def handle_exception_from_cpp(exc):
@@ -42,10 +50,13 @@ def handle_exception_from_cpp(exc):
         return TaichiTypeError(str(exc))
     if isinstance(exc, core.TaichiSyntaxError):
         return TaichiSyntaxError(str(exc))
+    if isinstance(exc, core.TaichiAssertionError):
+        return TaichiAssertionError(str(exc))
     return exc
 
 
 __all__ = [
     'TaichiSyntaxError', 'TaichiTypeError', 'TaichiCompilationError',
-    'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError'
+    'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',
+    'TaichiAssertionError'
 ]

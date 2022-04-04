@@ -86,23 +86,83 @@ An informal quick summary of evaluation rules:
 - Taichi value + Taichi value = Taichi value
 :::
 
-### Naming and scope
+### Variables and scope
+
+A variable contains a *name*, a *type* and a *value*. In Taichi, a variable can
+be defined in the following ways:
+- A parameter. The name of the variable is the parameter name. The type of the
+variable is the parameter type annotation. The value of the variable is passed
+in at runtime.
+- An [assignment](#assignment-statements) statement, if the name on the
+left-hand side appears for the first time. The name of the variable is the name
+on the left-hand side. If there is a type annotation on the left-hand side, the
+type of the variable is the type annotation; otherwise, the type of the
+variable is inferred from the expression on the right-hand side. The value of
+the variable is the evaluation result of the expression on the right-hand side
+at runtime.
+
+Taichi is statically-typed. That is, you cannot change the type of a variable
+after its definition. However, you can change the value of a variable if there
+is another assignment statement after its definition.
+
+Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_science)).
+Therefore, if a variable is defined in a [block](#compound-statements), it is
+invisible outside that block.
 
 ## Expressions
 
+The section explains the syntax and semantics of expressions in Taichi.
+
 ### Atoms
+
+Atoms are the most basic elements of expressions. The simplest atoms are
+identifiers or literals. Forms enclosed in parentheses, brackets or braces
+are also categorized syntactically as atoms.
+
+```
+atom      ::= identifier | literal | enclosure
+enclosure ::= parenth_form | list_display | dict_display
+```
 
 #### Identifiers (Names)
 
+Lexical definition of
+[identifiers](https://docs.python.org/3/reference/lexical_analysis.html#identifiers)
+(also referred to as names) in Taichi follows Python.
+
+There are three cases during evaluation:
+- The name is visible and corresponds to a variable defined in Taichi. Then the
+evaluation result is the value of the variable at runtime.
+- The name is only visible in Python, i.e., the name binding is outside Taichi.
+Then compile-time evaluation is triggered, resulting in the Python value bound
+to that name.
+- The name is invisible. Then a `TaichiNameError` is thrown.
+
 #### Literals
+
+Taichi supports [integer](https://docs.python.org/3/reference/lexical_analysis.html#integer-literals)
+and [floating-point](https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals)
+literals, whose lexical definitions follow Python.
+
+```
+literal ::= integer | floatnumber
+```
+
+Literals are evaluated to Python values at compile time.
 
 #### Parenthesized forms
 
-#### Displays for lists, sets and dictionaries
+```
+parenth_form ::= "(" [expression_list] ")"
+```
+
+A parenthesized expression list is evaluated to whatever the expression list is
+evaluated to. An empty pair of parentheses is evaluated to an empty tuple at
+compile time.
+
+#### Displays for lists and dictionaries
 
 #### List displays
-
-#### Set displays
 
 #### Dictionary displays
 
@@ -136,11 +196,21 @@ An informal quick summary of evaluation rules:
 
 ### Boolean operations
 
-### Assignment expressions
-
 ### Conditional expressions
 
 ### Expression lists
+
+```
+expression_list ::= expression ("," expression)* [","]
+```
+
+Except when part of a list display, an expression list containing at least one
+comma is evaluated to a tuple at compile time. The component expressions are
+evaluated from left to right.
+
+The trailing comma is required only to create a tuple with length 1; it is
+optional in all other cases. A single expression without a trailing comma
+is evaluated to the value of that expression.
 
 ## Simple statements
 
@@ -153,6 +223,22 @@ An informal quick summary of evaluation rules:
 #### Annotated assignment statements
 
 ### The `assert` statement
+Assert statements are a convenient way to insert debugging assertions into a program:
+
+```
+assert_stmt ::=  "assert" expression ["," expression]
+```
+
+Assert statements are currently supported on the CPU, CUDA, and Metal backends.
+
+Assert statements only work in debug mode (when `debug=True` is set in the arguments of `ti.init()`),
+otherwise they are equivalent to no-op.
+
+The simple form, `assert expression`, raises `TaichiAssertionError` (which is a subclass of `AssertionError`)
+when `expression` is equal to `False`, with the code of `expression` as the error message.
+
+The extended form, `assert expression1, expression2`, raises `TaichiAssertionError` when `expression1` is equal to `False`,
+with `expression2` as the error message.
 
 ### The `pass` statement
 

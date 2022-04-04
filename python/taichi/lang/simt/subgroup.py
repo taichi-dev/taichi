@@ -40,6 +40,11 @@ def broadcast_first(value):
     # TODO
     pass
 
+def broadcast(value, index : i32):
+  return expr.Expr(
+        _ti_core.insert_internal_func_call("subgroupBroadcast",
+                                           expr.make_expr_group(value, index),
+                                           False))
 
 def group_size():
     return expr.Expr(

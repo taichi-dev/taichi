@@ -29,7 +29,7 @@ constexpr char kRetBufferName[] = "ret_buffer";
 constexpr char kListgenBufferName[] = "listgen_buffer";
 constexpr char kExtArrBufferName[] = "ext_arr_buffer";
 
-constexpr int kMaxNumThreadsGridStrideLoop = 65536;
+constexpr int kMaxNumThreadsGridStrideLoop = 65536 * 2;
 
 using BufferType = TaskAttributes::BufferType;
 using BufferInfo = TaskAttributes::BufferInfo;
@@ -957,6 +957,13 @@ class TaskCodegen : public IRVisitor {
       val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_size());
     } else if (stmt->func_name == "subgroupInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_invocation_id());
+    } else if (stmt->func_name == "subgroupBroadcast") {
+      auto value = ir_->query_value(stmt->args[0]->raw_name());
+      auto index = ir_->query_value(stmt->args[1]->raw_name());
+      val = ir_->make_value(
+          spv::OpGroupNonUniformBroadcast, value.stype,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup), value,
+          index);
     } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end() ||
                inclusive_scan_ops.find(stmt->func_name) !=
                    inclusive_scan_ops.end()) {

@@ -3,13 +3,14 @@
 #include "taichi/ir/expr.h"
 #include "taichi/ir/expression.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/llvm/llvm_offline_cache.h"
 
 namespace taichi {
 namespace lang {
 
-class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
+class ExpressionPrinter : public ExpressionVisitor {
  public:
-  ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr) : os_(os) {
+  ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
   }
 
   void set_ostream(std::ostream *os) {
@@ -19,6 +20,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
   std::ostream &get_ostream() {
     TI_ASSERT(os_);
     return *os_;
+  }
+ private:
+  std::ostream *os_{nullptr};
+};
+
+class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
+ public:
+  explicit ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr) : ExpressionPrinter(os) {
   }
 
   void visit(ExprGroup &expr_group) override {
@@ -212,11 +221,10 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
     return oss.str();
   }
 
- private:
+ protected:
   template <typename... Args>
   void emit(Args &&... args) {
-    TI_ASSERT(os_);
-    (*os_ << ... << std::forward<Args>(args));
+    (this->get_ostream() << ... << std::forward<Args>(args));
   }
 
   template <typename T>
@@ -243,8 +251,46 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
       emit(std::forward<D>(e));
     }
   }
+};
 
-  std::ostream *os_{nullptr};
+// Temporary reuse ExpressionHumanFriendlyPrinter
+class ExpressionOfflineCacheKeyGenerator : public ExpressionHumanFriendlyPrinter {
+ public:
+  explicit ExpressionOfflineCacheKeyGenerator(std::ostream *os = nullptr)
+   : ExpressionHumanFriendlyPrinter(os) {
+  }
+
+  void visit(GlobalVariableExpression *expr) override {
+    emit("#", expr->ident.name());
+    if (expr->snode) {
+      emit("(snode=", get_hashed_offline_cache_key_of_snode(expr->snode), ')');
+    } else {
+      emit("(dt=", expr->dt->to_string(), ')');
+    }
+  }
+
+  void visit(GlobalPtrExpression *expr) override {
+    if (expr->snode) {
+      emit(get_hashed_offline_cache_key_of_snode(expr->snode));
+    } else {
+      expr->var->accept(this);
+    }
+    emit('[');
+    emit_vector(expr->indices.exprs);
+    emit(']');
+  }
+
+  void visit(SNodeOpExpression *expr) override {
+    emit(snode_op_type_name(expr->op_type));
+    emit('(', get_hashed_offline_cache_key_of_snode(expr->snode), ", [");
+    emit_vector(expr->indices.exprs);
+    emit(']');
+    if (expr->value.expr) {
+      emit(' ');
+      expr->value->accept(this);
+    }
+    emit(')');
+  }
 };
 
 }  // namespace lang

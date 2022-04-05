@@ -809,7 +809,9 @@ class KernelManager::Impl {
   }
 
   DeviceAllocation allocate_memory(const Device::AllocParams &params) {
-    return rhi_device_->allocate_memory(params);
+    auto res = rhi_device_->allocate_memory(params);
+    TI_INFO("Allocated Ndarray alloc_id={} size={}", res.alloc_id, params.size);
+    return res;
   }
 
  private:
@@ -1178,6 +1180,7 @@ class KernelManager::Impl {
       if (host_ctx.is_device_allocation[arg.index]) {
         dev_alloc = *reinterpret_cast<const DeviceAllocation *>(
             host_ctx.args[arg.index]);
+        TI_INFO("Ndarray arg_id={} alloc_id={}", arg.index, dev_alloc.alloc_id);
       } else {
         dev_alloc = ctk.ext_arr_arg_to_dev_alloc.at(arg.index).alloc;
       }

@@ -439,8 +439,9 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = metal_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("device {} *{} = {};", dt, stmt->raw_name(),
-           ndarray_buffer_name(stmt->arg_id));
+      const auto type_str = fmt::format("device {} *", dt);
+      emit("{}{} = reinterpret_cast<{}>({});", type_str, stmt->raw_name(),
+           type_str, ndarray_buffer_name(stmt->arg_id));
     } else {
       emit("const {} {} = *{}.arg{}();", dt, stmt->raw_name(), kContextVarName,
            stmt->arg_id);
@@ -1106,24 +1107,22 @@ class KernelCodegenImpl : public IRVisitor {
       ScopedIndent s(current_appender());
       emit("explicit {}(device byte* addr) : addr_(addr) {{}}", class_name);
       for (const auto &arg : ctx_attribs_.args()) {
+        if (arg.is_array) {
+          continue;
+        }
         const auto dt_name = metal_data_type_name(arg.dt);
         emit("device {}* arg{}() {{", dt_name, arg.index);
-        if (arg.is_array) {
-          emit("  // array, size={} B", arg.stride);
-        } else {
-          emit("  // scalar, size={} B", arg.stride);
-        }
+        emit("  // scalar, size={} B", arg.stride);
         emit("  return (device {}*)(addr_ + {});", dt_name, arg.offset_in_mem);
         emit("}}");
       }
       for (const auto &ret : ctx_attribs_.rets()) {
+        if (ret.is_array) {
+          continue;
+        }
         const auto dt_name = metal_data_type_name(ret.dt);
         emit("device {}* ret{}() {{", dt_name, ret.index);
-        if (ret.is_array) {
-          emit("  // array, size={} B", ret.stride);
-        } else {
-          emit("  // scalar, size={} B", ret.stride);
-        }
+        emit("  // scalar, size={} B", ret.stride);
         emit("  return (device {}*)(addr_ + {});", dt_name, ret.offset_in_mem);
         emit("}}");
       }

@@ -1,5 +1,6 @@
 ci:
   autoupdate_schedule: quarterly
+  autoupdate_commit_msg: '[misc] Update pre-commit hooks'
 
 exclude: ^((tests/python/test_exception|.*/examples/.*)\.py$|external/)
 repos:

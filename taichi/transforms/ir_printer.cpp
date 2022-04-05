@@ -55,8 +55,9 @@ class IRPrinter : public IRVisitor {
   std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(ExpressionPrinter *expr_printer = nullptr, std::string *output = nullptr)
-   : expr_printer_(expr_printer), output(output) {
+  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+            std::string *output = nullptr)
+      : expr_printer_(expr_printer), output(output) {
   }
 
   template <typename... Args>
@@ -75,7 +76,9 @@ class IRPrinter : public IRVisitor {
     }
   }
 
-  static void run(ExpressionPrinter *expr_printer, IRNode *node, std::string *output) {
+  static void run(ExpressionPrinter *expr_printer,
+                  IRNode *node,
+                  std::string *output) {
     if (node == nullptr) {
       TI_WARN("IRPrinter: Printing nullptr.");
       if (output) {

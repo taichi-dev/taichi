@@ -21,13 +21,15 @@ class ExpressionPrinter : public ExpressionVisitor {
     TI_ASSERT(os_);
     return *os_;
   }
+
  private:
   std::ostream *os_{nullptr};
 };
 
 class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
  public:
-  explicit ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr) : ExpressionPrinter(os) {
+  explicit ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr)
+      : ExpressionPrinter(os) {
   }
 
   void visit(ExprGroup &expr_group) override {
@@ -254,10 +256,11 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 };
 
 // Temporary reuse ExpressionHumanFriendlyPrinter
-class ExpressionOfflineCacheKeyGenerator : public ExpressionHumanFriendlyPrinter {
+class ExpressionOfflineCacheKeyGenerator
+    : public ExpressionHumanFriendlyPrinter {
  public:
   explicit ExpressionOfflineCacheKeyGenerator(std::ostream *os = nullptr)
-   : ExpressionHumanFriendlyPrinter(os) {
+      : ExpressionHumanFriendlyPrinter(os) {
   }
 
   void visit(GlobalVariableExpression *expr) override {

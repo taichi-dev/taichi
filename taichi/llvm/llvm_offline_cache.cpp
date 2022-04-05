@@ -72,8 +72,9 @@ get_offline_cache_key_of_compile_config(CompileConfig *config) {
   return serializer.data;
 }
 
-static TI_FORCE_INLINE void
-get_offline_cache_key_of_snode_impl(SNode *snode, BinaryOutputSerializer &serializer) {
+static TI_FORCE_INLINE void get_offline_cache_key_of_snode_impl(
+    SNode *snode,
+    BinaryOutputSerializer &serializer) {
   for (auto &c : snode->ch) {
     get_offline_cache_key_of_snode_impl(c.get(), serializer);
   }
@@ -121,7 +122,8 @@ get_offline_cache_key_of_snode_impl(SNode *snode, BinaryOutputSerializer &serial
     get_offline_cache_key_of_snode_impl(s, serializer);
   }
   if (snode->currently_placing_exp_snode) {
-    get_offline_cache_key_of_snode_impl(snode->currently_placing_exp_snode, serializer);
+    get_offline_cache_key_of_snode_impl(snode->currently_placing_exp_snode,
+                                        serializer);
   }
   if (snode->currently_placing_exp_snode_dtype) {
     serializer(snode->currently_placing_exp_snode_dtype->to_string());
@@ -136,7 +138,7 @@ get_offline_cache_key_of_snode_impl(SNode *snode, BinaryOutputSerializer &serial
 
 std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
   TI_ASSERT(snode);
-  
+
   BinaryOutputSerializer serializer;
   serializer.initialize();
   get_offline_cache_key_of_snode_impl(snode, serializer);
@@ -149,7 +151,8 @@ std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
   return picosha2::get_hash_hex_string(hasher);
 }
 
-std::string get_hashed_offline_cache_key(CompileConfig *config, Kernel *kernel) {
+std::string get_hashed_offline_cache_key(CompileConfig *config,
+                                         Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
     irpass::gen_offline_cache_key(kernel->ir.get(), &kernel_ast_string);

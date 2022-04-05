@@ -60,7 +60,7 @@ class IRPrinter : public IRVisitor {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 

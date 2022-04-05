@@ -151,7 +151,7 @@ T ifloordiv(T a, T b) {
 
 struct LLVMRuntime;
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
 
 extern "C" {
 
@@ -594,7 +594,7 @@ struct LLVMRuntime {
   }
 
   template <typename T, typename... Args>
-  T *create(Args &&... args) {
+  T *create(Args &&...args) {
     auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
@@ -1708,7 +1708,7 @@ struct printf_helper {
   }
 
   template <typename... Args, typename T>
-  void push_back(T t, Args &&... args) {
+  void push_back(T t, Args &&...args) {
     *(T *)&buffer[tail] = t;
     if (tail % sizeof(T) != 0)
       tail += sizeof(T) - tail % sizeof(T);
@@ -1725,7 +1725,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

@@ -600,7 +600,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   template <typename T, typename... Args>
-  Stmt *insert(Args &&... args) {
+  Stmt *insert(Args &&...args) {
     return insert_back(Stmt::make<T>(args...));
   }
 

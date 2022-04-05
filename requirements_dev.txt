@@ -4,7 +4,7 @@ coverage
 Pillow
 pybind11
 GitPython
-yapf==0.31.0
+yapf
 distro
 sourceinspect
 isort

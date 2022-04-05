@@ -214,7 +214,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
 
  private:
   template <typename... Args>
-  void emit(Args &&... args) {
+  void emit(Args &&...args) {
     TI_ASSERT(os_);
     (*os_ << ... << std::forward<Args>(args));
   }

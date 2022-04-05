@@ -7,7 +7,8 @@ from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
-from taichi.types.annotations import any_arr, ext_arr, template
+from taichi.types import ndarray_type
+from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, u8
 
 
@@ -19,43 +20,52 @@ def fill_tensor(tensor: template(), val: template()):
 
 
 @kernel
-def fill_ndarray(ndarray: any_arr(), val: template()):
+def fill_ndarray(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
         ndarray[I] = val
 
 
 @kernel
-def fill_ndarray_matrix(ndarray: any_arr(), val: template()):
+def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
         ndarray[I].fill(val)
 
 
 @kernel
-def tensor_to_ext_arr(tensor: template(), arr: ext_arr()):
+def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
     for I in grouped(tensor):
         arr[I] = tensor[I]
 
 
 @kernel
-def ndarray_to_ext_arr(ndarray: any_arr(), arr: ext_arr()):
+def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(),
+                       arr: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         arr[I] = ndarray[I]
 
 
 @kernel
-def ndarray_matrix_to_ext_arr(ndarray: any_arr(), arr: ext_arr(),
+def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(),
+                              arr: ndarray_type.ndarray(),
+                              layout_is_aos: template(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             for q in static(range(ndarray[I].m)):
                 if static(as_vector):
-                    arr[I, p] = ndarray[I][p]
+                    if static(layout_is_aos):
+                        arr[I, p] = ndarray[I][p]
+                    else:
+                        arr[p, I] = ndarray[I][p]
                 else:
-                    arr[I, p, q] = ndarray[I][p, q]
+                    if static(layout_is_aos):
+                        arr[I, p, q] = ndarray[I][p, q]
+                    else:
+                        arr[p, q, I] = ndarray[I][p, q]
 
 
 @kernel
-def vector_to_fast_image(img: template(), out: ext_arr()):
+def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
@@ -81,7 +91,7 @@ def vector_to_fast_image(img: template(), out: ext_arr()):
 
 
 @kernel
-def tensor_to_image(tensor: template(), arr: ext_arr()):
+def tensor_to_image(tensor: template(), arr: ndarray_type.ndarray()):
     for I in grouped(tensor):
         t = ops.cast(tensor[I], f32)
         arr[I, 0] = t
@@ -90,7 +100,7 @@ def tensor_to_image(tensor: template(), arr: ext_arr()):
 
 
 @kernel
-def vector_to_image(mat: template(), arr: ext_arr()):
+def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             arr[I, p] = ops.cast(mat[I][p], f32)
@@ -105,37 +115,48 @@ def tensor_to_tensor(tensor: template(), other: template()):
 
 
 @kernel
-def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
+def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
     for I in grouped(tensor):
         tensor[I] = arr[I]
 
 
 @kernel
-def ndarray_to_ndarray(ndarray: any_arr(), other: any_arr()):
+def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(),
+                       other: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = other[I]
 
 
 @kernel
-def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
+def ext_arr_to_ndarray(arr: ndarray_type.ndarray(),
+                       ndarray: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = arr[I]
 
 
 @kernel
-def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(),
+def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
+                              ndarray: ndarray_type.ndarray(),
+                              layout_is_aos: template(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             for q in static(range(ndarray[I].m)):
                 if static(as_vector):
-                    ndarray[I][p] = arr[I, p]
+                    if static(layout_is_aos):
+                        ndarray[I][p] = arr[I, p]
+                    else:
+                        ndarray[I][p] = arr[p, I]
                 else:
-                    ndarray[I][p, q] = arr[I, p, q]
+                    if static(layout_is_aos):
+                        ndarray[I][p, q] = arr[I, p, q]
+                    else:
+                        ndarray[I][p, q] = arr[p, q, I]
 
 
 @kernel
-def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):
+def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
+                      as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
@@ -146,7 +167,8 @@ def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):
 
 
 @kernel
-def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
+def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
+                      as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):

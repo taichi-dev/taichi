@@ -458,10 +458,14 @@ class Mesh:
 
 
 def TriMesh():
+    """Create a triangle mesh builder.
+    """
     return Mesh.Tri()
 
 
 def TetMesh():
+    """Create a tetrahedron mesh builder.
+    """
     return Mesh.Tet()
 
 

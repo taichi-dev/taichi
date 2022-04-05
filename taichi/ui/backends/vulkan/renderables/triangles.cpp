@@ -34,7 +34,7 @@ void Triangles::init_triangles(AppContext *app_context,
   Renderable::init_render_resources();
 }
 
-Triangles::Triangles(AppContext *app_context) {
+Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_triangles(app_context, 3, 3);
 }
 

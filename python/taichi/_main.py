@@ -536,13 +536,13 @@ class TaichiMain:
     @register
     def format(arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
-        raise RuntimeError('Please run python misc/code_format.py instead')
+        raise RuntimeError('Please run `pre-commit run -a` instead')
 
     @staticmethod
     @register
     def format_all(arguments: list = sys.argv[2:]):
         """Reformat all source files"""
-        raise RuntimeError('Please run python misc/code_format.py instead')
+        raise RuntimeError('Please run `pre-commit run -a` instead')
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):

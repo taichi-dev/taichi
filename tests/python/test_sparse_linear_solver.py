@@ -12,7 +12,8 @@ The symmetric positive definite matrix is created in matlab using the following 
     Aarray = U * A * U';
     b = [1,2,3,4]';
     res = inv(A) * b;
-"""
+""" # yapf: disable
+
 Aarray = np.array([[
     2.73999501130921, 0.518002544441220, 0.745119303009342, 0.0508907745638859
 ], [0.518002544441220, 1.45111665837647, 0.757997555750432, 0.290885785873098],
@@ -41,7 +42,7 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             InputArray: ti.ext_arr(), b: ti.template()):
+             InputArray: ti.types.ndarray(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += InputArray[i, j]
         for i in range(n):

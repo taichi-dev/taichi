@@ -64,6 +64,8 @@ void export_lang(py::module &m) {
                                             PyExc_SyntaxError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
+  py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
+                                               PyExc_AssertionError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -259,6 +261,7 @@ void export_lang(py::module &m) {
 
   // Export ASTBuilder
   py::class_<ASTBuilder>(m, "ASTBuilder")
+      .def("make_id_expr", &ASTBuilder::make_id_expr)
       .def("create_kernel_exprgroup_return",
            &ASTBuilder::create_kernel_exprgroup_return)
       .def("create_print", &ASTBuilder::create_print)
@@ -402,8 +405,17 @@ void export_lang(py::module &m) {
              return program->current_callable->insert_arr_arg(dt, total_dim,
                                                               shape);
            })
-      .def("decl_ret", [&](Program *program, const DataType &dt) {
-        return program->current_callable->insert_ret(dt);
+      .def("decl_ret",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_ret(dt);
+           })
+      .def("make_id_expr",
+           [](Program *program, const std::string &name) {
+             return Expr::make<IdExpression>(program->get_next_global_id(name));
+           })
+      .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
+        return Expr::make<GlobalVariableExpression>(
+            snode, program->get_next_global_id());
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -537,8 +549,7 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference);
 
   py::class_<Expr> expr(m, "Expr");
-  expr.def("serialize", [](Expr *expr) { return expr->serialize(); })
-      .def("snode", &Expr::snode, py::return_value_policy::reference)
+  expr.def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
@@ -582,8 +593,7 @@ void export_lang(py::module &m) {
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
-      .def("push_back", &ExprGroup::push_back)
-      .def("serialize", [](ExprGroup *eg) { eg->serialize(); });
+      .def("push_back", &ExprGroup::push_back);
 
   py::class_<Stmt>(m, "Stmt");
 
@@ -605,8 +615,10 @@ void export_lang(py::module &m) {
   });
 
   m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        [&](const std::string &func_name, const ExprGroup &args,
+            bool with_runtime_context) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
+                                                        with_runtime_context);
         });
 
   m.def("make_func_call_expr",
@@ -716,8 +728,6 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
-
-  m.def("make_id_expr", Expr::make<IdExpression, std::string>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
@@ -843,9 +853,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
-  m.def("global_var_expr_from_snode", [](SNode *snode) {
-    return Expr::make<GlobalVariableExpression>(snode);
-  });
   m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });

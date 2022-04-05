@@ -1,3 +1,9 @@
+"""Taichi utility module.
+
+- `image` submodule for image io.
+- `video` submodule for exporting results to video files.
+- `diagnose` submodule for printing system environment information.
+"""
 from taichi.tools.async_utils import *
 from taichi.tools.cc_compose import *
 from taichi.tools.diagnose import *

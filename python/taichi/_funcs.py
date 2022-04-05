@@ -307,6 +307,85 @@ def sym_eig2x2(A, dt):
 
 
 @func
+def sym_eig3x3(A, dt):
+    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 3x3 real symmetric matrix using Cardano's method.
+
+    Mathematical concept refers to https://www.mpi-hd.mpg.de/personalhomes/globes/3x3/.
+
+    Args:
+        A (ti.Matrix(3, 3)): input 3x3 symmetric matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        eigenvalues (ti.Vector(3)): The eigenvalues. Each entry store one eigen value.
+        eigenvectors (ti.Matrix(3, 3)): The eigenvectors. Each column stores one eigenvector.
+    """
+    M_SQRT3 = 1.73205080756887729352744634151
+    m = A.trace()
+    dd = A[0, 1] * A[0, 1]
+    ee = A[1, 2] * A[1, 2]
+    ff = A[0, 2] * A[0, 2]
+    c1 = A[0, 0] * A[1, 1] + A[0, 0] * A[2, 2] + A[1, 1] * A[2, 2] - (dd + ee +
+                                                                      ff)
+    c0 = A[2, 2] * dd + A[0, 0] * ee + A[1, 1] * ff - A[0, 0] * A[1, 1] * A[
+        2, 2] - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
+
+    p = m * m - 3.0 * c1
+    q = m * (p - 1.5 * c1) - 13.5 * c0
+    sqrt_p = ops.sqrt(ops.abs(p))
+    phi = 27.0 * (0.25 * c1 * c1 * (p - c1) + c0 * (q + 6.75 * c0))
+    phi = (1.0 / 3.0) * ops.atan2(ops.sqrt(ops.abs(phi)), q)
+
+    c = sqrt_p * ops.cos(phi)
+    s = (1.0 / M_SQRT3) * sqrt_p * ops.sin(phi)
+    eigenvalues = Vector([0.0, 0.0, 0.0], dt=dt)
+    eigenvalues[2] = (1.0 / 3.0) * (m - c)
+    eigenvalues[1] = eigenvalues[2] + s
+    eigenvalues[0] = eigenvalues[2] + c
+    eigenvalues[2] = eigenvalues[2] - s
+
+    t = ops.abs(eigenvalues[0])
+    u = ops.abs(eigenvalues[1])
+    if u > t:
+        t = u
+    u = ops.abs(eigenvalues[2])
+    if u > t:
+        t = u
+    if t < 1.0:
+        u = t
+    else:
+        u = t * t
+    Q = Matrix.zero(dt, 3, 3)
+    Q[0, 1] = A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
+    Q[1, 1] = A[0, 2] * A[0, 1] - A[1, 2] * A[0, 0]
+    Q[2, 1] = A[0, 1] * A[0, 1]
+
+    Q[0, 0] = Q[0, 1] + A[0, 2] * eigenvalues[0]
+    Q[1, 0] = Q[1, 1] + A[1, 2] * eigenvalues[0]
+    Q[2, 0] = (A[0, 0] - eigenvalues[0]) * (A[1, 1] - eigenvalues[0]) - Q[2, 1]
+    norm = Q[0, 0] * Q[0, 0] + Q[1, 0] * Q[1, 0] + Q[2, 0] * Q[2, 0]
+    norm = ops.sqrt(1.0 / norm)
+    Q[0, 0] *= norm
+    Q[1, 0] *= norm
+    Q[2, 0] *= norm
+
+    Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
+    Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
+    Q[2, 1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2, 1]
+    norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
+
+    norm = ops.sqrt(1.0 / norm)
+    Q[0, 1] *= norm
+    Q[1, 1] *= norm
+    Q[2, 1] *= norm
+
+    Q[0, 2] = Q[1, 0] * Q[2, 1] - Q[2, 0] * Q[1, 1]
+    Q[1, 2] = Q[2, 0] * Q[0, 1] - Q[0, 0] * Q[2, 1]
+    Q[2, 2] = Q[0, 0] * Q[1, 1] - Q[1, 0] * Q[0, 1]
+    return eigenvalues, Q
+
+
+@func
 def _svd(A, dt):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
@@ -431,7 +510,9 @@ def sym_eig(A, dt=None):
         dt = impl.get_runtime().default_fp
     if A.n == 2:
         return sym_eig2x2(A, dt)
-    raise Exception("Symmetric eigen solver only supports 2D matrices.")
+    if A.n == 3:
+        return sym_eig3x3(A, dt)
+    raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']

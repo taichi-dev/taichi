@@ -78,14 +78,13 @@ class MemoryAccessOptions {
 
 class Identifier {
  public:
-  static int id_counter;
   std::string name_;
+  int id{0};
 
-  int id;
+  // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(const std::string &name_ = "") : name_(name_) {
-    id = id_counter++;
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -100,10 +99,6 @@ class Identifier {
 
   bool operator==(const Identifier &o) const {
     return id == o.id;
-  }
-
-  static void reset_counter() {
-    id_counter = 0;
   }
 };
 
@@ -190,6 +185,7 @@ class IRVisitor {
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
+#undef DEFINE_VISIT
 };
 
 struct CompileConfig;

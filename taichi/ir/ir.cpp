@@ -23,7 +23,6 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
   }
 }
 
-int Identifier::id_counter = 0;
 std::string Identifier::raw_name() const {
   if (name_.empty())
     return fmt::format("tmp{}", id);

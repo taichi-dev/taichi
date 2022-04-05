@@ -16,7 +16,7 @@ python3 -m pip install taichi
 ```
 
 :::note
-Currently, Taichi only supports Python 3.6/3.7/3.8/3.9 (64-bit).
+Currently, Taichi only supports Python 3.6/3.7/3.8/3.9/3.10 (64-bit).
 :::
 
 import Tabs from '@theme/Tabs';
@@ -318,7 +318,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a cpu-based [GUI system](../gui/gui.md) for users to render
+Taichi provides a cpu-based [GUI system](../gui/gui_system.md) for users to render
 their results on the screen.
 
 ```python

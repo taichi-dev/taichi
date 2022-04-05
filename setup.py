@@ -27,7 +27,7 @@ classifiers = [
     'Topic :: Games/Entertainment :: Simulation',
     'Intended Audience :: Science/Research',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
+    'License :: OSI Approved :: Apache Software License',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
@@ -273,12 +273,13 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'astor',
+          'numpy', 'sourceinspect>=0.0.4', 'colorama',
           'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
-      license='MIT',
+      license=
+      'Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)',
       include_package_data=True,
       entry_points={
           'console_scripts': [

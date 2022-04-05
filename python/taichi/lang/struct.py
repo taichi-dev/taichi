@@ -59,6 +59,15 @@ class Struct(TaichiOperations):
 
     @property
     def keys(self):
+        """Returns the list of member names in string format.
+
+        Example::
+
+           >>> vec3 = ti.types.vector(3, ti.f32)
+           >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+           >>> a.keys
+           ['center', 'radius']
+        """
         return list(self.entries.keys())
 
     @property
@@ -67,6 +76,15 @@ class Struct(TaichiOperations):
 
     @property
     def items(self):
+        """Returns the items in this struct.
+
+        Example::
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+            >>> sphere.items
+            dict_items([('center', 2), ('radius', 1.0)])
+        """
         return self.entries.items()
 
     def _register_members(self):
@@ -238,6 +256,38 @@ class Struct(TaichiOperations):
               offset=None,
               needs_grad=False,
               layout=Layout.AOS):
+        """Creates a :class:`~taichi.StructField` with each element
+        has this struct as its type.
+
+        Args:
+            members (dict): a dict, each item is like `name: type`.
+            shape (Tuple[int]): width and height of the field.
+            offset (Tuple[int]): offset of the indices of the created field.
+                For example if `offset=(-10, -10)` the indices of the field
+                will start at `(-10, -10)`, not `(0, 0)`.
+            needs_grad (bool): enabling gradient field or not.
+            layout: AOS or SOA.
+
+        Example:
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = {"center": vec3, "radius": float}
+            >>> F = ti.Struct.field(sphere, shape=(3, 3))
+            >>> F
+            {'center': array([[[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]]], dtype=float32), 'radius': array([[0., 0., 0.],
+               [0., 0., 0.],
+               [0., 0., 0.]], dtype=float32)}
+        """
 
         if shape is None and offset is not None:
             raise TaichiSyntaxError(
@@ -303,6 +353,7 @@ class _IntermediateStruct(Struct):
 
 class StructField(Field):
     """Taichi struct field with SNode implementation.
+
        Instead of directly contraining Expr entries, the StructField object
        directly hosts members as `Field` instances to support nested structs.
 
@@ -318,6 +369,16 @@ class StructField(Field):
 
     @property
     def keys(self):
+        """Returns the list of names of the field members.
+
+        Example::
+
+            >>> f1 = ti.Vector.field(3, ti.f32, shape=(3, 3))
+            >>> f2 = ti.field(ti.f32, shape=(3, 3))
+            >>> F = ti.StructField({"center": f1, "radius": f2})
+            >>> F.keys
+            ['center', 'radius']
+        """
         return list(self.field_dict.keys())
 
     @property
@@ -354,7 +415,7 @@ class StructField(Field):
                 ))
 
     def _get_field_members(self):
-        """Get A flattened list of all struct elements.
+        """Gets A flattened list of all struct elements.
 
         Returns:
             A list of struct elements.
@@ -398,7 +459,7 @@ class StructField(Field):
 
     @python_scope
     def fill(self, val):
-        """Fills `self` with a specific value.
+        """Fills this struct field with a specified value.
 
         Args:
             val (Union[int, float]): Value to fill.
@@ -423,20 +484,32 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
+        """Copies the data from a set of `numpy.array` into this field.
+
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
         for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
+        """Copies the data from a set of `torch.tensor` into this field.
+
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
         for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
     def to_numpy(self):
-        """Converts the Struct field instance to a dictionary of NumPy arrays. The dictionary may be nested when converting
-           nested structs.
+        """Converts the Struct field instance to a dictionary of NumPy arrays.
 
-        Args:
+        The dictionary may be nested when converting nested structs.
+
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
@@ -444,13 +517,17 @@ class StructField(Field):
 
     @python_scope
     def to_torch(self, device=None):
-        """Converts the Struct field instance to a dictionary of PyTorch tensors. The dictionary may be nested when converting
-           nested structs.
+        """Converts the Struct field instance to a dictionary of PyTorch tensors.
+
+        The dictionary may be nested when converting nested structs.
 
         Args:
-            device (torch.device, optional): The desired device of returned tensor.
+            device (torch.device, optional): The
+                desired device of returned tensor.
+
         Returns:
-            Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
+            Dict[str, Union[torch.Tensor, Dict]]: The result
+                PyTorch tensor.
         """
         return {k: v.to_torch(device=device) for k, v in self._items}
 

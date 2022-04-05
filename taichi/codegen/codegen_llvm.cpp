@@ -1,6 +1,6 @@
 #ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
-
+#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
@@ -304,8 +304,7 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&module,
-                         bool needs_cache)
+                         std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
           module == nullptr ? kernel->program->get_llvm_program_impl()
@@ -314,7 +313,6 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                             : std::move(module),
           kernel->program->get_llvm_program_impl()->get_llvm_context(
               kernel->arch)),
-      needs_cache_(needs_cache),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -2111,7 +2109,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  std::vector<llvm::Value *> args{get_context()};
+  std::vector<llvm::Value *> args;
+
+  if (stmt->with_runtime_context)
+    args.push_back(get_context());
+
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }
@@ -2268,17 +2270,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
 
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
-  eliminate_unused_functions();
-
-  auto *llvm_prog = prog->get_llvm_program_impl();
-  if (needs_cache_) {
-    std::vector<std::string> offloaded_task_name_list;
-    for (auto &task : offloaded_tasks) {
-      offloaded_task_name_list.push_back(task.name);
-    }
-    llvm_prog->cache_kernel(this->kernel->get_key(), this->module.get(),
-                            std::move(offloaded_task_name_list));
-  }
 
   tlctx->add_module(std::move(module));
 
@@ -2384,7 +2375,42 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 FunctionType CodeGenLLVM::gen() {
+  bool needs_cache = false;
+  const auto &config = prog->config;
+  std::string kernel_key;
+  if (config.offline_cache && this->supports_offline_cache() &&
+      !kernel->is_evaluator) {
+    kernel_key = get_offline_cache_key(&kernel->program->config, kernel);
+
+    LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
+    LlvmOfflineCache::KernelCacheData cache_data;
+    auto *tlctx =
+        this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+    auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+    if (reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+      this->module = std::move(cache_data.owned_module);
+      for (auto &task : cache_data.offloaded_task_list) {
+        auto &t = this->offloaded_tasks.emplace_back(this);
+        t.name = std::move(task.name);
+        t.block_dim = task.block_dim;
+        t.grid_dim = task.grid_dim;
+      }
+      kernel->set_from_offline_cache();
+      return compile_module_to_executable();
+    } else {
+      needs_cache = true;
+    }
+  }
+
+  if (!kernel->lowered()) {
+    kernel->lower();
+  }
   emit_to_module();
+  eliminate_unused_functions();
+  if (needs_cache) {
+    cache_module(kernel_key);
+  }
   return compile_module_to_executable();
 }
 
@@ -2451,6 +2477,18 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
 }
 
+void CodeGenLLVM::cache_module(const std::string &kernel_key) {
+  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
+  std::vector<OffloadedTaskCache> offloaded_task_list;
+  for (auto &task : offloaded_tasks) {
+    auto &task_cache = offloaded_task_list.emplace_back();
+    task_cache.name = task.name;
+    task_cache.block_dim = task.block_dim;
+    task_cache.grid_dim = task.grid_dim;
+  }
+  prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
+                                              std::move(offloaded_task_list));
+}
 TLANG_NAMESPACE_END
 
 #endif  // #ifdef TI_WITH_LLVM

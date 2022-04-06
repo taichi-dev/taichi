@@ -21,7 +21,7 @@ def _test_solve_2x2(dt, a00):
 
     @ti.kernel
     def solve_2x2():
-        A[None] = ti.Matrix([[a00, 2.0], [2.0, 3.0]])
+        A[None] = ti.Matrix([[a00, 1.0], [1.0, 1.001]])
         b[None] = ti.Vector([3.0, 15.0])
         x[None] = ti.solve(A[None], b[None])
 
@@ -65,13 +65,13 @@ def _test_solve_3x3(dt, a00):
     _solve_vector_equal(x_ti, x_np, tol)
 
 
-@pytest.mark.parametrize('a00', [i for i in range(10)])
+@pytest.mark.parametrize('a00', [float(i) for i in range(10)])
 @test_utils.test(default_fp=ti.f32, fast_math=False)
 def test_solve_2x2_f32(a00):
     _test_solve_2x2(ti.f32, a00)
 
 
-@pytest.mark.parametrize('a00', [i for i in range(10)])
+@pytest.mark.parametrize('a00', [float(i) for i in range(10)])
 @test_utils.test(require=ti.extension.data64,
                  default_fp=ti.f64,
                  fast_math=False)
@@ -79,13 +79,13 @@ def test_solve_2x2_f64(a00):
     _test_solve_2x2(ti.f64, a00)
 
 
-@pytest.mark.parametrize('a00', [i for i in range(10)])
+@pytest.mark.parametrize('a00', [float(i) for i in range(10)])
 @test_utils.test(default_fp=ti.f32, fast_math=False)
 def test_solve_3x3_f32(a00):
     _test_solve_3x3(ti.f32, a00)
 
 
-@pytest.mark.parametrize('a00', [i for i in range(10)])
+@pytest.mark.parametrize('a00', [float(i) for i in range(10)])
 @test_utils.test(require=ti.extension.data64,
                  default_fp=ti.f64,
                  fast_math=False)

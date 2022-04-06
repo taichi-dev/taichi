@@ -397,7 +397,7 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
-        if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQL "x86_64")
+        if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
             # Avoid glibc dependencies
             if (TI_WITH_VULKAN)
                 target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)

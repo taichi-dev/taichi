@@ -47,7 +47,7 @@ def upload_artifact(is_taichi):
     if not is_taichi:
         command.extend(
             ['--repository-url', 'https://pypi.taichi.graphics/simple/'])
-    uname = '__token__' if is_taichi else 'admin'
+    uname = '__token__' if is_taichi else 'taichi-nightly-cloud-pypi-uploader'
     command.extend(['--verbose', '-u', uname, '-p', twine_password, 'dist/*'])
 
     try:

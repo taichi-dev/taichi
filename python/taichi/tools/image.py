@@ -18,7 +18,8 @@ def cook_image_to_bytes(img):
     elif img.dtype in [np.float32, np.float64]:
         img = (np.clip(img, 0, 1) * 255.0 + 0.5).astype(np.uint8)
     elif img.dtype != np.uint8:
-        raise ValueError(f'Data type {img.dtype} not supported in ti.tools.imwrite')
+        raise ValueError(
+            f'Data type {img.dtype} not supported in ti.tools.imwrite')
 
     assert len(img.shape) in [2,
                               3], "Image must be either RGB/RGBA or greyscale"

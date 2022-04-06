@@ -305,11 +305,12 @@ is evaluated to the value of that expression.
 assignment_expression ::=  [identifier ":="] expression
 ```
 
-An assignment expression (sometimes also called a “named expression” or “walrus”) assigns an expression to an identifier,
+An assignment expression assigns an expression to an identifier (see
+[assignment statements](#assignment-statements) for more details),
 while also returning the value of the expression.
 
 :::note
-This operator is supported in Python 3.8, see [PEP 572](https://www.python.org/dev/peps/pep-0572) for more details about assignment expressions
+This operator is supported since Python 3.8.
 :::
 
 #### Augmented assignment statements

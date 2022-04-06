@@ -49,6 +49,9 @@ class MetalProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override;
+
  private:
   const metal::CompiledStructs &compile_snode_tree_types_impl(SNodeTree *tree);
 

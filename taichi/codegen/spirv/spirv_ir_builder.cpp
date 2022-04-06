@@ -635,10 +635,26 @@ Value IRBuilder::get_subgroup_invocation_id() {
     this->decorate(spv::OpDecorate, subgroup_local_invocation_id_,
                    spv::DecorationBuiltIn,
                    spv::BuiltInSubgroupLocalInvocationId);
+    global_values.push_back(subgroup_local_invocation_id_);
   }
 
   return this->make_value(spv::OpLoad, t_uint32_,
                           subgroup_local_invocation_id_);
+}
+
+Value IRBuilder::get_subgroup_size() {
+  if (subgroup_size_.id == 0) {
+    SType ptr_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
+    subgroup_size_ = new_value(ptr_type, ValueKind::kVariablePtr);
+    ib_.begin(spv::OpVariable)
+        .add_seq(ptr_type, subgroup_size_, spv::StorageClassInput)
+        .commit(&global_);
+    this->decorate(spv::OpDecorate, subgroup_size_, spv::DecorationBuiltIn,
+                   spv::BuiltInSubgroupSize);
+    global_values.push_back(subgroup_size_);
+  }
+
+  return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);
 }
 
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \

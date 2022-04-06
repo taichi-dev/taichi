@@ -275,9 +275,24 @@ stride) inside have to be evaluated to Python values.
 
 #### Membership test operations
 
-#### Identity comparisons
-
 ### Boolean operations
+
+```
+or_test  ::= and_test | or_test "or" and_test
+and_test ::= not_test | and_test "and" not_test
+not_test ::= comparison | "not" not_test
+```
+
+When the operator is inside a [static expression](#static-expressions),
+the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
+Otherwise, the behavior depends on the `short_circuit_operators` option of `ti.init()`:
+- If `short_circuit_operators` is `False` (default), a *logical and* will be
+treated as a *bitwise AND*, and a *logical or* will be treated as a *bitwise
+OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
+- If `short_circuit_operators` is `True`, the normal short circuiting behavior
+is adopted, and the operands are required to be boolean values. Since Taichi
+does not have boolean type yet, `ti.i32` is served as a temporary alternative.
+A `ti.i32` value is considered `False` if and only if the value is evaluated to 0.
 
 ### Conditional expressions
 

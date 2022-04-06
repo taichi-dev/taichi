@@ -12,12 +12,6 @@ namespace metal {
 #ifdef TI_PLATFORM_OSX
 namespace {
 
-class AllocToMTLBufferMapper {
- public:
-  virtual ~AllocToMTLBufferMapper() = default;
-  virtual MTLBuffer *find(DeviceAllocation alloc) const = 0;
-};
-
 class ResourceBinderImpl : public ResourceBinder {
  public:
   struct Binding {
@@ -153,7 +147,7 @@ class CommandListImpl : public CommandList {
     auto encoder = new_blit_command_encoder(command_buffer_.get());
     TI_ASSERT(encoder != nullptr);
     metal::set_label(encoder.get(), inflight_label_);
-    auto *buf = alloc_buf_mapper_->find(ptr);
+    auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
     mac::TI_NSRange range;
     range.location = ptr.offset;
@@ -244,7 +238,12 @@ class StreamImpl : public Stream {
 class DeviceImpl : public Device, public AllocToMTLBufferMapper {
  public:
   explicit DeviceImpl(const ComputeDeviceParams &params)
-      : device_(params.device), mem_pool_(params.mem_pool) {
+      : device_(params.device),
+        mem_pool_(params.mem_pool),
+        only_for_dev_allocation_(params.only_for_dev_allocation) {
+    if (only_for_dev_allocation_) {
+      return;
+    }
     command_queue_ = new_command_queue(device_);
     TI_ASSERT(command_queue_ != nullptr);
     // TODO: thread local streams?
@@ -267,11 +266,14 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
 
   void dealloc_memory(DeviceAllocation handle) override {
     allocations_.erase(handle.alloc_id);
-    TI_NOT_IMPLEMENTED;
   }
 
   std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
                                             std::string name) override {
+    if (only_for_dev_allocation_) {
+      TI_ERROR("only_for_dev_allocation");
+      return nullptr;
+    }
     TI_ASSERT(src.type == PipelineSourceType::metal_src);
     TI_ASSERT(src.stage == PipelineStageType::compute);
     // FIXME: infer version/fast_math
@@ -288,7 +290,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   void *map_range(DevicePtr ptr, uint64_t size) override {
-    auto *mem = find_buffer_mem(ptr.alloc_id);
+    auto *mem = find(ptr).mem;
     if (!mem) {
       return nullptr;
     }
@@ -300,7 +302,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   void *map(DeviceAllocation alloc) override {
-    auto *mem = find_buffer_mem(alloc.alloc_id);
+    auto *mem = find(alloc).mem;
     if (!mem) {
       return nullptr;
     }
@@ -319,26 +321,26 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   Stream *get_compute_stream() override {
+    if (only_for_dev_allocation_) {
+      TI_ERROR("only_for_dev_allocation");
+      return nullptr;
+    }
+
     return stream_.get();
   }
 
-  MTLBuffer *find(DeviceAllocation alloc) const override {
+  BufferAndMem find(DeviceAllocation alloc) const override {
+    BufferAndMem bm;
     auto itr = allocations_.find(alloc.alloc_id);
     if (itr == allocations_.end()) {
-      return nullptr;
+      return bm;
     }
-    return itr->second.buffer.get();
+    bm.buffer = itr->second.buffer.get();
+    bm.mem = itr->second.buffer_mem.get();
+    return bm;
   }
 
  private:
-  const BufferMemoryView *find_buffer_mem(DeviceAllocationId id) const {
-    auto itr = allocations_.find(id);
-    if (itr == allocations_.end()) {
-      return nullptr;
-    }
-    return itr->second.buffer_mem.get();
-  }
-
   struct AllocationInternal {
     std::unique_ptr<BufferMemoryView> buffer_mem{nullptr};
     nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
@@ -346,6 +348,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
 
   MTLDevice *const device_;
   MemoryPool *const mem_pool_;
+  const bool only_for_dev_allocation_;
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   std::unique_ptr<StreamImpl> stream_{nullptr};
   std::unordered_map<DeviceAllocationId, AllocationInternal> allocations_;
@@ -353,17 +356,19 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
 
 }  // namespace
 
-std::unique_ptr<taichi::lang::Device> make_compute_device(
-    const ComputeDeviceParams &params) {
-  return std::make_unique<DeviceImpl>(params);
+MakeDeviceResult make_compute_device(const ComputeDeviceParams &params) {
+  MakeDeviceResult res;
+  auto impl = std::make_unique<DeviceImpl>(params);
+  res.mapper = impl.get();
+  res.device = std::move(impl);
+  return res;
 }
 
 #else
 
-std::unique_ptr<taichi::lang::Device> make_compute_device(
-    const ComputeDeviceParams &params) {
+MakeDeviceResult make_compute_device(const ComputeDeviceParams &params) {
   TI_ERROR("Platform does not support Metal");
-  return nullptr;
+  return MakeDeviceResult{};
 }
 
 #endif  // TI_PLATFORM_OSX

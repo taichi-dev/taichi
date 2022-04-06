@@ -348,12 +348,18 @@ def reset():
 
 @taichi_scope
 def static_print(*args, __p=print, **kwargs):
+    """The print function in Taichi scope.
+
+    This function is called at compile time and has no runtime overhead.
+    """
     __p(*args, **kwargs)
 
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
     """Throw AssertionError when `cond` is False.
+
+    This function is called at compile time and has no runtime overhead.
     The bool value in `cond` must can be determined at compile time.
 
     Args:
@@ -687,7 +693,7 @@ def ti_float(_var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
-    """Return an array of zeros with the same shape and type as the input. It's also a scalar
+    """Returns an array of zeros with the same shape and type as the input. It's also a scalar
     if the input is a scalar.
 
     Args:
@@ -710,7 +716,7 @@ def zero(x):
 
 @taichi_scope
 def one(x):
-    """Return an array of ones with the same shape and type as the input. It's also a scalar
+    """Returns an array of ones with the same shape and type as the input. It's also a scalar
     if the input is a scalar.
 
     Args:
@@ -833,6 +839,11 @@ def grouped(x):
 
 
 def stop_grad(x):
+    """Stops computing gradients during back propagation.
+
+    Args:
+        x (:class:`~taichi.Field`): A field.
+    """
     get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
 
 

@@ -84,7 +84,7 @@ The `pos` parameter of every drawing method accepts Taichi fields or NumPy array
 - `(0.0, 0.0)`: the lower-left corner of the window.
 - `(1.0, 1.0)`: the upper-right corner of the window.
 
-The following code draws 50 circles with a radius of `1.5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
+The following code draws 50 circles with a radius of `5` and in three different colors randomly assigned by `indices`, an integer array of the same size as `pos`.
 
 ```python
 import numpy as np
@@ -94,15 +94,13 @@ pos = np.random.random((50, 2))
 # 1 corresponds to 0xED553B
 # 2 corresponds to 0xEEEEF0
 indices = np.random.randint(0, 2, size=(50,))
-gui = ti.GUI("lines", res=(400, 400))
+gui = ti.GUI("circles", res=(400, 400))
 while gui.running:
-    gui.circles(pos, radius=1.5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=indices)
+    gui.circles(pos, radius=5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=indices)
     gui.show()
 ```
 
-
-
-![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=N2Y2M2YxMWZlZGM2NGM1ZGQ3Y2JlZmU3NzgyMjRmZWRfSEprR1JLempxWkVSOFllRnBkS1hMZGlGeFI3SWVNN0RfVG9rZW46Ym94Y25EZFhiUmwzeWxjakllME1SSXhNMjlnXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
+![gui-circles](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-circles.png)
 
 The following code draws five blue line segments whose width is 2, with `X` and `Y` representing the five starting points and the five ending points.
 
@@ -110,10 +108,13 @@ The following code draws five blue line segments whose width is 2, with `X` and 
 import numpy as np
 X = np.random.random((5, 2))
 Y = np.random.random((5, 2))
-gui.lines(begin=X, end=Y, radius=2, color=0x068587)
+gui = ti.GUI("lines", res=(400, 400))
+while gui.running:
+    gui.lines(begin=X, end=Y, radius=2, color=0x068587)
+    gui.show()
 ```
 
-![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=NDlhNDgxOTViYmNmNTBhZDQ2YjJhMmYxZjQxMWY4MDBfVjd6WURPM2d1M05TOW9FUk9tVHpIQlFtVVJMNjdudGlfVG9rZW46Ym94Y254dTk5dFI1ZEwzSTFHUGJKOWl2dG5mXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
+![gui-lines](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-lines.png)
 
 The following code draws two orange triangles orange, with `X`, `Y`, and `Z` representing the three points of the triangles.
 
@@ -122,13 +123,13 @@ import numpy as np
 X = np.random.random((2, 2))
 Y = np.random.random((2, 2))
 Z = np.random.random((2, 2))
-gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
+gui = ti.GUI("triangles", res=(400, 400))
+while gui.running:
+    gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
+    gui.show()
 ```
 
-
-
-![img](https://o9ixctz0o7.feishu.cn/space/api/box/stream/download/asynccode/?code=N2JkMDNmNWYxYTBiMTliNDVjNWRhNGNmNWMxY2Y4ZjlfQURQSTlIYVVjTWEyYjVIWThjVmxtNmFZNlI4QzJDWUJfVG9rZW46Ym94Y252bkpSeDVEUkhRY1pmanRpZ2hDY1lkXzE2NDg2MzAzNjA6MTY0ODYzMzk2MF9WNA)
-
+![gui-triangles](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-triangles.png)
 
 
 ## Event handling

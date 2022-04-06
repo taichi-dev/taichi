@@ -72,7 +72,7 @@ class KernelManager {
 
   // FIXME(k-ye): This is a temporary workaround since Metal has not switched to
   // Unified Device API yet.
-  DeviceAllocation allocate_memory(const Device::AllocParams& params);
+  DeviceAllocation allocate_memory(const Device::AllocParams &params);
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally

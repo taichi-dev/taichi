@@ -292,8 +292,7 @@ OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
 - If `short_circuit_operators` is `True`, the normal short circuiting behavior
 is adopted, and the operands are required to be boolean values. Since Taichi
 does not have boolean type yet, `ti.i32` is served as a temporary alternative.
-A `ti.i32` value is considered `False` if and only if the value is evaluated to
-0.
+A `ti.i32` value is considered `False` if and only if the value is evaluated to 0.
 
 ### Conditional expressions
 

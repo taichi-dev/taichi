@@ -70,7 +70,7 @@ Use Python's package installer **pip** to install Taichi:
 pip install taichi
 ```
 
-*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features.*
+*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features. The nightly packages can be installed from our self-hosted PyPI (Using self-hosted PyPI allows us to provide more frequent releases over a longer period of time)*
 
 ```bash
 pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly

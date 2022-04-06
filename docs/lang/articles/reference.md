@@ -295,10 +295,6 @@ The trailing comma is required only to create a tuple with length 1; it is
 optional in all other cases. A single expression without a trailing comma
 is evaluated to the value of that expression.
 
-## Simple statements
-
-### Expression statements
-
 ### Assignment statements
 
 ```
@@ -309,9 +305,23 @@ An assignment expression assigns an expression to an identifier (see
 [assignment statements](#assignment-statements) for more details),
 while also returning the value of the expression.
 
+Example:
+```python
+@ti.kernel
+def foo() -> ti.i32:
+    b = 2 + (a := 5)
+    b += a
+    return b
+# the return value should be 12
+```
+
 :::note
 This operator is supported since Python 3.8.
 :::
+
+## Simple statements
+
+### Expression statements
 
 #### Augmented assignment statements
 

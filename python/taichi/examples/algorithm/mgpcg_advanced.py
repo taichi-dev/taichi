@@ -272,7 +272,7 @@ class MGPCG_Example(MGPCG):
         self.init()
         self.solve(max_iters=400, verbose=verbose)
         self.paint()
-        ti.imshow(self.pixels)
+        ti.tools.imshow(self.pixels)
         ti.profiler.print_kernel_profiler_info()
 
 

@@ -454,6 +454,11 @@ class HostMetalCtxBlitter {
       return;
     }
     char *const base = (char *)kernel_ctx_mem_->ptr();
+    struct BufferAndSize {
+      MTLBuffer *buffer{nullptr};
+      size_t size{0};
+    };
+    std::vector<BufferAndSize> buf_sz;
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
@@ -470,9 +475,12 @@ class HostMetalCtxBlitter {
         } else {
           const void *host_ptr = host_ctx_->get_arg<void *>(i);
           const auto alloc_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
-          auto *mem = alloc_mapper_->find(alloc_sz.alloc).mem;
+          auto buf_mem = alloc_mapper_->find(alloc_sz.alloc);
+          TI_ASSERT(buf_mem.buffer != nullptr);
+          auto *mem = buf_mem.mem;
           TI_ASSERT(mem != nullptr);
           std::memcpy(mem->ptr(), host_ptr, alloc_sz.size);
+          buf_sz.push_back(BufferAndSize{buf_mem.buffer, alloc_sz.size});
         }
       } else if (dt == MetalDataType::i32) {
         TO_METAL(int32);
@@ -497,8 +505,11 @@ class HostMetalCtxBlitter {
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
-    did_modify_range(kernel_ctx_buffer_, /*location=*/0,
-                     kernel_ctx_mem_->size());
+    buf_sz.push_back(
+        BufferAndSize{kernel_ctx_buffer_, kernel_ctx_mem_->size()});
+    for (auto bs : buf_sz) {
+      did_modify_range(bs.buffer, /*length=*/0, bs.size);
+    }
   }
 
   void metal_to_host() {
@@ -749,7 +760,8 @@ class KernelManager::Impl {
       ctx_blitter->host_to_metal();
       input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
     }
-    get_dev_alloc_buffers(ctk, *ctx, &input_buffers);
+    auto ndarray_buffers = get_dev_alloc_buffers(ctk, *ctx);
+    input_buffers.insert(ndarray_buffers.begin(), ndarray_buffers.end());
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
@@ -768,6 +780,9 @@ class KernelManager::Impl {
       if (used_print_assert) {
         clear_print_assert_buffer();
         buffers_to_blit.push_back(print_buffer_.get());
+      }
+      for (auto [_, buf] : ndarray_buffers) {
+        buffers_to_blit.push_back(buf);
       }
       blit_buffers_and_sync(buffers_to_blit);
 
@@ -810,7 +825,6 @@ class KernelManager::Impl {
 
   DeviceAllocation allocate_memory(const Device::AllocParams &params) {
     auto res = rhi_device_->allocate_memory(params);
-    TI_INFO("Allocated Ndarray alloc_id={} size={}", res.alloc_id, params.size);
     return res;
   }
 
@@ -1169,9 +1183,9 @@ class KernelManager::Impl {
                                         offset);
   }
 
-  void get_dev_alloc_buffers(const CompiledTaichiKernel &ctk,
-                             const RuntimeContext &host_ctx,
-                             InputBuffersMap *buffers) const {
+  InputBuffersMap get_dev_alloc_buffers(const CompiledTaichiKernel &ctk,
+                                        const RuntimeContext &host_ctx) const {
+    InputBuffersMap res;
     for (const auto &arg : ctk.ctx_attribs.args()) {
       if (!arg.is_array) {
         continue;
@@ -1180,14 +1194,17 @@ class KernelManager::Impl {
       if (host_ctx.is_device_allocation[arg.index]) {
         dev_alloc = *reinterpret_cast<const DeviceAllocation *>(
             host_ctx.args[arg.index]);
-        TI_INFO("Ndarray arg_id={} alloc_id={}", arg.index, dev_alloc.alloc_id);
+        TI_TRACE("Ndarray arg_id={} alloc_id={}", arg.index,
+                 dev_alloc.alloc_id);
       } else {
         dev_alloc = ctk.ext_arr_arg_to_dev_alloc.at(arg.index).alloc;
+        TI_TRACE("ExtArr arg_id={} alloc_id={}", arg.index, dev_alloc.alloc_id);
       }
       MTLBuffer *buffer = devalloc_mapper_->find(dev_alloc).buffer;
       TI_ASSERT(buffer != nullptr);
-      (*buffers)[BufferDescriptor::ndarray(arg.index)] = buffer;
+      res[BufferDescriptor::ndarray(arg.index)] = buffer;
     }
+    return res;
   }
 
   struct SNodesRootBuffer {

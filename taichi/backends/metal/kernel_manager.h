@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "taichi/backends/device.h"
 #include "taichi/backends/metal/kernel_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/lang_util.h"
@@ -15,6 +16,7 @@
 namespace taichi {
 namespace lang {
 
+class Kernel;
 struct RuntimeContext;
 
 namespace metal {
@@ -67,6 +69,10 @@ class KernelManager {
 
   // For debugging purpose
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
+
+  // FIXME(k-ye): This is a temporary workaround since Metal has not switched to
+  // Unified Device API yet.
+  DeviceAllocation allocate_memory(const Device::AllocParams& params);
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally

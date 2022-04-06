@@ -372,7 +372,7 @@ annotated_assignment_stmt ::= augtarget ":" expression
                               ["=" (starred_expression)]
 ```
 The difference from normal [Assignment statements](#assignment-statements) is that only single target is allowed.
-There is also a cast if the type of target is not the same as annotation. 
+There is also a cast if the type of target is not the same as annotation.
 
 ### The `assert` statement
 Assert statements are a convenient way to insert debugging assertions into a program:

@@ -74,11 +74,15 @@ class SparseMatrix {
     return nullptr;
   }
 
-  virtual float32 get_element(int row, int col) {
+  template <class T>
+  T get_element(int row, int col) {
+    std::cout << "get_element not implemented" << std::endl;
     return 0;
   }
 
-  virtual void set_element(int row, int col, float32 value) {
+  template <class T>
+  void set_element(int row, int col, T value) {
+    std::cout << "set_element not implemented" << std::endl;
     return;
   }
 
@@ -147,6 +151,11 @@ class EigenSparseMatrix : public SparseMatrix {
     return EigenSparseMatrix(sm.matrix_ * scale);
   }
 
+  friend EigenSparseMatrix operator*(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_.cwiseProduct(rhs.matrix_));
+  }
+
   EigenSparseMatrix transpose() {
     return EigenSparseMatrix(matrix_.transpose());
   }
@@ -155,11 +164,13 @@ class EigenSparseMatrix : public SparseMatrix {
     return EigenSparseMatrix(matrix_ * sm.matrix_);
   }
 
-  virtual float32 get_element(int row, int col) override {
+  template <typename T>
+  T get_element(int row, int col) {
     return matrix_.coeff(row, col);
   }
 
-  void set_element(int row, int col, float32 value) override {
+  template <typename T>
+  void set_element(int row, int col, T value) {
     matrix_.coeffRef(row, col) = value;
   }
 

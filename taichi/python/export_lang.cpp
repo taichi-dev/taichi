@@ -945,8 +945,8 @@ void export_lang(py::module &m) {
            py::arg("dt") = PrimitiveType::f32)
       .def(py::init<SparseMatrix &>())
       .def("to_string", &SparseMatrix::to_string)
-      .def("get_element", &SparseMatrix::get_element)
-      .def("set_element", &SparseMatrix::set_element)
+      .def("get_element", &SparseMatrix::get_element<float32>)
+      .def("set_element", &SparseMatrix::set_element<float32>)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 
@@ -965,13 +965,16 @@ void export_lang(py::module &m) {
       .def(py::self *= float##TYPE())                                        \
       .def(py::self *float##TYPE())                                          \
       .def(float##TYPE() * py::self)                                         \
+      .def(py::self *py::self)                                               \
       .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
       .def("transpose",                                                      \
            &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
       .def("get_element",                                                    \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element)      \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element<      \
+               float##TYPE>)                                                 \
       .def("set_element",                                                    \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element)      \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element<      \
+               float##TYPE>)                                                 \
       .def("mat_vec_mul",                                                    \
            &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
                Eigen::VectorX##VTYPE>);

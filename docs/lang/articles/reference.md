@@ -283,14 +283,17 @@ and_test ::= not_test | and_test "and" not_test
 not_test ::= comparison | "not" not_test
 ```
 
-When all operands of the operator are evaluated to Python values,
+When the operator is inside a [static expression](#static-expressions),
 the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
-Otherwise, there are different behaviours:
-- Currently, Taichi does not have bool type, so `True` and `False` have different meanings as usual. `True` means the value is not equal `0`, `False` otherwise.
-- The type of operator can be `int` and `Matrix`. When `short_circuit_operators = True`, the type of operator can't be `Matrix`.
-- When `short_circuit_operators = False`, `and` will be `bit-and`, and `or` will be `bit-or`. The return type of this operation depend on the type of operators. If the type of operator is `Matrix`, it will return a `Matrix`(they are applied in an element-wise manner).
-- When `short_circuit_operators = True`, It means `x and y` will evaluate `x` firstly and evaluate `y` when `x` is `True`. It also means `x or y` will evaluate `x` firstly and evaluate `y` when `x` is `False`.
-- By default, there is `short_circuit_operators = False` in Taichi.
+Otherwise, the behavior depends on the `short_circuit_operators` option of `ti.init()`:
+- If `short_circuit_operators` is `False` (default), a *logical and* will be
+treated as a *bitwise AND*, and a *logical or* will be treated as a *bitwise
+OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
+- If `short_circuit_operators` is `True`, the normal short circuiting behavior
+is adopted, and the operands are required to be boolean values. Since Taichi
+does not have boolean type yet, `ti.i32` is served as a temporary alternative.
+A `ti.i32` value is considered `False` if and only if the value is evaluated to
+0.
 
 ### Conditional expressions
 

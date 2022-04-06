@@ -13,6 +13,7 @@ on:
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
   NIGHT_PWD: ${{ secrets.TAICHI_PYPI_PWD }}
+  NIGHT_USERNAME: ${{ secrets.TAICHI_PYPI_USERNAME }}
   METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}

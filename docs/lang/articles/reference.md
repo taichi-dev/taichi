@@ -296,8 +296,7 @@ The `expression` of ndrange `for` statement must be a call to `ti.ndrange()` or 
 If the `expression` is a call to `ti.range()`, it is a normal ndrange `for`.
 If the `expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
 
-You can use grouped `for` loops to write dimensionality-independent programs,
-see [here](lang/articles/advanced/meta.md#dimensionality-independent-programming-using-grouped-indices) for more information.
+You can use grouped `for` loops to write [dimensionality-independent programs](lang/articles/advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
 
 `ti.ndrange` receives arbitrary numbers of arguments.
 The k-th argument represents the iteration range of the k-th dimension,

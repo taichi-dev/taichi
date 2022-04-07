@@ -264,13 +264,29 @@ stride) inside have to be evaluated to Python values.
 #### Calls
 
 ```
-call          ::= primary "(" argument_list ")"
-argument_list ::= args
-args          ::= [arg ("," arg)*]
-arg           ::= identifier
+call                 ::= primary "(" [argument_list [","] | comprehension] ")"
+argument_list        ::= positional_arguments ["," starred_and_keywords]
+                           ["," keywords_arguments]
+                         | starred_and_keywords ["," keywords_arguments]
+                         | keywords_arguments
+positional_arguments ::= positional_item ("," positional_item)*
+positional_item      ::= assignment_expression | "*" expression
+starred_and_keywords ::= ("*" expression | keyword_item)
+                         ("," "*" expression | "," keyword_item)*
+keywords_arguments   ::= (keyword_item | "**" expression)
+                         ("," keyword_item | "," "**" expression)*
+keyword_item         ::= identifier "=" expression
+
+
 ```
 
-To favor simplicity, Taichi language doesn't support keyword arguments like Python.
+To favor simplicity, starred arguments and keyword arguments are not supported for Taichi kernels.
+
+When calling a Python function, it needs to be wrapped by `ti.static()`.
+
+The following Taichi builtin functions are supported: `print()`, `min()`, `max()`, `int()`, `float()`, `any()`, `all()`, `abs()`, `pow()`.
+
+Calling a type annotation for literals
 
 ### The power operator
 

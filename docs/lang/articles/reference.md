@@ -295,7 +295,7 @@ The trailing comma is required only to create a tuple with length 1; it is
 optional in all other cases. A single expression without a trailing comma
 is evaluated to the value of that expression.
 
-### Assignment statements
+### Assignment expressions
 
 ```
 assignment_expression ::=  [identifier ":="] expression
@@ -322,6 +322,8 @@ This operator is supported since Python 3.8.
 ## Simple statements
 
 ### Expression statements
+
+### Assignment statements
 
 #### Augmented assignment statements
 

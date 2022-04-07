@@ -441,7 +441,8 @@ and it continues with the next cycle of the nearest enclosing loop.
 The `for` statement in Taichi is used to iterate over a range of numbers, multidimensional ranges, or the indices of elements in a field.
 
 ```
-for_stmt ::=  "for" target_list "in" expression ":" suite
+for_stmt        ::=  "for" target_list "in" iter_expression ":" suite
+iter_expression ::=  static_expression | expression
 ```
 
 Taichi does not support `else` clause in `for` statements.
@@ -456,14 +457,16 @@ then it can be terminated by `break` statements.
 
 There are four kinds of `for` statements:
 
-- The range `for` statement iterates over a range of numbers.
-- The ndrange `for` iterates over multidimensional ranges.
-- The struct `for` statement iterates over every active elements in a taichi field.
-- The static `for` statement unrolls a range/ndrange `for` at compile time.
+- The range `for` statement
+- The ndrange `for` iterates
+- The struct `for` statement
+- The static `for` statement
 
 #### The range `for` statement
 
-The `expression` of range `for` statement must be like `range(begin, end)` or `range(end)`,
+The range `for` statement iterates over a range of numbers.
+
+The `iter_expression` of range `for` statement must be like `range(begin, end)` or `range(end)`,
 and they mean the same as the python `range` function,
 except that the `step` argument is not supported.
 
@@ -474,9 +477,11 @@ The range `for` loops are by default parallelized when the loops are in the oute
 
 #### The ndrange `for` statement
 
-The `expression` of ndrange `for` statement must be a call to `ti.ndrange()` or a nested call to `ti.grouped(ti.ndrange())`.
-If the `expression` is a call to `ti.range()`, it is a normal ndrange `for`.
-If the `expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
+The ndrange `for` iterates over multidimensional ranges.
+
+The `iter_expression` of ndrange `for` statement must be a call to `ti.ndrange()` or a nested call to `ti.grouped(ti.ndrange())`.
+- If the `iter_expression` is a call to `ti.range()`, it is a normal ndrange `for`.
+- If the `iter_expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
 
 You can use grouped `for` loops to write [dimensionality-independent programs](lang/articles/advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
 
@@ -485,9 +490,9 @@ The k-th argument represents the iteration range of the k-th dimension,
 and the loop iterates over the [direct product](https://en.wikipedia.org/wiki/Direct_product) of the iteration range of each dimension.
 
 Every argument must be an integer or a tuple of two integers.
-If the k-th argument is an integer `n`, the range of the k-th dimension
+- If the k-th argument is an integer `n`, the range of the k-th dimension
 is equivalent to the range of `range(n)` in python.
-If the k-th argument is a tuple of two integers `(a, b)`, the range of the k-th dimension
+- If the k-th argument is a tuple of two integers `(a, b)`, the range of the k-th dimension
 is equivalent to the range of `range(a, b)` in python.
 
 The `target_list` of an n-dimensional normal ndrange `for` statement must be n different identifiers which
@@ -499,10 +504,13 @@ is not occupied in the current scope, and the identifier is assigned a `ti.Vecto
 The ndrange `for` loops are by default parallelized when the loops are in the outermost scope.
 
 #### The struct `for` statement
-The `expression` of a struct `for` statement must be a Taichi field or a call to `ti.grouped(x)` where `x` is a Taichi field.
 
-If the `expression` is a Taichi field, it is a normal struct `for`.
-If the `expression` is a call to `ti.grouped(x)` where `x` is a Taichi field, it is a grouped struct `for`.
+The struct `for` statement iterates over every active elements in a taichi field.
+
+The `iter_expression` of a struct `for` statement must be a Taichi field or a call to `ti.grouped(x)` where `x` is a Taichi field.
+
+- If the `iter_expression` is a Taichi field, it is a normal struct `for`.
+- If the `iter_expression` is a call to `ti.grouped(x)` where `x` is a Taichi field, it is a grouped struct `for`.
 
 The `target_list` of a normal struct `for` statement on an n-dimensional field must be n different identifiers which
 are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.
@@ -514,10 +522,14 @@ The struct `for` statement must be at the outermost scope of the kernel,
 and it cannot be terminated by a `break` statement even when it is run serially.
 
 #### The static `for` statement
-The `expression` of a static `for` statement must be a call to `ti.static()` and the argument of `ti.static()` must meet the requirement on `expression` of the range/ndrange for, and
-every variable inside `expression` must be a compile-time constant.
 
-The static `for` statement unrolls the range/ndrange `for` loop at compile time.
+The static `for` statement unrolls a range/ndrange `for` loop at compile time.
+
+If the `iter_expression` of the `for` statement is a [`static_expression`](#static-expressions), 
+the `for` statement is a static `for` statement.
+
+The `positional_arguments` of the `static_expression` must meet the requirement on
+`iter_expression` of the range/ndrange for.
 
 For example,
 ```python

@@ -34,6 +34,16 @@ class GUI:
 
     """
     class Event:
+        """Class for holding a gui event.
+
+        An event is represented by:
+
+        + type (PRESS, MOTION, RELEASE)
+        + modifier (modifier keys like ctrl, shift, etc)
+        + pos (mouse position)
+        + key (event key)
+        + delta (for holding mouse wheel)
+        """
         def __init__(self):
             self.type = None
             self.modifier = None
@@ -111,11 +121,22 @@ class GUI:
         self.close()
 
     def close(self):
+        """Close this GUI.
+
+        Example::
+
+            >>> while gui.running:
+            >>>     if gui.get_event(gui.PRESS, ti.GUI.ESCAPE):
+            >>>         gui.close()
+            >>>     gui.show()
+        """
         self.core = None  # dereference to call GUI::~GUI()
 
     # Widget system
 
     class WidgetValue:
+        """Class for maintaining id of gui widgets.
+        """
         def __init__(self, gui, wid):
             self.gui = gui
             self.wid = wid
@@ -144,7 +165,7 @@ class GUI:
         return bool(int(os.environ[key]))
 
     def slider(self, text, minimum, maximum, step=1):
-        """Create a slider object on canvas to be manipulated with.
+        """Creates a slider object on canvas to be manipulated with.
 
         Args:
             text (str): The title of slider.
@@ -159,7 +180,7 @@ class GUI:
         return GUI.WidgetValue(self, wid)
 
     def label(self, text):
-        """Create a label object on canvas.
+        """Creates a label object on canvas.
 
         Args:
             text (str): The title of label.
@@ -190,7 +211,7 @@ class GUI:
     # Drawing system
 
     def clear(self, color=None):
-        """Clear the canvas with the color provided.
+        """Clears the canvas with the color provided.
 
         Args:
             color (int, optional): Specify the color to clear the canvas. Default
@@ -202,6 +223,12 @@ class GUI:
         self.canvas.clear(color)
 
     def cook_image(self, img):
+        """Converts an img to range [0, 1] for display.
+
+        The input image is stored in a `numpy.ndarray`, if it's dtype
+        is `int` it will be rescaled and mapped into range [0, 1]. If
+        the dtype is `float` it will be directly casted to 32-bit float type.
+        """
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float16, np.float32, np.float64]:
@@ -316,7 +343,7 @@ class GUI:
         self.core.set_img(self.img.ctypes.data)
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
-        """Draw a circle on canvas.
+        """Draws a circle on canvas.
 
         Args:
             pos (Union[List[int], numpy.array]): The position of the circle.
@@ -331,7 +358,7 @@ class GUI:
                 color=0xFFFFFF,
                 palette=None,
                 palette_indices=None):
-        """Draw a list of circles on canvas.
+        """Draws a list of circles on canvas.
 
         Args:
             pos (numpy.array): The positions of the circles.
@@ -415,7 +442,7 @@ class GUI:
                                     radius_single, radius_array)
 
     def triangles(self, a, b, c, color=0xFFFFFF):
-        """Draw a list of triangles on canvas.
+        """Draws a list of triangles on canvas.
 
         Args:
             a (numpy.array): The positions of the first points of triangles.
@@ -462,7 +489,7 @@ class GUI:
                                       color_array)
 
     def triangle(self, a, b, c, color=0xFFFFFF):
-        """Draw a single triangle on canvas.
+        """Draws a single triangle on canvas.
 
         Args:
             a (List[Number]): The position of the first point of triangle. Shape must be 2.
@@ -529,7 +556,7 @@ class GUI:
                                   color_array, radius_single, radius_array)
 
     def line(self, begin, end, radius=1, color=0xFFFFFF):
-        """Draw a single line on canvas.
+        """Draws a single line on canvas.
 
         Args:
             begin (List[Number]): The position of one end of line. Shape must be 2.
@@ -571,7 +598,7 @@ class GUI:
             self.lines(begin, end, radius, color)
 
     def arrow(self, orig, direction, radius=1, color=0xffffff, **kwargs):
-        """Draw a single arrow on canvas.
+        """Draws a single arrow on canvas.
 
         Args:
             orig (List[Number]): The position where arrow starts. Shape must be 2.
@@ -586,7 +613,7 @@ class GUI:
             self.line(begin[0], end[0], radius, color)
 
     def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
-        """Draw a single rectangle on canvas.
+        """Draws a single rectangle on canvas.
 
         Args:
             topleft (List[Number]): The position of the topleft corner of rectangle.
@@ -607,7 +634,7 @@ class GUI:
         self.line(d, a, radius, color)
 
     def text(self, content, pos, font_size=15, color=0xFFFFFF):
-        """Draw texts on canvas.
+        """Draws texts on canvas.
 
         Args:
             content (str): The text to be drawn on canvas.
@@ -633,7 +660,7 @@ class GUI:
         return base.reshape(w * h, 2)
 
     def point_field(self, radius, color=0xffffff, bound=0.5):
-        """Draw a field of points on canvas.
+        """Draws a field of points on canvas.
 
         Args:
             radius (np.array): The pattern and radius of the field of points.
@@ -671,7 +698,7 @@ class GUI:
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        """Show the frame content in the gui window, or save the content to an
+        """Shows the frame content in the gui window, or save the content to an
         image file.
 
         Args:
@@ -688,6 +715,8 @@ class GUI:
     # Event system
 
     class EventFilter:
+        """A set to store detected user events.
+        """
         def __init__(self, *e_filter):
             self.filter = set()
             for ent in e_filter:
@@ -697,6 +726,8 @@ class GUI:
                 self.filter.add(ent)
 
         def match(self, e):
+            """Check if a specified event `e` is among the detected events.
+            """
             if (e.type, e.key) in self.filter:
                 return True
             if e.type in self.filter:
@@ -714,7 +745,7 @@ class GUI:
         return self.core.has_key_event()
 
     def get_event(self, *e_filter):
-        """Check if the specified event is triggered.
+        """Checks if the specified event is triggered.
 
         Args:
             *e_filter (ti.GUI.EVENT): The specific event to be checked.
@@ -729,7 +760,7 @@ class GUI:
             return False
 
     def get_events(self, *e_filter):
-        """Get a list of events that are triggered.
+        """Gets a list of events that are triggered.
 
         Args:
             *e_filter (List[ti.GUI.EVENT]): The type of events to be filtered.
@@ -747,7 +778,7 @@ class GUI:
                 yield e
 
     def get_key_event(self):
-        """Get keyboard triggered event.
+        """Gets keyboard triggered event.
 
         Returns:
             :class:`~taichi.misc.gui.GUI.EVENT`: The keyboard triggered event.
@@ -781,7 +812,7 @@ class GUI:
         return e
 
     def is_pressed(self, *keys):
-        """Check if any key among a set of specified keys is pressed.
+        """Checks if any key among a set of specified keys is pressed.
 
         Args:
             *keys (Union[str, List[str]]): The keys to be listened to.
@@ -799,7 +830,7 @@ class GUI:
             return False
 
     def get_cursor_pos(self):
-        """Return the current position of mouse as a pair of floats
+        """Returns the current position of mouse as a pair of floats
         in the range `[0, 1] x [0, 1]`.
 
         The origin of the coordinates system is located at the lower left
@@ -814,7 +845,7 @@ class GUI:
 
     @property
     def running(self):
-        """Return whether this gui is running or not.
+        """Returns whether this gui is running or not.
 
         Returns:
             bool: whether this gui is running or not.
@@ -823,7 +854,7 @@ class GUI:
 
     @running.setter
     def running(self, value):
-        """Set the running status of this gui. `True` for running
+        """Sets the running status of this gui. `True` for running
         and `False` for stop.
 
         Args:
@@ -836,7 +867,7 @@ class GUI:
 
     @property
     def fps_limit(self):
-        """Get the maximum fps of this gui.
+        """Gets the maximum fps of this gui.
 
         Returns:
             int: the maximum fps.
@@ -860,7 +891,7 @@ class GUI:
 
 
 def rgb_to_hex(c):
-    """Convert rgb color format to hex color format.
+    """Converts rgb color format to hex color format.
 
     Args:
         c (List[int]): The rgb representation of color.
@@ -875,7 +906,7 @@ def rgb_to_hex(c):
 
 
 def hex_to_rgb(color):
-    """Convert hex color format to rgb color format.
+    """Converts hex color format to rgb color format.
 
     Args:
         color (int): The hex representation of color.

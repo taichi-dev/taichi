@@ -1,3 +1,3 @@
-from taichi.lang.simt import warp
+from taichi.lang.simt import subgroup, warp
 
-__all__ = ['warp']
+__all__ = ['warp', 'subgroup']

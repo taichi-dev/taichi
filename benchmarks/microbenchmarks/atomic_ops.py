@@ -21,7 +21,7 @@ def reduction_default(arch, repeat, atomic_op, container, dtype, dsize,
             atomic_op(y[None], x[i])
 
     @ti.kernel
-    def reduction_array(y: ti.any_arr(), x: ti.any_arr()):
+    def reduction_array(y: ti.types.ndarray(), x: ti.types.ndarray()):
         for i in x:
             atomic_op(y[None], x[i])
 

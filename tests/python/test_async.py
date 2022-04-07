@@ -26,7 +26,7 @@ def test_numpy():
     n = 10000
 
     @ti.kernel
-    def inc(a: ti.ext_arr()):
+    def inc(a: ti.types.ndarray()):
         for i in range(n):
             a[i] += i
 

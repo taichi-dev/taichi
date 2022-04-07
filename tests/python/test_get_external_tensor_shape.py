@@ -13,7 +13,7 @@ if has_pytorch():
 @test_utils.test()
 def test_get_external_tensor_shape_access_numpy(size):
     @ti.kernel
-    def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
+    def func(x: ti.types.ndarray(), index: ti.template()) -> ti.i32:
         return x.shape[index]
 
     x_hat = np.ones(size, dtype=np.int32)
@@ -27,7 +27,7 @@ def test_get_external_tensor_shape_access_numpy(size):
 @test_utils.test()
 def test_get_external_tensor_shape_sum_numpy(size):
     @ti.kernel
-    def func(x: ti.ext_arr()) -> ti.i32:
+    def func(x: ti.types.ndarray()) -> ti.i32:
         y = 0
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
@@ -47,7 +47,7 @@ def test_get_external_tensor_shape_sum_numpy(size):
 @test_utils.test(exclude=ti.opengl)
 def test_get_external_tensor_shape_access_torch(size):
     @ti.kernel
-    def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
+    def func(x: ti.types.ndarray(), index: ti.template()) -> ti.i32:
         return x.shape[index]
 
     x_hat = torch.ones(size, dtype=torch.int32, device='cpu')
@@ -62,7 +62,7 @@ def test_get_external_tensor_shape_access_torch(size):
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_get_external_tensor_shape_access_ndarray(size):
     @ti.kernel
-    def func(x: ti.any_arr(), index: ti.template()) -> ti.i32:
+    def func(x: ti.types.ndarray(), index: ti.template()) -> ti.i32:
         return x.shape[index]
 
     x_hat = ti.ndarray(ti.i32, shape=size)

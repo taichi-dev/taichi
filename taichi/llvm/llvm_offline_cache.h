@@ -8,7 +8,7 @@
 namespace taichi {
 namespace lang {
 
-std::string get_offline_cache_key_of_kernel(Kernel *kernel);
+std::string get_offline_cache_key(CompileConfig *config, Kernel *kernel);
 
 struct LlvmOfflineCache {
   struct OffloadedTaskCacheData {

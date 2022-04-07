@@ -160,7 +160,7 @@ class Cloth:
                 D[2 * idx2 + m, 2 * idx2 + n] -= self.Jv[i][m, n]
 
     @ti.kernel
-    def updatePosVel(self, h: ti.f32, dv: ti.ext_arr()):
+    def updatePosVel(self, h: ti.f32, dv: ti.types.ndarray()):
         for i in self.pos:
             self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
             self.pos[i] += h * self.vel[i]

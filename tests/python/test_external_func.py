@@ -11,7 +11,7 @@ from tests import test_utils
 
 
 @pytest.mark.skipif(not has_clangpp(), reason='Clang not installed.')
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.x64, ti.cuda])
 def test_source_builder_from_source():
     source_bc = '''
     extern "C" {
@@ -47,7 +47,7 @@ def test_source_builder_from_source():
 
 
 @pytest.mark.skipif(not has_clangpp(), reason='Clang not installed.')
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.x64, ti.cuda])
 def test_source_builder_from_file():
     source_code = '''
     extern "C" {

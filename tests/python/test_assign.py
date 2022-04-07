@@ -82,3 +82,16 @@ def test_assign_ann_over():
 
     with pytest.raises(ti.TaichiCompilationError):
         func_ann_over()
+
+
+@test_utils.test(debug=True)
+def test_assign_chained_involve_self():
+    @ti.kernel
+    def foo():
+        a = 1
+        b = 1
+        a = b = a + b
+        assert a == 2
+        assert b == 2
+
+    foo()

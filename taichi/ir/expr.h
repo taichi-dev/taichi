@@ -83,9 +83,6 @@ class Expr {
 
   Expr operator[](const ExprGroup &indices) const;
 
-  std::string serialize() const;
-  void serialize(std::ostream &ss) const;
-
   Expr operator!();
 
   template <typename T, typename... Args>

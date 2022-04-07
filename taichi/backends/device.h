@@ -58,6 +58,7 @@ using DeviceAllocationId = uint32_t;
 struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
   DeviceAllocationId alloc_id{0};
+  // TODO: Shall we include size here?
 
   DevicePtr get_ptr(uint64_t offset = 0) const;
 

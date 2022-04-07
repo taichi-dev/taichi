@@ -24,15 +24,16 @@ user_api[ti] = [
     'i', 'i16', 'i32', 'i64', 'i8', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl',
     'il', 'init', 'int16', 'int32', 'int64', 'int8', 'is_active',
     'is_logging_effective', 'j', 'jk', 'jkl', 'jl', 'k', 'kernel', 'kl', 'l',
-    'lang', 'length', 'linalg', 'log', 'loop_config', 'max', 'mesh_local',
-    'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange', 'no_activate',
-    'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'randn', 'random',
-    'raw_div', 'raw_mod', 'rescale_index', 'reset', 'rgb_to_hex', 'root',
-    'round', 'rsqrt', 'select', 'set_logging_level', 'simt', 'sin',
-    'sparse_matrix_builder', 'sqrt', 'static', 'static_assert', 'static_print',
-    'stop_grad', 'svd', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
-    'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
-    'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+    'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max',
+    'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange',
+    'no_activate', 'one', 'opengl', 'polar_decompose', 'pow', 'profiler',
+    'randn', 'random', 'raw_div', 'raw_mod', 'rescale_index', 'reset',
+    'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
+    'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
+    'static_assert', 'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync',
+    'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
+    'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64',
+    'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
@@ -41,6 +42,11 @@ user_api[ti.Field] = [
 user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
+]
+user_api[ti.math] = [
+    'clamp', 'cross', 'degrees', 'distance', 'dot', 'e', 'fract', 'log2',
+    'mat2', 'mat3', 'mat4', 'mix', 'normalize', 'pi', 'radians', 'reflect',
+    'refract', 'sign', 'smoothstep', 'step'
 ]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',

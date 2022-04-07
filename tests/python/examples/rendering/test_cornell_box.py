@@ -17,9 +17,9 @@ def test_cornell_box():
 def video_cornell_box(result_dir):
     from taichi.examples.rendering.cornell_box import (render, tonemap,
                                                        tonemapped_buffer)
-    video_manager = ti.VideoManager(output_dir=result_dir,
-                                    framerate=24,
-                                    automatic_build=False)
+    video_manager = ti.tools.VideoManager(output_dir=result_dir,
+                                          framerate=24,
+                                          automatic_build=False)
     gui = ti.GUI("Taichi Cornell Box",
                  res=800,
                  background_color=0x112F41,

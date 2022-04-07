@@ -160,19 +160,102 @@ A parenthesized expression list is evaluated to whatever the expression list is
 evaluated to. An empty pair of parentheses is evaluated to an empty tuple at
 compile time.
 
-#### Displays for lists and dictionaries
+#### List and dictionary displays
 
-#### List displays
+Taichi supports
+[displays](https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries)
+for container (list and dictionary only) construction. Like in Python, a
+display is one of:
+- listing the container items explicitly;
+- providing a *comprehension* (a set of looping and filtering instructions) to
+compute the container items.
 
-#### Dictionary displays
+```
+list_display       ::= "[" [expression_list | list_comprehension] "]"
+list_comprehension ::= assignment_expression comp_for
+
+dict_display       ::= "{" [key_datum_list | dict_comprehension] "}"
+key_datum_list     ::= key_datum ("," key_datum)* [","]
+key_datum          ::= expression ":" expression
+dict_comprehension ::= key_datum comp_for
+
+comp_for           ::= "for" target_list "in" or_test [comp_iter]
+comp_iter          ::= comp_for | comp_if
+comp_if            ::= "if" or_test [comp_iter]
+```
+
+The semantics of list and dict displays in Taichi mainly follow Python. Note
+that they are evaluated at compile time, so all expressions in `comp_for`,
+as well as keys in `key_datum`, are required to be evaluated to Python values.
+
+For example, in the following code snippet, `a` can be successfully defined
+while `b` cannot because `p` cannot be evaluated to a Python value at compile
+time.
+
+```python
+@ti.kernel
+def test(p: ti.i32):
+    a = ti.Matrix([i * p for i in range(10)])  # valid
+    b = ti.Matrix([i * p for i in range(p)])  # compile error
+```
 
 ### Primaries
 
+Primaries represent the most tightly bound operations.
+
+```
+primary ::= atom | attributeref | subscription | slicing | call
+```
+
 #### Attribute references
+
+```
+attributeref ::= primary "." identifier
+```
+
+Attribute references are evaluated at compile time. The `primary` must be
+evaluated to a Python value with an attribute named `identifier`. Common use
+cases in Taichi include metadata queries of
+[field](https://docs.taichi.graphics/lang/articles/meta#field-metadata) and
+[matrices](https://docs.taichi.graphics/lang/articles/meta#matrix--vector-metadata).
 
 #### Subscriptions
 
+```
+subscription ::= primary "[" expression_list "]"
+```
+
+If `primary` is evaluated to a Python value (e.g., a list or a dictionary),
+then all expressions in `expression_list` are required to be evaluated to
+Python values, and the subscription is evaluated at compile time following
+[Python](https://docs.python.org/3/reference/expressions.html#subscriptions).
+
+Otherwise, `primary` has a Taichi type. All Taichi types excluding primitive
+types support subscriptions. You can refer to documentation of these types
+for subscription usage.
+
+:::note
+When `primary` has a Taichi matrix type, all expressions in `expression_list`
+are required to be evaluated to Python values. This restriction can be got rid
+of by setting `ti.init(dynamic_index=True)`.
+:::
+
 #### Slicings
+
+```
+slicing      ::= primary "[" slice_list "]"
+slice_list   ::= slice_item ("," slice_item)* [","]
+slice_item   ::= expression | proper_slice
+proper_slice ::= [expression] ":" [expression] [ ":" [expression] ]
+```
+
+Currently, slicings are only supported when `primary` has a Taichi matrix type,
+and the evaluation happens at compile time.
+When `slice_item` is in the form of:
+- a single `expression`: it is required to be evaluated to a Python value
+unless `ti.init(dynamic_index=True)` is set.
+- `proper_slice`: all expressions (the lower bound, the upper bound, and the
+stride) inside have to be evaluated to Python values.
 
 #### Calls
 
@@ -192,11 +275,68 @@ compile time.
 
 #### Membership test operations
 
-#### Identity comparisons
-
 ### Boolean operations
 
+```
+or_test  ::= and_test | or_test "or" and_test
+and_test ::= not_test | and_test "and" not_test
+not_test ::= comparison | "not" not_test
+```
+
+When the operator is inside a [static expression](#static-expressions),
+the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
+Otherwise, the behavior depends on the `short_circuit_operators` option of `ti.init()`:
+- If `short_circuit_operators` is `False` (default), a *logical and* will be
+treated as a *bitwise AND*, and a *logical or* will be treated as a *bitwise
+OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
+- If `short_circuit_operators` is `True`, the normal short circuiting behavior
+is adopted, and the operands are required to be boolean values. Since Taichi
+does not have boolean type yet, `ti.i32` is served as a temporary alternative.
+A `ti.i32` value is considered `False` if and only if the value is evaluated to 0.
+
+### Assignment expressions
+
+```
+assignment_expression ::= [identifier ":="] expression
+```
+
+An assignment expression assigns an expression to an identifier (see
+[assignment statements](#assignment-statements) for more details),
+while also returning the value of the expression.
+
+Example:
+```python
+@ti.kernel
+def foo() -> ti.i32:
+    b = 2 + (a := 5)
+    b += a
+    return b
+# the return value should be 12
+```
+
+:::note
+This operator is supported since Python 3.8.
+:::
+
 ### Conditional expressions
+
+### Static expressions
+
+```
+static_expression ::= "ti.static(" positional_arguments ")"
+```
+
+Static expressions are expressions that are wrapped by a call to `ti.static()`.
+The `positional_arguments` is evaluated at compile time, and the items inside must be evaluated to Python values.
+
+`ti.static()` receives one or more arguments.
+- When a single argument is passed in, it returns the argument.
+- When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
+
+The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
+such as [compile-time loop unrolling and compile-time branching](lang/articles/advanced/meta.md#compile-time-evaluations).
+
+The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](lang/articles/advanced/syntax_sugars.md#aliases).
 
 ### Expression lists
 
@@ -238,15 +378,57 @@ The simple form, `assert expression`, raises `TaichiAssertionError` (which is a 
 when `expression` is equal to `False`, with the code of `expression` as the error message.
 
 The extended form, `assert expression1, expression2`, raises `TaichiAssertionError` when `expression1` is equal to `False`,
-with `expression2` as the error message.
+with `expression2` as the error message. `expression2` must be a constant or a formatted string. The variables in the
+formatted string must be scalars.
 
 ### The `pass` statement
+```
+pass_stmt ::=  "pass"
+```
+
+`pass` is a null operation — when it is executed, nothing happens.
+It is useful as a placeholder when a statement is required syntactically, but no code needs to be executed.
 
 ### The `return` statement
+```
+return_stmt ::=  "return" [expression_list]
+```
+
+The return statement may only occur once in a Taichi kernel or a Taichi function,
+and it must be at the bottom of the function body.
+Note that this is subject to change, and Taichi might relax it in the future.
+
+If a Taichi kernel or Taichi function has a return type hint,
+it must have a return statement that returns a value other than `None`.
+
+If a Taichi kernel has a return statement that returns a value other than `None`, it must have a return type hint.
+The return type hint for Taichi function is optional but recommended.
+Note that this is subject to change, and Taichi might enforce it in the future.
+
+A kernel can have at most one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`,
+and the number of elements in the return value must not exceed 30.
+Note that this number is an implementation detail, and Taichi might relax it in the future.
+
+A Taichi function can have multiple return values in a return statement,
+and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and more.
 
 ### The `break` statement
+```
+break_stmt ::=  "break"
+```
+
+The break statement may only occur syntactically nested in a for or while loop, and it terminates the nearest enclosing loop.
+
+Break statement is not allowed when the nearest enclosing loop is a parallel range/ndrange for loop,
+a struct for loop, or a mesh for loop.
 
 ### The `continue` statement
+```
+continue_stmt ::=  "continue"
+```
+
+The continue statement may only occur syntactically nested in a for or while loop,
+and it continues with the next cycle of the nearest enclosing loop.
 
 ## Compound statements
 

@@ -15,13 +15,13 @@ def paint():
 
 paint()
 pixel = pixel.to_numpy()
-ti.imshow(pixel, 'Random Generated')
+ti.tools.imshow(pixel, 'Random Generated')
 for ext in ['bmp', 'png', 'jpg']:
     fn = 'taichi-example-random-img.' + ext
-    ti.imwrite(pixel, fn)
-    pixel_r = ti.imread(fn)
+    ti.tools.imwrite(pixel, fn)
+    pixel_r = ti.tools.imread(fn)
     if ext != 'jpg':
         assert (pixel_r == pixel).all()
     else:
-        ti.imshow(pixel_r, 'JPEG Read Result')
+        ti.tools.imshow(pixel_r, 'JPEG Read Result')
     os.remove(fn)

@@ -292,12 +292,18 @@ a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
 The binary arithmetic operators can operate on scalar and tensor. For tensor-tensor ops, both arguments must have the same shape. For scalar-tensor or tensor-scalar ops, the scalar is usually broadcast to the size of the tensor. The @ operator is for matrix multiplication and only operates on Tensor arguments.
 
+In division `/` operation, the compiler will automatically convert integral operands into default floating-point types (`f32` or `f64`).
+
+When the operands have different types, the outcoming type will be set as the expected type under C++ (e.g. `i32` + `i64` = `i64`).
+
 ### Shifting operations
 
 ```
 shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
 These operators accept integer scalar (i32, i64, etc.) and interrelated tensor for both arguments. When both arguments are tensors, they must have the same shape. When one is a scalar and the other is a tensor, the scalar is logically broadcast to match the size of the tensor.
+
+The compiler will check both operands to be integral type.
 
 ### Binary bitwise operations
 
@@ -308,6 +314,7 @@ or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
 The & operator computes the bitwise AND of its arguments, the ^ the bitwise XOR, and the | the bitwise OR. The types requirements and broadcast logic are the same as shifting operations.
 
+The compiler will check both operands to be integral type.
 
 ### Comparisons
 
@@ -316,6 +323,8 @@ comparison    ::= or_expr (comp_operator or_expr)*
 comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | "is" ["not"] | ["not"] "in"
 ```
 A comparison yields a boolean value (True or False), or if one of the operands is a Tensor, a boolean Tensor. Comparisons can be chained arbitrarily as long as they do not yield boolean Tensors that have more than one element. a op1 b op2 c ... is equivalent to a op1 b and b op2 c and ....
+
+All operands need to be primaries. The return type is `i32` for all comparision operations.
 
 #### Value comparisons
 

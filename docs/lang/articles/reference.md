@@ -441,8 +441,8 @@ and it continues with the next cycle of the nearest enclosing loop.
 The `for` statement in Taichi is used to iterate over a range of numbers, multidimensional ranges, or the indices of elements in a field.
 
 ```
-for_stmt        ::=  "for" target_list "in" iter_expression ":" suite
-iter_expression ::=  static_expression | expression
+for_stmt        ::= "for" target_list "in" iter_expression ":" suite
+iter_expression ::= static_expression | expression
 ```
 
 Taichi does not support `else` clause in `for` statements.

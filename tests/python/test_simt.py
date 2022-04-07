@@ -100,7 +100,8 @@ def test_shfl_xor_i32():
         for i in range(32):
             for j in range(5):
                 offset = 1 << j
-                a[i] += ti.simt.warp.shfl_xor_i32(ti.u32(0xFFFFFFFF), a[i], offset)
+                a[i] += ti.simt.warp.shfl_xor_i32(ti.u32(0xFFFFFFFF), a[i],
+                                                  offset)
 
     value = 0
     for i in range(32):

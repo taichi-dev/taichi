@@ -267,8 +267,7 @@ stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
 
 The difference between the compound statements in Taichi and Python is that Taichi introduces
 compile time evaluation. If the expression in the *clause header* is a static expression,
-Taichi changes the contents of the compound statement at compile time
-according to the evaluation result of the expression.
+Taichi replaces the compound statement at compile time according to the evaluation result of the expression.
 
 ### The `if` statement
 

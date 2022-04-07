@@ -271,11 +271,11 @@ To favor simplicity, Taichi language doesn't support keyword arguments like Pyth
 ### The power operator
 
 ```
-power ::= 'ti.pow(' primary ',' primary ')' | primary ['**' u_expr]
+power ::= primary ['**' u_expr]
 ```
 
-Taichi predefines its own exponentiation function 'ti.pow()'. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
-Applying Python '**' operator inside Taichi scope is equivalent. In such cases, the power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
+Applying '**' operator inside Taichi scope has the same behavior as Python. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
+The power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
 
 ### Unary arithmetic and bitwise operations
 

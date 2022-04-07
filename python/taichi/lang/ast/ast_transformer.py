@@ -9,7 +9,8 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
-from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
+from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
+                                                   ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
@@ -81,9 +82,11 @@ class ASTTransformer(Builder):
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
+        values = node.value.ptr if is_static_assign else impl.expr_init(
+            node.value.ptr)
+
         for node_target in node.targets:
-            ASTTransformer.build_assign_unpack(ctx, node_target,
-                                               node.value.ptr,
+            ASTTransformer.build_assign_unpack(ctx, node_target, values,
                                                is_static_assign)
         return None
 
@@ -103,11 +106,22 @@ class ASTTransformer(Builder):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
         targets = node_target.elts
-        tmp_tuple = values if is_static_assign else impl.expr_init_list(
-            values, len(targets))
+
+        if isinstance(values, matrix.Matrix):
+            if not values.m == 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+            values = values.entries
+
+        if not isinstance(values, collections.abc.Sequence):
+            raise TaichiSyntaxError(f'Cannot unpack type: {type(values)}')
+
+        if len(values) != len(targets):
+            raise TaichiSyntaxError(
+                "The number of targets is not equal to value length")
 
         for i, target in enumerate(targets):
-            ASTTransformer.build_assign_basic(ctx, target, tmp_tuple[i],
+            ASTTransformer.build_assign_basic(ctx, target, values[i],
                                               is_static_assign)
 
         return None
@@ -529,37 +543,40 @@ class ASTTransformer(Builder):
             if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
                     "Return inside non-static if/for is not supported")
-        build_stmt(ctx, node.value)
+        if node.value is not None:
+            build_stmt(ctx, node.value)
+        if node.value is None or node.value.ptr is None:
+            if not ctx.is_real_function:
+                ctx.returned = ReturnStatus.ReturnedVoid
+            return None
         if ctx.is_kernel or ctx.is_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
-            if node.value is not None:
-                if ctx.func.return_type is None:
-                    raise TaichiSyntaxError(
-                        f'A {"kernel" if ctx.is_kernel else "function"} '
-                        'with a return value must be annotated '
-                        'with a return type, e.g. def func() -> ti.f32')
-                if id(ctx.func.return_type) in primitive_types.type_ids:
-                    ctx.ast_builder.create_kernel_exprgroup_return(
-                        expr.make_expr_group(
-                            ti_ops.cast(expr.Expr(node.value.ptr),
-                                        ctx.func.return_type).ptr))
-                elif isinstance(ctx.func.return_type, MatrixType):
-                    ctx.ast_builder.create_kernel_exprgroup_return(
-                        expr.make_expr_group([
-                            ti_ops.cast(exp, ctx.func.return_type.dtype)
-                            for exp in itertools.chain.from_iterable(
-                                node.value.ptr.to_list())
-                        ]))
-                else:
-                    raise TaichiSyntaxError(
-                        "The return type is not supported now!")
-                # For args[0], it is an ast.Attribute, because it loads the
-                # attribute, |ptr|, of the expression |ret_expr|. Therefore we
-                # only need to replace the object part, i.e. args[0].value
+            if ctx.func.return_type is None:
+                raise TaichiSyntaxError(
+                    f'A {"kernel" if ctx.is_kernel else "function"} '
+                    'with a return value must be annotated '
+                    'with a return type, e.g. def func() -> ti.f32')
+            if id(ctx.func.return_type) in primitive_types.type_ids:
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(
+                        ti_ops.cast(expr.Expr(node.value.ptr),
+                                    ctx.func.return_type).ptr))
+            elif isinstance(ctx.func.return_type, MatrixType):
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group([
+                        ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in
+                        itertools.chain.from_iterable(node.value.ptr.to_list())
+                    ]))
+            else:
+                raise TaichiSyntaxError(
+                    "The return type is not supported now!")
+            # For args[0], it is an ast.Attribute, because it loads the
+            # attribute, |ptr|, of the expression |ret_expr|. Therefore we
+            # only need to replace the object part, i.e. args[0].value
         else:
             ctx.return_data = node.value.ptr
         if not ctx.is_real_function:
-            ctx.returned = True
+            ctx.returned = ReturnStatus.ReturnedValue
         return None
 
     @staticmethod
@@ -1182,22 +1199,52 @@ class ASTTransformer(Builder):
         args = build_stmt(ctx, node.right)
         if not isinstance(args, collections.abc.Sequence):
             args = (args, )
+        args = [expr.Expr(x).ptr for x in args]
+        return msg, args
+
+    @staticmethod
+    def ti_format_list_to_assert_msg(raw):
+        entries = impl.ti_format_list_to_content_entries([raw])
+        msg = ""
+        args = []
+        for entry in entries:
+            if isinstance(entry, str):
+                msg += entry
+            elif isinstance(entry, _ti_core.Expr):
+                ty = entry.get_ret_type()
+                if ty in primitive_types.real_types:
+                    msg += "%f"
+                elif ty in primitive_types.integer_types:
+                    msg += "%d"
+                else:
+                    raise TaichiSyntaxError(
+                        f"Unsupported data type: {type(ty)}")
+                args.append(entry)
+            else:
+                raise TaichiSyntaxError(f"Unsupported type: {type(entry)}")
         return msg, args
 
     @staticmethod
     def build_Assert(ctx, node):
         extra_args = []
         if node.msg is not None:
-            if isinstance(node.msg, ast.Constant):
-                msg = node.msg.value
-            elif isinstance(node.msg, ast.Str):
-                msg = node.msg.s
-            elif ASTTransformer._is_string_mod_args(node.msg):
+            if ASTTransformer._is_string_mod_args(node.msg):
                 msg, extra_args = ASTTransformer._handle_string_mod_args(
                     ctx, node.msg)
             else:
-                raise ValueError(
-                    f"assert info must be constant, not {ast.dump(node.msg)}")
+                msg = build_stmt(ctx, node.msg)
+                if isinstance(node.msg, ast.Constant):
+                    msg = str(msg)
+                elif isinstance(node.msg, ast.Str):
+                    pass
+                elif isinstance(msg, collections.abc.Sequence) and len(
+                        msg) > 0 and msg[0] == "__ti_format__":
+                    msg, extra_args = ASTTransformer.ti_format_list_to_assert_msg(
+                        msg)
+                else:
+                    raise TaichiSyntaxError(
+                        f"assert info must be constant or formatted string, not {type(msg)}"
+                    )
         else:
             msg = unparse(node.test)
         test = build_stmt(ctx, node.test)
@@ -1231,7 +1278,8 @@ build_stmt = ASTTransformer()
 def build_stmts(ctx, stmts):
     with ctx.variable_scope_guard():
         for stmt in stmts:
-            if ctx.returned or ctx.loop_status() != LoopStatus.Normal:
+            if ctx.returned != ReturnStatus.NoReturn or ctx.loop_status(
+            ) != LoopStatus.Normal:
                 break
             else:
                 build_stmt(ctx, stmt)

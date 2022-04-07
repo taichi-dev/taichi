@@ -132,9 +132,9 @@ def test_reduction_different_scale():
 
 
 @test_utils.test()
-def test_reduction_any_arr():
+def test_reduction_ndarray():
     @ti.kernel
-    def reduce(a: ti.any_arr()) -> ti.i32:
+    def reduce(a: ti.types.ndarray()) -> ti.i32:
         s = 0
         for i in a:
             ti.atomic_add(s, a[i])

@@ -69,12 +69,12 @@ def fill_random(dst, dtype, container):
             dst[I] = ti.random(dtype)
 
     @ti.kernel
-    def fill_1d_array(dst: ti.any_arr()):
+    def fill_1d_array(dst: ti.types.ndarray()):
         for i in dst:
             dst[i] = ti.random(dtype)
 
     @ti.kernel
-    def fill_2d_array(dst: ti.any_arr()):
+    def fill_2d_array(dst: ti.types.ndarray()):
         for i, j in dst:
             dst[i, j] = ti.random(dtype)
 

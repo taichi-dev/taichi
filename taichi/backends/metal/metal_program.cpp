@@ -115,5 +115,17 @@ const metal::CompiledStructs &MetalProgramImpl::compile_snode_tree_types_impl(
   return compiled_snode_trees_.back();
 }
 
+DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  Device::AllocParams params;
+  params.size = alloc_size;
+  params.host_read = false;
+  params.host_write = false;
+  params.usage = AllocUsage::Storage;
+  params.export_sharing = false;
+  return metal_kernel_mgr_->allocate_memory(params);
+}
+
 }  // namespace lang
 }  // namespace taichi

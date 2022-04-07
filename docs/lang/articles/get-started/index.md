@@ -276,9 +276,11 @@ It is the loop **at the outermost scope** that gets parallelized, not
 the outermost loop.
 
 ```python
+x = [1, 2, 3]
+
 @ti.kernel
 def foo():
-    for i in x:
+    for i in x: # Parallelized :-)
         ...
 
 @ti.kernel

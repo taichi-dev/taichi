@@ -18,9 +18,9 @@ def video_mpm99(result_dir):
     from taichi.examples.simulation.mpm99 import (dt, initialize, material,
                                                   substep, x)
 
-    video_manager = ti.VideoManager(output_dir=result_dir,
-                                    framerate=24,
-                                    automatic_build=False)
+    video_manager = ti.tools.VideoManager(output_dir=result_dir,
+                                          framerate=24,
+                                          automatic_build=False)
     initialize()
     gui = ti.GUI("Taichi MLS-MPM-99",
                  res=512,

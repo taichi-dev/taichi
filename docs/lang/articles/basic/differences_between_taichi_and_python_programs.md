@@ -25,11 +25,11 @@ def error_kernel_no_return_annotation():
     return 0  # Error: Have return statement but have no return type annotation
 
 @ti.kernel
-def error_kernel_no_return() -> ti.i31:  # Error: Have return type annotation but have no return statement
+def error_kernel_no_return() -> ti.i32:  # Error: Have return type annotation but have no return statement
     pass
 
 @ti.func
-def error_func_no_return() -> ti.i31:  # Error: Have return type annotation but have no return statement
+def error_func_no_return() -> ti.i32:  # Error: Have return type annotation but have no return statement
     pass
 ```
 

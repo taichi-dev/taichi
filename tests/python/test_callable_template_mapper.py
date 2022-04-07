@@ -41,7 +41,7 @@ def test_callable_template_mapper_numpy():
 
     ti.root.place(x, y)
 
-    annotations = (ti.template(), ti.template(), ti.ext_arr())
+    annotations = (ti.template(), ti.template(), ti.types.ndarray())
 
     import numpy as np
 

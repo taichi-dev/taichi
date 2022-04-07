@@ -18,10 +18,40 @@ def record_action_config(key, value):
 
 
 def start_recording(filename):
+    """Starts recording kernel information to a `yml` file.
+
+    Args:
+        filename (str): output `yml` file.
+
+    Example::
+
+        >>> ti.aot.start_recording('record.yml')
+        >>> ti.init(arch=ti.cc)
+        >>> loss = ti.field(float, (), needs_grad=True)
+        >>> x = ti.field(float, 233, needs_grad=True)
+        >>>
+        >>> @ti.kernel
+        >>> def compute_loss():
+        >>>     for i in x:
+        >>>         loss[None] += x[i]**2
+        >>>
+        >>> @ti.kernel
+        >>> def do_some_works():
+        >>>     for i in x:
+        >>>         x[i] -= x.grad[i]
+        >>>
+        >>> with ti.Tape(loss):
+        >>>     compute_loss()
+        >>> do_some_works()
+    """
     ti_core.start_recording(filename)
 
 
 def stop_recording():
+    """Stops recording kernel information.
+
+    This function should be called in pair with :func:`~ti.aot.start_recording`.
+    """
     ti_core.stop_recording()
 
 

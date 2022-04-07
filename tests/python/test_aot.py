@@ -84,7 +84,8 @@ def test_aot_bind_id():
     density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(x: ti.f32, density1: ti.any_arr(field_dim=2, element_shape=())):
+    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2,
+                                                   element_shape=())):
         for i, j in density1:
             density[i, j] = x
             density1[i, j] = x + 1
@@ -109,7 +110,7 @@ def test_aot_ndarray_range_hint():
     density = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(density: ti.any_arr()):
+    def init(density: ti.types.ndarray()):
         for i, j in density:
             density[i, j] = 1
 
@@ -306,9 +307,10 @@ def test_opengl_8_ssbo():
     density6 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
 
     @ti.kernel
-    def init(d: ti.i32, density1: ti.any_arr(), density2: ti.any_arr(),
-             density3: ti.any_arr(), density4: ti.any_arr(),
-             density5: ti.any_arr(), density6: ti.any_arr()):
+    def init(d: ti.i32, density1: ti.types.ndarray(),
+             density2: ti.types.ndarray(), density3: ti.types.ndarray(),
+             density4: ti.types.ndarray(), density5: ti.types.ndarray(),
+             density6: ti.types.ndarray()):
         for i, j in density1:
             density1[i, j] = d + 1
             density2[i, j] = d + 2
@@ -340,10 +342,11 @@ def test_opengl_exceed_max_ssbo():
     density8 = ti.ndarray(dtype=ti.f32, shape=(n, n))
 
     @ti.kernel
-    def init(d: ti.i32, density1: ti.any_arr(), density2: ti.any_arr(),
-             density3: ti.any_arr(), density4: ti.any_arr(),
-             density5: ti.any_arr(), density6: ti.any_arr(),
-             density7: ti.any_arr(), density8: ti.any_arr()):
+    def init(d: ti.i32, density1: ti.types.ndarray(),
+             density2: ti.types.ndarray(), density3: ti.types.ndarray(),
+             density4: ti.types.ndarray(), density5: ti.types.ndarray(),
+             density6: ti.types.ndarray(), density7: ti.types.ndarray(),
+             density8: ti.types.ndarray()):
         for i, j in density1:
             density1[i, j] = d + 1
             density2[i, j] = d + 2
@@ -519,9 +522,11 @@ def test_mpm88_ndarray():
     E = 400
 
     @ti.kernel
-    def substep(x: ti.any_arr(element_dim=1), v: ti.any_arr(element_dim=1),
-                C: ti.any_arr(element_dim=2), J: ti.any_arr(),
-                grid_v: ti.any_arr(element_dim=1), grid_m: ti.any_arr()):
+    def substep(x: ti.types.ndarray(element_dim=1),
+                v: ti.types.ndarray(element_dim=1),
+                C: ti.types.ndarray(element_dim=2), J: ti.types.ndarray(),
+                grid_v: ti.types.ndarray(element_dim=1),
+                grid_m: ti.types.ndarray()):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)

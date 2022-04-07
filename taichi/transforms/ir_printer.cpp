@@ -1,5 +1,6 @@
 // The IRPrinter prints the IR in a human-readable format
 
+#include "taichi/ir/expression_printer.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -45,6 +46,9 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
 }
 
 class IRPrinter : public IRVisitor {
+ private:
+  ExpressionHumanFriendlyPrinter expr_printer_;
+
  public:
   int current_indent;
 
@@ -96,7 +100,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendExprStmt *stmt) override {
-    print("{}", stmt->val.serialize());
+    print("{}", (stmt->val));
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -108,7 +112,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
-    print("{} = {}", assign->lhs.serialize(), assign->rhs.serialize());
+    print("{} = {}", expr_to_string(assign->lhs), expr_to_string(assign->rhs));
   }
 
   void visit(FrontendAllocaStmt *alloca) override {
@@ -117,7 +121,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *assert) override {
-    print("{} : assert {}", assert->name(), assert->cond.serialize());
+    print("{} : assert {}", assert->name(), expr_to_string(assert->cond));
   }
 
   void visit(AssertStmt *assert) override {
@@ -155,13 +159,13 @@ class IRPrinter : public IRVisitor {
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      extras += stmt->indices[i].serialize();
+      extras += expr_to_string(stmt->indices[i]);
       if (i + 1 < (int)stmt->indices.size())
         extras += ", ";
     }
     extras += "]";
     if (stmt->val.expr) {
-      extras += ", " + stmt->val.serialize();
+      extras += ", " + expr_to_string(stmt->val);
     }
     print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
           stmt->snode->get_node_type_name_hinted(), extras);
@@ -242,7 +246,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendIfStmt *if_stmt) override {
-    print("{} : if {} {{", if_stmt->name(), if_stmt->condition.serialize());
+    print("{} : if {} {{", if_stmt->name(), expr_to_string(if_stmt->condition));
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -257,7 +261,7 @@ class IRPrinter : public IRVisitor {
     for (auto const &c : print_stmt->contents) {
       std::string name;
       if (std::holds_alternative<Expr>(c))
-        name = std::get<Expr>(c).serialize();
+        name = expr_to_string(std::get<Expr>(c).expr.get());
       else
         name = c_quoted(std::get<std::string>(c));
       contents.push_back(name);
@@ -319,7 +323,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    print("{} : while {} {{", stmt->name(), stmt->cond.serialize());
+    print("{} : while {} {{", stmt->name(), expr_to_string(stmt->cond));
     stmt->body->accept(this);
     print("}}");
   }
@@ -330,7 +334,7 @@ class IRPrinter : public IRVisitor {
         [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
       print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
-            for_stmt->begin.serialize(), for_stmt->end.serialize(),
+            expr_to_string(for_stmt->begin), expr_to_string(for_stmt->end),
             block_dim_info(for_stmt->block_dim));
     } else if (for_stmt->mesh_for) {
       print("{} : for {} in mesh {{", for_stmt->name(), vars);
@@ -339,7 +343,7 @@ class IRPrinter : public IRVisitor {
             for_stmt->global_var.is<GlobalVariableExpression>()
                 ? for_stmt->global_var.cast<GlobalVariableExpression>()
                       ->snode->get_node_type_name_hinted()
-                : for_stmt->global_var.serialize(),
+                : expr_to_string(for_stmt->global_var),
             scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
     }
@@ -419,7 +423,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendReturnStmt *stmt) override {
     print("{}{} : return [{}]", stmt->type_hint(), stmt->name(),
-          stmt->values.serialize());
+          expr_group_to_string(stmt->values));
   }
 
   void visit(ReturnStmt *stmt) override {
@@ -758,13 +762,32 @@ class IRPrinter : public IRVisitor {
     }
     print(" (inputs=");
     for (auto &s : stmt->args) {
-      print(s.serialize());
+      print(expr_to_string(s));
     }
     print(", outputs=");
     for (auto &s : stmt->outputs) {
-      print(s.serialize());
+      print(expr_to_string(s));
     }
     print(")");
+  }
+
+ private:
+  std::string expr_to_string(Expr &expr) {
+    return expr_to_string(expr.expr.get());
+  }
+
+  std::string expr_to_string(Expression *expr) {
+    std::ostringstream oss;
+    expr_printer_.set_ostream(&oss);
+    expr->accept(&expr_printer_);
+    return oss.str();
+  }
+
+  std::string expr_group_to_string(ExprGroup &expr_group) {
+    std::ostringstream oss;
+    expr_printer_.set_ostream(&oss);
+    expr_printer_.visit(expr_group);
+    return oss.str();
   }
 };
 

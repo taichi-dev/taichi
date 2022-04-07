@@ -260,10 +260,10 @@ stride) inside have to be evaluated to Python values.
 #### Calls
 
 ```
-call          ::=  primary '(' argument_list ')'
-argument_list ::=  args
-args          ::=  [arg (',' arg)*]
-arg           ::=  identifier
+call          ::= primary "(" argument_list ")"
+argument_list ::= args
+args          ::= [arg ("," arg)*]
+arg           ::= identifier
 ```
 
 To favor simplicity, Taichi language doesn't support keyword arguments like Python.
@@ -271,7 +271,7 @@ To favor simplicity, Taichi language doesn't support keyword arguments like Pyth
 ### The power operator
 
 ```
-power ::= primary ['**' u_expr]
+power ::= primary ["**" u_expr]
 ```
 
 Applying '**' operator inside Taichi scope has the same behavior as Python. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
@@ -280,31 +280,31 @@ The power operator binds more tightly than unary operators on the left, but less
 ### Unary arithmetic and bitwise operations
 
 ```
-u_expr ::=  power | '-' power | '~' power
+u_expr ::= power | "-" power | "~" power
 ```
 The unary - operator yields the negation of its argument. The unary ~ operator yields the bitwise inversion of its argument. - can be used with all scalar and tensor. ~ can only be used with integer scalar (i32, i64, etc.) and interrelated tensor.
 
 ### Binary arithmetic operations
 
 ```
-m_expr ::=  u_expr | m_expr '*' u_expr | m_expr '@' m_expr | m_expr '//' u_expr | m_expr '/' u_expr | m_expr '%' u_expr
-a_expr ::=  m_expr | a_expr '+' m_expr | a_expr '-' m_expr
+m_expr ::= u_expr | m_expr "*" u_expr | m_expr "@" m_expr | m_expr "//" u_expr | m_expr "/" u_expr | m_expr "%" u_expr
+a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
 The binary arithmetic operators can operate on scalar and tensor. For tensor-tensor ops, both arguments must have the same shape. For scalar-tensor or tensor-scalar ops, the scalar is usually broadcast to the size of the tensor. The @ operator is for matrix multiplication and only operates on Tensor arguments.
 
 ### Shifting operations
 
 ```
-shift_expr ::=  a_expr | shift_expr ( '<<' | '>>' ) a_expr
+shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
 These operators accept integer scalar (i32, i64, etc.) and interrelated tensor for both arguments. When both arguments are tensors, they must have the same shape. When one is a scalar and the other is a tensor, the scalar is logically broadcast to match the size of the tensor.
 
 ### Binary bitwise operations
 
 ```
-and_expr ::=  shift_expr | and_expr '&' shift_expr
-xor_expr ::=  and_expr | xor_expr '^' and_expr
-or_expr  ::=  xor_expr | or_expr '|' xor_expr
+and_expr ::= shift_expr | and_expr "&" shift_expr
+xor_expr ::= and_expr | xor_expr "^" and_expr
+or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
 The & operator computes the bitwise AND of its arguments, the ^ the bitwise XOR, and the | the bitwise OR. The types requirements and broadcast logic are the same as shifting operations.
 
@@ -312,8 +312,8 @@ The & operator computes the bitwise AND of its arguments, the ^ the bitwise XOR,
 ### Comparisons
 
 ```
-comparison    ::=  or_expr (comp_operator or_expr)*
-comp_operator ::=  '<' | '>' | '==' | '>=' | '<=' | '!=' | 'is' ['not'] | ['not'] 'in'
+comparison    ::= or_expr (comp_operator or_expr)*
+comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | "is" ["not"] | ["not"] "in"
 ```
 A comparison yields a boolean value (True or False), or if one of the operands is a Tensor, a boolean Tensor. Comparisons can be chained arbitrarily as long as they do not yield boolean Tensors that have more than one element. a op1 b op2 c ... is equivalent to a op1 b and b op2 c and ....
 
@@ -418,7 +418,7 @@ is evaluated to the value of that expression.
 Assert statements are a convenient way to insert debugging assertions into a program:
 
 ```
-assert_stmt ::=  "assert" expression ["," expression]
+assert_stmt ::= "assert" expression ["," expression]
 ```
 
 Assert statements are currently supported on the CPU, CUDA, and Metal backends.
@@ -435,7 +435,7 @@ formatted string must be scalars.
 
 ### The `pass` statement
 ```
-pass_stmt ::=  "pass"
+pass_stmt ::= "pass"
 ```
 
 `pass` is a null operation — when it is executed, nothing happens.
@@ -443,7 +443,7 @@ It is useful as a placeholder when a statement is required syntactically, but no
 
 ### The `return` statement
 ```
-return_stmt ::=  "return" [expression_list]
+return_stmt ::= "return" [expression_list]
 ```
 
 The return statement may only occur once in a Taichi kernel or a Taichi function,
@@ -466,7 +466,7 @@ and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and 
 
 ### The `break` statement
 ```
-break_stmt ::=  "break"
+break_stmt ::= "break"
 ```
 
 The break statement may only occur syntactically nested in a for or while loop, and it terminates the nearest enclosing loop.
@@ -476,7 +476,7 @@ a struct for loop, or a mesh for loop.
 
 ### The `continue` statement
 ```
-continue_stmt ::=  "continue"
+continue_stmt ::= "continue"
 ```
 
 The continue statement may only occur syntactically nested in a for or while loop,

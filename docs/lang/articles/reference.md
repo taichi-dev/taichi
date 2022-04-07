@@ -297,7 +297,7 @@ A `ti.i32` value is considered `False` if and only if the value is evaluated to 
 ### Assignment expressions
 
 ```
-assignment_expression ::=  [identifier ":="] expression
+assignment_expression ::= [identifier ":="] expression
 ```
 
 An assignment expression assigns an expression to an identifier (see

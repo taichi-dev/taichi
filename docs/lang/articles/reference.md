@@ -366,7 +366,7 @@ is evaluated to the value of that expression.
 Assert statements are a convenient way to insert debugging assertions into a program:
 
 ```
-assert_stmt ::=  "assert" expression ["," expression]
+assert_stmt ::= "assert" expression ["," expression]
 ```
 
 Assert statements are currently supported on the CPU, CUDA, and Metal backends.
@@ -383,7 +383,7 @@ formatted string must be scalars.
 
 ### The `pass` statement
 ```
-pass_stmt ::=  "pass"
+pass_stmt ::= "pass"
 ```
 
 `pass` is a null operation — when it is executed, nothing happens.
@@ -391,7 +391,7 @@ It is useful as a placeholder when a statement is required syntactically, but no
 
 ### The `return` statement
 ```
-return_stmt ::=  "return" [expression_list]
+return_stmt ::= "return" [expression_list]
 ```
 
 The return statement may only occur once in a Taichi kernel or a Taichi function,
@@ -414,7 +414,7 @@ and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and 
 
 ### The `break` statement
 ```
-break_stmt ::=  "break"
+break_stmt ::= "break"
 ```
 
 The break statement may only occur syntactically nested in a for or while loop, and it terminates the nearest enclosing loop.
@@ -424,7 +424,7 @@ a struct for loop, or a mesh for loop.
 
 ### The `continue` statement
 ```
-continue_stmt ::=  "continue"
+continue_stmt ::= "continue"
 ```
 
 The continue statement may only occur syntactically nested in a for or while loop,

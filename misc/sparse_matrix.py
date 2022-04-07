@@ -4,8 +4,16 @@ ti.init(arch=ti.x64)
 
 n = 8
 
-K = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
-f = ti.linalg.SparseMatrixBuilder(n, 1, max_num_triplets=100)
+K = ti.linalg.SparseMatrixBuilder(n,
+                                  n,
+                                  max_num_triplets=100,
+                                  dtype=ti.f32,
+                                  storage_format='col_major')
+f = ti.linalg.SparseMatrixBuilder(n,
+                                  1,
+                                  max_num_triplets=100,
+                                  dtype=ti.f32,
+                                  storage_format='col_major')
 
 
 @ti.kernel

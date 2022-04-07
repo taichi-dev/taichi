@@ -325,7 +325,7 @@ If the `expression` is a call to `ti.grouped(x)` where `x` is a Taichi field, it
 The `target_list` of a normal struct `for` statement on an n-dimensional field must be n different identifiers which
 are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.
 
-The `target_list` of a grouped ndrange `for` statement on an n-dimensional field must be one identifier which
+The `target_list` of a grouped struct `for` statement on an n-dimensional field must be one identifier which
 is not occupied in the current scope, and the identifier is assigned a `ti.Vector` with length n, which contains the loop variables of all n dimensions.
 
 The struct `for` statement must be at the outermost scope of the kernel,

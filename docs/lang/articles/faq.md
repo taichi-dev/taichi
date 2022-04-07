@@ -24,7 +24,7 @@ for _ in range(1):  # This "ghost" loop will be "parallelized", but with only on
 
 ### What is the most convenient way to load images into Taichi fields?
 
-One feasible solution is `field.from_numpy(ti.imread('filename.png'))`.
+One feasible solution is `field.from_numpy(ti.tools.imread('filename.png'))`.
 
 ### Can Taichi interact with **other Python packages** such as `matplotlib`?
 

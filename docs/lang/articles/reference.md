@@ -109,6 +109,10 @@ Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_scie
 Therefore, if a variable is defined in a [block](#compound-statements), it is
 invisible outside that block.
 
+### Binary operation rule
+
+For all binary operations, scalars are broadcast in the case of scalar-tensor/tensor-scalar operations, and tensor-tensor is done elementwise without any broadcasting. In tensor-tensor cases, all operands are required to be the same shape.
+
 ## Expressions
 
 The section explains the syntax and semantics of expressions in Taichi.
@@ -274,8 +278,7 @@ To favor simplicity, Taichi language doesn't support keyword arguments like Pyth
 power ::= primary ["**" u_expr]
 ```
 
-Applying '**' operator inside Taichi scope has the same behavior as Python. Scalars are broadcast in the case of scalar-tensor/tensor-scalar exponentiation operations, and tensor-tensor exponentiation is done elementwise without any broadcasting.
-The power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
+Applying '**' operator inside Taichi scope has the same behavior as Python. The power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
 
 ### Unary arithmetic and bitwise operations
 

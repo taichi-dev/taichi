@@ -934,6 +934,7 @@ void export_lang(py::module &m) {
       },
       py::return_value_policy::reference);
 
+  // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("build", &SparseMatrixBuilder::build)

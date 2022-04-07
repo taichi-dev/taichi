@@ -18,7 +18,7 @@
 #define MAKE_MATRIX(TYPE, STORAGE)                                             \
   {                                                                            \
     Pair("f" #TYPE, #STORAGE),                                                 \
-        [](int cols, int rows, DataType dt) -> std::unique_ptr<SparseMatrix> { \
+        [](int rows, int cols, DataType dt) -> std::unique_ptr<SparseMatrix> { \
           using FC = Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;         \
           return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);      \
         }                                                                      \

@@ -259,9 +259,9 @@ Each *clause header* begins with a uniquely identifying keyword and ends with a 
 A *suite* is a group of statements controlled by a *clause*.
 
 ```
-compound_stmt ::= if_stmt | while_stmt | for_stmt 
-suite ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT 
-statement ::= stmt_list NEWLINE | compound_stmt 
+compound_stmt ::= if_stmt | while_stmt | for_stmt
+suite ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT
+statement ::= stmt_list NEWLINE | compound_stmt
 stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
 ```
 

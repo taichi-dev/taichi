@@ -250,43 +250,49 @@ with `expression2` as the error message.
 
 ## Compound statements
 
-This section describes the supported syntax of compound statements in Taichi,
-and it is modeled after [the compound statement chapter of The Python Language Reference](https://docs.python.org/3/reference/compound_stmts.html)
+This section explains the syntax and semantics of compound statements in Taichi.
 
-A compound statement consists of one or more ‘clauses’.
-A clause consists of a header and a ‘suite’.
-The clause headers of a particular compound statement are all at the same indentation level.
-Each clause header begins with a uniquely identifying keyword and ends with a colon.
-A suite is a group of statements controlled by a clause.
+A compound statement consists of one or more *clauses*.
+A *clause* consists of a header and a *suite*.
+The *clause headers* of a particular compound statement are all at the same indentation level.
+Each *clause header* begins with a uniquely identifying keyword and ends with a colon.
+A *suite* is a group of statements controlled by a *clause*.
+
+```
+compound_stmt ::= if_stmt | while_stmt | for_stmt 
+suite ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT 
+statement ::= stmt_list NEWLINE | compound_stmt 
+stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
+```
 
 The difference between the compound statements in Taichi and Python is that Taichi introduces
-compile time evaluation. If the expression in the clause header is a static expression,
+compile time evaluation. If the expression in the *clause header* is a static expression,
 Taichi changes the contents of the compound statement at compile time
 according to the evaluation result of the expression.
 
 ### The `if` statement
 
-The if statement is used for conditional execution:
+The `if` statement is used for conditional execution:
 ```
 if_stmt ::=  "if" (static_expression | assignment_expression) ":" suite
              ("elif" (static_expression | assignment_expression) ":" suite)*
              ["else" ":" suite]
 ```
 
-It selects exactly one of the suites by evaluating the expressions one by one until one is found to be true
-(see section Boolean operations for the definition of true and false);
-then that suite is executed (and no other part of the if statement is executed or evaluated).
-If all expressions are false, the suite of the else clause, if present, is executed.
+It selects exactly one of the *suites* by evaluating the expressions one by one until one is found to be true
+(see section [Boolean operations](#boolean-operations) for the definition of true and false);
+then that *suite* is executed (and no other part of the if statement is executed or evaluated).
+If all expressions are false, the *suite* of the else *clause*, if present, is executed.
 
-A clause in the `if` statement whose expression is a static expression is called a static `if` clause.
+A *clause* in the `if` statement whose expression is a static expression is called a static `if` *clause*.
 
-The expression of a static `if` clause is evaluated at compile time, and it must be a compile-time constant.
+The expression of a static `if` *clause* is evaluated at compile time, and it must be a compile-time constant.
 
-The static `if` clauses change the clauses in the compound statement at compile time as below.
-The expressions of static `if` clauses are evaluated one by one at compile time until one is found to be true;
-then all clauses after that clause are removed from the compound statement,
-and that clause becomes the last clause of the compound statement, with the expression set to `True`.
-The static `if` clauses whose expressions are found to be false are removed from the compound statement.
+The static `if` *clauses* replaces the *clauses* in the compound statement at compile time as below.
+The expressions of static `if` *clauses* are evaluated one by one at compile time until one is found to be true;
+then all *clauses* after that *clause* are removed from the compound statement,
+and that *clause* becomes the last *clause* of the compound statement, with the expression set to `True`.
+The static `if` *clauses* whose expressions are found to be false are removed from the compound statement.
 
 ### The `while` statement
 
@@ -295,11 +301,11 @@ The while statement is used for repeated execution as long as an expression is t
 while_stmt ::=  "while" assignment_expression ":" suite
 ```
 
-This repeatedly tests the expression and, if it is true, executes the first suite;
+This repeatedly tests the expression and, if it is true, executes the *suite*;
 if the expression is false (which may be the first time it is tested) the loop terminates.
 
-A break statement executed in the first suite terminates the loop.
-A continue statement executed in the first suite skips the rest of the suite and
+A break statement executed in the *suite* terminates the loop.
+A continue statement executed in the *suite* skips the rest of the *suite* and
 goes back to testing the expression.
 
 ### The `for` statement

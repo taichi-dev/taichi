@@ -260,9 +260,9 @@ A *suite* is a group of statements controlled by a *clause*.
 
 ```
 compound_stmt ::= if_stmt | while_stmt | for_stmt
-suite ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT
-statement ::= stmt_list NEWLINE | compound_stmt
-stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
+suite         ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT
+statement     ::= stmt_list NEWLINE | compound_stmt
+stmt_list     ::= simple_stmt (";" simple_stmt)* [";"]
 ```
 
 The difference between the compound statements in Taichi and Python is that Taichi introduces
@@ -273,9 +273,9 @@ Taichi replaces the compound statement at compile time according to the evaluati
 
 The `if` statement is used for conditional execution:
 ```
-if_stmt ::=  "if" (static_expression | assignment_expression) ":" suite
-             ("elif" (static_expression | assignment_expression) ":" suite)*
-             ["else" ":" suite]
+if_stmt ::= "if" (static_expression | assignment_expression) ":" suite
+            ("elif" (static_expression | assignment_expression) ":" suite)*
+            ["else" ":" suite]
 ```
 
 It selects exactly one of the *suites* by evaluating the expressions one by one until one is found to be true
@@ -297,14 +297,14 @@ The static `if` *clauses* whose expressions are found to be false are removed fr
 
 The while statement is used for repeated execution as long as an expression is true:
 ```
-while_stmt ::=  "while" assignment_expression ":" suite
+while_stmt ::= "while" assignment_expression ":" suite
 ```
 
 This repeatedly tests the expression and, if it is true, executes the *suite*;
 if the expression is false (which may be the first time it is tested) the loop terminates.
 
-A break statement executed in the *suite* terminates the loop.
-A continue statement executed in the *suite* skips the rest of the *suite* and
+A [`break` statement](#the-break-statement) executed in the *suite* terminates the loop.
+A [`continue` statement](#the-continue-statement) executed in the *suite* skips the rest of the *suite* and
 goes back to testing the expression.
 
 ### The `for` statement

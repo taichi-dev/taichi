@@ -477,7 +477,7 @@ The static `if` *clauses* whose expressions are found to be false are removed fr
 
 ### The `while` statement
 
-The while statement is used for repeated execution as long as an expression is true:
+The `while` statement is used for repeated execution as long as an expression is true:
 ```
 while_stmt ::= "while" assignment_expression ":" suite
 ```

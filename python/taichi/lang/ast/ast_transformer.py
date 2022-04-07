@@ -148,7 +148,17 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            var = build_stmt(ctx, target)
+            if isinstance(target, ast.Attribute):
+                build_stmt(ctx, target.value)
+                obj = target.value.ptr
+                if target.attr in dir(obj):
+                    var = target.ptr = getattr(obj, target.attr)
+                else:
+                    setattr(obj, target.attr, impl.expr_init(value))
+                    return getattr(obj, target.attr)
+            else:
+                var = build_stmt(ctx, target)
+
             try:
                 var._assign(value)
             except AttributeError:

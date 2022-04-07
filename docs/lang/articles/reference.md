@@ -205,13 +205,13 @@ static_expression ::= "ti.static(" positional_arguments ")"
 ```
 
 Static expressions are expressions that are wrapped by a call to `ti.static()`.
-The `positional_arguments` is evaluated at compile time, and the variables inside it must be compile-time constants.
+The `positional_arguments` is evaluated at compile time, and the items inside must be evaluated to Python values.
 
 `ti.static()` receives one or more arguments.
-If one argument it passed to it, it returns the argument.
-If more than one arguments is passed to it, it returns a tuple containing all the arguments in the same order as they are passed.
+- When a single argument is passed in, it returns the argument.
+- When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
 
-The static expressions work as hints to trigger many metaprogramming functions in Taichi,
+The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
 such as [compile-time loop unrolling and compile-time branching](lang/articles/advanced/meta.md#compile-time-evaluations).
 
 The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](lang/articles/advanced/syntax_sugars.md#aliases).

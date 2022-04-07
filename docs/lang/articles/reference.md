@@ -279,22 +279,6 @@ stride) inside have to be evaluated to Python values.
 
 ### Boolean operations
 
-### Conditional expressions
-
-### Expression lists
-
-```
-expression_list ::= expression ("," expression)* [","]
-```
-
-Except when part of a list display, an expression list containing at least one
-comma is evaluated to a tuple at compile time. The component expressions are
-evaluated from left to right.
-
-The trailing comma is required only to create a tuple with length 1; it is
-optional in all other cases. A single expression without a trailing comma
-is evaluated to the value of that expression.
-
 ### Assignment expressions
 
 ```
@@ -318,6 +302,22 @@ def foo() -> ti.i32:
 :::note
 This operator is supported since Python 3.8.
 :::
+
+### Conditional expressions
+
+### Expression lists
+
+```
+expression_list ::= expression ("," expression)* [","]
+```
+
+Except when part of a list display, an expression list containing at least one
+comma is evaluated to a tuple at compile time. The component expressions are
+evaluated from left to right.
+
+The trailing comma is required only to create a tuple with length 1; it is
+optional in all other cases. A single expression without a trailing comma
+is evaluated to the value of that expression.
 
 ## Simple statements
 

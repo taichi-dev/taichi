@@ -525,7 +525,7 @@ and it cannot be terminated by a `break` statement even when it is run serially.
 
 The static `for` statement unrolls a range/ndrange `for` loop at compile time.
 
-If the `iter_expression` of the `for` statement is a [`static_expression`](#static-expressions), 
+If the `iter_expression` of the `for` statement is a [`static_expression`](#static-expressions),
 the `for` statement is a static `for` statement.
 
 The `positional_arguments` of the `static_expression` must meet the requirement on

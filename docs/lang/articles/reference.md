@@ -490,10 +490,10 @@ The k-th argument represents the iteration range of the k-th dimension,
 and the loop iterates over the [direct product](https://en.wikipedia.org/wiki/Direct_product) of the iteration range of each dimension.
 
 Every argument must be an integer or a tuple of two integers.
-- If the k-th argument is an integer `n`, the range of the k-th dimension
-is equivalent to the range of `range(n)` in Python.
-- If the k-th argument is a tuple of two integers `(a, b)`, the range of the k-th dimension
-is equivalent to the range of `range(a, b)` in Python.
+- If the k-th argument is an integer `stop`, the range of the k-th dimension
+is equivalent to the range of `range(stop)` in Python.
+- If the k-th argument is a tuple of two integers `(start, stop)`, the range of the k-th dimension
+is equivalent to the range of `range(start, stop)` in Python.
 
 The `target_list` of an n-dimensional normal ndrange `for` statement must be n different identifiers which
 are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.

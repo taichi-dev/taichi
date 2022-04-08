@@ -79,7 +79,7 @@ jobs:
             echo >-
               '::set-output name=matrix_osx::{"include":[
                 {"name":"taichi-nightly","python":"3.8"},
-                {"name":"taichi-nightly","python":"3.10","conda_python":"py310"}
+                {"name":"taichi-nightly","python":"3.10"}
               ]}"'
           fi
 

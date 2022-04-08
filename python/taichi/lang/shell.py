@@ -1,20 +1,19 @@
-import atexit
 import functools
 import os
 import sys
 
+from taichi._lib import core as _ti_core
 from taichi._logging import info, warn
-from taichi.core.util import ti_core as _ti_core
 
 try:
-    import sourceinspect as oinspect
+    import sourceinspect as oinspect  # pylint: disable=unused-import
 except ImportError:
     warn('`sourceinspect` not installed!')
     warn(
         'Without this package Taichi may not function well in Python IDLE interactive shell, '
         'Blender scripting module and Python native shell.')
     warn('Please run `python3 -m pip install sourceinspect` to install.')
-    import inspect as oinspect
+    import inspect as oinspect  # pylint: disable=unused-import
 
 pybuf_enabled = False
 _env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')
@@ -35,7 +34,6 @@ def _shell_pop_print(old_call):
 
     @functools.wraps(old_call)
     def new_call(*args, **kwargs):
-        _taichi_skip_traceback = 1
         ret = old_call(*args, **kwargs)
         # print's in kernel won't take effect until ti.sync(), discussion:
         # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102

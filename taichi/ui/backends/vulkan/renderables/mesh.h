@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Mesh final : public Renderable {
  public:
-  Mesh(AppContext *app_context);
+  Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const MeshInfo &info, const Scene &scene);
 
@@ -41,7 +41,8 @@ class Mesh final : public Renderable {
 
   void init_mesh(AppContext *app_context,
                  int vertices_count,
-                 int indices_count);
+                 int indices_count,
+                 VertexAttributes vbo_attrs);
 
   void update_ubo(const MeshInfo &info, const Scene &scene);
 

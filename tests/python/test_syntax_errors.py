@@ -1,10 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_try():
     x = ti.field(ti.f32)
 
@@ -17,11 +17,11 @@ def test_try():
         except:
             a = 1
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_for_else():
     x = ti.field(ti.f32)
 
@@ -34,11 +34,11 @@ def test_for_else():
         else:
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_while_else():
     x = ti.field(ti.f32)
 
@@ -51,11 +51,22 @@ def test_while_else():
         else:
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
+def test_raise():
+    @ti.kernel
+    def foo():
+        raise Exception()
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='Unsupported node "Raise"') as e:
+        foo()
+
+
+@test_utils.test()
 def test_loop_var_range():
     x = ti.field(ti.f32)
 
@@ -67,11 +78,11 @@ def test_loop_var_range():
         for i in range(10):
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_loop_var_struct():
     x = ti.field(ti.f32)
 
@@ -83,11 +94,11 @@ def test_loop_var_struct():
         for i in x:
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_loop_var_struct():
     x = ti.field(ti.f32)
 
@@ -99,11 +110,11 @@ def test_loop_var_struct():
         for i, j in x:
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_func_def_in_kernel():
     @ti.kernel
     def kernel():
@@ -113,11 +124,11 @@ def test_func_def_in_kernel():
 
         print(func())
 
-    kernel()
+    with pytest.raises(ti.TaichiCompilationError):
+        kernel()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_func_def_in_func():
     @ti.func
     def func():
@@ -131,62 +142,62 @@ def test_func_def_in_func():
     def kernel():
         print(func())
 
-    kernel()
+    with pytest.raises(ti.TaichiCompilationError):
+        kernel()
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_kernel_bad_argument_annotation():
-    with pytest.raises(ti.KernelDefError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
 
         @ti.kernel
         def kernel(x: 'bar'):
             print(x)
 
 
-@ti.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu)
 def test_func_bad_argument_annotation():
-    with pytest.raises(ti.KernelDefError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
 
         @ti.func
         def func(x: 'foo'):
             print(x)
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_nested_static():
     @ti.kernel
     def func():
         for i in ti.static(ti.static(range(1))):
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_nested_grouped():
     @ti.kernel
     def func():
         for i in ti.grouped(ti.grouped(range(1))):
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_nested_ndrange():
     @ti.kernel
     def func():
         for i in ti.ndrange(ti.ndrange(1)):
             pass
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_static_grouped_struct_for():
     val = ti.field(ti.i32)
 
@@ -197,11 +208,11 @@ def test_static_grouped_struct_for():
         for I in ti.static(ti.grouped(val)):
             pass
 
-    test()
+    with pytest.raises(ti.TaichiCompilationError):
+        test()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_is():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -210,11 +221,11 @@ def test_is():
     def func():
         a = b is c
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_is_not():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -223,11 +234,11 @@ def test_is_not():
     def func():
         a = b is not c
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_in():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -236,11 +247,11 @@ def test_in():
     def func():
         a = b in c
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_not_in():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -249,78 +260,71 @@ def test_not_in():
     def func():
         a = b not in c
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_expr_set():
     @ti.kernel
     def func():
         x = {2, 4, 6}
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
-@ti.test(arch=ti.cpu)
-def test_func_multiple_return():
-    @ti.func
-    def safe_sqrt(a):
-        if a > 0:
-            return ti.sqrt(a)
-        else:
-            return 0.0
-
+@test_utils.test()
+def test_redefining_template_args():
     @ti.kernel
-    def kern(a: float):
-        print(safe_sqrt(a))
+    def foo(a: ti.template()):
+        a = 5
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            "Variable 'a' cannot be assigned. Maybe it is not a Taichi object?"
+    ):
+        foo(1)
+
+
+@test_utils.test()
+def test_break_in_outermost_for():
+    @ti.kernel
+    def foo():
+        for i in range(10):
+            break
 
     with pytest.raises(ti.TaichiSyntaxError,
-                       match='cannot have multiple returns'):
-        kern(-233)
+                       match="Cannot break in the outermost loop"):
+        foo()
 
 
-@ti.test(arch=ti.cpu)
-def test_func_multiple_return_in_static_if():
+@test_utils.test()
+def test_funcdef_in_kernel():
+    @ti.kernel
+    def foo():
+        def bar():
+            pass
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.kernel'"):
+        foo()
+
+
+@test_utils.test()
+def test_funcdef_in_func():
     @ti.func
-    def safe_static_sqrt(a: ti.template()):
-        if ti.static(a > 0):
-            return ti.sqrt(a)
-        else:
-            return 0.0
+    def foo():
+        def bar():
+            pass
 
     @ti.kernel
-    def kern():
-        print(safe_static_sqrt(-233))
+    def baz():
+        foo()
 
-    kern()
-
-
-@ti.test()
-def test_func_def_inside_kernel():
-    @ti.kernel
-    def k():
-        @ti.func
-        def illegal():
-            return 1
-
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match='Function definition not allowed'):
-        k()
-
-
-@ti.test()
-def test_func_def_inside_func():
-    @ti.func
-    def f():
-        @ti.func
-        def illegal():
-            return 1
-
-    @ti.kernel
-    def k():
-        f()
-
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match='Function definition not allowed'):
-        k()
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Function definition is not allowed in 'ti.func'"):
+        baz()

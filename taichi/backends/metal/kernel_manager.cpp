@@ -9,13 +9,16 @@
 #include <string_view>
 
 #include "taichi/backends/metal/constants.h"
+#include "taichi/backends/metal/device.h"
 #include "taichi/backends/metal/features.h"
+#include "taichi/backends/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
+#include "taichi/common/exceptions.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -48,36 +51,6 @@ inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   }
   return kMslVersionNone;
 }
-
-// This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
-// Once allocated, it does not own the memory (hence the name "view"). Instead,
-// GC is deferred to the memory pool.
-class BufferMemoryView {
- public:
-  BufferMemoryView(size_t size, MemoryPool *mem_pool) {
-    // Both |ptr_| and |size_| must be aligned to page size.
-    size_ = iroundup(size, taichi_page_size);
-    ptr_ = (char *)mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
-    TI_ASSERT(ptr_ != nullptr);
-    std::memset(ptr_, 0, size_);
-  }
-  // Move only
-  BufferMemoryView(BufferMemoryView &&) = default;
-  BufferMemoryView &operator=(BufferMemoryView &&) = default;
-  BufferMemoryView(const BufferMemoryView &) = delete;
-  BufferMemoryView &operator=(const BufferMemoryView &) = delete;
-
-  inline size_t size() const {
-    return size_;
-  }
-  inline char *ptr() const {
-    return ptr_;
-  }
-
- private:
-  size_t size_;
-  char *ptr_;
-};
 
 // MetalRuntime maintains a series of MTLBuffers that are shared across all the
 // Metal kernels mapped by a single Taichi kernel. This map stores those buffers
@@ -406,7 +379,7 @@ class CompiledTaichiKernel {
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
-                      Context *host_ctx,
+                      RuntimeContext *host_ctx,
                       uint64_t *host_result_buffer,
                       const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
@@ -472,9 +445,10 @@ class HostMetalCtxBlitter {
   }
 
   void metal_to_host() {
-#define TO_HOST(type)                                   \
-  const type d = *reinterpret_cast<type *>(device_ptr); \
-  host_result_buffer_[i] = taichi_union_cast_with_different_sizes<uint64>(d);
+#define TO_HOST(type, offset)                                      \
+  const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
+  host_result_buffer_[offset] =                                    \
+      taichi_union_cast_with_different_sizes<uint64>(d);
 
     if (ctx_attribs_->empty()) {
       return;
@@ -508,25 +482,24 @@ class HostMetalCtxBlitter {
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
       char *device_ptr = base + ret.offset_in_mem;
-      if (ret.is_array) {
-        void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, ret.stride);
-      } else {
+      const int dt_bytes = metal_data_type_bytes(ret.dt);
+      const int num = ret.stride / dt_bytes;
+      for (int j = 0; j < num; ++j) {
         const auto dt = ret.dt;
         if (dt == MetalDataType::i32) {
-          TO_HOST(int32);
+          TO_HOST(int32, j);
         } else if (dt == MetalDataType::u32) {
-          TO_HOST(uint32);
+          TO_HOST(uint32, j);
         } else if (dt == MetalDataType::f32) {
-          TO_HOST(float32);
+          TO_HOST(float32, j);
         } else if (dt == MetalDataType::i8) {
-          TO_HOST(int8);
+          TO_HOST(int8, j);
         } else if (dt == MetalDataType::i16) {
-          TO_HOST(int16);
+          TO_HOST(int16, j);
         } else if (dt == MetalDataType::u8) {
-          TO_HOST(uint8);
+          TO_HOST(uint8, j);
         } else if (dt == MetalDataType::u16) {
-          TO_HOST(uint16);
+          TO_HOST(uint16, j);
         } else {
           TI_ERROR("Metal does not support return value type={}",
                    metal_data_type_name(ret.dt));
@@ -538,7 +511,7 @@ class HostMetalCtxBlitter {
 
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
-      Context *ctx,
+      RuntimeContext *ctx,
       uint64_t *host_result_buffer,
       std::string name) {
     if (kernel.ctx_attribs.empty()) {
@@ -551,7 +524,7 @@ class HostMetalCtxBlitter {
  private:
   const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
@@ -577,6 +550,17 @@ class KernelManager::Impl {
     command_queue_ = new_command_queue(device_.get());
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
+
+    {
+      ComputeDeviceParams rhi_params;
+      rhi_params.device = device_.get();
+      rhi_params.mem_pool = mem_pool_;
+      rhi_params.only_for_dev_allocation = true;
+      auto make_res = make_compute_device(rhi_params);
+      rhi_device_ = std::move(make_res.device);
+      TI_ASSERT(rhi_device_ != nullptr);
+      devalloc_mapper_ = make_res.mapper;
+    }
 
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
@@ -620,13 +604,13 @@ class KernelManager::Impl {
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
-    init_runtime_buffer(compiled_runtime_module_);
+    init_runtime_buffer(compiled_runtime_module_, params.config->random_seed);
     clear_print_assert_buffer();
   }
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
-    rtbuf.desc = BufferDescriptor::Root(compiled_tree.root_id);
+    rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
       rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
                                                      mem_pool_);
@@ -676,7 +660,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     mac::ScopedAutoreleasePool pool;
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
@@ -689,13 +673,13 @@ class KernelManager::Impl {
     for (auto &rb : root_buffers_) {
       input_buffers[rb.desc] = rb.buffer.get();
     }
-    input_buffers[BufferDescriptor::GlobalTmps()] = global_tmps_buffer_.get();
-    input_buffers[BufferDescriptor::Runtime()] = runtime_buffer_.get();
-    input_buffers[BufferDescriptor::Print()] = print_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
+    input_buffers[BufferDescriptor::print()] = print_buffer_.get();
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::Context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
     }
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {
@@ -755,15 +739,17 @@ class KernelManager::Impl {
     return sna->data_list.next - 1;
   }
 
+  DeviceAllocation allocate_memory(const Device::AllocParams &params) {
+    auto res = rhi_device_->allocate_memory(params);
+    return res;
+  }
+
  private:
-  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
+                           int random_seed) {
     char *addr = runtime_mem_->ptr();
     // init rand_seeds
-    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
-    std::mt19937 generator(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    std::default_random_engine generator((unsigned int)random_seed);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {
@@ -997,11 +983,13 @@ class KernelManager::Impl {
       end_encoding(encoder.get());
     }
     // Sync
-    profiler_->start("metal_synchronize");
+    if (profiler_)
+      profiler_->start("metal_synchronize");
     commit_command_buffer(cur_command_buffer_.get());
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
-    profiler_->stop();
+    if (profiler_)
+      profiler_->stop();
 
     // print_runtime_debug();
   }
@@ -1043,7 +1031,7 @@ class KernelManager::Impl {
     // As a workaround, we put [didModifyRange:] before sync, where the program
     // is still executing normally.
     // asst_rec->flag = 0;
-    TI_ERROR("Assertion failure: {}", err_str);
+    throw TaichiAssertionError(err_str);
   }
 
   void flush_print_buffers() {
@@ -1122,6 +1110,9 @@ class KernelManager::Impl {
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
+  // TODO(k-ye): Name this to `device_`, then hide the `MTLDevice device_`.
+  std::unique_ptr<Device> rhi_device_{nullptr};
+  AllocToMTLBufferMapper *devalloc_mapper_{nullptr};
   // FIXME: This is for AOT, name it better
   BufferMetaData buffer_meta_data_;
   std::vector<CompiledStructs> compiled_snode_trees_;
@@ -1179,7 +1170,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1195,6 +1186,11 @@ class KernelManager::Impl {
   std::size_t get_snode_num_dynamically_allocated(SNode *) {
     TI_ERROR("Metal not supported on the current OS");
     return 0;
+  }
+
+  DeviceAllocation allocate_memory(const Device::AllocParams &params) {
+    TI_ERROR("Metal not supported on the current OS");
+    return kDeviceNullAllocation;
   }
 };
 
@@ -1221,7 +1217,7 @@ void KernelManager::register_taichi_kernel(
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
-                                         Context *ctx) {
+                                         RuntimeContext *ctx) {
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 
@@ -1239,6 +1235,11 @@ PrintStringTable *KernelManager::print_strtable() {
 
 std::size_t KernelManager::get_snode_num_dynamically_allocated(SNode *snode) {
   return impl_->get_snode_num_dynamically_allocated(snode);
+}
+
+DeviceAllocation KernelManager::allocate_memory(
+    const Device::AllocParams &params) {
+  return impl_->allocate_memory(params);
 }
 
 }  // namespace metal

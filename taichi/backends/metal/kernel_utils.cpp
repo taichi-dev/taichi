@@ -76,7 +76,7 @@ std::string KernelAttributes::debug_string() const {
 }
 
 KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
-    : ctx_bytes_(0), extra_args_bytes_(Context::extra_args_size) {
+    : ctx_bytes_(0), extra_args_bytes_(RuntimeContext::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
   for (const auto &ka : kernel.args) {
     ArgAttributes ma;
@@ -87,22 +87,37 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
                metal_data_type_name(ma.dt));
     }
-    ma.is_array = ka.is_external_array;
+    ma.is_array = ka.is_array;
     ma.stride = ma.is_array ? ka.size : dt_bytes;
     ma.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(ma);
   }
   for (const auto &kr : kernel.rets) {
     RetAttributes mr;
-    mr.dt = to_metal_type(kr.dt);
-    const size_t dt_bytes = metal_data_type_bytes(mr.dt);
-    if (dt_bytes > 4) {
-      // Metal doesn't support 64bit data buffers.
-      TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
-               metal_data_type_name(mr.dt));
+    if (auto tensor_type = kr.dt->cast<TensorType>()) {
+      mr.dt = to_metal_type(tensor_type->get_element_type());
+      const size_t dt_bytes = metal_data_type_bytes(mr.dt);
+      mr.is_array = true;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR(
+            "Metal kernel only supports <= 32-bit data, got {} which is "
+            "Tensor's element type",
+            metal_data_type_name(mr.dt));
+      }
+      mr.stride =
+          tensor_type->get_num_elements() * metal_data_type_bytes(mr.dt);
+    } else {
+      mr.dt = to_metal_type(kr.dt);
+      const size_t dt_bytes = metal_data_type_bytes(mr.dt);
+      mr.is_array = false;
+      if (dt_bytes > 4) {
+        // Metal doesn't support 64bit data buffers.
+        TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
+                 metal_data_type_name(mr.dt));
+      }
+      mr.stride = metal_data_type_bytes(mr.dt);
     }
-    mr.is_array = false;  // TODO(#909): this is a temporary limitation
-    mr.stride = dt_bytes;
     mr.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(mr);
   }
@@ -120,12 +135,17 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Put scalar args in the memory first
     for (int i : scalar_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+      // Align bytes to the nearest multiple of dt_bytes
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
     }
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
     }

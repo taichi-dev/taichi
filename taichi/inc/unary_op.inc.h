@@ -1,5 +1,6 @@
 PER_UNARY_OP(neg)
 PER_UNARY_OP(sqrt)
+PER_UNARY_OP(round)
 PER_UNARY_OP(floor)
 PER_UNARY_OP(ceil)
 PER_UNARY_OP(cast_value)

@@ -85,23 +85,31 @@ IRBuilder::IfGuard::~IfGuard() {
 
 RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           Stmt *end,
-                                          int vectorize,
                                           int bit_vectorize,
                                           int num_cpu_threads,
                                           int block_dim,
                                           bool strictly_serialized) {
   return insert(Stmt::make_typed<RangeForStmt>(
-      begin, end, std::make_unique<Block>(), vectorize, bit_vectorize,
-      num_cpu_threads, block_dim, strictly_serialized));
+      begin, end, std::make_unique<Block>(), bit_vectorize, num_cpu_threads,
+      block_dim, strictly_serialized));
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,
-                                            int vectorize,
                                             int bit_vectorize,
                                             int num_cpu_threads,
                                             int block_dim) {
   return insert(Stmt::make_typed<StructForStmt>(
-      snode, std::make_unique<Block>(), vectorize, bit_vectorize,
+      snode, std::make_unique<Block>(), bit_vectorize, num_cpu_threads,
+      block_dim));
+}
+
+MeshForStmt *IRBuilder::create_mesh_for(mesh::Mesh *mesh,
+                                        mesh::MeshElementType element_type,
+                                        int bit_vectorize,
+                                        int num_cpu_threads,
+                                        int block_dim) {
+  return insert(Stmt::make_typed<MeshForStmt>(
+      mesh, element_type, std::make_unique<Block>(), bit_vectorize,
       num_cpu_threads, block_dim));
 }
 
@@ -206,6 +214,10 @@ UnaryOpStmt *IRBuilder::create_not(Stmt *value) {
 
 UnaryOpStmt *IRBuilder::create_logical_not(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::logic_not, value));
+}
+
+UnaryOpStmt *IRBuilder::create_round(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::round, value));
 }
 
 UnaryOpStmt *IRBuilder::create_floor(Stmt *value) {
@@ -415,7 +427,8 @@ GlobalPtrStmt *IRBuilder::create_global_ptr(
 ExternalPtrStmt *IRBuilder::create_external_ptr(
     ArgLoadStmt *ptr,
     const std::vector<Stmt *> &indices) {
-  return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
+  return insert(
+      Stmt::make_typed<ExternalPtrStmt>(ptr, indices, std::vector<int>(), 0));
 }
 
 AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
@@ -443,6 +456,38 @@ AdStackLoadTopAdjStmt *IRBuilder::ad_stack_load_top_adjoint(
 void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
                                             Stmt *val) {
   insert(Stmt::make_typed<AdStackAccAdjointStmt>(stack, val));
+}
+
+// Mesh related.
+
+MeshRelationAccessStmt *IRBuilder::get_relation_size(
+    mesh::Mesh *mesh,
+    Stmt *mesh_idx,
+    mesh::MeshElementType to_type) {
+  return insert(
+      Stmt::make_typed<MeshRelationAccessStmt>(mesh, mesh_idx, to_type));
+}
+
+MeshRelationAccessStmt *IRBuilder::get_relation_access(
+    mesh::Mesh *mesh,
+    Stmt *mesh_idx,
+    mesh::MeshElementType to_type,
+    Stmt *neighbor_idx) {
+  return insert(Stmt::make_typed<MeshRelationAccessStmt>(
+      mesh, mesh_idx, to_type, neighbor_idx));
+}
+
+MeshIndexConversionStmt *IRBuilder::get_index_conversion(
+    mesh::Mesh *mesh,
+    mesh::MeshElementType idx_type,
+    Stmt *idx,
+    mesh::ConvType conv_type) {
+  return insert(Stmt::make_typed<MeshIndexConversionStmt>(mesh, idx_type, idx,
+                                                          conv_type));
+}
+
+MeshPatchIndexStmt *IRBuilder::get_patch_index() {
+  return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
 
 TLANG_NAMESPACE_END

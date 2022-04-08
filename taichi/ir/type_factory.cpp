@@ -22,14 +22,6 @@ Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   return primitive_types_[id].get();
 }
 
-Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
-  auto key = std::make_pair(num_elements, element);
-  if (vector_types_.find(key) == vector_types_.end()) {
-    vector_types_[key] = std::make_unique<VectorType>(num_elements, element);
-  }
-  return vector_types_[key].get();
-}
-
 Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   auto encode = [](const std::vector<int> &shape) -> std::string {
     std::string s;
@@ -57,11 +49,11 @@ Type *TypeFactory::get_custom_int_type(int num_bits,
                                        bool is_signed,
                                        Type *compute_type) {
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
-  if (custom_int_types.find(key) == custom_int_types.end()) {
-    custom_int_types[key] =
+  if (custom_int_types_.find(key) == custom_int_types_.end()) {
+    custom_int_types_[key] =
         std::make_unique<CustomIntType>(num_bits, is_signed, compute_type);
   }
-  return custom_int_types[key].get();
+  return custom_int_types_[key].get();
 }
 
 Type *TypeFactory::get_custom_float_type(Type *digits_type,
@@ -69,11 +61,11 @@ Type *TypeFactory::get_custom_float_type(Type *digits_type,
                                          Type *compute_type,
                                          float64 scale) {
   auto key = std::make_tuple(digits_type, exponent_type, compute_type, scale);
-  if (custom_float_types.find(key) == custom_float_types.end()) {
-    custom_float_types[key] = std::make_unique<CustomFloatType>(
+  if (custom_float_types_.find(key) == custom_float_types_.end()) {
+    custom_float_types_[key] = std::make_unique<CustomFloatType>(
         digits_type, exponent_type, compute_type, scale);
   }
-  return custom_float_types[key].get();
+  return custom_float_types_[key].get();
 }
 
 Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
@@ -172,11 +164,6 @@ class TypePromotionMapping {
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();
       TI_WARN("promoted_type got a pointer input.");
-    }
-
-    if (d->is<VectorType>()) {
-      d = d->as<VectorType>()->get_element_type();
-      TI_WARN("promoted_type got a vector input.");
     }
 
     if (d->is<TensorType>()) {

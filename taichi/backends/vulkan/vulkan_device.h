@@ -4,7 +4,11 @@
 
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
+#ifdef ANDROID
+#include <android/native_window_jni.h>
+#elif !defined(TI_EMSCRIPTENED)
 #include <GLFW/glfw3.h>
+#endif
 
 #include <memory>
 #include <optional>
@@ -96,8 +100,17 @@ class VulkanResourceBinder : public ResourceBinder {
   struct Binding {
     VkDescriptorType type;
     DevicePtr ptr;
-    size_t size;
+    VkDeviceSize size;
     VkSampler sampler{VK_NULL_HANDLE};  // used only for images
+
+    bool operator==(const Binding &other) const {
+      return other.type == type && other.ptr == ptr && other.size == size &&
+             other.sampler == sampler;
+    }
+
+    bool operator!=(const Binding &other) const {
+      return !(*this == other);
+    }
   };
 
   struct Set {
@@ -109,12 +122,20 @@ class VulkanResourceBinder : public ResourceBinder {
         return false;
       }
       for (auto &pair : bindings) {
-        const Binding &other_binding = other.bindings.at(pair.first);
+        auto other_binding_iter = other.bindings.find(pair.first);
+        if (other_binding_iter == other.bindings.end()) {
+          return false;
+        }
+        const Binding &other_binding = other_binding_iter->second;
         if (other_binding.type != pair.second.type) {
           return false;
         }
       }
       return true;
+    }
+
+    bool operator!=(const Set &other) const {
+      return !(*this == other);
     }
   };
 
@@ -124,6 +145,45 @@ class VulkanResourceBinder : public ResourceBinder {
       size_t hash = 0;
       for (const auto &pair : set.bindings) {
         hash = (hash ^ size_t(pair.second.type)) ^ size_t(pair.first);
+      }
+      return hash;
+    }
+  };
+
+  struct DescSetCmp {
+    bool operator()(const Set &a, const Set &b) const {
+      if (a.bindings.size() != b.bindings.size()) {
+        return false;
+      }
+      for (auto &pair : a.bindings) {
+        auto other_binding_iter = b.bindings.find(pair.first);
+        if (other_binding_iter == b.bindings.end()) {
+          return false;
+        }
+        const Binding &other_binding = other_binding_iter->second;
+        if (other_binding != pair.second) {
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+
+  struct DescSetHasher {
+    std::size_t operator()(const Set &set) const {
+      // TODO: Come up with a better hash
+      size_t hash = 0;
+      for (const auto &pair : set.bindings) {
+        size_t binding_hash = 0;
+        uint32_t *u32_ptr = (uint32_t *)&pair.second;
+        for (int i = 0; i < sizeof(Set) / sizeof(uint32_t); i++) {
+          binding_hash = binding_hash ^ u32_ptr[i];
+          binding_hash = (binding_hash << 7) | (binding_hash >> (64 - 7));
+        }
+        binding_hash = binding_hash ^ pair.first;
+        binding_hash =
+            (binding_hash << pair.first) | (binding_hash >> (64 - pair.first));
+        hash = hash ^ binding_hash;
       }
       return hash;
     }
@@ -141,10 +201,18 @@ class VulkanResourceBinder : public ResourceBinder {
 
   std::unique_ptr<Bindings> materialize() override;
 
-  void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
-  void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DevicePtr ptr,
+                 size_t size) override;
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DeviceAllocation alloc) override;
+  void buffer(uint32_t set,
+              uint32_t binding,
+              DevicePtr ptr,
+              size_t size) override;
+  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
   void image(uint32_t set,
              uint32_t binding,
              DeviceAllocation alloc,
@@ -341,6 +409,12 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
+  std::unordered_map<VulkanResourceBinder::Set,
+                     vkapi::IVkDescriptorSet,
+                     VulkanResourceBinder::DescSetHasher,
+                     VulkanResourceBinder::DescSetCmp>
+      currently_used_sets_;
+
   // Renderpass & raster pipeline
   VulkanRenderPassDesc current_renderpass_desc_;
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
@@ -357,8 +431,9 @@ class VulkanSurface : public Surface {
 
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
+  int get_image_count() override;
   BufferFormat image_format() override;
-  virtual void resize(uint32_t width, uint32_t height);
+  void resize(uint32_t width, uint32_t height) override;
 
   DeviceAllocation get_image_data() override;
 
@@ -372,14 +447,18 @@ class VulkanSurface : public Surface {
   VkSurfaceKHR surface_;
   VkSwapchainKHR swapchain_;
   VkSemaphore image_available_;
+#ifdef ANDROID
+  ANativeWindow *window_;
+#elif !defined(TI_EMSCRIPTENED)
   GLFWwindow *window_;
+#endif
   BufferFormat image_format_;
 
   uint32_t image_index_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
 
-  DeviceAllocation screenshot_image_{kDeviceNullAllocation};
+  // DeviceAllocation screenshot_image_{kDeviceNullAllocation};
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 
@@ -410,6 +489,8 @@ class VulkanStream : public Stream {
   VkQueue queue_;
   uint32_t queue_family_index_;
 
+  vkapi::IVkSemaphore last_semaphore_{nullptr};
+
   // Command pools are per-thread
   vkapi::IVkFence cmd_sync_fence_;
   vkapi::IVkCommandPool command_pool_;
@@ -437,6 +518,8 @@ class VulkanDevice : public GraphicsDevice {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
+
+  uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
   // Mapping can fail and will return nullptr
   void *map_range(DevicePtr ptr, uint64_t size) override;
@@ -538,6 +621,7 @@ class VulkanDevice : public GraphicsDevice {
     VmaAllocationInfo alloc_info;
     vkapi::IVkBuffer buffer;
     void *mapped{nullptr};
+    VkDeviceAddress addr{0};
   };
 
   unordered_map<uint32_t, AllocationInternal> allocations_;

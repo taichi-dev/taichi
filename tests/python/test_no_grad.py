@@ -2,9 +2,10 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_no_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -24,7 +25,7 @@ def test_no_grad():
         func()
 
 
-@ti.test()
+@test_utils.test()
 def test_raise_no_gradient():
     y = ti.field(shape=(), name='y', dtype=ti.f32, needs_grad=True)
     x = ti.field(shape=(), name='x', dtype=ti.f32)
@@ -36,9 +37,9 @@ def test_raise_no_gradient():
         z[0] = x.grad[None]
 
     x[None] = 5.
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=
+            'Gradient x.grad has not been placed, check whether `needs_grad=True`'
+    ):
         func(x)
-
-    assert e.type is RuntimeError
-    assert e.value.args[
-        0] == f"Gradient x.grad has not been placed, check whether `needs_grad=True`"

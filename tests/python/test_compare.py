@@ -1,7 +1,11 @@
+import pytest
+from taichi.lang import impl
+
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_compare_basics():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -40,7 +44,7 @@ def test_compare_basics():
     assert a[11]
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_compare_equality():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -79,7 +83,7 @@ def test_compare_equality():
     assert not a[11]
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_no_duplicate_eval():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -94,7 +98,7 @@ def test_no_duplicate_eval():
     assert a[2]  # ti.append returns 0
 
 
-@ti.test()
+@test_utils.test()
 def test_no_duplicate_eval_func():
     a = ti.field(ti.i32, ())
     b = ti.field(ti.i32, ())
@@ -104,7 +108,7 @@ def test_no_duplicate_eval_func():
         return ti.atomic_add(b[None], n)
 
     def foo(n):
-        return ti.atomic_add(ti.subscript(b, None), n)
+        return ti.atomic_add(impl.subscript(b, None), n)
 
     @ti.kernel
     def func():
@@ -115,7 +119,7 @@ def test_no_duplicate_eval_func():
     assert b[None] == 2
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_chain_compare():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -135,3 +139,62 @@ def test_chain_compare():
     func()
     assert a[0]
     assert not a[1]
+
+
+@test_utils.test()
+def test_static_in():
+    @ti.kernel
+    def foo(a: ti.template()) -> ti.i32:
+        b = 0
+        if ti.static(a in [ti.i32, ti.u32]):
+            b = 1
+        elif ti.static(a not in [ti.f32, ti.f64]):
+            b = 2
+        return b
+
+    assert foo(ti.u32) == 1
+    assert foo(ti.i64) == 2
+    assert foo(ti.f32) == 0
+
+
+@test_utils.test()
+def test_non_static_in():
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='"In" is only supported inside `ti.static`.'):
+
+        @ti.kernel
+        def foo(a: ti.template()) -> ti.i32:
+            b = 0
+            if a in [ti.i32, ti.u32]:
+                b = 1
+            return b
+
+        foo(ti.i32)
+
+
+@test_utils.test()
+def test_static_is():
+    @ti.kernel
+    def is_f32(tp: ti.template()) -> ti.i32:
+        return ti.static(tp is ti.f32)
+
+    @ti.kernel
+    def is_not_f32(tp: ti.template()) -> ti.i32:
+        return ti.static(tp is not ti.f32)
+
+    assert is_f32(ti.f32) == 1
+    assert is_f32(ti.i32) == 0
+    assert is_not_f32(ti.f32) == 0
+    assert is_not_f32(ti.i32) == 1
+
+
+@test_utils.test()
+def test_non_static_is():
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='"Is" is only supported inside `ti.static`.'):
+
+        @ti.kernel
+        def is_f32(tp: ti.template()) -> ti.i32:
+            return tp is ti.f32
+
+        is_f32(ti.f32)

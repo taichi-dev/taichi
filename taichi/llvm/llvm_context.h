@@ -37,7 +37,7 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
 
-  TaichiLLVMContext(Arch arch);
+  TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch);
 
   virtual ~TaichiLLVMContext();
 
@@ -104,6 +104,8 @@ class TaichiLLVMContext {
 
   std::size_t get_type_size(llvm::Type *type);
 
+  std::size_t get_struct_element_offset(llvm::StructType *type, int idx);
+
   template <typename T>
   llvm::Value *get_constant(T t);
 
@@ -126,6 +128,10 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+  void add_function_to_snode_tree(int id, std::string func);
+
+  void delete_functions_of_snode_tree(int id);
+
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
@@ -145,15 +151,20 @@ class TaichiLLVMContext {
   void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
 
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
-      per_thread_data;
+      per_thread_data_;
 
-  Arch arch;
+  Arch arch_;
 
-  std::thread::id main_thread_id;
-  ThreadLocalData *main_thread_data{nullptr};
-  std::mutex mut;
-  std::mutex thread_map_mut;
+  std::thread::id main_thread_id_;
+  ThreadLocalData *main_thread_data_{nullptr};
+  std::mutex mut_;
+  std::mutex thread_map_mut_;
+
+  std::unordered_map<int, std::vector<std::string>> snode_tree_funcs_;
 };
+
+std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
+                                                       llvm::LLVMContext *ctx);
 
 }  // namespace lang
 }  // namespace taichi

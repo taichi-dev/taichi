@@ -1,11 +1,11 @@
 import numpy as np
-import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=[ti.extension.async_mode, ti.extension.sparse],
-         async_mode=True)
+@test_utils.test(require=[ti.extension.async_mode, ti.extension.sparse],
+                 async_mode=True)
 def test_remove_clear_list_from_fused_serial():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -26,7 +26,7 @@ def test_remove_clear_list_from_fused_serial():
     init_xy()
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     @ti.kernel
@@ -63,7 +63,7 @@ def test_remove_clear_list_from_fused_serial():
             assert xs[i] == 0
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_sfg_dead_store_elimination():
     n = 32
 
@@ -86,7 +86,7 @@ def test_sfg_dead_store_elimination():
     x.from_numpy(xnp)
     ti.sync()
 
-    stats = ti.get_kernel_stats()
+    stats = ti.tools.async_utils.get_kernel_stats()
     stats.clear()
 
     for _ in range(5):
@@ -102,10 +102,10 @@ def test_sfg_dead_store_elimination():
 
     x_grad = x.grad.to_numpy()
     for i in range(n):
-        assert ti.approx(x_grad[i]) == 2.0 * i
+        assert test_utils.approx(x_grad[i]) == 2.0 * i
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@test_utils.test(require=ti.extension.async_mode, async_mode=True)
 def test_global_tmp_value_state():
     # https://github.com/taichi-dev/taichi/issues/2024
     n = 10
@@ -121,4 +121,4 @@ def test_global_tmp_value_state():
 
     x.from_numpy(np.arange(0, n, dtype=np.float32))
     mean = compute_mean_of_boundary_edges()
-    assert ti.approx(mean) == 33
+    assert test_utils.approx(mean) == 33

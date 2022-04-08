@@ -11,6 +11,37 @@ namespace lang {
 class Program;
 class Ndarray;
 
+/* Note: [Ndarray host reader & writer]
+ * Unlike snodes/fields which are persistent global storage that can safely
+ * use SNode* as keys to cache reader & writer kernels, ndarrays' life-cycle
+ * depends on their corresponding python objects. In other words we cannot
+ * use Ndarray* here as caching keys since it's possible that one ndarray reuses
+ * exactly the same address where a freed ndarray instance was.
+ *
+ * Fortunately since ndarray reader & writer don't hardcode ndarray address in
+ * the kernel, their caching mechanism can also be more efficient than the snode
+ * ones. Currently we only use ndarray's num_active_indices & dtype information
+ * (saved in NdarrayRwKeys) in the reader & writer kernels Details can be found
+ * in get_ndarray_reader/writer in program.cpp.
+ */
+struct NdarrayRwKeys {
+  int num_active_indices;
+  DataType dtype;
+
+  struct Hasher {
+    std::size_t operator()(const NdarrayRwKeys &k) const {
+      auto h1 = std::hash<int>{}(k.num_active_indices);
+      auto h2 = k.dtype.hash();
+      return h1 ^ h2;
+    }
+  };
+
+  bool operator==(const NdarrayRwKeys &other) const {
+    return num_active_indices == other.num_active_indices &&
+           dtype == other.dtype;
+  }
+};
+
 /** A mapping from a Ndarray to its read/write access kernels.
  */
 class NdarrayRwAccessorsBank {
@@ -50,7 +81,8 @@ class NdarrayRwAccessorsBank {
 
  private:
   Program *const program_;
-  std::unordered_map<const Ndarray *, RwKernels> ndarray_to_kernels_;
+  std::unordered_map<NdarrayRwKeys, RwKernels, NdarrayRwKeys::Hasher>
+      ndarray_to_kernels_;
 };
 
 }  // namespace lang

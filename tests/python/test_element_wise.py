@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
-from taichi import allclose
+from tests import test_utils
 
 
 def _c_mod(a, b):
@@ -11,7 +11,7 @@ def _c_mod(a, b):
 
 @pytest.mark.parametrize('lhs_is_mat,rhs_is_mat', [(True, True), (True, False),
                                                    (False, True)])
-@ti.test(fast_math=False, exclude=[ti.vulkan])
+@test_utils.test(fast_math=False, exclude=[ti.vulkan])
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 16)
     if lhs_is_mat:
@@ -55,27 +55,27 @@ def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = x.to_numpy()
     y = y.to_numpy()
     z = z.to_numpy()
-    assert allclose(x[0], y + z)
-    assert allclose(x[1], y - z)
-    assert allclose(x[2], y * z)
-    assert allclose(x[3], y / z)
-    assert allclose(x[4], y // z)
-    assert allclose(x[5], y % z)
-    assert allclose(x[6], y**z)
-    assert allclose(x[7], y == z)
-    assert allclose(x[8], y != z)
-    assert allclose(x[9], y > z)
-    assert allclose(x[10], y >= z)
-    assert allclose(x[11], y < z)
-    assert allclose(x[12], y <= z)
-    assert allclose(x[13], np.arctan2(y, z))
-    assert allclose(x[14], np.minimum(y, z))
-    assert allclose(x[15], np.maximum(y, z))
+    assert test_utils.allclose(x[0], y + z)
+    assert test_utils.allclose(x[1], y - z)
+    assert test_utils.allclose(x[2], y * z)
+    assert test_utils.allclose(x[3], y / z)
+    assert test_utils.allclose(x[4], y // z)
+    assert test_utils.allclose(x[5], y % z)
+    assert test_utils.allclose(x[6], y**z)
+    assert test_utils.allclose(x[7], y == z)
+    assert test_utils.allclose(x[8], y != z)
+    assert test_utils.allclose(x[9], y > z)
+    assert test_utils.allclose(x[10], y >= z)
+    assert test_utils.allclose(x[11], y < z)
+    assert test_utils.allclose(x[12], y <= z)
+    assert test_utils.allclose(x[13], np.arctan2(y, z))
+    assert test_utils.allclose(x[14], np.minimum(y, z))
+    assert test_utils.allclose(x[15], np.maximum(y, z))
 
 
 @pytest.mark.parametrize('is_mat', [(True, True), (True, False),
                                     (False, True)])
-@ti.test()
+@test_utils.test()
 def test_binary_i(is_mat):
     lhs_is_mat, rhs_is_mat = is_mat
 
@@ -125,30 +125,30 @@ def test_binary_i(is_mat):
     x = x.to_numpy()
     y = y.to_numpy()
     z = z.to_numpy()
-    assert allclose(x[0], y + z)
-    assert allclose(x[1], y - z)
-    assert allclose(x[2], y * z)
-    assert allclose(x[3], y // z)
-    assert allclose(x[4], y // z)
-    assert allclose(x[5], y % z)
-    assert allclose(x[6], y % z)
-    assert allclose(x[7], y**z)
-    assert allclose(x[8], y == z)
-    assert allclose(x[9], y != z)
-    assert allclose(x[10], y > z)
-    assert allclose(x[11], y >= z)
-    assert allclose(x[12], y < z)
-    assert allclose(x[13], y <= z)
-    assert allclose(x[14], y & z)
-    assert allclose(x[15], y ^ z)
-    assert allclose(x[16], y | z)
-    assert allclose(x[17], np.minimum(y, z))
-    assert allclose(x[18], np.maximum(y, z))
-    assert allclose(x[19], y << z)
+    assert test_utils.allclose(x[0], y + z)
+    assert test_utils.allclose(x[1], y - z)
+    assert test_utils.allclose(x[2], y * z)
+    assert test_utils.allclose(x[3], y // z)
+    assert test_utils.allclose(x[4], y // z)
+    assert test_utils.allclose(x[5], y % z)
+    assert test_utils.allclose(x[6], y % z)
+    assert test_utils.allclose(x[7], y**z, rel=1e-5)
+    assert test_utils.allclose(x[8], y == z)
+    assert test_utils.allclose(x[9], y != z)
+    assert test_utils.allclose(x[10], y > z)
+    assert test_utils.allclose(x[11], y >= z)
+    assert test_utils.allclose(x[12], y < z)
+    assert test_utils.allclose(x[13], y <= z)
+    assert test_utils.allclose(x[14], y & z)
+    assert test_utils.allclose(x[15], y ^ z)
+    assert test_utils.allclose(x[16], y | z)
+    assert test_utils.allclose(x[17], np.minimum(y, z))
+    assert test_utils.allclose(x[18], np.maximum(y, z))
+    assert test_utils.allclose(x[19], y << z)
 
 
 @pytest.mark.parametrize('rhs_is_mat', [True, False])
-@ti.test(fast_math=False)
+@test_utils.test(fast_math=False)
 def test_writeback_binary_f(rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 9)
     y = ti.Matrix.field(3, 2, ti.f32, ())
@@ -184,18 +184,18 @@ def test_writeback_binary_f(rhs_is_mat):
     x = x.to_numpy()
     y = y.to_numpy()
     z = z.to_numpy()
-    assert allclose(x[1], y + z)
-    assert allclose(x[2], y - z)
-    assert allclose(x[3], y * z)
-    assert allclose(x[4], y / z)
-    assert allclose(x[5], y // z)
-    assert allclose(x[6], y % z)
-    assert allclose(x[7], np.minimum(y, z))
-    assert allclose(x[8], np.maximum(y, z))
+    assert test_utils.allclose(x[1], y + z)
+    assert test_utils.allclose(x[2], y - z)
+    assert test_utils.allclose(x[3], y * z)
+    assert test_utils.allclose(x[4], y / z)
+    assert test_utils.allclose(x[5], y // z)
+    assert test_utils.allclose(x[6], y % z)
+    assert test_utils.allclose(x[7], np.minimum(y, z))
+    assert test_utils.allclose(x[8], np.maximum(y, z))
 
 
 @pytest.mark.parametrize('rhs_is_mat', [(True, True), (True, False)])
-@ti.test()
+@test_utils.test()
 def test_writeback_binary_i(rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.i32, 12)
     y = ti.Matrix.field(3, 2, ti.i32, ())
@@ -230,23 +230,23 @@ def test_writeback_binary_i(rhs_is_mat):
     x = x.to_numpy()
     y = y.to_numpy()
     z = z.to_numpy()
-    assert allclose(x[1], y + z)
-    assert allclose(x[2], y - z)
-    assert allclose(x[3], y * z)
-    assert allclose(x[4], y // z)
-    assert allclose(x[5], y % z)
-    assert allclose(x[6], y & z)
-    assert allclose(x[7], y | z)
-    assert allclose(x[8], y ^ z)
-    assert allclose(x[10], np.minimum(y, z))
-    assert allclose(x[11], np.maximum(y, z))
+    assert test_utils.allclose(x[1], y + z)
+    assert test_utils.allclose(x[2], y - z)
+    assert test_utils.allclose(x[3], y * z)
+    assert test_utils.allclose(x[4], y // z)
+    assert test_utils.allclose(x[5], y % z)
+    assert test_utils.allclose(x[6], y & z)
+    assert test_utils.allclose(x[7], y | z)
+    assert test_utils.allclose(x[8], y ^ z)
+    assert test_utils.allclose(x[10], np.minimum(y, z))
+    assert test_utils.allclose(x[11], np.maximum(y, z))
 
 
-@ti.test(exclude=[ti.vulkan])
+@test_utils.test()
 def test_unary():
     xi = ti.Matrix.field(3, 2, ti.i32, 4)
     yi = ti.Matrix.field(3, 2, ti.i32, ())
-    xf = ti.Matrix.field(3, 2, ti.f32, 14)
+    xf = ti.Matrix.field(3, 2, ti.f32, 15)
     yf = ti.Matrix.field(3, 2, ti.f32, ())
 
     yi.from_numpy(np.array([[3, 2], [9, 0], [7, 4]], np.int32))
@@ -256,10 +256,10 @@ def test_unary():
     def func():
         xi[0] = -yi[None]
         xi[1] = ~yi[None]
-        xi[2] = ti.logical_not(yi[None])
-        xi[3] = ti.abs(yi[None])
+        xi[2] = not yi[None]
+        xi[3] = abs(yi[None])
         xf[0] = -yf[None]
-        xf[1] = ti.abs(yf[None])
+        xf[1] = abs(yf[None])
         xf[2] = ti.sqrt(yf[None])
         xf[3] = ti.sin(yf[None])
         xf[4] = ti.cos(yf[None])
@@ -272,35 +272,38 @@ def test_unary():
         xf[11] = ti.exp(yf[None])
         xf[12] = ti.log(yf[None])
         xf[13] = ti.rsqrt(yf[None])
+        xf[14] = ti.round(yf[None])
 
     func()
     xi = xi.to_numpy()
     yi = yi.to_numpy()
     xf = xf.to_numpy()
     yf = yf.to_numpy()
-    assert allclose(xi[0], -yi)
-    assert allclose(xi[1], ~yi)
-    assert allclose(xi[3], np.abs(yi))
-    assert allclose(xf[0], -yf)
-    assert allclose(xf[1], np.abs(yf))
-    assert allclose(xf[2], np.sqrt(yf), rel=1e-5)
-    assert allclose(xf[3], np.sin(yf), rel=1e-4)
-    assert allclose(xf[4], np.cos(yf), rel=1e-4)
-    assert allclose(xf[5], np.tan(yf), rel=1e-4)
-    assert allclose(xf[6], np.arcsin(yf), rel=1e-4)
-    assert allclose(xf[7], np.arccos(yf), rel=1e-4)
-    assert allclose(xf[8], np.tanh(yf), rel=1e-4)
-    assert allclose(xf[9], np.floor(yf), rel=1e-5)
-    assert allclose(xf[10], np.ceil(yf), rel=1e-5)
-    assert allclose(xf[11], np.exp(yf), rel=1e-5)
-    assert allclose(xf[12], np.log(yf), rel=1e-5)
-    assert allclose(xf[13], 1 / np.sqrt(yf), rel=1e-5)
+    assert test_utils.allclose(xi[0], -yi)
+    assert test_utils.allclose(xi[1], ~yi)
+    assert test_utils.allclose(xi[3], np.abs(yi))
+    assert test_utils.allclose(xf[0], -yf)
+    assert test_utils.allclose(xf[1], np.abs(yf))
+    assert test_utils.allclose(xf[2], np.sqrt(yf), rel=1e-5)
+    assert test_utils.allclose(xf[3], np.sin(yf), rel=1e-4)
+    assert test_utils.allclose(xf[4], np.cos(yf), rel=1e-4)
+    assert test_utils.allclose(xf[5], np.tan(yf), rel=1e-4)
+    # vulkan need 1e-3
+    assert test_utils.allclose(xf[6], np.arcsin(yf), rel=1e-3)
+    assert test_utils.allclose(xf[7], np.arccos(yf), rel=1e-3)
+    assert test_utils.allclose(xf[8], np.tanh(yf), rel=1e-4)
+    assert test_utils.allclose(xf[9], np.floor(yf), rel=1e-5)
+    assert test_utils.allclose(xf[10], np.ceil(yf), rel=1e-5)
+    assert test_utils.allclose(xf[11], np.exp(yf), rel=1e-5)
+    assert test_utils.allclose(xf[12], np.log(yf), rel=1e-5)
+    assert test_utils.allclose(xf[13], 1 / np.sqrt(yf), rel=1e-5)
+    assert test_utils.allclose(xf[14], np.round(yf), rel=1e-5)
 
 
 @pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
                                     (False, True, False), (False, False, True),
                                     (False, True, True)])
-@ti.test()
+@test_utils.test()
 def test_ternary_i(is_mat):
     cond_is_mat, lhs_is_mat, rhs_is_mat = is_mat
     x = ti.Matrix.field(3, 2, ti.i32, 1)
@@ -332,12 +335,13 @@ def test_ternary_i(is_mat):
 
     @ti.kernel
     def func():
-        x[0] = z[None] if y[None] else w[None]
+        x[0] = ti.select(y[None], z[None], w[None])
 
     func()
     x = x.to_numpy()
     y = y.to_numpy()
     z = z.to_numpy()
     w = w.to_numpy()
-    assert allclose(x[0],
-                    np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
+    assert test_utils.allclose(
+        x[0],
+        np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)

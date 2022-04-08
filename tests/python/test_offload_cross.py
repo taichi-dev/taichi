@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_cross_block_locals():
     ret = ti.field(ti.f32)
 
@@ -19,7 +20,7 @@ def test_offload_with_cross_block_locals():
     assert ret[None] == 45
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_cross_block_locals2():
     ret = ti.field(ti.f32)
 
@@ -40,7 +41,7 @@ def test_offload_with_cross_block_locals2():
     assert ret[None] == 45 * 21
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_cross_block_locals3():
     ret = ti.field(ti.f32, shape=())
 
@@ -57,7 +58,7 @@ def test_offload_with_cross_block_locals3():
     assert ret[None] == 1
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_cross_block_locals4():
     ret = ti.field(ti.f32, shape=())
 
@@ -74,7 +75,7 @@ def test_offload_with_cross_block_locals4():
     assert ret[None] == 10
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_flexible_bounds():
     s = ti.field(ti.i32, shape=())
     lower = ti.field(ti.i32, shape=())
@@ -92,7 +93,7 @@ def test_offload_with_flexible_bounds():
     assert s[None] == 29 * 10 // 2
 
 
-@ti.test()
+@test_utils.test()
 def test_offload_with_cross_block_globals():
     ret = ti.field(ti.f32)
 
@@ -108,3 +109,27 @@ def test_offload_with_cross_block_globals():
     ker()
 
     assert ret[None] == 46
+
+
+@test_utils.test()
+def test_offload_with_cross_nested_for():
+    @ti.kernel
+    def run(a: ti.i32):
+        b = a + 1
+        for x in range(1):
+            for i in range(b):
+                print('OK')
+
+    run(2)
+
+
+@test_utils.test()
+def test_offload_with_cross_if_inside_for():
+    @ti.kernel
+    def run(a: ti.i32):
+        b = a > 2
+        for x in range(1):
+            if b:
+                print('OK')
+
+    run(2)

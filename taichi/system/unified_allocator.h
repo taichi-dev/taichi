@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {
@@ -14,8 +14,8 @@ TLANG_NAMESPACE_BEGIN
 
 // This class can only have one instance
 class UnifiedAllocator {
-  std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
-  std::size_t size;
+  std::unique_ptr<VirtualMemoryAllocator> cpu_vm_;
+  std::size_t size_;
   Arch arch_;
 
   // put these two on the unified memory so that GPU can have access

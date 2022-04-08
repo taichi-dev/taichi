@@ -20,7 +20,7 @@ FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *) {
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));
-  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
+  return [ker_ptr](RuntimeContext &ctx) { return ker_ptr->launch(&ctx); };
 }
 
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -41,7 +41,7 @@ void CCProgramImpl::materialize_snode_tree(
   layout_ = gen.compile();
   size_t root_size = layout_->compile();
   size_t gtmp_size = taichi_global_tmp_buffer_size;
-  size_t args_size = taichi_max_num_args * sizeof(uint64);
+  size_t args_size = taichi_result_buffer_entries * sizeof(uint64);
 
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
 
@@ -99,7 +99,7 @@ void CCRuntime::compile() {
   execute(cc_program_impl_->config->cc_compile_cmd, obj_path_, src_path_);
 }
 
-void CCKernel::launch(Context *ctx) {
+void CCKernel::launch(RuntimeContext *ctx) {
   if (!kernel_->is_evaluator)
     ActionRecorder::get_instance().record("launch_kernel",
                                           {
@@ -179,7 +179,7 @@ CCFuncEntryType *CCProgramImpl::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll_->load_function("Tk_" + name));
 }
 
-CCContext *CCProgramImpl::update_context(Context *ctx) {
+CCContext *CCProgramImpl::update_context(RuntimeContext *ctx) {
   // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
   std::memcpy(context_->args, ctx->args, taichi_max_num_args * sizeof(uint64));
   context_->earg = (int *)ctx->extra_args;
@@ -189,7 +189,7 @@ CCContext *CCProgramImpl::update_context(Context *ctx) {
 void CCProgramImpl::context_to_result_buffer() {
   TI_ASSERT(result_buffer_);
   std::memcpy(result_buffer_, context_->args,
-              sizeof(uint64));  // XXX: assumed 1 return
+              taichi_max_num_ret_value * sizeof(uint64));
   context_->earg = nullptr;
 }
 

@@ -1,7 +1,10 @@
+from taichi.lang.misc import loop_unique
+
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_loop_unique_simple_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -12,7 +15,7 @@ def test_loop_unique_simple_1d():
     @ti.kernel
     def inc_y():
         for i in x:
-            a = ti.loop_unique(x[i])
+            a = loop_unique(x[i])
             y[a] += 1
 
     x[1] = 2
@@ -26,7 +29,7 @@ def test_loop_unique_simple_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_loop_unique_binary_op_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -37,7 +40,7 @@ def test_loop_unique_binary_op_1d():
     @ti.kernel
     def inc_y():
         for i in x:
-            a = ti.loop_unique(x[i])
+            a = loop_unique(x[i])
             y[a + 1] += 1
 
     x[1] = 2
@@ -51,7 +54,7 @@ def test_loop_unique_binary_op_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_loop_unique_nested_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -63,7 +66,7 @@ def test_loop_unique_nested_1d():
     def inc_y():
         for i in x:
             for j in range(i):
-                a = ti.loop_unique(x[i])
+                a = loop_unique(x[i])
                 y[a] += 1
 
     x[1] = 2
@@ -77,7 +80,7 @@ def test_loop_unique_nested_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse)
 def test_loop_unique_2d():
     x, y, z = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
@@ -89,7 +92,7 @@ def test_loop_unique_2d():
     @ti.kernel
     def inc_y_z():
         for i, j in x:
-            a = ti.loop_unique(x[i, j])
+            a = loop_unique(x[i, j])
             y[a, j] += 1
             z[i, i] += 1  # cannot demote this
 
@@ -123,7 +126,7 @@ def test_loop_unique_2d():
             assert z[i, j] == expected_result_z.get((i, j), 0)
 
 
-@ti.test()
+@test_utils.test()
 def test_loop_unique_ndrange():
     x, y, z = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
@@ -144,7 +147,7 @@ def test_loop_unique_ndrange():
     @ti.kernel
     def inc_y_z():
         for i, j in ti.ndrange(a, b):
-            u = ti.loop_unique(x[i, j])
+            u = loop_unique(x[i, j])
             y[u] += i
             z[i, j + 1] += 10  # TODO: demote this
 

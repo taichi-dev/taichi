@@ -3,6 +3,7 @@
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/backends/opengl/opengl_api.h"
 
 #include <string>
 #include <unordered_map>
@@ -24,11 +25,11 @@ class OpenglCodeGen {
         allows_nv_shader_ext_(allows_nv_shader_ext) {
   }
 
-  CompiledProgram compile(Kernel &kernel);
+  CompiledTaichiKernel compile(Kernel &kernel);
 
  private:
   void lower();
-  CompiledProgram gen();
+  CompiledTaichiKernel gen();
 
   const std::string kernel_name_;
   [[maybe_unused]] const StructCompiledResult *struct_compiled_;

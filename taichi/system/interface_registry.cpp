@@ -1,6 +1,5 @@
 #include <functional>
 
-#include "pybind11/pybind11.h"
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/system/benchmark.h"

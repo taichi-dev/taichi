@@ -9,8 +9,8 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-Particles::Particles(AppContext *app_context) {
-  init_particles(app_context, 1);
+Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
+  init_particles(app_context, /*vertices_count=*/1, vbo_attrs);
 }
 
 void Particles::update_ubo(glm::vec3 color,
@@ -32,6 +32,7 @@ void Particles::update_ubo(glm::vec3 color,
 }
 
 void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
+  Renderable::update_data(info.renderable_info);
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
@@ -43,13 +44,13 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     app_context_->device().unmap(storage_buffer_);
   }
 
-  Renderable::update_data(info.renderable_info);
-
   update_ubo(info.color, info.renderable_info.has_per_vertex_color, info.radius,
              scene);
 }
 
-void Particles::init_particles(AppContext *app_context, int vertices_count) {
+void Particles::init_particles(AppContext *app_context,
+                               int vertices_count,
+                               VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       1,
@@ -60,6 +61,7 @@ void Particles::init_particles(AppContext *app_context, int vertices_count) {
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
       TopologyType::Points,
+      vbo_attrs,
   };
 
   Renderable::init(config, app_context);

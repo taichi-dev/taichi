@@ -8,6 +8,9 @@ namespace taichi {
 namespace lang {
 
 TEST(Type, BitTypes) {
+  auto f16 =
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f16);
+  EXPECT_EQ(f16->to_string(), "f16");
   auto i32 = TypeFactory::get_instance()
                  .get_primitive_type(PrimitiveTypeID::i32)
                  ->as<PrimitiveType>();

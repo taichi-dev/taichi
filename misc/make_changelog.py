@@ -17,7 +17,7 @@ def load_pr_tags():
     return details
 
 
-def main(ver='master', repo_dir='.'):
+def main(ver=None, repo_dir='.'):
     g = Repo(repo_dir)
     commits_with_tags = set([tag.commit for tag in g.tags])
     commits = list(g.iter_commits(ver, max_count=200))
@@ -33,11 +33,8 @@ def main(ver='master', repo_dir='.'):
 
     for i, c in enumerate(commits):
         s = format(c)
-        if c in commits_with_tags:
-            if i == 0:
-                continue
-            else:
-                break
+        if c in commits_with_tags and i > 0:
+            break
 
         tags = []
         while s[0] == '[':
@@ -78,11 +75,11 @@ def main(ver='master', repo_dir='.'):
 
 
 if __name__ == '__main__':
-    ver = sys.argv[1] if len(sys.argv) > 1 else 'master'
+    ver = sys.argv[1] if len(sys.argv) > 1 else None
     repo = sys.argv[2] if len(sys.argv) > 2 else '.'
     save = sys.argv[3] if len(sys.argv) > 3 else False
     res = main(ver, repo)
     if save:
-        with open('../python/taichi/CHANGELOG.md', 'w') as f:
+        with open('./python/taichi/CHANGELOG.md', 'w') as f:
             f.write(res)
     print(res)

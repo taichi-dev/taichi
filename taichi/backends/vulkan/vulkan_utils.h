@@ -8,9 +8,7 @@
 #include <VersionHelpers.h>
 #endif
 
-#include <volk.h>
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.h>
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include <functional>
 #include <optional>

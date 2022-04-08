@@ -1,6 +1,7 @@
 #pragma once
 #include "taichi/lang_util.h"
 
+#include "taichi/jit/jit_module.h"
 #include "taichi/program/compile_config.h"
 #include <string>
 #include <vector>
@@ -26,6 +27,9 @@ enum class DeviceCapability : uint32_t {
   spirv_has_float16,
   spirv_has_float64,
   spirv_has_atomic_i64,
+  spirv_has_atomic_float16,  // load, store, exchange
+  spirv_has_atomic_float16_add,
+  spirv_has_atomic_float16_minmax,
   spirv_has_atomic_float,  // load, store, exchange
   spirv_has_atomic_float_add,
   spirv_has_atomic_float_minmax,
@@ -33,17 +37,28 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_add,
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
+  spirv_has_physical_storage_buffer,
+  spirv_has_subgroup_basic,
+  spirv_has_subgroup_vote,
+  spirv_has_subgroup_arithmetic,
+  spirv_has_subgroup_ballot,
+  // Graphics Caps,
+  wide_lines
 };
 
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
+struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
-struct DeviceAllocation {
+using DeviceAllocationId = uint32_t;
+
+struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
-  uint32_t alloc_id{0};
+  DeviceAllocationId alloc_id{0};
+  // TODO: Shall we include size here?
 
   DevicePtr get_ptr(uint64_t offset = 0) const;
 
@@ -56,14 +71,14 @@ struct DeviceAllocation {
   }
 };
 
-struct DeviceAllocationGuard : public DeviceAllocation {
+struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
   DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
   DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
   ~DeviceAllocationGuard();
 };
 
-struct DevicePtr : public DeviceAllocation {
+struct TI_DLL_EXPORT DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
   bool operator==(const DevicePtr &other) const {
@@ -263,6 +278,17 @@ class CommandList {
   virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) = 0;
   virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
 
+  struct ComputeSize {
+    uint32_t x{0};
+    uint32_t y{0};
+    uint32_t z{0};
+  };
+  // Some GPU APIs can set the block (workgroup, threadsgroup) size at
+  // dispatch time.
+  virtual void dispatch(ComputeSize grid_size, ComputeSize block_size) {
+    dispatch(grid_size.x, grid_size.y, grid_size.z);
+  }
+
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
                                 int y0,
@@ -362,15 +388,17 @@ class Device {
  public:
   virtual ~Device(){};
 
-  virtual uint32_t get_cap(DeviceCapability capability_id) const {
+  uint32_t get_cap(DeviceCapability capability_id) const {
     if (caps_.find(capability_id) == caps_.end())
       return 0;
     return caps_.at(capability_id);
   }
 
-  virtual void set_cap(DeviceCapability capability_id, uint32_t val) {
+  void set_cap(DeviceCapability capability_id, uint32_t val) {
     caps_[capability_id] = val;
   }
+
+  void print_all_cap() const;
 
   struct AllocParams {
     uint64_t size{0};
@@ -381,7 +409,12 @@ class Device {
   };
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
+
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
+
+  virtual uint64_t get_memory_physical_pointer(DeviceAllocation handle) {
+    TI_NOT_IMPLEMENTED
+  }
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -392,6 +425,13 @@ class Device {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
   }
+
+  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Each thraed will acquire its own stream
+  virtual Stream *get_compute_stream() = 0;
 
   // Mapping can fail and will return nullptr
   virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
@@ -425,9 +465,6 @@ class Device {
                               DevicePtr src,
                               uint64_t size);
 
-  // Each thraed will acquire its own stream
-  virtual Stream *get_compute_stream() = 0;
-
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;
 };
@@ -440,6 +477,7 @@ class Surface {
   virtual DeviceAllocation get_target_image() = 0;
   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
+  virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
   virtual void resize(uint32_t width, uint32_t height) = 0;
   virtual DeviceAllocation get_image_data() {
@@ -468,6 +506,8 @@ struct SurfaceConfig {
   bool vsync{false};
   bool adaptive{true};
   void *window_handle{nullptr};
+  uint32_t width{1};
+  uint32_t height{1};
 };
 
 struct ImageParams {

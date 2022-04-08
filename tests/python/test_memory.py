@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cuda)
+@test_utils.test(arch=ti.cuda)
 def test_memory_allocate():
     HUGE_SIZE = 1024**2 * 128
     x = ti.field(ti.i32, shape=(HUGE_SIZE, ))

@@ -1,9 +1,11 @@
 import numpy as np
+import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_abs():
     x = ti.field(ti.f32)
 
@@ -24,7 +26,7 @@ def test_abs():
         assert x[i] == i
 
 
-@ti.test()
+@test_utils.test()
 def test_int():
     x = ti.field(ti.f32)
 
@@ -47,7 +49,7 @@ def test_int():
         assert x[i] == i // 2
 
 
-@ti.test()
+@test_utils.test()
 def test_minmax():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -70,7 +72,10 @@ def test_minmax():
         y[i] = N - i
         z[i] = i - 2 if i % 2 else i + 2
 
-    func()
+    with pytest.warns(DeprecationWarning,
+                      match="Calling builtin function") as records:
+        func()
+    assert len(records) > 0
 
     assert np.allclose(
         minimum.to_numpy(),

@@ -18,7 +18,7 @@ Every kernel in Taichi is a template kernel, even if it has no template argument
 
 ## Template metaprogramming
 
-By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
+By using `ti.template()` as an argument type hint, a Taichi field or a python object can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 
 ```python {2}
 @ti.kernel
@@ -37,6 +37,10 @@ copy_1D(a, b)
 # Reuse the kernel for field c and d:
 copy_1D(c, d)
 ```
+
+:::note
+If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel.
+:::
 
 :::note
 The template parameters are inlined into the generated kernel after compilation.
@@ -122,6 +126,12 @@ def foo():
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
 computational overhead at runtime:
 
+### Static Scope
+`ti.static` is a function which receives one argument. It is a hint for the compiler to evaluate the argument at compile time.
+The scope of the argument of `ti.static` is called static-scope.
+
+### Compile-time branching
+
 - Use `ti.static` for compile-time branching (for those who are familiar with
   C++17, this is similar to [if
   constexpr](https://en.cppreference.com/w/cpp/language/if).):
@@ -138,6 +148,8 @@ def static():
 :::note
 One of the two branches of the `static if` will be discarded after compilation.
 :::
+
+### Loop unrolling
 
 - Use `ti.static` for forced loop unrolling:
 
@@ -158,7 +170,7 @@ def func():
 
 There are two reasons to use `ti.static` with for loops:
 
-- Loop unrolling for improving runtime performance (see section [Compile-time evaluations](##Compile-time evaluations)).
+- Loop unrolling for improving runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
 - Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
 
 For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
@@ -173,3 +185,28 @@ def reset():
       # The inner loop must be unrolled since j is an index for accessing a vector
       x[i][j] = 0
 ```
+
+## Compile-time recursion of `ti.func`
+
+A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines whether to recurse is evaluated at compile time.
+
+You can combine [compile-time branching](#compile-time-branching) and [template](#template-metaprogramming) to write compile-time recursive functions.
+
+For example, `sum_from_one_to` is a compile-time recursive function that calculates the sum of numbers from `1` to `n`.
+
+```python {1-6}
+@ti.func
+def sum_from_one_to(n: ti.template()) -> ti.i32:
+    ret = 0
+    if ti.static(n > 0):
+        ret = n + sum_from_one_to(n - 1)
+    return ret
+
+@ti.kernel
+def sum_from_one_to_ten():
+    print(sum_from_one_to(10))  # prints 55
+```
+
+:::caution WARNING
+When the recursion is too deep, it is not recommended to use compile-time recursion because deeper compile-time recursion expands to longer code during compilation, resulting in increased compilation time.
+:::

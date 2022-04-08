@@ -27,7 +27,7 @@ TaskLaunchRecord::TaskLaunchRecord() : kernel(nullptr), ir_handle(nullptr, 0) {
 // Initial node has rec.id == 0, so we start from rec.id == 1.
 std::atomic<int> TaskLaunchRecord::task_counter = 1;
 
-TaskLaunchRecord::TaskLaunchRecord(Context context,
+TaskLaunchRecord::TaskLaunchRecord(RuntimeContext context,
                                    Kernel *kernel,
                                    IRHandle ir_handle)
     : context(context), kernel(kernel), ir_handle(ir_handle) {
@@ -150,7 +150,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   get_meta_input_value_states(root_stmt, &meta, ir_bank);
-  meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
+  meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt).first;
 
   std::unordered_set<SNode *> activates, deactivates;
 

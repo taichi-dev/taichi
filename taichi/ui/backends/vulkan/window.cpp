@@ -1,20 +1,26 @@
 #include "taichi/ui/backends/vulkan/window.h"
+#include "taichi/program/callable.h"
+
+using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-Window::Window(const AppConfig &config) : WindowBase(config) {
-  init(config);
+Window::Window(Program *prog, const AppConfig &config) : WindowBase(config) {
+  init(prog, config);
 }
 
-void Window::init(const AppConfig &config) {
-  glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
+void Window::init(Program *prog, const AppConfig &config) {
+  if (config_.show_window) {
+    glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
+  }
 
   renderer_ = std::make_unique<Renderer>();
-  renderer_->init(glfw_window_, config);
+  renderer_->init(prog, glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
-  gui_ = std::make_unique<Gui>(&renderer_->app_context(), glfw_window_);
+  gui_ = std::make_unique<Gui>(&renderer_->app_context(),
+                               &renderer_->swap_chain(), glfw_window_);
 
   prepare_for_next_frame();
 }
@@ -80,7 +86,9 @@ void Window::present_frame() {
 Window::~Window() {
   gui_->cleanup();
   renderer_->cleanup();
-  glfwTerminate();
+  if (config_.show_window) {
+    glfwTerminate();
+  }
 }
 
 void Window::write_image(const std::string &filename) {
@@ -88,6 +96,9 @@ void Window::write_image(const std::string &filename) {
     draw_frame();
   }
   renderer_->swap_chain().write_image(filename);
+  if (!config_.show_window) {
+    prepare_for_next_frame();
+  }
 }
 
 }  // namespace vulkan

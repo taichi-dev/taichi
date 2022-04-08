@@ -1,5 +1,12 @@
-from .np2ply import PLYWriter
-from .patterns import taichi_logo
-from .video import VideoManager
+"""Taichi utility module.
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+- `image` submodule for image io.
+- `video` submodule for exporting results to video files.
+- `diagnose` submodule for printing system environment information.
+"""
+from taichi.tools.async_utils import *
+from taichi.tools.cc_compose import *
+from taichi.tools.diagnose import *
+from taichi.tools.image import *
+from taichi.tools.np2ply import *
+from taichi.tools.video import *

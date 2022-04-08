@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/lang_util.h"
 
 #include <algorithm>
@@ -60,6 +60,10 @@ class KernelProfilerBase {
   virtual void clear() = 0;
 
   virtual void sync() = 0;
+
+  virtual bool set_profiler_toolkit(std::string toolkit_name) {
+    return false;
+  }
 
   // TODO: remove start and always use start_with_handle
   virtual void start(const std::string &kernel_name){TI_NOT_IMPLEMENTED};

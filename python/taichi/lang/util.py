@@ -1,11 +1,13 @@
 import functools
 import os
+import traceback
 
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from colorama import Fore, Style
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
-
-import taichi as ti
+from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
+                                          u16, u32, u64)
 
 _has_pytorch = False
 
@@ -28,10 +30,29 @@ def has_pytorch():
     return _has_pytorch
 
 
+from distutils.spawn import find_executable
+
+# Taichi itself uses llvm-10.0.0 to compile.
+# There will be some issues compiling CUDA with other clang++ version.
+_clangpp_candidates = ['clang++-10']
+_clangpp_presence = None
+for c in _clangpp_candidates:
+    if find_executable(c) is not None:
+        _clangpp_presence = find_executable(c)
+
+
+def has_clangpp():
+    return _clangpp_presence is not None
+
+
+def get_clangpp():
+    return _clangpp_presence
+
+
 def is_taichi_class(rhs):
     taichi_class = False
     try:
-        if rhs.is_taichi_class:
+        if rhs._is_taichi_class:
             taichi_class = True
     except:
         pass
@@ -48,28 +69,29 @@ def to_numpy_type(dt):
         DataType: The counterpart data type in numpy.
 
     """
-    if dt == ti.f32:
+    if dt == f32:
         return np.float32
-    elif dt == ti.f64:
+    if dt == f64:
         return np.float64
-    elif dt == ti.i32:
+    if dt == i32:
         return np.int32
-    elif dt == ti.i64:
+    if dt == i64:
         return np.int64
-    elif dt == ti.i8:
+    if dt == i8:
         return np.int8
-    elif dt == ti.i16:
+    if dt == i16:
         return np.int16
-    elif dt == ti.u8:
+    if dt == u8:
         return np.uint8
-    elif dt == ti.u16:
+    if dt == u16:
         return np.uint16
-    elif dt == ti.u32:
+    if dt == u32:
         return np.uint32
-    elif dt == ti.u64:
+    if dt == u64:
         return np.uint64
-    else:
-        assert False
+    if dt == f16:
+        return np.half
+    assert False
 
 
 def to_pytorch_type(dt):
@@ -82,28 +104,27 @@ def to_pytorch_type(dt):
         DataType: The counterpart data type in torch.
 
     """
-    if dt == ti.f32:
+    # pylint: disable=E1101
+    if dt == f32:
         return torch.float32
-    elif dt == ti.f64:
+    if dt == f64:
         return torch.float64
-    elif dt == ti.i32:
+    if dt == i32:
         return torch.int32
-    elif dt == ti.i64:
+    if dt == i64:
         return torch.int64
-    elif dt == ti.i8:
+    if dt == i8:
         return torch.int8
-    elif dt == ti.i16:
+    if dt == i16:
         return torch.int16
-    elif dt == ti.u8:
+    if dt == u8:
         return torch.uint8
-    elif dt == ti.u16:
-        return torch.uint16
-    elif dt == ti.u32:
-        return torch.uint32
-    elif dt == ti.u64:
-        return torch.uint64
-    else:
-        assert False
+    if dt == f16:
+        return torch.float16
+    if dt in (u16, u32, u64):
+        raise RuntimeError(
+            f'PyTorch doesn\'t support {dt.to_string()} data type.')
+    assert False
 
 
 def to_taichi_type(dt):
@@ -120,63 +141,63 @@ def to_taichi_type(dt):
         return dt
 
     if dt == np.float32:
-        return ti.f32
-    elif dt == np.float64:
-        return ti.f64
-    elif dt == np.int32:
-        return ti.i32
-    elif dt == np.int64:
-        return ti.i64
-    elif dt == np.int8:
-        return ti.i8
-    elif dt == np.int16:
-        return ti.i16
-    elif dt == np.uint8:
-        return ti.u8
-    elif dt == np.uint16:
-        return ti.u16
-    elif dt == np.uint32:
-        return ti.u32
-    elif dt == np.uint64:
-        return ti.u64
+        return f32
+    if dt == np.float64:
+        return f64
+    if dt == np.int32:
+        return i32
+    if dt == np.int64:
+        return i64
+    if dt == np.int8:
+        return i8
+    if dt == np.int16:
+        return i16
+    if dt == np.uint8:
+        return u8
+    if dt == np.uint16:
+        return u16
+    if dt == np.uint32:
+        return u32
+    if dt == np.uint64:
+        return u64
+    if dt == np.half:
+        return f16
 
     if has_pytorch():
+        # pylint: disable=E1101
         if dt == torch.float32:
-            return ti.f32
-        elif dt == torch.float64:
-            return ti.f64
-        elif dt == torch.int32:
-            return ti.i32
-        elif dt == torch.int64:
-            return ti.i64
-        elif dt == torch.int8:
-            return ti.i8
-        elif dt == torch.int16:
-            return ti.i16
-        elif dt == torch.uint8:
-            return ti.u8
-        elif dt == torch.uint16:
-            return ti.u16
-        elif dt == torch.uint32:
-            return ti.u32
-        elif dt == torch.uint64:
-            return ti.u64
+            return f32
+        if dt == torch.float64:
+            return f64
+        if dt == torch.int32:
+            return i32
+        if dt == torch.int64:
+            return i64
+        if dt == torch.int8:
+            return i8
+        if dt == torch.int16:
+            return i16
+        if dt == torch.uint8:
+            return u8
+        if dt == torch.float16:
+            return f16
+        if dt in (u16, u32, u64):
+            raise RuntimeError(
+                f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
-    raise AssertionError("Unknown type {}".format(dt))
+    raise AssertionError(f"Unknown type {dt}")
 
 
 def cook_dtype(dtype):
-    _taichi_skip_traceback = 1
     if isinstance(dtype, _ti_core.DataType):
         return dtype
-    elif isinstance(dtype, _ti_core.Type):
+    if isinstance(dtype, _ti_core.Type):
         return _ti_core.DataType(dtype)
-    elif dtype is float:
+    if dtype is float:
         return impl.get_runtime().default_fp
-    elif dtype is int:
+    if dtype is int:
         return impl.get_runtime().default_ip
-    else:
-        raise ValueError(f'Invalid data type {dtype}')
+    raise ValueError(f'Invalid data type {dtype}')
 
 
 def in_taichi_scope():
@@ -190,7 +211,6 @@ def in_python_scope():
 def taichi_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 1
         assert in_taichi_scope(), \
                 f'{func.__name__} cannot be called in Python-scope'
         return func(*args, **kwargs)
@@ -201,9 +221,32 @@ def taichi_scope(func):
 def python_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 1
         assert in_python_scope(), \
                 f'{func.__name__} cannot be called in Taichi-scope'
         return func(*args, **kwargs)
 
     return wrapped
+
+
+def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
+    """Print a warning message. Note that the builtin `warnings` module is
+    unreliable since it may be suppressed by other packages such as IPython.
+
+    Args:
+        msg (str): message to print.
+        warning_type (Warning): type of warning.
+        stacklevel (int): warning stack level from the caller.
+        print_stack (bool): whether to print the stack
+    """
+    msg = f'{warning_type.__name__}: {msg}'
+    if print_stack:
+        msg += f'\n{get_traceback(stacklevel)}'
+    print(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL)
+
+
+def get_traceback(stacklevel=1):
+    s = traceback.extract_stack()[:-1 - stacklevel]
+    return ''.join(traceback.format_list(s))
+
+
+__all__ = []

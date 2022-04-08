@@ -1,7 +1,10 @@
+import pytest
+
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_accessor():
     a = ti.field(dtype=ti.i32)
 
@@ -11,7 +14,7 @@ def test_accessor():
     assert a[1029, 2100, 2200] == 1
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_for_huge_offsets():
     a = ti.field(dtype=ti.i32)
 
@@ -32,7 +35,7 @@ def test_struct_for_huge_offsets():
                     assert a[i, j, k, l] == i + j * 10 + k * 100 + l * 1000
 
 
-@ti.test()
+@test_utils.test()
 def test_struct_for_negative():
     a = ti.field(dtype=ti.i32)
 
@@ -51,7 +54,7 @@ def test_struct_for_negative():
             assert a[i, j] == i + j * 10
 
 
-@ti.test()
+@test_utils.test()
 def test_offset_for_var():
     a = ti.field(dtype=ti.i32, shape=16, offset=-48)
     b = ti.field(dtype=ti.i32, shape=(16, ), offset=(16, ))
@@ -73,7 +76,7 @@ def test_offset_for_var():
             assert e[i, j] == i * j
 
 
-@ti.test()
+@test_utils.test()
 def test_offset_for_vector():
     a = ti.field(dtype=ti.i32, shape=16, offset=-48)
     b = ti.field(dtype=ti.i32, shape=16, offset=None)
@@ -92,7 +95,7 @@ def test_offset_for_vector():
         assert c[i][0] == 2 * i
 
 
-@ti.test()
+@test_utils.test()
 def test_offset_for_matrix():
     a = ti.Matrix.field(3,
                         3,
@@ -113,22 +116,26 @@ def test_offset_for_matrix():
             assert a[i, j][0, 0] == i + j
 
 
-@ti.test()
-@ti.must_throw(AssertionError)
+@test_utils.test()
 def test_offset_must_throw_var():
-    a = ti.field(dtype=ti.float32, shape=3, offset=(3, 4))
-    b = ti.field(dtype=ti.float32, shape=None, offset=(3, 4))
+    with pytest.raises(AssertionError):
+        a = ti.field(dtype=ti.float32, shape=3, offset=(3, 4))
+        b = ti.field(dtype=ti.float32, shape=None, offset=(3, 4))
 
 
-@ti.test()
-@ti.must_throw(AssertionError)
+@test_utils.test()
 def test_offset_must_throw_vector():
-    a = ti.Vector.field(3, dtype=ti.float32, shape=3, offset=(3, 4))
-    b = ti.Vector.field(3, dtype=ti.float32, shape=None, offset=(3, ))
+    with pytest.raises(AssertionError):
+        a = ti.Vector.field(3, dtype=ti.float32, shape=3, offset=(3, 4))
+        b = ti.Vector.field(3, dtype=ti.float32, shape=None, offset=(3, ))
 
 
-@ti.test()
-@ti.must_throw(AssertionError)
+@test_utils.test()
 def test_offset_must_throw_matrix():
-    c = ti.Matrix.field(3, 3, dtype=ti.i32, shape=(32, 16, 8), offset=(32, 16))
-    d = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))
+    with pytest.raises(AssertionError):
+        c = ti.Matrix.field(3,
+                            3,
+                            dtype=ti.i32,
+                            shape=(32, 16, 8),
+                            offset=(32, 16))
+        d = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))

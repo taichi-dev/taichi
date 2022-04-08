@@ -12,7 +12,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
        {Extension::sparse, Extension::async_mode, Extension::quant,
         Extension::quant_basic, Extension::data64, Extension::adstack,
         Extension::assertion, Extension::extfunc, Extension::packed,
-        Extension::dynamic_index}},
+        Extension::dynamic_index, Extension::mesh}},
       {Arch::arm64,
        {Extension::sparse, Extension::async_mode, Extension::quant,
         Extension::quant_basic, Extension::data64, Extension::adstack,
@@ -21,7 +21,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
        {Extension::sparse, Extension::async_mode, Extension::quant,
         Extension::quant_basic, Extension::data64, Extension::adstack,
         Extension::bls, Extension::assertion, Extension::packed,
-        Extension::dynamic_index}},
+        Extension::dynamic_index, Extension::mesh}},
       // TODO: supporting quant & async in metal(tests randomly crashed)
       {Arch::metal,
        {Extension::adstack, Extension::assertion, Extension::sparse}},

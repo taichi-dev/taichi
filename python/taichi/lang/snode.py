@@ -1,15 +1,8 @@
 import numbers
 
-# The reason we import just the taichi.core.util module, instead of the ti_core
-# object within it, is that ti_core is stateful. While in practice ti_core is
-# loaded during the import procedure, it's probably still good to delay the
-# access to it.
-import taichi.lang
-from taichi.core.util import ti_core as _ti_core
-from taichi.lang import impl
-from taichi.lang.expr import Expr
+from taichi._lib import core as _ti_core
+from taichi.lang import expr, impl, matrix
 from taichi.lang.field import Field
-from taichi.misc.util import deprecated
 
 
 class SNode:
@@ -18,7 +11,7 @@ class SNode:
     For more information on Taichi's SNode system, please check out
     these references:
 
-    * https://docs.taichi.graphics/lang/articles/advanced/sparse
+    * https://docs.taichi.graphics/lang/articles/sparse
     * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
 
     Arg:
@@ -59,13 +52,15 @@ class SNode:
             self.ptr.pointer(axes, dimensions,
                              impl.current_cfg().packed))
 
-    def hash(self, axes, dimensions):
+    @staticmethod
+    def _hash(axes, dimensions):
+        # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions,
-                                   impl.current_cfg().packed))
+        # if isinstance(dimensions, int):
+        #     dimensions = [dimensions] * len(axes)
+        # return SNode(self.ptr.hash(axes, dimensions,
+        #                            impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -101,10 +96,6 @@ class SNode:
             self.ptr.bitmasked(axes, dimensions,
                                impl.current_cfg().packed))
 
-    @deprecated('_bit_struct', 'bit_struct')
-    def _bit_struct(self, num_bits):
-        return self.bit_struct(num_bits)
-
     def bit_struct(self, num_bits: int):
         """Adds a bit_struct SNode as a child component of `self`.
 
@@ -115,10 +106,6 @@ class SNode:
             The added :class:`~taichi.lang.SNode` instance.
         """
         return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
-
-    @deprecated('_bit_array', 'bit_array')
-    def _bit_array(self, axes, dimensions, num_bits):
-        return self.bit_array(axes, dimensions, num_bits)
 
     def bit_array(self, axes, dimensions, num_bits):
         """Adds a bit_array SNode as a child component of `self`.
@@ -157,7 +144,7 @@ class SNode:
 
         for arg in args:
             if isinstance(arg, Field):
-                for var in arg.get_field_members():
+                for var in arg._get_field_members():
                     self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
@@ -199,8 +186,22 @@ class SNode:
             return impl.root
         return SNode(p)
 
+    def _path_from_root(self):
+        """Gets the path from root to `self` in the SNode tree.
+
+        Returns:
+            List[Union[_Root, SNode]]: The list of SNodes on the path from root to `self`.
+        """
+        p = self
+        res = [p]
+        while p != impl.root:
+            p = p.parent()
+            res.append(p)
+        res.reverse()
+        return res
+
     @property
-    def dtype(self):
+    def _dtype(self):
         """Gets the data type of `self`.
 
         Returns:
@@ -208,16 +209,8 @@ class SNode:
         """
         return self.ptr.data_type()
 
-    @deprecated('x.data_type()', 'x.dtype')
-    def data_type(self):
-        return self.dtype
-
-    @deprecated('x.dim()', 'len(x.shape)')
-    def dim(self):
-        return len(self.shape)
-
     @property
-    def id(self):
+    def _id(self):
         """Gets the id of `self`.
 
         Returns:
@@ -233,30 +226,20 @@ class SNode:
             Tuple[int]: The number of elements from root in each axis of `self`.
         """
         dim = self.ptr.num_active_indices()
-        ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
+        ret = tuple(self.ptr.get_shape_along_axis(i) for i in range(dim))
 
-        class callable_tuple(tuple):
-            @deprecated('x.shape()', 'x.shape')
-            def __call__(self):
-                return self
-
-        ret = callable_tuple(ret)
         return ret
 
-    @deprecated('x.get_shape(i)', 'x.shape[i]')
-    def get_shape(self, i):
-        return self.shape[i]
-
-    def loop_range(self):
+    def _loop_range(self):
         """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:
             taichi_core.Expr: See above.
         """
-        return _ti_core.global_var_expr_from_snode(self.ptr)
+        return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
 
     @property
-    def name(self):
+    def _name(self):
         """Gets the name of `self`.
 
         Returns:
@@ -265,24 +248,14 @@ class SNode:
         return self.ptr.name()
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets `self`.
-
         Returns:
             SNode: `self`.
         """
         return self
 
-    @property
-    def needs_grad(self):
-        """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-
-        Returns:
-            bool: Whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
-        """
-        return self.ptr.has_grad()
-
-    def get_children(self):
+    def _get_children(self):
         """Gets all children components of `self`.
 
         Returns:
@@ -294,30 +267,38 @@ class SNode:
         return children
 
     @property
-    def num_dynamically_allocated(self):
+    def _num_dynamically_allocated(self):
         runtime = impl.get_runtime()
-        runtime.materialize()
+        runtime.materialize_root_fb(False)
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
 
     @property
-    def cell_size_bytes(self):
-        runtime = impl.get_runtime()
-        runtime.materialize()
+    def _cell_size_bytes(self):
+        impl.get_runtime().materialize_root_fb(False)
         return self.ptr.cell_size_bytes
+
+    @property
+    def _offset_bytes_in_parent_cell(self):
+        impl.get_runtime().materialize_root_fb(False)
+        return self.ptr.offset_bytes_in_parent_cell
 
     def deactivate_all(self):
         """Recursively deactivate all children components of `self`."""
-        ch = self.get_children()
+        ch = self._get_children()
         for c in ch:
             c.deactivate_all()
         SNodeType = _ti_core.SNodeType
         if self.ptr.type == SNodeType.pointer or self.ptr.type == SNodeType.bitmasked:
-            taichi.lang.meta.snode_deactivate(self)
+            from taichi._kernels import \
+                snode_deactivate  # pylint: disable=C0415
+            snode_deactivate(self)
         if self.ptr.type == SNodeType.dynamic:
             # Note that dynamic nodes are different from other sparse nodes:
             # instead of deactivating each element, we only need to deactivate
             # its parent, whose linked list of chunks of elements will be deleted.
-            taichi.lang.meta.snode_deactivate_dynamic(self)
+            from taichi._kernels import \
+                snode_deactivate_dynamic  # pylint: disable=C0415
+            snode_deactivate_dynamic(self)
 
     def __repr__(self):
         type_ = str(self.ptr.type)[len('SNodeType.'):]
@@ -334,7 +315,7 @@ class SNode:
     def __eq__(self, other):
         return self.ptr == other.ptr
 
-    def physical_index_position(self):
+    def _physical_index_position(self):
         """Gets mappings from virtual axes to physical axes.
 
         Returns:
@@ -346,3 +327,124 @@ class SNode:
             if physical != -1:
                 ret[virtual] = physical
         return ret
+
+
+def rescale_index(a, b, I):
+    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'.
+
+    Args:
+
+        a, b (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`): Input taichi fields or snodes.
+        I (Union[list, :class:`~taichi.Vector`]): grouped loop index.
+
+    Returns:
+        Ib (:class:`~taichi.Vector`): rescaled grouped loop index
+    """
+    assert isinstance(
+        a, (Field, SNode)), "The first argument must be a field or an SNode"
+    assert isinstance(
+        b, (Field, SNode)), "The second argument must be a field or an SNode"
+    if isinstance(I, list):
+        I = matrix.Vector(I)
+    else:
+        assert isinstance(
+            I, matrix.Matrix
+        ), "The third argument must be an index (list or ti.Vector)"
+    entries = [I(i) for i in range(I.n)]
+    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
+        if a.shape[n] > b.shape[n]:
+            entries[n] = I(n) // (a.shape[n] // b.shape[n])
+        if a.shape[n] < b.shape[n]:
+            entries[n] = I(n) * (b.shape[n] // a.shape[n])
+    return matrix.Vector(entries)
+
+
+def append(node, indices, val):
+    """Append a value `val` to a SNode `node` at index `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): Input SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
+        val (:mod:`~taichi.types`): the data to be appended.
+    """
+    a = impl.expr_init(
+        _ti_core.insert_append(node._snode.ptr, expr.make_expr_group(indices),
+                               expr.Expr(val).ptr))
+    return a
+
+
+def is_active(node, indices):
+    """Explicitly query whether a cell in a SNode `node` at location
+    `indices` is active or not.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, list, :class:`~taichi.Vector`]): the indices to visit.
+
+    Returns:
+        bool: the cell `node[indices]` is active or not.
+    """
+    return expr.Expr(
+        _ti_core.insert_is_active(node._snode.ptr,
+                                  expr.make_expr_group(indices)))
+
+
+def activate(node, indices):
+    """Explicitly activate a cell of `node` at location `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
+    """
+    impl.get_runtime().prog.current_ast_builder().insert_activate(
+        node._snode.ptr, expr.make_expr_group(indices))
+
+
+def deactivate(node, indices):
+    """Explicitly deactivate a cell of `node` at location `indices`.
+
+    After deactivation, the Taichi runtime automatically recycles and zero-fills
+    the memory of the deactivated cell.
+
+    Args:
+        node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
+    """
+    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+        node._snode.ptr, expr.make_expr_group(indices))
+
+
+def length(node, indices):
+    """Return the length of the dynamic SNode `node` at index `indices`.
+
+    Args:
+        node (:class:`~taichi.SNode`): a dynamic SNode.
+        indices (Union[int, :class:`~taichi.Vector`]): the indices to query.
+
+    Returns:
+        int: the length of cell `node[indices]`.
+    """
+    return expr.Expr(
+        _ti_core.insert_len(node._snode.ptr, expr.make_expr_group(indices)))
+
+
+def get_addr(f, indices):
+    """Query the memory address (on CUDA/x64) of field `f` at index `indices`.
+
+    Currently, this function can only be called inside a taichi kernel.
+
+    Args:
+        f (Union[:class:`~taichi.Field`, :class:`~taichi.MatrixField`]): Input taichi field for memory address query.
+        indices (Union[int, :class:`~taichi.Vector`]): The specified field indices of the query.
+
+    Returns:
+        ti.u64: The memory address of `f[indices]`.
+    """
+    return expr.Expr(
+        _ti_core.expr_get_addr(f._snode.ptr, expr.make_expr_group(indices)))
+
+
+__all__ = [
+    'activate', 'append', 'deactivate', 'get_addr', 'is_active', 'length',
+    'rescale_index', "SNode"
+]

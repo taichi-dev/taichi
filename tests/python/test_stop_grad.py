@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_normal_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -27,7 +28,7 @@ def test_normal_grad():
         assert x.grad[i] == i * 2
 
 
-@ti.test()
+@test_utils.test()
 def test_stop_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -41,7 +42,7 @@ def test_stop_grad():
     @ti.kernel
     def func():
         for i in range(n):
-            ti.core.stop_grad(x.snode.ptr)
+            ti.stop_grad(x)
             loss[None] += x[i]**2
 
     for i in range(n):
@@ -54,7 +55,7 @@ def test_stop_grad():
         assert x.grad[i] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_stop_grad2():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)

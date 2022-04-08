@@ -3,7 +3,7 @@
 #include "taichi/lang_util.h"
 
 #include "taichi/math/linalg.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"
@@ -22,10 +22,14 @@ std::string runtime_lib_dir() {
     folder = compiled_lib_dir;
   } else {
     auto ti_lib_dir = getenv("TI_LIB_DIR");
-    TI_ERROR_IF(!ti_lib_dir,
-                "If you are running the taichi_cpp_tests please set TI_LIB_DIR "
-                "to $TAICHI_INSTALL_DIR/lib where TAICHI_INSTALL_DIR can be "
-                "retrieved from taichi.__path__[0] in python");
+    TI_ERROR_IF(
+        !ti_lib_dir,
+        "If you are running the taichi_cpp_tests please set $TI_LIB_DIR "
+        "to $TAICHI_INSTALL_DIR/_lib/runtime. $TAICHI_INSTALL_DIR can be "
+        "retrieved from taichi.__path__[0] in python. You can also use this "
+        "script to find out $TI_LIB_DIR:\n\n"
+        "python -c \"import os; import taichi as ti; p = "
+        "os.path.join(ti.__path__[0], '_lib', 'runtime'); print(p)\"");
     folder = std::string(ti_lib_dir);
   }
   return folder;

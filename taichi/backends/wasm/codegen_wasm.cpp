@@ -212,6 +212,10 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 
   FunctionType gen() override {
     TI_AUTO_PROF
+    // lower kernel
+    if (!kernel->lowered()) {
+      kernel->lower();
+    }
     // emit_to_module
     stat.add("codegen_taichi_kernel_function");
     auto offloaded_task_name = init_taichi_kernel_function();
@@ -231,7 +235,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
-    return [=](Context &context) {
+    return [=](RuntimeContext &context) {
       TI_TRACE("Launching Taichi Kernel Function");
       auto func = (int32(*)(void *))kernel_symbol;
       func(&context);

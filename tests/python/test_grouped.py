@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_vector_index():
     val = ti.field(ti.i32)
 
@@ -16,7 +17,7 @@ def test_vector_index():
         for i in range(n):
             for j in range(m):
                 for k in range(p):
-                    I = ti.Vector([i, j, k], dt=ti.i32)
+                    I = ti.Vector([i, j, k])
                     val[I] = i + j * 2 + k * 3
 
     test()
@@ -27,7 +28,7 @@ def test_vector_index():
                 assert val[i, j, k] == i + j * 2 + k * 3
 
 
-@ti.test()
+@test_utils.test()
 def test_grouped():
     val = ti.field(ti.i32)
 
@@ -50,7 +51,7 @@ def test_grouped():
                 assert val[i, j, k] == i + j * 2 + k * 3
 
 
-@ti.test()
+@test_utils.test()
 def test_grouped_ndrange():
     val = ti.field(ti.i32)
 
@@ -77,7 +78,7 @@ def test_grouped_ndrange():
                                  j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
 
 
-@ti.test()
+@test_utils.test()
 def test_static_grouped_ndrange():
     val = ti.field(ti.i32)
 
@@ -104,7 +105,7 @@ def test_static_grouped_ndrange():
                                  j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
 
 
-@ti.test()
+@test_utils.test()
 def test_grouped_ndrange_starred():
     val = ti.field(ti.i32)
 
@@ -129,7 +130,7 @@ def test_grouped_ndrange_starred():
                            k] == (i + j * 2 + k * 3 if j < n and k < n else 0)
 
 
-@ti.test()
+@test_utils.test()
 def test_grouped_ndrange_0d():
     val = ti.field(ti.i32, shape=())
 
@@ -143,7 +144,7 @@ def test_grouped_ndrange_0d():
     assert val[None] == 42
 
 
-@ti.test()
+@test_utils.test()
 def test_static_grouped_ndrange_0d():
     val = ti.field(ti.i32, shape=())
 
@@ -157,7 +158,7 @@ def test_static_grouped_ndrange_0d():
     assert val[None] == 42
 
 
-@ti.test()
+@test_utils.test()
 def test_static_grouped_func():
 
     K = 3

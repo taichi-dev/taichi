@@ -1,7 +1,8 @@
-torch
 pytest
 pytest-xdist
 pytest-rerunfailures
 pytest-cov
 numpy
 autograd
+requests==2.26
+matplotlib

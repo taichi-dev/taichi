@@ -1,10 +1,12 @@
 #pragma once
+
+#include "taichi/aot/module_builder.h"
+#include "taichi/ir/statements.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/program/aot_module_builder.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {
@@ -63,6 +65,12 @@ class ProgramImpl {
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
 
+  /**
+   * Dump Offline-cache data to disk
+   */
+  virtual void dump_cache_data_to_disk() {
+  }
+
   virtual Device *get_compute_device() {
     return nullptr;
   }
@@ -71,10 +79,18 @@ class ProgramImpl {
     return nullptr;
   }
 
+  virtual std::shared_ptr<Device> get_device_shared() {
+    return nullptr;
+  }
+
   virtual DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return kDeviceNullPtr;
   }
 
+  virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                                   uint64 *result_buffer) {
+    return kDeviceNullAllocation;
+  }
   virtual ~ProgramImpl() {
   }
 

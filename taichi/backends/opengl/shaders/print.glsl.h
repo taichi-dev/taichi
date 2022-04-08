@@ -1,5 +1,6 @@
 // vim: ft=glsl
 // clang-format off
+// NOLINTBEGIN(*)
 #include "taichi/util/macros.h"
 
 #ifdef TI_INSIDE_OPENGL_CODEGEN
@@ -39,3 +40,4 @@ OPENGL_END_PRINT_DEF
 
 #undef OPENGL_BEGIN_PRINT_DEF
 #undef OPENGL_END_PRINT_DEF
+// NOLINTEND(*)

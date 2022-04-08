@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 
 struct CuptiConfig {
 #if defined(TI_WITH_CUDA_TOOLKIT)
-  uint32_t num_ranges = 16384;  // max number of kernels traced by CUPTI
+  uint32_t num_ranges = 1048576;  // max number of kernels traced by CUPTI
   std::vector<std::string> metric_list;
 #endif
 };
@@ -35,9 +35,11 @@ class CuptiToolkit {
   bool update_record(uint32_t records_size_after_sync,
                      std::vector<KernelProfileTracedRecord> &traced_records);
   void reset_metrics(const std::vector<std::string> &metrics);
+  void set_status(bool enable);
 
  private:
-  CuptiConfig cupti_config_;
+  [[maybe_unused]] bool enabled_{false};
+  [[maybe_unused]] CuptiConfig cupti_config_;
   CuptiImage cupti_image_;
 };
 

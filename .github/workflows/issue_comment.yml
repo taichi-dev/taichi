@@ -16,5 +16,6 @@ jobs:
           issue-type: pull-request
           permission: triage
           commands: |
-            format
             benchmark
+            rebase
+            rerun

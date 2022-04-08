@@ -1,10 +1,11 @@
 import numpy as np
+import pytest
 
 import taichi as ti
-from taichi import approx
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.data64, fast_math=False)
+@test_utils.test(require=ti.extension.data64, fast_math=False)
 def test_precision():
     u = ti.field(ti.f64, shape=())
     v = ti.field(ti.f64, shape=())
@@ -16,8 +17,8 @@ def test_precision():
         w[None] = ti.cast(u[None] + 7, ti.f64) / ti.cast(u[None] + 3, ti.f64)
 
     forward()
-    assert v[None]**2 == approx(3.25, abs=1e-12)
-    assert w[None] * 3 == approx(7, abs=1e-12)
+    assert v[None]**2 == test_utils.approx(3.25, abs=1e-12)
+    assert w[None] * 3 == test_utils.approx(7, abs=1e-12)
 
 
 def mat_equal(A, B, tol=1e-6):
@@ -26,7 +27,7 @@ def mat_equal(A, B, tol=1e-6):
 
 def _test_svd(dt, n):
     print(
-        f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp} fast_math={ti.cfg.fast_math} dim={n}'
+        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp} fast_math={ti.lang.impl.current_cfg().fast_math} dim={n}'
     )
     A = ti.Matrix.field(n, n, dtype=dt, shape=())
     A_reconstructed = ti.Matrix.field(n, n, dtype=dt, shape=())
@@ -58,23 +59,24 @@ def _test_svd(dt, n):
     for i in range(n):
         for j in range(n):
             if i != j:
-                assert sigma[None][i, j] == approx(0)
+                assert sigma[None][i, j] == test_utils.approx(0)
 
 
-def test_svd():
-    for fp in [ti.f32, ti.f64]:
-        for d in [2, 3]:
-
-            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [],
-                     default_fp=fp,
-                     fast_math=False)
-            def wrapped():
-                _test_svd(fp, d)
-
-            wrapped()
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32, fast_math=False)
+def test_svd_f32(dim):
+    _test_svd(ti.f32, dim)
 
 
-@ti.test()
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False)
+def test_svd_f64(dim):
+    _test_svd(ti.f64, dim)
+
+
+@test_utils.test()
 def test_transpose_no_loop():
     A = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
     U = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())

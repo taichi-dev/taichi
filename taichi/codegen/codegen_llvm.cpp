@@ -1,8 +1,13 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
-
+#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
+
+#include "llvm/IR/Module.h"
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/Linker/Linker.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -22,7 +27,7 @@ void OffloadedTask::end() {
   codegen->offloaded_tasks.push_back(*this);
 }
 
-void OffloadedTask::operator()(Context *context) {
+void OffloadedTask::operator()(RuntimeContext *context) {
   TI_ASSERT(func);
   func(context);
 }
@@ -67,9 +72,12 @@ FunctionCreationGuard::FunctionCreationGuard(
 }
 
 FunctionCreationGuard::~FunctionCreationGuard() {
-  mb->builder->CreateRetVoid();
+  if (!mb->returned) {
+    mb->builder->CreateRetVoid();
+  }
   mb->func = old_func;
   mb->builder->restoreIP(ip);
+  mb->returned = false;
 
   {
     llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
@@ -77,6 +85,7 @@ FunctionCreationGuard::~FunctionCreationGuard() {
     mb->builder->CreateBr(entry);
     mb->entry_block = old_entry;
   }
+  TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
 namespace {
@@ -119,12 +128,12 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
 }  // namespace
 
 // CodeGenLLVM
-
-uint64 CodeGenLLVM::task_counter = 0;
-
 void CodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
+    if (returned) {
+      break;
+    }
   }
 }
 
@@ -135,18 +144,6 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
-    // Initialize as zero
-    for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-      auto origin_address = builder->CreatePtrToInt(
-          llvm_val[stmt], llvm::Type::getInt64Ty(*llvm_context));
-      int address_offset = i * data_type_size(tensor_type->get_element_type());
-      auto target_address = builder->CreateAdd(
-          origin_address, tlctx->get_constant((int64)address_offset));
-      auto target_ptr = builder->CreateIntToPtr(
-          target_address, llvm::PointerType::get(type, 0));
-      builder->CreateStore(
-          tlctx->get_constant(tensor_type->get_element_type(), 0), target_ptr);
-    }
   } else {
     TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
@@ -159,27 +156,39 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] = create_call(
-      fmt::format("rand_{}", data_type_name(stmt->ret_type)), {get_context()});
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Promoting to f32 since there's no rand_f16 support in runtime.cpp.
+    auto val_f32 = create_call("rand_f32", {get_context()});
+    llvm_val[stmt] =
+        builder->CreateFPTrunc(val_f32, llvm::Type::getHalfTy(*llvm_context));
+  } else {
+    llvm_val[stmt] =
+        create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)),
+                    {get_context()});
+  }
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_taichi_type = stmt->operand->ret_type;
+  if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Promote to f32 since we don't have f16 support for extra unary ops in in
+    // runtime.cpp.
+    input = builder->CreateFPExt(input, llvm::Type::getFloatTy(*llvm_context));
+    input_taichi_type = PrimitiveType::f32;
+  }
+
   auto op = stmt->op_type;
   auto input_type = input->getType();
 
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input);  \
+      llvm_val[stmt] = create_call(#x "_f32", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input);  \
+      llvm_val[stmt] = create_call(#x "_f64", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input);  \
+      llvm_val[stmt] = create_call(#x "_i32", input);                   \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -206,6 +215,11 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     TI_NOT_IMPLEMENTED
   }
 #undef UNARY_STD
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Convert back to f16
+    llvm_val[stmt] = builder->CreateFPTrunc(
+        llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+  }
 }
 
 std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
@@ -306,7 +320,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
     this->ir = kernel->ir.get();
   initialize_context();
 
-  context_ty = get_runtime_type("Context");
+  context_ty = get_runtime_type("RuntimeContext");
   physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
@@ -334,6 +348,9 @@ llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
   }
 }
 
+void CodeGenLLVM::visit(DecorationStmt *stmt) {
+}
+
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
@@ -352,24 +369,41 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
-        cast_op = llvm::Instruction::CastOps::FPToSI;
+        cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI
+                                : llvm::Instruction::CastOps::FPToUI;
       } else if (is_integral(from) && is_real(to)) {
-        cast_op = llvm::Instruction::CastOps::SIToFP;
+        cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP
+                                  : llvm::Instruction::CastOps::UIToFP;
       } else {
         TI_P(data_type_name(from));
         TI_P(data_type_name(to));
         TI_NOT_IMPLEMENTED;
       }
-      llvm_val[stmt] =
-          builder->CreateCast(cast_op, llvm_val[stmt->operand],
-                              tlctx->get_data_type(stmt->cast_type));
+      auto cast_type = to->is_primitive(PrimitiveTypeID::f16)
+                           ? PrimitiveType::f32
+                           : stmt->cast_type;
+
+      llvm_val[stmt] = builder->CreateCast(cast_op, llvm_val[stmt->operand],
+                                           tlctx->get_data_type(cast_type));
+
+      if (to->is_primitive(PrimitiveTypeID::f16)) {
+        llvm_val[stmt] = builder->CreateFPTrunc(
+            llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+      }
     } else if (is_real(from) && is_real(to)) {
       if (data_type_size(from) < data_type_size(to)) {
         llvm_val[stmt] = builder->CreateFPExt(
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
-        llvm_val[stmt] = builder->CreateFPTrunc(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        if (to->is_primitive(PrimitiveTypeID::f16)) {
+          llvm_val[stmt] = builder->CreateFPTrunc(
+              builder->CreateFPTrunc(llvm_val[stmt->operand],
+                                     llvm::Type::getFloatTy(*llvm_context)),
+              llvm::Type::getHalfTy(*llvm_context));
+        } else {
+          llvm_val[stmt] = builder->CreateFPTrunc(
+              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        }
       }
     } else if (!is_real(from) && !is_real(to)) {
       // TODO: implement casting into custom integer type
@@ -402,15 +436,19 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
   }
+  UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
   UNARY_INTRINSIC(ceil)
-  else emit_extra_unary(stmt);
+  else {
+    emit_extra_unary(stmt);
+  }
 #undef UNARY_INTRINSIC
 }
 
 void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto ret_type = stmt->ret_type;
+
   if (op == BinaryOpType::add) {
     if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
@@ -495,70 +533,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MAX(i64)
     else {
       TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
-    }
-  } else if (op == BinaryOpType::atan2) {
-    if (arch_is_cpu(current_arch())) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "atan2_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] = create_call(
-            "atan2_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (current_arch() == Arch::cuda) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "__nv_atan2f", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] = create_call(
-            "__nv_atan2", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else if (op == BinaryOpType::pow) {
-    if (arch_is_cpu(current_arch())) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] =
-            create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] =
-            create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (current_arch() == Arch::cuda) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "__nv_powf", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            create_call("__nv_pow", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] =
-            create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else {
       TI_NOT_IMPLEMENTED
     }
   } else if (op == BinaryOpType::min) {
@@ -650,8 +624,61 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
     llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(PrimitiveType::i32));
   } else {
-    TI_P(binary_op_type_name(op));
-    TI_NOT_IMPLEMENTED
+    // This branch contains atan2 and pow which use runtime.cpp function for
+    // **real** type. We don't have f16 support there so promoting to f32 is
+    // necessary.
+    llvm::Value *lhs = llvm_val[stmt->lhs];
+    llvm::Value *rhs = llvm_val[stmt->rhs];
+    if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      lhs = builder->CreateFPExt(lhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      rhs = builder->CreateFPExt(rhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      ret_type = PrimitiveType::f32;
+    }
+
+    if (op == BinaryOpType::atan2) {
+      if (arch_is_cpu(current_arch())) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("atan2_f32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("atan2_f64", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else if (op == BinaryOpType::pow) {
+      if (arch_is_cpu(current_arch())) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
+          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else {
+      TI_P(binary_op_type_name(op));
+      TI_NOT_IMPLEMENTED
+    }
+
+    // Convert back to f16 if applicable.
+    if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      llvm_val[stmt] = builder->CreateFPTrunc(
+          llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+    }
   }
 }
 
@@ -674,6 +701,8 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
     return llvm::Type::getFloatTy(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::Type::getDoubleTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::Type::getHalfTy(*llvm_context);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -706,12 +735,20 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(false_block);
   if (if_stmt->false_statements) {
     if_stmt->false_statements->accept(this);
   }
-  builder->CreateBr(after_if);
+  if (!returned) {
+    builder->CreateBr(after_if);
+  } else {
+    returned = false;
+  }
   builder->SetInsertPoint(after_if);
 }
 
@@ -732,7 +769,7 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
     value =
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
-  return builder->CreateCall(runtime_printf, args);
+  return create_call(runtime_printf, args);
 }
 
 llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
@@ -746,6 +783,23 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
         tag,
         TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
         value);
+  else if (value->getType() == llvm::Type::getHalfTy(*llvm_context)) {
+    auto extended =
+        builder->CreateFPExt(value, llvm::Type::getFloatTy(*llvm_context));
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+        extended);
+  } else if (value->getType() == llvm::Type::getInt64Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i64),
+        value);
+  else if (value->getType() == llvm::Type::getInt16Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i16),
+        value);
   else
     TI_NOT_IMPLEMENTED
 }
@@ -758,7 +812,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32))
+      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
+          arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
         value = builder->CreateFPExt(value,
                                      tlctx->get_data_type(PrimitiveType::f64));
       args.push_back(value);
@@ -774,7 +829,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   args.insert(args.begin(),
               builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
 
-  llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
+  llvm_val[stmt] = create_call(runtime_printf, args);
 }
 
 void CodeGenLLVM::visit(ConstStmt *stmt) {
@@ -783,6 +838,9 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::f16)) {
+    llvm_val[stmt] = llvm::ConstantFP::get(llvm::Type::getHalfTy(*llvm_context),
+                                           val.val_float32());
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
@@ -824,7 +882,16 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
-  if (stmt->as_return()) {
+  auto stmt_in_off_range_for = [stmt]() {
+    TI_ASSERT(stmt->scope != nullptr);
+    if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+      TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                offl->task_type == OffloadedStmt::TaskType::struct_for);
+      return offl->task_type == OffloadedStmt::TaskType::range_for;
+    }
+    return false;
+  };
+  if (stmt_in_off_range_for()) {
     builder->CreateRetVoid();
   } else {
     TI_ASSERT(current_loop_reentry != nullptr);
@@ -852,7 +919,11 @@ void CodeGenLLVM::visit(WhileStmt *stmt) {
 
   stmt->body->accept(this);
 
-  builder->CreateBr(body);  // jump to head
+  if (!returned) {
+    builder->CreateBr(body);  // jump to head
+  } else {
+    returned = false;
+  }
 
   builder->SetInsertPoint(after_loop);
 }
@@ -884,12 +955,13 @@ void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
 }
 
 llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
-                                      std::vector<llvm::Value *> args) {
+                                      llvm::ArrayRef<llvm::Value *> args) {
   check_func_call_signature(func, args);
   return builder->CreateCall(func, args);
 }
+
 llvm::Value *CodeGenLLVM::create_call(std::string func_name,
-                                      std::vector<llvm::Value *> args) {
+                                      llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);
   return create_call(func, args);
 }
@@ -946,8 +1018,11 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
 
       for_stmt->body->accept(this);
     }
-
-    builder->CreateBr(loop_inc);
+    if (!returned) {
+      builder->CreateBr(loop_inc);
+    } else {
+      returned = false;
+    }
     builder->SetInsertPoint(loop_inc);
 
     if (!for_stmt->reversed) {
@@ -966,8 +1041,56 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
   create_naive_range_for(for_stmt);
 }
 
+llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
+  llvm::Type *dest_ty = nullptr;
+  TI_ASSERT(!type->is<PointerType>());
+  if (auto cit = type->cast<CustomIntType>()) {
+    if (cit->get_is_signed())
+      dest_ty = tlctx->get_data_type(PrimitiveType::i32);
+    else
+      dest_ty = tlctx->get_data_type(PrimitiveType::u32);
+  } else {
+    dest_ty = tlctx->get_data_type(type);
+  }
+  auto dest_bits = dest_ty->getPrimitiveSizeInBits();
+  if (dest_ty == llvm::Type::getHalfTy(*llvm_context)) {
+    // if dest_ty == half, CreateTrunc will only keep low 16bits of mantissa
+    // which doesn't mean anything.
+    // So we truncate to 32 bits first and then fptrunc to half if applicable
+    auto truncated =
+        builder->CreateTrunc(val, llvm::Type::getIntNTy(*llvm_context, 32));
+    auto casted = builder->CreateBitCast(truncated,
+                                         llvm::Type::getFloatTy(*llvm_context));
+    return builder->CreateFPTrunc(casted, llvm::Type::getHalfTy(*llvm_context));
+  } else {
+    auto truncated = builder->CreateTrunc(
+        val, llvm::Type::getIntNTy(*llvm_context, dest_bits));
+
+    return builder->CreateBitCast(truncated, dest_ty);
+  }
+}
+
+llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
+  auto intermediate_bits = 0;
+  if (auto cit = type->cast<CustomIntType>()) {
+    intermediate_bits = data_type_bits(cit->get_compute_type());
+  } else {
+    intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
+  }
+  llvm::Type *dest_ty = tlctx->get_data_type<int64>();
+  llvm::Type *intermediate_type = nullptr;
+  if (val->getType() == llvm::Type::getHalfTy(*llvm_context)) {
+    val = builder->CreateFPExt(val, tlctx->get_data_type<float>());
+    intermediate_type = tlctx->get_data_type<int32>();
+  } else {
+    intermediate_type = llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
+  }
+  return builder->CreateZExt(builder->CreateBitCast(val, intermediate_type),
+                             dest_ty);
+}
+
 void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  auto raw_arg = call(builder.get(), "Context_get_args", get_context(),
+  auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
                       tlctx->get_constant(stmt->arg_id));
 
   llvm::Type *dest_ty = nullptr;
@@ -976,42 +1099,27 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
         llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
-    TI_ASSERT(!stmt->ret_type->is<PointerType>());
-    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
-      if (cit->get_is_signed())
-        dest_ty = tlctx->get_data_type(PrimitiveType::i32);
-      else
-        dest_ty = tlctx->get_data_type(PrimitiveType::u32);
-    } else {
-      dest_ty = tlctx->get_data_type(stmt->ret_type);
-    }
-    auto dest_bits = dest_ty->getPrimitiveSizeInBits();
-    auto truncated = builder->CreateTrunc(
-        raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
-    llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
+    llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
   }
 }
 
 void CodeGenLLVM::visit(ReturnStmt *stmt) {
-  if (stmt->ret_type.is_pointer()) {
+  auto types = stmt->element_types();
+  if (std::any_of(types.begin(), types.end(),
+                  [](const DataType &t) { return t.is_pointer(); })) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits = 0;
-    if (auto cit = stmt->value->ret_type->cast<CustomIntType>()) {
-      intermediate_bits = data_type_bits(cit->get_compute_type());
-    } else {
-      intermediate_bits =
-          tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
+    TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
+    int idx{0};
+    for (auto &value : stmt->values) {
+      create_call(
+          "RuntimeContext_store_result",
+          {get_context(), bitcast_to_u64(llvm_val[value], value->ret_type),
+           tlctx->get_constant<int32>(idx++)});
     }
-    llvm::Type *intermediate_type =
-        llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
-    llvm::Type *dest_ty = tlctx->get_data_type<int64>();
-    auto extended = builder->CreateZExt(
-        builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
-        dest_ty);
-    builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
-                        {get_runtime(), extended});
   }
+  builder->CreateRetVoid();
+  returned = true;
 }
 
 void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
@@ -1097,6 +1205,41 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_op_using_cas(
+    llvm::Value *dest,
+    llvm::Value *val,
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+  BasicBlock *after_loop =
+      BasicBlock::Create(*llvm_context, "after_while", func);
+
+  builder->CreateBr(body);
+  builder->SetInsertPoint(body);
+
+  llvm::Value *old_val;
+
+  {
+    old_val = builder->CreateLoad(dest);
+    auto new_val = op(old_val, val);
+    dest =
+        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
+        dest,
+        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        AtomicOrdering::SequentiallyConsistent,
+        AtomicOrdering::SequentiallyConsistent);
+    // Check whether CAS was succussful
+    auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+    builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
+  }
+
+  builder->SetInsertPoint(after_loop);
+
+  return old_val;
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1124,33 +1267,49 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::min) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_min_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_min_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_min_f32"),
+        old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_min_f64"),
+        old_value = create_call("atomic_min_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::max) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_max_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_max_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_max_f32"),
+        old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_max_f64"),
+        old_value = create_call("atomic_max_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
@@ -1427,14 +1586,19 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
-  auto origin_address = builder->CreatePtrToInt(
-      llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
-  auto address_offset = builder->CreateSExt(
-      llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
-  auto target_address = builder->CreateAdd(origin_address, address_offset);
-  auto dt = stmt->ret_type.ptr_removed();
-  llvm_val[stmt] = builder->CreateIntToPtr(
-      target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  if (stmt->is_local_ptr()) {
+    llvm_val[stmt] =
+        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+  } else {
+    auto origin_address = builder->CreatePtrToInt(
+        llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
+    auto address_offset = builder->CreateSExt(
+        llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
+    auto target_address = builder->CreateAdd(origin_address, address_offset);
+    auto dt = stmt->ret_type.ptr_removed();
+    llvm_val[stmt] = builder->CreateIntToPtr(
+        target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  }
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
@@ -1446,8 +1610,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   std::vector<llvm::Value *> sizes(num_indices);
 
   for (int i = 0; i < num_indices; i++) {
-    auto raw_arg = builder->CreateCall(
-        get_runtime_function("Context_get_extra_args"),
+    auto raw_arg = create_call(
+        "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
@@ -1469,8 +1633,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = builder->CreateCall(
-      get_runtime_function("Context_get_extra_args"),
+  llvm_val[stmt] = create_call(
+      "RuntimeContext_get_extra_args",
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 
@@ -1483,9 +1647,9 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
-  auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
-                                      stmt->task_name(), suffix);
-  task_counter += 1;
+  auto task_kernel_name =
+      fmt::format("{}_{}_{}{}", kernel_name, kernel->get_next_task_id(),
+                  stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
@@ -1511,7 +1675,11 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 }
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
-  builder->CreateRetVoid();
+  if (!returned) {
+    builder->CreateRetVoid();
+  } else {
+    returned = false;
+  }
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);
@@ -1575,7 +1743,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
-        llvm::PointerType::get(get_runtime_type("Context"), 0),
+        llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
         get_tls_buffer_type(),
         llvm::PointerType::get(get_runtime_type("Element"), 0),
         tlctx->get_data_type<int>(),
@@ -1670,6 +1838,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
     auto struct_for_body_bb =
         BasicBlock::Create(*llvm_context, "struct_for_body_body", func);
+
+    auto lrg = make_loop_reentry_guard(this);
+    current_loop_reentry = body_tail_bb;
 
     builder->CreateBr(loop_test_bb);
 
@@ -1866,8 +2037,10 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
 
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
-      stmt->loop->as<OffloadedStmt>()->task_type ==
-          OffloadedStmt::TaskType::struct_for) {
+      (stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::struct_for ||
+       stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::mesh_for)) {
     llvm_val[stmt] = create_call("thread_idx");
   } else {
     TI_NOT_IMPLEMENTED;
@@ -1886,12 +2059,6 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   } else {
     TI_NOT_IMPLEMENTED;
   }
-}
-
-void CodeGenLLVM::visit(BlockDimStmt *stmt) {
-  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark
-                      // it as a loud failure.
-      llvm_val[stmt] = create_call("block_dim", {});
 }
 
 void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
@@ -1942,7 +2109,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  std::vector<llvm::Value *> args{get_context()};
+  std::vector<llvm::Value *> args;
+
+  if (stmt->with_runtime_context)
+    args.push_back(get_context());
+
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }
@@ -2017,6 +2188,75 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
+void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
+  TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
+  std::vector<llvm::Value *> arg_values;
+  for (const auto &s : stmt->arg_stmts)
+    arg_values.push_back(llvm_val[s]);
+  // Link external module to the core module
+  if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {
+    linked_modules.insert(stmt->bc_filename);
+    std::unique_ptr<llvm::Module> external_module =
+        module_from_bitcode_file(stmt->bc_filename, llvm_context);
+    auto *func_ptr = external_module->getFunction(stmt->bc_funcname);
+    TI_ASSERT_INFO(func_ptr != nullptr, "{} is not found in {}.",
+                   stmt->bc_funcname, stmt->bc_filename);
+    auto link_error =
+        llvm::Linker::linkModules(*module, std::move(external_module));
+    TI_ASSERT(!link_error);
+  }
+  // Retrieve function again. Do it here to detect name conflicting.
+  auto *func_ptr = module->getFunction(stmt->bc_funcname);
+  // Convert pointer type from a[n * m] to a[n][m]
+  for (int i = 0; i < func_ptr->getFunctionType()->getNumParams(); ++i) {
+    TI_ASSERT_INFO(func_ptr->getArg(i)->getType()->getTypeID() ==
+                       arg_values[i]->getType()->getTypeID(),
+                   "TypeID {} != {} with {}",
+                   (int)func_ptr->getArg(i)->getType()->getTypeID(),
+                   (int)arg_values[i]->getType()->getTypeID(), i);
+    auto tmp_value = arg_values[i];
+    arg_values[i] =
+        builder->CreatePointerCast(tmp_value, func_ptr->getArg(i)->getType());
+  }
+  create_call(func_ptr, arg_values);
+}
+
+void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
+  TI_ASSERT(stmt->type == ExternalFuncCallStmt::SHARED_OBJECT);
+  std::vector<llvm::Type *> arg_types;
+  std::vector<llvm::Value *> arg_values;
+
+  for (const auto &s : stmt->arg_stmts) {
+    TI_ASSERT(s->width() == 1);
+    arg_types.push_back(tlctx->get_data_type(s->ret_type));
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  for (const auto &s : stmt->output_stmts) {
+    TI_ASSERT(s->width() == 1);
+    auto t = tlctx->get_data_type(s->ret_type);
+    auto ptr = llvm::PointerType::get(t, 0);
+    arg_types.push_back(ptr);
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                           arg_types, false);
+  auto func_ptr_type = llvm::PointerType::get(func_type, 0);
+
+  auto addr = tlctx->get_constant((std::size_t)stmt->so_func);
+  auto func = builder->CreateIntToPtr(addr, func_ptr_type);
+  create_call(func, arg_values);
+}
+
+void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
+  TI_NOT_IMPLEMENTED
+}
+
+void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
+  llvm_val[stmt] = get_arg(2);
+}
+
 void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {
@@ -2030,7 +2270,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
 
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
-  eliminate_unused_functions();
 
   tlctx->add_module(std::move(module));
 
@@ -2039,8 +2278,23 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   }
   auto offloaded_tasks_local = offloaded_tasks;
   auto kernel_name_ = kernel_name;
-  return [=](Context &context) {
+  return [offloaded_tasks_local, kernel_name_,
+          kernel = this->kernel](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name_);
+    auto args = kernel->args;
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array && context.is_device_allocation[i] &&
+          args[i].size > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
+                              ->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_device_allocation(i, false);
+      }
+    }
     for (auto task : offloaded_tasks_local) {
       task(&context);
     }
@@ -2079,13 +2333,23 @@ llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
 }
 
 std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
-  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type()};
+}
+
+std::vector<llvm::Type *> CodeGenLLVM::get_mesh_xlogue_argument_types() {
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
+          get_tls_buffer_type(), tlctx->get_data_type<uint32_t>()};
 }
 
 llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_xlogue_argument_types(), false);
+}
+
+llvm::Type *CodeGenLLVM::get_mesh_xlogue_function_type() {
+  return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                 get_mesh_xlogue_argument_types(), false);
 }
 
 llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
@@ -2094,7 +2358,7 @@ llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {
-  auto runtime_ptr = create_call("Context_get_runtime", {get_context()});
+  auto runtime_ptr = create_call("RuntimeContext_get_runtime", {get_context()});
   return builder->CreateBitCast(
       runtime_ptr, llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
 }
@@ -2111,7 +2375,42 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 FunctionType CodeGenLLVM::gen() {
+  bool needs_cache = false;
+  const auto &config = prog->config;
+  std::string kernel_key;
+  if (config.offline_cache && this->supports_offline_cache() &&
+      !kernel->is_evaluator) {
+    kernel_key = get_offline_cache_key(&kernel->program->config, kernel);
+
+    LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
+    LlvmOfflineCache::KernelCacheData cache_data;
+    auto *tlctx =
+        this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+    auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+    if (reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+      this->module = std::move(cache_data.owned_module);
+      for (auto &task : cache_data.offloaded_task_list) {
+        auto &t = this->offloaded_tasks.emplace_back(this);
+        t.name = std::move(task.name);
+        t.block_dim = task.block_dim;
+        t.grid_dim = task.grid_dim;
+      }
+      kernel->set_from_offline_cache();
+      return compile_module_to_executable();
+    } else {
+      needs_cache = true;
+    }
+  }
+
+  if (!kernel->lowered()) {
+    kernel->lower();
+  }
   emit_to_module();
+  eliminate_unused_functions();
+  if (needs_cache) {
+    cache_module(kernel_key);
+  }
   return compile_module_to_executable();
 }
 
@@ -2132,4 +2431,64 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   return xlogue;
 }
 
+llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_mesh_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_mesh_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
+}
+
+void CodeGenLLVM::visit(FuncCallStmt *stmt) {
+  if (!func_map.count(stmt->func)) {
+    auto guard = get_function_creation_guard(
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+    func_map.insert({stmt->func, guard.body});
+    stmt->func->ir->accept(this);
+  }
+  llvm::Function *llvm_func = func_map[stmt->func];
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  call("RuntimeContext_set_runtime", new_ctx, get_runtime());
+  for (int i = 0; i < stmt->args.size(); i++) {
+    auto *val =
+        bitcast_to_u64(llvm_val[stmt->args[i]], stmt->args[i]->ret_type);
+    call("RuntimeContext_set_args", new_ctx,
+         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
+  }
+  llvm::Value *result_buffer = nullptr;
+  if (stmt->ret_type->is<PrimitiveType>() &&
+      !stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    result_buffer = builder->CreateAlloca(tlctx->get_data_type<uint64>());
+    call("RuntimeContext_set_result_buffer", new_ctx, result_buffer);
+    create_call(llvm_func, {new_ctx});
+    auto *ret_val_u64 = builder->CreateLoad(result_buffer);
+    llvm_val[stmt] = bitcast_from_u64(ret_val_u64, stmt->ret_type);
+  } else {
+    create_call(llvm_func, {new_ctx});
+  }
+}
+
+void CodeGenLLVM::cache_module(const std::string &kernel_key) {
+  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
+  std::vector<OffloadedTaskCache> offloaded_task_list;
+  for (auto &task : offloaded_tasks) {
+    auto &task_cache = offloaded_task_list.emplace_back();
+    task_cache.name = task.name;
+    task_cache.block_dim = task.block_dim;
+    task_cache.grid_dim = task.grid_dim;
+  }
+  prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
+                                              std::move(offloaded_task_list));
+}
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

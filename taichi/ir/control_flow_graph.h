@@ -19,7 +19,7 @@ namespace lang {
 class CFGNode {
  private:
   // For accelerating get_store_forwarding_data()
-  std::unordered_set<Block *> parent_blocks;
+  std::unordered_set<Block *> parent_blocks_;
 
  public:
   // This node corresponds to block->statements[i]

@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(arch=ti.cpu, cpu_max_num_threads=1)
+@test_utils.test(arch=ti.cpu, cpu_max_num_threads=1)
 def test_serial_range_for():
     n = 1024 * 32
     s = ti.field(dtype=ti.i32, shape=n)
@@ -19,7 +20,7 @@ def test_serial_range_for():
         assert s[i] == i
 
 
-@ti.test(arch=ti.cpu, cpu_max_num_threads=1)
+@test_utils.test(arch=ti.cpu, cpu_max_num_threads=1)
 def test_serial_struct_for():
     n = 1024 * 32
     s = ti.field(dtype=ti.i32, shape=n)

@@ -36,29 +36,20 @@ DEFINE_ATOMIC_OP_INTRINSIC(xor, i64)
 DEFINE_ATOMIC_OP_INTRINSIC(xor, u32)
 DEFINE_ATOMIC_OP_INTRINSIC(xor, u64)
 
-inline f32 add_f32(f32 a, f32 b) {
-  return a + b;
-}
+#define DEFINE_ADD(T)   \
+  T add_##T(T a, T b) { \
+    return a + b;       \
+  }
 
-inline f64 add_f64(f64 a, f64 b) {
-  return a + b;
-}
+#define DEFINE_MIN(T)     \
+  T min_##T(T a, T b) {   \
+    return b > a ? a : b; \
+  }
 
-inline f32 min_f32(f32 a, f32 b) {
-  return b > a ? a : b;
-}
-
-inline f64 min_f64(f64 a, f64 b) {
-  return b > a ? a : b;
-}
-
-inline f32 max_f32(f32 a, f32 b) {
-  return b < a ? a : b;
-}
-
-inline f64 max_f64(f64 a, f64 b) {
-  return b < a ? a : b;
-}
+#define DEFINE_MAX(T)     \
+  T max_##T(T a, T b) {   \
+    return b < a ? a : b; \
+  }
 
 #define DEFINE_ATOMIC_OP_COMP_EXCH(OP, T)                                     \
   T atomic_##OP##_##T(volatile T *dest, T inc) {                              \
@@ -74,13 +65,24 @@ inline f64 max_f64(f64 a, f64 b) {
     return old_val;                                                           \
   }
 
+DEFINE_ADD(f32)
+DEFINE_ADD(f64)
+DEFINE_MIN(f32)
+DEFINE_MIN(f64)
+DEFINE_MAX(f32)
+DEFINE_MAX(f64)
+
 DEFINE_ATOMIC_OP_COMP_EXCH(add, f32)
 DEFINE_ATOMIC_OP_COMP_EXCH(add, f64)
-DEFINE_ATOMIC_OP_COMP_EXCH(min, f32)
-DEFINE_ATOMIC_OP_COMP_EXCH(min, f64)
 DEFINE_ATOMIC_OP_COMP_EXCH(min, i32)
 DEFINE_ATOMIC_OP_COMP_EXCH(min, i64)
-DEFINE_ATOMIC_OP_COMP_EXCH(max, f32)
-DEFINE_ATOMIC_OP_COMP_EXCH(max, f64)
+DEFINE_ATOMIC_OP_COMP_EXCH(min, f32)
+DEFINE_ATOMIC_OP_COMP_EXCH(min, f64)
 DEFINE_ATOMIC_OP_COMP_EXCH(max, i32)
 DEFINE_ATOMIC_OP_COMP_EXCH(max, i64)
+DEFINE_ATOMIC_OP_COMP_EXCH(max, f32)
+DEFINE_ATOMIC_OP_COMP_EXCH(max, f64)
+DEFINE_ATOMIC_OP_COMP_EXCH(min, u32)
+DEFINE_ATOMIC_OP_COMP_EXCH(min, u64)
+DEFINE_ATOMIC_OP_COMP_EXCH(max, u32)
+DEFINE_ATOMIC_OP_COMP_EXCH(max, u64)

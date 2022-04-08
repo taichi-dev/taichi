@@ -5,15 +5,17 @@
 #include <functional>
 #include <optional>
 #include <atomic>
+#include <stack>
 
 #define TI_RUNTIME_HOST
+#include "taichi/aot/module_builder.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
-#include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
@@ -27,6 +29,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/ir/mesh.h"
 
 namespace taichi {
 namespace lang {
@@ -73,12 +76,6 @@ struct hash<taichi::lang::JITEvaluatorId> {
 namespace taichi {
 namespace lang {
 
-extern Program *current_program;
-
-TI_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
-
 class StructCompiler;
 class LlvmProgramImpl;
 class AsyncEngine;
@@ -96,7 +93,7 @@ class AsyncEngine;
  * LlvmProgramImpl, MetalProgramImpl..
  */
 
-class Program {
+class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
@@ -173,6 +170,16 @@ class Program {
   void visualize_layout(const std::string &fn);
 
   Kernel &kernel(const std::function<void()> &body,
+                 const std::string &name = "",
+                 bool grad = false) {
+    // Expr::set_allow_store(true);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    // Expr::set_allow_store(false);
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
+  }
+
+  Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  bool grad = false) {
     // Expr::set_allow_store(true);
@@ -269,6 +276,16 @@ class Program {
   SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
+   * Allocates a SNode tree id for a new SNode tree
+   *
+   * @return The SNode tree id allocated
+   *
+   * Returns and consumes a free SNode tree id if there is any,
+   * Otherwise returns the size of `snode_trees_`
+   */
+  int allocate_snode_tree_id();
+
+  /**
    * Gets the root of a SNode tree.
    *
    * @param tree_id Index of the SNode tree
@@ -292,13 +309,36 @@ class Program {
     return program_impl_->get_graphics_device();
   }
 
+  std::shared_ptr<Device> get_device_shared() {
+    return program_impl_->get_device_shared();
+  }
+
+  // TODO: do we still need result_buffer?
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) {
+    return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
+  ASTBuilder *current_ast_builder() {
+    return current_callable ? &current_callable->context->builder() : nullptr;
+  }
+
+  Identifier get_next_global_id(const std::string &name = "") {
+    return Identifier(global_id_counter_++, name);
+  }
+
  private:
+  uint64 ndarray_writer_counter_{0};
+  uint64 ndarray_reader_counter_{0};
+  int global_id_counter_{0};
+
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
   NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+  std::stack<int> free_snode_tree_ids_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;

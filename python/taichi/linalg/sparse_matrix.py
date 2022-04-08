@@ -1,7 +1,8 @@
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
 from taichi.lang.field import Field
-from taichi.type.primitive_types import f32
+from taichi.lang.impl import get_runtime
+from taichi.lang.util import warning
+from taichi.types import annotations, f32
 
 
 class SparseMatrix:
@@ -18,7 +19,7 @@ class SparseMatrix:
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = _ti_core.create_sparse_matrix(n, m)
+            self.matrix = get_runtime().prog.create_sparse_matrix(n, m)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -55,10 +56,12 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = self.matrix * other
             return SparseMatrix(sm=sm)
-        elif isinstance(other, SparseMatrix):
+        if isinstance(other, SparseMatrix):
             assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def __rmul__(self, other):
         """Right scalar multiplication for sparse matrix.
@@ -71,6 +74,8 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def transpose(self):
         """Sparse Matrix transpose.
@@ -93,16 +98,15 @@ class SparseMatrix:
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix.matmul(other.matrix)
             return SparseMatrix(sm=sm)
-        elif isinstance(other, Field):
+        if isinstance(other, Field):
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other.to_numpy())
-        elif isinstance(other, np.ndarray):
+        if isinstance(other, np.ndarray):
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
-        else:
-            assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
+        assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
@@ -116,6 +120,10 @@ class SparseMatrix:
 
     def __repr__(self):
         return self.matrix.to_string()
+
+    def shape(self):
+        """The shape of the sparse matrix."""
+        return (self.n, self.m)
 
 
 class SparseMatrixBuilder:
@@ -135,11 +143,12 @@ class SparseMatrixBuilder:
                  dtype=f32):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
+        self.dtype = dtype
         if num_rows is not None:
-            self.ptr = _ti_core.create_sparse_matrix_builder(
-                num_rows, num_cols, max_num_triplets)
+            self.ptr = get_runtime().prog.create_sparse_matrix_builder(
+                num_rows, num_cols, max_num_triplets, dtype)
 
-    def get_addr(self):
+    def _get_addr(self):
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
@@ -147,11 +156,18 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def build(self, dtype=f32, format='CSR'):
+    def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)
 
 
-sparse_matrix_builder = SparseMatrixBuilder
-# Alias for :class:`SparseMatrixBuilder`
+# TODO: remove this in 1.0 release
+class sparse_matrix_builder(annotations.sparse_matrix_builder):
+    def __init__(self):
+        warning(
+            'ti.linalg.sparse_matrix_builder is deprecated. Please use ti.types.sparse_matrix_builder instead.',
+            DeprecationWarning)
+
+
+__all__ = ['SparseMatrix', 'SparseMatrixBuilder', 'sparse_matrix_builder']

@@ -1,2 +1,7 @@
 [MESSAGES CONTROL]
-disable=invalid-name, missing-function-docstring, missing-class-docstring, missing-module-docstring, unused-wildcard-import, cyclic-import, blacklisted-name, import-outside-toplevel
+disable=all
+enable=
+    C0121,C0200,C0209,C0321,C0325,C0415,
+    W0101,W0108,W0202,W0235,W0401,W0404,W0611,W0621,W0622,W612,W1309,
+    E1101,
+    R0201,R0205,R0402,R1703,R1705,R1710,R1732

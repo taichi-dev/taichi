@@ -19,7 +19,7 @@ constexpr int taichi_opengl_ret_base =
     taichi_opengl_extra_args_base +
     taichi_max_num_args * taichi_max_num_indices * sizeof(int);
 constexpr int taichi_opengl_external_arr_base =
-    taichi_opengl_ret_base + sizeof(uint64_t);
+    taichi_opengl_ret_base + taichi_max_num_ret_value * sizeof(uint64_t);
 
 struct UsedFeature {
   // types:
@@ -32,8 +32,10 @@ struct UsedFeature {
   bool float64{false};
 
   // buffers:
+  bool buf_data{false};
   bool buf_args{false};
   bool buf_gtmp{false};
+  std::unordered_map<int, int> arr_arg_to_bind_idx;
 
   // utilties:
   bool fast_pow{false};
@@ -52,6 +54,8 @@ enum class GLBufId {
   Gtmp = 1,
   Args = 2,
   Runtime = 3,
+  // This is indeed the beginning id for |Arr|s so |Arr| MUST be the last item.
+  Arr = 4,
 };
 
 struct IOV {

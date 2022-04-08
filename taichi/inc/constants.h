@@ -5,7 +5,7 @@
 constexpr int taichi_max_num_indices = 8;
 // legacy: only used in cc and opengl backends
 constexpr int taichi_max_num_args = 8;
-// used in llvm backend: only the first 16 arguments can be ext_arr/any_arr
+// used in llvm backend: only the first 16 arguments can be types.ndarray
 // TODO: refine argument passing
 constexpr int taichi_max_num_args_total = 64;
 constexpr int taichi_max_num_args_extra = 16;
@@ -18,13 +18,18 @@ constexpr std::size_t taichi_page_size = 4096;
 constexpr std::size_t taichi_error_message_max_length = 2048;
 constexpr std::size_t taichi_error_message_max_num_arguments = 32;
 constexpr std::size_t taichi_result_buffer_entries = 32;
+constexpr std::size_t taichi_max_num_ret_value = 30;
 // slot for kernel return value
 constexpr std::size_t taichi_result_buffer_ret_value_id = 0;
 // slot for error code and error message char *
-constexpr std::size_t taichi_result_buffer_error_id = 1;
-constexpr std::size_t taichi_result_buffer_runtime_query_id = 2;
+constexpr std::size_t taichi_result_buffer_error_id = 30;
+constexpr std::size_t taichi_result_buffer_runtime_query_id = 31;
 
 constexpr int taichi_listgen_max_element_size = 1024;
+
+// use for auto mesh_local to determine shared-mem size per block (in bytes)
+// TODO: get this at runtime
+constexpr std::size_t default_shared_mem_size = 65536;
 
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g) {

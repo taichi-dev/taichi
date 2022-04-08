@@ -19,6 +19,7 @@ namespace py = pybind11;
 #include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
+#include <memory>
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -229,19 +230,21 @@ struct PyCanvas {
 };
 
 struct PyWindow {
-  WindowBase *window;
+  std::unique_ptr<WindowBase> window{nullptr};
 
-  PyWindow(std::string name,
+  PyWindow(Program *prog,
+           std::string name,
            py::tuple res,
            bool vsync,
+           bool show_window,
            std::string package_path,
            Arch ti_arch,
            bool is_packed_mode) {
-    AppConfig config = {name,          res[0].cast<int>(), res[1].cast<int>(),
-                        vsync,         package_path,       ti_arch,
-                        is_packed_mode};
+    AppConfig config = {name,    res[0].cast<int>(), res[1].cast<int>(),
+                        vsync,   show_window,        package_path,
+                        ti_arch, is_packed_mode};
     // todo: support other ggui backends
-    window = new vulkan::Window(config);
+    window = std::make_unique<vulkan::Window>(prog, config);
   }
 
   void write_image(const std::string &filename) {
@@ -297,8 +300,10 @@ struct PyWindow {
     return py::make_tuple(x, y);
   }
 
-  ~PyWindow() {
-    delete window;
+  void destroy() {
+    if (window) {
+      window.reset();
+    }
   }
 };
 
@@ -306,7 +311,8 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, std::string, Arch, bool>())
+      .def(py::init<Program *, std::string, py::tuple, bool, bool, std::string,
+                    Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("write_image", &PyWindow::write_image)
@@ -316,8 +322,9 @@ void export_ggui(py::module &m) {
       .def("set_is_running", &PyWindow::set_is_running)
       .def("get_event", &PyWindow::get_event)
       .def("get_events", &PyWindow::get_events)
-      .def_property("event", &PyWindow::get_current_event,
-                    &PyWindow::set_current_event)
+      .def("get_current_event", &PyWindow::get_current_event)
+      .def("set_current_event", &PyWindow::set_current_event)
+      .def("destroy", &PyWindow::destroy)
       .def("GUI", &PyWindow::GUI);
 
   py::class_<PyCanvas>(m, "PyCanvas")

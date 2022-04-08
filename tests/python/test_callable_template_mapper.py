@@ -1,9 +1,10 @@
 from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_callable_template_mapper():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32)
@@ -33,14 +34,14 @@ def test_callable_template_mapper():
     assert mapper.lookup((0, x, 1))[0] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_callable_template_mapper_numpy():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32)
 
     ti.root.place(x, y)
 
-    annotations = (ti.template(), ti.template(), ti.ext_arr())
+    annotations = (ti.template(), ti.template(), ti.types.ndarray())
 
     import numpy as np
 

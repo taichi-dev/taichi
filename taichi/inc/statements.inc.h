@@ -1,4 +1,5 @@
 // Frontend statements
+PER_STATEMENT(FrontendExternalFuncStmt)
 PER_STATEMENT(FrontendExprStmt)
 PER_STATEMENT(FrontendIfStmt)
 PER_STATEMENT(FrontendForStmt)
@@ -16,14 +17,17 @@ PER_STATEMENT(FrontendReturnStmt)
 
 // Middle-end statement
 
+// Decoration / debug statement
+PER_STATEMENT(DecorationStmt)
+
 // Without per-lane attributes
 PER_STATEMENT(RangeForStmt)
 PER_STATEMENT(StructForStmt)
+PER_STATEMENT(MeshForStmt)
 PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)
 PER_STATEMENT(ContinueStmt)
-PER_STATEMENT(FuncBodyStmt)
 PER_STATEMENT(FuncCallStmt)
 PER_STATEMENT(ReturnStmt)
 
@@ -71,10 +75,13 @@ PER_STATEMENT(ElementShuffleStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
+PER_STATEMENT(MeshRelationAccessStmt)
+PER_STATEMENT(MeshIndexConversionStmt)
+PER_STATEMENT(MeshPatchIndexStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(LoopLinearIndexStmt)
+PER_STATEMENT(GlobalThreadIndexStmt)
 PER_STATEMENT(BlockCornerIndexStmt)
-PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 PER_STATEMENT(ClearListStmt)
 

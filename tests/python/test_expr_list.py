@@ -1,17 +1,18 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_expr_list_basic():
     @ti.kernel
     def func(u: int, v: float) -> float:
         x = [2 + u, 3 + v]
         return x[0] * 100 + x[1]
 
-    assert func(1, 1.1) == ti.approx(304.1)
+    assert func(1, 1.1) == test_utils.approx(304.1)
 
 
-@ti.test()
+@test_utils.test()
 def test_listcomp_multiple_ifs():
     x = ti.field(ti.i32, shape=(4, ))
 

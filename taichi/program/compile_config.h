@@ -1,9 +1,10 @@
 #pragma once
 
-#include "arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 struct CompileConfig {
   Arch arch;
@@ -12,6 +13,7 @@ struct CompileConfig {
   bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;
+  int opt_level;
   int external_optimization_level;
   int max_vector_width;
   bool packed;
@@ -40,7 +42,7 @@ struct CompileConfig {
   bool make_thread_local;
   bool make_block_local;
   bool detect_read_only;
-  bool ndarray_use_torch;
+  bool ndarray_use_cached_allocator;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
@@ -72,7 +74,8 @@ struct CompileConfig {
   std::string cc_link_cmd;
 
   // Opengl backend options:
-  bool allow_nv_shader_extension;
+  bool allow_nv_shader_extension{true};
+  bool use_gles{false};
 
   // Async options
   int async_opt_passes{3};
@@ -91,9 +94,24 @@ struct CompileConfig {
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
+  // Mesh related.
+  // MeshTaichi options
+  bool make_mesh_block_local{true};
+  bool optimize_mesh_reordered_mapping{true};
+  bool mesh_localize_to_end_mapping{true};
+  bool mesh_localize_from_end_mapping{false};
+  bool mesh_localize_all_attr_mappings{false};
+  bool demote_no_access_mesh_fors{true};
+  bool experimental_auto_mesh_local{false};
+  int auto_mesh_local_default_occupacy{4};
+
+  // Offline cache options
+  bool offline_cache{false};
+  std::string offline_cache_file_path{get_repo_dir() + "ticache"};
+
   CompileConfig();
 };
 
-extern CompileConfig default_compile_config;
+extern TI_DLL_EXPORT CompileConfig default_compile_config;
 
 TLANG_NAMESPACE_END

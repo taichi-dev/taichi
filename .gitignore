@@ -57,6 +57,7 @@ __pycache__
 *.jpg
 !docs/**/*.jpg
 !docs/**/*.png
+!tests/python/expected/*.png
 *.egg-info
 .tlang_cache
 /taichi/common/version.h
@@ -77,8 +78,10 @@ _build
 *.ll
 *.bc
 *.yml
+!.github/**/*.yml
 *.dot
 *.json
+!tests/**/*.json
 !docs/**/*.json
 imgui.ini
 /venv/

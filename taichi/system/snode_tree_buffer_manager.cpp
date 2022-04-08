@@ -1,10 +1,12 @@
 #include "snode_tree_buffer_manager.h"
 #include "taichi/program/program.h"
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
-SNodeTreeBufferManager::SNodeTreeBufferManager(LlvmProgramImpl *prog)
+SNodeTreeBufferManager::SNodeTreeBufferManager(ProgramImpl *prog)
     : prog_(prog) {
   TI_TRACE("SNode tree buffer manager created.");
 }
@@ -38,6 +40,7 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
                                      std::size_t alignment,
                                      const int snode_tree_id,
                                      uint64 *result_buffer) {
+#ifdef TI_WITH_LLVM
   TI_TRACE("allocating memory for SNode Tree {}", snode_tree_id);
   TI_ASSERT_INFO(snode_tree_id < kMaxNumSnodeTreesLlvm,
                  "LLVM backend supports up to {} snode trees",
@@ -46,8 +49,9 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
   if (set_it == size_set_.end()) {
     runtime_jit->call<void *, std::size_t, std::size_t>(
         "runtime_memory_allocate_aligned", runtime, size, alignment);
-    auto ptr = prog_->fetch_result<Ptr>(taichi_result_buffer_runtime_query_id,
-                                        result_buffer);
+    LlvmProgramImpl *llvm_prog = static_cast<LlvmProgramImpl *>(prog_);
+    auto ptr = llvm_prog->fetch_result<Ptr>(
+        taichi_result_buffer_runtime_query_id, result_buffer);
     roots_[snode_tree_id] = ptr;
     sizes_[snode_tree_id] = size;
     return ptr;
@@ -64,6 +68,9 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
     sizes_[snode_tree_id] = size;
     return x.second;
   }
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 void SNodeTreeBufferManager::destroy(SNodeTree *snode_tree) {

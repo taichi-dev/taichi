@@ -1,5 +1,6 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include <set>
 #include <unordered_map>
@@ -19,8 +20,8 @@ class OffloadedTask {
   using task_fp_type = int32 (*)(void *);
   task_fp_type func;
 
-  int block_dim;
-  int grid_dim;
+  int block_dim{0};
+  int grid_dim{0};
 
   OffloadedTask(CodeGenLLVM *codegen);
 
@@ -30,7 +31,7 @@ class OffloadedTask {
 
   void compile();
 
-  void operator()(Context *context);
+  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {
@@ -48,8 +49,6 @@ class FunctionCreationGuard {
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
-  static uint64 task_counter;
-
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -72,8 +71,12 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   llvm::BasicBlock *func_body_bb;
+  std::set<std::string> linked_modules;
+  bool returned{false};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
+
+  std::unordered_map<Function *, llvm::Function *> func_map;
 
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
@@ -98,7 +101,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   std::vector<llvm::Type *> get_xlogue_argument_types();
 
+  std::vector<llvm::Type *> get_mesh_xlogue_argument_types();
+
   llvm::Type *get_xlogue_function_type();
+
+  llvm::Type *get_mesh_xlogue_function_type();
 
   llvm::Value *get_root(int snode_tree_id);
 
@@ -120,6 +127,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual FunctionType gen();
 
+  virtual bool supports_offline_cache() const {
+    return false;
+  }
+
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,
@@ -136,10 +147,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void emit_gc(OffloadedStmt *stmt);
 
   llvm::Value *create_call(llvm::Value *func,
-                           std::vector<llvm::Value *> args = {});
+                           llvm::ArrayRef<llvm::Value *> args = {});
 
   llvm::Value *create_call(std::string func_name,
-                           std::vector<llvm::Value *> args = {});
+                           llvm::ArrayRef<llvm::Value *> args = {});
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,
@@ -165,6 +176,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
+
+  void visit(DecorationStmt *stmt) override;
 
   void visit(UnaryOpStmt *stmt) override;
 
@@ -306,6 +319,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual void create_offload_range_for(OffloadedStmt *stmt) = 0;
 
+  virtual void create_offload_mesh_for(OffloadedStmt *stmt) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 
   void visit(LoopIndexStmt *stmt) override;
@@ -313,8 +330,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopLinearIndexStmt *stmt) override;
 
   void visit(BlockCornerIndexStmt *stmt) override;
-
-  void visit(BlockDimStmt *stmt) override;
 
   void visit(GlobalTemporaryStmt *stmt) override;
 
@@ -344,7 +359,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopUniqueStmt *stmt) override;
 
+  void visit_call_bitcode(ExternalFuncCallStmt *stmt);
+
+  void visit_call_shared_object(ExternalFuncCallStmt *stmt);
+
+  void visit(ExternalFuncCallStmt *stmt) override;
+
+  void visit(MeshPatchIndexStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
+
+  llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *extract_exponent_from_float(llvm::Value *f);
 
@@ -355,7 +380,22 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
-  ~CodeGenLLVM() = default;
+  llvm::Value *atomic_op_using_cas(
+      llvm::Value *dest,
+      llvm::Value *val,
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+
+  void visit(FuncCallStmt *stmt) override;
+
+  llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
+  llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
+
+  ~CodeGenLLVM() override = default;
+
+ private:
+  void cache_module(const std::string &kernel_key);
 };
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

@@ -12,6 +12,8 @@
 #include <array>
 #include <optional>
 #include <set>
+#include <memory>
+
 #include "taichi/ui/utils/utils.h"
 #include "taichi/ui/backends/vulkan/vertex.h"
 #include "taichi/ui/backends/vulkan/scene.h"
@@ -21,7 +23,6 @@
 #include "taichi/ui/common/canvas_base.h"
 
 #include "gui.h"
-#include <memory>
 
 #include "renderables/set_image.h"
 #include "renderables/triangles.h"
@@ -30,13 +31,19 @@
 #include "renderables/circles.h"
 #include "renderables/lines.h"
 
+namespace taichi {
+namespace lang {
+class Program;
+}  // namespace lang
+}  // namespace taichi
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-class Renderer {
+class TI_DLL_EXPORT Renderer {
  public:
-  void init(GLFWwindow *window, const AppConfig &config);
+  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 
   void prepare_for_next_frame();
@@ -74,7 +81,7 @@ class Renderer {
   AppContext app_context_;
 
   template <typename T>
-  T *get_renderable_of_type();
+  T *get_renderable_of_type(VertexAttributes vbo_attrs);
 };
 
 }  // namespace vulkan

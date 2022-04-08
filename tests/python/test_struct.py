@@ -1,8 +1,12 @@
+import pytest
+
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
-def test_linear():
+@pytest.mark.parametrize("round", range(10))
+@test_utils.test()
+def test_linear(round):
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
 
@@ -20,12 +24,7 @@ def test_linear():
         assert y[i] == i + 123
 
 
-def test_linear_repeated():
-    for i in range(10):
-        test_linear()
-
-
-@ti.test()
+@test_utils.test()
 def test_linear_nested():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -44,7 +43,7 @@ def test_linear_nested():
         assert y[i] == i + 123
 
 
-@ti.test()
+@test_utils.test()
 def test_linear_nested_aos():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -62,7 +61,7 @@ def test_linear_nested_aos():
         assert y[i] == i + 123
 
 
-@ti.test(exclude=[ti.vulkan])
+@test_utils.test(exclude=[ti.vulkan])
 def test_2d_nested():
     x = ti.field(ti.i32)
 

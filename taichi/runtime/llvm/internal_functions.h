@@ -9,39 +9,54 @@
     }                                                        \
   } while (0)
 
-i32 do_nothing(Context *context) {
+#define ATOMIC_INSERT(T)                                             \
+  do {                                                               \
+    auto base_ptr = (int64 *)base_ptr_;                              \
+    int64 *num_triplets = base_ptr;                                  \
+    auto data_base_ptr = *(T **)(base_ptr + 1);                      \
+    auto triplet_id = atomic_add_i64(num_triplets, 1);               \
+    data_base_ptr[triplet_id * 3] = i;                               \
+    data_base_ptr[triplet_id * 3 + 1] = j;                           \
+    data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<T>(value); \
+  } while (0);
+
+i32 do_nothing(RuntimeContext *context) {
   return 0;
 }
 
-i32 refresh_counter(Context *context) {
+i32 refresh_counter(RuntimeContext *context) {
   auto runtime = context->runtime;
   auto queue = runtime->mem_req_queue;
   queue->tail++;
   return 0;
 }
 
-i32 insert_triplet(Context *context,
-                   int64 base_ptr_,
-                   int i,
-                   int j,
-                   float value) {
-  auto base_ptr = (int64 *)base_ptr_;
-
-  int64 *num_triplets = base_ptr;
-  auto data_base_ptr = *(int32 **)(base_ptr + 1);
-
-  auto triplet_id = atomic_add_i64(num_triplets, 1);
-  data_base_ptr[triplet_id * 3] = i;
-  data_base_ptr[triplet_id * 3 + 1] = j;
-  data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int32>(value);
+i32 insert_triplet_f32(RuntimeContext *context,
+                       int64 base_ptr_,
+                       int i,
+                       int j,
+                       float value) {
+  ATOMIC_INSERT(int32);
   return 0;
 }
 
-i32 test_internal_func_args(Context *context, float32 i, float32 j, int32 k) {
+i32 insert_triplet_f64(RuntimeContext *context,
+                       int64 base_ptr_,
+                       int i,
+                       int j,
+                       float64 value) {
+  ATOMIC_INSERT(int64);
+  return 0;
+}
+
+i32 test_internal_func_args(RuntimeContext *context,
+                            float32 i,
+                            float32 j,
+                            int32 k) {
   return static_cast<int>((i + j) * k);
 }
 
-i32 test_stack(Context *context) {
+i32 test_stack(RuntimeContext *context) {
   auto stack = new u8[132];
   stack_push(stack, 16, 4);
   stack_push(stack, 16, 4);
@@ -50,7 +65,7 @@ i32 test_stack(Context *context) {
   return 0;
 }
 
-i32 test_list_manager(Context *context) {
+i32 test_list_manager(RuntimeContext *context) {
   auto runtime = context->runtime;
   taichi_printf(runtime, "LLVMRuntime %p\n", runtime);
   auto list = context->runtime->create<ListManager>(runtime, 4, 16);
@@ -65,7 +80,7 @@ i32 test_list_manager(Context *context) {
   return 0;
 }
 
-i32 test_node_allocator(Context *context) {
+i32 test_node_allocator(RuntimeContext *context) {
   auto runtime = context->runtime;
   taichi_printf(runtime, "LLVMRuntime %p\n", runtime);
   auto nodes = context->runtime->create<NodeManager>(runtime, sizeof(i64), 4);
@@ -98,7 +113,7 @@ i32 test_node_allocator(Context *context) {
   return 0;
 }
 
-i32 test_node_allocator_gc_cpu(Context *context) {
+i32 test_node_allocator_gc_cpu(RuntimeContext *context) {
   auto runtime = context->runtime;
   taichi_printf(runtime, "LLVMRuntime %p\n", runtime);
   auto nodes = context->runtime->create<NodeManager>(runtime, sizeof(i64), 4);
@@ -142,7 +157,7 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   return 0;
 }
 
-i32 test_active_mask(Context *context) {
+i32 test_active_mask(RuntimeContext *context) {
   auto rt = context->runtime;
   taichi_printf(rt, "%d activemask %x\n", thread_idx(), cuda_active_mask());
 
@@ -159,7 +174,7 @@ i32 test_active_mask(Context *context) {
   return 0;
 }
 
-i32 test_shfl(Context *context) {
+i32 test_shfl(RuntimeContext *context) {
   auto rt = context->runtime;
   auto s =
       cuda_shfl_down_sync_i32(cuda_active_mask(), warp_idx() + 1000, 2, 31);

@@ -40,14 +40,14 @@ void BasicStmtVisitor::visit(StructForStmt *for_stmt) {
   for_stmt->body->accept(this);
 }
 
+void BasicStmtVisitor::visit(MeshForStmt *for_stmt) {
+  preprocess_container_stmt(for_stmt);
+  for_stmt->body->accept(this);
+}
+
 void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
   preprocess_container_stmt(stmt);
   stmt->all_blocks_accept(this);
-}
-
-void BasicStmtVisitor::visit(FuncBodyStmt *stmt) {
-  preprocess_container_stmt(stmt);
-  stmt->body->accept(this);
 }
 
 void BasicStmtVisitor::visit(FrontendWhileStmt *stmt) {

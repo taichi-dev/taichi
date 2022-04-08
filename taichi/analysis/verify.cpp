@@ -12,51 +12,51 @@ TLANG_NAMESPACE_BEGIN
 
 class IRVerifier : public BasicStmtVisitor {
  private:
-  Block *current_block;
-  Stmt *current_container_stmt;
+  Block *current_block_;
+  Stmt *current_container_stmt_;
   // each scope corresponds to an unordered_set
-  std::vector<std::unordered_set<Stmt *>> visible_stmts;
+  std::vector<std::unordered_set<Stmt *>> visible_stmts_;
 
  public:
   using BasicStmtVisitor::visit;
 
   explicit IRVerifier(IRNode *root)
-      : current_block(nullptr), current_container_stmt(nullptr) {
+      : current_block_(nullptr), current_container_stmt_(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     if (!root->is<Block>())
-      visible_stmts.emplace_back();
+      visible_stmts_.emplace_back();
     if (root->is<Stmt>() && root->as<Stmt>()->is_container_statement()) {
-      current_container_stmt = root->as<Stmt>();
+      current_container_stmt_ = root->as<Stmt>();
     }
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT_INFO(stmt->parent == current_block,
+    TI_ASSERT_INFO(stmt->parent == current_block_,
                    "stmt({})->parent({}) != current_block({})", stmt->id,
-                   fmt::ptr(stmt->parent), fmt::ptr(current_block));
+                   fmt::ptr(stmt->parent), fmt::ptr(current_block_));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
       bool found = false;
-      for (int depth = (int)visible_stmts.size() - 1; depth >= 0; depth--) {
-        if (visible_stmts[depth].find(op) != visible_stmts[depth].end()) {
+      for (int depth = (int)visible_stmts_.size() - 1; depth >= 0; depth--) {
+        if (visible_stmts_[depth].find(op) != visible_stmts_[depth].end()) {
           found = true;
           break;
         }
       }
       TI_ASSERT_INFO(
           found,
-          "IR broken: stmt {} cannot have operand {}."
+          "IR broken: stmt {} {} cannot have operand {} {}."
           " If you are using autodiff, please check"
-          " https://docs.taichi.graphics/lang/articles/advanced/"
-          "differentiable_programming#kernel-simplicity-rule"
+          " https://docs.taichi.graphics/lang/articles/"
+          "differences_between_taichi_and_python_programs"
           " If it doesn't help, please report this bug by opening an issue at"
           " https://github.com/taichi-dev/taichi to help us improve."
           " Thanks in advance!",
-          stmt->id, op->id);
+          stmt->type(), stmt->id, op->type(), op->id);
     }
-    visible_stmts.back().insert(stmt);
+    visible_stmts_.back().insert(stmt);
   }
 
   void preprocess_container_stmt(Stmt *stmt) override {
@@ -69,23 +69,25 @@ class IRVerifier : public BasicStmtVisitor {
 
   void visit(Block *block) override {
     TI_ASSERT_INFO(
-        block->parent_stmt == current_container_stmt,
+        block->parent_stmt == current_container_stmt_,
         "block({})->parent({}) != current_container_stmt({})", fmt::ptr(block),
         block->parent_stmt ? block->parent_stmt->name() : "nullptr",
-        current_container_stmt ? current_container_stmt->name() : "nullptr");
-    auto backup_block = current_block;
-    current_block = block;
-    auto backup_container_stmt = current_container_stmt;
-    visible_stmts.emplace_back();
+        current_container_stmt_ ? current_container_stmt_->name() : "nullptr");
+    auto backup_block = current_block_;
+    current_block_ = block;
+    auto backup_container_stmt = current_container_stmt_;
+    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+      visible_stmts_.emplace_back();
     for (auto &stmt : block->statements) {
       if (stmt->is_container_statement())
-        current_container_stmt = stmt.get();
+        current_container_stmt_ = stmt.get();
       stmt->accept(this);
       if (stmt->is_container_statement())
-        current_container_stmt = backup_container_stmt;
+        current_container_stmt_ = backup_container_stmt;
     }
-    current_block = backup_block;
-    visible_stmts.pop_back();
+    current_block_ = backup_block;
+    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+      current_block_ = backup_block;
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -123,9 +125,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
                     OffloadedStmt::TaskType::struct_for ||
                 stmt->loop->as<OffloadedStmt>()->task_type ==
+                    OffloadedStmt::TaskType::mesh_for ||
+                stmt->loop->as<OffloadedStmt>()->task_type ==
                     OffloadedStmt::TaskType::range_for);
     } else {
       TI_ASSERT(stmt->loop->is<StructForStmt>() ||
+                stmt->loop->is<MeshForStmt>() ||
                 stmt->loop->is<RangeForStmt>());
     }
   }

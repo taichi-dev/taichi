@@ -42,7 +42,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
     name_list_.push_back(name);
 }
 
-void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
+                                                 const SNode *rep_snode,
                                                  bool is_scalar,
                                                  DataType dt,
                                                  std::vector<int> shape,

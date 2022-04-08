@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/opengl/aot_data.h"
 
 namespace taichi {
@@ -18,11 +18,11 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
-  void preprocess_kernels() override;
-
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
-  void add_per_backend_field(const std::string &identifier,
+
+  void add_field_per_backend(const std::string &identifier,
+                             const SNode *rep_snode,
                              bool is_scalar,
                              DataType dt,
                              std::vector<int> shape,
@@ -33,10 +33,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
-  void preprocess_kernel(CompiledKernel &ker);
-
   StructCompiledResult &compiled_structs_;
-
   AotData aot_data_;
   bool allow_nv_shader_extension_ = false;
 };

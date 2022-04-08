@@ -1,9 +1,11 @@
 #include <taichi/backends/device.h>
-#include <taichi/backends/cpu/cpu_device.h>
 
 #if TI_WITH_VULKAN
 #include <taichi/backends/vulkan/vulkan_device.h>
 #include <taichi/backends/interop/vulkan_cpu_interop.h>
+#if TI_WITH_LLVM
+#include <taichi/backends/cpu/cpu_device.h>
+#endif
 #if TI_WITH_CUDA
 #include <taichi/backends/cuda/cuda_device.h>
 #include <taichi/backends/interop/vulkan_cuda_interop.h>
@@ -29,11 +31,13 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
   }
 
 #if TI_WITH_VULKAN
+#if TI_WITH_LLVM
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {
     // TODO: support direct copy if dst itself supports host write.
     return Device::MemcpyCapability::RequiresStagingBuffer;
   }
+#endif
 #if TI_WITH_CUDA
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cuda::CudaDevice *>(src.device)) {
@@ -71,7 +75,7 @@ void Device::memcpy_via_staging(DevicePtr dst,
                                 DevicePtr src,
                                 uint64_t size) {
   // Inter-device copy
-#if TI_WITH_VULKAN
+#if defined(TI_WITH_VULKAN) && defined(TI_WITH_LLVM)
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {
     memcpy_cpu_to_vulkan_via_staging(dst, staging, src, size);
@@ -87,6 +91,53 @@ void Device::memcpy_via_host(DevicePtr dst,
                              DevicePtr src,
                              uint64_t size) {
   TI_NOT_IMPLEMENTED;
+}
+
+void Device::print_all_cap() const {
+  const std::unordered_map<DeviceCapability, std::string> names{
+      {DeviceCapability::vk_api_version, "vk_api_version"},
+      {DeviceCapability::vk_has_physical_features2,
+       "vk_has_physical_features2"},
+      {DeviceCapability::vk_has_external_memory, "vk_has_external_memory"},
+      {DeviceCapability::vk_has_surface, "vk_has_surface"},
+      {DeviceCapability::vk_has_presentation, "vk_has_presentation"},
+      {DeviceCapability::spirv_version, "spirv_version"},
+      {DeviceCapability::spirv_has_int8, "spirv_has_int8"},
+      {DeviceCapability::spirv_has_int16, "spirv_has_int16"},
+      {DeviceCapability::spirv_has_int64, "spirv_has_int64"},
+      {DeviceCapability::spirv_has_float16, "spirv_has_float16"},
+      {DeviceCapability::spirv_has_float64, "spirv_has_float64"},
+      {DeviceCapability::spirv_has_atomic_i64, "spirv_has_atomic_i64"},
+      {DeviceCapability::spirv_has_atomic_float16, "spirv_has_atomic_float16"},
+      {DeviceCapability::spirv_has_atomic_float16_add,
+       "spirv_has_atomic_float16_add"},
+      {DeviceCapability::spirv_has_atomic_float16_minmax,
+       "spirv_has_atomic_float16_minmax"},
+      {DeviceCapability::spirv_has_atomic_float, "spirv_has_atomic_float"},
+      {DeviceCapability::spirv_has_atomic_float_add,
+       "spirv_has_atomic_float_add"},
+      {DeviceCapability::spirv_has_atomic_float_minmax,
+       "spirv_has_atomic_float_minmax"},
+      {DeviceCapability::spirv_has_atomic_float64, "spirv_has_atomic_float64"},
+      {DeviceCapability::spirv_has_atomic_float64_add,
+       "spirv_has_atomic_float64_add"},
+      {DeviceCapability::spirv_has_atomic_float64_minmax,
+       "spirv_has_atomic_float64_minmax"},
+      {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::spirv_has_physical_storage_buffer,
+       "spirv_has_physical_storage_buffer"},
+      {DeviceCapability::spirv_has_subgroup_basic, "spirv_has_subgroup_basic"},
+      {DeviceCapability::spirv_has_subgroup_vote, "spirv_has_subgroup_vote"},
+      {DeviceCapability::spirv_has_subgroup_arithmetic,
+       "spirv_has_subgroup_arithmetic"},
+      {DeviceCapability::spirv_has_subgroup_ballot,
+       "spirv_has_subgroup_ballot"},
+      {DeviceCapability::wide_lines, "wide_lines"},
+  };
+  for (auto &pair : caps_) {
+    TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),
+             int(pair.first), pair.second);
+  }
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,

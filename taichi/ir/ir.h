@@ -9,10 +9,16 @@
 #include <tuple>
 
 #include "taichi/common/core.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
+
+#ifdef TI_WITH_LLVM
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/MapVector.h"
+#endif
 
 namespace taichi {
 namespace lang {
@@ -27,7 +33,7 @@ class SNode;
 class Kernel;
 struct CompileConfig;
 
-enum class SNodeAccessFlag : int { block_local, read_only };
+enum class SNodeAccessFlag : int { block_local, read_only, mesh_local };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 
 class MemoryAccessOptions {
@@ -70,33 +76,15 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-class DecoratorRecorder {
- public:
-  int vectorize;
-  int bit_vectorize;
-  int num_cpu_threads;
-  bool strictly_serialized;
-  MemoryAccessOptions mem_access_opt;
-  int block_dim;
-  bool uniform;
-
-  DecoratorRecorder() {
-    reset();
-  }
-
-  void reset();
-};
-
 class Identifier {
  public:
-  static int id_counter;
   std::string name_;
+  int id{0};
 
-  int id;
+  // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(const std::string &name_ = "") : name_(name_) {
-    id = id_counter++;
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -114,9 +102,15 @@ class Identifier {
   }
 };
 
+#ifdef TI_WITH_LLVM
+using stmt_vector = llvm::SmallVector<pStmt, 8>;
+#else
+using stmt_vector = std::vector<pStmt>;
+#endif
+
 class VecStatement {
  public:
-  std::vector<pStmt> stmts;
+  stmt_vector stmts;
 
   VecStatement() {
   }
@@ -129,7 +123,7 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
-  VecStatement(std::vector<pStmt> &&other_stmts) {
+  VecStatement(stmt_vector &&other_stmts) {
     stmts = std::move(other_stmts);
   }
 
@@ -191,6 +185,7 @@ class IRVisitor {
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
+#undef DEFINE_VISIT
 };
 
 struct CompileConfig;
@@ -394,28 +389,28 @@ class StmtField {
 template <typename T>
 class StmtFieldNumeric final : public StmtField {
  private:
-  std::variant<T *, T> value;
+  std::variant<T *, T> value_;
 
  public:
-  explicit StmtFieldNumeric(T *value) : value(value) {
+  explicit StmtFieldNumeric(T *value) : value_(value) {
   }
 
-  explicit StmtFieldNumeric(T value) : value(value) {
+  explicit StmtFieldNumeric(T value) : value_(value) {
   }
 
   bool equal(const StmtField *other_generic) const override {
     if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
-      if (std::holds_alternative<T *>(other->value) &&
-          std::holds_alternative<T *>(value)) {
-        return *(std::get<T *>(other->value)) == *(std::get<T *>(value));
-      } else if (std::holds_alternative<T *>(other->value) ||
-                 std::holds_alternative<T *>(value)) {
+      if (std::holds_alternative<T *>(other->value_) &&
+          std::holds_alternative<T *>(value_)) {
+        return *(std::get<T *>(other->value_)) == *(std::get<T *>(value_));
+      } else if (std::holds_alternative<T *>(other->value_) ||
+                 std::holds_alternative<T *>(value_)) {
         TI_ERROR(
             "Inconsistent StmtField value types: a pointer value is compared "
             "to a non-pointer value.");
         return false;
       } else {
-        return std::get<T>(other->value) == std::get<T>(value);
+        return std::get<T>(other->value_) == std::get<T>(value_);
       }
     } else {
       // Different types
@@ -426,10 +421,10 @@ class StmtFieldNumeric final : public StmtField {
 
 class StmtFieldSNode final : public StmtField {
  private:
-  SNode *const &snode;
+  SNode *const &snode_;
 
  public:
-  explicit StmtFieldSNode(SNode *const &snode) : snode(snode) {
+  explicit StmtFieldSNode(SNode *const &snode) : snode_(snode) {
   }
 
   static int get_snode_id(SNode *snode);
@@ -451,12 +446,12 @@ class StmtFieldMemoryAccessOptions final : public StmtField {
 
 class StmtFieldManager {
  private:
-  Stmt *stmt;
+  Stmt *stmt_;
 
  public:
   std::vector<std::unique_ptr<StmtField>> fields;
 
-  StmtFieldManager(Stmt *stmt) : stmt(stmt) {
+  StmtFieldManager(Stmt *stmt) : stmt_(stmt) {
   }
 
   template <typename T>
@@ -547,7 +542,7 @@ class Stmt : public IRNode {
 
   bool has_operand(Stmt *stmt) const;
 
-  void replace_with(Stmt *new_stmt);
+  void replace_usages_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
@@ -596,14 +591,19 @@ class Stmt : public IRNode {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual ~Stmt() = default;
+  ~Stmt() override = default;
+
+  static void reset_counter() {
+    instance_id_counter = 0;
+  }
 };
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt;
-  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  Stmt *mask_var;
+  Stmt *parent_stmt{nullptr};
+  stmt_vector statements;
+  stmt_vector trash_bin;
+  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
@@ -620,16 +620,22 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
+  stmt_vector::iterator locate(int location);
+  stmt_vector::iterator find(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
+  void erase_range(stmt_vector::iterator begin, stmt_vector::iterator end);
+  void erase(std::unordered_set<Stmt *> stmts);
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   // Returns stmt.get()
   Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+  Stmt *insert_at(std::unique_ptr<Stmt> &&stmt, stmt_vector::iterator location);
 
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
+  Stmt *insert_at(VecStatement &&stmt, stmt_vector::iterator location);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);
@@ -672,11 +678,12 @@ class Block : public IRNode {
 
 class DelayedIRModifier {
  private:
-  std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
-  std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
-  std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
-  std::vector<Stmt *> to_erase;
-  std::vector<std::pair<Stmt *, Block *>> to_extract_to_block_front;
+  std::vector<std::pair<Stmt *, VecStatement>> to_insert_before_;
+  std::vector<std::pair<Stmt *, VecStatement>> to_insert_after_;
+  std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with_;
+  std::vector<Stmt *> to_erase_;
+  std::vector<std::pair<Stmt *, Block *>> to_extract_to_block_front_;
+  std::vector<std::pair<IRNode *, CompileConfig>> to_type_check_;
   bool modified_{false};
 
  public:
@@ -690,6 +697,7 @@ class DelayedIRModifier {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   void extract_to_block_front(Stmt *stmt, Block *blk);
+  void type_check(IRNode *node, CompileConfig cfg);
   bool modify_ir();
 
   // Force the next call of modify_ir() to return true.
@@ -702,29 +710,6 @@ struct LocalAddress {
 
   LocalAddress(Stmt *var, int offset);
 };
-
-extern DecoratorRecorder dec;
-
-inline void Vectorize(int v) {
-  dec.vectorize = v;
-}
-
-inline void BitVectorize(int v) {
-  dec.bit_vectorize = v;
-}
-
-inline void Parallelize(int v) {
-  dec.num_cpu_threads = v;
-}
-
-inline void StrictlySerialize() {
-  dec.strictly_serialized = true;
-}
-
-inline void BlockDim(int v) {
-  TI_ASSERT(bit::is_power_of_two(v));
-  dec.block_dim = v;
-}
 
 class VectorElement {
  public:
@@ -743,7 +728,7 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;
   if constexpr (is_specialization<decay_T, std::vector>::value ||
                 is_specialization<decay_T, LaneAttribute>::value) {
-    stmt->field_manager.fields.emplace_back(
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
     for (int i = 0; i < (int)value.size(); i++) {
       (*this)("__element", value[i]);
@@ -751,30 +736,30 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   } else if constexpr (std::is_same<decay_T,
                                     std::variant<Stmt *, std::string>>::value) {
     if (std::holds_alternative<std::string>(value)) {
-      stmt->field_manager.fields.emplace_back(
+      stmt_->field_manager.fields.emplace_back(
           std::make_unique<StmtFieldNumeric<std::string>>(
               std::get<std::string>(value)));
     } else {
       (*this)("__element", std::get<Stmt *>(value));
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
-    stmt->register_operand(const_cast<Stmt *&>(value));
+    stmt_->register_operand(const_cast<Stmt *&>(value));
   } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
-    stmt->register_operand(const_cast<Stmt *&>(value.var));
-    stmt->field_manager.fields.emplace_back(
+    stmt_->register_operand(const_cast<Stmt *&>(value.var));
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<int>>(value.offset));
   } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
-    stmt->register_operand(const_cast<Stmt *&>(value.stmt));
-    stmt->field_manager.fields.emplace_back(
+    stmt_->register_operand(const_cast<Stmt *&>(value.stmt));
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<int>>(value.index));
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {
-    stmt->field_manager.fields.emplace_back(
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));
   } else if constexpr (std::is_same<decay_T, MemoryAccessOptions>::value) {
-    stmt->field_manager.fields.emplace_back(
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldMemoryAccessOptions>(value));
   } else {
-    stmt->field_manager.fields.emplace_back(
+    stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::remove_reference_t<T>>>(&value));
   }
 }

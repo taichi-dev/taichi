@@ -30,6 +30,10 @@ class MetalProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+
   void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -45,7 +49,12 @@ class MetalProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override;
+
  private:
+  const metal::CompiledStructs &compile_snode_tree_types_impl(SNodeTree *tree);
+
   std::optional<metal::CompiledRuntimeModule> compiled_runtime_module_{
       std::nullopt};
   std::vector<metal::CompiledStructs> compiled_snode_trees_;

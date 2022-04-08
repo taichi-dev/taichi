@@ -149,7 +149,13 @@ void memcpy_cuda_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
   DeviceAllocation dst_alloc(dst);
   DeviceAllocation src_alloc(src);
 
-  static std::unordered_map<int, unsigned char *> alloc_base_ptrs;
+  static std::unordered_map<
+      VulkanDevice *,
+      std::unordered_map<CudaDevice *,
+                         std::unordered_map<int, unsigned char *>>>
+      alloc_base_ptrs_all;
+  std::unordered_map<int, unsigned char *> &alloc_base_ptrs =
+      alloc_base_ptrs_all[vk_dev][cuda_dev];
 
   if (alloc_base_ptrs.find(dst_alloc.alloc_id) == alloc_base_ptrs.end()) {
     auto [base_mem, alloc_offset, alloc_size] =

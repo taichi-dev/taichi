@@ -1,8 +1,10 @@
+import pytest
+
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@test_utils.test()
 def test_nested_kernel_error():
     @ti.kernel
     def B():
@@ -12,4 +14,5 @@ def test_nested_kernel_error():
     def A():
         B()
 
-    A()
+    with pytest.raises(ti.TaichiCompilationError):
+        A()

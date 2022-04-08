@@ -32,8 +32,8 @@ class Inliner : public BasicStmtVisitor {
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
     if (func->rets.empty()) {
-      modifier.replace_with(stmt,
-                            std::move(inlined_ir->as<Block>()->statements));
+      modifier_.replace_with(stmt,
+                             std::move(inlined_ir->as<Block>()->statements));
     } else {
       if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
             return s->is<ReturnStmt>();
@@ -50,13 +50,14 @@ class Inliner : public BasicStmtVisitor {
           /*filter=*/[&](Stmt *s) { return s->is<ReturnStmt>(); },
           /*generator=*/
           [&](Stmt *s) {
+            TI_ASSERT(s->as<ReturnStmt>()->values.size() == 1);
             return Stmt::make<LocalStoreStmt>(return_address,
-                                              s->as<ReturnStmt>()->value);
+                                              s->as<ReturnStmt>()->values[0]);
           });
-      modifier.insert_before(stmt,
-                             std::move(inlined_ir->as<Block>()->statements));
+      modifier_.insert_before(stmt,
+                              std::move(inlined_ir->as<Block>()->statements));
       // Load the return value here
-      modifier.replace_with(
+      modifier_.replace_with(
           stmt, Stmt::make<LocalLoadStmt>(LocalAddress(return_address, 0)));
     }
   }
@@ -66,7 +67,7 @@ class Inliner : public BasicStmtVisitor {
     bool modified = false;
     while (true) {
       node->accept(&inliner);
-      if (inliner.modifier.modify_ir())
+      if (inliner.modifier_.modify_ir())
         modified = true;
       else
         break;
@@ -75,7 +76,7 @@ class Inliner : public BasicStmtVisitor {
   }
 
  private:
-  DelayedIRModifier modifier;
+  DelayedIRModifier modifier_;
 };
 
 const PassID InliningPass::id = "InliningPass";

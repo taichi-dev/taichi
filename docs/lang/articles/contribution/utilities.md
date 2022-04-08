@@ -86,7 +86,7 @@ int func(void *p) {
 ## Benchmarking and regression tests
 
 - Run `ti benchmark` to run tests in benchmark mode. This will record
-  the performance of `ti test`, and save it in `benchmarks/output`.
+  the performance of `python tests/run_tests.py`, and save it in `benchmarks/output`.
 - Run `ti regression` to show the difference between the previous
   result in `benchmarks/baseline`. And you can see if the performance
   is increasing or decreasing after your commits. This is really
@@ -150,7 +150,7 @@ when the program crashes.
 
 ```python
 # Python
-ti.set_gdb_trigger(True)
+ti.init(gdb_trigger=True)
 ```
 
 ```cpp
@@ -188,7 +188,7 @@ in is executed in test.
   not C++ yet.
 
 ```bash
-ti test -C       # run tests and save results to .coverage
+python tests/run_tests.py -C       # run tests and save results to .coverage
 coverage report  # generate a coverage report on terminal output
 coverage html    # generate a HTML form report in htmlcov/index.html
 ```

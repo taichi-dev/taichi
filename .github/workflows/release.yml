@@ -1,35 +1,67 @@
 name: Publishing Release
 on:
-  release:
-    # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
-    types: [published]
-  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
-  # We use this to distinguish which taichi to release.
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
   workflow_dispatch:
+    # Manually trigger the release workflow, a version must be provided
+    inputs:
+      version:
+        description: 'The version to release (e.g. v0.8.0), or leave it empty for nightly build'
+        type: string
+        required: false
+
+env:
+  PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+  NIGHT_PWD: ${{ secrets.TAICHI_PYPI_PWD }}
+  NIGHT_USERNAME: ${{ secrets.TAICHI_PYPI_USERNAME }}
+  METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+  METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+  METADATA_URL: ${{ secrets.METADATA_URL }}
+  RELEASE_VERSION: ${{ github.event.inputs.version }}
+  TI_CI: 1
 
 jobs:
+  add_version_to_database:
+    name: Add version to database
+    # Skip running release workflow on forks
+    if: github.repository_owner == 'taichi-dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Save new version
+        run: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Not a production release"
+            exit 0
+          fi
+          python3 -m pip install requests==2.26
+          python3 misc/save_new_version.py
+
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
     runs-on: ubuntu-latest
+    needs: add_version_to_database
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_osx: ${{ steps.set-matrix.outputs.matrix_osx }}
     steps:
       - id: set-matrix
         run: |
-          # For nightly release, we only run on python 3.8
-          [ -z "${{ github.event.action }}" ] && matrix="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\",\"conda_python\":\"py38\"}]"
-          # For production release, we run on four python versions.
-          [ -z "${{ github.event.action }}" ] || matrix="[{\"name\":\"taichi\",\"python\":\"3.6\",\"conda_python\":\"py36\"},{\"name\":\"taichi\",\"python\":\"3.7\",\"conda_python\":\"py37\"},{\"name\":\"taichi\",\"python\":\"3.8\",\"conda_python\":\"py38\"},{\"name\":\"taichi\",\"python\":\"3.9\",\"conda_python\":\"py39\"}]"
-          echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
-          # M1 only supports py38 and py39(conda), so change matrix.
-          [ -z "${{ github.event.action }}" ] && matrix_osx="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\"}]"
-          [ -z "${{ github.event.action }}" ] || matrix_osx="[{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
-          echo ::set-output name=matrix_osx::{\"include\":$(echo $matrix_osx)}\"
+          if [ -n "$RELEASE_VERSION" ]; then
+            # For production release, we run on four python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
 
-  build_and_upload_linux:
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
+          else
+            # For nightly release, we only run on python 3.8
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"}]}"'
+
+            # M1 only supports py38 and py39(conda), so change matrix.
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"}]}"'
+          fi
+
+  build_and_test_linux:
     name: Build and Upload (linux only)
     needs: matrix_prep
     strategy:
@@ -39,68 +71,148 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-gpu-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-gpu-
 
       - name: Build
         run: |
-          mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
+          mkdir -m777 shared
+          docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
           PY: ${{ matrix.conda_python }}
           GPU_BUILD: ON
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: :1
+          DISPLAY: ':1'
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
-          path: wheel/*.whl
+          name: dist
+          path: shared/dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
-          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          docker cp wheel/*.whl taichi_test:/home/dev/
+          docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+            /home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp shared/dist/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
+          docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: :1
-
-      - name: Upload PyPI
-        env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
-          PROJECT_NAME: ${{ matrix.name }}
-        run: |
-          mkdir dist
-          cp wheel/*.whl dist/
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+          DISPLAY: ':1'
 
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
 
-  build_and_upload_mac:
+  build_and_test_manylinux2014:
+    name: Build and Upload (manylinux2014)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [self-hosted, cuda, cn, release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-manylinux-${{ github.sha }}
+          restore-keys: |
+            sccache-manylinux-
+
+      - name: Build
+        run: |
+          mkdir -m777 shared
+          docker create --user dev --name taichi_build --gpus all \
+            -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
+          docker start -a taichi_build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_BUILD: ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          PROJECT_NAME: ${{ matrix.name }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: shared/dist/*.whl
+          retention-days: 20
+
+      - name: Test
+        run: |
+          docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
+            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            /home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp shared/dist/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
+          docker cp tests/ taichi_test:/home/dev/
+          docker start -a taichi_test
+        env:
+          PY: ${{ matrix.conda_python }}
+          GPU_TEST: ON
+          TI_WANTED_ARCHS: "cuda,cpu"
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
+
+  build_and_test_mac:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-mac-${{ github.sha }}
+          restore-keys: |
+            sccache-mac-
 
       - uses: actions/setup-python@v2
         with:
@@ -109,52 +221,32 @@ jobs:
       - name: Download Pre-Built LLVM 10.0.0
         run: python misc/ci_download.py
         env:
-          CI_PLATFORM: macos-latest
+          CI_PLATFORM: macos-10.15
 
       - name: Create Python Wheel
         run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python build.py build --project_name $PROJECT_NAME
-          cd ..
-          NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+          brew install molten-vk
+          export PATH=$(pwd)/taichi-llvm/bin/:$PATH
+          bash .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
       - name: Test
-        run: |
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti test -vr2 -t2 -a cpu,metal
-
-      - name: Upload PyPI
+        run: .github/workflows/scripts/unix_test.sh
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
-          PROJECT_NAME: ${{ matrix.name }}
-        run: |
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
+          TI_WANTED_ARCHS: 'cpu'
 
-  build_and_upload_m1:
+  build_and_test_m1:
     name: Build and Upload (Apple M1)
     needs: matrix_prep
     strategy:
@@ -163,57 +255,52 @@ jobs:
     runs-on: [self-hosted, m1]
     defaults:
       run:
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-m1-${{ github.sha }}
+          restore-keys: |
+            sccache-m1-
 
       - name: Build
         run: |
+          brew install molten-vk
           # We hacked here because conda activate in CI won't update python PATH
           # automatically. So we don't activate and use desired python version
           # directly.
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          python3 -m pip uninstall taichi taichi-nightly -y
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          python3 -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python3 build.py build --project_name $PROJECT_NAME
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          bash .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
-      - name: Upload PyPI
-        env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
+      - name: Test
         run: |
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+          .github/workflows/scripts/unix_test.sh
+        env:
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
+          PYTHON: ${{ matrix.python }}
+          GPU_TEST: ON
 
-  build_and_upload_macos_1014:
+  build_and_test_macos_1014:
     name: Build and Upload (macos 1014)
     needs: matrix_prep
     strategy:
@@ -223,7 +310,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-1014-${{ github.sha }}
+          restore-keys: |
+            sccache-1014-
 
       - name: Build
         run: |
@@ -233,54 +328,29 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
           export PATH=$LLVM_DIR/bin:$PATH
-          python3 -m pip uninstall taichi taichi-nightly -y
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          python3 -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python3 build.py build --project_name $PROJECT_NAME
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          bash .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-1014.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti test -vr2 -t2 -a cpu
+          .github/workflows/scripts/unix_test.sh
         env:
+          TI_WANTED_ARCHS: 'cpu'
           PYTHON: ${{ matrix.python }}
 
-      - name: Upload PyPI
-        env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
-          PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
-        run: |
-          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
-
-  build_and_upload_windows:
+  build_and_test_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep
     strategy:
@@ -288,59 +358,39 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: windows-latest
     steps:
-      - name: Install 7Zip PowerShell
-        shell: powershell
-        run: Install-Module 7Zip4PowerShell -Force -Verbose
-
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Add Visual Studio Shell to ENV
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
 
-      - name: Download And Install Vulkan
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
-          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-          $installer.WaitForExit();
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ccache_cache
+          key: ccache-win64-clang-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-clang-
 
       - name: Build Python Wheel
         shell: powershell
         run: |
-          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
-          cd C:\
-          Remove-item alias:curl
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
-          7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
-          7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          clang --version
-          cd D:\a\taichi\taichi
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          python build.py build --project_name $env:PROJECT_NAME
-          cd ..\dist
-          $env:WHL = $(dir *.whl)
-          python -m pip install $env:WHL
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -libsDir C:\
+          venv\Scripts\python -m pip install $(dir dist\*.whl)
         env:
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
-          VULKAN_SDK: C:/VulkanSDK/1.2.189.0
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
+          name: dist
           path: dist/*.whl
           retention-days: 20
 
@@ -348,21 +398,91 @@ jobs:
         shell: powershell
         run: |
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
+          . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
-          python bin/taichi diagnose
-          python bin/taichi test -vr2 -t2
-
-      - name: Upload PyPI
-        shell: powershell
+          pip install torch
+          ti diagnose
+          python tests/run_tests.py -vr2 -t2
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
-          PROJECT_NAME: ${{ matrix.name }}
+          TI_SKIP_VERSION_CHECK: ON
+
+  upload_to_pypi:
+    name: Upload release to PyPI
+    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Get dist files
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload to PyPI
         run: |
-          cd python
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {python build.py upload --skip_build}
+          ls -l dist/
+          if [ -z "$RELEASE_VERSION" ]; then
+            export PROJECT_NAME="taichi-nightly"
+          else
+            export PROJECT_NAME="taichi"
+          fi
+          python -m pip install requests twine
+          python misc/upload_release.py
+
+  create_release:
+    name: Create tag and publish release
+    needs: upload_to_pypi
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          pip3 install gitpython
+          content=$(python3 misc/make_changelog.py)
+          echo $content
+          # Escape multiline strings:
+          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          echo "::set-output name=content::$content"
+
+      - name: Create tag
+        run: |
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
+          git tag -a ${RELEASE_VERSION} -m "Release ${RELEASE_VERSION}"
+          git push origin --tags
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog.outputs.content }}
+          tag_name: ${{ github.event.inputs.version }}
+
+      - name: Bump version
+        run: |
+          version_parts=(${RELEASE_VERSION//./ })
+          version_parts[2]=$(expr ${version_parts[2]} + 1)
+          next_version=$(IFS=.; echo "${version_parts[*]}")
+          # Update version.txt
+          git checkout -b "bump/$next_version"
+          echo "$next_version" > version.txt
+          git add version.txt
+          # Commit and push changes
+          git commit -m "Bump version to $next_version"
+          git push origin "bump/$next_version"
+          # Create pull request
+          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

@@ -1,8 +1,158 @@
 #include "opengl_device.h"
+#include "opengl_api.h"
 
 namespace taichi {
 namespace lang {
 namespace opengl {
+
+namespace {
+const std::unordered_map<BufferFormat, GLuint> format_to_gl_internal_format = {
+    {BufferFormat::r8, GL_R8},
+    {BufferFormat::rg8, GL_RG8},
+    {BufferFormat::rgba8, GL_RGBA8},
+    {BufferFormat::rgba8srgb, GL_SRGB8_ALPHA8},
+    {BufferFormat::bgra8, GL_BGRA8_EXT},
+    {BufferFormat::bgra8srgb, GL_INVALID_ENUM},
+    {BufferFormat::r8u, GL_R8UI},
+    {BufferFormat::rg8u, GL_RG8UI},
+    {BufferFormat::rgba8u, GL_RGBA8UI},
+    {BufferFormat::r8i, GL_R8I},
+    {BufferFormat::rg8i, GL_RG8I},
+    {BufferFormat::rgba8i, GL_RGBA8I},
+    {BufferFormat::r16, GL_R16},
+    {BufferFormat::rg16, GL_RG16},
+    {BufferFormat::rgb16, GL_RGB16},
+    {BufferFormat::rgba16, GL_RGBA16},
+    {BufferFormat::r16u, GL_R16UI},
+    {BufferFormat::rg16u, GL_RG16UI},
+    {BufferFormat::rgb16u, GL_RGB16UI},
+    {BufferFormat::rgba16u, GL_RGBA16UI},
+    {BufferFormat::r16i, GL_R16I},
+    {BufferFormat::rg16i, GL_RG16I},
+    {BufferFormat::rgb16i, GL_RGB16I},
+    {BufferFormat::rgba16i, GL_RGBA16I},
+    {BufferFormat::r16f, GL_R16F},
+    {BufferFormat::rg16f, GL_RG16F},
+    {BufferFormat::rgb16f, GL_RGB16F},
+    {BufferFormat::rgba16f, GL_RGBA16F},
+    {BufferFormat::r32u, GL_R32UI},
+    {BufferFormat::rg32u, GL_RG32UI},
+    {BufferFormat::rgb32u, GL_RGB32UI},
+    {BufferFormat::rgba32u, GL_RGBA32UI},
+    {BufferFormat::r32i, GL_R32I},
+    {BufferFormat::rg32i, GL_RG32I},
+    {BufferFormat::rgb32i, GL_RGB32I},
+    {BufferFormat::rgba32i, GL_RGBA32I},
+    {BufferFormat::r32f, GL_R32F},
+    {BufferFormat::rg32f, GL_RG32F},
+    {BufferFormat::rgb32f, GL_RGB32F},
+    {BufferFormat::rgba32f, GL_RGBA32F},
+    {BufferFormat::depth16, GL_INVALID_ENUM},
+    {BufferFormat::depth24stencil8, GL_DEPTH24_STENCIL8},
+    {BufferFormat::depth32f, GL_DEPTH32F_STENCIL8}};
+
+const std::unordered_map<GLuint, GLuint> gl_internal_format_to_type = {
+    {GL_R8, GL_UNSIGNED_BYTE},
+    {GL_R8_SNORM, GL_BYTE},
+    {GL_R8UI, GL_UNSIGNED_BYTE},
+    {GL_R8I, GL_BYTE},
+    {GL_R16, GL_UNSIGNED_SHORT},
+    {GL_R16_SNORM, GL_SHORT},
+    {GL_R16F, GL_HALF_FLOAT},
+    {GL_R16UI, GL_UNSIGNED_SHORT},
+    {GL_R16I, GL_SHORT},
+    {GL_R32UI, GL_UNSIGNED_INT},
+    {GL_R32I, GL_INT},
+    {GL_R32F, GL_FLOAT},
+    {GL_RG8, GL_UNSIGNED_BYTE},
+    {GL_RG8_SNORM, GL_BYTE},
+    {GL_RG8UI, GL_UNSIGNED_BYTE},
+    {GL_RG8I, GL_BYTE},
+    {GL_RG16, GL_UNSIGNED_SHORT},
+    {GL_RG16_SNORM, GL_SHORT},
+    {GL_RG16F, GL_HALF_FLOAT},
+    {GL_RG16UI, GL_UNSIGNED_SHORT},
+    {GL_RG16I, GL_SHORT},
+    {GL_RG32UI, GL_UNSIGNED_INT},
+    {GL_RG32I, GL_INT},
+    {GL_RG32F, GL_FLOAT},
+    {GL_RGB8, GL_UNSIGNED_BYTE},
+    {GL_RGB8_SNORM, GL_BYTE},
+    {GL_RGB8UI, GL_UNSIGNED_BYTE},
+    {GL_RGB8I, GL_BYTE},
+    {GL_RGB16, GL_UNSIGNED_SHORT},
+    {GL_RGB16_SNORM, GL_SHORT},
+    {GL_RGB16F, GL_HALF_FLOAT},
+    {GL_RGB16UI, GL_UNSIGNED_SHORT},
+    {GL_RGB16I, GL_SHORT},
+    {GL_RGB32UI, GL_UNSIGNED_INT},
+    {GL_RGB32I, GL_INT},
+    {GL_RGB32F, GL_FLOAT},
+    {GL_RGBA8, GL_UNSIGNED_BYTE},
+    {GL_SRGB8_ALPHA8, GL_UNSIGNED_BYTE},
+    {GL_RGBA8_SNORM, GL_BYTE},
+    {GL_RGBA8UI, GL_UNSIGNED_BYTE},
+    {GL_RGBA8I, GL_BYTE},
+    {GL_RGBA16, GL_UNSIGNED_SHORT},
+    {GL_RGBA16_SNORM, GL_SHORT},
+    {GL_RGBA16F, GL_HALF_FLOAT},
+    {GL_RGBA16UI, GL_UNSIGNED_SHORT},
+    {GL_RGBA16I, GL_SHORT},
+    {GL_RGBA32UI, GL_UNSIGNED_INT},
+    {GL_RGBA32I, GL_INT},
+    {GL_RGBA32F, GL_FLOAT}};
+
+const std::unordered_map<GLuint, GLuint> gl_internal_format_to_format = {
+    {GL_R8, GL_RED},
+    {GL_R8_SNORM, GL_RED},
+    {GL_R8UI, GL_RED},
+    {GL_R8I, GL_RED},
+    {GL_R16, GL_RED},
+    {GL_R16_SNORM, GL_RED},
+    {GL_R16F, GL_RED},
+    {GL_R16UI, GL_RED},
+    {GL_R16I, GL_RED},
+    {GL_R32UI, GL_RED},
+    {GL_R32I, GL_RED},
+    {GL_R32F, GL_RED},
+    {GL_RG8, GL_RG},
+    {GL_RG8_SNORM, GL_RG},
+    {GL_RG8UI, GL_RG},
+    {GL_RG8I, GL_RG},
+    {GL_RG16, GL_RG},
+    {GL_RG16_SNORM, GL_RG},
+    {GL_RG16F, GL_RG},
+    {GL_RG16UI, GL_RG},
+    {GL_RG16I, GL_RG},
+    {GL_RG32UI, GL_RG},
+    {GL_RG32I, GL_RG},
+    {GL_RG32F, GL_RG},
+    {GL_RGB8, GL_RGB},
+    {GL_RGB8_SNORM, GL_RGB},
+    {GL_RGB8UI, GL_RGB},
+    {GL_RGB8I, GL_RGB},
+    {GL_RGB16, GL_RGB},
+    {GL_RGB16_SNORM, GL_RGB},
+    {GL_RGB16F, GL_RGB},
+    {GL_RGB16UI, GL_RGB},
+    {GL_RGB16I, GL_RGB},
+    {GL_RGB32UI, GL_RGB},
+    {GL_RGB32I, GL_RGB},
+    {GL_RGB32F, GL_RGB},
+    {GL_RGBA8, GL_RGBA},
+    {GL_SRGB8_ALPHA8, GL_RGBA},
+    {GL_RGBA8_SNORM, GL_RGBA},
+    {GL_RGBA8UI, GL_RGBA},
+    {GL_RGBA8I, GL_RGBA},
+    {GL_RGBA16, GL_RGBA},
+    {GL_RGBA16_SNORM, GL_RGBA},
+    {GL_RGBA16F, GL_RGBA},
+    {GL_RGBA16UI, GL_RGBA},
+    {GL_RGBA16I, GL_RGBA},
+    {GL_RGBA32UI, GL_RGBA},
+    {GL_RGBA32I, GL_RGBA},
+    {GL_RGBA32F, GL_RGBA}};
+}  // namespace
 
 std::string get_opengl_error_string(GLenum err) {
   switch (err) {
@@ -92,7 +242,8 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
   shader_id = glCreateShader(GL_COMPUTE_SHADER);
 
   const GLchar *source_cstr = (const GLchar *)desc.data;
-  glShaderSource(shader_id, 1, &source_cstr, nullptr);
+  int length = desc.size;
+  glShaderSource(shader_id, 1, &source_cstr, &length);
 
   glCompileShader(shader_id);
   int status = GL_TRUE;
@@ -239,21 +390,32 @@ void GLCommandList::draw_indexed(uint32_t num_indicies,
 void GLCommandList::image_transition(DeviceAllocation img,
                                      ImageLayout old_layout,
                                      ImageLayout new_layout) {
-  TI_NOT_IMPLEMENTED;
+  auto cmd = std::make_unique<CmdImageTransition>();
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::buffer_to_image(DeviceAllocation dst_img,
                                     DevicePtr src_buf,
                                     ImageLayout img_layout,
                                     const BufferImageCopyParams &params) {
-  TI_NOT_IMPLEMENTED;
+  auto cmd = std::make_unique<CmdBufferToImage>();
+  cmd->params = params;
+  cmd->image = dst_img.alloc_id;
+  cmd->buffer = src_buf.alloc_id;
+  cmd->offset = src_buf.offset;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::image_to_buffer(DevicePtr dst_buf,
                                     DeviceAllocation src_img,
                                     ImageLayout img_layout,
                                     const BufferImageCopyParams &params) {
-  TI_NOT_IMPLEMENTED;
+  auto cmd = std::make_unique<CmdImageToBuffer>();
+  cmd->params = params;
+  cmd->image = src_img.alloc_id;
+  cmd->buffer = dst_buf.alloc_id;
+  cmd->offset = dst_buf.offset;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::run_commands() {
@@ -299,11 +461,11 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   alloc.alloc_id = buffer;
 
   if (params.host_read && params.host_write) {
-    buffer_to_access_[buffer] = GL_READ_WRITE;
+    buffer_to_access_[buffer] = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
   } else if (params.host_read) {
-    buffer_to_access_[buffer] = GL_READ_ONLY;
+    buffer_to_access_[buffer] = GL_MAP_READ_BIT;
   } else if (params.host_write) {
-    buffer_to_access_[buffer] = GL_WRITE_ONLY;
+    buffer_to_access_[buffer] = GL_MAP_WRITE_BIT;
   }
 
   return alloc;
@@ -333,6 +495,11 @@ void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
 }
 
 void *GLDevice::map(DeviceAllocation alloc) {
+  int size = 0;
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
+  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
+  return map_range(alloc.get_ptr(0), size);
+  /*
   TI_ASSERT_INFO(
       buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
@@ -342,6 +509,7 @@ void *GLDevice::map(DeviceAllocation alloc) {
                              buffer_to_access_.at(alloc.alloc_id));
   check_opengl_error("glMapBuffer");
   return mapped;
+  */
 }
 
 void GLDevice::unmap(DevicePtr ptr) {
@@ -397,18 +565,55 @@ std::unique_ptr<Surface> GLDevice::create_surface(const SurfaceConfig &config) {
 }
 
 DeviceAllocation GLDevice::create_image(const ImageParams &params) {
-  TI_NOT_IMPLEMENTED;
-  return kDeviceNullAllocation;
+  GLuint tex;
+  glGenTextures(1, &tex);
+  check_opengl_error("glGenTextures");
+
+  auto gl_texture_dims = GL_TEXTURE_2D;
+  if (params.dimension == ImageDimension::d1D) {
+    gl_texture_dims = GL_TEXTURE_1D;
+  } else if (params.dimension == ImageDimension::d2D) {
+    gl_texture_dims = GL_TEXTURE_2D;
+  }
+
+  auto format = format_to_gl_internal_format.at(params.format);
+
+  glBindTexture(gl_texture_dims, tex);
+  check_opengl_error("glBindTexture");
+  if (params.dimension == ImageDimension::d1D) {
+    glTexStorage1D(gl_texture_dims, 1, format, params.x);
+    check_opengl_error("glTexStorage1D");
+  } else if (params.dimension == ImageDimension::d2D) {
+    glTexStorage2D(gl_texture_dims, 1, format, params.x, params.y);
+    check_opengl_error("glTexStorage2D");
+  } else {
+    glTexStorage3D(gl_texture_dims, 1, format, params.x, params.y, params.z);
+    check_opengl_error("glTexStorage3D");
+  }
+
+  DeviceAllocation alloc;
+  alloc.device = this;
+  alloc.alloc_id = tex;
+
+  image_to_dims_[tex] = gl_texture_dims;
+  image_to_int_format_[tex] = format;
+
+  return alloc;
 }
 
 void GLDevice::destroy_image(DeviceAllocation handle) {
-  TI_NOT_IMPLEMENTED;
+  glDeleteTextures(1, &handle.alloc_id);
+  check_opengl_error("glDeleteTextures");
+  image_to_dims_.erase(handle.alloc_id);
+  image_to_int_format_.erase(handle.alloc_id);
 }
 
 void GLDevice::image_transition(DeviceAllocation img,
                                 ImageLayout old_layout,
                                 ImageLayout new_layout) {
-  TI_NOT_IMPLEMENTED;
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT |
+                  GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
+                  GL_FRAMEBUFFER_BARRIER_BIT);
 }
 
 void GLDevice::buffer_to_image(DeviceAllocation dst_img,
@@ -480,13 +685,77 @@ void GLCommandList::CmdBufferCopy::execute() {
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size, GL_RED,
-                       GL_FLOAT, &data);
-  check_opengl_error("glClearBufferSubData");
+  if (is_gles()) {
+    int buf_size = 0;
+    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
+    TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
+              "GLES only supports full clear");
+    glBufferData(GL_SHADER_STORAGE_BUFFER, buf_size, nullptr, GL_DYNAMIC_READ);
+    check_opengl_error("glBufferData");
+  } else {
+    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size,
+                         GL_RED, GL_FLOAT, &data);
+    check_opengl_error("glClearBufferSubData");
+  }
 }
 
 void GLCommandList::CmdDispatch::execute() {
   glDispatchCompute(x, y, z);
+}
+
+void GLCommandList::CmdImageTransition::execute() {
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT |
+                  GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
+                  GL_FRAMEBUFFER_BARRIER_BIT);
+}
+
+void GLCommandList::CmdBufferToImage::execute() {
+  auto image_dims = device->get_image_gl_dims(image);
+  auto image_format = device->get_image_gl_int_dims(image);
+  auto gl_type = gl_internal_format_to_type.at(image_format);
+
+  glBindTexture(image_dims, image);
+  check_opengl_error("glBindTexture");
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer);
+  check_opengl_error("glBindBuffer");
+  if (image_dims == GL_TEXTURE_1D) {
+    glTexSubImage1D(image_dims, /*level=*/0, params.image_offset.x,
+                    params.image_extent.x, image_format, gl_type,
+                    (void *)offset);
+  } else if (image_dims == GL_TEXTURE_2D) {
+    glTexSubImage2D(image_dims, /*level=*/0, params.image_offset.x,
+                    params.image_offset.y, params.image_extent.x,
+                    params.image_extent.y, image_format, gl_type,
+                    (void *)offset);
+  } else {
+    glTexSubImage3D(
+        image_dims, /*level=*/0, params.image_offset.x, params.image_offset.y,
+        params.image_offset.z, params.image_extent.x, params.image_extent.y,
+        params.image_extent.z, image_format, gl_type, (void *)offset);
+  }
+  check_opengl_error("glTexSubImage");
+  glBindTexture(image_dims, /*target=*/0);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, /*target=*/0);
+}
+
+void GLCommandList::CmdImageToBuffer::execute() {
+  auto image_dims = device->get_image_gl_dims(image);
+  auto image_format = device->get_image_gl_int_dims(image);
+  auto gl_type = gl_internal_format_to_type.at(image_format);
+  auto unsized_format = gl_internal_format_to_format.at(image_format);
+
+  glBindTexture(image_dims, image);
+  check_opengl_error("glBindTexture");
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer);
+  check_opengl_error("glBindBuffer");
+  TI_ASSERT_INFO(params.image_offset.x == 0 && params.image_offset.y == 0 &&
+                     params.image_offset.z == 0,
+                 "OpenGL can only copy full images to buffer");
+  glGetTexImage(/*level=*/0, image_format, unsized_format, gl_type,
+                (void *)offset);
+  check_opengl_error("glGetTexImage");
+  glBindTexture(image_dims, /*target=*/0);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, /*target=*/0);
 }
 
 }  // namespace opengl

@@ -1,5 +1,6 @@
-#include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
+
+#include "taichi/common/task.h"
 #include "taichi/util/bit.h"
 
 #if defined(TI_GUI_COCOA)
@@ -7,6 +8,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 #include "taichi/platform/mac/objc_api.h"
@@ -422,6 +424,11 @@ void GUI::redraw() {
 }
 
 GUI::~GUI() {
+  if (show_gui) {
+    call(window, "close");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    process_event();
+  }
 }
 
 TI_NAMESPACE_END

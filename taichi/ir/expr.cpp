@@ -6,17 +6,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void Expr::serialize(std::ostream &ss) const {
-  TI_ASSERT(expr);
-  expr->serialize(ss);
-}
-
-std::string Expr::serialize() const {
-  std::stringstream ss;
-  serialize(ss);
-  return ss.str();
-}
-
 void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
 }
@@ -33,61 +22,26 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
-                                         false_val);
-}
-
-Expr operator-(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
-}
-
-Expr operator~(const Expr &expr) {
-  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
+void Expr::type_check(CompileConfig *config) {
+  expr->type_check(config);
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret =
-      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_bits, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
   TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
+  return Expr::make<GlobalPtrExpression>(*this, indices);
 }
 
 Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_callable) {
-    // Inside a kernel or a function
-    // Create an assignment in the IR
-    if (expr == nullptr) {
-      set(o.eval());
-    } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(
-          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
-    } else {
-      // set(o.eval());
-      TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
-    }
-  } else {
-    set(o);  // Literally set this Expr to o
-  }
+  set(o);
   return *this;
-}
-
-Expr Expr::parent() const {
-  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
-                 "Cannot get snode parent of non-global variables.");
-  return Expr::make<GlobalVariableExpression>(
-      cast<GlobalVariableExpression>()->snode->parent);
 }
 
 SNode *Expr::snode() const {
@@ -100,104 +54,75 @@ Expr Expr::operator!() {
   return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
 }
 
-void Expr::declare(DataType dt) {
-  set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
-}
-
 void Expr::set_grad(const Expr &o) {
   this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
 
+Expr::Expr(int16 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i16, x);
+}
+
 Expr::Expr(int32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i32, x);
 }
 
 Expr::Expr(int64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::i64, x);
 }
 
 Expr::Expr(float32 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f32, x);
 }
 
 Expr::Expr(float64 x) : Expr() {
-  expr = std::make_shared<ConstExpression>(x);
+  expr = std::make_shared<ConstExpression>(PrimitiveType::f64, x);
 }
 
 Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
+Expr expr_rand(DataType dt) {
+  return Expr::make<RandExpression>(dt);
 }
 
-void Expr::operator+=(const Expr &o) {
-  if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
-                                             load_if_ptr(o));
-  } else {
-    (*this) = (*this) + o;
-  }
+Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
+                                       val);
 }
 
-void Expr::operator-=(const Expr &o) {
-  if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
-                                             load_if_ptr(o));
-  } else {
-    (*this) = (*this) - o;
-  }
+Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val) {
+  return snode_append(expr.snode(), indices, val);
 }
 
-void Expr::operator*=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) * load_if_ptr(o);
+Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
 }
 
-void Expr::operator/=(const Expr &o) {
-  TI_ASSERT(!this->atomic);
-  (*this) = (*this) / load_if_ptr(o);
+Expr snode_length(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
 }
 
-Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
-    return Expr::make<GlobalLoadExpression>(ptr);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
-    return Expr::make<GlobalLoadExpression>(ptr[ExprGroup()]);
-  } else if (ptr.is<TensorElementExpression>()) {
-    auto tensor_ptr = ptr.cast<TensorElementExpression>();
-    if (tensor_ptr->is_global_tensor())
-      return Expr::make<GlobalLoadExpression>(ptr);
-    else if (tensor_ptr->is_local_tensor())
-      return Expr::make<LocalLoadExpression>(ptr);
-    else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else
-    return ptr;
+Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
 }
 
-Expr Var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
-  var = x;
-  var->ret_type = x->ret_type;
-  return var;
+Expr snode_length(const Expr &expr, const ExprGroup &indices) {
+  return snode_length(expr.snode(), indices);
 }
 
+Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {
+  return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
+}
+
+Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
+  return Expr::make<LoopUniqueExpression>(input, covers);
+}
+
+Expr global_new(Expr id_expr, DataType dt) {
+  TI_ASSERT(id_expr.is<IdExpression>());
+  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
+      dt, id_expr.cast<IdExpression>()->id));
+  return ret;
+}
 TLANG_NAMESPACE_END

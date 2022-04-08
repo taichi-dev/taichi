@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/struct/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
@@ -13,21 +14,25 @@ namespace lang {
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
                                        TaichiLLVMContext *tlctx,
-                                       std::unique_ptr<llvm::Module> &&module)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : LLVMModuleBuilder(std::move(module), tlctx),
       arch_(arch),
       config_(config),
       tlctx_(tlctx),
-      llvm_ctx_(tlctx_->get_this_thread_context()) {
+      llvm_ctx_(tlctx_->get_this_thread_context()),
+      snode_tree_id_(snode_tree_id) {
 }
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        LlvmProgramImpl *prog,
-                                       std::unique_ptr<llvm::Module> &&module)
+                                       std::unique_ptr<llvm::Module> &&module,
+                                       int snode_tree_id)
     : StructCompilerLLVM(arch,
                          prog->config,
                          prog->get_llvm_context(arch),
-                         std::move(module)) {
+                         std::move(module),
+                         snode_tree_id) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -55,6 +60,13 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
 
   snode.cell_size_bytes = tlctx_->get_type_size(ch_type);
+
+  for (int i = 0; i < snode.ch.size(); i++) {
+    if (!snode.ch[i]->is_bit_level) {
+      snode.ch[i]->offset_bytes_in_parent_cell =
+          tlctx_->get_struct_element_offset(ch_type, i);
+    }
+  }
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
@@ -160,8 +172,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   // Create a dummy function in the module with the type stub as return type
   // so that the type is referenced in the module
   auto ft = llvm::FunctionType::get(llvm::PointerType::get(stub, 0), false);
-  llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                         type_stub_name(&snode) + "_func", module.get());
+  create_function(ft, type_stub_name(&snode) + "_func");
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
@@ -174,9 +185,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx_)},
       false);
 
-  auto func =
-      llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                             snode->refine_coordinates_func_name(), *module);
+  auto func = create_function(ft, snode->refine_coordinates_func_name());
 
   auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -250,9 +259,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
-    auto func =
-        llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                               snode.get_ch_from_parent_func_name(), *module);
+    auto func = create_function(ft, snode.get_ch_from_parent_func_name());
 
     auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
@@ -306,7 +313,7 @@ void StructCompilerLLVM::run(SNode &root) {
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   auto node_type = get_llvm_node_type(module.get(), &root);
-  root_size = tlctx_->get_data_layout().getTypeAllocSize(node_type);
+  root_size = tlctx_->get_type_size(node_type);
 
   tlctx_->set_struct_module(module);
 }
@@ -345,5 +352,14 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
   return get_stub(module, snode, 3);
 }
 
+llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
+                                                    std::string func_name) {
+  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
+  return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
+                                *module);
+}
+
 }  // namespace lang
 }  // namespace taichi
+
+#endif  //#ifdef TI_WITH_LLVM

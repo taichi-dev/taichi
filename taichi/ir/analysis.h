@@ -1,8 +1,10 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/pass.h"
 #include "taichi/analysis/gather_uniquely_accessed_pointers.h"
+#include "taichi/analysis/mesh_bls_analyzer.h"
 #include <atomic>
 #include <optional>
 #include <unordered_set>
@@ -13,7 +15,7 @@ namespace lang {
 
 class DiffRange {
  private:
-  bool related;
+  bool related_;
 
  public:
   int coeff;
@@ -31,22 +33,22 @@ class DiffRange {
   }
 
   DiffRange(bool related, int coeff, int low, int high)
-      : related(related), coeff(coeff), low(low), high(high) {
+      : related_(related), coeff(coeff), low(low), high(high) {
     if (!related) {
       this->low = this->high = 0;
     }
   }
 
-  bool related_() const {
-    return related;
+  bool related() const {
+    return related_;
   }
 
   bool linear_related() const {
-    return related && coeff == 1;
+    return related_ && coeff == 1;
   }
 
   bool certain() {
-    TI_ASSERT(related);
+    TI_ASSERT(related_);
     return high == low + 1;
   }
 };
@@ -104,7 +106,8 @@ gather_snode_read_writes(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr);
-std::unordered_map<const SNode *, GlobalPtrStmt *>
+std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
+          std::unordered_map<int, ExternalPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
@@ -233,6 +236,16 @@ std::unordered_set<Stmt *> constexpr_prop(
     std::function<bool(Stmt *)> is_const_seed);
 
 void verify(IRNode *root);
+
+// Mesh Related.
+void gather_meshfor_relation_types(IRNode *node);
+std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
+          /* total= */ std::unordered_set<mesh::MeshElementType>>
+gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config);
+std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
+    OffloadedStmt *offload,
+    bool auto_mesh_local,
+    const CompileConfig &config);
 
 }  // namespace analysis
 }  // namespace irpass

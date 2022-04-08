@@ -4,19 +4,22 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/visitors.h"
-#include "taichi/ir/frontend.h"
+#include "taichi/ir/frontend_ir.h"
 
 TLANG_NAMESPACE_BEGIN
+
+static_assert(
+    sizeof(real) == sizeof(float32),
+    "Please build the taichi compiler with single precision (TI_USE_DOUBLE=0)");
 
 // "Type" here does not include vector width
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
-  CompileConfig config;
+  CompileConfig config_;
 
  public:
-  explicit TypeCheck(const CompileConfig &config) : config(config) {
+  explicit TypeCheck(const CompileConfig &config) : config_(config) {
     allow_undefined_visitor = true;
   }
 
@@ -34,11 +37,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    // TODO: use PrimitiveType::u1 when it's supported
-    TI_ASSERT_INFO(
-        if_stmt->cond->ret_type->is_primitive(PrimitiveTypeID::i32),
-        "`if` conditions must be of type int32, consider using `if x != 0:` "
-        "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -61,14 +59,15 @@ class TypeCheck : public IRVisitor {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     auto dst_type = stmt->dest->ret_type.ptr_removed();
     if (auto cit = dst_type->cast<CustomIntType>()) {
-      dst_type = cit->get_compute_type();
+      dst_type = cit->get_physical_type();
     } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      dst_type = cft->get_compute_type();
-    }
-    if (stmt->val->ret_type != dst_type) {
-      TI_WARN("[{}] Atomic add ({} to {}) may lose precision, at", stmt->name(),
-              data_type_name(stmt->val->ret_type), data_type_name(dst_type));
-      TI_WARN("\n{}", stmt->tb);
+      auto cit = cft->get_digits_type()->as<CustomIntType>();
+      dst_type = cit->get_physical_type();
+    } else if (stmt->val->ret_type != dst_type) {
+      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}",
+              stmt->name(), atomic_op_type_name(stmt->op_type),
+              data_type_name(stmt->val->ret_type), data_type_name(dst_type),
+              stmt->tb);
       stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
     }
     stmt->ret_type = dst_type;
@@ -118,9 +117,9 @@ class TypeCheck : public IRVisitor {
         stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
       }
       if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-        TI_WARN("[{}] Local store may lose precision: {} <- {}, at",
-                stmt->name(), dst_value_type->to_string(), input_type);
-        TI_WARN("\n{}", stmt->tb);
+        TI_WARN("[{}] Local store may lose precision: {} <- {}, at\n{}",
+                stmt->name(), dst_value_type->to_string(), input_type,
+                stmt->tb);
       }
       stmt->ret_type = dst_value_type;
       return;
@@ -140,10 +139,10 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->dest->ret_type != common_container_type) {
       TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {}) at",
+          "[{}] Local store may lose precision (target = {}, value = {}), "
+          "at\n{}",
           stmt->name(), stmt->dest->ret_data_type_name(),
-          old_data->ret_data_type_name(), stmt->id);
-      TI_WARN("\n{}", stmt->tb);
+          old_data->ret_data_type_name(), stmt->id, stmt->tb);
     }
     stmt->ret_type = stmt->dest->ret_type;
   }
@@ -224,9 +223,8 @@ class TypeCheck : public IRVisitor {
     // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
     // u8 to u8 leads to extra warnings.
     if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-      TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
-              stmt->name(), dst_value_type->to_string(), input_type);
-      TI_WARN("\n{}", stmt->tb);
+      TI_WARN("[{}] Global store may lose precision: {} <- {}, at\n{}",
+              stmt->name(), dst_value_type->to_string(), input_type, stmt->tb);
     }
   }
 
@@ -242,6 +240,10 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(MeshForStmt *stmt) override {
+    stmt->body->accept(this);
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
@@ -252,17 +254,10 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type = stmt->cast_type;
     }
     if (!is_real(stmt->operand->ret_type)) {
-      if (is_trigonometric(stmt->op_type)) {
-        TI_ERROR("[{}] Trigonometric operator takes real inputs only. At {}",
-                 stmt->name(), stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::floor ||
-                 stmt->op_type == UnaryOpType::ceil) {
-        TI_ERROR("[{}] floor/ceil takes real inputs only. At {}", stmt->name(),
-                 stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::sqrt ||
-                 stmt->op_type == UnaryOpType::exp ||
-                 stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config.default_fp);
+      if (stmt->op_type == UnaryOpType::sqrt ||
+          stmt->op_type == UnaryOpType::exp ||
+          stmt->op_type == UnaryOpType::log) {
+        cast(stmt->operand, config_.default_fp);
       }
     }
   }
@@ -300,14 +295,13 @@ class TypeCheck : public IRVisitor {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
         TI_WARN(
-            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}) "
-            "at",
+            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}), "
+            "at\n{}",
             stmt->name(), stmt->lhs->ret_data_type_name(),
-            stmt->rhs->ret_data_type_name(), stmt->id);
+            stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
       } else {
-        TI_WARN("[{}] {} at", stmt->name(), comment);
+        TI_WARN("[{}] {} at\n{}", stmt->name(), comment, stmt->tb);
       }
-      TI_WARN("\n{}", stmt->tb);
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
     };
@@ -318,7 +312,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = config.default_fp;
+      auto default_fp = config_.default_fp;
       if (!is_real(stmt->lhs->ret_type)) {
         cast(stmt->lhs, default_fp);
       }
@@ -357,11 +351,6 @@ class TypeCheck : public IRVisitor {
     if (!matching) {
       error();
     }
-    if (binary_is_bitwise(stmt->op_type)) {
-      if (!is_integral(stmt->lhs->ret_type)) {
-        error("Error: bitwise operations can only apply to integral types.");
-      }
-    }
     if (is_comparison(stmt->op_type)) {
       stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
           stmt->lhs->width(), PrimitiveType::i32);
@@ -374,10 +363,8 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
-      TI_ASSERT(stmt->op1->ret_type->vector_width() ==
-                stmt->op2->ret_type->vector_width());
-      TI_ASSERT(stmt->op2->ret_type->vector_width() ==
-                stmt->op3->ret_type->vector_width());
+      TI_ASSERT(stmt->op1->width() == stmt->op2->width());
+      TI_ASSERT(stmt->op2->width() == stmt->op3->width());
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -399,7 +386,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
-    TI_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
     stmt->ret_type = stmt->input->ret_type;
   }
 
@@ -417,19 +403,16 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(rt != PrimitiveType::unknown);
-    TI_ASSERT(rt->vector_width() == 1);
+    TI_ASSERT(stmt->width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    stmt->ret_type = stmt->value->ret_type;
-    TI_ASSERT(stmt->ret_type->vector_width() == 1);
+    TI_ASSERT(stmt->width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -449,11 +432,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
-  }
-
-  void visit(BlockDimStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }

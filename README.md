@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png"/>
+  <img width="500px" src="https://user-images.githubusercontent.com/100768747/162405540-21191b9d-d020-4822-b7cf-4c626f7557c3.png"/>
 </div>
 
 

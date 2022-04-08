@@ -505,7 +505,7 @@ The ndrange `for` loops are by default parallelized when the loops are in the ou
 
 #### The struct `for` statement
 
-The struct `for` statement iterates over every active elements in a taichi field.
+The struct `for` statement iterates over every active elements in a Taichi field.
 
 The `iter_expression` of a struct `for` statement must be a Taichi field or a call to `ti.grouped(x)` where `x` is a Taichi field.
 

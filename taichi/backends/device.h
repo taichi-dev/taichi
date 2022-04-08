@@ -408,7 +408,7 @@ class Device {
   void print_all_cap() const;
 
   struct AllocParams {
-    size_t size{0};
+    uint64_t size{0};
     bool host_write{false};
     bool host_read{false};
     bool export_sharing{false};

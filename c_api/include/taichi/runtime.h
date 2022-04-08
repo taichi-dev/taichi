@@ -22,10 +22,14 @@ TI_DLL_EXPORT Taichi_RuntimeContext *taichi_make_runtime_context();
 TI_DLL_EXPORT void taichi_destroy_runtime_context(Taichi_RuntimeContext *ctx);
 
 TI_DLL_EXPORT void taichi_set_runtime_context_arg_i32(
-    Taichi_RuntimeContext *ctx, int param_i, int32_t val);
+    Taichi_RuntimeContext *ctx,
+    int param_i,
+    int32_t val);
 
 TI_DLL_EXPORT void taichi_set_runtime_context_arg_float(
-    Taichi_RuntimeContext *ctx, int param_i, float val);
+    Taichi_RuntimeContext *ctx,
+    int param_i,
+    float val);
 
 typedef TI_DLL_EXPORT struct {
   int32_t length;
@@ -33,11 +37,16 @@ typedef TI_DLL_EXPORT struct {
 } Taichi_NdShape;
 
 TI_DLL_EXPORT void taichi_set_runtime_context_arg_ndarray(
-    Taichi_RuntimeContext *ctx, int param_i, Taichi_DeviceAllocation *arr,
-    const Taichi_NdShape *shape, const Taichi_NdShape *elem_shape);
+    Taichi_RuntimeContext *ctx,
+    int param_i,
+    Taichi_DeviceAllocation *arr,
+    const Taichi_NdShape *shape,
+    const Taichi_NdShape *elem_shape);
 
 TI_DLL_EXPORT void taichi_set_runtime_context_arg_scalar_ndarray(
-    Taichi_RuntimeContext *ctx, int param_i, Taichi_DeviceAllocation *arr,
+    Taichi_RuntimeContext *ctx,
+    int param_i,
+    Taichi_DeviceAllocation *arr,
     const Taichi_NdShape *shape);
 
 #ifdef __cplusplus

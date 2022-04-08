@@ -37,13 +37,15 @@ void taichi_destroy_embedded_vulkan_device(Taichi_EmbeddedVulkanDevice *evd) {
   delete cppcast(evd);
 }
 
-Taichi_VulkanDevice *taichi_get_vulkan_device(Taichi_EmbeddedVulkanDevice *evd) {
+Taichi_VulkanDevice *taichi_get_vulkan_device(
+    Taichi_EmbeddedVulkanDevice *evd) {
   auto *ptr = cppcast(evd);
   return reinterpret_cast<Taichi_VulkanDevice *>(ptr->device());
 }
 
-Taichi_VulkanRuntime *taichi_make_vulkan_runtime(uint64_t *host_result_buffer,
-                                          Taichi_VulkanDevice *vk_device) {
+Taichi_VulkanRuntime *taichi_make_vulkan_runtime(
+    uint64_t *host_result_buffer,
+    Taichi_VulkanDevice *vk_device) {
   tvk::VkRuntime::Params params;
   params.host_result_buffer = host_result_buffer;
   params.device = cppcast(vk_device);
@@ -54,7 +56,8 @@ void taichi_destroy_vulkan_runtime(Taichi_VulkanRuntime *vr) {
   delete cppcast(vr);
 }
 
-void taichi_vulkan_add_root_buffer(Taichi_VulkanRuntime *vr, size_t root_buffer_size) {
+void taichi_vulkan_add_root_buffer(Taichi_VulkanRuntime *vr,
+                                   size_t root_buffer_size) {
   cppcast(vr)->add_root_buffer(root_buffer_size);
 }
 

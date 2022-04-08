@@ -458,7 +458,7 @@ then it can be terminated by `break` statements.
 There are four kinds of `for` statements:
 
 - The range `for` statement
-- The ndrange `for` iterates
+- The ndrange `for` statement
 - The struct `for` statement
 - The static `for` statement
 

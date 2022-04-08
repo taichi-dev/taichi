@@ -27,38 +27,46 @@ def ballot(predicate):
 def shfl_sync_i32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
-            "cuda_shfl_sync_i32", expr.make_expr_group(mask, val, offset, 32),
+            # lane offset is 31 for warp size 32
+            "cuda_shfl_sync_i32",
+            expr.make_expr_group(mask, val, offset, 31),
             False))
 
 
 def shfl_sync_f32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
-            "cuda_shfl_sync_f32", expr.make_expr_group(mask, val, offset, 32),
+            # lane offset is 31 for warp size 32
+            "cuda_shfl_sync_f32",
+            expr.make_expr_group(mask, val, offset, 31),
             False))
 
 
 def shfl_down_i32(mask, val, offset):
-    # Here we use 31 as the last argument since 32 (warp size) does not work
-    # for some reason. Using 31 leads to the desired behavior.
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_down_sync_i32",
-            expr.make_expr_group(mask, val, offset, 31), False))
+            # lane offset is 31 for warp size 32
+            expr.make_expr_group(mask, val, offset, 31),
+            False))
 
 
 def shfl_up_i32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_up_sync_i32",
-            expr.make_expr_group(mask, val, offset, 32), False))
+            # lane offset is 0 for warp size 32
+            expr.make_expr_group(mask, val, offset, 0),
+            False))
 
 
 def shfl_up_f32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_up_sync_f32",
-            expr.make_expr_group(mask, val, offset, 32), False))
+            # lane offset is 0 for warp size 32
+            expr.make_expr_group(mask, val, offset, 0),
+            False))
 
 
 def shfl_xor_i32(mask, val, offset):

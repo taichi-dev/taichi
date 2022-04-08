@@ -62,7 +62,7 @@ class Matrix(TaichiOperations):
     """
     _is_taichi_class = True
 
-    def __init__(self, arr, dt=None, suppress_warning=False):
+    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -77,7 +77,7 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         elif not isinstance(arr[0], Iterable):  # now init a Vector
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [[x] for x in arr]
             elif not impl.current_cfg().dynamic_index:
                 mat = [[impl.expr_init(x)] for x in arr]
@@ -117,7 +117,7 @@ class Matrix(TaichiOperations):
                                 (len(arr), ), self.dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [list(row) for row in arr]
             elif not impl.current_cfg().dynamic_index:
                 mat = [[impl.expr_init(x) for x in row] for row in arr]
@@ -270,7 +270,7 @@ class Matrix(TaichiOperations):
 
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
-        ret = self.entries[self._linearize_entry_id(*args)]
+        ret = self._get_entry(*args)
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
@@ -288,6 +288,9 @@ class Matrix(TaichiOperations):
                 self.entries[idx].setter(e)
             else:
                 self.entries[idx] = e
+
+    def _get_entry(self, *args):
+        return self.entries[self._linearize_entry_id(*args)]
 
     def _get_slice(self, a, b):
         if not isinstance(a, slice):

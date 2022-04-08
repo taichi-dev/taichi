@@ -466,8 +466,8 @@ There are four kinds of `for` statements:
 
 The range `for` statement iterates over a range of numbers.
 
-The `iter_expression` of range `for` statement must be like `range(begin, end)` or `range(end)`,
-and they mean the same as the Python `range` function,
+The `iter_expression` of range `for` statement must be like `range(start, stop)` or `range(stop)`,
+and they mean the same as [the Python `range` function](https://docs.python.org/3/library/stdtypes.html#range),
 except that the `step` argument is not supported.
 
 The `target_list` of range `for` statement must be an identifier which
@@ -491,9 +491,9 @@ and the loop iterates over the [direct product](https://en.wikipedia.org/wiki/Di
 
 Every argument must be an integer or a tuple of two integers.
 - If the k-th argument is an integer `n`, the range of the k-th dimension
-is equivalent to the range of `range(n)` in python.
+is equivalent to the range of `range(n)` in Python.
 - If the k-th argument is a tuple of two integers `(a, b)`, the range of the k-th dimension
-is equivalent to the range of `range(a, b)` in python.
+is equivalent to the range of `range(a, b)` in Python.
 
 The `target_list` of an n-dimensional normal ndrange `for` statement must be n different identifiers which
 are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.

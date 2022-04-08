@@ -437,3 +437,111 @@ and it continues with the next cycle of the nearest enclosing loop.
 ### The `while` statement
 
 ### The `for` statement
+
+The `for` statement in Taichi is used to iterate over a range of numbers, multidimensional ranges, or the indices of elements in a field.
+
+```
+for_stmt        ::= "for" target_list "in" iter_expression ":" suite
+iter_expression ::= static_expression | expression
+```
+
+Taichi does not support `else` clause in `for` statements.
+
+The `for` loops can iterate in parallel if they are in the outermost scope.
+When a `for` loop is parallelized, the order of iteration is not determined,
+and it cannot be terminated by `break` statements.
+
+Taichi uses `ti.loop_config` function to set directives for the loop right after it.
+You can write `ti.loop_config(serialize=True)` before a range/ndrange `for` loop to let it run serially,
+then it can be terminated by `break` statements.
+
+There are four kinds of `for` statements:
+
+- The range `for` statement
+- The ndrange `for` statement
+- The struct `for` statement
+- The static `for` statement
+
+#### The range `for` statement
+
+The range `for` statement iterates over a range of numbers.
+
+The `iter_expression` of range `for` statement must be like `range(start, stop)` or `range(stop)`,
+and they mean the same as [the Python `range` function](https://docs.python.org/3/library/stdtypes.html#range),
+except that the `step` argument is not supported.
+
+The `target_list` of range `for` statement must be an identifier which
+is not occupied in the current scope.
+
+The range `for` loops are by default parallelized when the loops are in the outermost scope.
+
+#### The ndrange `for` statement
+
+The ndrange `for` iterates over multidimensional ranges.
+
+The `iter_expression` of ndrange `for` statement must be a call to `ti.ndrange()` or a nested call to `ti.grouped(ti.ndrange())`.
+- If the `iter_expression` is a call to `ti.range()`, it is a normal ndrange `for`.
+- If the `iter_expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
+
+You can use grouped `for` loops to write [dimensionality-independent programs](lang/articles/advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
+
+`ti.ndrange` receives arbitrary numbers of arguments.
+The k-th argument represents the iteration range of the k-th dimension,
+and the loop iterates over the [direct product](https://en.wikipedia.org/wiki/Direct_product) of the iteration range of each dimension.
+
+Every argument must be an integer or a tuple of two integers.
+- If the k-th argument is an integer `stop`, the range of the k-th dimension
+is equivalent to the range of `range(stop)` in Python.
+- If the k-th argument is a tuple of two integers `(start, stop)`, the range of the k-th dimension
+is equivalent to the range of `range(start, stop)` in Python.
+
+The `target_list` of an n-dimensional normal ndrange `for` statement must be n different identifiers which
+are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.
+
+The `target_list` of an n-dimensional grouped ndrange `for` statement must be one identifier which
+is not occupied in the current scope, and the identifier is assigned a `ti.Vector` with length n, which contains the loop variables of all n dimensions.
+
+The ndrange `for` loops are by default parallelized when the loops are in the outermost scope.
+
+#### The struct `for` statement
+
+The struct `for` statement iterates over every active elements in a Taichi field.
+
+The `iter_expression` of a struct `for` statement must be a Taichi field or a call to `ti.grouped(x)` where `x` is a Taichi field.
+
+- If the `iter_expression` is a Taichi field, it is a normal struct `for`.
+- If the `iter_expression` is a call to `ti.grouped(x)` where `x` is a Taichi field, it is a grouped struct `for`.
+
+The `target_list` of a normal struct `for` statement on an n-dimensional field must be n different identifiers which
+are not occupied in the current scope, and the k-th identifier is assigned an integer which is the loop variable of the k-th dimension.
+
+The `target_list` of a grouped struct `for` statement on an n-dimensional field must be one identifier which
+is not occupied in the current scope, and the identifier is assigned a `ti.Vector` with length n, which contains the loop variables of all n dimensions.
+
+The struct `for` statement must be at the outermost scope of the kernel,
+and it cannot be terminated by a `break` statement even when it is run serially.
+
+#### The static `for` statement
+
+The static `for` statement unrolls a range/ndrange `for` loop at compile time.
+
+If the `iter_expression` of the `for` statement is a [`static_expression`](#static-expressions),
+the `for` statement is a static `for` statement.
+
+The `positional_arguments` of the `static_expression` must meet the requirement on
+`iter_expression` of the range/ndrange for.
+
+For example,
+```python
+for i in ti.static(range(5)):
+    print(i)
+```
+is unrolled to
+```python
+print(0)
+print(1)
+print(2)
+print(3)
+print(4)
+```
+at compile time.

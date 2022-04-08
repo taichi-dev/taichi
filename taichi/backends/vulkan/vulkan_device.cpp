@@ -2083,7 +2083,7 @@ void VulkanSurface::create_swap_chain() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
@@ -2193,7 +2193,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif

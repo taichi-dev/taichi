@@ -277,19 +277,19 @@ stride) inside have to be evaluated to Python values.
 
 #### Identity comparisons
 
-### Boolean operations {#boolean-operations}
+### Boolean operations
 
 ### Conditional expressions
 
 ```
 conditional_expression ::= or_test ["if" or_test "else" expression]
-expression             ::= conditional_expression | lambda_expr
+expression             ::= conditional_expression
 ```
 
 Conditional expressions (sometimes called a “ternary operator”) have the lowest priority of all Python operations.
 
 The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
-If `C` is `True` (the meaning of `True` and `False` has been mentioned at [Boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+If `C` is `True` (the meaning of `True` and `False` has been mentioned at [boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
 In Taichi, `or_test` in conditional expression will be expanded to `or_test != 0` automatically.
 
 ### Expression lists
@@ -308,7 +308,7 @@ is evaluated to the value of that expression.
 
 ## Simple statements
 
-A simple statement is comprised within a single logical line. Several simple statements may occur on a single line separated by semicolons. The syntax for simple statements is:
+This section explains the syntax and semantics of compound statements in Taichi. A simple statement is comprised within a single logical line. Several simple statements may occur on a single line separated by semicolons.
 
 ```
 simple_stmt ::= expression_stmt
@@ -322,8 +322,6 @@ simple_stmt ::= expression_stmt
                 | continue_stmt
 ```
 
-The following section describes the syntax of simple statements that are supported in Taichi.
-It is modeled after [the simple statements chapter of the Python language reference](https://docs.python.org/3/reference/simple_stmts.html).
 
 ### Expression statements
 
@@ -335,7 +333,7 @@ starred_item       ::= assignment_expression | "*" or_expr
 
 An expression statement evaluates the expression list (which may be a single expression).
 
-### Assignment statements {#assignment-statements}
+### Assignment statements
 
 ```
 assignment_stmt ::= (target_list "=")+ (starred_expression)

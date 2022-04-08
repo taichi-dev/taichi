@@ -148,5 +148,6 @@ def test_static_assert_nonstatic_condition():
         value = False
         ti.static_assert(value, "Oh, no!")
 
-    with pytest.raises(ti.TaichiTypeError, match="Static assert with non-static condition"):
+    with pytest.raises(ti.TaichiTypeError,
+                       match="Static assert with non-static condition"):
         foo()

@@ -62,8 +62,10 @@ def shfl_up_f32(mask, val, offset):
 
 
 def shfl_xor_i32(mask, val, offset):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_xor_sync_i32",
+            expr.make_expr_group(mask, val, offset, 31), False))
 
 
 def match_any():

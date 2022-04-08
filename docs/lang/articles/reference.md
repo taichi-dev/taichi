@@ -467,7 +467,7 @@ There are four kinds of `for` statements:
 The range `for` statement iterates over a range of numbers.
 
 The `iter_expression` of range `for` statement must be like `range(begin, end)` or `range(end)`,
-and they mean the same as the python `range` function,
+and they mean the same as the Python `range` function,
 except that the `step` argument is not supported.
 
 The `target_list` of range `for` statement must be an identifier which

@@ -8,7 +8,9 @@ def test_vector_swizzle_python():
     assert all(a.gbr == (2, 3, 1))
     a.bgr = (2, 3, 3)
     assert all(a.rgb == (3, 3, 2))
-    a.gbr = a.gbr + (1, 2, 3)  # FIXME: Taichi does not support += on matrices in python scope
+    a.gbr = a.gbr + (
+        1, 2, 3
+    )  # FIXME: Taichi does not support += on matrices in python scope
     assert all(a.rgb == (6, 4, 4))
     b = ti.math.vec3(1)
     assert all((a + b).rgb == (7, 5, 5))

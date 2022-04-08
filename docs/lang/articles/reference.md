@@ -286,11 +286,8 @@ conditional_expression ::= or_test ["if" or_test "else" expression]
 expression             ::= conditional_expression
 ```
 
-Conditional expressions (sometimes called a “ternary operator”) have the lowest priority of all Python operations.
-
 The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
 If `C` is `True` (the meaning of `True` and `False` has been mentioned at [boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
-In Taichi, `or_test` in conditional expression will be expanded to `or_test != 0` automatically.
 
 ### Expression lists
 
@@ -326,7 +323,7 @@ simple_stmt ::= expression_stmt
 ### Expression statements
 
 ```
-expression_stmt    ::= starred_expression
+expression_stmt    ::= expression_list
 starred_expression ::= expression | (starred_item ",")* [starred_item]
 starred_item       ::= assignment_expression | "*" or_expr
 ```
@@ -336,7 +333,7 @@ An expression statement evaluates the expression list (which may be a single exp
 ### Assignment statements
 
 ```
-assignment_stmt ::= (target_list "=")+ (starred_expression)
+assignment_stmt ::= (target_list "=")+ (expression_list)
 target_list     ::= target ("," target)* [","]
 target          ::= identifier
                     | "(" [target_list] ")"

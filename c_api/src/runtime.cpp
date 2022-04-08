@@ -1,6 +1,6 @@
 #include "c_api/include/taichi/runtime.h"
 
-#include "c_api/include/taichi/aot_module.h"
+#include "c_api/include/taichi/aot/module.h"
 #include "taichi/aot/module_loader.h"
 
 #define TI_RUNTIME_HOST 1
@@ -10,44 +10,44 @@ namespace {
 
 #include "c_api/src/inc/runtime_casts.inc.h"
 
-tl::RuntimeContext *cppcast(TaichiRuntimeContext *ctx) {
+tl::RuntimeContext *cppcast(Taichi_RuntimeContext *ctx) {
   return reinterpret_cast<tl::RuntimeContext *>(ctx);
 }
 
 }  // namespace
 
-void launch_taichi_kernel(TaichiKernel *k, TaichiRuntimeContext *ctx) {
+void taichi_launch_kernel(Taichi_Kernel *k, Taichi_RuntimeContext *ctx) {
   auto *kn = reinterpret_cast<tl::aot::Kernel *>(k);
   kn->launch(cppcast(ctx));
 }
 
-TaichiRuntimeContext *make_runtime_context() {
+Taichi_RuntimeContext *taichi_make_runtime_context() {
   auto *ctx = new tl::RuntimeContext();
   memset(ctx, 0, sizeof(tl::RuntimeContext));
-  return reinterpret_cast<TaichiRuntimeContext *>(ctx);
+  return reinterpret_cast<Taichi_RuntimeContext *>(ctx);
 }
 
-void destroy_runtime_context(TaichiRuntimeContext *ctx) {
+void taichi_destroy_runtime_context(Taichi_RuntimeContext *ctx) {
   delete cppcast(ctx);
 }
 
-void set_runtime_context_arg_i32(TaichiRuntimeContext *ctx,
-                                 int param_i,
-                                 int32_t val) {
+void taichi_set_runtime_context_arg_i32(Taichi_RuntimeContext *ctx,
+                                        int param_i,
+                                        int32_t val) {
   cppcast(ctx)->set_arg(param_i, val);
 }
 
-void set_runtime_context_arg_float(TaichiRuntimeContext *ctx,
-                                   int param_i,
-                                   float val) {
+void taichi_set_runtime_context_arg_float(Taichi_RuntimeContext *ctx,
+                                          int param_i,
+                                          float val) {
   cppcast(ctx)->set_arg(param_i, val);
 }
 
-void set_runtime_context_arg_ndarray(TaichiRuntimeContext *ctx,
-                                     int param_i,
-                                     DeviceAllocation *arr,
-                                     const NdShape *shape,
-                                     const NdShape *elem_shape) {
+void taichi_set_runtime_context_arg_ndarray(Taichi_RuntimeContext *ctx,
+                                            int param_i,
+                                            Taichi_DeviceAllocation *arr,
+                                            const Taichi_NdShape *shape,
+                                            const Taichi_NdShape *elem_shape) {
   tl::RuntimeContext *rctx = cppcast(ctx);
   rctx->set_arg(param_i, cppcast(arr));
   rctx->set_device_allocation(param_i, /*is_device_allocation=*/true);
@@ -62,12 +62,13 @@ void set_runtime_context_arg_ndarray(TaichiRuntimeContext *ctx,
   }
 }
 
-void set_runtime_context_arg_scalar_ndarray(TaichiRuntimeContext *ctx,
-                                            int param_i,
-                                            DeviceAllocation *arr,
-                                            const NdShape *shape) {
-  set_runtime_context_arg_ndarray(ctx, param_i, arr, shape,
-                                  /*elem_shape=*/NULL);
+void taichi_set_runtime_context_arg_scalar_ndarray(
+    Taichi_RuntimeContext *ctx,
+    int param_i,
+    Taichi_DeviceAllocation *arr,
+    const Taichi_NdShape *shape) {
+  taichi_set_runtime_context_arg_ndarray(ctx, param_i, arr, shape,
+                                         /*elem_shape=*/NULL);
 }
 
 #undef TI_RUNTIME_HOST

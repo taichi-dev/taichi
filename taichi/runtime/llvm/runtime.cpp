@@ -1028,11 +1028,23 @@ f32 cuda_shfl_down_f32(i32 delta, f32 val, int width) {
   return 0;
 }
 
+i32 cuda_shfl_xor_sync_i32(u32 mask, i32 val, i32 delta, int width) {
+  return 0;
+}
+
 i32 cuda_shfl_up_sync_i32(u32 mask, i32 val, i32 delta, int width) {
   return 0;
 }
 
 f32 cuda_shfl_up_sync_f32(u32 mask, f32 val, i32 delta, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_sync_i32(u32 mask, i32 val, i32 delta, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_sync_f32(u32 mask, f32 val, i32 delta, int width) {
   return 0;
 }
 

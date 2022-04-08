@@ -47,15 +47,71 @@ def test_ballot():
 
 
 @test_utils.test(arch=ti.cuda)
-def test_shfl_i32():
-    # TODO
-    pass
+def test_shfl_sync_i32():
+    a = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_sync_i32(ti.u32(0xFFFFFFFF), a[i], 0)
+
+    for i in range(32):
+        a[i] = i + 1
+
+    foo()
+
+    for i in range(1, 32):
+        assert a[i] == 1
+
+
+@test_utils.test(arch=ti.cuda)
+def test_shfl_sync_f32():
+    a = ti.field(dtype=ti.f32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_sync_f32(ti.u32(0xFFFFFFFF), a[i], 0)
+
+    for i in range(32):
+        a[i] = i + 1.0
+
+    foo()
+
+    for i in range(1, 32):
+        assert a[i] == approx(1.0, abs=1e-4)
 
 
 @test_utils.test(arch=ti.cuda)
 def test_shfl_up_i32():
     # TODO
     pass
+
+
+@test_utils.test(arch=ti.cuda)
+def test_shfl_xor_i32():
+    a = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            for j in range(5):
+                offset = 1 << j
+                a[i] += ti.simt.warp.shfl_xor_i32(ti.u32(0xFFFFFFFF), a[i],
+                                                  offset)
+
+    value = 0
+    for i in range(32):
+        a[i] = i
+        value += i
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == value
 
 
 @test_utils.test(arch=ti.cuda)

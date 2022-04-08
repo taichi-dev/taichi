@@ -209,4 +209,4 @@ for i in range(400):
     gui.set_image(pixels)
     gui.show()
 
-ti.print_kernel_profile_info()
+ti.profiler.print_kernel_profiler_info()

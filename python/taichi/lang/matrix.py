@@ -235,6 +235,11 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        # A hack way to check if this is a vector from `taichi.math`,
+        # to avoid importing a deleted name across modules.
+        if isinstance(other, Matrix) and (hasattr(other, "_DIM")):
+            return type(other)(*[x for x, in entries])
+
         return Matrix(entries)
 
     def _linearize_entry_id(self, *args):

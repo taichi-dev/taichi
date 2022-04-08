@@ -275,9 +275,48 @@ stride) inside have to be evaluated to Python values.
 
 #### Membership test operations
 
-#### Identity comparisons
-
 ### Boolean operations
+
+```
+or_test  ::= and_test | or_test "or" and_test
+and_test ::= not_test | and_test "and" not_test
+not_test ::= comparison | "not" not_test
+```
+
+When the operator is inside a [static expression](#static-expressions),
+the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
+Otherwise, the behavior depends on the `short_circuit_operators` option of `ti.init()`:
+- If `short_circuit_operators` is `False` (default), a *logical and* will be
+treated as a *bitwise AND*, and a *logical or* will be treated as a *bitwise
+OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
+- If `short_circuit_operators` is `True`, the normal short circuiting behavior
+is adopted, and the operands are required to be boolean values. Since Taichi
+does not have boolean type yet, `ti.i32` is served as a temporary alternative.
+A `ti.i32` value is considered `False` if and only if the value is evaluated to 0.
+
+### Assignment expressions
+
+```
+assignment_expression ::= [identifier ":="] expression
+```
+
+An assignment expression assigns an expression to an identifier (see
+[assignment statements](#assignment-statements) for more details),
+while also returning the value of the expression.
+
+Example:
+```python
+@ti.kernel
+def foo() -> ti.i32:
+    b = 2 + (a := 5)
+    b += a
+    return b
+# the return value should be 12
+```
+
+:::note
+This operator is supported since Python 3.8.
+:::
 
 ### Conditional expressions
 
@@ -288,6 +327,24 @@ expression             ::= conditional_expression
 
 The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
 If `C` is `True` (the meaning of `True` and `False` has been mentioned at [boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+
+### Static expressions
+
+```
+static_expression ::= "ti.static(" positional_arguments ")"
+```
+
+Static expressions are expressions that are wrapped by a call to `ti.static()`.
+The `positional_arguments` is evaluated at compile time, and the items inside must be evaluated to Python values.
+
+`ti.static()` receives one or more arguments.
+- When a single argument is passed in, it returns the argument.
+- When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
+
+The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
+such as [compile-time loop unrolling and compile-time branching](lang/articles/advanced/meta.md#compile-time-evaluations).
+
+The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](lang/articles/advanced/syntax_sugars.md#aliases).
 
 ### Expression lists
 

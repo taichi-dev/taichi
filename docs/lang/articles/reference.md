@@ -460,20 +460,42 @@ if_stmt ::= "if" (static_expression | assignment_expression) ":" suite
             ["else" ":" suite]
 ```
 
-It selects exactly one of the *suites* by evaluating the expressions one by one until one is found to be true
-(see section [Boolean operations](#boolean-operations) for the definition of true and false);
-then that *suite* is executed (and no other part of the if statement is executed or evaluated).
-If all expressions are false, the *suite* of the else *clause*, if present, is executed.
+The `elif` *clause* is a syntax sugar for a `if` statement inside a `else` *clause*. 
+For example:
 
-A *clause* in the `if` statement whose expression is a static expression is called a static `if` *clause*.
+```python
+if cond_a:
+    body_a
+elif cond_b:
+    body_b
+elif cond_c:
+    body_c
+else:
+    body_d
+```
+is equivalent to
+```python
+if cond_a:
+    body_a
+else:
+    if cond_b:
+        body_b
+    else:
+        if cond_c:
+            body_c
+        else:
+            body_d
+```
+Taichi first transforms `elif` *clause* as above, and then deal with the `if` statement with only an `if` *clause* and possibly an `else` *clause* as below.
 
-The expression of a static `if` *clause* is evaluated at compile time, and it must be a compile-time constant.
+If the expression of the `if` *clause* is found to be true (see section [Boolean operations](#boolean-operations) for the definition of true and false),
+the *suite* of the `if` *clause* is executed. Otherwise, the *suite* of the `else` *clause*, if present, is executed. 
 
-The static `if` *clauses* replaces the *clauses* in the compound statement at compile time as below.
-The expressions of static `if` *clauses* are evaluated one by one at compile time until one is found to be true;
-then all *clauses* after that *clause* are removed from the compound statement,
-and that *clause* becomes the last *clause* of the compound statement, with the expression set to `True`.
-The static `if` *clauses* whose expressions are found to be false are removed from the compound statement.
+An `if` statement whose expression is a static expression is called a static `if` statement.
+The expression of a static `if` *clause* is evaluated at compile time, and it replaces the compound statement as below at compile time.
+- If the static expression is found to be true, the *suite* of the `if` *clause* replaces the static `if` statement. 
+- If the static expression is found to be false, and there is an `else` *clause*, the *suite* of the `else` *clause* replaces the static `if` statement.
+- If the static expression is found to be false, and there is no `else` *clause*, a `pass` statement replaces the static `if` statement.
 
 ### The `while` statement
 

@@ -590,7 +590,12 @@ def test_mpm88_ndarray():
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
         template_args = {
-            'x': x, 'v': v, 'C': C, 'J': J, 'grid_m': grid_m, 'grid_v': grid_v,
+            'x': x,
+            'v': v,
+            'C': C,
+            'J': J,
+            'grid_m': grid_m,
+            'grid_v': grid_v,
         }
         m.add_kernel(substep, template_args=template_args)
 

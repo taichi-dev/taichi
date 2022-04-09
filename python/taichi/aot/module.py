@@ -78,7 +78,6 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-
     def __init__(self, arch):
         """Creates a new AOT module instance
 
@@ -146,12 +145,14 @@ class Module:
             anno for anno in kernel.argument_annotations
             if isinstance(anno, template_types)
         ])
-        if template_args is not None and num_template_args != len(template_args):
+        if template_args is not None and num_template_args != len(
+                template_args):
             raise TaichiCompilationError(
                 f'Need {num_template_args} inputs to instantiate the template '
                 f'parameters, got {len(template_args)}')
         i = 0
-        for arg_name, anno in zip(kernel.argument_names, kernel.argument_annotations):
+        for arg_name, anno in zip(kernel.argument_names,
+                                  kernel.argument_annotations):
             if isinstance(anno, template_types):
                 if template_args:
                     injected_args.append(template_args[arg_name])

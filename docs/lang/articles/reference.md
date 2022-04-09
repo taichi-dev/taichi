@@ -460,7 +460,7 @@ if_stmt ::= "if" (static_expression | assignment_expression) ":" suite
             ["else" ":" suite]
 ```
 
-The `elif` *clause* is a syntax sugar for a `if` statement inside a `else` *clause*. 
+The `elif` *clause* is a syntax sugar for a `if` statement inside a `else` *clause*.
 For example:
 
 ```python
@@ -489,11 +489,11 @@ else:
 Taichi first transforms `elif` *clause* as above, and then deal with the `if` statement with only an `if` *clause* and possibly an `else` *clause* as below.
 
 If the expression of the `if` *clause* is found to be true (see section [Boolean operations](#boolean-operations) for the definition of true and false),
-the *suite* of the `if` *clause* is executed. Otherwise, the *suite* of the `else` *clause*, if present, is executed. 
+the *suite* of the `if` *clause* is executed. Otherwise, the *suite* of the `else` *clause*, if present, is executed.
 
 An `if` statement whose expression is a static expression is called a static `if` statement.
 The expression of a static `if` *clause* is evaluated at compile time, and it replaces the compound statement as below at compile time.
-- If the static expression is found to be true, the *suite* of the `if` *clause* replaces the static `if` statement. 
+- If the static expression is found to be true, the *suite* of the `if` *clause* replaces the static `if` statement.
 - If the static expression is found to be false, and there is an `else` *clause*, the *suite* of the `else` *clause* replaces the static `if` statement.
 - If the static expression is found to be false, and there is no `else` *clause*, a `pass` statement replaces the static `if` statement.
 

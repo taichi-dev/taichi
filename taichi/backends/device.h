@@ -166,7 +166,14 @@ enum class PipelineStageType {
   raytracing
 };
 
+// FIXME: Drop the plural form?
 enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
+
+enum class PolygonMode : int {
+  Fill = 0,
+  Line = 1,
+  Point = 2,
+};
 
 enum class BufferFormat : uint32_t {
   r8,
@@ -522,6 +529,7 @@ struct ImageParams {
 
 struct RasterParams {
   TopologyType prim_topology;
+  PolygonMode polygon_mode;
   bool front_face_cull{false};
   bool back_face_cull{false};
   bool depth_test{false};

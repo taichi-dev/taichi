@@ -528,8 +528,8 @@ struct ImageParams {
 };
 
 struct RasterParams {
-  TopologyType prim_topology;
-  PolygonMode polygon_mode;
+  TopologyType prim_topology{TopologyType::Triangles};
+  PolygonMode polygon_mode{PolygonMode::Fill};
   bool front_face_cull{false};
   bool back_face_cull{false};
   bool depth_test{false};

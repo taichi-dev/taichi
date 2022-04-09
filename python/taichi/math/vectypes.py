@@ -15,7 +15,7 @@ class _VectorType(Matrix):
     _DIM = 3
     _DTYPE = f32
 
-    def __init__(self, *data):
+    def __init__(self, *data, is_ref=False):
         x = data[0]
         assert not isinstance(
             x, collections.abc.Sequence), "Matrix is not accepted"
@@ -25,7 +25,7 @@ class _VectorType(Matrix):
         if len(data) == 1:
             data = [x] * self._DIM
 
-        super().__init__(data, self._DTYPE)
+        super().__init__(data, self._DTYPE, is_ref=is_ref)
 
         self._add_swizzle_attrs()
 
@@ -52,12 +52,12 @@ class _VectorType(Matrix):
 
             result = []
             for key in attr_name:
-                result.append(self(key_group.index(key)))
+                result.append(self._get_entry(key_group.index(key)))
             if result:
                 if self._DTYPE == f32:
-                    return globals()[f"vec{len(result)}"](*result)
+                    return globals()[f"vec{len(result)}"](*result, is_ref=True)
 
-                return globals()[f"ivec{len(result)}"](*result)
+                return globals()[f"ivec{len(result)}"](*result, is_ref=True)
 
         raise AttributeError(f"Cannot get attribute: {attr_name}")
 

@@ -116,7 +116,7 @@ def test_aot_ndarray_range_hint():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
-        m.add_kernel(init, (density, ))
+        m.add_kernel(init, template_args={'density': density})
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
@@ -453,9 +453,12 @@ def test_mpm99_aot():
                 grid_v[i, j][1] -= dt * 50  # gravity
                 if i < 3 and grid_v[i, j][0] < 0:
                     grid_v[i, j][0] = 0  # Boundary conditions
-                if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
-                if j < 3 and grid_v[i, j][1] < 0: grid_v[i, j][1] = 0
-                if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
+                if i > n_grid - 3 and grid_v[i, j][0] > 0:
+                    grid_v[i, j][0] = 0
+                if j < 3 and grid_v[i, j][1] < 0:
+                    grid_v[i, j][1] = 0
+                if j > n_grid - 3 and grid_v[i, j][1] > 0:
+                    grid_v[i, j][1] = 0
         for p in x:  # grid to particle (G2P)
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
@@ -586,8 +589,29 @@ def test_mpm88_ndarray():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
-        m.add_kernel(substep, (x, v, C, J, grid_v, grid_m))
+        template_args = {
+            'x': x, 'v': v, 'C': C, 'J': J, 'grid_m': grid_m, 'grid_v': grid_v,
+        }
+        m.add_kernel(substep, template_args=template_args)
 
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
+
+
+@test_utils.test(arch=ti.opengl)
+def test_aot_ndarray_template_mixed():
+    @ti.kernel
+    def run(arr: ti.types.ndarray(), val1: ti.f32, val2: ti.template()):
+        for i in arr:
+            arr[i] = val1 + val2
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        x = ti.ndarray(dtype=ti.f32, shape=16)
+        m = ti.aot.Module(ti.opengl)
+        m.add_kernel(run, template_args={'arr': x, 'val2': 42})
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+            res = json.load(json_file)
+            args_count = res['aot_data']['kernels']['run']['args_count']
+            assert args_count == 2, res  # `arr` and `val1`

@@ -164,6 +164,10 @@ configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
 
+if(ANDROID)
+    set(TI_EXPORT_CORE ON)
+endif()
+
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)
 endif()

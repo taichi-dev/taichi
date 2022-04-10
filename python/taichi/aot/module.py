@@ -166,19 +166,22 @@ class Module:
                             f'ndarray for param={name}')
                     if args.annotation.element_dim == 0:
                         injected_args.append(
-                            ScalarNdarray(f32, (2, ) * args.annotation.field_dim))
+                            ScalarNdarray(f32,
+                                          (2, ) * args.annotation.field_dim))
                     elif args.annotation.element_dim == 1:
                         injected_args.append(
                             VectorNdarray(args.annotation.element_shape[0],
                                           dtype=f32,
-                                          shape=(2, ) * args.annotation.field_dim,
+                                          shape=(2, ) *
+                                          args.annotation.field_dim,
                                           layout=Layout.AOS))
                     elif args.annotation.element_dim == 2:
                         injected_args.append(
                             MatrixNdarray(args.annotation.element_shape[0],
                                           args.annotation.element_shape[1],
                                           dtype=f32,
-                                          shape=(2, ) * args.annotation.field_dim,
+                                          shape=(2, ) *
+                                          args.annotation.field_dim,
                                           layout=Layout.AOS))
                     else:
                         raise RuntimeError('')

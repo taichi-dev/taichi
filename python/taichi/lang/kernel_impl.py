@@ -206,7 +206,8 @@ class Func:
         for i, args in enumerate(self.arguments):
             if not isinstance(args.annotation, template):
                 if id(args.annotation) in primitive_types.type_ids:
-                    non_template_args.append(ops.cast(args[i], args.annotation))
+                    non_template_args.append(ops.cast(args[i],
+                                                      args.annotation))
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
@@ -442,7 +443,6 @@ class Kernel:
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
             self.arguments.append(KernelArguments(annotation, param.name))
-
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:

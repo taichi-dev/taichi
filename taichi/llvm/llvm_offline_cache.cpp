@@ -107,7 +107,7 @@ static TI_FORCE_INLINE void get_offline_cache_key_of_snode_impl(
   if (!snode->ambient_val.dt->is_primitive(PrimitiveTypeID::unknown)) {
     serializer(snode->ambient_val.stringify());
   }
-  if (!snode->grad_info->is_primal()) {
+  if (snode->grad_info && !snode->grad_info->is_primal()) {
     if (auto *grad_snode = snode->grad_info->grad_snode()) {
       get_offline_cache_key_of_snode_impl(grad_snode, serializer);
     }
@@ -155,7 +155,7 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
                                          Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
-    irpass::gen_offline_cache_key(kernel->ir.get(), &kernel_ast_string);
+    irpass::gen_offline_cache_key(kernel->program, kernel->ir.get(), &kernel_ast_string);
   }
 
   std::vector<std::uint8_t> compile_config_key;

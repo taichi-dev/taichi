@@ -3,6 +3,7 @@
 #include "taichi/ir/expr.h"
 #include "taichi/ir/expression.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/program/program.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 
 namespace taichi {
@@ -259,14 +260,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 class ExpressionOfflineCacheKeyGenerator
     : public ExpressionHumanFriendlyPrinter {
  public:
-  explicit ExpressionOfflineCacheKeyGenerator(std::ostream *os = nullptr)
-      : ExpressionHumanFriendlyPrinter(os) {
+  explicit ExpressionOfflineCacheKeyGenerator(Program *prog, std::ostream *os = nullptr)
+      : ExpressionHumanFriendlyPrinter(os), prog_(prog) {
   }
 
   void visit(GlobalVariableExpression *expr) override {
     emit("#", expr->ident.name());
     if (expr->snode) {
-      emit("(snode=", get_hashed_offline_cache_key_of_snode(expr->snode), ')');
+      emit("(snode=", this->get_hashed_key_of_snode(expr->snode), ')');
     } else {
       emit("(dt=", expr->dt->to_string(), ')');
     }
@@ -274,7 +275,7 @@ class ExpressionOfflineCacheKeyGenerator
 
   void visit(GlobalPtrExpression *expr) override {
     if (expr->snode) {
-      emit(get_hashed_offline_cache_key_of_snode(expr->snode));
+      emit(this->get_hashed_key_of_snode(expr->snode));
     } else {
       expr->var->accept(this);
     }
@@ -285,7 +286,7 @@ class ExpressionOfflineCacheKeyGenerator
 
   void visit(SNodeOpExpression *expr) override {
     emit(snode_op_type_name(expr->op_type));
-    emit('(', get_hashed_offline_cache_key_of_snode(expr->snode), ", [");
+    emit('(', this->get_hashed_key_of_snode(expr->snode), ", [");
     emit_vector(expr->indices.exprs);
     emit(']');
     if (expr->value.expr) {
@@ -294,6 +295,30 @@ class ExpressionOfflineCacheKeyGenerator
     }
     emit(')');
   }
+ private:
+  const std::string &cache_snode_tree_key(int snode_tree_id, std::string &&key) {
+    if (snode_tree_id >= snode_tree_key_cache_.size()) {
+      snode_tree_key_cache_.resize(snode_tree_id + 1);
+    }
+    return snode_tree_key_cache_[snode_tree_id] = std::move(key);
+  }
+
+  std::string get_hashed_key_of_snode(SNode *snode) {
+    TI_ASSERT(snode && prog_);
+    auto snode_tree_id = snode->get_snode_tree_id();
+    std::string res;
+    if (snode_tree_id < snode_tree_key_cache_.size() && !snode_tree_key_cache_[snode_tree_id].empty()) {
+      res = snode_tree_key_cache_[snode_tree_id];
+    } else {
+      auto *snode_tree_root = prog_->get_snode_root(snode_tree_id);
+      auto snode_tree_key = get_hashed_offline_cache_key_of_snode(snode_tree_root);
+      res = cache_snode_tree_key(snode_tree_id, std::move(snode_tree_key));
+    }
+    return res.append(std::to_string(snode->id));
+  }
+
+  Program *prog_{nullptr};
+  std::vector<std::string> snode_tree_key_cache_;
 };
 
 }  // namespace lang

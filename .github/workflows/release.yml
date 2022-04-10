@@ -50,37 +50,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo >-
-              '::set-output name=matrix::{"include":[
-                {"name":"taichi","python":"3.6","conda_python":"py36"},
-                {"name":"taichi","python":"3.7","conda_python":"py37"},
-                {"name":"taichi","python":"3.8","conda_python":"py38"},
-                {"name":"taichi","python":"3.9","conda_python":"py39"},
-                {"name":"taichi","python":"3.10","conda_python":"py310"}
-              ]}"'
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38, py39, and py310(conda), so change matrix.
-            echo >-
-              '::set-output name=matrix_osx::{"include":[
-                {"name":"taichi","python":"3.8"},
-                {"name":"taichi","python":"3.9"},
-                {"name":"taichi","python":"3.10"}
-              ]}"'
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
           else
             # For nightly release, we run on three python versions.
-            echo >-
-              '::set-output name=matrix::{"include":[
-                {"name":"taichi-nightly","python":"3.6","conda_python":"py36"},
-                {"name":"taichi-nightly","python":"3.8","conda_python":"py38"},
-                {"name":"taichi-nightly","python":"3.10","conda_python":"py310"}
-              ]}"'
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.6","conda_python":"py36"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38 and py310(conda), so change matrix.
-            echo >-
-              '::set-output name=matrix_osx::{"include":[
-                {"name":"taichi-nightly","python":"3.8"},
-                {"name":"taichi-nightly","python":"3.10"}
-              ]}"'
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
           fi
 
   build_and_test_linux:

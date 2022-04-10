@@ -155,7 +155,8 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
                                          Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
-    irpass::gen_offline_cache_key(kernel->program, kernel->ir.get(), &kernel_ast_string);
+    irpass::gen_offline_cache_key(kernel->program, kernel->ir.get(),
+                                  &kernel_ast_string);
   }
 
   std::vector<std::uint8_t> compile_config_key;

@@ -260,7 +260,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 class ExpressionOfflineCacheKeyGenerator
     : public ExpressionHumanFriendlyPrinter {
  public:
-  explicit ExpressionOfflineCacheKeyGenerator(Program *prog, std::ostream *os = nullptr)
+  explicit ExpressionOfflineCacheKeyGenerator(Program *prog,
+                                              std::ostream *os = nullptr)
       : ExpressionHumanFriendlyPrinter(os), prog_(prog) {
   }
 
@@ -295,8 +296,10 @@ class ExpressionOfflineCacheKeyGenerator
     }
     emit(')');
   }
+
  private:
-  const std::string &cache_snode_tree_key(int snode_tree_id, std::string &&key) {
+  const std::string &cache_snode_tree_key(int snode_tree_id,
+                                          std::string &&key) {
     if (snode_tree_id >= snode_tree_key_cache_.size()) {
       snode_tree_key_cache_.resize(snode_tree_id + 1);
     }
@@ -307,11 +310,13 @@ class ExpressionOfflineCacheKeyGenerator
     TI_ASSERT(snode && prog_);
     auto snode_tree_id = snode->get_snode_tree_id();
     std::string res;
-    if (snode_tree_id < snode_tree_key_cache_.size() && !snode_tree_key_cache_[snode_tree_id].empty()) {
+    if (snode_tree_id < snode_tree_key_cache_.size() &&
+        !snode_tree_key_cache_[snode_tree_id].empty()) {
       res = snode_tree_key_cache_[snode_tree_id];
     } else {
       auto *snode_tree_root = prog_->get_snode_root(snode_tree_id);
-      auto snode_tree_key = get_hashed_offline_cache_key_of_snode(snode_tree_root);
+      auto snode_tree_key =
+          get_hashed_offline_cache_key_of_snode(snode_tree_root);
       res = cache_snode_tree_key(snode_tree_id, std::move(snode_tree_key));
     }
     return res.append(std::to_string(snode->id));

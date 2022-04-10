@@ -14,7 +14,7 @@ This doc proposes the standard way to make design decisions in Taichi. RFCs shou
 
 Throughout the development of Taichi, we often hear new developers complaining about the steep learning curve of Taichi's codebase. One reason is that, currently the design decisions are spread across different places and hard to track.
 
-RFC process is a well-established mechanism in the open source communities to solve this problem. It provdies a common place for developers to discuss design decisions publicly. It also serves as a doc library for
+RFC process is a well-established mechanism in the open source communities to solve this problem. It provdies a common place for developers to discuss design decisions publicly. It also serves as a doc library for people who want to learn about Taichi's architecture, evolving history, etc.
 
 # Goals
 
@@ -35,7 +35,7 @@ RFC process is a well-established mechanism in the open source communities to so
 
 ## Other forms of documentation
 
-RFC is not the only documentation system. We do have other forms of documentation, including [the docsite](https://docs.taichi-lang.org/), technical blogs and design docs. Unlike RFCs, Tte design docs will be written in a retrospective way to cover existing system's design and implementation.
+RFC is not the only documentation system. We do have other forms of documentation, including [docsite](https://docs.taichi-lang.org/), technical blogs and design docs. Unlike RFCs, design docs will be written in a retrospective way to cover existing system's design and implementation.
 
 ## RFC ID
 

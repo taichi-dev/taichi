@@ -7,7 +7,7 @@
 
 # TL;DR
 
-Required. 
+Required.
 
 TL;DR stands for *too long; didn't read*, so make sure to put only the most essential information here and keep it short.
 
@@ -19,7 +19,7 @@ Your audiences understand your proposal better if they can understand the proble
 
 # Goals
 
-Required. 
+Required.
 
 * Be very specific about the goals this RFC is aiming for: Given the problem definition, which aspects will be discussed/resolved in this RFC?
 * You should almost always write this section as a bullet list.

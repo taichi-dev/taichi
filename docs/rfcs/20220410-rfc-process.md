@@ -14,7 +14,7 @@ This doc proposes the standard way to make design decisions in Taichi. RFCs shou
 
 Throughout the development of Taichi, we often hear new developers complaining about the steep learning curve of Taichi's codebase. One reason is that, currently the design decisions are spread across different places and hard to track.
 
-RFC process is a well-established mechanism in the open source communities to solve this problem. It provdies a common place for developers to discuss design decisions publicly. It also serves as a doc library for 
+RFC process is a well-established mechanism in the open source communities to solve this problem. It provdies a common place for developers to discuss design decisions publicly. It also serves as a doc library for
 
 # Goals
 
@@ -49,7 +49,7 @@ Date can conflict if multiple RFCs are proposed on the same day. However, given 
 # FAQ
 
 1. When should I initiate a new RFC?
-   
+
    There isn't a standard answer here. Rust's RFC guideline summarizes the situation pretty well:
 
    > You need to follow this process if you intend to make "substantial" changes to Rust, Cargo, Crates.io, or the RFC process itself. What constitutes a "substantial" change is evolving based on community norms and varies depending on what part of the ecosystem you are proposing to change...

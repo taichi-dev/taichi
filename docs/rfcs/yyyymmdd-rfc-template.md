@@ -15,7 +15,7 @@ TL;DR stands for *too long; didn't read*, so make sure to put only the most esse
 
 Highly recommended.
 
-Your audiences understand your proposal better if they can understand the problen domain first.
+Your audiences understand your proposal better if they can understand the problem domain first.
 
 # Goals
 

@@ -279,21 +279,9 @@ stride) inside have to be evaluated to Python values.
 #### Calls
 
 ```
-call                 ::= primary "(" [argument_list [","] | comprehension] ")"
-argument_list        ::= positional_arguments ["," starred_and_keywords]
-                           ["," keywords_arguments]
-                         | starred_and_keywords ["," keywords_arguments]
-                         | keywords_arguments
+call                 ::= primary "(" [positional_arguments] ")"
 positional_arguments ::= positional_item ("," positional_item)*
 positional_item      ::= assignment_expression | "*" expression
-starred_and_keywords ::= ("*" expression | keyword_item)
-                         ("," "*" expression | "," keyword_item)*
-keywords_arguments   ::= (keyword_item | "**" expression)
-                         ("," keyword_item | "," "**" expression)*
-keyword_item         ::= identifier "=" expression
-
-
-```
 
 The `primary` must be evaluated to one of:
 - A [Taichi function](basic/syntax.md#taichi-function).

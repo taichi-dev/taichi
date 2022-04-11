@@ -309,7 +309,7 @@ Calling a type annotation for literals
 power ::= primary ["**" u_expr]
 ```
 
-Applying '**' operator inside Taichi scope has the same behavior as Python. The power operator binds more tightly than unary operators on the left, but less tightly than unary operators on the right; i.e. -3 ** -2 == -(3 ** (-2)).
+The power operator has the same semantics as the builtin `pow()` function.
 
 ### Unary arithmetic and bitwise operations
 

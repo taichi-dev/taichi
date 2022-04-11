@@ -1,8 +1,10 @@
 #include "c_api/include/taichi/backends/vulkan_device.h"
 
+#if TI_WITH_VULKAN
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
+#endif
 
 namespace {
 

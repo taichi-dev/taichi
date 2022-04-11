@@ -1,5 +1,5 @@
-from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
 from taichi.lang.kernel_arguments import KernelArguments
+from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
 
 import taichi as ti
 from tests import test_utils
@@ -23,19 +23,18 @@ def test_callable_template_mapper():
     assert mapper.lookup((0, 0, 1))[0] == 2
     assert mapper.lookup((0, 1, 0))[0] == 1
 
-    mapper = TaichiCallableTemplateMapper((KernelArguments(ti.i32, ti.i32),
-                                           KernelArguments(ti.i32, ti.i32),
-                                           KernelArguments(ti.i32, ti.i32)),
-                                          ())
+    mapper = TaichiCallableTemplateMapper(
+        (KernelArguments(ti.i32, ti.i32), KernelArguments(
+            ti.i32, ti.i32), KernelArguments(ti.i32, ti.i32)), ())
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 0, 1))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
 
-    mapper = TaichiCallableTemplateMapper((KernelArguments(ti.i32, ti.i32),
-                                           KernelArguments(ti.template(), ti.template()),
-                                           KernelArguments(ti.i32, ti.i32)),
+    mapper = TaichiCallableTemplateMapper((KernelArguments(
+        ti.i32, ti.i32), KernelArguments(
+            ti.template(), ti.template()), KernelArguments(ti.i32, ti.i32)),
                                           (1, ))
     assert mapper.lookup((0, x, 0))[0] == 0
     assert mapper.lookup((0, y, 0))[0] == 1

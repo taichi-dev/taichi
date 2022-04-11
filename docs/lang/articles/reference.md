@@ -298,7 +298,7 @@ keyword_item         ::= identifier "=" expression
 The `primary` must be evaluated to one of:
 - A [Taichi function](basic/syntax.md#taichi-function).
 - A [Taichi builtin function](basic/operator.md#other-arithmetic-functions).
-- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type. 
+- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
 - A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
 
 ### The power operator

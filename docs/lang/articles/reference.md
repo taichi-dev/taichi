@@ -320,6 +320,14 @@ This operator is supported since Python 3.8.
 
 ### Conditional expressions
 
+```
+conditional_expression ::= or_test ["if" or_test "else" expression]
+expression             ::= conditional_expression
+```
+
+The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
+If `C` is `True` (the meaning of `True` and `False` has been mentioned at [boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+
 ### Static expressions
 
 ```
@@ -354,13 +362,77 @@ is evaluated to the value of that expression.
 
 ## Simple statements
 
+This section explains the syntax and semantics of compound statements in Taichi. A simple statement is comprised within a single logical line. Several simple statements may occur on a single line separated by semicolons.
+
+```
+simple_stmt ::= expression_stmt
+                | assert_stmt
+                | assignment_stmt
+                | augmented_assignment_stmt
+                | annotated_assignment_stmt
+                | pass_stmt
+                | return_stmt
+                | break_stmt
+                | continue_stmt
+```
+
+
 ### Expression statements
+
+```
+expression_stmt    ::= expression_list
+```
+
+An expression statement evaluates the expression list (which may be a single expression).
 
 ### Assignment statements
 
+```
+assignment_stmt ::= (target_list "=")+ expression_list
+target_list     ::= target ("," target)* [","]
+target          ::= identifier
+                    | "(" [target_list] ")"
+                    | "[" [target_list] "]"
+                    | attributeref
+                    | subscription
+```
+
+The recursive definition of an assignment statement basically follows
+[Python](https://docs.python.org/3/reference/simple_stmts.html#assignment-statements),
+with the following points to notice:
+- According to the [Variables and scope](#variables-and-scope) section, if a
+target is an identifier appearing for the first time, a variable is defined
+with that name and inferred type from the corresponding right-hand side
+expression. If the expression is evaluated to a Python value, it will be turned
+into a Taichi value with [default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+- If a target is an existing identifier, the corresponding right-hand side
+expression must be evaluated to a Taichi value with the type of the
+corresponding variable of that identifier. Otherwise, an implicit cast will
+happen.
+
 #### Augmented assignment statements
 
+```
+augmented_assignment_stmt ::= augtarget augop expression_list
+augtarget                 ::= identifier | attributeref | subscription
+augop                     ::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" |
+                              "**="| ">>=" | "<<=" | "&=" | "^=" | "|="
+```
+
+Different from [Python](https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements), some augmented assignments (e.g., `x[i] += 1`) are [automatically atomic](basic/operator.md#supported-atomic-operations) in Taichi.
+
 #### Annotated assignment statements
+
+```
+annotated_assignment_stmt ::= identifier ":" expression "=" expression
+```
+The differences from normal [assignment statements](#assignment-statements) are:
+- Only single identifier target is allowed.
+- If the identifier appears for the first time, a variable is defined
+with that name and type annotation (the expression after ":"). The right-hand
+side expression is cast to a Taichi value with the annotated type.
+- If the identifier already exists, the type annotation must be the same as the
+type of the corresponding variable of the identifier.
 
 ### The `assert` statement
 Assert statements are a convenient way to insert debugging assertions into a program:

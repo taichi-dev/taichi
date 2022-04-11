@@ -366,9 +366,7 @@ are required to have integer types.
 comparison    ::= or_expr (comp_operator or_expr)*
 comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | ["not"] "in"
 ```
-A comparison yields a boolean value (True or False), or if one of the operands is a Tensor, a boolean Tensor. Comparisons can be chained arbitrarily as long as they do not yield boolean Tensors that have more than one element. a op1 b op2 c ... is equivalent to a op1 b and b op2 c and ....
-
-All operands need to be primaries. The return type is `i32` for all comparision operations.
+Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x < y) & (y <= z)`.
 
 #### Value comparisons
 

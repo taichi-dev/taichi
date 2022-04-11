@@ -295,13 +295,11 @@ keyword_item         ::= identifier "=" expression
 
 ```
 
-To favor simplicity, starred arguments and keyword arguments are not supported for Taichi kernels.
-
-When calling a Python function, it needs to be wrapped by `ti.static()`.
-
-The following Taichi builtin functions are supported: `print()`, `min()`, `max()`, `int()`, `float()`, `any()`, `all()`, `abs()`, `pow()`.
-
-Calling a type annotation for literals
+The `primary` must be evaluated to one of:
+- A [Taichi function](basic/syntax.md#taichi-function).
+- A [Taichi builtin function](basic/operator.md#other-arithmetic-functions).
+- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type. 
+- A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
 
 ### The power operator
 
@@ -314,9 +312,20 @@ The power operator has the same semantics as the builtin `pow()` function.
 ### Unary arithmetic and bitwise operations
 
 ```
-u_expr ::= power | "-" power | "~" power
+u_expr ::= power | "-" power | "+" power | "~" power
 ```
-The unary - operator yields the negation of its argument. The unary ~ operator yields the bitwise inversion of its argument. - can be used with all scalar and tensor. ~ can only be used with integer scalar (i32, i64, etc.) and interrelated tensor.
+Similar to [rules for binary operations](#common-rules-of-binary-operations),
+if the operand is a Python value, compile-time evaluation is triggered and a
+result Python value is produced. Now the remaining case is that the operand is
+a Taichi value:
+- If the operand is a primitive type value, the return type is also a primitive
+type.
+- If the operand is a compound type value, the operator is conducted
+element-wise, resulting in a compound type value with same shape.
+
+See [arithmetic operators](basic/operator.md#arithmetic-operators) and
+[bitwise operators](basic/operator.md#bitwise-operators) for operator details.
+Note that `~` can only be used with integer type values.
 
 ### Binary arithmetic operations
 
@@ -324,20 +333,20 @@ The unary - operator yields the negation of its argument. The unary ~ operator y
 m_expr ::= u_expr | m_expr "*" u_expr | m_expr "@" m_expr | m_expr "//" u_expr | m_expr "/" u_expr | m_expr "%" u_expr
 a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
-The binary arithmetic operators can operate on scalar and tensor. For tensor-tensor ops, both arguments must have the same shape. For scalar-tensor or tensor-scalar ops, the scalar is usually broadcast to the size of the tensor. The @ operator is for matrix multiplication and only operates on Tensor arguments.
-
-In division `/` operation, the compiler will automatically convert integral operands into default floating-point types (`f32` or `f64`).
-
-When the operands have different types, the outcoming type will be set as the expected type under C++ (e.g. `i32` + `i64` = `i64`).
-
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [arithmetic operators](basic/operator.md#arithmetic-operators). Note that
+the `@` operator is for matrix multiplication and only operates on matrix type
+arguments.
 ### Shifting operations
 
 ```
 shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
-These operators accept integer scalar (i32, i64, etc.) and interrelated tensor for both arguments. When both arguments are tensors, they must have the same shape. When one is a scalar and the other is a tensor, the scalar is logically broadcast to match the size of the tensor.
-
-The compiler will check both operands to be integral type.
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+are required to have integer types.
 
 ### Binary bitwise operations
 
@@ -346,15 +355,16 @@ and_expr ::= shift_expr | and_expr "&" shift_expr
 xor_expr ::= and_expr | xor_expr "^" and_expr
 or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
-The & operator computes the bitwise AND of its arguments, the ^ the bitwise XOR, and the | the bitwise OR. The types requirements and broadcast logic are the same as shifting operations.
-
-The compiler will check both operands to be integral type.
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+are required to have integer types.
 
 ### Comparisons
 
 ```
 comparison    ::= or_expr (comp_operator or_expr)*
-comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | "is" ["not"] | ["not"] "in"
+comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | ["not"] "in"
 ```
 A comparison yields a boolean value (True or False), or if one of the operands is a Tensor, a boolean Tensor. Comparisons can be chained arbitrarily as long as they do not yield boolean Tensors that have more than one element. a op1 b op2 c ... is equivalent to a op1 b and b op2 c and ....
 
@@ -362,11 +372,15 @@ All operands need to be primaries. The return type is `i32` for all comparision 
 
 #### Value comparisons
 
-The operators <, >, ==, >=, <=, and != compare the values of two objects. The two objects generally need to be of the same type, unless there is an implicit type conversion available between the objects. Built-in Python types like strings, lists, tuples are not supported. They need to be converted into Taichi scalar or tensor in advance.
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [comparison operators](basic/operator.md#comparison-operators).
 
 #### Membership test operations
 
-List, dict and tuple types along with 'in' operations, are not supported in Taichi scope. The only exception is to put the whole expression into 'ti.static()' which degenerates into Python expression. More details refer to Python's specifications.
+The semantics of membership test operations follow
+[Python](https://docs.python.org/3/reference/expressions.html#membership-test-operations),
+but they are only supported in [static expressions](#static-expressions).
 ### Boolean operations
 
 ```

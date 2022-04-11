@@ -352,9 +352,6 @@ The operators <, >, ==, >=, <=, and != compare the values of two objects. The tw
 #### Membership test operations
 
 List, dict and tuple types along with 'in' operations, are not supported in Taichi scope. The only exception is to put the whole expression into 'ti.static()' which degenerates into Python expression. More details refer to Python's specifications.
-
-#### Identity comparisons
-
 ### Boolean operations
 
 ```

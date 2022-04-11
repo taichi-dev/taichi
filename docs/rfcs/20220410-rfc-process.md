@@ -8,7 +8,7 @@
 
 # TL;DR
 
-This doc proposes the standard way to make design decisions in Taichi. RFCs should be proposed and discussed before any major design or implementation gets landed in Taichi.
+This doc proposes the standard way to make design decisions in Taichi.  The “RFC” (request for comments) process is intended to provide a consistent and controlled path for new features to land in Taichi, so that all stakeholders can be confident about the evolving direction.
 
 # Background
 
@@ -23,13 +23,14 @@ RFC process is a well-established mechanism in the open source communities to so
 
 # Detailed Design
 
-1. Make a copy of [`yyyymmdd-rfc-template.md`](yyyymmdd-rfc-template.md), fill in all the required sections.
-2. Send a new PR with this RFC file, then go through the normal PR process.
-3. If the relevant community members decide to approve this RFC:
-   1. Open a new issue to track the work proposed by this RFC.
+1. Before initiating an RFC, it is recommended to file a Github Issue first to describe roughly the proposed solution.
+2. Make a copy of [`yyyymmdd-rfc-template.md`](yyyymmdd-rfc-template.md), fill in all the required sections.
+3. Send a new PR with this RFC file, then go through the normal PR process.
+4. If the relevant community members decide to approve this RFC:
+   1. In case you didn't do step 1, now is a good time to open a new issue to track the work proposed by this RFC.
    2. Fill in the issue URL in `Relevant Issue`.
    3. Merge this PR & enjoy coding.
-4. Otherwise if the members decide not to approve it, either re-iterate on the RFC and re-request the review, or simply drop it.
+5. Otherwise if the members decide not to approve it, either re-iterate on the RFC and re-request the review, or simply drop it.
 
 # Alternatives
 

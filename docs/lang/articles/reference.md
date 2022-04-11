@@ -282,6 +282,7 @@ stride) inside have to be evaluated to Python values.
 call                 ::= primary "(" [positional_arguments] ")"
 positional_arguments ::= positional_item ("," positional_item)*
 positional_item      ::= assignment_expression | "*" expression
+```
 
 The `primary` must be evaluated to one of:
 - A [Taichi function](basic/syntax.md#taichi-function).
@@ -302,6 +303,7 @@ The power operator has the same semantics as the builtin `pow()` function.
 ```
 u_expr ::= power | "-" power | "+" power | "~" power
 ```
+
 Similar to [rules for binary operations](#common-rules-of-binary-operations),
 if the operand is a Python value, compile-time evaluation is triggered and a
 result Python value is produced. Now the remaining case is that the operand is
@@ -321,6 +323,7 @@ Note that `~` can only be used with integer type values.
 m_expr ::= u_expr | m_expr "*" u_expr | m_expr "@" m_expr | m_expr "//" u_expr | m_expr "/" u_expr | m_expr "%" u_expr
 a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
+
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
 and [arithmetic operators](basic/operator.md#arithmetic-operators). Note that
@@ -331,6 +334,7 @@ arguments.
 ```
 shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
+
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
 and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
@@ -343,6 +347,7 @@ and_expr ::= shift_expr | and_expr "&" shift_expr
 xor_expr ::= and_expr | xor_expr "^" and_expr
 or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
+
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
 and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
@@ -354,6 +359,7 @@ are required to have integer types.
 comparison    ::= or_expr (comp_operator or_expr)*
 comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | ["not"] "in"
 ```
+
 Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x < y) & (y <= z)`.
 
 #### Value comparisons

@@ -1,16 +1,18 @@
 #include "c_api/include/taichi/aot/vulkan_module.h"
 
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
-
-#if TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_device.h"
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
-#endif
+#include "taichi/backends/vulkan/runtime.h"
 
 namespace {
 
 #include "c_api/src/inc/aot_casts.inc.h"
-#include "c_api/src/inc/vulkan_casts.inc.h"
+
+namespace tvk = ::taichi::lang::vulkan;
+
+tvk::VkRuntime *cppcast(Taichi_VulkanRuntime *ptr) {
+  return reinterpret_cast<tvk::VkRuntime *>(ptr);
+}
+
 
 }  // namespace
 

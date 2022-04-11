@@ -34,3 +34,16 @@ def test_vector_swizzle_taichi():
         assert all((M @ b) == (1, 1, 1))
 
     foo()
+
+
+@test_utils.test(debug=True)
+def test_vector_dtype():
+    @ti.kernel
+    def foo():
+        a = ti.math.vec3(1, 2, 3)
+        a /= 2
+        assert all(abs(a - (0.5, 1., 1.5)) < 1e-6)
+        b = ti.math.ivec3(1.5, 2.5, 3.5)
+        assert all(b == (1, 2, 3))
+
+    foo()

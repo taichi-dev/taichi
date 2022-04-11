@@ -94,7 +94,7 @@ class _VectorType(Matrix):
 
 def _wrap_ops(cls):
     def wrapped(func):
-        return lambda self, other: cls(*func(self, other))
+        return lambda *args, **kwargs: cls(*func(*args, **kwargs))
 
     methods = [
         '__neg__', '__abs__', '__add__', '__radd__', '__sub__', '__rsub__',

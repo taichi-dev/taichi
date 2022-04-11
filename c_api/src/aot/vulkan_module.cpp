@@ -6,12 +6,7 @@
 namespace {
 
 #include "c_api/src/inc/aot_casts.inc.h"
-
-namespace tvk = ::taichi::lang::vulkan;
-
-tvk::VkRuntime *cppcast(Taichi_VulkanRuntime *ptr) {
-  return reinterpret_cast<tvk::VkRuntime *>(ptr);
-}
+#include "c_api/src/inc/vulkan_casts.inc.h"
 
 }  // namespace
 

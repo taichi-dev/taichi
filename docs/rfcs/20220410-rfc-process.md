@@ -14,7 +14,7 @@ This doc proposes the standard way to make design decisions in Taichi. RFCs shou
 
 Throughout the development of Taichi, we often hear new developers complaining about the steep learning curve of Taichi's codebase. One reason is that, currently the design decisions are spread across different places and hard to track.
 
-RFC process is a well-established mechanism in the open source communities to solve this problem. It provdies a common place for developers to discuss design decisions publicly. It also serves as a doc library for people who want to learn about Taichi's architecture, evolving history, etc.
+RFC process is a well-established mechanism in the open source communities to solve this problem. It provides a common place for developers to discuss design decisions publicly. It also serves as a doc library for people who want to learn about Taichi's architecture, evolving history, etc.
 
 # Goals
 

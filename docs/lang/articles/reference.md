@@ -366,7 +366,7 @@ is evaluated to the value of that expression.
 Assert statements are a convenient way to insert debugging assertions into a program:
 
 ```
-assert_stmt ::=  "assert" expression ["," expression]
+assert_stmt ::= "assert" expression ["," expression]
 ```
 
 Assert statements are currently supported on the CPU, CUDA, and Metal backends.
@@ -383,7 +383,7 @@ formatted string must be scalars.
 
 ### The `pass` statement
 ```
-pass_stmt ::=  "pass"
+pass_stmt ::= "pass"
 ```
 
 `pass` is a null operation — when it is executed, nothing happens.
@@ -391,7 +391,7 @@ It is useful as a placeholder when a statement is required syntactically, but no
 
 ### The `return` statement
 ```
-return_stmt ::=  "return" [expression_list]
+return_stmt ::= "return" [expression_list]
 ```
 
 The return statement may only occur once in a Taichi kernel or a Taichi function,
@@ -414,7 +414,7 @@ and the return values can be scalar, `ti.Vector`, `ti.Matrix`, `ti.Struct`, and 
 
 ### The `break` statement
 ```
-break_stmt ::=  "break"
+break_stmt ::= "break"
 ```
 
 The break statement may only occur syntactically nested in a for or while loop, and it terminates the nearest enclosing loop.
@@ -424,7 +424,7 @@ a struct for loop, or a mesh for loop.
 
 ### The `continue` statement
 ```
-continue_stmt ::=  "continue"
+continue_stmt ::= "continue"
 ```
 
 The continue statement may only occur syntactically nested in a for or while loop,
@@ -432,9 +432,84 @@ and it continues with the next cycle of the nearest enclosing loop.
 
 ## Compound statements
 
+This section explains the syntax and semantics of compound statements in Taichi.
+
+A compound statement consists of one or more *clauses*.
+A *clause* consists of a header and a *suite*.
+The *clause headers* of a particular compound statement are all at the same indentation level.
+Each *clause header* begins with a uniquely identifying keyword and ends with a colon.
+A *suite* is a group of statements controlled by a *clause*.
+
+```
+compound_stmt ::= if_stmt | while_stmt | for_stmt
+suite         ::= stmt_list NEWLINE | NEWLINE INDENT statement+ DEDENT
+statement     ::= stmt_list NEWLINE | compound_stmt
+stmt_list     ::= simple_stmt (";" simple_stmt)* [";"]
+```
+
+The difference between the compound statements in Taichi and Python is that Taichi introduces
+compile time evaluation. If the expression in the *clause header* is a static expression,
+Taichi replaces the compound statement at compile time according to the evaluation result of the expression.
+
 ### The `if` statement
 
+The `if` statement is used for conditional execution:
+```
+if_stmt ::= "if" (static_expression | assignment_expression) ":" suite
+            ("elif" (static_expression | assignment_expression) ":" suite)*
+            ["else" ":" suite]
+```
+
+The `elif` *clause* is a syntax sugar for a `if` statement inside a `else` *clause*.
+For example:
+
+```python
+if cond_a:
+    body_a
+elif cond_b:
+    body_b
+elif cond_c:
+    body_c
+else:
+    body_d
+```
+is equivalent to
+```python
+if cond_a:
+    body_a
+else:
+    if cond_b:
+        body_b
+    else:
+        if cond_c:
+            body_c
+        else:
+            body_d
+```
+Taichi first transforms `elif` *clause* as above, and then deal with the `if` statement with only an `if` *clause* and possibly an `else` *clause* as below.
+
+If the expression of the `if` *clause* is found to be true (see section [Boolean operations](#boolean-operations) for the definition of true and false),
+the *suite* of the `if` *clause* is executed. Otherwise, the *suite* of the `else` *clause*, if present, is executed.
+
+An `if` statement whose expression is a static expression is called a static `if` statement.
+The expression of a static `if` *clause* is evaluated at compile time, and it replaces the compound statement as below at compile time.
+- If the static expression is found to be true, the *suite* of the `if` *clause* replaces the static `if` statement.
+- If the static expression is found to be false, and there is an `else` *clause*, the *suite* of the `else` *clause* replaces the static `if` statement.
+- If the static expression is found to be false, and there is no `else` *clause*, a `pass` statement replaces the static `if` statement.
+
 ### The `while` statement
+
+The `while` statement is used for repeated execution as long as an expression is true:
+```
+while_stmt ::= "while" assignment_expression ":" suite
+```
+
+This repeatedly tests the expression and, if it is true, executes the *suite*;
+if the expression is false (which may be the first time it is tested) the loop terminates.
+
+A [`break` statement](#the-break-statement) executed in the *suite* terminates the loop.
+A [`continue` statement](#the-continue-statement) executed in the *suite* skips the rest of the *suite* and
+goes back to testing the expression.
 
 ### The `for` statement
 

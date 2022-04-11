@@ -23,7 +23,7 @@ RFC process is a well-established mechanism in the open source communities to so
 
 # Detailed Design
 
-1. Before initiating an RFC, it is recommended to file a Github Issue first to describe roughly the proposed solution.
+1. Before initiating an RFC, it is recommended to file a Github Issue first to briefly describe the idea.
 2. Make a copy of [`yyyymmdd-rfc-template.md`](yyyymmdd-rfc-template.md), fill in all the required sections.
 3. Send a new PR with this RFC file, then go through the normal PR process.
 4. If the relevant community members decide to approve this RFC:

@@ -12,7 +12,20 @@ namespace {
 #include "c_api/src/inc/runtime_casts.inc.h"
 #include "c_api/src/inc/vulkan_casts.inc.h"
 
+#if TI_WITH_VULKAN
+
+tvk::VulkanDeviceCreator *cppcast(Taichi_EmbeddedVulkanDevice *ptr) {
+  return reinterpret_cast<tvk::VulkanDeviceCreator *>(ptr);
+}
+
+tvk::VulkanDevice *cppcast(Taichi_VulkanDevice *dev) {
+  return reinterpret_cast<tvk::VulkanDevice *>(dev);
+}
+#endif
+
 }  // namespace
+
+#if TI_WITH_VULKAN
 
 Taichi_EmbeddedVulkanDevice *taichi_make_embedded_vulkan_device(
     uint32_t api_version,
@@ -54,6 +67,37 @@ Taichi_VulkanRuntime *taichi_make_vulkan_runtime(
   params.device = cppcast(vk_device);
   return reinterpret_cast<Taichi_VulkanRuntime *>(new tvk::VkRuntime(params));
 }
+
+#else
+
+Taichi_EmbeddedVulkanDevice *taichi_make_embedded_vulkan_device(
+    uint32_t api_version,
+    const char **instance_extensions,
+    uint32_t instance_extensions_count,
+    const char **device_extensions,
+    uint32_t device_extensions_count) {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+}
+
+void taichi_destroy_embedded_vulkan_device(Taichi_EmbeddedVulkanDevice *evd) {
+  TI_NOT_IMPLEMENTED;
+}
+
+Taichi_VulkanDevice *taichi_get_vulkan_device(
+    Taichi_EmbeddedVulkanDevice *evd) {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+}
+
+Taichi_VulkanRuntime *taichi_make_vulkan_runtime(
+    uint64_t *host_result_buffer,
+    Taichi_VulkanDevice *vk_device) {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+}
+
+#endif  // #if TI_WITH_VULKAN
 
 void taichi_destroy_vulkan_runtime(Taichi_VulkanRuntime *vr) {
   delete cppcast(vr);

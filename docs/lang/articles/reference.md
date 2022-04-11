@@ -109,9 +109,24 @@ Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_scie
 Therefore, if a variable is defined in a [block](#compound-statements), it is
 invisible outside that block.
 
-### Binary operation rule
+### Common rules of binary operations
 
-For all binary operations, scalars are broadcast in the case of scalar-tensor/tensor-scalar operations, and tensor-tensor is done elementwise without any broadcasting. In tensor-tensor cases, all operands are required to be the same shape.
+Following the [Values and types](#values-and-types) section, if both operands
+of a binary operation are Python values, compile-time evaluation is triggered
+and a result Python value is produced. If only one operand is a Python value,
+it is first turned into a Taichi value with
+[default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+Now the only remaining case is that both operands are Taichi values.
+
+Binary operations can happen between Taichi values of either primitive type or
+compound type. There are three cases in total:
+- Two primitive type values. The return type is also a primitive type.
+- One primitive type value and one compound type value. The primitive type
+value is first broadcast into the shape of the compound type value. Now it
+belongs to the case of two compound type values.
+- Two compound type values. For operators other than matrix multiplication,
+both values are required to have the same shape, and the operator is conducted
+element-wise, resulting in a compound type value with same shape.
 
 ## Expressions
 

@@ -426,7 +426,7 @@ Different from [Python](https://docs.python.org/3/reference/simple_stmts.html#au
 ```
 annotated_assignment_stmt ::= identifier ":" expression "=" expression
 ```
-The differences from normal [Assignment statements](#assignment-statements) are:
+The differences from normal [assignment statements](#assignment-statements) are:
 - Only single identifier target is allowed.
 - If the identifier appears for the first time, a variable is defined
 with that name and type annotation (the expression after ":"). The right-hand

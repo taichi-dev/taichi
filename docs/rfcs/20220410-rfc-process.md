@@ -27,7 +27,7 @@ RFC process is a well-established mechanism in the open source communities to so
 2. Make a copy of [`yyyymmdd-rfc-template.md`](yyyymmdd-rfc-template.md), fill in all the required sections.
 3. Send a new PR with this RFC file, then go through the normal PR process.
 4. If the relevant community members decide to approve this RFC:
-   1. In case you didn't do step 1, now is a good time to open a new issue to track the work proposed by this RFC.
+   1. In case you haven't done step 1, now is a good time to open a new issue for tracking the works proposed by this RFC.
    2. Fill in the issue URL in `Relevant Issue`.
    3. Merge this PR & enjoy coding.
 5. Otherwise if the members decide not to approve it, either re-iterate on the RFC and re-request the review, or simply drop it.

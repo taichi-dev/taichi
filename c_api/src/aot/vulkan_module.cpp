@@ -13,7 +13,6 @@ tvk::VkRuntime *cppcast(Taichi_VulkanRuntime *ptr) {
   return reinterpret_cast<tvk::VkRuntime *>(ptr);
 }
 
-
 }  // namespace
 
 Taichi_AotModule *taichi_make_vulkan_aot_module(const char *module_path,

@@ -42,8 +42,8 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for args in kernel.arguments:
-            if isinstance(args.annotation, template):
+        for arg in kernel.arguments:
+            if isinstance(arg.annotation, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
@@ -142,8 +142,8 @@ class Module:
         injected_args = []
         template_types = (NdarrayType, template)
         num_template_args = len([
-            args.annotation for args in kernel.arguments
-            if isinstance(args.annotation, template_types)
+            arg.annotation for arg in kernel.arguments
+            if isinstance(arg.annotation, template_types)
         ])
         if template_args is not None and num_template_args != len(
                 template_args):
@@ -151,37 +151,38 @@ class Module:
                 f'Need {num_template_args} inputs to instantiate the template '
                 f'parameters, got {len(template_args)}')
         i = 0
-        for args in kernel.arguments:
-            if isinstance(args.annotation, template_types):
+        for arg in kernel.arguments:
+            anno = arg.annotation
+            if isinstance(anno, template_types):
                 if template_args:
-                    injected_args.append(template_args[args.name])
+                    injected_args.append(template_args[arg.name])
                 else:
-                    if not isinstance(args.annotation, NdarrayType):
+                    if not isinstance(anno, NdarrayType):
                         raise TaichiCompilationError(
-                            f'Expected Ndaray type, got {args.annotation}')
-                    if args.annotation.element_shape is None or args.annotation.field_dim is None:
+                            f'Expected Ndaray type, got {anno}')
+                    if anno.element_shape is None or anno.field_dim is None:
                         raise TaichiCompilationError(
                             'Please either specify both `element_shape` and `field_dim` '
                             'in the param annotation, or provide an example '
                             f'ndarray for param={name}')
-                    if args.annotation.element_dim == 0:
+                    if anno.element_dim == 0:
                         injected_args.append(
                             ScalarNdarray(f32,
-                                          (2, ) * args.annotation.field_dim))
-                    elif args.annotation.element_dim == 1:
+                                          (2, ) * anno.field_dim))
+                    elif anno.element_dim == 1:
                         injected_args.append(
-                            VectorNdarray(args.annotation.element_shape[0],
+                            VectorNdarray(anno.element_shape[0],
                                           dtype=f32,
                                           shape=(2, ) *
-                                          args.annotation.field_dim,
+                                          anno.field_dim,
                                           layout=Layout.AOS))
-                    elif args.annotation.element_dim == 2:
+                    elif anno.element_dim == 2:
                         injected_args.append(
-                            MatrixNdarray(args.annotation.element_shape[0],
-                                          args.annotation.element_shape[1],
+                            MatrixNdarray(anno.element_shape[0],
+                                          anno.element_shape[1],
                                           dtype=f32,
                                           shape=(2, ) *
-                                          args.annotation.field_dim,
+                                          anno.field_dim,
                                           layout=Layout.AOS))
                     else:
                         raise RuntimeError('')

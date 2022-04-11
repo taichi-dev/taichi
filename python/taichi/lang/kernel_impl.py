@@ -159,8 +159,8 @@ class Func:
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i, args in enumerate(self.arguments):
-            if isinstance(args.annotation, template):
+        for i, arg in enumerate(self.arguments):
+            if isinstance(arg.annotation, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.arguments, self.template_slot_locations)
@@ -203,11 +203,11 @@ class Func:
         # Skip the template args, e.g., |self|
         assert self.is_real_function
         non_template_args = []
-        for i, args in enumerate(self.arguments):
-            if not isinstance(args.annotation, template):
-                if id(args.annotation) in primitive_types.type_ids:
-                    non_template_args.append(ops.cast(args[i],
-                                                      args.annotation))
+        for i, kernel_arg in enumerate(self.arguments):
+            anno = kernel_arg.annotation
+            if not isinstance(anno, template):
+                if id(anno) in primitive_types.type_ids:
+                    non_template_args.append(ops.cast(args[i], anno))
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)

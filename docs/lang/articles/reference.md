@@ -381,8 +381,6 @@ simple_stmt ::= expression_stmt
 
 ```
 expression_stmt    ::= expression_list
-starred_expression ::= expression | (starred_item ",")* [starred_item]
-starred_item       ::= assignment_expression | "*" or_expr
 ```
 
 An expression statement evaluates the expression list (which may be a single expression).
@@ -390,41 +388,51 @@ An expression statement evaluates the expression list (which may be a single exp
 ### Assignment statements
 
 ```
-assignment_stmt ::= (target_list "=")+ (expression_list)
+assignment_stmt ::= (target_list "=")+ expression_list
 target_list     ::= target ("," target)* [","]
 target          ::= identifier
                     | "(" [target_list] ")"
                     | "[" [target_list] "]"
                     | attributeref
                     | subscription
-                    | "*" target
 ```
 
-An assignment statement evaluates the expression list (remember that this can be a single expression or a comma-separated list,
-the latter yielding a tuple) and assigns the single resulting object to each of the target lists, from left to right.
-
-If the resulting object is a Python value, it will become a Taichi value implicitly by this statement.
+The recursive definition of an assignment statement basically follows
+[Python](https://docs.python.org/3/reference/simple_stmts.html#assignment-statements),
+with the following points to notice:
+- According to the [Variables and scope](#variables-and-scope) section, if a
+target is an identifier appearing for the first time, a variable is defined
+with that name and inferred type from the corresponding right-hand side
+expression. If the expression is evaluated to a Python value, it will be turned
+into a Taichi value with [default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+- If a target is an existing identifier, the corresponding right-hand side
+expression must be evaluated to a Taichi value with the type of the
+corresponding variable of that identifier. Otherwise, an implicit cast will
+happen.
 
 #### Augmented assignment statements
 
 ```
-augmented_assignment_stmt ::= augtarget augop (expression_list)
+augmented_assignment_stmt ::= augtarget augop expression_list
 augtarget                 ::= identifier | attributeref | subscription
 augop                     ::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" |
                               "**="| ">>=" | "<<=" | "&=" | "^=" | "|="
 ```
 
-In Taichi, some augmented assignments (e.g., `x[i] += 1`) are automatically atomic.
-See [supported-atomic-operations](https://docs.taichi.graphics/lang/articles/operator#supported-atomic-operations) for more details.
+Different from [Python](https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements), some augmented assignments (e.g., `x[i] += 1`) are [automatically atomic](basic/operator.md#supported-atomic-operations) in Taichi.
 
 #### Annotated assignment statements
 
 ```
-annotated_assignment_stmt ::= augtarget ":" expression
-                              ["=" (starred_expression)]
+annotated_assignment_stmt ::= identifier ":" expression "=" expression
 ```
-The difference from normal [Assignment statements](#assignment-statements) is that only single target is allowed.
-There is also a cast if the type of target is not the same as annotation.
+The differences from normal [Assignment statements](#assignment-statements) are:
+- Only single identifier target is allowed.
+- If the identifier appears for the first time, a variable is defined
+with that name and type annotation (the expression after ":"). The right-hand
+side expression is cast to a Taichi value with the annotated type.
+- If the identifier already exists, the type annotation must be the same as the
+type of the corresponding variable of the identifier.
 
 ### The `assert` statement
 Assert statements are a convenient way to insert debugging assertions into a program:

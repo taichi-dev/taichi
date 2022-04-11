@@ -80,7 +80,8 @@ class Matrix(TaichiOperations):
             if in_python_scope() or is_ref:
                 mat = [[x] for x in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x)] for x in arr]
+                mat = [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                       for x in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -120,7 +121,10 @@ class Matrix(TaichiOperations):
             if in_python_scope() or is_ref:
                 mat = [list(row) for row in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x) for x in row] for row in arr]
+                mat = [[
+                    impl.expr_init(ops_mod.cast(x, dt) if dt else x)
+                    for x in row
+                ] for row in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,

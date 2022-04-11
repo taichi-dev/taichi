@@ -1,8 +1,10 @@
 #include "c_api/include/taichi/aot/vulkan_module.h"
 
+#if TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
+#endif
 
 namespace {
 

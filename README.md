@@ -140,6 +140,12 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 
 *Contributor avatars are randomly shuffled.*
 
+## License
+
+Taichi is distributed under the terms of Apache License (Version 2.0).
+
+See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) for details.
+
 ## Community
 
 ### Join our discussions

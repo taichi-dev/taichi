@@ -6,7 +6,7 @@
 
 ---
 
-# Summary
+# TL;DR
 
 This doc proposes the standard way to make design decisions in Taichi. RFCs should be proposed and discussed before any major design or implementation gets landed in Taichi.
 

@@ -124,7 +124,7 @@ See [Get started](https://docs.taichi.graphics) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
+If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/dev_install).
 
 ## Documentation
 

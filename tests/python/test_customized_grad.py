@@ -250,7 +250,8 @@ def test_customized_kernels_tape_no_grad():
 
     with ti.Tape(loss=total):
         forward(4)
-    assert x.grad[0] == 0
+        func(5)
+    assert x.grad[0] == 5
 
 
 @test_utils.test()

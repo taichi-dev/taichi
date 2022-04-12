@@ -104,7 +104,6 @@ def no_grad(func):
         >>> def foo(a):
         >>>     multiply(a)"""
     def decorated(*args, **kwargs):
-        # TODO [#3025]: get rid of circular imports and move this to the top.
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
             impl.get_runtime().target_tape.insert(decorated, args)

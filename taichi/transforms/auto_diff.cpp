@@ -656,6 +656,7 @@ class MakeAdjoint : public IRVisitor {
       //     for _ in range(5)
       //         q += a[i]
       if (stmt->is<GlobalLoadStmt>() &&
+          (stmt->parent->parent_stmt != nullptr) &&
           stmt->parent->parent_stmt->is<RangeForStmt>()) {
         // Check whether this GlobalLoadStmt is in the body of a for-loop by
         // searching in the backup forward pass If not (Case 1), the alloca

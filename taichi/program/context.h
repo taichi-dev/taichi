@@ -57,7 +57,9 @@ struct RuntimeContext {
     return taichi_union_cast_with_different_sizes<T>(result_buffer[i]);
   }
 
-  void set_arg_devalloc(int arg_id, DeviceAllocation& alloc, const std::vector<int>& shape) {
+  void set_arg_devalloc(int arg_id,
+                        DeviceAllocation &alloc,
+                        const std::vector<int> &shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_device_allocation(arg_id, true);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
@@ -66,7 +68,10 @@ struct RuntimeContext {
     }
   }
 
-  void set_arg_devalloc(int arg_id, DeviceAllocation& alloc, const std::vector<int>& shape, const std::vector<int>& element_shape) {
+  void set_arg_devalloc(int arg_id,
+                        DeviceAllocation &alloc,
+                        const std::vector<int> &shape,
+                        const std::vector<int> &element_shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_device_allocation(arg_id, true);
     TI_ASSERT(shape.size() + element_shape.size() <= taichi_max_num_indices);

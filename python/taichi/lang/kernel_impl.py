@@ -333,8 +333,8 @@ class TaichiCallableTemplateMapper:
 
     def extract(self, args):
         extracted = []
-        for arg, kernel_args in zip(args, self.arguments):
-            extracted.append(self.extract_arg(arg, kernel_args.annotation))
+        for arg, kernel_arg in zip(args, self.arguments):
+            extracted.append(self.extract_arg(arg, kernel_arg.annotation))
         return tuple(extracted)
 
     def lookup(self, args):
@@ -378,8 +378,8 @@ class Kernel:
         self.classkernel = _classkernel
         self.extract_arguments()
         self.template_slot_locations = []
-        for i, args in enumerate(self.arguments):
-            if isinstance(args.annotation, template):
+        for i, arg in enumerate(self.arguments):
+            if isinstance(arg.annotation, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.arguments, self.template_slot_locations)

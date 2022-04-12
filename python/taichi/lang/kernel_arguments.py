@@ -9,7 +9,7 @@ from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64
 
 
-class KernelArguments:
+class KernelArgument:
     def __init__(self, _annotation, _name):
         self.annotation = _annotation
         self.name = _name

@@ -17,7 +17,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
                                    handle_exception_from_cpp)
 from taichi.lang.expr import Expr
-from taichi.lang.kernel_arguments import KernelArguments
+from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
@@ -270,7 +270,7 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.arguments.append(KernelArguments(annotation, param.name))
+            self.arguments.append(KernelArgument(annotation, param.name))
 
 
 class TaichiCallableTemplateMapper:
@@ -442,7 +442,7 @@ class Kernel:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.arguments.append(KernelArguments(annotation, param.name))
+            self.arguments.append(KernelArgument(annotation, param.name))
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:

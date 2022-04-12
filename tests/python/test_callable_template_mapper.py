@@ -1,4 +1,4 @@
-from taichi.lang.kernel_arguments import KernelArguments
+from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
 
 import taichi as ti
@@ -13,9 +13,9 @@ def test_callable_template_mapper():
     ti.root.place(x, y)
 
     mapper = TaichiCallableTemplateMapper(
-        (KernelArguments(ti.template(), ti.template()),
-         KernelArguments(ti.template(), ti.template()),
-         KernelArguments(ti.template(), ti.template())),
+        (KernelArgument(ti.template(), ti.template()),
+         KernelArgument(ti.template(), ti.template()),
+         KernelArgument(ti.template(), ti.template())),
         template_slot_locations=(0, 1, 2))
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 1
@@ -24,17 +24,17 @@ def test_callable_template_mapper():
     assert mapper.lookup((0, 1, 0))[0] == 1
 
     mapper = TaichiCallableTemplateMapper(
-        (KernelArguments(ti.i32, ti.i32), KernelArguments(
-            ti.i32, ti.i32), KernelArguments(ti.i32, ti.i32)), ())
+        (KernelArgument(ti.i32, ti.i32), KernelArgument(
+            ti.i32, ti.i32), KernelArgument(ti.i32, ti.i32)), ())
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 0, 1))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
 
-    mapper = TaichiCallableTemplateMapper((KernelArguments(
-        ti.i32, ti.i32), KernelArguments(
-            ti.template(), ti.template()), KernelArguments(ti.i32, ti.i32)),
+    mapper = TaichiCallableTemplateMapper((KernelArgument(
+        ti.i32, ti.i32), KernelArgument(
+            ti.template(), ti.template()), KernelArgument(ti.i32, ti.i32)),
                                           (1, ))
     assert mapper.lookup((0, x, 0))[0] == 0
     assert mapper.lookup((0, y, 0))[0] == 1
@@ -48,9 +48,9 @@ def test_callable_template_mapper_numpy():
 
     ti.root.place(x, y)
 
-    annotations = (KernelArguments(ti.template(), ti.template()),
-                   KernelArguments(ti.template(), ti.template()),
-                   KernelArguments(ti.types.ndarray(), ti.types.ndarray()))
+    annotations = (KernelArgument(ti.template(), ti.template()),
+                   KernelArgument(ti.template(), ti.template()),
+                   KernelArgument(ti.types.ndarray(), ti.types.ndarray()))
 
     import numpy as np
 

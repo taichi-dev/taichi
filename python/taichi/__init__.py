@@ -44,9 +44,10 @@ __deprecated_names__ = {
 }
 
 __customized_deprecations__ = {
-    'parallelize': ('loop_config(parallelize=...)', 'lang.misc._parallelize'),
-    'serialize': ('loop_config(serialize=True)', 'lang.misc._serialize'),
-    'block_dim': ('loop_config(block_dim=...)', 'lang.misc._block_dim')
+    'parallelize': ('Please use ti.loop_config(parallelize=...) instead.', 'lang.misc._parallelize'),
+    'serialize': ('Please use ti.loop_config(serialize=True) instead.', 'lang.misc._serialize'),
+    'block_dim': ('Please use ti.loop_config(block_dim=...) instead.', 'lang.misc._block_dim'),
+    'pyfunc': ('Please avoid using it.', 'lang.kernel_impl.pyfunc')
 }
 
 if sys.version_info.minor < 7:
@@ -72,7 +73,7 @@ else:
         if attr in __customized_deprecations__:
             msg, fun = __customized_deprecations__[attr]
             warnings.warn(
-                f'ti.{attr} is deprecated. Please use ti.{msg} instead.',
+                f'ti.{attr} is deprecated. {msg}',
                 DeprecationWarning)
             exec(f'{attr} = {fun}')
             return locals()[attr]

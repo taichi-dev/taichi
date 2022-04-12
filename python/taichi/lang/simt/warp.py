@@ -8,9 +8,10 @@ def all_nonzero(mask, predicate):
             "cuda_all_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
-def any_nonzero():
-    # TODO
-    pass
+def any_nonzero(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_any_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
 def unique():

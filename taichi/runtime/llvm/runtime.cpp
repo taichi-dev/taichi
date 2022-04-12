@@ -1020,6 +1020,9 @@ i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
   return 0;
 }
 
+  
+  
+  
 f32 cuda_shfl_down_sync_f32(u32 mask, f32 val, i32 delta, int width) {
   return 0;
 }
@@ -1054,6 +1057,14 @@ bool cuda_all_sync(u32 mask, bool bit) {
 
 int32 cuda_all_sync_i32(u32 mask, int32 predicate) {
   return (int32)cuda_all_sync(mask, (bool)predicate);
+}
+
+bool cuda_any_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_any_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_any_sync(mask, (bool)predicate);
 }
 
 int32 cuda_ballot_sync(int32 mask, bool bit) {

@@ -60,6 +60,10 @@ FunctionCreationGuard::FunctionCreationGuard(
   old_entry = mb->entry_block;
   mb->entry_block = allocas;
 
+  final = llvm::BasicBlock::Create(*mb->llvm_context, "final", body);
+  old_final = mb->final_block;
+  mb->final_block = final;
+
   entry = llvm::BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
 
   ip = mb->builder->saveIP();
@@ -73,18 +77,20 @@ FunctionCreationGuard::FunctionCreationGuard(
 
 FunctionCreationGuard::~FunctionCreationGuard() {
   if (!mb->returned) {
-    mb->builder->CreateRetVoid();
+    mb->builder->CreateBr(final);
   }
-  mb->func = old_func;
-  mb->builder->restoreIP(ip);
+  mb->builder->SetInsertPoint(final);
+  mb->builder->CreateRetVoid();
   mb->returned = false;
 
-  {
-    llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
-    mb->builder->SetInsertPoint(allocas);
-    mb->builder->CreateBr(entry);
-    mb->entry_block = old_entry;
-  }
+  mb->builder->SetInsertPoint(allocas);
+  mb->builder->CreateBr(entry);
+
+  mb->entry_block = old_entry;
+  mb->final_block = old_final;
+  mb->func = old_func;
+  mb->builder->restoreIP(ip);
+
   TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
@@ -1118,7 +1124,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
            tlctx->get_constant<int32>(idx++)});
     }
   }
-  builder->CreateRetVoid();
+  builder->CreateBr(final_block);
   returned = true;
 }
 
@@ -1667,6 +1673,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
+  this->final_block = llvm::BasicBlock::Create(*llvm_context, "final", func);
 
   // The real function body
   func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
@@ -1676,10 +1683,12 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
   if (!returned) {
-    builder->CreateRetVoid();
+    builder->CreateBr(final_block);
   } else {
     returned = false;
   }
+  builder->SetInsertPoint(final_block);
+  builder->CreateRetVoid();
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);

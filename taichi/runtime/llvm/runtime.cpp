@@ -1048,6 +1048,14 @@ f32 cuda_shfl_sync_f32(u32 mask, f32 val, i32 delta, int width) {
   return 0;
 }
 
+bool cuda_all_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_all_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_all_sync(mask, (bool)predicate);
+}
+
 bool cuda_any_sync(u32 mask, bool bit) {
   return false;
 }

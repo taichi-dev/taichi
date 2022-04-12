@@ -1173,13 +1173,13 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   enum spv::Op add_op = spv::OpIAdd;
   bool use_atomic_increment = false;
 
-  // use atomic increment for DX API to avoid error X3694
-  #ifdef TI_WITH_DX11
+// use atomic increment for DX API to avoid error X3694
+#ifdef TI_WITH_DX11
   if (dynamic_cast<const taichi::lang::directx11::Dx11Device *>(device_)) {
     use_atomic_increment = true;
   }
-  #endif
-  
+#endif
+
   if (use_atomic_increment) {
     Value tmp9 = new_value(t_uint32_, ValueKind::kNormal);
     ib_.begin(spv::Op::OpAtomicIIncrement)

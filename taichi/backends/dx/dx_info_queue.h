@@ -9,7 +9,6 @@ namespace taichi {
 namespace lang {
 namespace directx11 {
 
-
 class Dx11InfoQueue {
  public:
   struct Entry {
@@ -33,7 +32,6 @@ class Dx11InfoQueue {
   ID3D11InfoQueue *info_queue_{};
   int last_message_count_;
 };
-
 
 }  // namespace directx11
 }  // namespace lang

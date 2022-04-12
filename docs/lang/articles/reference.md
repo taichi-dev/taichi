@@ -109,6 +109,25 @@ Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_scie
 Therefore, if a variable is defined in a [block](#compound-statements), it is
 invisible outside that block.
 
+### Common rules of binary operations
+
+Following the [Values and types](#values-and-types) section, if both operands
+of a binary operation are Python values, compile-time evaluation is triggered
+and a result Python value is produced. If only one operand is a Python value,
+it is first turned into a Taichi value with
+[default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+Now the only remaining case is that both operands are Taichi values.
+
+Binary operations can happen between Taichi values of either primitive type or
+compound type. There are three cases in total:
+- Two primitive type values. The return type is also a primitive type.
+- One primitive type value and one compound type value. The primitive type
+value is first broadcast into the shape of the compound type value. Now it
+belongs to the case of two compound type values.
+- Two compound type values. For operators other than matrix multiplication,
+both values are required to have the same shape, and the operator is conducted
+element-wise, resulting in a compound type value with same shape.
+
 ## Expressions
 
 The section explains the syntax and semantics of expressions in Taichi.
@@ -259,22 +278,101 @@ stride) inside have to be evaluated to Python values.
 
 #### Calls
 
+```
+call                 ::= primary "(" [positional_arguments] ")"
+positional_arguments ::= positional_item ("," positional_item)*
+positional_item      ::= assignment_expression | "*" expression
+```
+
+The `primary` must be evaluated to one of:
+- A [Taichi function](basic/syntax.md#taichi-function).
+- A [Taichi builtin function](basic/operator.md#other-arithmetic-functions).
+- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
+- A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
+
 ### The power operator
+
+```
+power ::= primary ["**" u_expr]
+```
+
+The power operator has the same semantics as the builtin `pow()` function.
 
 ### Unary arithmetic and bitwise operations
 
+```
+u_expr ::= power | "-" power | "+" power | "~" power
+```
+
+Similar to [rules for binary operations](#common-rules-of-binary-operations),
+if the operand is a Python value, compile-time evaluation is triggered and a
+result Python value is produced. Now the remaining case is that the operand is
+a Taichi value:
+- If the operand is a primitive type value, the return type is also a primitive
+type.
+- If the operand is a compound type value, the operator is conducted
+element-wise, resulting in a compound type value with same shape.
+
+See [arithmetic operators](basic/operator.md#arithmetic-operators) and
+[bitwise operators](basic/operator.md#bitwise-operators) for operator details.
+Note that `~` can only be used with integer type values.
+
 ### Binary arithmetic operations
 
+```
+m_expr ::= u_expr | m_expr "*" u_expr | m_expr "@" m_expr | m_expr "//" u_expr | m_expr "/" u_expr | m_expr "%" u_expr
+a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
+```
+
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [arithmetic operators](basic/operator.md#arithmetic-operators). Note that
+the `@` operator is for matrix multiplication and only operates on matrix type
+arguments.
 ### Shifting operations
+
+```
+shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
+```
+
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+are required to have integer types.
 
 ### Binary bitwise operations
 
+```
+and_expr ::= shift_expr | and_expr "&" shift_expr
+xor_expr ::= and_expr | xor_expr "^" and_expr
+or_expr  ::= xor_expr | or_expr "|" xor_expr
+```
+
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+are required to have integer types.
+
 ### Comparisons
+
+```
+comparison    ::= or_expr (comp_operator or_expr)*
+comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | ["not"] "in"
+```
+
+Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x < y) & (y <= z)`.
 
 #### Value comparisons
 
+See [common rules for binary operations](#common-rules-of-binary-operations),
+[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+and [comparison operators](basic/operator.md#comparison-operators).
+
 #### Membership test operations
 
+The semantics of membership test operations follow
+[Python](https://docs.python.org/3/reference/expressions.html#membership-test-operations),
+but they are only supported in [static expressions](#static-expressions).
 ### Boolean operations
 
 ```

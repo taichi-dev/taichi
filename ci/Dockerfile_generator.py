@@ -40,6 +40,8 @@ RUN yum check-update && \\
                    libXrandr
 """
 
+ADD_GIT_PPA = "add-apt-repository -y ppa:git-core/ppa && apt-get update && "
+
 CPU_APT_INSTALL_BLOCK = """
 RUN apt-get update && \\
     apt-get install -y software-properties-common \\

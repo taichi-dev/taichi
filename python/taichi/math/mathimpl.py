@@ -506,7 +506,7 @@ def csqrt(z):
 
 
 __all__ = [
-    "clamp", "cconj", "cdiv", "cmul", "cross", "csqrt", "degrees", "distance",
+    "cconj", "cdiv", "clamp", "cmul", "cross", "csqrt", "degrees", "distance",
     "dot", "e", "fract", "log2", 'mat2', 'mat3', 'mat4', "mix", "normalize",
     "pi", "radians", "reflect", "refract", "sign", "smoothstep", "step"
 ]

@@ -31,11 +31,11 @@ Taichi recommends installing Python from [Miniforge](https://github.com/conda-fo
 
 The following table lists the supported operating systems and the backends that Taichi supports on these platforms:
 
-| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **C source**    |
+| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **Vulkan**    |
 | :----------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-|   Windows    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         |        N/A         |
+|   Windows    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
 |    Linux     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
-|    macOS     | :heavy_check_mark: |        N/A         |        N/A         | :heavy_check_mark: |        N/A         |
+|    macOS     | :heavy_check_mark: |        N/A         |        N/A         | :heavy_check_mark: | :heavy_check_mark: |
 
 - :heavy_check_mark:: supported;
 - N/A: not available

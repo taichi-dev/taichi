@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
@@ -37,3 +39,5 @@ class Dx11ProgramImpl : public ProgramImpl {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif

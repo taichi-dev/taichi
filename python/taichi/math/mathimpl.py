@@ -6,7 +6,6 @@ from math import e, pi
 import taichi as ti
 from taichi.math import vec2, vec3
 
-
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
 """
@@ -507,7 +506,7 @@ def csqrt(z):
 
 
 __all__ = [
-    "clamp", "cconj", "cdiv", "cmul", "cross", "csqrt", "degrees", "distance", "dot",
-    "e", "fract", "log2", 'mat2', 'mat3', 'mat4', "mix", "normalize", "pi",
-    "radians", "reflect", "refract", "sign", "smoothstep", "step"
+    "clamp", "cconj", "cdiv", "cmul", "cross", "csqrt", "degrees", "distance",
+    "dot", "e", "fract", "log2", 'mat2', 'mat3', 'mat4', "mix", "normalize",
+    "pi", "radians", "reflect", "refract", "sign", "smoothstep", "step"
 ]

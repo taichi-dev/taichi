@@ -61,6 +61,11 @@ jobs:
     name: Check Static Analyzer
     runs-on: ubuntu-latest
     needs: check_files
+    container:
+      image: ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -71,33 +76,30 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
-          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /bin/bash
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
-          docker exec --user root check_clang_tidy apt install -y clang-tidy-10
-          docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
+          apt install -y clang-tidy-10
+          bash .github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
-          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
           CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
     timeout-minutes: 60
+    container:
+      image: ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            python: py39
+          - python: py39
             with_cc: ON
             wanted_archs: 'cpu,cc'
-          - os: ubuntu-latest
-            python: py310
+          - python: py310
             with_cc: ON
             wanted_archs: 'cpu,cc'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     permissions:
       packages: read
       contents: read
@@ -114,36 +116,12 @@ jobs:
           restore-keys: |
             sccache-linux-${{matrix.with_cc}}-
 
-      - name: Get docker images
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
-        env:
-          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          mkdir -m777 shared
-          docker create --user dev --name taichi_build \
-            -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 \
-            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
-          # A tarball is needed because sccache needs some permissions that only the file owner has.
-          # 1000 is the uid and gid of user "dev" in the container.
-          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
-          docker start -a taichi_build
-          rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
-          docker cp taichi_build:/home/dev/taichi/dist shared/dist
-          docker cp taichi_build:/home/dev/taichi/build shared/build
+          bash .github/workflows/scripts/unix_build.sh
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: taichi
@@ -154,22 +132,10 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp shared/dist/ taichi_test:/home/dev/
-          docker cp shared/build/ taichi_test:/home/dev/
-          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-          docker cp tests/ taichi_test:/home/dev/
-          docker cp pyproject.toml taichi_test:/home/dev/
-          docker start -a taichi_test
+          bash .github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
-
-      - name: clean docker container
-        if: always()
-        run: |
-          docker rm taichi_build taichi_test -f
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -244,6 +210,13 @@ jobs:
     needs: check_files
     runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
+    container:
+      image: registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0
+      volumes:
+        - /tmp/.X11-unix:/tmp/.X11-unix
+      env:
+        DISPLAY: ':1'
+      options: --gpus all
     steps:
       - uses: actions/checkout@v2
         with:
@@ -262,47 +235,22 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          mkdir -m777 shared
-          docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
-            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
-          # A tarball is needed because sccache needs some permissions that only the file owner has.
-          # 1000 is the uid and gid of user "dev" in the container.
-          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
-          docker start -a taichi_build
-          rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
-          docker cp taichi_build:/home/dev/taichi/dist shared/dist
-          docker cp taichi_build:/home/dev/taichi/build shared/build
+          bash .github/workflows/scripts/unix_build.sh
         env:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          DISPLAY: :1
 
       - name: Test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
-             /home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp shared/dist/ taichi_test:/home/dev/
-          docker cp shared/build/ taichi_test:/home/dev/
-          docker cp pyproject.toml taichi_test:/home/dev/
-          docker cp tests/ taichi_test:/home/dev/
-          docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-          docker start -a taichi_test
+          bash .github/workflows/scripts/unix_test.sh
         env:
           PY: py38
           GPU_TEST: ON
-          DISPLAY: :1
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
 

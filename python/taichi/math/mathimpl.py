@@ -4,6 +4,7 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 import taichi as ti
+
 from .vectypes import vec2
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101

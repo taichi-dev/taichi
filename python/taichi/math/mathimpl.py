@@ -481,8 +481,8 @@ def csqrt(z):
     if `w^2=z`, then `w = csqrt(z)`.
 
     Among the two square roots of `z`, if their real parts are non-zero,
-    the one with positive real part is returned. If their real parts
-    are both zero, the one with non-negative imaginary part is returned.
+    the one with positive real part is returned. If both their real parts
+    are zero, the one with non-negative imaginary part is returned.
 
     Args:
         z (:class:`~taichi.math.vec2`): The input.

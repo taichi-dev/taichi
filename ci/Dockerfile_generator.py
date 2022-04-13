@@ -54,8 +54,8 @@ RUN apt-get update && \\
 
 GPU_APT_INSTALL_BLOCK = """
 RUN apt-get update && \\
-    apt-get install -y software-properties-common \\
-                       python3-pip \\
+    apt-get install -y software-properties-common && {}\\
+    apt-get install -y python3-pip \\
                        libtinfo-dev \\
                        clang-10 \\
                        wget \\

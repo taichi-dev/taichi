@@ -10,8 +10,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="https://github.com/taichi-dev"
 
 RUN apt-get update && \
-    apt-get install -y software-properties-common \
-                       python3-pip \
+    apt-get install -y software-properties-common && add-apt-repository ppa:git-core/ppa && apt-get update && \
+    apt-get install -y python3-pip \
                        libtinfo-dev \
                        clang-10 \
                        wget \

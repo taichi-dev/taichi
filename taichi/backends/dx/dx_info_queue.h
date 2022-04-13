@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/device.h"
 #include <d3d11.h>
 
@@ -34,3 +36,5 @@ class Dx11InfoQueue {
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

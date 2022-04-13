@@ -1,3 +1,5 @@
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_program.h"
 
 #include "taichi/backends/dx/dx_device.h"
@@ -9,7 +11,7 @@ namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel,
                                    vulkan::VkRuntime *runtime,
-                                   vulkan::SNodeTreeManager snode_tree_mgr) {
+                                   vulkan::SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
       std::move(vulkan::run_codegen(kernel, runtime->get_ti_device(),
                                     snode_tree_mgr->get_compiled_structs())));
@@ -36,7 +38,7 @@ void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-  device_ = std::make_unique<directx11::Dx11Device>();
+  device_ = std::make_shared<directx11::Dx11Device>();
 
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;
@@ -66,3 +68,5 @@ void Dx11ProgramImpl::destroy_snode_tree(SNodeTree *snode_tree) {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif

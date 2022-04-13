@@ -10,7 +10,7 @@ from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
                                 _MatrixFieldElement)
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import u16, i32, u32
+from taichi.types import i32, u16, u32
 from taichi.types.compound_types import CompoundType
 
 from taichi import lang
@@ -286,8 +286,7 @@ class MeshInstance:
                                     value.vars[0].ptr.snode())
 
     def set_relation_dynamic(self, rel_type: MeshRelationType,
-                             value: ScalarField, 
-                             patch_offset : ScalarField, 
+                             value: ScalarField, patch_offset: ScalarField,
                              offset: ScalarField):
         _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
                                       value.vars[0].ptr.snode(),

@@ -1067,8 +1067,8 @@ void export_lang(py::module &m) {
   m.def("set_relation_dynamic",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
            SNode *patch_offset, SNode *offset) {
-          mesh_ptr.ptr->relations.insert(
-              std::pair(type, mesh::MeshLocalRelation(value, patch_offset, offset)));
+          mesh_ptr.ptr->relations.insert(std::pair(
+              type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
 }
 

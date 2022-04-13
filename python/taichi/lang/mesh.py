@@ -10,7 +10,7 @@ from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
                                 _MatrixFieldElement)
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import i32
+from taichi.types import i32, u16, u32
 from taichi.types.compound_types import CompoundType
 
 from taichi import lang
@@ -286,9 +286,11 @@ class MeshInstance:
                                     value.vars[0].ptr.snode())
 
     def set_relation_dynamic(self, rel_type: MeshRelationType,
-                             value: ScalarField, offset: ScalarField):
+                             value: ScalarField, patch_offset: ScalarField,
+                             offset: ScalarField):
         _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
                                       value.vars[0].ptr.snode(),
+                                      patch_offset.vars[0].ptr.snode(),
                                       offset.vars[0].ptr.snode())
 
     def add_mesh_attribute(self, element_type, snode, reorder_type):
@@ -332,10 +334,12 @@ class MeshMetadata:
                 relation_by_orders(from_order, to_order))
             self.relation_fields[rel_type] = {}
             self.relation_fields[rel_type]["value"] = impl.field(
-                dtype=i32, shape=len(relation["value"]))
+                dtype=u16, shape=len(relation["value"]))
             if from_order <= to_order:
                 self.relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=i32, shape=len(relation["offset"]))
+                    dtype=u16, shape=len(relation["offset"]))
+                self.relation_fields[rel_type]["patch_offset"] = impl.field(
+                    dtype=u32, shape=len(relation["patch_offset"]))
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])
@@ -358,6 +362,8 @@ class MeshMetadata:
             self.relation_fields[rel_type]["value"].from_numpy(
                 np.array(relation["value"]))
             if from_order <= to_order:
+                self.relation_fields[rel_type]["patch_offset"].from_numpy(
+                    np.array(relation["patch_offset"]))
                 self.relation_fields[rel_type]["offset"].from_numpy(
                     np.array(relation["offset"]))
 
@@ -422,6 +428,7 @@ class MeshBuilder:
             if from_order <= to_order:
                 instance.set_relation_dynamic(
                     rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["patch_offset"],
                     metadata.relation_fields[rel_type]["offset"])
             else:
                 instance.set_relation_fixed(

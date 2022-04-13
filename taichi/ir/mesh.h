@@ -53,8 +53,8 @@ MeshRelationType relation_by_orders(int from_order, int to_order);
 MeshRelationType inverse_relation(MeshRelationType rel);
 
 struct MeshLocalRelation {
-  MeshLocalRelation(SNode *value_, SNode *offset_)
-      : value(value_), offset(offset_) {
+  MeshLocalRelation(SNode *value_, SNode *patch_offset_, SNode *offset_)
+      : value(value_), patch_offset(patch_offset_), offset(offset_) {
     fixed = false;
   }
 
@@ -64,6 +64,7 @@ struct MeshLocalRelation {
 
   bool fixed;
   SNode *value{nullptr};
+  SNode *patch_offset{nullptr};
   SNode *offset{nullptr};
 };
 

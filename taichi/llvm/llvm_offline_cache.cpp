@@ -20,26 +20,20 @@ get_offline_cache_key_of_compile_config(CompileConfig *config) {
   serializer(config->debug);
   serializer(config->cfg_optimization);
   serializer(config->check_out_of_bound);
-  serializer(config->simd_width);
   serializer(config->opt_level);
   serializer(config->external_optimization_level);
-  serializer(config->max_vector_width);
   serializer(config->packed);
-  serializer(config->serial_schedule);
   serializer(config->move_loop_invariant_outside_if);
   serializer(config->demote_dense_struct_fors);
   serializer(config->advanced_optimization);
   serializer(config->constant_folding);
-  serializer(config->use_llvm);
   serializer(config->fast_math);
-  serializer(config->dynamic_index);
   serializer(config->flatten_if);
   serializer(config->make_thread_local);
   serializer(config->make_block_local);
   serializer(config->detect_read_only);
   serializer(config->default_fp->to_string());
   serializer(config->default_ip.to_string());
-  serializer(config->extra_flags);
   if (arch_is_cpu(config->arch)) {
     serializer(config->default_cpu_block_dim);
     serializer(config->cpu_max_num_threads);

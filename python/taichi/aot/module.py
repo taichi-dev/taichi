@@ -42,8 +42,8 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for anno in kernel.argument_annotations:
-            if isinstance(anno, template):
+        for arg in kernel.arguments:
+            if isinstance(arg.annotation, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
@@ -142,8 +142,8 @@ class Module:
         injected_args = []
         template_types = (NdarrayType, template)
         num_template_args = len([
-            anno for anno in kernel.argument_annotations
-            if isinstance(anno, template_types)
+            arg.annotation for arg in kernel.arguments
+            if isinstance(arg.annotation, template_types)
         ])
         if template_args is not None and num_template_args != len(
                 template_args):
@@ -151,11 +151,11 @@ class Module:
                 f'Need {num_template_args} inputs to instantiate the template '
                 f'parameters, got {len(template_args)}')
         i = 0
-        for arg_name, anno in zip(kernel.argument_names,
-                                  kernel.argument_annotations):
+        for arg in kernel.arguments:
+            anno = arg.annotation
             if isinstance(anno, template_types):
                 if template_args:
-                    injected_args.append(template_args[arg_name])
+                    injected_args.append(template_args[arg.name])
                 else:
                     if not isinstance(anno, NdarrayType):
                         raise TaichiCompilationError(

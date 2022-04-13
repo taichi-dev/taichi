@@ -464,16 +464,16 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
-                if isinstance(ctx.func.argument_annotations[i],
+                if isinstance(ctx.func.arguments[i].annotation,
                               annotations.template):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
-                elif isinstance(ctx.func.argument_annotations[i],
+                elif isinstance(ctx.func.arguments[i].annotation,
                                 annotations.sparse_matrix_builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_sparse_matrix(
                             to_taichi_type(ctx.arg_features[i])))
-                elif isinstance(ctx.func.argument_annotations[i],
+                elif isinstance(ctx.func.arguments[i].annotation,
                                 ndarray_type.NdarrayType):
                     ctx.create_variable(
                         arg.arg,
@@ -481,15 +481,15 @@ class ASTTransformer(Builder):
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
-                elif isinstance(ctx.func.argument_annotations[i], MatrixType):
+                elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
-                            ctx.func.argument_annotations[i]))
+                            ctx.func.arguments[i].annotation))
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(
-                            ctx.func.argument_annotations[i])
+                            ctx.func.arguments[i].annotation)
             # remove original args
             node.args.args = []
 
@@ -524,9 +524,9 @@ class ASTTransformer(Builder):
                     # Remove annotations because they are not used.
                     args.args[i].annotation = None
                     # Template arguments are passed by reference.
-                    if isinstance(ctx.func.argument_annotations[i],
+                    if isinstance(ctx.func.arguments[i].annotation,
                                   annotations.template):
-                        ctx.create_variable(ctx.func.argument_names[i], data)
+                        ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

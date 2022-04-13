@@ -1629,7 +1629,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1640,7 +1640,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 

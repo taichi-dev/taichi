@@ -83,10 +83,12 @@ def paint(t: float):
 
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-for i in range(1000000):
+i = 0
+while gui.running:
     paint(i * 0.03)
     gui.set_image(pixels)
     gui.show()
+    i = i + 1
 ```
 
 Let's dive into this simple Taichi program.

@@ -211,9 +211,7 @@ def test_fractal_f16():
     def paint(t: float):
         for i, j in pixels:  # Parallelized over all pixels
             c = ti.Vector([-0.8, ti.cos(t) * 0.2], dt=ti.f16)
-            z = ti.Vector([
-                i / n - 1, j / n - 0.5
-            ], dt=ti.f16) * 2
+            z = ti.Vector([i / n - 1, j / n - 0.5], dt=ti.f16) * 2
             iterations = 0
             while z.norm() < 20 and iterations < 50:
                 z = complex_sqr(z) + c

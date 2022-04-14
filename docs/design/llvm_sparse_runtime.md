@@ -198,7 +198,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 }
 ```
 
-1. Uses the current length `n` as the index (`i`) to store `data`. 
+1. Uses the current length `n` as the index (`i`) to store `data`.
 2. `chunk_strat` tracks the starting index of a given chunk, and always starts at `0` . `p_chunk_ptr` is initialized to the pointer to the first chunk.
 3. Inside the `while` loop, checks if the given chunk slot is empty first, and allocates a new chunk if so.
 4. Compares if the determined index `i` falls within the current chunk.
@@ -344,7 +344,7 @@ void ListManager::append(void *data_ptr) {
 }
 ```
 
-[`clear()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L472-L474) simply resets `num_elements` to zero, without doing anything to the list contents. 
+[`clear()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L472-L474) simply resets `num_elements` to zero, without doing anything to the list contents.
 
 ## GC
 

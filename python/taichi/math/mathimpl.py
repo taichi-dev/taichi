@@ -5,7 +5,6 @@ from math import e, pi
 
 import taichi as ti
 
-from .vectypes import vec2
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
@@ -406,108 +405,8 @@ def cross(x, y):
     return x.cross(y)
 
 
-@ti.func
-def cmul(z1, z2):
-    """Performs complex multiplication between two 2d vectors.
-
-    This is equivalent to the multiplication in the complex number field
-    when `z1` and `z2` are treated as complex numbers.
-
-    Args:
-        z1 (:class:`~taichi.math.vec2`): The first input.
-        z2 (:class:`~taichi.math.vec2`): The second input.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def test():
-        >>>     z1 = ti.math.vec2(1, 1)
-        >>>     z2 = ti.math.vec2(0, 1)
-        >>>     ti.math.cmul(z1, z2)  # [-1, 1]
-
-    Returns:
-        :class:`~taichi.math.vec2`: the complex multiplication `z1 * z2`.
-    """
-    x1, y1 = z1[0], z1[1]
-    x2, y2 = z2[0], z2[1]
-    return vec2(x1 * x2 - y1 * y2, x1 * y2 + x2 * y1)
-
-
-@ti.func
-def cconj(z):
-    """Returns the complex conjugate of a 2d vector.
-
-    If `z=(x, y)` then the conjugate of `z` is `(x, -y)`.
-
-    Args:
-        z (:class:`~taichi.math.vec2`): The input.
-
-    Returns:
-       :class:`~taichi.math.vec2`: The complex conjugate of `z`.
-    """
-    return vec2(z[0], -z[1])
-
-
-@ti.func
-def cdiv(z1, z2):
-    """Performs complex division between two 2d vectors.
-
-    This is equivalent to the division in the complex number field
-    when `z1` and `z2` are treated as complex numbers.
-
-    Args:
-        z1 (:class:`~taichi.math.vec2`): The first input.
-        z2 (:class:`~taichi.math.vec2`): The second input.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def test():
-        >>>     z1 = ti.math.vec2(1, 1)
-        >>>     z2 = ti.math.vec2(0, 1)
-        >>>     ti.math.cdiv(z1, z2)  # [1, -1]
-
-    Returns:
-        :class:`~taichi.math.vec2`: the complex division of `z1 / z2`.
-    """
-    x1, y1 = z1[0], z1[1]
-    x2, y2 = z2[0], z2[1]
-    return vec2(x1 * x2 + y1 * y2, -x1 * y2 + x2 * y1) / dot(z1, z2)
-
-
-@ti.func
-def csqrt(z):
-    """Returns the complex square root of a 2d vector `z`, so that
-    if `w^2=z`, then `w = csqrt(z)`.
-
-    Among the two square roots of `z`, if their real parts are non-zero,
-    the one with positive real part is returned. If both their real parts
-    are zero, the one with non-negative imaginary part is returned.
-
-    Args:
-        z (:class:`~taichi.math.vec2`): The input.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def test():
-        >>>     z = ti.math.vec2(-1, 0)
-        >>>     w = ti.math.csqrt(z)  # [0, 1]
-
-    Returns:
-        :class:`~taichi.math.vec2`: The complex square root.
-    """
-    result = vec2(0.)
-    if any(z):
-        r = ti.sqrt(ti.sqrt(dot(z, z)))
-        a = ti.atan2(z[1], z[0])
-        result = r * vec2(ti.cos(a / 2.0), ti.sin(a / 2.0))
-
-    return result
-
-
 __all__ = [
-    "cconj", "cdiv", "clamp", "cmul", "cross", "csqrt", "degrees", "distance",
-    "dot", "e", "fract", "log2", 'mat2', 'mat3', 'mat4', "mix", "normalize",
-    "pi", "radians", "reflect", "refract", "sign", "smoothstep", "step"
+    "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2",
+    "mat2", "mat3", "mat4", "mix", "normalize", "pi", "radians", "reflect",
+    "refract", "sign", "smoothstep", "step"
 ]

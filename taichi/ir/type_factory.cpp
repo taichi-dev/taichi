@@ -134,52 +134,52 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
 }
 
 namespace {
-  static bool compare(DataType x, DataType y) {
-    // Is the first type "bigger" than the second type?
-    if (is_real(x) != is_real(y)) {
-      // One is real, the other is integral.
-      // real > integral
-      return is_real(x);
+static bool compare_types(DataType x, DataType y) {
+  // Is the first type "bigger" than the second type?
+  if (is_real(x) != is_real(y)) {
+    // One is real, the other is integral.
+    // real > integral
+    return is_real(x);
+  } else {
+    if (is_real(x) && is_real(y)) {
+      // Both are real
+      return data_type_bits(x) > data_type_bits(y);
     } else {
-      if (is_real(x) && is_real(y)) {
-        // Both are real
-        return data_type_bits(x) > data_type_bits(y);
+      // Both are integral
+      auto x_bits = data_type_bits(x);
+      auto y_bits = data_type_bits(y);
+      if (x_bits != y_bits) {
+        return x_bits > y_bits;
       } else {
-        // Both are integral
-        auto x_bits = data_type_bits(x);
-        auto y_bits = data_type_bits(y);
-        if (x_bits != y_bits) {
-          return x_bits > y_bits;
-        } else {
-          // Same number of bits. Unsigned > signed
-          auto x_unsigned = !is_signed(x);
-          auto y_unsigned = !is_signed(y);
-          return x_unsigned > y_unsigned;
-        }
+        // Same number of bits. Unsigned > signed
+        auto x_unsigned = !is_signed(x);
+        auto y_unsigned = !is_signed(y);
+        return x_unsigned > y_unsigned;
       }
     }
   }
+}
 
-  static DataType to_primitive_type(DataType d) {
-    if (d->is<PointerType>()) {
-      d = d->as<PointerType>()->get_pointee_type();
-      TI_WARN("promoted_type got a pointer input.");
-    }
+static DataType to_primitive_type(DataType d) {
+  if (d->is<PointerType>()) {
+    d = d->as<PointerType>()->get_pointee_type();
+    TI_WARN("promoted_type got a pointer input.");
+  }
 
-    if (d->is<TensorType>()) {
-      d = d->as<TensorType>()->get_element_type();
-      TI_WARN("promoted_type got a tensor input.");
-    }
+  if (d->is<TensorType>()) {
+    d = d->as<TensorType>()->get_element_type();
+    TI_WARN("promoted_type got a tensor input.");
+  }
 
-    auto primitive = d->cast<PrimitiveType>();
-    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
-                   d->to_string());
-    return primitive;
-  };
+  auto primitive = d->cast<PrimitiveType>();
+  TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                 d->to_string());
+  return primitive;
+};
 }  // namespace
 
 DataType promoted_type(DataType x, DataType y) {
-  if (compare(to_primitive_type(x), to_primitive_type(y)))
+  if (compare_types(to_primitive_type(x), to_primitive_type(y)))
     return x;
   else
     return y;

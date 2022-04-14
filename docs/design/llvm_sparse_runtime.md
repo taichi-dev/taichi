@@ -29,7 +29,7 @@ However, this is likely subject to change, so that all SNodes can share the same
 `dense` is the simplest form of SNode. It is just an array of cells living in a chunk of contiguous memory, or `std::array<Cell, N>` for those with a C++ background. Its header file is in [`node_dense.h`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/node_dense.h).
 
 
-* `Dense_get_num_elements`: This is ust `max_num_elements` stored in `DenseMeta`.
+* `Dense_get_num_elements`: This is just `max_num_elements` stored in `DenseMeta`.
 * `Dense_activate`: Empty body, because cells are always activated in `dense`.
 * `Dense_is_active`: Always returns `1`.
 * `Dense_lookup_element`: Returns the address of the `i`-th cell. That is, `node + element_size * i`.
@@ -203,7 +203,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 
 # Runtime
 
-Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp. Note that this file is *NOT* linked into Taichi's CPP core library. Instead, it is compiled into a LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design brings the advantage that the code shared between CPU and CUDA backends can be written once. In addition, the sparse runtime can be implemented in a language with enough abstraction (i.e., C++ instead of raw LLVM IR).
+Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp. Note that this file is *NOT* linked into Taichi's CPP core library. Instead, it is compiled into a LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between CPU and CUDA backends. In addition, the sparse runtime can be implemented in a language with enough abstraction (i.e., C++ instead of raw LLVM IR).
 
 The core data structure of this runtime is [`LLVMRuntime`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L543), which holds a handful of data:
 
@@ -244,9 +244,9 @@ Ptr allocate() {
 }
 ```
 
-1. Reads the (possible) index next free item
-2. If running out of the indices in the free list, allocate a new chunk from `data_list`
-3. Otherwise, re-use the index from `free_list`
+1. Reads the (possible) index of the next free item.
+2. If running out of the indices in the free list, allocate a new chunk from `data_list`.
+3. Otherwise, re-use the index from `free_list`.
 4. Either way, index `l` points to a memory slot in `data_list`. Returns that slot.
 
 [`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) is quite straightforward.

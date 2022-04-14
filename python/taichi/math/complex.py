@@ -1,6 +1,7 @@
 import taichi as ti
-from .vectypes import vec2
+
 from .mathimpl import dot
+from .vectypes import vec2
 
 
 @ti.func

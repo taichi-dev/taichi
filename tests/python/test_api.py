@@ -45,10 +45,10 @@ user_api[ti.FieldsBuilder] = [
 ]
 user_api[ti.math] = [
     'cconj', 'cdiv', 'cexp', 'cinv', 'clamp', 'clog', 'cmul', 'cpow', 'cross',
-    'csqrt', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2',
-    'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize',
-    'pi', 'radians', 'reflect', 'refract', 'sign', 'smoothstep', 'step',
-    'vec2', 'vec3', 'vec4'
+    'csqrt', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2', 'ivec3',
+    'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize', 'pi',
+    'radians', 'reflect', 'refract', 'sign', 'smoothstep', 'step', 'vec2',
+    'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = [
     'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',

@@ -213,7 +213,7 @@ def test_fractal_f16():
             c = ti.Vector([-0.8, ti.cos(t) * 0.2], dt=ti.f16)
             z = ti.Vector([
                 i / n - 1, j / n - 0.5
-            ]) * 2  # FIXME: the kernel crashes when z stores f16
+            ], dt=ti.f16) * 2
             iterations = 0
             while z.norm() < 20 and iterations < 50:
                 z = complex_sqr(z) + c

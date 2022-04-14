@@ -134,39 +134,7 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
 }
 
 namespace {
-class TypePromotionMapping {
- public:
-  TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                   \
-  mapping[std::make_pair(get_primitive_data_type<x>(),     \
-                         get_primitive_data_type<y>())] =  \
-      get_primitive_data_type<decltype(std::declval<x>() + \
-                                       std::declval<y>())>();
-#define TRY_FIRST(x)      \
-  TRY_SECOND(x, float32); \
-  TRY_SECOND(x, float64); \
-  TRY_SECOND(x, int8);    \
-  TRY_SECOND(x, int16);   \
-  TRY_SECOND(x, int32);   \
-  TRY_SECOND(x, int64);   \
-  TRY_SECOND(x, uint8);   \
-  TRY_SECOND(x, uint16);  \
-  TRY_SECOND(x, uint32);  \
-  TRY_SECOND(x, uint64);
-
-    TRY_FIRST(float32);
-    TRY_FIRST(float64);
-    TRY_FIRST(int8);
-    TRY_FIRST(int16);
-    TRY_FIRST(int32);
-    TRY_FIRST(int64);
-    TRY_FIRST(uint8);
-    TRY_FIRST(uint16);
-    TRY_FIRST(uint32);
-    TRY_FIRST(uint64);
-  }
-
-  bool compare(DataType x, DataType y) {
+  static bool compare(DataType x, DataType y) {
     // Is the first type "bigger" than the second type?
     if (is_real(x) != is_real(y)) {
       // One is real, the other is integral.
@@ -192,43 +160,7 @@ class TypePromotionMapping {
     }
   }
 
-  DataType promoted_type(DataType x, DataType y) {
-    if (compare(x, y))
-      return x;
-    else
-      return y;
-  }
-
-  DataType query(DataType x, DataType y) {
-    for (auto &inputs: mapping) {
-      auto type_x = TypeFactory::get_instance().get_primitive_type(inputs.first.first);
-      auto type_y = TypeFactory::get_instance().get_primitive_type(inputs.first.second);
-      auto x_name = data_type_name(type_x);
-      auto y_name = data_type_name(type_y);
-      auto old_name = data_type_name(TypeFactory::get_instance().get_primitive_type(inputs.second));
-      auto new_name = data_type_name(promoted_type(type_x, type_y));
-
-      if (old_name == new_name) {
-        fmt::print("{} + {} = {}\n", x_name, y_name, old_name);
-      } else {
-        fmt::print("{} + {} = {} -> {}\n", x_name, y_name, old_name, new_name);
-      }
-      // TI_ASSERT(inputs.second == inputs.first.second || inputs.second == inputs.first.first);
-    }
-    exit(0);
-
-    auto primitive =
-        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
-
-    /*
-    */
-    return TypeFactory::get_instance().get_primitive_type(primitive);
-  }
-
- private:
-  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
-      mapping;
-  static PrimitiveTypeID to_primitive_type(DataType d) {
+  static DataType to_primitive_type(DataType d) {
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();
       TI_WARN("promoted_type got a pointer input.");
@@ -242,15 +174,15 @@ class TypePromotionMapping {
     auto primitive = d->cast<PrimitiveType>();
     TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
                    d->to_string());
-    return primitive->type;
+    return primitive;
   };
-};
-// TODO(#2196): Stop using global variables.
-TypePromotionMapping type_promotion_mapping;
 }  // namespace
 
-DataType promoted_type(DataType a, DataType b) {
-  return type_promotion_mapping.query(a, b);
+DataType promoted_type(DataType x, DataType y) {
+  if (compare(to_primitive_type(x), to_primitive_type(y)))
+    return x;
+  else
+    return y;
 }
 
 TLANG_NAMESPACE_END

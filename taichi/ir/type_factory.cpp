@@ -103,6 +103,20 @@ PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
   return int_type->cast<PrimitiveType>();
 }
 
+PrimitiveType *TypeFactory::get_primitive_real_type(int bits) {
+  Type *real_type;
+  if (bits == 16) {
+    real_type = get_primitive_type(PrimitiveTypeID::f16);
+  } else if (bits == 32) {
+    real_type = get_primitive_type(PrimitiveTypeID::f32);
+  } else if (bits == 64) {
+    real_type = get_primitive_type(PrimitiveTypeID::f64);
+  } else {
+    TI_ERROR("No primitive real type has {} bits", bits);
+  }
+  return real_type->cast<PrimitiveType>();
+}
+
 DataType TypeFactory::create_vector_or_scalar_type(int width,
                                                    DataType element,
                                                    bool element_is_pointer) {
@@ -151,9 +165,63 @@ class TypePromotionMapping {
     TRY_FIRST(uint32);
     TRY_FIRST(uint64);
   }
+
+  bool compare(DataType x, DataType y) {
+    // Is the first type "bigger" than the second type?
+    if (is_real(x) != is_real(y)) {
+      // One is real, the other is integral.
+      // real > integral
+      return is_real(x);
+    } else {
+      if (is_real(x) && is_real(y)) {
+        // Both are real
+        return data_type_bits(x) > data_type_bits(y);
+      } else {
+        // Both are integral
+        auto x_bits = data_type_bits(x);
+        auto y_bits = data_type_bits(y);
+        if (x_bits != y_bits) {
+          return x_bits > y_bits;
+        } else {
+          // Same number of bits. Unsigned > signed
+          auto x_unsigned = !is_signed(x);
+          auto y_unsigned = !is_signed(y);
+          return x_unsigned > y_unsigned;
+        }
+      }
+    }
+  }
+
+  DataType promoted_type(DataType x, DataType y) {
+    if (compare(x, y))
+      return x;
+    else
+      return y;
+  }
+
   DataType query(DataType x, DataType y) {
+    for (auto &inputs: mapping) {
+      auto type_x = TypeFactory::get_instance().get_primitive_type(inputs.first.first);
+      auto type_y = TypeFactory::get_instance().get_primitive_type(inputs.first.second);
+      auto x_name = data_type_name(type_x);
+      auto y_name = data_type_name(type_y);
+      auto old_name = data_type_name(TypeFactory::get_instance().get_primitive_type(inputs.second));
+      auto new_name = data_type_name(promoted_type(type_x, type_y));
+
+      if (old_name == new_name) {
+        fmt::print("{} + {} = {}\n", x_name, y_name, old_name);
+      } else {
+        fmt::print("{} + {} = {} -> {}\n", x_name, y_name, old_name, new_name);
+      }
+      // TI_ASSERT(inputs.second == inputs.first.second || inputs.second == inputs.first.first);
+    }
+    exit(0);
+
     auto primitive =
         mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+
+    /*
+    */
     return TypeFactory::get_instance().get_primitive_type(primitive);
   }
 

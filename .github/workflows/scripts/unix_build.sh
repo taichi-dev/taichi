@@ -50,6 +50,7 @@ setup_python() {
 }
 
 build() {
+    git config --global --add safe.directory "$(pwd)"
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""

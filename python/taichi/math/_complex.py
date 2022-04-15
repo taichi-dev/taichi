@@ -70,7 +70,7 @@ def cdiv(z1, z2):
     """
     x1, y1 = z1[0], z1[1]
     x2, y2 = z2[0], z2[1]
-    return vec2(x1 * x2 + y1 * y2, -x1 * y2 + x2 * y1) / dot(z1, z2)
+    return vec2(x1 * x2 + y1 * y2, -x1 * y2 + x2 * y1) / dot(z2, z2)
 
 
 @ti.func

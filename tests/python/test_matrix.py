@@ -552,8 +552,11 @@ def test_matrix_dtype():
     foo()
 
 
-inplace_operation_types = [operator.iadd, operator.isub, operator.imul, operator.ifloordiv, operator.imod, operator.ilshift, operator.irshift,
-                                  operator.ior, operator.ixor, operator.iand]
+inplace_operation_types = [
+    operator.iadd, operator.isub, operator.imul, operator.ifloordiv,
+    operator.imod, operator.ilshift, operator.irshift, operator.ior,
+    operator.ixor, operator.iand
+]
 
 
 @test_utils.test()

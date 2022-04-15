@@ -550,3 +550,16 @@ def test_matrix_dtype():
         assert all(b == ((1, 2), (3, 4)))
 
     foo()
+
+
+inplace_operation_types = [operator.iadd, operator.isub, operator.imul, operator.ifloordiv, operator.imod, operator.ilshift, operator.irshift,
+                                  operator.ior, operator.ixor, operator.iand]
+
+
+@test_utils.test()
+def test_python_scope_inplace_operator():
+    for ops in inplace_operation_types:
+        a, b = test_matrix_arrays[:2]
+        m1, m2 = ti.Matrix(a), ti.Matrix(b)
+        m1 = ops(m1, m2)
+        assert np.allclose(m1.to_numpy(), ops(a, b))

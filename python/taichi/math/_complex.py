@@ -97,7 +97,7 @@ def csqrt(z):
     """
     result = vec2(0.)
     if any(z):
-        r = ti.sqrt(ti.sqrt(dot(z, z)))
+        r = ti.sqrt(z.norm())
         a = ti.atan2(z[1], z[0])
         result = r * vec2(ti.cos(a / 2.0), ti.sin(a / 2.0))
 

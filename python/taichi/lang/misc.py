@@ -341,7 +341,7 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/layout.
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
@@ -461,6 +461,8 @@ def init(arch=None,
 
 
 def no_activate(*args):
+    """Deactivates a SNode pointer.
+    """
     for v in args:
         get_runtime().prog.no_activate(v._snode.ptr)
 
@@ -468,7 +470,7 @@ def no_activate(*args):
 def block_local(*args):
     """Hints Taichi to cache the fields and to enable the BLS optimization.
 
-    Please visit https://docs.taichi.graphics/lang/articles/advanced/performance
+    Please visit https://docs.taichi.graphics/lang/articles/performance
     for how BLS is used.
 
     Args:
@@ -498,6 +500,29 @@ def cache_read_only(*args):
 
 
 def assume_in_range(val, base, low, high):
+    """Hints the compiler that a value is between a specified range,
+    for the compiler to perform scatchpad optimization, and return the
+    value untouched.
+
+    The assumed range is `[base + low, base + high)`.
+
+    Args:
+
+        val (Number): The input value.
+        base (Number): The base point for the range interval.
+        low (Number): The lower offset relative to `base` (included).
+        high (Number): The higher offset relative to `base` (excluded).
+
+    Returns:
+        Return the input `value` untouched.
+
+    Example::
+
+        >>> # hint the compiler that x is in range [8, 12).
+        >>> x = ti.assume_in_range(x, 10, -2, 2)
+        >>> x
+        10
+    """
     return _ti_core.expr_assume_in_range(
         Expr(val).ptr,
         Expr(base).ptr, low, high)
@@ -513,12 +538,16 @@ def loop_unique(val, covers=None):
 
 
 def _parallelize(v):
+    """Sets the number of threads to use on CPU.
+    """
     get_runtime().prog.current_ast_builder().parallelize(v)
     if v == 1:
         get_runtime().prog.current_ast_builder().strictly_serialize()
 
 
 def _serialize():
+    """Sets the number of threads to 1.
+    """
     _parallelize(1)
 
 
@@ -528,7 +557,38 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(block_dim=None, serialize=None, parallelize=None):
+def loop_config(*, block_dim=None, serialize=False, parallelize=None):
+    """Sets directives for the next loop
+
+    Args:
+        block_dim (int): The number of threads in a block on GPU
+        serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
+        parallelize (int): The number of threads to use on CPU
+
+    Examples::
+
+        @ti.kernel
+        def break_in_serial_for() -> ti.i32:
+            a = 0
+            ti.loop_config(serialize=True)
+            for i in range(100):  # This loop runs serially
+                a += i
+                if i == 10:
+                    break
+            return a
+
+        break_in_serial_for()  # returns 55
+
+        n = 128
+        val = ti.field(ti.i32, shape=n)
+        @ti.kernel
+        def fill():
+            ti.loop_config(parallelize=8, block_dim=16)
+            # If the kernel is run on the CPU backend, 8 threads will be used to run it
+            # If the kernel is run on the CUDA backend, each block will have 16 threads.
+            for i in range(n):
+                val[i] = i
+    """
     if block_dim is not None:
         _block_dim(block_dim)
 
@@ -539,6 +599,22 @@ def loop_config(block_dim=None, serialize=None, parallelize=None):
 
 
 def global_thread_idx():
+    """Returns the global thread id of this running thread,
+    only available for cpu and cuda backends.
+
+    For cpu backends this is equal to the cpu thread id,
+    For cuda backends this is equal to `block_id * block_dim + thread_id`.
+
+    Example::
+
+        >>> f = ti.field(ti.f32, shape=(16, 16))
+        >>> @ti.kernel
+        >>> def test():
+        >>>     for i in ti.grouped(f):
+        >>>         print(ti.global_thread_idx())
+        >>>
+        test()
+    """
     return impl.get_runtime().prog.current_ast_builder(
     ).insert_thread_idx_expr()
 
@@ -549,7 +625,7 @@ def mesh_patch_idx():
 
 
 def Tape(loss, clear_gradients=True):
-    """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
+    """Returns a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
     context manager would catching all of the callings of functions that
     decorated by :func:`~taichi.lang.kernel_impl.kernel` or
     :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
@@ -595,7 +671,7 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
-    """Set the gradients of all fields to zero.
+    """Sets the gradients of all fields to zero.
     """
     impl.get_runtime().materialize()
 

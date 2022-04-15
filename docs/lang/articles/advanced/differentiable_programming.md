@@ -16,7 +16,7 @@ four orders of magnitude faster than those using model-free reinforcement learni
 
 [^2]: [ChainQueen: A Real-Time Differentiable Physical Simulator for Soft Robotics](https://arxiv.org/pdf/1810.01054.pdf)
 
-Imagine that you have the following kernel:
+Suppose you have the following kernel:
 
 ```python
 x = ti.field(float, ())
@@ -28,7 +28,7 @@ def compute_y():
 ```
 
 Now if you want to get the derivative of `y` with respect to `x`:
-`dy/dx`, it's straightforward to write out the gradient kernel manually:
+`dy/dx`, it is straightforward to write out the gradient kernel manually:
 
 ```python {4-6}
 x = ti.field(dtype=ti.f32, shape=())
@@ -40,13 +40,13 @@ def compute_dy_dx():
     dy_dx[None] = ti.cos(x[None])
 ```
 
-However, as you make a change to `compute_y`, you will have to rework the gradient formula
+However, as you make a change to `compute_y`, you have to rework the gradient formula
 by hand and update `compute_dy_dx` accordingly. Apparently, when
 the kernel becomes larger and gets frequently updated, this manual workflow is
 really error-prone and hard to maintain.
 
 If you run into this situation, Taichi's handy automatic differentiation (autodiff)
-system comes to the rescue! Taichi supports gradient evaluation through
+system comes to your rescue! Taichi supports gradient evaluation through
 either `ti.Tape()` or the more flexible `kernel.grad()` syntax.
 
 ## Using `ti.Tape()`
@@ -59,7 +59,7 @@ Using `ti.Tape()` is the easiest way to obtain a kernel that computes `dy/dx`:
 2.  Use context manager `with ti.Tape(y):` to capture the kernel invocations which you want to automatically differentiate.
 3.  Now `dy/dx` value at current `x` is available at `x.grad[None]`.
 
-Here's the full code snippet elaborating the steps above:
+The following code snippet explains the steps above:
 
 ```python
 x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
@@ -76,16 +76,16 @@ print('dy/dx =', x.grad[None], ' at x =', x[None])
 ```
 ### Case study: gravity simulation
 
-A common problem in physical simulation is that it's usually easy to compute
+A common problem in physical simulation is that it is usually easy to compute
 energy but hard to compute force on every particle,
-e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220)
+for example [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220)
 and [FEM with hyperelastic energy functions](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fem128.py).
 Recall that we can differentiate
 (negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you have coded
 a kernel that computes the potential energy, you may use Taichi's autodiff
 system to obtain the derivatives and then `F_i` on each particle.
 
-Take
+Taking
 [examples/simulation/ad_gravity.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/ad_gravity.py)
 as an example:
 
@@ -146,13 +146,13 @@ while gui.running:
 
 The argument `U` to `ti.Tape(U)` must be a 0D field.
 
-To use autodiff with multiple output variables, please see the
+To use autodiff with multiple output variables, see the
 `kernel.grad()` usage below.
 :::
 
 :::note
 
-`ti.Tape(U)` will automatically set _`U[None]`_ to 0 on
+`ti.Tape(U)` automatically sets _`U[None]`_ to `0` on
 start up.
 :::
 
@@ -167,12 +167,12 @@ for examples on using autodiff-based force evaluation MPM and FEM.
 ## Using `kernel.grad()`
 
 As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
-If there're multiple output variables that you want to back-propagate
-gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`.
+If there are multiple output variables that you want to back-propagate
+gradients to inputs, call `kernel.grad()` instead of `ti.Tape()`.
 Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually
-before calling the `kernel.grad()`. The reason is that the `grad` of the output variables themselves
+before calling `kernel.grad()`. The reason is that the `grad` of the output variables themselves
 will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation.
-If using `ti.Tape()`, the program will help you do this under the hood.
+By calling `ti.Tape()`, you have the program do this under the hood.
 
 ```python {13-14}
 import taichi as ti
@@ -204,20 +204,20 @@ for i in range(N):
 ```
 
 :::tip
-It might be tedious to write out `need_grad=True` for every input in a complicated use case.
+It may be tedius to write out `need_grad=True` for every input in a complicated use case.
 Alternatively, Taichi provides an API `ti.root.lazy_grad()` that automatically places the
 gradient fields following the layout of their primal fields.
 :::
 
 :::caution
-When using `kernel.grad()`, it's recommended to always run forward kernel before backward, e.g. `kernel(); kernel.grad()`. If global fields used in the derivative calculation get mutated in the forward run, skipping
-`kernel()` breaks global data access rule #1 below and might produce incorrect gradients.
+When using `kernel.grad()`, it is recommended that you always run forward kernel before backward, for example `kernel(); kernel.grad()`. If global fields used in the derivative calculation get mutated in the forward run, skipping
+`kernel()` breaks global data access rule #1 below and may produce incorrect gradients.
 :::
 
 ## Limitations of Taichi autodiff system
 
 Unlike tools such as TensorFlow where **immutable** output buffers are
-generated, the **imperative** programming paradigm adopted in Taichi
+generated, the **imperative** programming paradigm adopted by Taichi
 allows programmers to freely modify global fields.
 
 To make automatic differentiation well-defined under this setting, the following
@@ -225,7 +225,7 @@ rules are enforced when writing differentiable programs in Taichi:
 
 ### Global Data Access Rules
 
-Currently Taichi's autodiff implementation doesn't save intermediate results of global fields which might be used in the backward pass. Therefore mutation is forbidden once you've read from a global field.
+Currently Taichi's autodiff implementation does not save intermediate results of global fields which might be used in the backward pass. Therefore mutation is forbidden once you've read from a global field.
 
 :::note Global Data Access Rule #1
 Once you read an element in a field, the element cannot be mutated anymore.
@@ -323,7 +323,7 @@ def differentiable_task():
         ...
 ```
 
-Taichi programs that violate this rule will result in an error.
+Violation of this rule results in an error.
 
 :::danger DANGER
 Violation of rules above might result in incorrect gradient result without a proper error.
@@ -332,9 +332,9 @@ to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assigne
 if you see any silent wrong results.
 :::
 
-### Write differentiable code inside Taichi kernel
+### Write differentiable code inside a Taichi kernel
 
-Taichi compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. Therefore, only the code written in Taichi scope is auto-differentiated. Although you can modify the `grad` of a field in python scope manually, the code is not auto-differentiated.
+Taichi's compiler only captures the code in the Taichi scope when performing the source code transformation for autodiff. Therefore, only the code written in Taichi scope is auto-differentiated. Although you can modify the `grad` of a field in python scope manually, the code is not auto-differentiated.
 
 Example:
 
@@ -385,7 +385,7 @@ Taichi provides two decorators `ti.ad.grad_replaced` and `ti.ad.grad_for` to ove
 automatic differentiation behavior.
 
 
-Here's a simple example to use customized gradient function in autodiff:
+The following is a simple example to use customized gradient function in autodiff:
 
 ```
 import taichi as ti

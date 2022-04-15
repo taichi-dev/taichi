@@ -9,8 +9,8 @@ namespace vulkan {
 
 using namespace taichi::lang;
 
-Mesh::Mesh(AppContext *app_context) {
-  init_mesh(app_context, 3, 3);
+Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
+  init_mesh(app_context, /*vertices_count=*/3, /*indices_count*/ 3, vbo_attrs);
 }
 
 void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
@@ -44,7 +44,8 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
 
 void Mesh::init_mesh(AppContext *app_context,
                      int vertices_count,
-                     int indices_count) {
+                     int indices_count,
+                     VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       indices_count,
@@ -55,6 +56,7 @@ void Mesh::init_mesh(AppContext *app_context,
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",
       app_context->config.package_path + "/shaders/Mesh_vk_frag.spv",
       TopologyType::Triangles,
+      vbo_attrs,
   };
 
   Renderable::init(config, app_context);

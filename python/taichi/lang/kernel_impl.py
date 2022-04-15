@@ -11,14 +11,17 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
+from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
-                                   TaichiRuntimeTypeError, TaichiSyntaxError)
+                                   TaichiRuntimeTypeError, TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 from taichi.lang.expr import Expr
+from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_pytorch, to_taichi_type
-from taichi.types import (any_arr, primitive_types, sparse_matrix_builder,
+from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
 from taichi import _logging
@@ -113,7 +116,7 @@ def _get_tree_and_ctx(self,
     for i, arg in enumerate(func_body.args.args):
         anno = arg.annotation
         if isinstance(anno, ast.Name):
-            global_vars[anno.id] = self.argument_annotations[i]
+            global_vars[anno.id] = self.arguments[i].annotation
 
     if isinstance(func_body.returns, ast.Name):
         global_vars[func_body.returns.id] = self.return_type
@@ -121,7 +124,7 @@ def _get_tree_and_ctx(self,
     if is_kernel or is_real_function:
         # inject template parameters into globals
         for i in self.template_slot_locations:
-            template_var_name = self.argument_names[i]
+            template_var_name = self.arguments[i].name
             global_vars[template_var_name] = args[i]
 
     return tree, ASTTransformerContext(excluded_parameters=excluded_parameters,
@@ -152,16 +155,15 @@ class Func:
         self.classfunc = _classfunc
         self.pyfunc = _pyfunc
         self.is_real_function = is_real_function
-        self.argument_annotations = []
-        self.argument_names = []
+        self.arguments = []
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i, anno in enumerate(self.argument_annotations):
-            if isinstance(anno, template):
+        for i, arg in enumerate(self.arguments):
+            if isinstance(arg.annotation, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
-            self.argument_annotations, self.template_slot_locations)
+            self.arguments, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
@@ -191,7 +193,7 @@ class Func:
             is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
         if not self.is_real_function:
-            if self.return_type and not ctx.returned:
+            if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                 raise TaichiSyntaxError(
                     "Function has a return type but does not have a return statement"
                 )
@@ -201,7 +203,8 @@ class Func:
         # Skip the template args, e.g., |self|
         assert self.is_real_function
         non_template_args = []
-        for i, anno in enumerate(self.argument_annotations):
+        for i, kernel_arg in enumerate(self.arguments):
+            anno = kernel_arg.annotation
             if not isinstance(anno, template):
                 if id(anno) in primitive_types.type_ids:
                     non_template_args.append(ops.cast(args[i], anno))
@@ -269,14 +272,13 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.argument_annotations.append(annotation)
-            self.argument_names.append(param.name)
+            self.arguments.append(KernelArgument(annotation, param.name))
 
 
 class TaichiCallableTemplateMapper:
-    def __init__(self, annotations, template_slot_locations):
-        self.annotations = annotations
-        self.num_args = len(annotations)
+    def __init__(self, arguments, template_slot_locations):
+        self.arguments = arguments
+        self.num_args = len(arguments)
         self.template_slot_locations = template_slot_locations
         self.mapping = {}
 
@@ -294,7 +296,7 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
-        if isinstance(anno, any_arr):
+        if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno._check_element_dim(arg, 0)
                 anno._check_element_shape(())
@@ -319,7 +321,7 @@ class TaichiCallableTemplateMapper:
             shape = tuple(arg.shape)
             if len(shape) < element_dim:
                 raise ValueError(
-                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, "
+                    f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
                     f"but the argument has only {len(shape)} dimensions")
             element_shape = (
             ) if element_dim == 0 else shape[:
@@ -333,8 +335,8 @@ class TaichiCallableTemplateMapper:
 
     def extract(self, args):
         extracted = []
-        for arg, anno in zip(args, self.annotations):
-            extracted.append(self.extract_arg(arg, anno))
+        for arg, kernel_arg in zip(args, self.arguments):
+            extracted.append(self.extract_arg(arg, kernel_arg.annotation))
         return tuple(extracted)
 
     def lookup(self, args):
@@ -373,17 +375,16 @@ class Kernel:
         Kernel.counter += 1
         self.is_grad = is_grad
         self.grad = None
-        self.argument_annotations = []
-        self.argument_names = []
+        self.arguments = []
         self.return_type = None
         self.classkernel = _classkernel
         self.extract_arguments()
         self.template_slot_locations = []
-        for i, anno in enumerate(self.argument_annotations):
-            if isinstance(anno, template):
+        for i, arg in enumerate(self.arguments):
+            if isinstance(arg.annotation, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
-            self.argument_annotations, self.template_slot_locations)
+            self.arguments, self.template_slot_locations)
         impl.get_runtime().kernels.append(self)
         self.reset()
         self.kernel_cpp = None
@@ -430,7 +431,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, any_arr)):
+                if isinstance(annotation,
+                              (template, ndarray_type.NdarrayType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -442,8 +444,7 @@ class Kernel:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.argument_annotations.append(annotation)
-            self.argument_names.append(param.name)
+            self.arguments.append(KernelArgument(annotation, param.name))
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
@@ -481,7 +482,7 @@ class Kernel:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
                 if not ctx.is_real_function:
-                    if self.return_type and not ctx.returned:
+                    if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
                         raise TaichiSyntaxError(
                             "Kernel has a return type but does not have a return statement"
                         )
@@ -541,8 +542,8 @@ class Kernel:
         # The actual function body
         def func__(*args):
             assert len(args) == len(
-                self.argument_annotations
-            ), f'{len(self.argument_annotations)} arguments needed but {len(args)} provided'
+                self.arguments
+            ), f'{len(self.arguments)} arguments needed but {len(args)} provided'
 
             tmps = []
             callbacks = []
@@ -552,30 +553,33 @@ class Kernel:
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
             for i, v in enumerate(args):
-                needed = self.argument_annotations[i]
+                needed = self.arguments[i].annotation
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, int):
-                        raise TaichiRuntimeTypeError(i, needed.to_string(),
-                                                     provided)
+                        raise TaichiRuntimeTypeError.get(
+                            i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
-                elif isinstance(needed, any_arr) and isinstance(
-                        v, taichi.lang._ndarray.Ndarray):
+                elif isinstance(needed,
+                                ndarray_type.NdarrayType) and isinstance(
+                                    v, taichi.lang._ndarray.Ndarray):
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
-                elif isinstance(needed, any_arr) and (self.match_ext_arr(v)):
+                elif isinstance(
+                        needed,
+                        ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -599,7 +603,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], (int, float)):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_float(
@@ -609,7 +613,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 if not isinstance(v[a, b], int):
-                                    raise TaichiRuntimeTypeError(
+                                    raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(),
                                         type(v[a, b]))
                                 launch_ctx.set_arg_int(actual_argument_slot,
@@ -645,7 +649,11 @@ class Kernel:
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
-            t_kernel(launch_ctx)
+            try:
+                t_kernel(launch_ctx)
+            except Exception as e:
+                e = handle_exception_from_cpp(e)
+                raise e from None
 
             ret = None
             ret_dt = self.return_type
@@ -770,7 +778,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         def wrapped(*args, **kwargs):
             try:
                 return primal(*args, **kwargs)
-            except TaichiCompilationError as e:
+            except (TaichiCompilationError, TaichiRuntimeError) as e:
                 raise type(e)('\n' + str(e)) from None
 
         wrapped.grad = adjoint
@@ -792,7 +800,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/lang/articles/basic/syntax#kernels.
+    See also https://docs.taichi.graphics/lang/articles/syntax#kernel.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -841,7 +849,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/lang/articles/advanced/odop
+    See also https://docs.taichi.graphics/lang/articles/odop
 
     Example::
 

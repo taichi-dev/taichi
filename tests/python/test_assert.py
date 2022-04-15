@@ -15,9 +15,9 @@ def test_assert_minimal():
     def func2():
         assert False
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func2()
 
 
@@ -28,7 +28,7 @@ def test_assert_basic():
         x = 20
         assert 10 <= x < 20
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AssertionError):
         func()
 
 
@@ -39,7 +39,7 @@ def test_assert_message():
         x = 20
         assert 10 <= x < 20, 'Foo bar'
 
-    with pytest.raises(RuntimeError, match='Foo bar'):
+    with pytest.raises(AssertionError, match='Foo bar'):
         func()
 
 
@@ -58,11 +58,38 @@ def test_assert_message_formatted():
         y = 0.5
         assert y < 0, 'y = %f' % y
 
-    with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
+    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
         assert_formatted()
     # TODO: note that we are not fully polished to be able to recover from
     # assertion failures...
-    with pytest.raises(RuntimeError, match=r'y = 0.5'):
+    with pytest.raises(AssertionError, match=r'y = 0.5'):
+        assert_float()
+
+    # success case
+    x[10] = 0
+    assert_formatted()
+
+
+@test_utils.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
+def test_assert_message_formatted_fstring():
+    x = ti.field(dtype=int, shape=16)
+    x[10] = 42
+
+    @ti.kernel
+    def assert_formatted():
+        for i in x:
+            assert x[i] == 0, f'x[{i}] expect={0} got={x[i]}'
+
+    @ti.kernel
+    def assert_float():
+        y = 0.5
+        assert y < 0, f'y = {y}'
+
+    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
+        assert_formatted()
+    # TODO: note that we are not fully polished to be able to recover from
+    # assertion failures...
+    with pytest.raises(AssertionError, match=r'y = 0.5'):
         assert_float()
 
     # success case
@@ -76,16 +103,6 @@ def test_assert_ok():
     def func():
         x = 20
         assert 10 <= x <= 20
-
-    func()
-
-
-@test_utils.test(arch=get_host_arch_list())
-def test_static_assert_is_static():
-    @ti.kernel
-    def func():
-        x = 0
-        ti.static_assert(x)  # Expr is not None
 
     func()
 
@@ -122,3 +139,15 @@ def test_static_assert_data_type_ok():
         ti.static_assert(x.dtype == ti.f32)
 
     func()
+
+
+@test_utils.test()
+def test_static_assert_nonstatic_condition():
+    @ti.kernel
+    def foo():
+        value = False
+        ti.static_assert(value, "Oh, no!")
+
+    with pytest.raises(ti.TaichiTypeError,
+                       match="Static assert with non-static condition"):
+        foo()

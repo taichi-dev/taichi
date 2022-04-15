@@ -102,40 +102,37 @@ We highly recommend that you complete code style checks and integration tests on
 
 ### Enforce code style
 
-1. Ensure that you have installed `clang-format-10`.
-2. Ensure that you have installed `yapf v0.31.0`.
-3. Re-format your code style:
+Taichi enfoces code style via [pre-commit](https://pre-commit.com/) hooks, which includes the following checks:
+
+1. C++ codes are formatted by `clang-format-10`.
+2. Python codes are formatted by `yapf v0.31.0` based on PEP 8 rules.
+3. Python codes are statically checked by [`pylint`](https://pylint.org/).
+
+You will need to install `pre-commit` first:
 
 ```
-python misc/code_format.py
-```
-<details>
-<summary><font color="#006284"> How to install clang-format-10 on M1 Mac </font></summary>
-
-1. Download and extract [Clang + LLVM 10.0.0 pre-built binary for macOS](https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-apple-darwin.tar.xz)
-
-2. Copy the `clang-format` binary to `~/.local/bin` and add `~/.local/bin` to `PATH`
-
-```shell
-mkdir -p ~/.local/bin
-cp clang+llvm-10.0.0-x86_64-apple-darwin/bin/clang-format ~/.local/bin/clang-format-10
-echo "export PATH=$HOME/.local/bin:\$PATH" >> ~/.zshrc
-source ~/.zshrc
+pip install pre-commit
 ```
 
-Please refer to [this](./dev_install#llvm-as-cannot-be-opened-on-macos) if you get an error message like `clang-format-10 can’t be opened because Apple cannot check it for malicious software on macOS`.
+and run the code checkers:
 
-</details>
+```
+pre-commit run -a
+```
 
+With this command, `yapf` will format your Python codes automatically.
+You can install it as a pre-commit hook so that it is run before you commit the changes to git:
+
+```
+pre-commit install
+```
 <details>
 <summary><font color="#006284"> What if I didn't format my code style locally? </font></summary>
 
-1. Have your reviewer leave a comment `/format` in your PR to enable GitHub Actions. See [#2481](https://github.com/taichi-dev/taichi/pull/2481).
-  *[Taichi Gardener](https://github.com/taichi-gardener)* *automatically pushes a commit to your branch to format your code.*
-
-2. If you wish to submit more changes after someone leaves the `/format` comment, ensure that your branch is up to date with your remote counterpart.
+No problem, the CI bot will run the code checkers and format your codes automatically when you submit a PR.
 
 </details>
+
 
 <!-- Todo: Make this a reusable fragment. -->
 

@@ -12,7 +12,8 @@ on:
 
 env:
   PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-  NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+  NIGHT_PWD: ${{ secrets.TAICHI_PYPI_PWD }}
+  NIGHT_USERNAME: ${{ secrets.TAICHI_PYPI_USERNAME }}
   METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
@@ -47,16 +48,17 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [ !-z "$RELEASE_VERSION" ]; then
-            # For production release, we run on four python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"}]}"'
+          if [ -n "$RELEASE_VERSION" ]; then
+            # For production release, we run on five python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
 
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"}]}"'
+            # M1 only supports py38, py39, and py310(conda), so change matrix.
+            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
           else
-            # For nightly release, we only run on python 3.8
-            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
+            # For nightly release, we run on three python versions.
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.6","conda_python":"py36"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
-            # M1 only supports py38 and py39(conda), so change matrix.
+            # M1 only supports py38 and py310(conda), so change matrix.
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.10"}]}"'
           fi
 

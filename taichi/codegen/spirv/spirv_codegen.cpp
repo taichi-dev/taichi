@@ -29,7 +29,7 @@ constexpr char kRetBufferName[] = "ret_buffer";
 constexpr char kListgenBufferName[] = "listgen_buffer";
 constexpr char kExtArrBufferName[] = "ext_arr_buffer";
 
-constexpr int kMaxNumThreadsGridStrideLoop = 65536;
+constexpr int kMaxNumThreadsGridStrideLoop = 65536 * 2;
 
 using BufferType = TaskAttributes::BufferType;
 using BufferInfo = TaskAttributes::BufferInfo;
@@ -50,7 +50,7 @@ std::string buffer_instance_name(BufferInfo b) {
     case BufferType::ListGen:
       return kListgenBufferName;
     case BufferType::ExtArr:
-      return kExtArrBufferName;
+      return std::string(kExtArrBufferName) + "_" + std::to_string(b.root_id);
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -475,7 +475,6 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 
@@ -485,7 +484,6 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     auto val = load_buffer(stmt->src, dt);
 
@@ -495,14 +493,13 @@ class TaskCodegen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto &arg_attribs = ctx_attribs_->args()[arg_id];
-    const auto offset_in_mem = arg_attribs.offset_in_mem;
     if (stmt->is_ptr) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      const auto dt = arg_attribs.dt;
+      const auto dt = PrimitiveType::get(arg_attribs.dtype);
       const auto val_type = ir_->get_primitive_type(dt);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
@@ -915,6 +912,119 @@ class TaskCodegen : public IRVisitor {
         ir_->cast(ir_->get_primitive_type(tri->element_type()),
                   ir_->select(ir_->cast(ir_->bool_type(), op1), op2, op3));
     ir_->register_value(tri->raw_name(), tri_val);
+  }
+
+  inline bool ends_with(std::string const &value, std::string const &ending) {
+    if (ending.size() > value.size())
+      return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+  }
+
+  void visit(InternalFuncStmt *stmt) override {
+    spirv::Value val;
+
+    const std::unordered_set<std::string> reduction_ops{
+        "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
+        "subgroupAnd", "subgroupOr",  "subgroupXor"};
+
+    const std::unordered_set<std::string> inclusive_scan_ops{
+        "subgroupInclusiveAdd", "subgroupInclusiveMul", "subgroupInclusiveMin",
+        "subgroupInclusiveMax", "subgroupInclusiveAnd", "subgroupInclusiveOr",
+        "subgroupInclusiveXor"};
+
+    if (stmt->func_name == "subgroupElect") {
+      val = ir_->make_value(
+          spv::OpGroupNonUniformElect, ir_->bool_type(),
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
+      val = ir_->cast(ir_->i32_type(), val);
+    } else if (stmt->func_name == "subgroupBarrier") {
+      ir_->make_inst(
+          spv::OpControlBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->const_i32_zero_);
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "subgroupMemoryBarrier") {
+      ir_->make_inst(
+          spv::OpMemoryBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          ir_->const_i32_zero_);
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "subgroupSize") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_size());
+    } else if (stmt->func_name == "subgroupInvocationId") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_subgroup_invocation_id());
+    } else if (stmt->func_name == "subgroupBroadcast") {
+      auto value = ir_->query_value(stmt->args[0]->raw_name());
+      auto index = ir_->query_value(stmt->args[1]->raw_name());
+      val = ir_->make_value(
+          spv::OpGroupNonUniformBroadcast, value.stype,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup), value,
+          index);
+    } else if (reduction_ops.find(stmt->func_name) != reduction_ops.end() ||
+               inclusive_scan_ops.find(stmt->func_name) !=
+                   inclusive_scan_ops.end()) {
+      auto arg = ir_->query_value(stmt->args[0]->raw_name());
+      auto stype = ir_->get_primitive_type(stmt->args[0]->ret_type);
+      spv::Op spv_op;
+
+      if (ends_with(stmt->func_name, "Add")) {
+        if (is_integral(stmt->args[0]->ret_type)) {
+          spv_op = spv::OpGroupNonUniformIAdd;
+        } else {
+          spv_op = spv::OpGroupNonUniformFAdd;
+        }
+      } else if (ends_with(stmt->func_name, "Mul")) {
+        if (is_integral(stmt->args[0]->ret_type)) {
+          spv_op = spv::OpGroupNonUniformIMul;
+        } else {
+          spv_op = spv::OpGroupNonUniformFMul;
+        }
+      } else if (ends_with(stmt->func_name, "Min")) {
+        if (is_integral(stmt->args[0]->ret_type)) {
+          if (is_signed(stmt->args[0]->ret_type)) {
+            spv_op = spv::OpGroupNonUniformSMin;
+          } else {
+            spv_op = spv::OpGroupNonUniformUMin;
+          }
+        } else {
+          spv_op = spv::OpGroupNonUniformFMin;
+        }
+      } else if (ends_with(stmt->func_name, "Max")) {
+        if (is_integral(stmt->args[0]->ret_type)) {
+          if (is_signed(stmt->args[0]->ret_type)) {
+            spv_op = spv::OpGroupNonUniformSMax;
+          } else {
+            spv_op = spv::OpGroupNonUniformUMax;
+          }
+        } else {
+          spv_op = spv::OpGroupNonUniformFMax;
+        }
+      } else if (ends_with(stmt->func_name, "And")) {
+        spv_op = spv::OpGroupNonUniformBitwiseAnd;
+      } else if (ends_with(stmt->func_name, "Or")) {
+        spv_op = spv::OpGroupNonUniformBitwiseOr;
+      } else if (ends_with(stmt->func_name, "Xor")) {
+        spv_op = spv::OpGroupNonUniformBitwiseXor;
+      } else {
+        TI_ERROR("Unsupported operation: {}", stmt->func_name);
+      }
+
+      spv::GroupOperation group_op;
+
+      if (reduction_ops.find(stmt->func_name) != reduction_ops.end()) {
+        group_op = spv::GroupOperationReduce;
+      } else if (inclusive_scan_ops.find(stmt->func_name) !=
+                 inclusive_scan_ops.end()) {
+        group_op = spv::GroupOperationInclusiveScan;
+      }
+
+      val = ir_->make_value(
+          spv_op, stype,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
+          group_op, arg);
+    }
+    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -1628,9 +1738,6 @@ class TaskCodegen : public IRVisitor {
     // The computation for a single work is wrapped inside a function, so that
     // we can do grid-strided loop.
     ir_->start_function(kernel_function_);
-    const spirv::Label func_label = ir_->current_label();
-
-    auto snode = stmt->snode;
 
     auto listgen_buffer =
         get_buffer_value(BufferType::ListGen, PrimitiveType::u32);
@@ -1806,9 +1913,9 @@ class TaskCodegen : public IRVisitor {
                                         "arg_ptr" + std::to_string(arg.index),
                                         arg.offset_in_mem);
       } else {
-        struct_components_.emplace_back(ir_->get_primitive_type(arg.dt),
-                                        "arg" + std::to_string(arg.index),
-                                        arg.offset_in_mem);
+        struct_components_.emplace_back(
+            ir_->get_primitive_type(PrimitiveType::get(arg.dtype)),
+            "arg" + std::to_string(arg.index), arg.offset_in_mem);
       }
     }
     // A compromise for use in constants buffer
@@ -1833,7 +1940,8 @@ class TaskCodegen : public IRVisitor {
     // Now we only have one ret
     TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
-      if (auto tensor_type = ret.dt->cast<TensorType>()) {
+      if (auto tensor_type =
+              PrimitiveType::get(ret.dtype)->cast<TensorType>()) {
         struct_components_.emplace_back(
             ir_->get_array_type(
                 ir_->get_primitive_type(tensor_type->get_element_type()),
@@ -1841,7 +1949,8 @@ class TaskCodegen : public IRVisitor {
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
         struct_components_.emplace_back(
-            ir_->get_array_type(ir_->get_primitive_type(ret.dt), 1),
+            ir_->get_array_type(
+                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 1),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       }
     }

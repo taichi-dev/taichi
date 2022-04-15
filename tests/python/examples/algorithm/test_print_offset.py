@@ -14,9 +14,9 @@ def test_print_offset():
 
 def video_print_offset(result_dir):
     from taichi.examples.algorithm.print_offset import a, fill, m, n
-    video_manager = ti.VideoManager(output_dir=result_dir,
-                                    framerate=24,
-                                    automatic_build=False)
+    video_manager = ti.tools.VideoManager(output_dir=result_dir,
+                                          framerate=24,
+                                          automatic_build=False)
 
     fill()
 

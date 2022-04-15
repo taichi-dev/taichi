@@ -27,7 +27,7 @@ namespace vulkan {
 
 class Particles final : public Renderable {
  public:
-  Particles(AppContext *app_context);
+  Particles(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const ParticlesInfo &info, const Scene &scene);
 
@@ -42,7 +42,9 @@ class Particles final : public Renderable {
     float tan_half_fov;
   };
 
-  void init_particles(AppContext *app_context, int vertices_count);
+  void init_particles(AppContext *app_context,
+                      int vertices_count,
+                      VertexAttributes vbo_attrs);
 
   void update_ubo(glm::vec3 color,
                   bool use_per_vertex_color,

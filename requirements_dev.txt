@@ -6,7 +6,6 @@ pybind11
 GitPython
 yapf==0.31.0
 distro
-astor
 sourceinspect
 isort
 pylint
@@ -14,3 +13,4 @@ requests==2.26
 twine
 wheel
 astunparse
+pre-commit

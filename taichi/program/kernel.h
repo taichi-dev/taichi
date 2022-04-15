@@ -117,14 +117,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return task_counter_++;
   }
 
-  void set_key(const std::string &key) {
-    this->kernel_key_ = key;
-  }
-
-  const std::string &get_key() const {
-    return this->kernel_key_;
-  }
-
   void set_from_offline_cache() {
     this->from_offline_cache_ = true;
   }

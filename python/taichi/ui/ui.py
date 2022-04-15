@@ -10,8 +10,22 @@ from .window import Window  # pylint: disable=unused-import
 
 
 def make_camera():
+    """Return an instance of :class:`~taichi.ui.Camera`. This is the
+    recommended way to create a camera in ggui.
+
+    You should also mannually set the camera parameters like `camera.position`,
+    `camera.lookat`, `camera.up`, etc. The default settings may not work for
+    your scene.
+
+    Example::
+
+        >>> camera = ti.ui.make_camera()
+    """
     check_ggui_availability()
     return Camera(_ti_core.PyCamera())
 
 
+# ----------------------
 ProjectionMode = _ti_core.ProjectionMode if _ti_core.GGUI_AVAILABLE else None
+"""Camera projection mode, 0 for perspective and 1 for orthogonal.
+"""

@@ -16,7 +16,7 @@ python3 -m pip install taichi
 ```
 
 :::note
-Currently, Taichi only supports Python 3.6/3.7/3.8/3.9 (64-bit).
+Currently, Taichi only supports Python 3.6/3.7/3.8/3.9/3.10 (64-bit).
 :::
 
 import Tabs from '@theme/Tabs';
@@ -83,10 +83,12 @@ def paint(t: float):
 
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-for i in range(1000000):
+i = 0
+while gui.running:
     paint(i * 0.03)
     gui.set_image(pixels)
     gui.show()
+    i = i + 1
 ```
 
 Let's dive into this simple Taichi program.
@@ -276,9 +278,11 @@ It is the loop **at the outermost scope** that gets parallelized, not
 the outermost loop.
 
 ```python
+x = [1, 2, 3]
+
 @ti.kernel
 def foo():
-    for i in x:
+    for i in x: # Parallelized :-)
         ...
 
 @ti.kernel
@@ -318,7 +322,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a cpu-based [GUI system](../gui/gui.md) for users to render
+Taichi provides a cpu-based [GUI system](../gui/gui_system.md) for users to render
 their results on the screen.
 
 ```python

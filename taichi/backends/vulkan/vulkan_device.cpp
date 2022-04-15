@@ -356,23 +356,27 @@ void VulkanPipeline::create_graphics_pipeline(
       graphics_pipeline_template_->input_assembly;
   input_assembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  if (raster_params.prim_topology == TopologyType::Triangles) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  } else if (raster_params.prim_topology == TopologyType::Lines) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-  } else if (raster_params.prim_topology == TopologyType::Points) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-  } else {
-    throw std::runtime_error("invalid topology");
-  }
+  static const std::unordered_map<TopologyType, VkPrimitiveTopology>
+      topo_types = {
+          {TopologyType::Triangles, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
+          {TopologyType::Lines, VK_PRIMITIVE_TOPOLOGY_LINE_LIST},
+          {TopologyType::Points, VK_PRIMITIVE_TOPOLOGY_POINT_LIST},
+      };
+  input_assembly.topology = topo_types.at(raster_params.prim_topology);
   input_assembly.primitiveRestartEnable = VK_FALSE;
+
+  static const std::unordered_map<PolygonMode, VkPolygonMode> polygon_modes = {
+      {PolygonMode::Fill, VK_POLYGON_MODE_FILL},
+      {PolygonMode::Line, VK_POLYGON_MODE_LINE},
+      {PolygonMode::Point, VK_POLYGON_MODE_POINT},
+  };
 
   VkPipelineRasterizationStateCreateInfo &rasterizer =
       graphics_pipeline_template_->rasterizer;
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthClampEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterizer.polygonMode = polygon_modes.at(raster_params.polygon_mode);
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = 0;
   if (raster_params.front_face_cull) {
@@ -2083,7 +2087,7 @@ void VulkanSurface::create_swap_chain() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
@@ -2193,7 +2197,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif

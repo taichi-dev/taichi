@@ -11,20 +11,5 @@ std::string Expression::get_attribute(const std::string &key) const {
   }
 }
 
-void ExprGroup::serialize(std::ostream &ss) const {
-  for (int i = 0; i < (int)exprs.size(); i++) {
-    exprs[i].serialize(ss);
-    if (i + 1 < (int)exprs.size()) {
-      ss << ", ";
-    }
-  }
-}
-
-std::string ExprGroup::serialize() const {
-  std::stringstream ss;
-  serialize(ss);
-  return ss.str();
-}
-
 }  // namespace lang
 }  // namespace taichi

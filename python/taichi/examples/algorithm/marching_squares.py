@@ -99,7 +99,7 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     touch(*gui.get_cursor_pos(), 0.05)
     n_edges = march(level)
     edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
-    gui.set_image(ti.imresize(pixels, *gui.res) / level)
+    gui.set_image(ti.tools.imresize(pixels, *gui.res) / level)
     gui.lines(edge_coords_np[:, 0],
               edge_coords_np[:, 1],
               color=0xff66cc,

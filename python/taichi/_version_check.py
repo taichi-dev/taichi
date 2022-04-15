@@ -19,7 +19,7 @@ def check_version(cur_uuid):
 
     system = platform.system()
     if system == 'Linux':
-        payload['platform'] = 'manylinux1_x86_64'
+        payload['platform'] = 'manylinux_2_27_x86_64'
     elif system == 'Windows':
         payload['platform'] = 'win_amd64'
     elif system == 'Darwin':
@@ -30,17 +30,8 @@ def check_version(cur_uuid):
         else:
             payload['platform'] = 'macosx_11_0_arm64'
 
-    python_version = platform.python_version()
-    if python_version.startswith('3.6.'):
-        payload['python'] = 'cp36'
-    elif python_version.startswith('3.7.'):
-        payload['python'] = 'cp37'
-    elif python_version.startswith('3.8.'):
-        payload['python'] = 'cp38'
-    elif python_version.startswith('3.9.'):
-        payload['python'] = 'cp39'
-    elif python_version.startswith('3.10.'):
-        payload['python'] = 'cp310'
+    python_version = platform.python_version().split('.')
+    payload['python'] = 'cp' + python_version[0] + python_version[1]
 
     payload['uuid'] = cur_uuid
     if os.getenv('TI_CI') == '1':
@@ -91,6 +82,8 @@ def try_check_version():
                                    cur_date)
         else:
             cur_uuid = str(uuid.uuid4())
+            write_version_info({'status': 0}, cur_uuid, version_info_path,
+                               cur_date)
             response = check_version(cur_uuid)
             write_version_info(response, cur_uuid, version_info_path, cur_date)
     # Wildcard exception to catch potential file writing errors.

@@ -82,6 +82,11 @@ nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
 struct TI_NSString;
 struct TI_NSArray;
 
+struct TI_NSRange {
+  size_t location{0};
+  size_t length{0};
+};
+
 // |str| must exist during the entire lifetime of the returned object, as it
 // does not own the underlying memory. Think of it as std::string_view.
 nsobj_unique_ptr<TI_NSString> wrap_string_as_ns_string(const std::string &str);

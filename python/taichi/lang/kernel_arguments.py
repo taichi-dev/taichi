@@ -9,6 +9,12 @@ from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64, RefType
 
 
+class KernelArgument:
+    def __init__(self, _annotation, _name):
+        self.annotation = _annotation
+        self.name = _name
+
+
 class SparseMatrixEntry:
     def __init__(self, ptr, i, j, dtype):
         self.ptr = ptr
@@ -62,7 +68,7 @@ def decl_sparse_matrix(dtype):
                              value_type)
 
 
-def decl_any_arr_arg(dtype, dim, element_shape, layout):
+def decl_ndarray_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
     arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, dim, element_shape)

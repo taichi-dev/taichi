@@ -177,9 +177,11 @@ def cexp(z):
 
 @ti.func
 def clog(z):
-    """Returns the complex logarithm of `z`.
+    """Returns the complex logarithm of `z`, so that if :math:`e^w = z`,
+    then :math:`log(z) = w`.
 
-    `z` is a 2d vector treated as a complex number.
+    `z` is a 2d vector treated as a complex number. The argument of :math:`w`
+    lies in the range (-pi, pi].
 
     Args:
         z (:class:`~taichi.math.vec2`): The input.

@@ -75,6 +75,17 @@ def test_kernel_keyword_args_missing():
 
 
 @test_utils.test(debug=True)
+def test_kernel_keyword_args_not_found():
+    @ti.kernel
+    def foo(a: ti.i32, b: ti.i32):
+        assert a == 1
+        assert b == 2
+
+    with pytest.raises(ti.TaichiSyntaxError, match="Unexpected argument 'c'"):
+        foo(1, 2, c=2)
+
+
+@test_utils.test(debug=True)
 def test_kernel_too_many():
     @ti.kernel
     def foo(a: ti.i32, b: ti.i32):
@@ -121,6 +132,22 @@ def test_function_keyword_args_missing():
 
     with pytest.raises(ti.TaichiSyntaxError, match="Parameter 'b' missing"):
         missing()
+
+
+@test_utils.test(debug=True)
+def test_function_keyword_args_not_found():
+    @ti.func
+    def foo(a, b, c=3):
+        assert a == 1
+        assert b == 2
+        assert c == 3
+
+    @ti.kernel
+    def not_found():
+        foo(1, 2, 3, d=3)
+
+    with pytest.raises(ti.TaichiSyntaxError, match="Unexpected argument 'd'"):
+        not_found()
 
 
 @test_utils.test(debug=True)

@@ -151,13 +151,17 @@ def _process_args(self, args, kwargs):
         ret[i] = arg
 
     for key, value in kwargs.items():
+        found = False
         for i, arg in enumerate(self.arguments):
             if key == arg.name:
                 if i < len_args:
                     raise TaichiSyntaxError(
                         f"Multiple values for argument '{key}'.")
                 ret[i] = value
+                found = True
                 break
+        if not found:
+            raise TaichiSyntaxError(f"Unexpected argument '{key}'")
 
     for i, arg in enumerate(ret):
         if arg is inspect.Parameter.empty:

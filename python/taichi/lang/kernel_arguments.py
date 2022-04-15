@@ -9,6 +9,12 @@ from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64
 
 
+class KernelArgument:
+    def __init__(self, _annotation, _name):
+        self.annotation = _annotation
+        self.name = _name
+
+
 class SparseMatrixEntry:
     def __init__(self, ptr, i, j, dtype):
         self.ptr = ptr

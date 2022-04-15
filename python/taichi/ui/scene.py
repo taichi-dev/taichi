@@ -73,13 +73,19 @@ def gen_normals(vertices, indices):
 
 
 class Scene:
-    """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
+    """The 3D scene class, which can contain meshes and particles,
+    and can be rendered on a canvas.
     """
     def __init__(self):
         check_ggui_availability()
         self.scene = _ti_core.PyScene()
 
     def set_camera(self, camera):
+        """Set the camera for this scene.
+
+        Args:
+            camera (:class:`~taichi.ui.Camera`): A camera instance.
+        """
         self.scene.set_camera(camera.ptr)
 
     def mesh(self,
@@ -92,12 +98,20 @@ class Scene:
         """Declare a mesh inside the scene.
 
         Args:
-            vertices: a taichi 3D Vector field, where each element indicate the 3D location of a vertex.
-            indices: a taichi int field of shape (3 * #triangles), which indicate the vertex indices of the triangles. If this is None, then it is assumed that the vertices are already arranged in triangles order.
-            normals: a taichi 3D Vector field, where each element indicate the normal of a vertex. If this is none, normals will be automatically inferred from vertex positions.
-            color: a global color of the mesh as 3 floats representing RGB values. If `per_vertex_color` is provided, this is ignored.
-            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each element indicate the RGB color of a vertex.
-            two_sided (bool): whether or not the triangles should be able to be seen from both sides.
+            vertices: a taichi 3D Vector field, where each element indicate the
+                3D location of a vertex.
+            indices: a taichi int field of shape (3 * #triangles), which indicate
+                the vertex indices of the triangles. If this is None, then it is
+                assumed that the vertices are already arranged in triangles order.
+            normals: a taichi 3D Vector field, where each element indicate the
+                normal of a vertex. If this is none, normals will be automatically
+                inferred from vertex positions.
+            color: a global color of the mesh as 3 floats representing RGB values.
+                If `per_vertex_color` is provided, this is ignored.
+            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
+                element indicate the RGB color of a vertex.
+            two_sided (bool): whether or not the triangles should be able to be
+                seen from both sides.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -121,10 +135,14 @@ class Scene:
         """Declare a set of particles within the scene.
 
         Args:
-            centers: a taichi 3D Vector field, where each element indicate the 3D location of the center of a triangle.
-            color: a global color for the particles as 3 floats representing RGB values. If `per_vertex_color` is provided, this is ignored.
-            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each element indicate the RGB color of a particle.
-            two_sided (bool): whether or not the triangles should be able to be seen from both sides.
+            centers: a taichi 3D Vector field, where each element indicate the
+                3D location of the center of a triangle.
+            color: a global color for the particles as 3 floats representing RGB
+                values. If `per_vertex_color` is provided, this is ignored.
+            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
+                element indicate the RGB color of a particle.
+            two_sided (bool): whether or not the triangles should be able to be
+                seen from both sides.
         """
         vbo = get_vbo_field(centers)
         copy_vertices_to_vbo(vbo, centers)
@@ -135,7 +153,22 @@ class Scene:
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
+        """Set a point light in this scene.
+
+        Args:
+            pos (list, tuple, :class:`~taichi.types.vector(3, float)`):
+                3D vector for light position.
+            color (list, tuple, :class:`~taichi.types.vector(3, float)`):
+                (r, g, b) triple for the color of the light, in the range [0, 1].
+        """
         self.scene.point_light(pos, color)
 
     def ambient_light(self, color):
+        """Set the ambient color of this scene.
+
+        Example::
+
+            >>> scene = ti.ui.Scene()
+            >>> scene.ambient_light([0.2, 0.2, 0.2])
+        """
         self.scene.ambient_light(color)

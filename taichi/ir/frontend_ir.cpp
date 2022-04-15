@@ -1,5 +1,6 @@
 #include "taichi/ir/frontend_ir.h"
 
+#include "taichi/ir/expression_printer.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
@@ -8,7 +9,8 @@ TLANG_NAMESPACE_BEGIN
 
 #define TI_ASSERT_TYPE_CHECKED(x)                       \
   TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
-                 "[{}] was not type-checked", x.serialize())
+                 "[{}] was not type-checked",           \
+                 ExpressionHumanFriendlyPrinter::expr_to_string(x))
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
@@ -52,9 +54,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(loop_var.size());
+  loop_var_id.reserve(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
     loop_var[i].expr->ret_type = PrimitiveType::i32;
   }
 }
@@ -79,9 +81,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(loop_var.size());
+  loop_var_id.reserve(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
   }
 }
 
@@ -108,8 +110,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     if (this->num_cpu_threads == 0)
       this->num_cpu_threads = std::thread::hardware_concurrency();
   }
-  loop_var_id.resize(1);
-  loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var_id.push_back(loop_var.cast<IdExpression>()->id);
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
@@ -135,19 +136,6 @@ void RandExpression::flatten(FlattenContext *ctx) {
   auto ran = std::make_unique<RandStmt>(dt);
   ctx->push_back(std::move(ran));
   stmt = ctx->back_stmt();
-}
-
-void UnaryOpExpression::serialize(std::ostream &ss) {
-  ss << '(';
-  if (is_cast()) {
-    ss << (type == UnaryOpType::cast_value ? "" : "reinterpret_");
-    ss << unary_op_type_name(type);
-    ss << '<' << data_type_name(cast_type) << "> ";
-  } else {
-    ss << unary_op_type_name(type) << ' ';
-  }
-  operand->serialize(ss);
-  ss << ')';
 }
 
 void UnaryOpExpression::type_check(CompileConfig *) {
@@ -267,7 +255,8 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
     flatten_rvalue(args[i], ctx);
     args_stmts[i] = args[i]->stmt;
   }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
+  ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
+                                   with_runtime_context);
   stmt = ctx->back_stmt();
 }
 
@@ -305,21 +294,6 @@ void GlobalPtrExpression::type_check(CompileConfig *) {
   } else {
     TI_ERROR("Invalid GlobalPtrExpression");
   }
-}
-
-void GlobalPtrExpression::serialize(std::ostream &ss) {
-  if (snode) {
-    ss << snode->get_node_type_name_hinted();
-  } else {
-    var.serialize(ss);
-  }
-  ss << '[';
-  for (int i = 0; i < (int)indices.size(); i++) {
-    indices.exprs[i]->serialize(ss);
-    if (i + 1 < (int)indices.size())
-      ss << ", ";
-  }
-  ss << ']';
 }
 
 void GlobalPtrExpression::flatten(FlattenContext *ctx) {
@@ -430,21 +404,6 @@ void LoopUniqueExpression::type_check(CompileConfig *) {
   ret_type = input->ret_type;
 }
 
-void LoopUniqueExpression::serialize(std::ostream &ss) {
-  ss << "loop_unique(";
-  input.serialize(ss);
-  for (int i = 0; i < covers.size(); i++) {
-    if (i == 0)
-      ss << ", covers=[";
-    ss << covers[i]->get_node_type_name_hinted();
-    if (i == (int)covers.size() - 1)
-      ss << ']';
-    else
-      ss << ", ";
-  }
-  ss << ')';
-}
-
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   flatten_rvalue(input, ctx);
   ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt, covers));
@@ -477,31 +436,6 @@ void AtomicOpExpression::type_check(CompileConfig *) {
   }
 }
 
-void AtomicOpExpression::serialize(std::ostream &ss) {
-  if (op_type == AtomicOpType::add) {
-    ss << "atomic_add(";
-  } else if (op_type == AtomicOpType::sub) {
-    ss << "atomic_sub(";
-  } else if (op_type == AtomicOpType::min) {
-    ss << "atomic_min(";
-  } else if (op_type == AtomicOpType::max) {
-    ss << "atomic_max(";
-  } else if (op_type == AtomicOpType::bit_and) {
-    ss << "atomic_bit_and(";
-  } else if (op_type == AtomicOpType::bit_or) {
-    ss << "atomic_bit_or(";
-  } else if (op_type == AtomicOpType::bit_xor) {
-    ss << "atomic_bit_xor(";
-  } else {
-    // min/max not supported in the LLVM backend yet.
-    TI_NOT_IMPLEMENTED;
-  }
-  dest.serialize(ss);
-  ss << ", ";
-  val.serialize(ss);
-  ss << ")";
-}
-
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
@@ -530,19 +464,6 @@ void SNodeOpExpression::type_check(CompileConfig *) {
   } else {
     ret_type = PrimitiveType::i32;
   }
-}
-
-void SNodeOpExpression::serialize(std::ostream &ss) {
-  ss << snode_op_type_name(op_type);
-  ss << '(';
-  ss << snode->get_node_type_name_hinted() << ", [";
-  indices.serialize(ss);
-  ss << "]";
-  if (value.expr) {
-    ss << ' ';
-    value.serialize(ss);
-  }
-  ss << ')';
 }
 
 void SNodeOpExpression::flatten(FlattenContext *ctx) {
@@ -590,7 +511,7 @@ void ConstExpression::flatten(FlattenContext *ctx) {
 void ExternalTensorShapeAlongAxisExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
                  "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
-                 ptr.serialize());
+                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
   ret_type = PrimitiveType::i32;
 }
 
@@ -621,12 +542,6 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<FuncCallStmt>(func, stmt_args);
   stmt = ctx->back_stmt();
-}
-
-void FuncCallExpression::serialize(std::ostream &ss) {
-  ss << "func_call(\"" << func->func_key.get_full_name() << "\", ";
-  args.serialize(ss);
-  ss << ')';
 }
 
 // Mesh related.
@@ -697,23 +612,25 @@ void ASTBuilder::insert_assignment(Expr &lhs, const Expr &rhs) {
   } else if (lhs.expr->is_lvalue()) {
     this->insert(std::make_unique<FrontendAssignStmt>(lhs, rhs));
   } else {
-    TI_ERROR("Cannot assign to non-lvalue: {}", lhs.serialize());
+    TI_ERROR("Cannot assign to non-lvalue: {}",
+             ExpressionHumanFriendlyPrinter::expr_to_string(lhs));
   }
 }
 
 Expr ASTBuilder::make_var(const Expr &x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  this->insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
+  auto var = this->expr_alloca();
   this->insert_assignment(var, x);
   return var;
+}
+
+Expr ASTBuilder::make_id_expr(const std::string &name) {
+  return Expr::make<IdExpression>(get_next_id(name));
 }
 
 void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
-  auto i = Expr(std::make_shared<IdExpression>());
+  auto i = Expr(std::make_shared<IdExpression>(get_next_id()));
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_,
                                                        for_loop_dec_.config);
   for_loop_dec_.reset();
@@ -738,8 +655,8 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   }
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
-  return Expr::make<InternalFuncCallExpression>("linear_thread_idx",
-                                                std::vector<Expr>{});
+  return Expr::make<InternalFuncCallExpression>(
+      "linear_thread_idx", std::vector<Expr>{}, /*with_runtime_context=*/true);
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {
@@ -805,7 +722,7 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
 }
 
 Expr ASTBuilder::expr_alloca() {
-  auto var = Expr(std::make_shared<IdExpression>());
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
@@ -815,7 +732,7 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements) {
-  auto var = Expr(std::make_shared<IdExpression>());
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       element_type));

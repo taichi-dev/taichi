@@ -1,8 +1,6 @@
 #include "llvm_program.h"
 #include "llvm/IR/Module.h"
 
-#include "picosha2.h"
-
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/arch.h"
 #include "taichi/llvm/llvm_offline_cache.h"
@@ -133,32 +131,7 @@ void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
 
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
                                       OffloadedStmt *offloaded) {
-  bool needs_cache = false;
-  if (config->offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
-    std::string kernel_key, hashed_kernel_key;
-    irpass::re_id(kernel->ir.get());
-    irpass::print(kernel->ir.get(), &kernel_key);
-    picosha2::hash256_hex_string(kernel_key, hashed_kernel_key);
-    if (kernel->grad)
-      hashed_kernel_key.push_back('g');
-    else
-      hashed_kernel_key.push_back('n');
-    auto func = this->create_kernel_function_from_offline_cache(
-        hashed_kernel_key, kernel);
-    if (func) {
-      kernel->set_from_offline_cache();
-      return func;
-    } else {
-      kernel->set_key(hashed_kernel_key);
-      needs_cache = true;
-    }
-  }
-  if (!kernel->lowered()) {
-    kernel->lower();
-  }
-  auto codegen =
-      KernelCodeGen::create(kernel->arch, kernel, offloaded, needs_cache);
+  auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
   return codegen->codegen();
 }
 
@@ -505,7 +478,7 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
             return fetch_result<uint64>(taichi_result_buffer_error_id,
                                         result_buffer);
           });
-      TI_ERROR("Assertion failure: {}", error_message_formatted);
+      throw TaichiAssertionError(error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -667,64 +640,22 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
   }
 }
 
-FunctionType LlvmProgramImpl::create_kernel_function_from_offline_cache(
-    const std::string &kernel_key,
-    Kernel *kernel) {
-  TI_ASSERT(config->offline_cache);
-  using task_fp_type = int32 (*)(void *);
-
-  LlvmOfflineCacheFileReader reader(config->offline_cache_file_path);
-  LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = this->get_llvm_context(config->arch);
-  auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-  if (!reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx))
-    return nullptr;
-
-  std::vector<task_fp_type> func_list;
-  tlctx->add_module(std::move(cache_data.owned_module));
-  for (const auto &func_name : cache_data.offloaded_task_name_list) {
-    void *kernel_symbol = tlctx->lookup_function_pointer(func_name);
-    TI_ASSERT(kernel_symbol);
-    func_list.push_back((task_fp_type)kernel_symbol);
-  }
-
-  return [kernel, flist = std::move(func_list)](RuntimeContext &ctx) -> void {
-    auto args = kernel->args;
-    // For taichi ndarrays, context.args saves pointer to its
-    // |DeviceAllocation|, CPU backend actually want to use the raw ptr
-    // here.
-    for (std::size_t i = 0; i < args.size(); ++i) {
-      if (args[i].is_array && ctx.is_device_allocation[i] && args[i].size > 0) {
-        DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(ctx.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
-                              ->get_ndarray_alloc_info_ptr(*ptr);
-        ctx.set_arg(i, host_ptr);
-        ctx.set_device_allocation(i, false);
-      }
-    }
-    for (auto func : flist) {
-      func(&ctx);
-    }
-  };
-}
-
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
-    std::vector<std::string> &&offloaded_task_name_list) {
+    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+        &&offloaded_task_list) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
     return;
   }
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
-  kernel_cache.offloaded_task_name_list = offloaded_task_name_list;
+  kernel_cache.offloaded_task_list = offloaded_task_list;
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
-  if (config->offline_cache && this->supports_offline_cache()) {
+  if (config->offline_cache && !cache_data_.kernels.empty()) {
     LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
     writer.set_data(std::move(cache_data_));
     writer.dump();

@@ -1,18 +1,26 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/program/kernel.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/io.h"
 
 namespace taichi {
 namespace lang {
 
+std::string get_offline_cache_key(CompileConfig *config, Kernel *kernel);
+
 struct LlvmOfflineCache {
+  struct OffloadedTaskCacheData {
+    std::string name;
+    int block_dim{0};
+    int grid_dim{0};
+  };
   struct KernelCacheData {
     std::string kernel_key;
     std::unique_ptr<llvm::Module> owned_module{nullptr};
     llvm::Module *module{nullptr};
-    std::vector<std::string> offloaded_task_name_list;
+    std::vector<OffloadedTaskCacheData> offloaded_task_list;
 
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
@@ -58,7 +66,8 @@ class LlvmOfflineCacheFileWriter {
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
       llvm::Module *module,
-      std::vector<std::string> &offloaded_task_name_list);
+      std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+          &offloaded_task_list);
 
   std::string path_;
   LlvmOfflineCache data_;

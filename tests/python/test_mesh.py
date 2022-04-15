@@ -22,8 +22,8 @@ def test_mesh_patch_idx():
 
     foo()
     idx = model.verts.idx.to_numpy()
-    assert idx[0] == 6
-    assert idx.sum() == 89
+    assert idx[0] == 0
+    assert idx.sum() == 0
 
 
 def _test_mesh_for(cell_reorder=False, vert_reorder=False, extra_tests=True):

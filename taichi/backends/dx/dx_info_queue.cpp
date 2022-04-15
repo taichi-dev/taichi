@@ -1,3 +1,5 @@
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_info_queue.h"
 
 namespace taichi {
@@ -138,3 +140,5 @@ int Dx11InfoQueue::live_object_count() {
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

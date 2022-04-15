@@ -92,10 +92,13 @@ def make_constant_expr(val, dtype):
     raise TaichiTypeError(f'Invalid constant scalar data type: {type(val)}')
 
 
-def make_var_list(size):
+def make_var_list(size, ast_builder=None):
     exprs = []
     for _ in range(size):
-        exprs.append(_ti_core.make_id_expr(''))
+        if ast_builder is None:
+            exprs.append(impl.get_runtime().prog.make_id_expr(''))
+        else:
+            exprs.append(ast_builder.make_id_expr(''))
     return exprs
 
 

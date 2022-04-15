@@ -1,0 +1,33 @@
+ci:
+  autoupdate_schedule: quarterly
+
+exclude: ^((tests/python/test_exception|.*/examples/.*)\.py$|external/)
+repos:
+  - repo: https://github.com/google/yapf
+    rev: v0.31.0
+    hooks:
+      - id: yapf
+        additional_dependencies: [toml]
+
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v10.0.1
+    hooks:
+      - id: clang-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.13.1
+    hooks:
+      - id: pylint
+        args: ['-rn', '-sn']
+        files: ^python/taichi/

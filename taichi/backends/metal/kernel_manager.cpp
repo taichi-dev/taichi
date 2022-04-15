@@ -9,6 +9,7 @@
 #include <string_view>
 
 #include "taichi/backends/metal/constants.h"
+#include "taichi/backends/metal/device.h"
 #include "taichi/backends/metal/features.h"
 #include "taichi/backends/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
@@ -17,6 +18,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
+#include "taichi/common/exceptions.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -549,6 +551,17 @@ class KernelManager::Impl {
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
 
+    {
+      ComputeDeviceParams rhi_params;
+      rhi_params.device = device_.get();
+      rhi_params.mem_pool = mem_pool_;
+      rhi_params.only_for_dev_allocation = true;
+      auto make_res = make_compute_device(rhi_params);
+      rhi_device_ = std::move(make_res.device);
+      TI_ASSERT(rhi_device_ != nullptr);
+      devalloc_mapper_ = make_res.mapper;
+    }
+
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
 
@@ -724,6 +737,11 @@ class KernelManager::Impl {
     // We allocate one ambient element for each `pointer` SNode from its
     // corresponding snode_allocator |sna|. Therefore the count starts at 1.
     return sna->data_list.next - 1;
+  }
+
+  DeviceAllocation allocate_memory(const Device::AllocParams &params) {
+    auto res = rhi_device_->allocate_memory(params);
+    return res;
   }
 
  private:
@@ -1013,7 +1031,7 @@ class KernelManager::Impl {
     // As a workaround, we put [didModifyRange:] before sync, where the program
     // is still executing normally.
     // asst_rec->flag = 0;
-    TI_ERROR("Assertion failure: {}", err_str);
+    throw TaichiAssertionError(err_str);
   }
 
   void flush_print_buffers() {
@@ -1092,6 +1110,9 @@ class KernelManager::Impl {
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
+  // TODO(k-ye): Name this to `device_`, then hide the `MTLDevice device_`.
+  std::unique_ptr<Device> rhi_device_{nullptr};
+  AllocToMTLBufferMapper *devalloc_mapper_{nullptr};
   // FIXME: This is for AOT, name it better
   BufferMetaData buffer_meta_data_;
   std::vector<CompiledStructs> compiled_snode_trees_;
@@ -1166,6 +1187,11 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
     return 0;
   }
+
+  DeviceAllocation allocate_memory(const Device::AllocParams &params) {
+    TI_ERROR("Metal not supported on the current OS");
+    return kDeviceNullAllocation;
+  }
 };
 
 #endif  // TI_PLATFORM_OSX
@@ -1209,6 +1235,11 @@ PrintStringTable *KernelManager::print_strtable() {
 
 std::size_t KernelManager::get_snode_num_dynamically_allocated(SNode *snode) {
   return impl_->get_snode_num_dynamically_allocated(snode);
+}
+
+DeviceAllocation KernelManager::allocate_memory(
+    const Device::AllocParams &params) {
+  return impl_->allocate_memory(params);
 }
 
 }  // namespace metal

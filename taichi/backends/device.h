@@ -58,6 +58,7 @@ using DeviceAllocationId = uint32_t;
 struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
   DeviceAllocationId alloc_id{0};
+  // TODO: Shall we include size here?
 
   DevicePtr get_ptr(uint64_t offset = 0) const;
 
@@ -165,7 +166,14 @@ enum class PipelineStageType {
   raytracing
 };
 
+// FIXME: Drop the plural form?
 enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
+
+enum class PolygonMode : int {
+  Fill = 0,
+  Line = 1,
+  Point = 2,
+};
 
 enum class BufferFormat : uint32_t {
   r8,
@@ -520,7 +528,8 @@ struct ImageParams {
 };
 
 struct RasterParams {
-  TopologyType prim_topology;
+  TopologyType prim_topology{TopologyType::Triangles};
+  PolygonMode polygon_mode{PolygonMode::Fill};
   bool front_face_cull{false};
   bool back_face_cull{false};
   bool depth_test{false};

@@ -13,7 +13,7 @@ def memcpy_default(arch, repeat, container, dtype, dsize, get_metric):
             dst[I] = src[I]
 
     @ti.kernel
-    def memcpy_array(dst: ti.any_arr(), src: ti.any_arr()):
+    def memcpy_array(dst: ti.types.ndarray(), src: ti.types.ndarray()):
         for I in ti.grouped(dst):
             dst[I] = src[I]
 

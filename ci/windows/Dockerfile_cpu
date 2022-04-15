@@ -1,0 +1,35 @@
+# escape=`
+
+# This image is based on the prebuilt image from Dockerfile_Buildtools_2019 (adapt the name based on your build input)
+FROM taichi-buildtools-2019:v0.0.1
+
+# Use Powerhell for running commands
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'Continue'; $verbosePreference='Continue';"]
+
+# Install Chocolatey and required tools
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = `
+        [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')); `
+    choco install -y cmake --version 3.22.0; `
+    choco install -y git; `
+    choco install -y miniconda3; `
+    Remove-Item -Recurse C:\ProgramData\chocolatey\lib\cmake*; `
+    Remove-Item -Recurse C:\ProgramData\chocolatey\lib\git*; `
+    [Environment]::SetEnvironmentVariable(\"Path\", `
+        \"C:\Program Files\CMake\bin;C:\Program Files\Git\bin;C:\tools\miniconda3\Scripts;\" + $Env:Path, `
+        [System.EnvironmentVariableTarget]::Machine)
+# TODO: we don't need cmake here, as it will be handled later by pip install
+
+RUN conda --version
+RUN choco install -y 7zip
+
+# Install conda
+RUN conda init powershell
+RUN conda create -n py37 python=3.7
+
+# TODO: replace this when merge into ci
+COPY win_build_test.ps1 C:\win_build_test.ps1
+
+# MUST use x64 as entry point
+ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\build\\vcvars64.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]

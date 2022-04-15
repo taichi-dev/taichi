@@ -63,5 +63,7 @@ def vec_to_euler(v):
 
 
 def check_ggui_availability():
+    """Checks if the `GGUI` environment is available.
+    """
     if not _ti_core.GGUI_AVAILABLE:
         raise Exception("GGUI Not Available")

@@ -61,6 +61,7 @@ jobs:
     name: Check Static Analyzer
     runs-on: ubuntu-latest
     needs: check_files
+    if: needs.check_files.outputs.run_job == 'true'
     container:
       image: ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
       credentials:
@@ -73,9 +74,6 @@ jobs:
 
       - name: clang-tidy
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           apt install -y clang-tidy-10
           bash .github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
@@ -117,10 +115,8 @@ jobs:
             sccache-linux-${{matrix.with_cc}}-
 
       - name: Build
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           bash .github/workflows/scripts/unix_build.sh
         env:
           PY: ${{ matrix.python }}
@@ -128,10 +124,8 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           bash .github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
@@ -168,20 +162,16 @@ jobs:
             sccache-mac-
 
       - name: Download Pre-Built LLVM 10.0.0
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
           brew install molten-vk
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
@@ -196,10 +186,8 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
@@ -231,10 +219,8 @@ jobs:
             sccache-linux-gpu-
 
       - name: Build & Install
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           bash .github/workflows/scripts/unix_build.sh
         env:
           PY: py38
@@ -243,21 +229,14 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           bash .github/workflows/scripts/unix_test.sh
         env:
           PY: py38
           GPU_TEST: ON
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
-
-      - name: clean docker container
-        if: always()
-        run: |
-          docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
     name: Build and Test Windows
@@ -339,10 +318,8 @@ jobs:
             sccache-m1-
 
       - name: Build
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
@@ -352,10 +329,8 @@ jobs:
           CXX: clang++
 
       - name: Test
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:

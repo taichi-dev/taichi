@@ -6,5 +6,5 @@ mkdir -p build_clang_tidy/
 cd build_clang_tidy
 cmake .. -DCMAKE_CXX_COMPILER=clang -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cd ..
-TAICHI_SRC=$PWD
+TAICHI_SRC=$PWD/taichi
 python3 scripts/run_clang_tidy.py "$TAICHI_SRC" -header-filter="$TAICHI_SRC/" -p build_clang_tidy -j16 -fix

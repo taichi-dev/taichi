@@ -151,13 +151,15 @@ def _process_args(self, args, kwargs):
         for i, arg in enumerate(self.arguments):
             if key == arg.name:
                 if i < len_args:
-                    raise TaichiSyntaxError(f"Multiple values for argument '{key}'.")
+                    raise TaichiSyntaxError(
+                        f"Multiple values for argument '{key}'.")
                 ret[i] = value
                 break
 
     for i, arg in enumerate(ret):
         if arg is inspect.Parameter.empty:
-            raise TaichiSyntaxError(f"Parameter '{self.arguments[i].name}' missing.")
+            raise TaichiSyntaxError(
+                f"Parameter '{self.arguments[i].name}' missing.")
 
     return ret
 
@@ -294,7 +296,8 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name, param.default))
+            self.arguments.append(
+                KernelArgument(annotation, param.name, param.default))
 
 
 class TaichiCallableTemplateMapper:
@@ -466,7 +469,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name, param.default))
+            self.arguments.append(
+                KernelArgument(annotation, param.name, param.default))
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:

@@ -124,6 +124,6 @@ def test_function_keyword_args_duplicate():
     def duplicate():
         foo(1, a=3, b=3)
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Multiple values for argument 'a'"):
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match="Multiple values for argument 'a'"):
         duplicate()
-

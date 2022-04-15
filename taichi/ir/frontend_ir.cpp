@@ -151,7 +151,8 @@ void UnaryOpExpression::type_check(CompileConfig *config) {
         fmt::format("'{}' takes real inputs only, however '{}' is provided",
                     unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
-       type == UnaryOpType::log) && !is_real(operand->ret_type)) {
+       type == UnaryOpType::log) &&
+      !is_real(operand->ret_type)) {
     ret_type = config->default_fp;
   } else {
     ret_type = is_cast() ? cast_type : operand->ret_type;

@@ -44,8 +44,9 @@ user_api[ti.FieldsBuilder] = [
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
-    'clamp', 'cross', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2',
-    'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize', 'pi',
+    'cconj', 'cdiv', 'cexp', 'cinv', 'clamp', 'clog', 'cmul', 'cpow', 'cross',
+    'csqrt', 'degrees', 'distance', 'dot', 'e', 'fract', 'ivec2', 'ivec3',
+    'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'normalize', 'pi',
     'radians', 'reflect', 'refract', 'sign', 'smoothstep', 'step', 'vec2',
     'vec3', 'vec4'
 ]

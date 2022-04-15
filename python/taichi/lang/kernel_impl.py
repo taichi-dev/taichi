@@ -161,7 +161,7 @@ def _process_args(self, args, kwargs):
                 found = True
                 break
         if not found:
-            raise TaichiSyntaxError(f"Unexpected argument '{key}'")
+            raise TaichiSyntaxError(f"Unexpected argument '{key}'.")
 
     for i, arg in enumerate(ret):
         if arg is inspect.Parameter.empty:

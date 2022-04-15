@@ -64,6 +64,7 @@ jobs:
     if: needs.check_files.outputs.run_job == 'true'
     container:
       image: ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -85,6 +86,7 @@ jobs:
     timeout-minutes: 60
     container:
       image: ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -204,7 +206,7 @@ jobs:
         - /tmp/.X11-unix:/tmp/.X11-unix
       env:
         DISPLAY: ':1'
-      options: --gpus all
+      options: --gpus all --user root
     steps:
       - uses: actions/checkout@v2
         with:

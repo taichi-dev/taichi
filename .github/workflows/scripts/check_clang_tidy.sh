@@ -2,7 +2,7 @@
 set -e
 
 CI_SETUP_CMAKE_ARGS=$1
-
+git config --global --add safe.directory "$PWD"
 python3 -m pip install -r requirements_dev.txt
 
 rm -rf build && mkdir build && cd build

@@ -144,6 +144,9 @@ def _process_args(self, args, kwargs):
     ret = [argument.default for argument in self.arguments]
     len_args = len(args)
 
+    if len_args > len(ret):
+        raise TaichiSyntaxError("Too many arguments.")
+
     for i, arg in enumerate(args):
         ret[i] = arg
 

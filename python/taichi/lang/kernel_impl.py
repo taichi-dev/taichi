@@ -58,8 +58,8 @@ def func(fn, is_real_function=False):
     fun = Func(fn, _classfunc=is_classfunc, is_real_function=is_real_function)
 
     @functools.wraps(fn)
-    def decorated(*args):
-        return fun.__call__(*args)
+    def decorated(*args, **kwargs):
+        return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
     decorated._is_real_function = is_real_function
@@ -89,8 +89,8 @@ def pyfunc(fn):
     fun = Func(fn, _classfunc=is_classfunc, _pyfunc=True)
 
     @functools.wraps(fn)
-    def decorated(*args):
-        return fun.__call__(*args)
+    def decorated(*args, **kwargs):
+        return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
     return decorated
@@ -140,6 +140,28 @@ def _get_tree_and_ctx(self,
                                        is_real_function=is_real_function)
 
 
+def _process_args(self, args, kwargs):
+    ret = [argument.default for argument in self.arguments]
+    len_args = len(args)
+
+    for i, arg in enumerate(args):
+        ret[i] = arg
+
+    for key, value in kwargs.items():
+        for i, arg in enumerate(self.arguments):
+            if key == arg.name:
+                if i < len_args:
+                    raise TaichiSyntaxError(f"Multiple values for argument '{key}'.")
+                ret[i] = value
+                break
+
+    for i, arg in enumerate(ret):
+        if arg is inspect.Parameter.empty:
+            raise TaichiSyntaxError(f"Parameter '{self.arguments[i].name}' missing.")
+
+    return ret
+
+
 class Func:
     function_counter = 0
 
@@ -166,7 +188,9 @@ class Func:
             self.arguments, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
+        args = _process_args(self, args, kwargs)
+
         if not impl.inside_kernel():
             if not self.pyfunc:
                 raise TaichiSyntaxError(
@@ -232,7 +256,7 @@ class Func:
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
-        if sig.return_annotation not in (inspect._empty, None):
+        if sig.return_annotation not in (inspect.Signature.empty, None):
             self.return_type = sig.return_annotation
         params = sig.parameters
         arg_names = params.keys()
@@ -270,7 +294,7 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name))
+            self.arguments.append(KernelArgument(annotation, param.name, param.default))
 
 
 class TaichiCallableTemplateMapper:
@@ -442,7 +466,7 @@ class Kernel:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name))
+            self.arguments.append(KernelArgument(annotation, param.name, param.default))
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
@@ -699,12 +723,12 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
+        args = _process_args(self, args, kwargs)
         if self.is_grad and impl.current_cfg().opt_level == 0:
             _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1
-        assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
 

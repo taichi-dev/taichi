@@ -51,3 +51,79 @@ def test_exceed_max_64():
             f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
     ):
         foo2(A)
+
+
+@test_utils.test(debug=True)
+def test_kernel_keyword_args():
+    @ti.kernel
+    def foo(a: ti.i32, b: ti.i32):
+        assert a == 1
+        assert b == 2
+
+    foo(1, b=2)
+
+
+@test_utils.test(debug=True)
+def test_kernel_keyword_args_missing():
+    @ti.kernel
+    def foo(a: ti.i32, b: ti.i32):
+        assert a == 1
+        assert b == 2
+
+    with pytest.raises(ti.TaichiSyntaxError, match="Parameter 'a' missing"):
+        foo(b=2)
+
+
+@test_utils.test(debug=True)
+def test_function_keyword_args():
+    @ti.func
+    def foo(a, b, c=3):
+        assert a == 1
+        assert b == 2
+        assert c == 3
+
+    @ti.func
+    def bar(a, b, c=3):
+        assert a == 1
+        assert b == 2
+        assert c == 4
+
+    @ti.kernel
+    def baz():
+        foo(1, b=2)
+        bar(b=2, a=1, c=4)
+
+    baz()
+
+
+@test_utils.test(debug=True)
+def test_function_keyword_args_missing():
+    @ti.func
+    def foo(a, b, c=3):
+        assert a == 1
+        assert b == 2
+        assert c == 3
+
+    @ti.kernel
+    def missing():
+        foo(1, c=3)
+
+    with pytest.raises(ti.TaichiSyntaxError, match="Parameter 'b' missing"):
+        missing()
+
+
+@test_utils.test(debug=True)
+def test_function_keyword_args_duplicate():
+    @ti.func
+    def foo(a, b, c=3):
+        assert a == 1
+        assert b == 2
+        assert c == 3
+
+    @ti.kernel
+    def duplicate():
+        foo(1, a=3, b=3)
+
+    with pytest.raises(ti.TaichiSyntaxError, match="Multiple values for argument 'a'"):
+        duplicate()
+

@@ -1,21 +1,11 @@
 #!/bin/bash
 set -ex
 
-check_in_docker() {
-    # This is a temporary solution to detect in a docker, but it should work
-    if [[ $(whoami) == "dev" ]]; then
-        echo "true"
-    else
-        echo "false"
-    fi
-}
-
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
-export TI_IN_DOCKER=$(check_in_docker)
 
-if [[ "$TI_IN_DOCKER" == "true" ]]; then
-    source $HOME/miniconda/etc/profile.d/conda.sh
+if [ -f "$HOME/miniconda/etc/profile.d/conda.sh" ] && [ -n "$PY" ] ; then
+    source "$HOME/miniconda/etc/profile.d/conda.sh"
     conda activate "$PY"
 fi
 python3 -m pip install dist/*.whl

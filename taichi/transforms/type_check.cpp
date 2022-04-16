@@ -258,6 +258,7 @@ class TypeCheck : public IRVisitor {
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
         cast(stmt->operand, config_.default_fp);
+        stmt->ret_type = config_.default_fp;
       }
     }
   }

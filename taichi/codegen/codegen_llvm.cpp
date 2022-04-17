@@ -1140,12 +1140,7 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  auto mask = stmt->parent->mask();
-  if (mask && stmt->width() != 1) {
-    TI_NOT_IMPLEMENTED
-  } else {
-    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
-  }
+  builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
@@ -1362,7 +1357,6 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->val]);
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();

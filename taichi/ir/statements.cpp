@@ -216,7 +216,7 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
 }
 
 IfStmt::IfStmt(Stmt *cond)
-    : cond(cond), true_mask(nullptr), false_mask(nullptr) {
+    : cond(cond) {
   TI_STMT_REG_FIELDS;
 }
 
@@ -235,8 +235,6 @@ void IfStmt::set_false_statements(
 
 std::unique_ptr<Stmt> IfStmt::clone() const {
   auto new_stmt = std::make_unique<IfStmt>(cond);
-  new_stmt->true_mask = true_mask;
-  new_stmt->false_mask = false_mask;
   if (true_statements)
     new_stmt->set_true_statements(true_statements->clone());
   if (false_statements)

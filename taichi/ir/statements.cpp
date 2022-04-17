@@ -215,8 +215,7 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
   return false;
 }
 
-IfStmt::IfStmt(Stmt *cond)
-    : cond(cond) {
+IfStmt::IfStmt(Stmt *cond) : cond(cond) {
   TI_STMT_REG_FIELDS;
 }
 

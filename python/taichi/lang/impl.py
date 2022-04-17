@@ -8,7 +8,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import TaichiRuntimeError
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -36,6 +36,8 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
+    if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
+        return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
@@ -374,6 +376,8 @@ def static_assert(cond, msg=None):
         >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
         AssertionError: the year must be a lunar year
     """
+    if isinstance(cond, Expr):
+        raise TaichiTypeError("Static assert with non-static condition")
     if msg is not None:
         assert cond, msg
     else:

@@ -225,3 +225,57 @@ def test_decorated_primal_missing_decorator():
 
     with ti.Tape(loss=total):
         func(4)
+
+
+@test_utils.test()
+def test_customized_kernels_tape_no_grad():
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
+
+    n = 128
+
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func(mul: ti.f32):
+        for i in range(n):
+            ti.atomic_add(total[None], x[i] * mul)
+
+    @ti.ad.no_grad
+    def forward(mul):
+        func(mul)
+        func(mul)
+
+    with ti.Tape(loss=total):
+        forward(4)
+        func(5)
+    assert x.grad[0] == 5
+
+
+@test_utils.test()
+def test_customized_kernels_grad_no_grad():
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
+
+    n = 128
+
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func(mul: ti.f32):
+        for i in range(n):
+            ti.atomic_add(total[None], x[i] * mul)
+
+    @ti.ad.no_grad
+    def forward(mul):
+        func(mul)
+        func(mul)
+
+    total.grad[None] = 1
+    forward(4)
+    forward.grad(4)
+    assert x.grad[0] == 0

@@ -50,7 +50,7 @@ std::string buffer_instance_name(BufferInfo b) {
     case BufferType::ListGen:
       return kListgenBufferName;
     case BufferType::ExtArr:
-      return kExtArrBufferName;
+      return std::string(kExtArrBufferName) + "_" + std::to_string(b.root_id);
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -475,7 +475,6 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 
@@ -485,7 +484,6 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     auto val = load_buffer(stmt->src, dt);
 
@@ -495,7 +493,6 @@ class TaskCodegen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto &arg_attribs = ctx_attribs_->args()[arg_id];
-    const auto offset_in_mem = arg_attribs.offset_in_mem;
     if (stmt->is_ptr) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
@@ -1009,6 +1006,8 @@ class TaskCodegen : public IRVisitor {
         spv_op = spv::OpGroupNonUniformBitwiseOr;
       } else if (ends_with(stmt->func_name, "Xor")) {
         spv_op = spv::OpGroupNonUniformBitwiseXor;
+      } else {
+        TI_ERROR("Unsupported operation: {}", stmt->func_name);
       }
 
       spv::GroupOperation group_op;
@@ -1739,9 +1738,6 @@ class TaskCodegen : public IRVisitor {
     // The computation for a single work is wrapped inside a function, so that
     // we can do grid-strided loop.
     ir_->start_function(kernel_function_);
-    const spirv::Label func_label = ir_->current_label();
-
-    auto snode = stmt->snode;
 
     auto listgen_buffer =
         get_buffer_value(BufferType::ListGen, PrimitiveType::u32);

@@ -17,7 +17,7 @@ import taichi as ti
 #         |    |    |    |    |
 #         16---12---08---04---00
 
-writer = ti.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
+writer = ti.tools.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
 
 # For the vertices, the only required channel is the position,
 # which can be added by passing 3 np.array x, y, z into the following function.
@@ -92,7 +92,7 @@ for frame in range(10):
     b = np.random.rand(20)
     alpha = np.random.rand(20)
     # re-fill
-    writer = ti.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
+    writer = ti.tools.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
     writer.add_vertex_pos(x, y, z)
     writer.add_faces(indices)
     writer.add_vertex_channel("vdata1", "double", vdata)

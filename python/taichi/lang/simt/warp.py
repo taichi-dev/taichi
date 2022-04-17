@@ -2,14 +2,16 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr
 
 
-def all_nonzero():
-    # TODO
-    pass
+def all_nonzero(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_all_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
-def any_nonzero():
-    # TODO
-    pass
+def any_nonzero(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_any_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
 def unique():
@@ -24,37 +26,56 @@ def ballot(predicate):
                                            False))
 
 
-def shfl_i32(mask, val, offset):
-    # TODO
-    pass
+def shfl_sync_i32(mask, val, offset):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            # lane offset is 31 for warp size 32
+            "cuda_shfl_sync_i32",
+            expr.make_expr_group(mask, val, offset, 31),
+            False))
+
+
+def shfl_sync_f32(mask, val, offset):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            # lane offset is 31 for warp size 32
+            "cuda_shfl_sync_f32",
+            expr.make_expr_group(mask, val, offset, 31),
+            False))
 
 
 def shfl_down_i32(mask, val, offset):
-    # Here we use 31 as the last argument since 32 (warp size) does not work
-    # for some reason. Using 31 leads to the desired behavior.
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_down_sync_i32",
-            expr.make_expr_group(mask, val, offset, 31), False))
+            # lane offset is 31 for warp size 32
+            expr.make_expr_group(mask, val, offset, 31),
+            False))
 
 
 def shfl_up_i32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_up_sync_i32",
-            expr.make_expr_group(mask, val, offset, 32), False))
+            # lane offset is 0 for warp size 32
+            expr.make_expr_group(mask, val, offset, 0),
+            False))
 
 
 def shfl_up_f32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(
             "cuda_shfl_up_sync_f32",
-            expr.make_expr_group(mask, val, offset, 32), False))
+            # lane offset is 0 for warp size 32
+            expr.make_expr_group(mask, val, offset, 0),
+            False))
 
 
 def shfl_xor_i32(mask, val, offset):
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_xor_sync_i32",
+            expr.make_expr_group(mask, val, offset, 31), False))
 
 
 def match_any():

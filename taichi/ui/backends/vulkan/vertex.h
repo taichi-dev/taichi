@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include "taichi/common/platform_macros.h"
 
 #include <type_traits>
 
@@ -42,7 +43,7 @@ constexpr inline VertexAttributes operator|(VertexAttributes src,
   return static_cast<VertexAttributes>(UT(src) | UT(a));
 }
 
-class VboHelpers {
+class TI_DLL_EXPORT VboHelpers {
  public:
   constexpr static VertexAttributes kOrderedAttrs[] = {
       VertexAttributes::kPos,

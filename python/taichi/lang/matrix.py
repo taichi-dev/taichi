@@ -62,7 +62,7 @@ class Matrix(TaichiOperations):
     """
     _is_taichi_class = True
 
-    def __init__(self, arr, dt=None, suppress_warning=False):
+    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -77,10 +77,11 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         elif not isinstance(arr[0], Iterable):  # now init a Vector
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [[x] for x in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x)] for x in arr]
+                mat = [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                       for x in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -117,10 +118,13 @@ class Matrix(TaichiOperations):
                                 (len(arr), ), self.dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [list(row) for row in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x) for x in row] for row in arr]
+                mat = [[
+                    impl.expr_init(ops_mod.cast(x, dt) if dt else x)
+                    for x in row
+                ] for row in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -235,6 +239,11 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        # A hack way to check if this is a vector from `taichi.math`,
+        # to avoid importing a deleted name across modules.
+        if isinstance(other, Matrix) and (hasattr(other, "_DIM")):
+            return type(other)(*[x for x, in entries])
+
         return Matrix(entries)
 
     def _linearize_entry_id(self, *args):
@@ -265,7 +274,7 @@ class Matrix(TaichiOperations):
 
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
-        ret = self.entries[self._linearize_entry_id(*args)]
+        ret = self._get_entry(*args)
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
@@ -283,6 +292,9 @@ class Matrix(TaichiOperations):
                 self.entries[idx].setter(e)
             else:
                 self.entries[idx] = e
+
+    def _get_entry(self, *args):
+        return self.entries[self._linearize_entry_id(*args)]
 
     def _get_slice(self, a, b):
         if not isinstance(a, slice):

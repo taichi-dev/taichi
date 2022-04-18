@@ -41,8 +41,8 @@ setup_sccache() {
 }
 
 setup_python() {
-    if [ -f "$HOME/miniconda/etc/profile.d/conda.sh" ] && [ -n "$PY" ] ; then
-        source "$HOME/miniconda/etc/profile.d/conda.sh"
+    if [ -f "/home/dev/miniconda/etc/profile.d/conda.sh" ] && [ -n "$PY" ] ; then
+        source "/home/dev/miniconda/etc/profile.d/conda.sh"
         conda activate "$PY"
     fi
     python3 -m pip uninstall taichi taichi-nightly -y

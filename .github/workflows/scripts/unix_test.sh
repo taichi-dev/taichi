@@ -4,8 +4,8 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-if [ -f "$HOME/miniconda/etc/profile.d/conda.sh" ] && [ -n "$PY" ] ; then
-    source "$HOME/miniconda/etc/profile.d/conda.sh"
+if [ -f "/home/dev/miniconda/etc/profile.d/conda.sh" ] && [ -n "$PY" ] ; then
+    source "/home/dev/miniconda/etc/profile.d/conda.sh"
     conda activate "$PY"
 fi
 python3 -m pip install dist/*.whl

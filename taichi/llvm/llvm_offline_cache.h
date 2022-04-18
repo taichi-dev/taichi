@@ -2,13 +2,15 @@
 
 #include "taichi/common/core.h"
 #include "taichi/program/kernel.h"
-#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/io.h"
+
+#include "llvm/IR/Module.h"
 
 namespace taichi {
 namespace lang {
 
-std::string get_offline_cache_key(CompileConfig *config, Kernel *kernel);
+std::string get_hashed_offline_cache_key_of_snode(SNode *snode);
+std::string get_hashed_offline_cache_key(CompileConfig *config, Kernel *kernel);
 
 struct LlvmOfflineCache {
   struct OffloadedTaskCacheData {

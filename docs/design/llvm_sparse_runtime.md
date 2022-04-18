@@ -348,7 +348,8 @@ The GC process for a given SNode is divided into three stages:
 
 1. [`gc_parallel_0`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1600-L1626): Moves the remaining, unused indices in `free_list` to its head.
 
-The code differentiates between the cases where destination and source ranges overlap or not:
+Normally this can be done via a simple `for` loop that copies data. However, we need to run it in parallel on GPUs and the data source and destination may overlap, so special care is needed.
+Therefore, the code differentiates between the cases where destination and source ranges overlap or not:
 
 ```sh
 

@@ -190,7 +190,10 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
     error();
-  if (is_comparison(type)) {
+  if (binary_is_logical(type) &&
+      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32))
+    error();
+  if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = PrimitiveType::i32;
     return;
   }
@@ -210,6 +213,34 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
   flatten_rvalue(lhs, ctx);
+  if (binary_is_logical(type)) {
+    auto result = ctx->push_back<AllocaStmt>(ret_type);
+    ctx->push_back<LocalStoreStmt>(result, lhs->stmt);
+    auto cond = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto if_stmt = ctx->push_back<IfStmt>(cond);
+
+    FlattenContext rctx;
+    rctx.current_block = ctx->current_block;
+    flatten_rvalue(rhs, &rctx);
+    rctx.push_back<LocalStoreStmt>(result, rhs->stmt);
+
+    auto true_block = std::make_unique<Block>();
+    if (type == BinaryOpType::logical_and) {
+      true_block->set_statements(std::move(rctx.stmts));
+    }
+    if_stmt->set_true_statements(std::move(true_block));
+
+    auto false_block = std::make_unique<Block>();
+    if (type == BinaryOpType::logical_or) {
+      false_block->set_statements(std::move(rctx.stmts));
+    }
+    if_stmt->set_false_statements(std::move(false_block));
+
+    auto ret = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    ret->tb = tb;
+    stmt = ret;
+    return;
+  }
   flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
   ctx->stmts.back()->tb = tb;

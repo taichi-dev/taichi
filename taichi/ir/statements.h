@@ -657,7 +657,6 @@ class LocalStoreStmt : public Stmt {
 class IfStmt : public Stmt {
  public:
   Stmt *cond;
-  Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
   explicit IfStmt(Stmt *cond);
@@ -672,7 +671,7 @@ class IfStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
+  TI_STMT_DEF_FIELDS(cond);
   TI_DEFINE_ACCEPT
 };
 

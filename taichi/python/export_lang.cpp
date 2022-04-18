@@ -698,7 +698,10 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(bit_shr)
   DEFINE_EXPRESSION_OP(bit_sar)
   DEFINE_EXPRESSION_OP(bit_not)
+
   DEFINE_EXPRESSION_OP(logic_not)
+  DEFINE_EXPRESSION_OP(logical_and)
+  DEFINE_EXPRESSION_OP(logical_or)
 
   DEFINE_EXPRESSION_OP(add)
   DEFINE_EXPRESSION_OP(sub)

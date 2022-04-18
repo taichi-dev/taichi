@@ -259,7 +259,7 @@ class _SpecialConfig:
     def __init__(self):
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.short_circuit_operators = False
+        self.short_circuit_operators = True
 
 
 def prepare_sandbox():

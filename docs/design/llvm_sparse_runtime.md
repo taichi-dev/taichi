@@ -104,7 +104,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
 }
 ```
 
-1. Retrieves both the lock and the pointer for the `i`-th cell. Note that the pointer width is assumed to be 8-byte wide. Locks are simple 64-bit integers. According to the layout, there are `max_num_elements` number of locks, followed by `max_num_elements` number of pointer to cells.
+1. Retrieves both the lock and the pointer for the `i`-th cell. Note that the pointer width is assumed to be 8-byte wide. Locks are simply 64-bit integers. According to the layout, there are `max_num_elements` number of locks, followed by `max_num_elements` number of pointers to cells.
 2. Checks whether the content of `data_ptr` is `nullptr` without any locking. This is the classical [double-checked locking](https://en.wikipedia.org/wiki/Double-checked_locking) pattern.
 3. If 2 is true, pick one thread within a CUDA warp to acquire the lock. This is a small optimization to prevent lock contention.
 4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/locked_task.h).

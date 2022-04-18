@@ -85,7 +85,7 @@ FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                snode_tree_mgr_.get());
 }
 
-static void glfw_error_callback(int code, const char* description) {
+static void glfw_error_callback(int code, const char *description) {
   TI_WARN("GLFW Error {}: {}", code, description);
 }
 

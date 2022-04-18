@@ -62,7 +62,7 @@ inline void initGLFW() {
   }
 }
 
-static void glfw_error_callback(int code, const char* description) {
+static void glfw_error_callback(int code, const char *description) {
   printf("GLFW Error %d: %s\n", code, description);
 }
 

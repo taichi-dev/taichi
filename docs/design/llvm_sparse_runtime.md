@@ -11,7 +11,7 @@ Taichi's LLVM sparse runtime lives under the [`taichi/runtime/llvm`](https://git
 For a single SNode type `X`, it comes with a `XMeta` struct derived from [`StructMeta`](https://github.com/taichi-dev/taichi/blob/2cdc58078ecd2aef2cde608f07325108c5b3d5a5/taichi/runtime/llvm/runtime.cpp#L365-L383). `StructMeta` has the following properties:
 
 * `snode_id`: SNode ID.
-* `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the number of active cells.
+* `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the current number of active cells, but the maximum.
 * `void X_activate(Ptr meta, Ptr node, int i)`: Activates cell `i`.
 * `i32 X_is_active(Ptr meta, Ptr node, int i)`: Returns if cell `i` is active.
 * `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. This can be `nullptr` for sparse SNodes.

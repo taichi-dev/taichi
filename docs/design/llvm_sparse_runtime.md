@@ -16,7 +16,7 @@ For a single SNode type `X`, it comes with a `XMeta` struct derived from [`Struc
 * `i32 X_is_active(Ptr meta, Ptr node, int i)`: Returns if cell `i` is active.
 * `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. This can be `nullptr` for sparse SNodes.
 
-Here, `Ptr` is an alias for `uint8_t*`, and `i32` for `int32_t`. As the name suggests, `meta` points the corresponding meta struct, while `node` points to the SNode instance.
+Here, `Ptr` is an alias for `uint8_t*`, and `i32` for `int32_t`. As the name suggests, `meta` points to the corresponding meta struct, while `node` points to the SNode instance.
 
 For sparse SNodes, they also implement this additional API:
 

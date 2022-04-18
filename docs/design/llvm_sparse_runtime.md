@@ -203,7 +203,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 
 # Runtime
 
-Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp. Note that this file is *NOT* linked into Taichi's CPP core library. Instead, it is compiled into a LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between CPU and CUDA backends. In addition, the sparse runtime can be implemented in a language with enough abstraction (i.e., C++ instead of raw LLVM IR).
+Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp. Note that this file is *NOT* linked into Taichi's core C++ library. Instead, it is compiled into a LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between backends using LLVM, such as CPU and CUDA. In addition, the sparse runtime can be implemented in a language with enough abstraction (i.e., C++ instead of raw LLVM IR).
 
 The core data structure of this runtime is [`LLVMRuntime`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L543), which holds a handful of data:
 

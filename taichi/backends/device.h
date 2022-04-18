@@ -9,6 +9,8 @@
 namespace taichi {
 namespace lang {
 
+constexpr size_t kBufferSizeEntireSize = size_t(-1);
+
 // For backend dependent code (e.g. codegen)
 // Or the backend runtime itself
 // Capabilities are per-device

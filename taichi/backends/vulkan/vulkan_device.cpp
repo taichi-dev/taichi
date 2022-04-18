@@ -855,7 +855,7 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 
 void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto buffer = ti_device_->get_vkbuffer(ptr);
-  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, (size == kBufferSizeEntireSize) ? VK_WHOLE_SIZE : size, data);
   buffer_->refs.push_back(buffer);
 }
 

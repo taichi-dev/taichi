@@ -346,7 +346,7 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
 
-    # save current working directory since it may be changed by the vulkan backend
+    # Save the current working directory since it may be changed by the Vulkan backend initialization on OS X (https://github.com/taichi-dev/taichi/issues/4811)
     current_dir = os.getcwd()
 
     cfg = impl.default_cfg()

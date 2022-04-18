@@ -12,7 +12,7 @@ For a single SNode type `X`, it comes with a `XMeta` struct derived from [`Struc
 
 * `snode_id`: SNode ID.
 * `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the number of active cells.
-* `void X_active(Ptr meta, Ptr node, int i)`: Activates cell `i`.
+* `void X_activate(Ptr meta, Ptr node, int i)`: Activates cell `i`.
 * `i32 X_is_active(Ptr meta, Ptr node, int i)`: Returns if cell `i` is active.
 * `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. This can be `nullptr` for sparse SNodes.
 

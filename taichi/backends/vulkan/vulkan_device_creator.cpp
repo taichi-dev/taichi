@@ -179,7 +179,7 @@ size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
   score +=
       size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) *
       1000;
-  score += VK_API_VERSION_MINOR(properties.driverVersion) * 100;
+  score += VK_API_VERSION_MINOR(properties.apiVersion) * 100;
 
   return score;
 }

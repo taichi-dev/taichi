@@ -460,7 +460,7 @@ def init(arch=None,
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
 
-    # reset current working directory back
+    # Recover the current working directory (https://github.com/taichi-dev/taichi/issues/4811)
     os.chdir(current_dir)
     return None
 

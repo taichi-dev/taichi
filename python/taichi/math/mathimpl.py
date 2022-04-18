@@ -404,8 +404,29 @@ def cross(x, y):
     return x.cross(y)
 
 
+@ti.func
+def mod(x, y):
+    """Compute value of one parameter modulo another, element-wise.
+
+    Args:
+        x (:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`): The first input.
+        y (:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`): The second input.
+
+    Returns:
+        the value of `x` modulo `y`. This is computed as `x - y * floor(x/y)`.
+
+    Example::
+
+        >>> x = ti.Vector([-0.5, 0.5, 1.])
+        >>> y = 1.0
+        >>> mod(x, y)
+        [0.5, 0.5, 0.0]
+    """
+    return x - y * ti.floor(x / y)
+
+
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2",
-    "mat2", "mat3", "mat4", "mix", "normalize", "pi", "radians", "reflect",
-    "refract", "sign", "smoothstep", "step"
+    "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians",
+    "reflect", "refract", "sign", "smoothstep", "step"
 ]

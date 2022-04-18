@@ -366,7 +366,7 @@ Therefore, the code differentiates between the cases where destination and sourc
 |\\\|\\\|\\\|   |   |   |   |   |  --->  |   |   |   |   |   |
 +---+---+---+---+---+---+---+---+        +---+---+---+---+---+
             src                          dst
-```
+Note cell indices 3 and 4 are in both the source and the destination regions.
 
 2. [`gc_parallel_1`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1628-L1640): Does some bookkeeping for `free_list` and `recycled_list`.
 

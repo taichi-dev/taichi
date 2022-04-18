@@ -346,6 +346,9 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
 
+    # save current working directory since it may be changed by the vulkan backend
+    current_dir = os.getcwd()
+
     cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
     if require_version is not None:
@@ -457,6 +460,8 @@ def init(arch=None,
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
 
+    # reset current working directory back
+    os.chdir(current_dir)
     return None
 
 

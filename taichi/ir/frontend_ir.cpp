@@ -138,7 +138,7 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void UnaryOpExpression::type_check(CompileConfig *) {
+void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -150,7 +150,13 @@ void UnaryOpExpression::type_check(CompileConfig *) {
     throw TaichiTypeError(
         fmt::format("'{}' takes real inputs only, however '{}' is provided",
                     unary_op_type_name(type), operand->ret_type->to_string()));
-  ret_type = is_cast() ? cast_type : operand->ret_type;
+  if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
+       type == UnaryOpType::log) &&
+      !is_real(operand->ret_type)) {
+    ret_type = config->default_fp;
+  } else {
+    ret_type = is_cast() ? cast_type : operand->ret_type;
+  }
 }
 
 bool UnaryOpExpression::is_cast() const {

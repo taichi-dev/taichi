@@ -72,7 +72,7 @@ Layout of a `pointer` SNode:
                                                                                  +------------+
 ```
 
-We can follow [`Pointer_activate`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_pointer.h#L41-L65) to see how `pointer` SNode is implemented using the sparse runtime infrastructure.
+We can follow [`Pointer_activate`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_pointer.h#L41-L65) to see how the `pointer` SNode is implemented using the sparse runtime infrastructure.
 
 ```cpp
 void Pointer_activate(Ptr meta_, Ptr node, int i) {

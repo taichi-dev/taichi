@@ -197,7 +197,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 }
 ```
 
-1. Uses the current length `n` as the index (`i`) to store `data`. 
+1. Uses the current length `n` as the index (`i`) to store `data`.
 2. `chunk_strat` tracks the starting index of a given chunk, and always starts at `0` . `p_chunk_ptr` is initialized to the pointer to the first chunk.
 3. Inside the `while` loop, checks if the given chunk slot is empty first, and allocates a new chunk if so.
 4. Compares if the determined index `i` falls within the current chunk.

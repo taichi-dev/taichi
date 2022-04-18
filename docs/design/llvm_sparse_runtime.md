@@ -352,7 +352,7 @@ Normally this can be done via a simple `for` loop that copies data. However, we 
 Therefore, the code differentiates between the cases where destination and source ranges overlap or not:
 
 ```sh
-
+# Legend: "\\\" for already re-used cell indices, "   " (empty) for cell indices that are still available.
 # src and dst range do not overlap:  src=[6, 8), dst=[0, 2)
 0   1   2   3   4   5   6   7   8        0   1   2
 +---+---+---+---+---+---+---+---+        +---+---+

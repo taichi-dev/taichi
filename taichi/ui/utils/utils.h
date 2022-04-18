@@ -62,6 +62,10 @@ inline void initGLFW() {
   }
 }
 
+static void glfw_error_callback(int code, const char* description) {
+  printf("GLFW Error %d: %s\n", code, description);
+}
+
 inline GLFWwindow *create_glfw_window_(const std::string &name,
                                        int screenWidth,
                                        int screenHeight,
@@ -69,8 +73,10 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
   initGLFW();
   GLFWwindow *window;
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwSetErrorCallback(glfw_error_callback);
+
   glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
   window = glfwCreateWindow(screenWidth, screenHeight, name.c_str(), nullptr,
                             nullptr);
@@ -80,11 +86,18 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
     exit(EXIT_FAILURE);
   }
 
+  if (glfwVulkanSupported() != GLFW_TRUE) {
+    printf("GLFW reports no Vulkan support\n");
+  }
+
+  // Invalid for Vulkan
+  /*
   if (vsync) {
     glfwSwapInterval(1);
   } else {
     glfwSwapInterval(0);
   }
+  */
   return window;
 }
 

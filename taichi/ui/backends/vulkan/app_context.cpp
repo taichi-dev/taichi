@@ -90,9 +90,11 @@ void AppContext::init(Program *prog,
 
       vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
 #else
-      if (glfwCreateWindowSurface(instance, window, nullptr, &surface) !=
+      VkResult result = VK_SUCCESS;
+      if ((result = glfwCreateWindowSurface(instance, window, nullptr, &surface)) !=
           VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
+        TI_WARN("Failed to create window: error {}", result);
+        return nullptr;
       }
 #endif
       return surface;

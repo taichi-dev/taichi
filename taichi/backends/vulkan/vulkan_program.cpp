@@ -85,6 +85,10 @@ FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                snode_tree_mgr_.get());
 }
 
+static void glfw_error_callback(int code, const char *description) {
+  TI_WARN("GLFW Error {}: {}", code, description);
+}
+
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             KernelProfilerBase *profiler,
                                             uint64 **result_buffer_ptr) {
@@ -97,15 +101,13 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 // The following code is only used when Taichi is running on its own.
 #ifndef ANDROID
   GLFWwindow *glfw_window = nullptr;
-#ifdef __APPLE__
-  glfwInitVulkanLoader(vkGetInstanceProcAddr);
-#endif
 
   if (glfwInit()) {
+    glfwSetErrorCallback(glfw_error_callback);
+
     // glfw init success
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     glfw_window = glfwCreateWindow(1, 1, "Dummy Window", nullptr, nullptr);
 
     if (glfwVulkanSupported() != GLFW_TRUE) {

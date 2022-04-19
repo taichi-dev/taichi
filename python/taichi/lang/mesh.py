@@ -481,15 +481,33 @@ class MeshBuilder:
 
 # Mesh First Class
 class Mesh:
+    """The Mesh type class.
+
+    ti.Mesh offers first-class support for triangular/tetrahedral meshes 
+    and allows efficient computation on these irregular data structures, 
+    only available for backends supporting `ti.extension.mesh`.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+    """
     def __init__(self):
         pass
 
     @staticmethod
     def Tet():
+        """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Tetrahedron)
 
     @staticmethod
     def Tri():
+        """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Triangle)
 
     @staticmethod
@@ -504,13 +522,19 @@ class Mesh:
 
 
 def TriMesh():
-    """Create a triangle mesh builder.
+    """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
     """
     return Mesh.Tri()
 
 
 def TetMesh():
-    """Create a tetrahedron mesh builder.
+    """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
     """
     return Mesh.Tet()
 

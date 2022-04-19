@@ -205,7 +205,19 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
-        """TBD
+        """Declares mesh attributes for the mesh element in current mesh builder.
+
+        Args:
+        members (Dict[str, Union[PrimitiveType, VectorType, MatrixType]]): \
+            names and types for element attributes.
+        reorder: True if reorders the internal memory for coalesced data access within mesh-for loop.
+        needs_grad: True if needs to record grad.
+
+        Example::
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> mesh = ti.TriMesh()
+        >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
+        >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
         """
         self.builder.elements.add(self._type)
         for key, dtype in members.items():

@@ -196,8 +196,12 @@ class MeshElement:
     def _AOS(self, aos=True):
         self.layout = Layout.AOS if aos else Layout.SOA
 
-    SOA = property(fget=_SOA)
-    AOS = property(fget=_AOS)
+    SOA = property(fset=_SOA)
+    """ Set `True` for SOA (structure of arrays) layout.
+    """
+    AOS = property(fset=_AOS)
+    """ Set `True` for AOS (array of structures) layout.
+    """
 
     def place(
         self,
@@ -205,6 +209,20 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
+        """Declares mesh attributes for the mesh element in current mesh builder.
+
+        Args:
+        members (Dict[str, Union[PrimitiveType, VectorType, MatrixType]]): \
+            names and types for element attributes.
+        reorder: True if reorders the internal memory for coalesced data access within mesh-for loop.
+        needs_grad: True if needs to record grad.
+
+        Example::
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> mesh = ti.TriMesh()
+        >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
+        >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
+        """
         self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
@@ -244,6 +262,16 @@ class MeshElement:
                                 field_dict, g2r_field)
 
     def link(self, element):
+        """Explicitly declares the element-element connectivity for compiler to pre-generate relation data.
+
+        Args:
+            element (MeshElement): mesh element in the same builder to represent the to-end of connectivity.
+
+        Example::
+            >>> mesh = ti.TriMesh()
+            >>> mesh.faces.link(mesh.verts) # declares F-V connectivity
+            >>> mesh.verts.link(mesh.verts) # declares V-V connectivity
+        """
         assert isinstance(element, MeshElement)
         assert element.builder == self.builder
         self.builder.relations.add(tuple([self._type, element._type]))
@@ -390,6 +418,17 @@ class MeshBuilder:
         self.relations = set()
 
     def build(self, metadata: MeshMetadata):
+        """Build and instantiate mesh from model meta data
+
+        Use the following external lib to generate meta data:
+        https://github.com/BillXu2000/meshtaichi_patcher
+
+        Args:
+            metadata : model meta data.
+
+        Returns:
+            The mesh instance class.
+        """
         instance = MeshInstance(self)
         instance.fields = {}
 
@@ -442,15 +481,33 @@ class MeshBuilder:
 
 # Mesh First Class
 class Mesh:
+    """The Mesh type class.
+
+    ti.Mesh offers first-class support for triangular/tetrahedral meshes
+    and allows efficient computation on these irregular data structures,
+    only available for backends supporting `ti.extension.mesh`.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+    """
     def __init__(self):
         pass
 
     @staticmethod
     def Tet():
+        """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Tetrahedron)
 
     @staticmethod
     def Tri():
+        """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Triangle)
 
     @staticmethod
@@ -465,13 +522,19 @@ class Mesh:
 
 
 def TriMesh():
-    """Create a triangle mesh builder.
+    """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
     """
     return Mesh.Tri()
 
 
 def TetMesh():
-    """Create a tetrahedron mesh builder.
+    """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
     """
     return Mesh.Tet()
 

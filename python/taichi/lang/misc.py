@@ -492,7 +492,7 @@ def block_local(*args):
 
 
 def mesh_local(*args):
-    """Hints the compiler to cache the mesh attributes 
+    """Hints the compiler to cache the mesh attributes
     and to enable the mesh BLS optimization,
     only available for backends supporting `ti.extension.mesh` and to use with mesh-for loop.
 
@@ -500,9 +500,9 @@ def mesh_local(*args):
 
     Args:
         *args (List[Attribute]): A list of mesh attributes or fields accessed as attributes.
-    
+
     Examples::
-        
+
         # instantiate model
         mesh_builder = ti.Mesh.tri()
         mesh_builder.verts.place({

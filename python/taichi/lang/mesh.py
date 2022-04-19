@@ -425,7 +425,7 @@ class MeshBuilder:
 
         Args:
             metadata : model meta data.
-        
+
         Returns:
             The mesh instance class.
         """
@@ -483,8 +483,8 @@ class MeshBuilder:
 class Mesh:
     """The Mesh type class.
 
-    ti.Mesh offers first-class support for triangular/tetrahedral meshes 
-    and allows efficient computation on these irregular data structures, 
+    ti.Mesh offers first-class support for triangular/tetrahedral meshes
+    and allows efficient computation on these irregular data structures,
     only available for backends supporting `ti.extension.mesh`.
 
     Related to https://github.com/taichi-dev/taichi/issues/3608

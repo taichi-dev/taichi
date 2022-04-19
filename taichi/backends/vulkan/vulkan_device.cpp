@@ -110,8 +110,7 @@ const std::unordered_map<BlendOp, VkBlendOp> blend_op_ti_2_vk = {
     {BlendOp::subtract, VK_BLEND_OP_SUBTRACT},
     {BlendOp::reverse_subtract, VK_BLEND_OP_REVERSE_SUBTRACT},
     {BlendOp::min, VK_BLEND_OP_MIN},
-    {BlendOp::max, VK_BLEND_OP_MAX}
-};
+    {BlendOp::max, VK_BLEND_OP_MAX}};
 
 VkBlendOp blend_op_ti_to_vk(BlendOp op) {
   if (blend_op_ti_2_vk.find(op) == blend_op_ti_2_vk.end()) {
@@ -268,7 +267,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     if (code_view.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
       uint32_t render_target_count = 0;
       result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
-                                         nullptr);
+                                                  nullptr);
       TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
       std::vector<SpvReflectInterfaceVariable *> variables(render_target_count);

@@ -144,7 +144,7 @@ void Renderable::create_graphics_pipeline() {
   raster_params.prim_topology = config_.topology_type;
   raster_params.depth_test = true;
   raster_params.depth_write = true;
-  
+
   if (config_.blending) {
     raster_params.blending.push_back(BlendingParams());
   }

@@ -46,13 +46,7 @@ enum class DeviceCapability : uint32_t {
   wide_lines
 };
 
-enum class BlendOp : uint32_t {
-  add,
-  subtract,
-  reverse_subtract,
-  min,
-  max
-};
+enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
 
 enum class BlendFactor : uint32_t {
   zero,

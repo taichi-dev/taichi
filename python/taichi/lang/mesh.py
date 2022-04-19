@@ -197,7 +197,11 @@ class MeshElement:
         self.layout = Layout.AOS if aos else Layout.SOA
 
     SOA = property(fset=_SOA)
+    """ Set `True` for SOA (structure of arrays) layout.
+    """
     AOS = property(fset=_AOS)
+    """ Set `True` for AOS (array of structures) layout.
+    """
 
     def place(
         self,

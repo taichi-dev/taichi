@@ -259,7 +259,7 @@ class _SpecialConfig:
     def __init__(self):
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.short_circuit_operators = False
+        self.short_circuit_operators = True
 
 
 def prepare_sandbox():
@@ -345,6 +345,10 @@ def init(arch=None,
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
+
+    # FIXME(https://github.com/taichi-dev/taichi/issues/4811): save the current working directory since it may be
+    # changed by the Vulkan backend initialization on OS X.
+    current_dir = os.getcwd()
 
     cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
@@ -457,6 +461,8 @@ def init(arch=None,
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
 
+    # Recover the current working directory (https://github.com/taichi-dev/taichi/issues/4811)
+    os.chdir(current_dir)
     return None
 
 

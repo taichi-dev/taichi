@@ -196,8 +196,8 @@ class MeshElement:
     def _AOS(self, aos=True):
         self.layout = Layout.AOS if aos else Layout.SOA
 
-    SOA = property(fget=_SOA)
-    AOS = property(fget=_AOS)
+    SOA = property(fset=_SOA)
+    AOS = property(fset=_AOS)
 
     def place(
         self,

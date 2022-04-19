@@ -493,9 +493,8 @@ def block_local(*args):
 
 def mesh_local(*args):
     """Hints the compiler to cache the mesh attributes 
-    and to enable the mesh BLS optimization.
-
-    only available for backends supporting `ti.extension.mesh`.
+    and to enable the mesh BLS optimization,
+    only available for backends supporting `ti.extension.mesh` and to use with mesh-for loop.
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
 
@@ -654,6 +653,11 @@ def global_thread_idx():
 
 
 def mesh_patch_idx():
+    """Returns the internal mesh patch id of this running thread,
+    only available for backends supporting `ti.extension.mesh` and to use within mesh-for loop.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+    """
     return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
     )
 

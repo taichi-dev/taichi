@@ -414,6 +414,17 @@ class MeshBuilder:
         self.relations = set()
 
     def build(self, metadata: MeshMetadata):
+        """Build and instantiate mesh from model meta data
+
+        Use the following external lib to generate meta data:
+        https://github.com/BillXu2000/meshtaichi_patcher
+
+        Args:
+            metadata : model meta data.
+        
+        Returns:
+            The mesh instance class.
+        """
         instance = MeshInstance(self)
         instance.fields = {}
 

@@ -492,6 +492,34 @@ def block_local(*args):
 
 
 def mesh_local(*args):
+    """Hints the compiler to cache the mesh attributes 
+    and to enable the mesh BLS optimization.
+
+    only available for backends supporting `ti.extension.mesh`.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+
+    Args:
+        *args (List[Attribute]): A list of mesh attributes or fields accessed as attributes.
+    
+    Examples::
+        
+        # instantiate model
+        mesh_builder = ti.Mesh.tri()
+        mesh_builder.verts.place({
+            'x' : ti.f32,
+            'y' : ti.f32
+        })
+        model = mesh_builder.build(meta)
+
+        @ti.kernel
+        def foo():
+            # hint the compiler to cache mesh vertex attribute `x` and `y`.
+            ti.mesh_local(model.verts.x, model.verts.y)
+            for v0 in model.verts: # mesh-for loop
+                for v1 in v0.verts:
+                    v0.x += v1.y
+    """
     for a in args:
         for v in a._get_field_members():
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(

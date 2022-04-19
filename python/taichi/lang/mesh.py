@@ -205,6 +205,8 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
+        """TBD
+        """
         self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
@@ -244,6 +246,16 @@ class MeshElement:
                                 field_dict, g2r_field)
 
     def link(self, element):
+        """Explicitly declares the element-element connectivity for compiler to pre-generate relation data.
+
+        Args:
+            element (MeshElement): mesh element in the same builder to represent the to-end of connectivity.
+
+        Example::
+            >>> mesh = ti.TriMesh()
+            >>> mesh.faces.link(mesh.verts) # declares F-V connectivity
+            >>> mesh.verts.link(mesh.verts) # declares V-V connectivity
+        """
         assert isinstance(element, MeshElement)
         assert element.builder == self.builder
         self.builder.relations.add(tuple([self._type, element._type]))

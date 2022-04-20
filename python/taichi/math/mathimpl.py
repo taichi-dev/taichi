@@ -7,6 +7,7 @@ import taichi as ti
 
 from .vectypes import vec2
 
+
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
 """

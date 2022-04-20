@@ -464,7 +464,7 @@ class Kernel:
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
-        
+
         if impl.current_cfg().use_mesh:
             taichi.lang.Mesh.update_relation(tree, ctx)
 

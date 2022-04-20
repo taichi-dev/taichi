@@ -70,10 +70,11 @@ class SwizzleGenerator:
         self._nrel_map = generate_num_required_elems_required_len_map(
             max_unique_elems)
 
-    def generate(self, accessors: Iterable[str], required_length: int)-> List[Tuple[int, ...]]:
+    def generate(self, accessors: Iterable[str],
+                 required_length: int) -> List[Tuple[int, ...]]:
         res = []
         for l in range(required_length):
-          res += self._gen_for_length(accessors, l + 1)
+            res += self._gen_for_length(accessors, l + 1)
         return res
 
     def _gen_for_length(self, accessors, required_length):
@@ -92,14 +93,14 @@ class SwizzleGenerator:
         return res
 
     def _generate_seed_patterns(self, acc, nrel_vals):
-      res = []
-      for val in nrel_vals:
-          assert len(acc) == len(val)
-          seed = []
-          for char, vi in zip(acc, val):
-              seed += [char] * vi
-          res.append(tuple(seed))
-      return res
+        res = []
+        for val in nrel_vals:
+            assert len(acc) == len(val)
+            seed = []
+            for char, vi in zip(acc, val):
+                seed += [char] * vi
+            res.append(tuple(seed))
+        return res
 
 
 __all__ = [

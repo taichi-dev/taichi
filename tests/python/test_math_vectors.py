@@ -3,15 +3,18 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
+
 def _Vector_based_vec3_maker(*data):
-  if len(data) == 1:
-    data = data * 3
-  return ti.Vector(data, dt=ti.f32)
+    if len(data) == 1:
+        data = data * 3
+    return ti.Vector(data, dt=ti.f32)
+
 
 vec3_makers = [
-  ti.math.vec3,
-  _Vector_based_vec3_maker,
+    ti.math.vec3,
+    _Vector_based_vec3_maker,
 ]
+
 
 @pytest.mark.parametrize('make_vec3', vec3_makers)
 @test_utils.test()

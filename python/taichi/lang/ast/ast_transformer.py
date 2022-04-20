@@ -591,8 +591,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Attribute(ctx, node):
         build_stmt(ctx, node.value)
-        if isinstance(node.value.ptr, impl.MeshInstance):
-            ctx.meshes.add(node.value.ptr)
         node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 

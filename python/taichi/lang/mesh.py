@@ -1,4 +1,5 @@
 import json
+import ast
 
 import numpy as np
 from taichi._lib import core as _ti_core
@@ -285,7 +286,6 @@ class MeshInstance:
         self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
         self.relation_set = set()
-        self.new_relations = set()
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):
@@ -330,44 +330,35 @@ class MeshInstance:
                                     reorder_type)
 
     def get_relation_size(self, from_index, to_element_type):
-        from_order = element_order(from_index.element_type)
-        to_order = element_order(to_element_type)
-        self.check_relation(from_order, to_order)
         return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr,
                                           to_element_type)
 
     def get_relation_access(self, from_index, to_element_type,
                             neighbor_idx_ptr):
-        from_order = element_order(from_index.element_type)
-        to_order = element_order(to_element_type)
-        self.check_relation(from_order, to_order)
+        # from_order = element_order(from_index.element_type)
+        # to_order = element_order(to_element_type)
         return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr,
                                             to_element_type, neighbor_idx_ptr)
 
-    def check_relation(self, from_order, to_order):
-        self.new_relations.add((from_order, to_order))
+    def update_relation(self, from_order, to_order):
+        rel_type = MeshRelationType(
+            relation_by_orders(from_order, to_order))
+        if rel_type not in self.relation_set:
+            meta = self.patcher.get_relation_meta(from_order, to_order)
+            print('new relation')
 
-    def update_relation(self):
-        for from_order, to_order in self.new_relations:
-            rel_type = MeshRelationType(
-                relation_by_orders(from_order, to_order))
-            if rel_type not in self.relation_set:
-                meta = self.patcher.get_relation_meta(from_order, to_order)
-                print('new relation')
+            def fun(arr, dtype):
+                field = impl.field(dtype=dtype, shape=arr.shape)
+                field.from_numpy(arr)
+                return field
 
-                def fun(arr, dtype):
-                    field = impl.field(dtype=dtype, shape=arr.shape)
-                    field.from_numpy(arr)
-                    return field
-
-                if from_order <= to_order:
-                    self.set_relation_dynamic(rel_type,
-                                              fun(meta["value"], u16),
-                                              fun(meta["patch_offset"], u32),
-                                              fun(meta["offset"], u16))
-                else:
-                    self.set_relation_fixed(rel_type, fun(meta["value"], u16))
-        self.new_relations.clear()
+            if from_order <= to_order:
+                self.set_relation_dynamic(rel_type,
+                                            fun(meta["value"], u16),
+                                            fun(meta["patch_offset"], u32),
+                                            fun(meta["offset"], u16))
+            else:
+                self.set_relation_fixed(rel_type, fun(meta["value"], u16))
 
 
 class MeshMetadata:
@@ -466,6 +457,8 @@ class MeshBuilder:
 
         self.elements = set()
         self.relations = set()
+
+        impl.current_cfg().use_mesh = True
 
     def build(self, metadata: MeshMetadata):
         """Build and instantiate mesh from model meta data
@@ -570,6 +563,49 @@ class Mesh:
     @staticmethod
     def generate_meta(data):
         return MeshMetadata(data)
+    
+    class RelationVisitor(ast.NodeVisitor):
+        def __init__(self, ctx):
+            self.vars = {}
+            self.visits = []
+            self.ctx = ctx
+
+        def visit_For(self, node):
+            if isinstance(node.iter, ast.Attribute):
+                value = node.iter.value
+                if isinstance(value, ast.Name):
+                    if value.id in self.ctx.global_vars:
+                        var = self.ctx.global_vars[value.id]
+                        if isinstance(var, MeshInstance):
+                            self.vars[node.target.id] = [var, node.iter.attr]
+            if isinstance(node.iter, ast.Name):
+                if node.iter.id in self.ctx.global_vars:
+                    var = self.ctx.global_vars[node.iter.id]
+                    if isinstance(var, MeshElementField):
+                        self.vars[node.target.id] = [var.mesh, element_type_name(var._type)]
+            ast.NodeVisitor.generic_visit(self, node)
+        
+        def visit_Assign(self, node):
+            if isinstance(node.targets[0], ast.Name):
+                if isinstance(node.value, ast.Name):
+                    if node.value.id in self.vars:
+                        self.vars[node.targets[0].id] = self.vars[node.value.id]
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Attribute(self, node):
+            if isinstance(node.value, ast.Name):
+                if node.value.id in self.vars:
+                    self.visits.append(self.vars[node.value.id] + [node.attr])
+            ast.NodeVisitor.generic_visit(self, node)
+    
+    @staticmethod
+    def update_relation(tree, ctx):
+        x = Mesh.RelationVisitor(ctx)
+        x.visit(tree)
+        name_to_order = {"verts": 0, "edges": 1, "faces": 2, "cells": 3}
+        for visit in x.visits:
+            visit[0].update_relation(name_to_order[visit[1]], name_to_order[visit[2]])
+
 
 
 def TriMesh():

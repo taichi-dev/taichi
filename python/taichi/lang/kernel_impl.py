@@ -464,6 +464,9 @@ class Kernel:
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
+        
+        if impl.current_cfg().use_mesh:
+            taichi.lang.Mesh.update_relation(tree, ctx)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -490,9 +493,6 @@ class Kernel:
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.is_grad)
-
-        for mesh in ctx.meshes:
-            mesh.update_relation()
 
         self.kernel_cpp = taichi_kernel
 

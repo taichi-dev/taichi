@@ -76,7 +76,7 @@ for i, j in A:
     A[i, j] += 1
 ```
 
-The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable o f automatically deducing the underlying data layout and applying a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
+The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable of automatically deducing the underlying data layout and applying a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
 
 ### Row-major versus column-major
 
@@ -190,8 +190,6 @@ ti.root.dense(ti.i, N).place(vel)
 def step():
     pos[i] += vel[i] * dt
     vel[i] += -k * pos[i] * dt
-
-...
 ```
 
 The above code snippet defines SoA fields and a `step` kernel that sequentially accesses each element.
@@ -216,9 +214,7 @@ def step():
 Merely revising the place statement is sufficient to change the layout. With this optimization, the instant elements `pos[i]` and `vel[i]` are now adjacent in memory, which is more efficient.
 
 <!-- ```python
-
 # SoA version
-
 N = 200000
 pos = ti.field(ti.f32)
 vel = ti.field(ti.f32)
@@ -229,7 +225,6 @@ ti.root.dense(ti.i, N).place(vel)
 def step():
     pos[i] += vel[i] * dt
     vel[i] += -k * pos[i] * dt
-
 ```
 
 ```python
@@ -272,7 +267,6 @@ Structure of Arrays (SoA): -->
 <!-- ```python
 ti.root.dense(ti.i, 3).place(x)
 ti.root.dense(ti.i, 3).place(y)
-
 ```
 Now their memory layout is:
 

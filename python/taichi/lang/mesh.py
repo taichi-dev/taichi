@@ -376,6 +376,8 @@ class MeshMetadata:
                     dtype=u16, shape=len(relation["offset"]))
                 self.relation_fields[rel_type]["patch_offset"] = impl.field(
                     dtype=u32, shape=len(relation["patch_offset"]))
+            self.relation_fields[rel_type]["from_order"] = from_order
+            self.relation_fields[rel_type]["to_order"] = to_order
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])
@@ -405,6 +407,10 @@ class MeshMetadata:
 
         self.attrs = {}
         self.attrs["x"] = np.array(data["attrs"]["x"]).reshape(-1, 3)
+        if "patcher" in data:
+            self.patcher = data["patcher"]
+        else:
+            self.patcher = None
 
 
 # Define the Mesh Type, stores the field type info
@@ -431,7 +437,8 @@ class MeshBuilder:
 
         instance.set_num_patches(metadata.num_patches)
 
-        for element in self.elements:
+        for element in metadata.element_fields:
+            self.elements.add(element)
             _ti_core.set_num_elements(instance.mesh_ptr, element,
                                       metadata.num_elements[element])
             instance.set_patch_max_element_num(
@@ -456,11 +463,9 @@ class MeshBuilder:
             instance.set_index_mapping(element, ConvType.g2r,
                                        metadata.element_fields[element]["g2r"])
 
-        for relation in self.relations:
-            from_order = element_order(relation[0])
-            to_order = element_order(relation[1])
-            rel_type = MeshRelationType(
-                relation_by_orders(from_order, to_order))
+        for rel_type in metadata.relation_fields:
+            from_order = metadata.relation_fields[rel_type]["from_order"]
+            to_order = metadata.relation_fields[rel_type]["to_order"]
             if from_order <= to_order:
                 instance.set_relation_dynamic(
                     rel_type, metadata.relation_fields[rel_type]["value"],
@@ -472,6 +477,8 @@ class MeshBuilder:
 
         if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
             instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101
+        
+        instance.patcher = metadata.patcher
 
         return instance
 

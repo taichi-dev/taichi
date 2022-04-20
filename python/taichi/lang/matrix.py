@@ -1,6 +1,6 @@
-from copy import deepcopy
 import numbers
 from collections.abc import Iterable
+from copy import deepcopy
 
 import numpy as np
 from taichi._lib import core as ti_core
@@ -13,12 +13,13 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
-from taichi.lang.swizzle_generator import SwizzleGenerator
+
 
 def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
@@ -27,7 +28,7 @@ def _gen_swizzles(cls):
         sw_patterns = []
         for pats_per_len in swizzle_gen.generate(key_group, required_length=4):
             sw_patterns += pats_per_len
-        
+
         for pat in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
@@ -39,7 +40,8 @@ def _gen_swizzles(cls):
 
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
-                        raise TaichiCompilationError('values does not match the attribute')
+                        raise TaichiCompilationError(
+                            'values does not match the attribute')
                     for ch, val in zip(pattern, value):
                         if in_python_scope():
                             instance[key_group.index(ch)] = val
@@ -49,9 +51,11 @@ def _gen_swizzles(cls):
                 prop = property(prop_getter, prop_setter)
                 prop_key = ''.join(pattern)
                 return prop_key, prop
+
             prop_key, prop = gen_property(pat, key_group)
             setattr(cls, prop_key, prop)
     return cls
+
 
 @_gen_swizzles
 class Matrix(TaichiOperations):
@@ -510,7 +514,6 @@ class Matrix(TaichiOperations):
     #         -1
     #     """
     #     self[3] = value
-
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

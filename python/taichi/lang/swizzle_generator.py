@@ -1,5 +1,5 @@
-from itertools import permutations, combinations
 from collections import namedtuple
+from itertools import combinations, permutations
 from typing import Iterable
 
 NRE_LNG = namedtuple('NRE_LNG', ['num_required_elems', 'length'])
@@ -26,7 +26,7 @@ def generate_num_required_elems_to_required_len_map(max_unique_elems=5):
             raise InvalidPattern(f'{num_required_elems} {required_len}')
         if num_required_elems == 1:
             if required_len > 0:
-                m[mkey] = ((required_len,),)
+                m[mkey] = ((required_len, ), )
                 return m[mkey]
             raise InvalidPattern(f'{num_required_elems} {required_len}')
 
@@ -34,7 +34,7 @@ def generate_num_required_elems_to_required_len_map(max_unique_elems=5):
         for n in range(1, required_len + 1):
             try:
                 cur = _gen_impl(num_required_elems - 1, required_len - n)
-                res += [(n,) + t for t in cur]
+                res += [(n, ) + t for t in cur]
             except InvalidPattern:
                 pass
         res = tuple(res)
@@ -55,7 +55,9 @@ def generate_seed_patterns(acc, nrel_vals):
         assert len(acc) == len(val)
         seed = []
         for char, vi in zip(acc, val):
-            seed += [char, ] * vi
+            seed += [
+                char,
+            ] * vi
         res.append(tuple(seed))
     return res
 
@@ -66,8 +68,10 @@ class SwizzleGenerator:
             max_unique_elems)
 
     def generate(self, accessors: Iterable[str], required_length: int):
-        res = [self._gen_for_length(accessors, l)
-               for l in range(1, required_length + 1)]
+        res = [
+            self._gen_for_length(accessors, l)
+            for l in range(1, required_length + 1)
+        ]
         return res
 
     def _gen_for_length(self, accessors, required_length):

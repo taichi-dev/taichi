@@ -145,6 +145,10 @@ void Renderable::create_graphics_pipeline() {
   raster_params.depth_test = true;
   raster_params.depth_write = true;
 
+  if (config_.blending) {
+    raster_params.blending.push_back(BlendingParams());
+  }
+
   std::vector<VertexInputBinding> vertex_inputs = {
       {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};
   // TODO: consider using uint8 for colors and normals

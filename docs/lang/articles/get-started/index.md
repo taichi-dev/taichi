@@ -143,7 +143,7 @@ ti.init(arch=ti.cpu)
 
 - With `arch=ti.gpu`, Taichi first tries to run on CUDA. If CUDA is not supported on your machine, Taichi falls back on Metal, OpenGL, Vulkan, or DX11.
 - If no GPU backend (CUDA, Metal, OpenGL, Vulkan, or DX11) is supported, Taichi falls back to the CPU backend.
-  :::
+:::
 
 :::note
 
@@ -181,7 +181,6 @@ that is **compiled, statically-typed, lexically-scoped, parallel and differentia
 *Taichi scope vs. Python scope*:
 
 Everything decorated with `@ti.kernel` and `@ti.func` is in the Taichi scope and hence will be compiled by the Taichi compiler.
-
 Everything else is in the Python scope. They are simply Python native code.
 :::
 
@@ -189,7 +188,7 @@ Everything else is in the Python scope. They are simply Python native code.
 
 - Taichi kernels must be called from the Python-scope.
 - Taichi functions must be called from the Taichi-scope.
-  :::
+:::
 
 :::tip
 
@@ -197,13 +196,9 @@ For those who come from the world of CUDA, `ti.func` corresponds to `__device__`
 :::
 
 :::note
-
 - Nested kernels are *not supported*.
-
 - Nested functions are *supported*.
-
 - Recursive functions are *not supported for now*.
-
 :::
 
 ### Parallel for-loops
@@ -220,11 +215,9 @@ For loops at the outermost scope in a Taichi kernel is *automatically paralleliz
 def fill():
     for i in range(10): # Parallelized
         x[i] += i
-
         s = 0
         for j in range(5): # Serialized in each parallel thread
             s += j
-
         y[i] = s
 
 @ti.kernel
@@ -238,7 +231,7 @@ def fill_3d():
 
 It is the loop *at the outermost scope* that gets parallelized, not the outermost loop.
 
-```python {3,9}
+```python
 @ti.kernel
 def foo():
     for i in range(10): # Parallelized :-)
@@ -250,20 +243,17 @@ def bar(k: ti.i32):
         for i in range(10): # Serial :-(
             ...
 ```
-
 :::
 
 *Struct-for loops* are particularly useful when iterating over (sparse) field elements. In the `fractal.py` above, `for i, j in pixels` loops over all the pixel coordinates, i.e.,`(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)`.
 
 :::note
-
 Struct-for is the key to [sparse computation](../advanced/sparse.md) in Taichi, as it will only loop over active elements in a sparse field. In dense fields, all elements are active.
 :::
 
 :::caution WARNING
 
 Struct-for loops must live at the outer-most scope of kernels.
-
 It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
 
 ```python
@@ -279,7 +269,6 @@ def bar(k: ti.i32):
         for i in x: # Not allowed. Struct-fors must live in the outermost scope.
             ...
 ```
-
 :::
 
 :::caution WARNING
@@ -304,7 +293,6 @@ def foo():
           ...
           break # OK!
 ```
-
 :::
 
 ### GUI system

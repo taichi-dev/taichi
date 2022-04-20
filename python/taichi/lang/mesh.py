@@ -1,5 +1,5 @@
-import json
 import ast
+import json
 
 import numpy as np
 from taichi._lib import core as _ti_core
@@ -341,8 +341,7 @@ class MeshInstance:
                                             to_element_type, neighbor_idx_ptr)
 
     def update_relation(self, from_order, to_order):
-        rel_type = MeshRelationType(
-            relation_by_orders(from_order, to_order))
+        rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
         if rel_type not in self.relation_set:
             meta = self.patcher.get_relation_meta(from_order, to_order)
             print('new relation')
@@ -353,10 +352,9 @@ class MeshInstance:
                 return field
 
             if from_order <= to_order:
-                self.set_relation_dynamic(rel_type,
-                                            fun(meta["value"], u16),
-                                            fun(meta["patch_offset"], u32),
-                                            fun(meta["offset"], u16))
+                self.set_relation_dynamic(rel_type, fun(meta["value"], u16),
+                                          fun(meta["patch_offset"], u32),
+                                          fun(meta["offset"], u16))
             else:
                 self.set_relation_fixed(rel_type, fun(meta["value"], u16))
 
@@ -563,7 +561,7 @@ class Mesh:
     @staticmethod
     def generate_meta(data):
         return MeshMetadata(data)
-    
+
     class RelationVisitor(ast.NodeVisitor):
         def __init__(self, ctx):
             self.vars = {}
@@ -582,14 +580,17 @@ class Mesh:
                 if node.iter.id in self.ctx.global_vars:
                     var = self.ctx.global_vars[node.iter.id]
                     if isinstance(var, MeshElementField):
-                        self.vars[node.target.id] = [var.mesh, element_type_name(var._type)]
+                        self.vars[node.target.id] = [
+                            var.mesh, element_type_name(var._type)
+                        ]
             ast.NodeVisitor.generic_visit(self, node)
-        
+
         def visit_Assign(self, node):
             if isinstance(node.targets[0], ast.Name):
                 if isinstance(node.value, ast.Name):
                     if node.value.id in self.vars:
-                        self.vars[node.targets[0].id] = self.vars[node.value.id]
+                        self.vars[node.targets[0].id] = self.vars[
+                            node.value.id]
             ast.NodeVisitor.generic_visit(self, node)
 
         def visit_Attribute(self, node):
@@ -597,15 +598,15 @@ class Mesh:
                 if node.value.id in self.vars:
                     self.visits.append(self.vars[node.value.id] + [node.attr])
             ast.NodeVisitor.generic_visit(self, node)
-    
+
     @staticmethod
     def update_relation(tree, ctx):
         x = Mesh.RelationVisitor(ctx)
         x.visit(tree)
         name_to_order = {"verts": 0, "edges": 1, "faces": 2, "cells": 3}
         for visit in x.visits:
-            visit[0].update_relation(name_to_order[visit[1]], name_to_order[visit[2]])
-
+            visit[0].update_relation(name_to_order[visit[1]],
+                                     name_to_order[visit[2]])
 
 
 def TriMesh():

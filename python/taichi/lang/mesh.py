@@ -256,6 +256,7 @@ class MeshInstance:
     def __init__(self, _type):
         self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
+        self.relation_set = set()
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):
@@ -282,12 +283,14 @@ class MeshInstance:
 
     def set_relation_fixed(self, rel_type: MeshRelationType,
                            value: ScalarField):
+        self.relation_set.add(rel_type)
         _ti_core.set_relation_fixed(self.mesh_ptr, rel_type,
                                     value.vars[0].ptr.snode())
 
     def set_relation_dynamic(self, rel_type: MeshRelationType,
                              value: ScalarField, patch_offset: ScalarField,
                              offset: ScalarField):
+        self.relation_set.add(rel_type)
         _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
                                       value.vars[0].ptr.snode(),
                                       patch_offset.vars[0].ptr.snode(),
@@ -296,6 +299,33 @@ class MeshInstance:
     def add_mesh_attribute(self, element_type, snode, reorder_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,
                                     reorder_type)
+    
+    def get_relation_size(self, from_index, to_element_type):
+        from_order = element_order(from_index.element_type)
+        to_order = element_order(to_element_type)
+        self.check_relation(from_order, to_order)
+        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr, to_element_type)
+    
+    def get_relation_access(self, from_index, to_element_type, neighbor_idx_ptr):
+        from_order = element_order(from_index.element_type)
+        to_order = element_order(to_element_type)
+        self.check_relation(from_order, to_order)
+        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr)
+    
+    def check_relation(self, from_order, to_order):
+        rel_type = MeshRelationType(
+            relation_by_orders(from_order, to_order))
+        print(rel_type.name, rel_type.value, from_order, to_order, self.relation_set)
+        if rel_type not in self.relation_set:
+            meta = self.patcher.get_relation_meta(from_order, to_order)
+            def fun(arr, dtype):
+                field = impl.field(dtype=dtype, shape=arr.shape)
+                field.from_numpy(arr)
+                return field
+            if from_order <= to_order:
+                self.set_relation_dynamic(rel_type, fun(meta["value"], u16), fun(meta["patch_offset"], u32), fun(meta["offset"], u16))
+            else:
+                self.set_relation_fixed(rel_type, fun(meta["value"], u16))
 
 
 class MeshMetadata:
@@ -530,16 +560,18 @@ class MeshRelationAccessProxy:
 
     @property
     def size(self):
-        return impl.Expr(
-            _ti_core.get_relation_size(self.mesh.mesh_ptr, self.from_index.ptr,
-                                       self.to_element_type))
+        # return impl.Expr(
+        #     _ti_core.get_relation_size(self.mesh.mesh_ptr, self.from_index.ptr,
+        #                                self.to_element_type))
+        return impl.Expr(self.mesh.get_relation_size(self.from_index, self.to_element_type))
 
     def subscript(self, *indices):
         assert len(indices) == 1
-        entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
-                                                  self.from_index.ptr,
-                                                  self.to_element_type,
-                                                  impl.Expr(indices[0]).ptr)
+        # entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
+        #                                           self.from_index.ptr,
+        #                                           self.to_element_type,
+        #                                           impl.Expr(indices[0]).ptr)
+        entry_expr = self.mesh.get_relation_access(self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr)
         entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)

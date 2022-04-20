@@ -546,5 +546,5 @@ def rot3(axis, ang):
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract", "log2",
     "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians", "reflect",
-    "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign", "smoothstep", "step",
+    "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign", "smoothstep", "step"
 ]

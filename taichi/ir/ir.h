@@ -603,7 +603,6 @@ class Block : public IRNode {
   Stmt *parent_stmt{nullptr};
   stmt_vector statements;
   stmt_vector trash_bin;
-  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
@@ -611,7 +610,6 @@ class Block : public IRNode {
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
   Block() {
-    mask_var = nullptr;
     parent_stmt = nullptr;
     kernel = nullptr;
   }
@@ -648,7 +646,6 @@ class Block : public IRNode {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
-  Stmt *mask();
   IRNode *get_parent() const override;
 
   Stmt *back() const {

@@ -66,11 +66,91 @@ get_offline_cache_key_of_compile_config(CompileConfig *config) {
   return serializer.data;
 }
 
-std::string get_offline_cache_key(CompileConfig *config, Kernel *kernel) {
+static TI_FORCE_INLINE void get_offline_cache_key_of_snode_impl(
+    SNode *snode,
+    BinaryOutputSerializer &serializer) {
+  for (auto &c : snode->ch) {
+    get_offline_cache_key_of_snode_impl(c.get(), serializer);
+  }
+  for (int i = 0; i < taichi_max_num_indices; ++i) {
+    auto &extractor = snode->extractors[i];
+    serializer(extractor.num_elements_from_root);
+    serializer(extractor.shape);
+    serializer(extractor.acc_shape);
+    serializer(extractor.num_bits);
+    serializer(extractor.acc_offset);
+    serializer(extractor.active);
+  }
+  serializer(snode->index_offsets);
+  serializer(snode->num_active_indices);
+  serializer(snode->physical_index_position);
+  serializer(snode->id);
+  serializer(snode->depth);
+  serializer(snode->name);
+  serializer(snode->num_cells_per_container);
+  serializer(snode->total_num_bits);
+  serializer(snode->total_bit_start);
+  serializer(snode->chunk_size);
+  serializer(snode->cell_size_bytes);
+  serializer(snode->offset_bytes_in_parent_cell);
+  if (snode->physical_type) {
+    serializer(snode->physical_type->to_string());
+  }
+  serializer(snode->dt->to_string());
+  serializer(snode->has_ambient);
+  if (!snode->ambient_val.dt->is_primitive(PrimitiveTypeID::unknown)) {
+    serializer(snode->ambient_val.stringify());
+  }
+  if (snode->grad_info && !snode->grad_info->is_primal()) {
+    if (auto *grad_snode = snode->grad_info->grad_snode()) {
+      get_offline_cache_key_of_snode_impl(grad_snode, serializer);
+    }
+  }
+  if (snode->exp_snode) {
+    get_offline_cache_key_of_snode_impl(snode->exp_snode, serializer);
+  }
+  serializer(snode->bit_offset);
+  serializer(snode->placing_shared_exp);
+  serializer(snode->owns_shared_exponent);
+  for (auto s : snode->exponent_users) {
+    get_offline_cache_key_of_snode_impl(s, serializer);
+  }
+  if (snode->currently_placing_exp_snode) {
+    get_offline_cache_key_of_snode_impl(snode->currently_placing_exp_snode,
+                                        serializer);
+  }
+  if (snode->currently_placing_exp_snode_dtype) {
+    serializer(snode->currently_placing_exp_snode_dtype->to_string());
+  }
+  serializer(snode->is_bit_level);
+  serializer(snode->is_path_all_dense);
+  serializer(snode->node_type_name);
+  serializer(snode->type);
+  serializer(snode->_morton);
+  serializer(snode->get_snode_tree_id());
+}
+
+std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
+  TI_ASSERT(snode);
+
+  BinaryOutputSerializer serializer;
+  serializer.initialize();
+  get_offline_cache_key_of_snode_impl(snode, serializer);
+  serializer.finalize();
+
+  picosha2::hash256_one_by_one hasher;
+  hasher.process(serializer.data.begin(), serializer.data.end());
+  hasher.finish();
+
+  return picosha2::get_hash_hex_string(hasher);
+}
+
+std::string get_hashed_offline_cache_key(CompileConfig *config,
+                                         Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
-    irpass::re_id(kernel->ir.get());
-    irpass::print(kernel->ir.get(), &kernel_ast_string);
+    irpass::gen_offline_cache_key(kernel->program, kernel->ir.get(),
+                                  &kernel_ast_string);
   }
 
   std::vector<std::uint8_t> compile_config_key;

@@ -179,7 +179,7 @@ size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
   score +=
       size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) *
       1000;
-  score += VK_API_VERSION_MINOR(properties.driverVersion) * 100;
+  score += VK_API_VERSION_MINOR(properties.apiVersion) * 100;
 
   return score;
 }
@@ -293,6 +293,12 @@ void VulkanDeviceCreator::create_instance() {
     } else if (name == VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) {
       extensions.insert(name);
       ti_device_->set_cap(DeviceCapability::vk_has_physical_features2, true);
+    } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
+      extensions.insert(name);
+    } else if (name == VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME) {
+      extensions.insert(name);
+    } else if (name == VK_EXT_DEBUG_UTILS_EXTENSION_NAME) {
+      extensions.insert(name);
     }
   }
 
@@ -339,6 +345,7 @@ void VulkanDeviceCreator::setup_debug_messenger() {
 
 void VulkanDeviceCreator::create_surface() {
   surface_ = params_.surface_creator(instance_);
+  TI_ASSERT_INFO(surface_, "failed to create window surface!");
 }
 
 void VulkanDeviceCreator::pick_physical_device() {

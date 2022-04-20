@@ -326,16 +326,6 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
   }
 }
 
-Stmt *Block::mask() {
-  if (mask_var)
-    return mask_var;
-  else if (parent_block() == nullptr) {
-    return nullptr;
-  } else {
-    return parent_block()->mask();
-  }
-}
-
 void Block::set_statements(VecStatement &&stmts) {
   statements.clear();
   for (int i = 0; i < (int)stmts.size(); i++) {
@@ -410,7 +400,6 @@ stmt_vector::iterator Block::find(Stmt *stmt) {
 std::unique_ptr<Block> Block::clone() const {
   auto new_block = std::make_unique<Block>();
   new_block->parent_stmt = parent_stmt;
-  new_block->mask_var = mask_var;
   new_block->stop_gradients = stop_gradients;
   new_block->statements.reserve(size());
   for (auto &stmt : statements)

@@ -148,6 +148,7 @@ class ASTTransformerContext:
         self.ast_builder = ast_builder
         self.visited_funcdef = False
         self.is_real_function = is_real_function
+        self.meshes = set()
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):

@@ -257,6 +257,7 @@ class MeshInstance:
         self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
         self.relation_set = set()
+        self.new_relations = set()
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):
@@ -313,19 +314,24 @@ class MeshInstance:
         return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr)
     
     def check_relation(self, from_order, to_order):
-        rel_type = MeshRelationType(
-            relation_by_orders(from_order, to_order))
-        print(rel_type.name, rel_type.value, from_order, to_order, self.relation_set)
-        if rel_type not in self.relation_set:
-            meta = self.patcher.get_relation_meta(from_order, to_order)
-            def fun(arr, dtype):
-                field = impl.field(dtype=dtype, shape=arr.shape)
-                field.from_numpy(arr)
-                return field
-            if from_order <= to_order:
-                self.set_relation_dynamic(rel_type, fun(meta["value"], u16), fun(meta["patch_offset"], u32), fun(meta["offset"], u16))
-            else:
-                self.set_relation_fixed(rel_type, fun(meta["value"], u16))
+        self.new_relations.add((from_order, to_order))
+    
+    def update_relation(self):
+        for from_order, to_order in self.new_relations:
+            rel_type = MeshRelationType(
+                relation_by_orders(from_order, to_order))
+            if rel_type not in self.relation_set:
+                meta = self.patcher.get_relation_meta(from_order, to_order)
+                print('new relation')
+                def fun(arr, dtype):
+                    field = impl.field(dtype=dtype, shape=arr.shape)
+                    field.from_numpy(arr)
+                    return field
+                if from_order <= to_order:
+                    self.set_relation_dynamic(rel_type, fun(meta["value"], u16), fun(meta["patch_offset"], u32), fun(meta["offset"], u16))
+                else:
+                    self.set_relation_fixed(rel_type, fun(meta["value"], u16))
+        self.new_relations.clear()
 
 
 class MeshMetadata:

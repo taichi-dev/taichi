@@ -278,20 +278,20 @@ def bar(k: ti.i32):
 ```python
 @ti.kernel
 def foo():
-  for i in x:
-      ...
-      break # Error!
+    for i in x:
+        ...
+        break # Error!
 
-  for i in range(10):
-      ...
-      break # Error!
+    for i in range(10):
+        ...
+        break # Error!
 
 @ti.kernel
 def foo():
-  for i in x:
-      for j in range(10):
-          ...
-          break # OK!
+    for i in x:
+        for j in range(10):
+            ...
+            break # OK!
 ```
 :::
 
@@ -303,9 +303,9 @@ Taichi provides a CPU-based [GUI system](../gui/gui_system.md) for you to render
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 
 for i in range(1000000):
-  paint(i * 0.03)
-  gui.set_image(pixels)
-  gui.show()
+    paint(i * 0.03)
+    gui.set_image(pixels)
+    gui.show()
 ```
 
 ## Still have issues?

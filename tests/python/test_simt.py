@@ -219,6 +219,25 @@ def test_shfl_up_f32():
 
 
 @test_utils.test(arch=ti.cuda)
+def test_shfl_down_f32():
+    a = ti.field(dtype=ti.f32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_down_f32(ti.u32(0xFFFFFFFF), a[i], 1)
+
+    for i in range(32):
+        a[i] = i * i * 0.9
+
+    foo()
+
+    for i in range(31):
+        assert a[i] == approx((i + 1) * (i + 1) * 0.9, abs=1e-4)
+
+
+@test_utils.test(arch=ti.cuda)
 def test_match_any():
     # TODO
     pass

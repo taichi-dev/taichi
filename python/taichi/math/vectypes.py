@@ -1,9 +1,7 @@
 import collections
-import functools
 import sys
 
 from taichi.lang.matrix import Matrix
-from taichi.lang.util import in_python_scope, python_scope
 from taichi.types.primitive_types import f32, i32
 
 

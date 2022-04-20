@@ -25,6 +25,8 @@ def _gen_swizzles(cls):
     KEMAP_SET = ['xyzw', 'rgba', 'uvw']
     for key_group in KEMAP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        # len=1 accessors are handled specially
+        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
 
         for pat in sw_patterns:
             # Create a function for value capturing
@@ -36,9 +38,6 @@ def _gen_swizzles(cls):
                     return Vector(res, is_ref=True)
 
                 def prop_setter(instance, value):
-                    if len(pattern) == 1:
-                        assert not isinstance(value, Iterable)
-                        value = [value, ]
                     if len(pattern) != len(value):
                         raise TaichiCompilationError(
                             'values does not match the attribute')
@@ -402,118 +401,118 @@ class Matrix(TaichiOperations):
                                                  self.dynamic_index_stride)
         return self(i, j)
 
-    # @property
-    # def x(self):
-    #     """Get the first element of a matrix.
+    @property
+    def x(self):
+        """Get the first element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.x
-    #         0
-    #     """
-    #     if impl.inside_kernel():
-    #         return self._subscript(0)
-    #     return self[0]
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.x
+            0
+        """
+        if impl.inside_kernel():
+            return self._subscript(0)
+        return self[0]
 
-    # @property
-    # def y(self):
-    #     """Get the second element of a matrix.
+    @property
+    def y(self):
+        """Get the second element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.y
-    #         1
-    #     """
-    #     if impl.inside_kernel():
-    #         return self._subscript(1)
-    #     return self[1]
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.y
+            1
+        """
+        if impl.inside_kernel():
+            return self._subscript(1)
+        return self[1]
 
-    # @property
-    # def z(self):
-    #     """Get the third element of a matrix.
+    @property
+    def z(self):
+        """Get the third element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.z
-    #         2
-    #     """
-    #     if impl.inside_kernel():
-    #         return self._subscript(2)
-    #     return self[2]
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.z
+            2
+        """
+        if impl.inside_kernel():
+            return self._subscript(2)
+        return self[2]
 
-    # @property
-    # def w(self):
-    #     """Get the fourth element of a matrix.
+    @property
+    def w(self):
+        """Get the fourth element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2, 3])
-    #         >>> m.w
-    #         3
-    #     """
-    #     if impl.inside_kernel():
-    #         return self._subscript(3)
-    #     return self[3]
+            >>> m = ti.Matrix([0, 1, 2, 3])
+            >>> m.w
+            3
+        """
+        if impl.inside_kernel():
+            return self._subscript(3)
+        return self[3]
 
-    # # since Taichi-scope use v.x.assign() instead
-    # @x.setter
-    # @python_scope
-    # def x(self, value):
-    #     """Set the first element of a matrix.
+    # since Taichi-scope use v.x.assign() instead
+    @x.setter
+    @python_scope
+    def x(self, value):
+        """Set the first element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.x = -1
-    #         >>> m.x
-    #         -1
-    #     """
-    #     self[0] = value
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.x = -1
+            >>> m.x
+            -1
+        """
+        self[0] = value
 
-    # @y.setter
-    # @python_scope
-    # def y(self, value):
-    #     """Set the second element of a matrix.
+    @y.setter
+    @python_scope
+    def y(self, value):
+        """Set the second element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.y = -1
-    #         >>> m.y
-    #         -1
-    #     """
-    #     self[1] = value
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.y = -1
+            >>> m.y
+            -1
+        """
+        self[1] = value
 
-    # @z.setter
-    # @python_scope
-    # def z(self, value):
-    #     """Set the third element of a matrix.
+    @z.setter
+    @python_scope
+    def z(self, value):
+        """Set the third element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2])
-    #         >>> m.z = -1
-    #         >>> m.z
-    #         -1
-    #     """
-    #     self[2] = value
+            >>> m = ti.Matrix([0, 1, 2])
+            >>> m.z = -1
+            >>> m.z
+            -1
+        """
+        self[2] = value
 
-    # @w.setter
-    # @python_scope
-    # def w(self, value):
-    #     """Set the fourth element of a matrix.
+    @w.setter
+    @python_scope
+    def w(self, value):
+        """Set the fourth element of a matrix.
 
-    #     Example::
+        Example::
 
-    #         >>> m = ti.Matrix([0, 1, 2, 3])
-    #         >>> m.w = -1
-    #         >>> m.w
-    #         -1
-    #     """
-    #     self[3] = value
+            >>> m = ti.Matrix([0, 1, 2, 3])
+            >>> m.w = -1
+            >>> m.w
+            -1
+        """
+        self[3] = value
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

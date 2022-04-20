@@ -4,8 +4,8 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 import taichi as ti
-from .vectypes import vec2
 
+from .vectypes import vec2
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
@@ -544,7 +544,8 @@ def rot3(axis, ang):
 
 
 __all__ = [
-    "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract", "log2",
-    "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians", "reflect",
-    "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign", "smoothstep", "step"
+    "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract",
+    "log2", "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians",
+    "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign",
+    "smoothstep", "step"
 ]

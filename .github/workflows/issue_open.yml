@@ -13,4 +13,4 @@ jobs:
       - uses: actions/add-to-project@main
         with:
           project-url: https://github.com/orgs/taichi-dev/projects/1
-          github-token: ${{ secrets.GARDENER_PAT }}
+          github-token: ${{ secrets.ORG_PROJECT_PAT }}

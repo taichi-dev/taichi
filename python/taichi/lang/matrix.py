@@ -36,6 +36,9 @@ def _gen_swizzles(cls):
                     return Vector(res, is_ref=True)
 
                 def prop_setter(instance, value):
+                    if len(pattern) == 1:
+                        assert not isinstance(value, Iterable)
+                        value = [value, ]
                     if len(pattern) != len(value):
                         raise TaichiCompilationError(
                             'values does not match the attribute')

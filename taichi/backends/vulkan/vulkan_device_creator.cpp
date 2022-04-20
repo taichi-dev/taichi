@@ -435,7 +435,7 @@ void VulkanDeviceCreator::create_logical_device() {
   ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
 
   if (physical_device_properties.apiVersion >= VK_API_VERSION_1_3) {
-    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10600);
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
   } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_2) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
   } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {

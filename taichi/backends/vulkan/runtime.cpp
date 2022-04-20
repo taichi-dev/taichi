@@ -357,7 +357,7 @@ void CompiledTaichiKernel::generate_command_list(
         if (bind.buffer.type == BufferType::ListGen) {
           // FIXME: properlly support multiple list
           cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
-                               kListGenBufferSize,
+                               kBufferSizeEntireSize,
                                /*data=*/0);
           cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
         }
@@ -579,9 +579,9 @@ void VkRuntime::init_nonroot_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kGtmpBufferSize,
+  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kListGenBufferSize,
+  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());
 }
@@ -597,7 +597,8 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
            /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
-  cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);
+  cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
+                       /*data=*/0);
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
   // cache the root buffer size

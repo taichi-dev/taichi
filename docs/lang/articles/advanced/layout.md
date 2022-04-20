@@ -328,7 +328,6 @@ y = ti.field(dtype=ti.f32)
 fb2.dense(ti.i, 5).place(y)
 fb2_snode_tree = fb2.finalize()  # Finalizes the FieldsBuilder and returns a SNodeTree
 func(y)
-...
 fb2_snode_tree.destroy() # Destruction
 ```
 

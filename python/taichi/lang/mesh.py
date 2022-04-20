@@ -636,17 +636,10 @@ class MeshRelationAccessProxy:
 
     @property
     def size(self):
-        # return impl.Expr(
-        #     _ti_core.get_relation_size(self.mesh.mesh_ptr, self.from_index.ptr,
-        #                                self.to_element_type))
         return impl.Expr(self.mesh.get_relation_size(self.from_index, self.to_element_type))
 
     def subscript(self, *indices):
         assert len(indices) == 1
-        # entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
-        #                                           self.from_index.ptr,
-        #                                           self.to_element_type,
-        #                                           impl.Expr(indices[0]).ptr)
         entry_expr = self.mesh.get_relation_access(self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr)
         entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,

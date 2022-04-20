@@ -106,15 +106,3 @@ class SwizzleGenerator:
 __all__ = [
     'SwizzleGenerator',
 ]
-
-if __name__ == '__main__':
-    sg = SwizzleGenerator()
-    pats_per_len = sg.generate('xyzw', 4)
-    total = 0
-    for i, pats in enumerate(pats_per_len):
-        print(f'patterns at len={i}')
-        for p in pats:
-            print(f'  {p}')
-        total += len(pats)
-    # https://jojendersie.de/performance-optimal-vector-swizzling-in-c/
-    print(f'total_patterns={total}')

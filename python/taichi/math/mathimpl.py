@@ -516,7 +516,7 @@ def rot2(ang):
 
 @ti.func
 def rot3(axis, ang):
-    """Returns the matrix representation of a 3d counter-clockwise rotation,
+    """Returns the matrix representation of a 3d rotation,
     given the axis and angle of rotation.
 
     Args:

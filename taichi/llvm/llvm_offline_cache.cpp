@@ -66,7 +66,7 @@ get_offline_cache_key_of_compile_config(CompileConfig *config) {
   return serializer.data;
 }
 
-static TI_FORCE_INLINE void get_offline_cache_key_of_snode_impl(
+static void get_offline_cache_key_of_snode_impl(
     SNode *snode,
     BinaryOutputSerializer &serializer) {
   for (auto &c : snode->ch) {

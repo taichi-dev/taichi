@@ -320,15 +320,14 @@ x = ti.field(dtype=ti.f32)
 fb1.dense(ti.ij, (5, 5)).place(x)
 fb1_snode_tree = fb1.finalize()  # Finalizes the FieldsBuilder and returns a SNodeTree
 func(x)
-...
-fb1_snode_tree.destroy() # Destruction
+fb1_snode_tree.destroy()  # Destruction
 
 fb2 = ti.FieldsBuilder()
 y = ti.field(dtype=ti.f32)
 fb2.dense(ti.i, 5).place(y)
 fb2_snode_tree = fb2.finalize()  # Finalizes the FieldsBuilder and returns a SNodeTree
 func(y)
-fb2_snode_tree.destroy() # Destruction
+fb2_snode_tree.destroy()  # Destruction
 ```
 
 Actually, the above demonstrated `ti.root` statements are implemented with `FieldsBuilder`, despite that `ti.root` has the capability to automatically manage memory allocations and recycling.

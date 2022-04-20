@@ -27,62 +27,6 @@ class _VectorType(Matrix):
 
         super().__init__(data, self._DTYPE, is_ref=is_ref)
 
-        self._add_swizzle_attrs()
-
-    def _add_swizzle_attrs(self):
-        """Create and bind properties for vector swizzles.
-        """
-        def getter_template(index, instance):
-            return instance(index)
-
-        @python_scope
-        def setter_template(index, instance, value):
-            instance[index] = value
-
-        for key_group in _VectorType._KEYMAP_SET:
-            for index, key in enumerate(key_group):
-                prop = property(functools.partial(getter_template, index),
-                                functools.partial(setter_template, index))
-                setattr(type(self), key, prop)
-
-    def __getattr__(self, attr_name):
-        for key_group in _VectorType._KEYMAP_SET:
-            if any(x not in key_group for x in attr_name):
-                continue
-
-            result = []
-            for key in attr_name:
-                result.append(self._get_entry(key_group.index(key)))
-            if result:
-                if self._DTYPE == f32:
-                    return globals()[f"vec{len(result)}"](*result, is_ref=True)
-
-                return globals()[f"ivec{len(result)}"](*result, is_ref=True)
-
-        raise AttributeError(f"Cannot get attribute: {attr_name}")
-
-    def __setattr__(self, attr_name, values):
-        if len(attr_name) > 1:
-            for key_group in _VectorType._KEYMAP_SET:
-                if any(x not in key_group for x in attr_name):
-                    continue
-
-                if len(attr_name) != len(values):
-                    raise Exception("values does not match the attribute")
-
-                was_valid = False
-                for key, value in zip(attr_name, values):
-                    if in_python_scope():
-                        self[key_group.index(key)] = value
-                    else:
-                        self(key_group.index(key))._assign(value)
-                    was_valid = True
-
-                if was_valid:
-                    return
-
-        super().__setattr__(attr_name, values)
-
     def to_list(self):
         """Return this matrix as a 1D `list`.
 

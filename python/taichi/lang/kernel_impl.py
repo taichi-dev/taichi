@@ -490,7 +490,7 @@ class Kernel:
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.is_grad)
-        
+
         for mesh in ctx.meshes:
             mesh.update_relation()
 

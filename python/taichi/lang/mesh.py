@@ -328,22 +328,25 @@ class MeshInstance:
     def add_mesh_attribute(self, element_type, snode, reorder_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,
                                     reorder_type)
-    
+
     def get_relation_size(self, from_index, to_element_type):
         from_order = element_order(from_index.element_type)
         to_order = element_order(to_element_type)
         self.check_relation(from_order, to_order)
-        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr, to_element_type)
-    
-    def get_relation_access(self, from_index, to_element_type, neighbor_idx_ptr):
+        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr,
+                                          to_element_type)
+
+    def get_relation_access(self, from_index, to_element_type,
+                            neighbor_idx_ptr):
         from_order = element_order(from_index.element_type)
         to_order = element_order(to_element_type)
         self.check_relation(from_order, to_order)
-        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr)
-    
+        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr,
+                                            to_element_type, neighbor_idx_ptr)
+
     def check_relation(self, from_order, to_order):
         self.new_relations.add((from_order, to_order))
-    
+
     def update_relation(self):
         for from_order, to_order in self.new_relations:
             rel_type = MeshRelationType(
@@ -351,12 +354,17 @@ class MeshInstance:
             if rel_type not in self.relation_set:
                 meta = self.patcher.get_relation_meta(from_order, to_order)
                 print('new relation')
+
                 def fun(arr, dtype):
                     field = impl.field(dtype=dtype, shape=arr.shape)
                     field.from_numpy(arr)
                     return field
+
                 if from_order <= to_order:
-                    self.set_relation_dynamic(rel_type, fun(meta["value"], u16), fun(meta["patch_offset"], u32), fun(meta["offset"], u16))
+                    self.set_relation_dynamic(rel_type,
+                                              fun(meta["value"], u16),
+                                              fun(meta["patch_offset"], u32),
+                                              fun(meta["offset"], u16))
                 else:
                     self.set_relation_fixed(rel_type, fun(meta["value"], u16))
         self.new_relations.clear()
@@ -516,7 +524,7 @@ class MeshBuilder:
 
         if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
             instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101
-        
+
         instance.patcher = metadata.patcher
 
         return instance
@@ -636,11 +644,14 @@ class MeshRelationAccessProxy:
 
     @property
     def size(self):
-        return impl.Expr(self.mesh.get_relation_size(self.from_index, self.to_element_type))
+        return impl.Expr(
+            self.mesh.get_relation_size(self.from_index, self.to_element_type))
 
     def subscript(self, *indices):
         assert len(indices) == 1
-        entry_expr = self.mesh.get_relation_access(self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr)
+        entry_expr = self.mesh.get_relation_access(self.from_index,
+                                                   self.to_element_type,
+                                                   impl.Expr(indices[0]).ptr)
         entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)

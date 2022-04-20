@@ -6,6 +6,21 @@ NRE_LNG = namedtuple('NRE_LNG', ['num_required_elems', 'length'])
 
 
 def generate_num_required_elems_to_required_len_map(max_unique_elems=5):
+    '''
+    For example, if we want a sequence of length 4 to be composed by {'x', 'y'},
+    we have the following options:
+
+    * 'xxxx': 4 'x', 0 'y'
+    * 'xyyy': 1 'x', 3 'y'
+    * 'xxyy': 2 'x', 2 'y'
+    * 'xxxy': 3 'x', 1 'y'
+    * 'yyyy': 0 'x', 4 'y'
+
+    Each of these pattern is a seed. We can then do a permutation on it to get
+    all the patterns for this seed.
+
+    NRE_LNG(2, 4) maps to [(4, 0), (1, 3), (2, 2), (3, 1), (0, 4)]
+    '''
     class InvalidPattern(Exception):
         pass
 

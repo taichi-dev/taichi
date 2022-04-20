@@ -1,6 +1,5 @@
 import numbers
 from collections.abc import Iterable
-from copy import deepcopy
 
 import numpy as np
 from taichi._lib import core as ti_core
@@ -25,9 +24,7 @@ def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
     KEMAP_SET = ['xyzw', 'rgba', 'uvw']
     for key_group in KEMAP_SET:
-        sw_patterns = []
-        for pats_per_len in swizzle_gen.generate(key_group, required_length=4):
-            sw_patterns += pats_per_len
+        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
 
         for pat in sw_patterns:
             # Create a function for value capturing

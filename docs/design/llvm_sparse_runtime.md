@@ -156,7 +156,7 @@ Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode
                                               +------------+
 ```
 
-The activation/deacctivation process is no different from that of `pointer`. We can trace through [`Dynamic_append`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_dynamic.h#L61-L87) to better understand the layout.
+The activation/deactivation process is no different from that of `pointer`. We can trace through [`Dynamic_append`](https://github.com/taichi-dev/taichi/blob/0f4fb9c662e6e3ffacc26e7373258d8d0414423b/taichi/runtime/llvm/node_dynamic.h#L61-L87) to better understand the layout.
 
 ```cpp
 i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {

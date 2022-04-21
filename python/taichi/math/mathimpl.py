@@ -62,7 +62,7 @@ def uvec3(*args):
 def uvec4(*args):
     """4D unsigned int vector type.
     """
-    return ti.types.vector(3, _get_uint_ip())(*args)
+    return ti.types.vector(4, _get_uint_ip())(*args)
 
 
 @ti.func

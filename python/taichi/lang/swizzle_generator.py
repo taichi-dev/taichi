@@ -92,7 +92,8 @@ class SwizzleGenerator:
             res += sorted(list(cur_len_patterns))
         return res
 
-    def _generate_seed_patterns(self, acc, nrel_vals):
+    @staticmethod
+    def _generate_seed_patterns(acc, nrel_vals):
         res = []
         for val in nrel_vals:
             assert len(acc) == len(val)

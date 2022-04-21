@@ -309,17 +309,21 @@ class MeshInstance:
                                            max_element_num)
 
     def set_relation_fixed(self, rel_type: MeshRelationType,
-                           value: ScalarField):
+                           value: ScalarField,
+                           max_value_per_patch : int):
         _ti_core.set_relation_fixed(self.mesh_ptr, rel_type,
-                                    value.vars[0].ptr.snode())
+                                    value.vars[0].ptr.snode(),
+                                    max_value_per_patch)
 
     def set_relation_dynamic(self, rel_type: MeshRelationType,
                              value: ScalarField, patch_offset: ScalarField,
-                             offset: ScalarField):
+                             offset: ScalarField,
+                             max_value_per_patch : int):
         _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
                                       value.vars[0].ptr.snode(),
                                       patch_offset.vars[0].ptr.snode(),
-                                      offset.vars[0].ptr.snode())
+                                      offset.vars[0].ptr.snode(),
+                                      max_value_per_patch)
 
     def add_mesh_attribute(self, element_type, snode, reorder_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,
@@ -363,6 +367,7 @@ class MeshMetadata:
             self.relation_fields[rel_type] = {}
             self.relation_fields[rel_type]["value"] = impl.field(
                 dtype=u16, shape=len(relation["value"]))
+            self.relation_fields[rel_type]["max_value_per_patch"] =  relation["max_value_per_patch"]
             if from_order <= to_order:
                 self.relation_fields[rel_type]["offset"] = impl.field(
                     dtype=u16, shape=len(relation["offset"]))
@@ -468,10 +473,12 @@ class MeshBuilder:
                 instance.set_relation_dynamic(
                     rel_type, metadata.relation_fields[rel_type]["value"],
                     metadata.relation_fields[rel_type]["patch_offset"],
-                    metadata.relation_fields[rel_type]["offset"])
+                    metadata.relation_fields[rel_type]["offset"],
+                    metadata.relation_fields[rel_type]["max_value_per_patch"])
             else:
                 instance.set_relation_fixed(
-                    rel_type, metadata.relation_fields[rel_type]["value"])
+                    rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["max_value_per_patch"])
 
         if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
             instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101

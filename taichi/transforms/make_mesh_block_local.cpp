@@ -633,7 +633,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
         });
   }
 
-  offload->bls_size = std::max(std::size_t(1), bls_offset_in_bytes_);
+  offload->bls_size = bls_offset_in_bytes_;
 }
 
 void MakeMeshBlockLocal::run(OffloadedStmt *offload,

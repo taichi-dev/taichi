@@ -1062,16 +1062,16 @@ void export_lang(py::module &m) {
         });
 
   m.def("set_relation_fixed",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value) {
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value, int max_value_per_patch) {
           mesh_ptr.ptr->relations.insert(
-              std::pair(type, mesh::MeshLocalRelation(value)));
+              std::pair(type, mesh::MeshLocalRelation(value, max_value_per_patch)));
         });
 
   m.def("set_relation_dynamic",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
-           SNode *patch_offset, SNode *offset) {
+           SNode *patch_offset, SNode *offset, int max_value_per_patch) {
           mesh_ptr.ptr->relations.insert(std::pair(
-              type, mesh::MeshLocalRelation(value, patch_offset, offset)));
+              type, mesh::MeshLocalRelation(value, patch_offset, offset, max_value_per_patch)));
         });
 }
 

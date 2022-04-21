@@ -53,16 +53,17 @@ MeshRelationType relation_by_orders(int from_order, int to_order);
 MeshRelationType inverse_relation(MeshRelationType rel);
 
 struct MeshLocalRelation {
-  MeshLocalRelation(SNode *value_, SNode *patch_offset_, SNode *offset_)
-      : value(value_), patch_offset(patch_offset_), offset(offset_) {
+  MeshLocalRelation(SNode *value_, SNode *patch_offset_, SNode *offset_, int max_value_per_patch_)
+      : value(value_), patch_offset(patch_offset_), offset(offset_), max_value_per_patch(max_value_per_patch_) {
     fixed = false;
   }
 
-  MeshLocalRelation(SNode *value_) : value(value_) {
+  MeshLocalRelation(SNode *value_, int max_value_per_patch_) : value(value_), max_value_per_patch(max_value_per_patch_) {
     fixed = true;
   }
 
   bool fixed;
+  int max_value_per_patch{0};
   SNode *value{nullptr};
   SNode *patch_offset{nullptr};
   SNode *offset{nullptr};

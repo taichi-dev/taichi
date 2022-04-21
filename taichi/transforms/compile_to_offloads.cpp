@@ -191,7 +191,7 @@ void offload_to_executable(IRNode *ir,
       print("Simplified X");
     }
 
-    if (config.make_mesh_block_local) {
+    if (config.make_mesh_rel_local) {
       irpass::make_mesh_rel_local(ir, config, {kernel->get_name()});
       print("Make mesh rel local");
       irpass::full_simplify(ir, config, {false, kernel->program});

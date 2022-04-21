@@ -43,8 +43,8 @@ mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
 """4x4 float matrix type.
 """
 
-
-_get_uint_ip = lambda: ti.u32 if impl.get_runtime().default_ip == ti.i32 else ti.u64
+_get_uint_ip = lambda: ti.u32 if impl.get_runtime(
+).default_ip == ti.i32 else ti.u64
 
 
 def uvec2(*args):

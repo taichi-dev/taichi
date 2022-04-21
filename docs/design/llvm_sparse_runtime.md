@@ -222,7 +222,7 @@ Each SNode is associated with its own memory allocator. These allocators are sto
 The allocator is of type [`NodeManager`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L619). It contains [three linked lists](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L627):
 
 * `data_list`: A list of fixed-sized memory chunks. Each chunk can store `chunk_num_elements` SNode cells. The aforementioned SNode chunks are from this list.
-* `free_list`: Indices of the free SNode cells. Each node in this list is an `int32_t` (or [`list_data_type`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L630)).
+* `free_list`: Indices of the free SNode cells. Each node in this list is an `int32_t` (or [`list_data_type`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L630)). When allocating, the runtime will first try to reuse a cell in the free list if there is one available, before requesting extra space from the memory allocator. (More details below.)
 * `recycled_list`: Indices of the released SNode cells. After a GC execution, items in this list will be transferred into `free_list` for reuse. Each node in this list is also an `int32_t`.
 
 Here's how [`allocate()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L655) is implemented:

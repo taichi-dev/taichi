@@ -4,10 +4,7 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 import taichi as ti
-<<<<<<< HEAD
 from taichi.lang import impl
-=======
->>>>>>> 591b138f31e8650325c5e91c6bdfd0aca0bdd238
 
 vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.

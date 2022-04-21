@@ -4,7 +4,7 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 import taichi as ti
-
+from taichi.lang import impl
 
 vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.
@@ -19,26 +19,28 @@ vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
 """
 
 ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
-"""2D float vector type.
+"""2D int vector type.
 """
 
 ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
-"""3D float vector type.
+"""3D int vector type.
 """
 
 ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-uvec2 = ti.types.vector(2, ti.u32)  # pylint: disable=E1101
+_uint = ti.u32 if impl.get_runtime().default_ip == ti.i32 else ti.u64
+
+uvec2 = ti.types.vector(2, _uint)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-uvec3 = ti.types.vector(3, ti.u32)  # pylint: disable=E1101
+uvec3 = ti.types.vector(3, _uint)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-uvec4 = ti.types.vector(4, ti.u32)  # pylint: disable=E1101
+uvec4 = ti.types.vector(4, _uint)  # pylint: disable=E1101
 """3D float vector type.
 """
 

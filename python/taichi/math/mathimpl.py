@@ -30,20 +30,6 @@ ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
 """4D int vector type.
 """
 
-_uint = ti.u32 if impl.get_runtime().default_ip == ti.i32 else ti.u64
-
-uvec2 = ti.types.vector(2, _uint)  # pylint: disable=E1101
-"""2D unsigned int vector type.
-"""
-
-uvec3 = ti.types.vector(3, _uint)  # pylint: disable=E1101
-"""3D unsigned int vector type.
-"""
-
-uvec4 = ti.types.vector(4, _uint)  # pylint: disable=E1101
-"""4D unsigned int vector type.
-"""
-
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type.
 """

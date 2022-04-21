@@ -211,13 +211,25 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
                                           shape, stride))
 
 
+class SrcInfoGuard:
+    def __init__(self, info_stack, info):
+        self.info_stack = info_stack
+        self.info = info
+
+    def __enter__(self):
+        self.info_stack.append(self.info)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.info_stack.pop()
+
+
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
-        self.scope_stack = []
+        self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
@@ -231,6 +243,9 @@ class PyTaichi:
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
+
+    def src_info_guard(self, info):
+        return SrcInfoGuard(self.src_info_stack, info)
 
     def set_default_fp(self, fp):
         assert fp in [f16, f32, f64]

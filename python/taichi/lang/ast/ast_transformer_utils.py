@@ -5,6 +5,7 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
+from taichi.lang import impl
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError,
                                    handle_exception_from_cpp)
@@ -17,7 +18,9 @@ class Builder:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            return method(ctx, node)
+            info = ctx.get_pos_info(node) if isinstance(node, (ast.stmt, ast.expr)) else ""
+            with impl.get_runtime().src_info_guard(info):
+                return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)

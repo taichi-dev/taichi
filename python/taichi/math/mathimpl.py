@@ -14,31 +14,31 @@ vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
 """
 
 vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D float vector type.
 """
 
 ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
-"""2D float vector type.
+"""2D int vector type.
 """
 
 ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
-"""3D float vector type.
+"""3D int vector type.
 """
 
 ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D int vector type.
 """
 
 uvec2 = ti.types.vector(2, ti.u32)  # pylint: disable=E1101
-"""2D float vector type.
+"""2D unsigned int vector type.
 """
 
 uvec3 = ti.types.vector(3, ti.u32)  # pylint: disable=E1101
-"""3D float vector type.
+"""3D unsigned int vector type.
 """
 
 uvec4 = ti.types.vector(4, ti.u32)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D unsigned int vector type.
 """
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101

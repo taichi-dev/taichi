@@ -5,39 +5,40 @@ from math import e, pi
 
 import taichi as ti
 
-vec2 = ti.types.vector(2, float)
+
+vec2 = ti.types.vector(2, ti.f32)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-vec3 = ti.types.vector(3, float)
+vec3 = ti.types.vector(3, ti.f32)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-vec4 = ti.types.vector(4, float)
+vec4 = ti.types.vector(4, ti.f32)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-ivec2 = ti.types.vector(2, int)
+ivec2 = ti.types.vector(2, ti.i32)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-ivec3 = ti.types.vector(3, int)
+ivec3 = ti.types.vector(3, ti.i32)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-ivec4 = ti.types.vector(4, int)
+ivec4 = ti.types.vector(4, ti.i32)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-uvec2 = ti.types.vector(2, ti.u32)
+uvec2 = ti.types.vector(2, ti.u32)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-uvec3 = ti.types.vector(3, ti.u32)
+uvec3 = ti.types.vector(3, ti.u32)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-uvec4 = ti.types.vector(4, ti.u32)
+uvec4 = ti.types.vector(4, ti.u32)  # pylint: disable=E1101
 """3D float vector type.
 """
 

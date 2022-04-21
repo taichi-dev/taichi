@@ -5,7 +5,42 @@ from math import e, pi
 
 import taichi as ti
 
-from .vectypes import vec2
+
+vec2 = ti.types.vector(2, 1, float)
+"""2D float vector type.
+"""
+
+vec3 = ti.types.vector(3, 1, float)
+"""3D float vector type.
+"""
+
+vec4 = ti.types.vector(4, 1, float)
+"""3D float vector type.
+"""
+
+ivec2 = ti.types.vector(2, 1, int)
+"""2D float vector type.
+"""
+
+ivec3 = ti.types.vector(3, 1, int)
+"""3D float vector type.
+"""
+
+ivec4 = ti.types.vector(4, 1, int)
+"""3D float vector type.
+"""
+
+uvec2 = ti.types.vector(2, 1, ti.u32)
+"""2D float vector type.
+"""
+
+uvec3 = ti.types.vector(3, 1, ti.u32)
+"""3D float vector type.
+"""
+
+uvec4 = ti.types.vector(4, 1, ti.u32)
+"""3D float vector type.
+"""
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
 """2x2 float matrix type
@@ -545,7 +580,8 @@ def rot3(axis, ang):
 
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract",
-    "log2", "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians",
-    "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign",
-    "smoothstep", "step"
+    "ivec2", "ivec3", "ivec4", "log2", "mat2", "mat3", "mat4", "mix", "mod",
+    "normalize", "pi", "radians", "reflect", "refract", "rot2", "rot3",
+    "rotate2d", "rotate3d", "sign", "smoothstep", "step", "uvec2", "uvec3",
+    "uvec4", "vec2", "vec3", "vec4"
 ]

@@ -251,7 +251,7 @@ Ptr allocate() {
 
 [`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) is quite straightforward.
 
-Before jumping into the GC system, we will also take look at the lower-level `ListManager`.
+Before jumping into the garbage collection (GC) system, we will also take look at the lower-level `ListManager`.
 
 ## `ListManager`: a CPU/GPU linked list
 

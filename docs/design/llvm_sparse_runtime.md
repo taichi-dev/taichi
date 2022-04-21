@@ -342,7 +342,7 @@ void ListManager::append(void *data_ptr) {
 
 [`clear()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L472-L474) simply resets `num_elements` to zero, without doing anything to the list contents.
 
-## GC
+## Garbage collection (GC)
 
 The GC process for a given SNode is divided into three stages:
 

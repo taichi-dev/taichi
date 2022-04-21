@@ -22,10 +22,10 @@ def _get_matrix_swizzle_apis():
 def _get_expected_matrix_apis():
     base = [
         'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
-        'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray', 'norm',
-        'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product', 'rotation2d',
-        'rows', 'sum', 'to_list', 'to_numpy', 'trace', 'transpose', 'unit', 'w',
-        'x', 'y', 'z', 'zero'
+        'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray',
+        'norm', 'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product',
+        'rotation2d', 'rows', 'sum', 'to_list', 'to_numpy', 'trace',
+        'transpose', 'unit', 'w', 'x', 'y', 'z', 'zero'
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)
@@ -56,10 +56,10 @@ user_api[ti] = [
     'randn', 'random', 'raw_div', 'raw_mod', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator', 'sym_eig', 'sync',
-    'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
-    'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64',
-    'x86_64', 'zero'
+    'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator',
+    'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools', 'types', 'u16',
+    'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan',
+    'wasm', 'x64', 'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
@@ -113,7 +113,7 @@ def test_api(src):
     # When Python version is below 3.7, deprecated names are
     # handled as normal names, which will fail this test.
     expected = user_api[src]
-    actual = [
-        s for s in dir(src) if not s.startswith('_')
-    ]
-    assert sys.version_info < (3, 7) or actual == expected, f'Failed for API={src}:\n  expected={expected}\n  actual={actual}'
+    actual = [s for s in dir(src) if not s.startswith('_')]
+    assert sys.version_info < (
+        3, 7
+    ) or actual == expected, f'Failed for API={src}:\n  expected={expected}\n  actual={actual}'

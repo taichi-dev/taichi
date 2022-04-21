@@ -50,19 +50,19 @@ _get_uint_ip = lambda: ti.u32 if impl.get_runtime(
 def uvec2(*args):
     """2D unsigned int vector type.
     """
-    return ti.types.vector(2, _get_uint_ip())(*args)
+    return ti.types.vector(2, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
 def uvec3(*args):
     """3D unsigned int vector type.
     """
-    return ti.types.vector(3, _get_uint_ip())(*args)
+    return ti.types.vector(3, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
 def uvec4(*args):
     """4D unsigned int vector type.
     """
-    return ti.types.vector(4, _get_uint_ip())(*args)
+    return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
 @ti.func

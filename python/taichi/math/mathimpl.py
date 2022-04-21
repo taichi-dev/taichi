@@ -5,7 +5,6 @@ from math import e, pi
 
 import taichi as ti
 
-
 vec2 = ti.types.vector(2, float)
 """2D float vector type.
 """

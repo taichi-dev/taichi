@@ -1614,7 +1614,8 @@ class MatrixType(CompoundType):
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
-        return self.cast(Matrix([[value for _ in range(self.m)] for _ in range(self.n)]))
+        return self.cast(
+            Matrix([[value for _ in range(self.m)] for _ in range(self.n)]))
 
     def field(self, **kwargs):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)

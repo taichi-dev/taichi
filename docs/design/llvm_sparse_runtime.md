@@ -30,7 +30,7 @@ However, this is likely subject to change, so that all SNodes can share the same
 
 
 * `Dense_get_num_elements`: This is just `max_num_elements` stored in `DenseMeta`.
-* `Dense_activate`: Empty body, because cells are always activated in `dense`.
+* `Dense_activate`: No-op, because cells are always activated in `dense`.
 * `Dense_is_active`: Always returns `1`.
 * `Dense_lookup_element`: Returns the address of the `i`-th cell. That is, `node + element_size * i`.
 

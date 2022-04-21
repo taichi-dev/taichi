@@ -108,7 +108,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
 2. Checks whether the content of `data_ptr` is `nullptr` without any locking. This is the classical [double-checked locking](https://en.wikipedia.org/wiki/Double-checked_locking) pattern.
 3. If 2 is true, pick one thread within a CUDA warp to acquire the lock. This is a small optimization to prevent lock contention.
 4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/locked_task.h).
-5. Retrieves the memory allocator (`node_allocators`) for this particular SNode, allocates a new cell, and stores the address of the allocated cell into `data_pointer`. Because the cell size of each SNode is different, the runtime has a dedicated allocator for each SNode, which knows how much space to allocate per cell.
+5. Retrieves the memory allocator (`node_allocators`) for this particular SNode, allocates a new cell, and stores the address of the allocated cell into `data_ptr`. Because the cell size of each SNode is different, the runtime has a dedicated allocator for each SNode, which knows how much space to allocate per cell.
 
 The deactivation and the checking-for-active procedures are quite similar. We omit them for brevity.
 

@@ -6,27 +6,27 @@ from math import e, pi
 import taichi as ti
 
 
-vec2 = ti.types.vector(2, ti.f32)  # pylint: disable=E1101
+vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-vec3 = ti.types.vector(3, ti.f32)  # pylint: disable=E1101
+vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-vec4 = ti.types.vector(4, ti.f32)  # pylint: disable=E1101
+vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-ivec2 = ti.types.vector(2, ti.i32)  # pylint: disable=E1101
+ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
 """2D float vector type.
 """
 
-ivec3 = ti.types.vector(3, ti.i32)  # pylint: disable=E1101
+ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
 """3D float vector type.
 """
 
-ivec4 = ti.types.vector(4, ti.i32)  # pylint: disable=E1101
+ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
 """3D float vector type.
 """
 

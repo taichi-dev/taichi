@@ -22,6 +22,7 @@ from taichi.types.compound_types import CompoundType
 
 def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
+    # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEMAP_SET = ['xyzw', 'rgba', 'stpq']
     for key_group in KEMAP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)

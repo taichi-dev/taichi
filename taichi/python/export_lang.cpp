@@ -210,8 +210,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::mesh_localize_from_end_mapping)
       .def_readwrite("optimize_mesh_reordered_mapping",
                      &CompileConfig::optimize_mesh_reordered_mapping)
-      .def_readwrite("mesh_localize_all_attr_mappings",
-                     &CompileConfig::mesh_localize_all_attr_mappings)
+      .def_readwrite("make_mesh_rel_local",
+                     &CompileConfig::make_mesh_rel_local)
       .def_readwrite("demote_no_access_mesh_fors",
                      &CompileConfig::demote_no_access_mesh_fors)
       .def_readwrite("experimental_auto_mesh_local",

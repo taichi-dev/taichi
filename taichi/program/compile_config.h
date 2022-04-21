@@ -105,6 +105,9 @@ struct CompileConfig {
   bool experimental_auto_mesh_local{false};
   int auto_mesh_local_default_occupacy{4};
 
+  // Validation option
+  bool make_mesh_rel_local{false};
+
   // Offline cache options
   bool offline_cache{false};
   std::string offline_cache_file_path{get_repo_dir() + "ticache"};

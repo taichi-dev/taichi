@@ -184,11 +184,18 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
     print("Make mesh thread local");
-    if (config.make_mesh_block_local && config.arch == Arch::cuda) {
+    if (config.make_mesh_block_local) {
       irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
       print("Make mesh block local");
       irpass::full_simplify(ir, config, {false, kernel->program});
       print("Simplified X");
+    }
+
+    if (config.make_mesh_block_local) {
+      irpass::make_mesh_rel_local(ir, config, {kernel->get_name()});
+      print("Make mesh rel local");
+      irpass::full_simplify(ir, config, {false, kernel->program});
+      print("Simplified XX");
     }
   }
 

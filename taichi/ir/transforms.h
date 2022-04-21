@@ -14,6 +14,7 @@
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
 #include "taichi/transforms/make_mesh_block_local.h"
+#include "taichi/transforms/make_mesh_rel_local.h"
 #include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
@@ -71,6 +72,9 @@ void make_mesh_thread_local(IRNode *root,
 void make_mesh_block_local(IRNode *root,
                            const CompileConfig &config,
                            const MakeMeshBlockLocal::Args &args);
+void make_mesh_rel_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeMeshRelLocalPass::Args &args);
 void demote_mesh_statements(IRNode *root,
                             const CompileConfig &config,
                             const DemoteMeshStatements::Args &args);

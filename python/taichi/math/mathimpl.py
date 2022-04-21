@@ -4,7 +4,10 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 import taichi as ti
+<<<<<<< HEAD
 from taichi.lang import impl
+=======
+>>>>>>> 591b138f31e8650325c5e91c6bdfd0aca0bdd238
 
 vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.
@@ -15,7 +18,7 @@ vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
 """
 
 vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D float vector type.
 """
 
 ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
@@ -27,33 +30,33 @@ ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
 """
 
 ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D int vector type.
 """
 
 _uint = ti.u32 if impl.get_runtime().default_ip == ti.i32 else ti.u64
 
 uvec2 = ti.types.vector(2, _uint)  # pylint: disable=E1101
-"""2D float vector type.
+"""2D unsigned int vector type.
 """
 
 uvec3 = ti.types.vector(3, _uint)  # pylint: disable=E1101
-"""3D float vector type.
+"""3D unsigned int vector type.
 """
 
 uvec4 = ti.types.vector(4, _uint)  # pylint: disable=E1101
-"""3D float vector type.
+"""4D unsigned int vector type.
 """
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
-"""2x2 float matrix type
+"""2x2 float matrix type.
 """
 
 mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
-"""3x3 float matrix type
+"""3x3 float matrix type.
 """
 
 mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
-"""4x4 float matrix type
+"""4x4 float matrix type.
 """
 
 

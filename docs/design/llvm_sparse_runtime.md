@@ -344,6 +344,7 @@ void ListManager::append(void *data_ptr) {
 
 ## Garbage collection (GC)
 
+GC will happen (in a parallel way on GPUs), after an offloaded task with possible sparse SNode deactivations. 
 The GC process for a given SNode is divided into three stages:
 
 1. [`gc_parallel_0`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1600-L1626): Moves the remaining, unused indices in `free_list` to its head.

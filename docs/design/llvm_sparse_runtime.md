@@ -125,6 +125,8 @@ The deactivation and the checking-for-active procedures are quite similar. We om
 Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode can be viewed as `std::vector<int32_t>`. However, `dynamic` is implemented as a singly linked list of *chunks*.
 
 ```sh
+# `n` stores the number of elements in this dynammic SNode cell
+
 +- node
 |
 +------------+------------+------------+
@@ -132,7 +134,7 @@ Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode
 +------------+------------+------------+
                           |
                           +-+------------+  # chunk-0, chunk_start = 0
-                            |     x------|--+
+                            |     >------|--+
                             +------------+  |
                             |     0      |  |
                             +------------+  |
@@ -219,7 +221,7 @@ We will explain how the SNode memory allocator is implemented, which is the bedr
 
 Each SNode is associated with its own memory allocator. These allocators are stored in an array, [`node_allocators`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L562).
 
-The allocator is of type [`NodeManager`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L619). It contains [three linked lists](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L627):
+The allocator is of type [`NodeManager`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L619). It contains [three linked lists of type `ListManager`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L627):
 
 * `data_list`: A list of fixed-sized memory chunks. Each chunk can store `chunk_num_elements` SNode cells. The aforementioned SNode chunks are from this list.
 * `free_list`: Indices of the free SNode cells. Each node in this list is an `int32_t` (or [`list_data_type`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L630)). When allocating, the runtime will first try to reuse a cell in the free list if there is one available, before requesting extra space from the memory allocator. (More details below.)

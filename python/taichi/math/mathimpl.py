@@ -44,6 +44,27 @@ mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
 """
 
 
+_get_uint_ip = lambda: ti.u32 if impl.get_runtime().default_ip == ti.i32 else ti.u64
+
+
+def uvec2(*args):
+    """2D unsigned int vector type.
+    """
+    return ti.types.vector(2, _get_uint_ip())(*args)
+
+
+def uvec3(*args):
+    """3D unsigned int vector type.
+    """
+    return ti.types.vector(3, _get_uint_ip())(*args)
+
+
+def uvec4(*args):
+    """4D unsigned int vector type.
+    """
+    return ti.types.vector(3, _get_uint_ip())(*args)
+
+
 @ti.func
 def mix(x, y, a):
     """Performs a linear interpolation between `x` and `y` using

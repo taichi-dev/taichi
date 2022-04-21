@@ -12,6 +12,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               warning)
@@ -19,6 +20,44 @@ from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 
 
+def _gen_swizzles(cls):
+    swizzle_gen = SwizzleGenerator()
+    # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
+    KEMAP_SET = ['xyzw', 'rgba', 'stpq']
+    for key_group in KEMAP_SET:
+        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        # len=1 accessors are handled specially
+        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
+
+        for pat in sw_patterns:
+            # Create a function for value capturing
+            def gen_property(pattern, key_group):
+                def prop_getter(instance):
+                    res = []
+                    for ch in pattern:
+                        res.append(instance._get_entry(key_group.index(ch)))
+                    return Vector(res, is_ref=True)
+
+                def prop_setter(instance, value):
+                    if len(pattern) != len(value):
+                        raise TaichiCompilationError(
+                            'values does not match the attribute')
+                    for ch, val in zip(pattern, value):
+                        if in_python_scope():
+                            instance[key_group.index(ch)] = val
+                        else:
+                            instance(key_group.index(ch))._assign(val)
+
+                prop = property(prop_getter, prop_setter)
+                prop_key = ''.join(pattern)
+                return prop_key, prop
+
+            prop_key, prop = gen_property(pat, key_group)
+            setattr(cls, prop_key, prop)
+    return cls
+
+
+@_gen_swizzles
 class Matrix(TaichiOperations):
     """The matrix class.
 

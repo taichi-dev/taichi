@@ -198,7 +198,9 @@ void Gui::cleanup_render_resources() {
   vkDestroyDescriptorPool(app_context_->device().vk_device(), descriptor_pool_,
                           nullptr);
 
-  ImGui_ImplVulkan_Shutdown();
+  if (initialized()) {
+    ImGui_ImplVulkan_Shutdown();
+  }
   render_pass_ = VK_NULL_HANDLE;
 }
 

@@ -367,3 +367,48 @@ def test_calling_many_kernels(curr_arch):
     assert len(listdir(
         tmp_offline_cache_file_path())) - count_of_cache_file == len(
             simple_kernels_to_test) * cache_files_num_per_kernel
+
+
+@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@_test_offline_cache_dec
+def test_offline_cache_with_changing_compile_config(curr_arch):
+    count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
+
+    @ti.kernel
+    def helper():
+        a = 100
+        b = 200
+        c = a / b
+        for i in range(b):
+            c += i
+
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == 0 * cache_files_num_per_kernel
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            default_fp=ti.f32,
+            **current_thread_ext_options())
+    helper()
+
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            default_fp=ti.f64,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == 1 * cache_files_num_per_kernel
+    helper()
+
+    ti.reset()
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == 2 * cache_files_num_per_kernel
+
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            default_fp=ti.f32,
+            cc_compile_cmd='gcc -Wc99-c11-compat -c -o \'{}\' \'{}\' -O0',
+            **current_thread_ext_options())
+    helper()
+
+    ti.reset()
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == 2 * cache_files_num_per_kernel

@@ -120,7 +120,6 @@ The deactivation and the checking-for-active procedures are quite similar. We om
 * The axis of `dynamic` must be different from those of all its predecessors. For example:
   * `dense(ti.ij, (2, 4)).dynamic(ti.k, 8)`: This is OK, because `dynamic`'s axis is unique.
   * `dense(ti.ij, (2, 4)).dynamic(ti.j, 8)`: This results in an error, because `dynamic`'s axis and `dense`'s overlaps on axis `j`.
-* `dynamic` can only store 32-bit integers. However, this is not an API contract, and is subject to change.
 
 Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode can be viewed as `std::vector<int32_t>`. However, `dynamic` is implemented as a singly linked list of *chunks*.
 

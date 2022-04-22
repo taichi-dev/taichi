@@ -119,8 +119,7 @@ def subscript(value, *_indices, skip_reordered=False):
             ind = [_index]
         flattened_indices += ind
     _indices = tuple(flattened_indices)
-    if isinstance(_indices,
-                  tuple) and len(_indices) == 1 and _indices[0] is None:
+    if len(_indices) == 1 and _indices[0] is None:
         _indices = ()
 
     if has_slice:

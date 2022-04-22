@@ -102,48 +102,21 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->dest->is<PtrOffsetStmt>() &&
-        stmt->dest->cast<PtrOffsetStmt>()->is_local_ptr()) {
-      auto dst_value_type = stmt->dest->ret_type.ptr_removed();
-      if (dst_value_type->is<CustomIntType>() ||
-          dst_value_type->is<CustomFloatType>()) {
-        // We force the value type to be the compute_type of the bit pointer.
-        // Casting from compute_type to physical_type is handled in codegen.
-        dst_value_type = dst_value_type->get_compute_type();
-      }
-      auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
-      auto input_type = stmt->val->ret_data_type_name();
-      if (dst_value_type != stmt->val->ret_type) {
-        stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
-      }
-      if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-        TI_WARN("[{}] Local store may lose precision: {} <- {}\n{}",
-                stmt->name(), dst_value_type->to_string(), input_type,
-                stmt->tb);
-      }
-      stmt->ret_type = dst_value_type;
-      return;
-    }
-
     if (stmt->dest->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
       stmt->dest->ret_type = stmt->val->ret_type;
     }
-    auto common_container_type =
-        promoted_type(stmt->dest->ret_type, stmt->val->ret_type);
-
-    auto old_data = stmt->val;
-    if (stmt->dest->ret_type != stmt->val->ret_type) {
-      stmt->val =
-          insert_type_cast_before(stmt, stmt->val, stmt->dest->ret_type);
+    auto dst_value_type = stmt->dest->ret_type.ptr_removed();
+    if (dst_value_type != stmt->val->ret_type) {
+      auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
+      if (dst_value_type != promoted) {
+        TI_WARN("[{}] Local store may lose precision {} <- {}\n{}",
+                stmt->name(), dst_value_type->to_string(),
+                stmt->val->ret_data_type_name(), stmt->tb);
+      }
+      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
     }
-    if (stmt->dest->ret_type != common_container_type) {
-      TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {})\n{}",
-          stmt->name(), stmt->dest->ret_data_type_name(),
-          old_data->ret_data_type_name(), stmt->id, stmt->tb);
-    }
-    stmt->ret_type = stmt->dest->ret_type;
+    stmt->ret_type = dst_value_type;
   }
 
   void visit(GlobalLoadStmt *stmt) override {

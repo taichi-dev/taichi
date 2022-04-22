@@ -561,8 +561,9 @@ class Mesh:
     @staticmethod
     def generate_meta(data):
         return MeshMetadata(data)
-    
-    class RelationVisitor(ast.NodeVisitor): # TODO: only works for simple cases
+
+    class RelationVisitor(ast.NodeVisitor
+                          ):  # TODO: only works for simple cases
         def __init__(self, ctx):
             self.vars = {}
             self.visits = []

@@ -43,7 +43,7 @@ namespace {
         return;
 
       if (offload->major_to_types.size() > 1 || offload->minor_relation_types.size() > 0) {
-        TI_NOT_IMPLEMENTED;
+        return;
       }
 
       const auto &from_type =  offload->major_from_type;
@@ -156,6 +156,111 @@ namespace {
           Stmt *value1 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, value_global, bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{0}));
           */
   
+          stmt->replace_with(std::move(bls));
+        }
+      } else {
+        Stmt *owned_num = offload->owned_num_local.find(from_type)->second;
+        Stmt *owned_offset = offload->owned_offset_local.find(from_type)->second;
+        Stmt *_1 = block->push_back<ConstStmt>(TypedConstant(1));
+        Stmt *owned_num_1 = block->push_back<BinaryOpStmt>(BinaryOpType::add, owned_num, _1);
+        Stmt *patch_idx = block->push_back<MeshPatchIndexStmt>();
+        Stmt *owned_offset_patch_idx = block->push_back<BinaryOpStmt>(BinaryOpType::add, owned_offset, patch_idx);
+
+        SNode *rel_offset = offload->mesh->relations.find(rel_type)->second.offset;
+        SNode *rel_value = offload->mesh->relations.find(rel_type)->second.value;
+
+        // Patch_offset, load once
+        Stmt *patch_offset = block->push_back<GlobalLoadStmt>(
+                        block->push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{offload->mesh->relations.find(rel_type)->second.patch_offset}, std::vector<Stmt *>{patch_idx}));
+        
+        DataType dt = PrimitiveType::u16;
+        auto dsize = data_type_size(dt);
+        // Allocate bls for `offset`
+        // Ensure BLS alignment
+        offload->bls_size += (dsize - offload->bls_size % dsize) % dsize;
+        const auto offset_offset_in_bytes = offload->bls_size;
+        TI_INFO("rel(offset)_offset_in_bytes = {}", offset_offset_in_bytes);
+        // Allocate storage for the `offset` BLS variable
+        offload->bls_size += dsize * (offload->mesh->patch_max_element_num.find(from_type)->second + 1);
+        TI_INFO("bls size = {}", offload->bls_size);
+
+        // Allocate bls for `value`
+        // Ensure BLS alignment
+        offload->bls_size += (dsize - offload->bls_size % dsize) % dsize;
+        const auto value_offset_in_bytes = offload->bls_size;
+        TI_INFO("rel(value)_offset_in_bytes = {}", value_offset_in_bytes);
+        // Allocate storage for the `offset` BLS variable
+        offload->bls_size += dsize * offload->mesh->relations.find(rel_type)->second.max_value_per_patch;
+        TI_INFO("bls size = {}", offload->bls_size);
+
+        Stmt *offset_offset_bytes = block->push_back<ConstStmt>(TypedConstant(int32(offset_offset_in_bytes)));
+        Stmt *value_offset_bytes = block->push_back<ConstStmt>(TypedConstant(int32(value_offset_in_bytes)));
+        Stmt *dsize_value = block->push_back<ConstStmt>(TypedConstant(dsize));
+
+        // Fetch relation `offset` data to shared mem
+        create_xlogue(
+          offload,
+          owned_num_1,
+          [&](Block *body, Stmt *idx_val) {
+            // Global ptr
+            Stmt *global_offset = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val, owned_offset_patch_idx);
+            Stmt *global_ptr = body->push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{rel_offset}, std::vector<Stmt *>{global_offset});
+            // Global value
+            Stmt *value = body->push_back<GlobalLoadStmt>(global_ptr);
+
+            // SM ptr
+            Stmt *idx_val_byte = body->push_back<BinaryOpStmt>(BinaryOpType::mul, idx_val, dsize_value);
+            Stmt *index = body->push_back<BinaryOpStmt>(BinaryOpType::add, offset_offset_bytes, idx_val_byte);
+            Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(index, TypeFactory::create_vector_or_scalar_type(1, dt, true));
+            body->push_back<GlobalStoreStmt>(bls_ptr, value);
+          }
+        );
+
+        Stmt *owned_offset_patch_idx_own_element = block->push_back<BinaryOpStmt>(BinaryOpType::add, owned_offset_patch_idx, owned_num);
+        Stmt *offset_end = block->push_back<GlobalLoadStmt>(
+                        block->push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{offload->mesh->relations.find(rel_type)->second.offset}, std::vector<Stmt *>{owned_offset_patch_idx_own_element}));
+        create_xlogue(
+          offload,
+          offset_end,
+          [&](Block *body, Stmt *idx_val) {
+            // Global ptr
+            Stmt *global_offset = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val, patch_offset);
+            Stmt *global_ptr = body->push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{rel_value}, std::vector<Stmt *>{global_offset});
+            // Global value
+            Stmt *value = body->push_back<GlobalLoadStmt>(global_ptr);
+
+            // SM ptr
+            Stmt *idx_val_byte = body->push_back<BinaryOpStmt>(BinaryOpType::mul, idx_val, dsize_value);
+            Stmt *index = body->push_back<BinaryOpStmt>(BinaryOpType::add, value_offset_bytes, idx_val_byte);
+            Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(index, TypeFactory::create_vector_or_scalar_type(1, dt, true));
+            body->push_back<GlobalStoreStmt>(bls_ptr, value);
+          }
+        );
+
+        // Replace relation access statement
+        std::vector<MeshRelationAccessStmt *> rel_access_stmts;
+        irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+          if (auto rel_access = stmt->cast<MeshRelationAccessStmt>()) {
+              rel_access_stmts.push_back(rel_access);
+          }
+          return false;
+        });
+
+        for (auto stmt : rel_access_stmts) {
+          VecStatement bls;
+          if (stmt->is_size()) {
+            Stmt *idx_0 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, bls.push_back<BinaryOpStmt>(BinaryOpType::mul, stmt->mesh_idx, dsize_value), offset_offset_bytes);
+            Stmt *idx_1 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, idx_0, dsize_value);
+            Stmt *bls_value_0 = bls.push_back<GlobalLoadStmt>(bls.push_back<BlockLocalPtrStmt>(idx_0, TypeFactory::create_vector_or_scalar_type(1, dt, true)));
+            Stmt *bls_value_1 = bls.push_back<GlobalLoadStmt>(bls.push_back<BlockLocalPtrStmt>(idx_1, TypeFactory::create_vector_or_scalar_type(1, dt, true)));
+            Stmt *value = bls.push_back<BinaryOpStmt>(BinaryOpType::sub, bls_value_1, bls_value_0);
+          } else {
+            Stmt *idx_0 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, bls.push_back<BinaryOpStmt>(BinaryOpType::mul, stmt->mesh_idx, dsize_value), offset_offset_bytes);
+            Stmt *offset = bls.push_back<GlobalLoadStmt>(bls.push_back<BlockLocalPtrStmt>(idx_0, TypeFactory::create_vector_or_scalar_type(1, dt, true)));
+            Stmt *offset_neighbor = bls.push_back<BinaryOpStmt>(BinaryOpType::add, offset, stmt->neighbor_idx);
+            Stmt *offset_neighbor_offset = bls.push_back<BinaryOpStmt>(BinaryOpType::add, bls.push_back<BinaryOpStmt>(BinaryOpType::mul, offset_neighbor, dsize_value), value_offset_bytes);
+            Stmt *value = bls.push_back<GlobalLoadStmt>(bls.push_back<BlockLocalPtrStmt>(offset_neighbor_offset, TypeFactory::create_vector_or_scalar_type(1, dt, true)));
+          }
           stmt->replace_with(std::move(bls));
         }
       }

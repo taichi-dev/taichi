@@ -634,6 +634,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   }
 
   offload->bls_size = bls_offset_in_bytes_;
+  TI_INFO("bls size = {}", offload->bls_size);
 }
 
 void MakeMeshBlockLocal::run(OffloadedStmt *offload,

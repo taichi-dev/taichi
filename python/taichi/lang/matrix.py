@@ -8,13 +8,13 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
-from taichi.lang.util import (cook_dtype, in_python_scope, in_taichi_scope, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type,
-                              warning)
+from taichi.lang.util import (cook_dtype, in_python_scope, in_taichi_scope,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 
@@ -1364,7 +1364,6 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
-
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1384,7 +1383,6 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
-
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1401,7 +1399,6 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1639,7 +1636,6 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1735,7 +1731,6 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

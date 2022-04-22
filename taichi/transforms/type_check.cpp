@@ -215,16 +215,14 @@ class TypeCheck : public IRVisitor {
       // Casting from compute_type to physical_type is handled in codegen.
       dst_value_type = dst_value_type->get_compute_type();
     }
-    auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
-    auto input_type = stmt->val->ret_data_type_name();
     if (dst_value_type != stmt->val->ret_type) {
+      auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
+      if (dst_value_type != promoted) {
+        TI_WARN("[{}] Global store may lose precision: {} <- {}, at\n{}",
+                stmt->name(), dst_value_type->to_string(),
+                stmt->val->ret_data_type_name(), stmt->tb);
+      }
       stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
-    }
-    // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
-    // u8 to u8 leads to extra warnings.
-    if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-      TI_WARN("[{}] Global store may lose precision: {} <- {}, at\n{}",
-              stmt->name(), dst_value_type->to_string(), input_type, stmt->tb);
     }
   }
 

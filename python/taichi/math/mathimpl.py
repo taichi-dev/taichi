@@ -3,21 +3,66 @@ Math functions for glsl-like functions and other stuff.
 """
 from math import e, pi
 
+from taichi.lang import impl
+
 import taichi as ti
 
-from .vectypes import vec2
+vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
+"""2D float vector type.
+"""
+
+vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
+"""3D float vector type.
+"""
+
+vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
+"""4D float vector type.
+"""
+
+ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
+"""2D int vector type.
+"""
+
+ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
+"""3D int vector type.
+"""
+
+ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
+"""4D int vector type.
+"""
 
 mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
-"""2x2 float matrix type
+"""2x2 float matrix type.
 """
 
 mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
-"""3x3 float matrix type
+"""3x3 float matrix type.
 """
 
 mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
-"""4x4 float matrix type
+"""4x4 float matrix type.
 """
+
+_get_uint_ip = lambda: ti.u32 if impl.get_runtime(
+).default_ip == ti.i32 else ti.u64
+
+
+def uvec2(*args):
+    """2D unsigned int vector type.
+    """
+    return ti.types.vector(2, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def uvec3(*args):
+    """3D unsigned int vector type.
+    """
+    return ti.types.vector(3, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def uvec4(*args):
+    """4D unsigned int vector type.
+    """
+    return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
 @ti.func
@@ -545,7 +590,8 @@ def rot3(axis, ang):
 
 __all__ = [
     "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract",
-    "log2", "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians",
-    "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d", "sign",
-    "smoothstep", "step"
+    "ivec2", "ivec3", "ivec4", "log2", "mat2", "mat3", "mat4", "mix", "mod",
+    "normalize", "pi", "radians", "reflect", "refract", "rot2", "rot3",
+    "rotate2d", "rotate3d", "sign", "smoothstep", "step", "uvec2", "uvec3",
+    "uvec4", "vec2", "vec3", "vec4"
 ]

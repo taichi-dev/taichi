@@ -1,3 +1,4 @@
+import functools
 import numbers
 from collections.abc import Iterable
 
@@ -23,12 +24,30 @@ from taichi.types.compound_types import CompoundType
 def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
-    KEMAP_SET = ['xyzw', 'rgba', 'stpq']
-    for key_group in KEMAP_SET:
-        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
-        # len=1 accessors are handled specially
-        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
+    KEYMAP_SET = ['xyzw', 'rgba', 'stpq']
 
+    def add_single_swizzle_attrs(cls):
+        """Add property getter and setter for a single character in "xyzwrgbastpq".
+        """
+        def prop_getter(index, instance):
+            return instance(index)
+
+        @python_scope
+        def prop_setter(index, instance, value):
+            instance[index] = value
+
+        for key_group in KEYMAP_SET:
+            for index, key in enumerate(key_group):
+                prop = property(functools.partial(prop_getter, index),
+                                functools.partial(prop_setter, index))
+                setattr(cls, key, prop)
+
+    add_single_swizzle_attrs(cls)
+
+    for key_group in KEYMAP_SET:
+        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        # len=1 accessors are handled specially above
+        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         for pat in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
@@ -401,119 +420,6 @@ class Matrix(TaichiOperations):
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
         return self(i, j)
-
-    @property
-    def x(self):
-        """Get the first element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.x
-            0
-        """
-        if impl.inside_kernel():
-            return self._subscript(0)
-        return self[0]
-
-    @property
-    def y(self):
-        """Get the second element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.y
-            1
-        """
-        if impl.inside_kernel():
-            return self._subscript(1)
-        return self[1]
-
-    @property
-    def z(self):
-        """Get the third element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.z
-            2
-        """
-        if impl.inside_kernel():
-            return self._subscript(2)
-        return self[2]
-
-    @property
-    def w(self):
-        """Get the fourth element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2, 3])
-            >>> m.w
-            3
-        """
-        if impl.inside_kernel():
-            return self._subscript(3)
-        return self[3]
-
-    # since Taichi-scope use v.x.assign() instead
-    @x.setter
-    @python_scope
-    def x(self, value):
-        """Set the first element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.x = -1
-            >>> m.x
-            -1
-        """
-        self[0] = value
-
-    @y.setter
-    @python_scope
-    def y(self, value):
-        """Set the second element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.y = -1
-            >>> m.y
-            -1
-        """
-        self[1] = value
-
-    @z.setter
-    @python_scope
-    def z(self, value):
-        """Set the third element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.z = -1
-            >>> m.z
-            -1
-        """
-        self[2] = value
-
-    @w.setter
-    @python_scope
-    def w(self, value):
-        """Set the fourth element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2, 3])
-            >>> m.w = -1
-            >>> m.w
-            -1
-        """
-        self[3] = value
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

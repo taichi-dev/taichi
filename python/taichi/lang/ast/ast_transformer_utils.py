@@ -18,7 +18,8 @@ class Builder:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            info = ctx.get_pos_info(node) if isinstance(node, (ast.stmt, ast.expr)) else ""
+            info = ctx.get_pos_info(node) if isinstance(
+                node, (ast.stmt, ast.expr)) else ""
             with impl.get_runtime().src_info_guard(info):
                 return method(ctx, node)
         except Exception as e:

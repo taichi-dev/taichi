@@ -247,6 +247,9 @@ class PyTaichi:
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)
 
+    def get_current_src_info(self):
+        return self.src_info_stack[-1]
+
     def set_default_fp(self, fp):
         assert fp in [f16, f32, f64]
         self.default_fp = fp

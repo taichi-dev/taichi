@@ -1,6 +1,7 @@
 import numbers
 from collections.abc import Iterable
 
+import numpy as np
 from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod

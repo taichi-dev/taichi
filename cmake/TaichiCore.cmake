@@ -16,6 +16,9 @@ option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 # projects.
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+# Suppress warnings from submodules introduced by the above symbol visibility change
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 if(ANDROID)
     set(TI_WITH_VULKAN ON)

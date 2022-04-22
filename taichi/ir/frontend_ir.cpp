@@ -820,6 +820,9 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
                                            const Expr &global) {
+  TI_WARN_IF(for_loop_dec_.config.strictly_serialized,
+             "ti.loop_config(serialize=True) does not have effect on the struct for. "
+             "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global, arch_,
                                                        for_loop_dec_.config);
   for_loop_dec_.reset();
@@ -832,6 +835,9 @@ void ASTBuilder::begin_frontend_mesh_for(
     const Expr &i,
     const mesh::MeshPtr &mesh_ptr,
     const mesh::MeshElementType &element_type) {
+  TI_WARN_IF(for_loop_dec_.config.strictly_serialized,
+             "ti.loop_config(serialize=True) does not have effect on the mesh for. "
+             "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
       i, mesh_ptr, element_type, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();

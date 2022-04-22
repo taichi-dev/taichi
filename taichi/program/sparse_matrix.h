@@ -3,6 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
+#include "taichi/program/ndarray.h"
 
 #include "Eigen/Sparse"
 
@@ -64,6 +65,8 @@ class SparseMatrix {
   Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
 
   SparseMatrix transpose();
+
+  SparseMatrix& build_from_ndarray(const Ndarray &ndarray);
 
  private:
   Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;

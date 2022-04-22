@@ -125,6 +125,17 @@ class SparseMatrix:
         """The shape of the sparse matrix."""
         return (self.n, self.m)
 
+    def build_from_ndarray(self, ndarray):
+        """Build the sparse matrix from a ti.Vector.ndarray.
+
+        Args:
+            ndarray (~taichi.lang.matrix.VectorNdarray): the ndarray to build the sparse matrix from.
+        """
+        from taichi.lang.matrix import VectorNdarray
+        if isinstance(ndarray, VectorNdarray):
+            self.matrix.build_from_ndarray(ndarray.arr)
+        else:
+            assert False, "Sparse matrix only supports building from ti.Vector.ndarray"
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.

@@ -955,7 +955,8 @@ void export_lang(py::module &m) {
       .def("get_element", &SparseMatrix::get_element)
       .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols);
+      .def("num_cols", &SparseMatrix::num_cols)
+      .def("build_from_ndarray", &SparseMatrix::build_from_ndarray);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

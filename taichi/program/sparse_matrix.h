@@ -66,7 +66,7 @@ class SparseMatrix {
 
   SparseMatrix transpose();
 
-  SparseMatrix& build_from_ndarray(const Ndarray &ndarray);
+  SparseMatrix &build_from_ndarray(const Ndarray &ndarray);
 
  private:
   Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;

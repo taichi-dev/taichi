@@ -137,6 +137,7 @@ class SparseMatrix:
         else:
             assert False, "Sparse matrix only supports building from ti.Vector.ndarray"
 
+
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.
 

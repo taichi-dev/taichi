@@ -162,20 +162,19 @@ void SparseMatrix::set_element(int row, int col, float32 value) {
   matrix_.coeffRef(row, col) = value;
 }
 
-
-  SparseMatrix& SparseMatrix::build_from_ndarray(const Ndarray &ndarray){
-    using T = float32;
-    using V = Eigen::Triplet<T>;
-    std::vector<V> triplets;
-    T *data = reinterpret_cast<T *>(ndarray.get_data_ptr_as_int());
-    auto num_triplets = ndarray.get_nelement()/3;
-    for (int i = 0; i < num_triplets; i++) {
-      triplets.push_back(V(data[i * 3], data[i * 3 + 1],
-                          taichi_union_cast<T>(data[i * 3 + 2])));
-    }
-    this->matrix_.setFromTriplets(triplets.begin(), triplets.end());
-    return *this;
+SparseMatrix &SparseMatrix::build_from_ndarray(const Ndarray &ndarray) {
+  using T = float32;
+  using V = Eigen::Triplet<T>;
+  std::vector<V> triplets;
+  T *data = reinterpret_cast<T *>(ndarray.get_data_ptr_as_int());
+  auto num_triplets = ndarray.get_nelement() / 3;
+  for (int i = 0; i < num_triplets; i++) {
+    triplets.push_back(
+        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
   }
+  this->matrix_.setFromTriplets(triplets.begin(), triplets.end());
+  return *this;
+}
 
 }  // namespace lang
 }  // namespace taichi

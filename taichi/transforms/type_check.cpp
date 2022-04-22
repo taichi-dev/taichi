@@ -64,8 +64,8 @@ class TypeCheck : public IRVisitor {
       auto cit = cft->get_digits_type()->as<CustomIntType>();
       dst_type = cit->get_physical_type();
     } else if (stmt->val->ret_type != dst_type) {
-      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}",
-              stmt->name(), atomic_op_type_name(stmt->op_type),
+      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision\n{}", stmt->name(),
+              atomic_op_type_name(stmt->op_type),
               data_type_name(stmt->val->ret_type), data_type_name(dst_type),
               stmt->tb);
       stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
@@ -117,7 +117,7 @@ class TypeCheck : public IRVisitor {
         stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
       }
       if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-        TI_WARN("[{}] Local store may lose precision: {} <- {}, at\n{}",
+        TI_WARN("[{}] Local store may lose precision: {} <- {}\n{}",
                 stmt->name(), dst_value_type->to_string(), input_type,
                 stmt->tb);
       }
@@ -139,8 +139,7 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->dest->ret_type != common_container_type) {
       TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {}), "
-          "at\n{}",
+          "[{}] Local store may lose precision (target = {}, value = {})\n{}",
           stmt->name(), stmt->dest->ret_data_type_name(),
           old_data->ret_data_type_name(), stmt->id, stmt->tb);
     }
@@ -218,7 +217,7 @@ class TypeCheck : public IRVisitor {
     if (dst_value_type != stmt->val->ret_type) {
       auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
       if (dst_value_type != promoted) {
-        TI_WARN("[{}] Global store may lose precision: {} <- {}, at\n{}",
+        TI_WARN("[{}] Global store may lose precision: {} <- {}\n{}",
                 stmt->name(), dst_value_type->to_string(),
                 stmt->val->ret_data_type_name(), stmt->tb);
       }
@@ -293,13 +292,11 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
-        TI_WARN(
-            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}), "
-            "at\n{}",
-            stmt->name(), stmt->lhs->ret_data_type_name(),
-            stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
+        TI_WARN("[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
+                stmt->name(), stmt->lhs->ret_data_type_name(),
+                stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
       } else {
-        TI_WARN("[{}] {} at\n{}", stmt->name(), comment, stmt->tb);
+        TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->tb);
       }
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");

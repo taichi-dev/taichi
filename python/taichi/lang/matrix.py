@@ -330,26 +330,84 @@ class Matrix(TaichiOperations):
             f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
+    # host access & python scope operation
+    def __len__(self):
+        """Get the length of each row of a matrix"""
+        # TODO: When this is a vector, should return its dimension?
+        return self.n
+
+    def __iter__(self):
+        if self.m == 1:
+            return (self(i) for i in range(self.n))
+        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+
+    @python_scope
+    def __getitem__(self, indices):
+        """Access to the element at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of the element.
+
+        Returns:
+            The value of the element at a specific position of a matrix.
+
+        """
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        if isinstance(i, slice) or isinstance(j, slice):
+            return self._get_slice(i, j)
+        return self._get_entry_and_read([i, j])
+
+    @python_scope
+    def __setitem__(self, indices, item):
+        """Set the element value at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of a element.
+
+        """
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        idx = self._linearize_entry_id(i, j)
+        if isinstance(self.entries[idx], SNodeHostAccess):
+            self.entries[idx].accessor.setter(item, *self.entries[idx].key)
+        elif isinstance(self.entries[idx], NdarrayHostAccess):
+            self.entries[idx].setter(item)
+        else:
+            self.entries[idx] = item
+
     def __call__(self, *args, **kwargs):
+        # TODO: It's quite hard to search for __call__, consider replacing this
+        # with a method of actual names?
         assert kwargs == {}
-        ret = self._get_entry(*args)
+        return self._get_entry_and_read(args)
+
+    def _get_entry_and_read(self, indices):
+        # Can be invoked in both Python and Taichi scope. `indices` must be
+        # compile-time constants (e.g. Python values)
+        ret = self._get_entry(*indices)
+
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
             ret = ret.getter()
         return ret
 
-    def _set_entry(self, i, j, e):
-        idx = self._linearize_entry_id(i, j)
-        if impl.inside_kernel():
-            self.entries[idx]._assign(e)
-        else:
-            if isinstance(self.entries[idx], SNodeHostAccess):
-                self.entries[idx].accessor.setter(e, *self.entries[idx].key)
-            elif isinstance(self.entries[idx], NdarrayHostAccess):
-                self.entries[idx].setter(e)
-            else:
-                self.entries[idx] = e
+    @python_scope
+    def _set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
 
     def _get_entry(self, *args):
         return self.entries[self._linearize_entry_id(*args)]
@@ -419,7 +477,7 @@ class Matrix(TaichiOperations):
             return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
-        return self(i, j)
+        return self._get_entry(i, j)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.
@@ -428,61 +486,6 @@ class Matrix(TaichiOperations):
         the difference is that this function always returns a new list.
         """
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
-
-    # host access & python scope operation
-    @python_scope
-    def __getitem__(self, indices):
-        """Access to the element at the given indices in a matrix.
-
-        Args:
-            indices (Sequence[Expr]): the indices of the element.
-
-        Returns:
-            The value of the element at a specific position of a matrix.
-
-        """
-        if not isinstance(indices, (list, tuple)):
-            indices = [indices]
-        assert len(indices) in [1, 2]
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        if isinstance(i, slice) or isinstance(j, slice):
-            return self._get_slice(i, j)
-        return self(i, j)
-
-    @python_scope
-    def __setitem__(self, indices, item):
-        """Set the element value at the given indices in a matrix.
-
-        Args:
-            indices (Sequence[Expr]): the indices of a element.
-
-        """
-        if not isinstance(indices, (list, tuple)):
-            indices = [indices]
-        assert len(indices) in [1, 2]
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        self._set_entry(i, j, item)
-
-    def __len__(self):
-        """Get the length of each row of a matrix"""
-        return self.n
-
-    def __iter__(self):
-        if self.m == 1:
-            return (self(i) for i in range(self.n))
-        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
-
-    @python_scope
-    def _set_entries(self, value):
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self[i, j] = value[i][j]
 
     @taichi_scope
     def cast(self, dtype):
@@ -1349,7 +1352,7 @@ class MatrixField(Field):
                        i + 1]._offset_bytes_in_parent_cell for path in paths):
                 return
         stride = paths[1][depth_below_lca]._offset_bytes_in_parent_cell - \
-                 paths[0][depth_below_lca]._offset_bytes_in_parent_cell
+            paths[0][depth_below_lca]._offset_bytes_in_parent_cell
         for i in range(2, num_members):
             if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
                     - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:

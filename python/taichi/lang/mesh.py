@@ -335,8 +335,6 @@ class MeshInstance:
 
     def get_relation_access(self, from_index, to_element_type,
                             neighbor_idx_ptr):
-        # from_order = element_order(from_index.element_type)
-        # to_order = element_order(to_element_type)
         return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr,
                                             to_element_type, neighbor_idx_ptr)
 
@@ -562,8 +560,9 @@ class Mesh:
     def generate_meta(data):
         return MeshMetadata(data)
 
-    class RelationVisitor(ast.NodeVisitor
-                          ):  # TODO: only works for simple cases
+    class RelationVisitor(ast.NodeVisitor):
+        # TODO: only works for simple cases
+
         def __init__(self, ctx):
             self.vars = {}
             self.visits = []

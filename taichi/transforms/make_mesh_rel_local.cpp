@@ -14,35 +14,26 @@ namespace {
     //  body(i);
     //  i += blockDim.x;
     // }
-    Stmt *create_xlogue(
+    void create_xlogue(
       OffloadedStmt *offload,
       Stmt *end_val,
       std::function<void(Block * /*block*/, Stmt * /*idx_val*/)> body_) {
       Block* block = offload->bls_prologue.get();
 
       Stmt *idx = block->push_back<AllocaStmt>(PrimitiveType::i32);
-      [[maybe_unused]] Stmt *init_val =
-          block->push_back<LocalStoreStmt>(idx, 
-            block->push_back<LoopLinearIndexStmt>(offload) // Equivalent to CUDA threadIdx
-          );
-      Stmt *block_dim_val = block->push_back<ConstStmt>(
-            LaneAttribute<TypedConstant>{offload->block_dim});
+      block->push_back<LocalStoreStmt>(idx, block->push_back<LoopLinearIndexStmt>(offload) /*Equivalent to CUDA threadIdx*/);
+      Stmt *block_dim_val = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>{offload->block_dim});
 
       std::unique_ptr<Block> body = std::make_unique<Block>();
       {
         Stmt *idx_val = body->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
-        Stmt *cond =
-            body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt, idx_val, end_val);
+        Stmt *cond = body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt, idx_val, end_val);
         body->push_back<WhileControlStmt>(nullptr, cond);
         body_(body.get(), idx_val);
-        Stmt *idx_val_ = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val,
-                                                      block_dim_val);
-        [[maybe_unused]] Stmt *idx_store =
-            body->push_back<LocalStoreStmt>(idx, idx_val_);
+        Stmt *idx_val_ = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val, block_dim_val);
+        [[maybe_unused]] Stmt *idx_store = body->push_back<LocalStoreStmt>(idx, idx_val_);
       }
       block->push_back<WhileStmt>(std::move(body));
-      Stmt *idx_val = block->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
-      return idx_val;
     }
 
     void make_mesh_rel_local_offload(OffloadedStmt *offload,
@@ -73,25 +64,25 @@ namespace {
       
       if (from_order > to_order) {
         Stmt *owned_element_num = offload->owned_num_local.find(from_type)->second;
-        size_t to_num = from_type == mesh::MeshElementType::Cell && to_type == mesh::MeshElementType::Edge ? 
+        int to_num = from_type == mesh::MeshElementType::Cell && to_type == mesh::MeshElementType::Edge ? 
                         /*Cell-Edge=*/ 6 : (from_order + 1);
-        Stmt *to_num_stmt = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>{to_num});
-        Stmt *patch_rel_num = block->push_back<BinaryOpStmt>(BinaryOpType::mul, owned_element_num, to_num_stmt);
+        Stmt *to_num_stmt = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>{int32(to_num)});
+        Stmt *patch_rel_num = block->push_back<BinaryOpStmt>(BinaryOpType::mul, owned_element_num, to_num_stmt);    
         Stmt *total_element_offset = offload->total_offset_local.find(from_type)->second;
+        Stmt *inital_offset = block->push_back<BinaryOpStmt>(BinaryOpType::mul, to_num_stmt, total_element_offset);
 
         // Allocate bls
         DataType dt = PrimitiveType::u16;
         auto dsize = data_type_size(dt);
         // Ensure BLS alignment
         offload->bls_size += (dsize - offload->bls_size % dsize) % dsize;
-        const auto & rel_offset_in_bytes = offload->bls_size;
+        const auto rel_offset_in_bytes = offload->bls_size;
+        TI_INFO("rel_offset_in_bytes = {}", rel_offset_in_bytes);
         // Allocate storage for the BLS variable
         offload->bls_size += dsize * offload->mesh->relations.find(rel_type)->second.max_value_per_patch;
         TI_INFO("bls size = {}", offload->bls_size);
 
-        Stmt *offset =
-          block->push_back<ConstStmt>(TypedConstant(int32(rel_offset_in_bytes)));
-        
+        Stmt *offset = block->push_back<ConstStmt>(TypedConstant(int32(rel_offset_in_bytes)));
         SNode *rel_value = offload->mesh->relations.find(rel_type)->second.value;
 
         // Fetch relation data to shared mem
@@ -100,8 +91,7 @@ namespace {
           patch_rel_num,
           [&](Block *body, Stmt *idx_val) {
             // Global ptr
-            Stmt *global_offset = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val, 
-              body->push_back<BinaryOpStmt>(BinaryOpType::mul, to_num_stmt, total_element_offset));
+            Stmt *global_offset = body->push_back<BinaryOpStmt>(BinaryOpType::add, idx_val, inital_offset);
             Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
             LaneAttribute<SNode *>{rel_value}, std::vector<Stmt *>{global_offset});
             // Global value
@@ -113,8 +103,61 @@ namespace {
             Stmt *index = body->push_back<BinaryOpStmt>(BinaryOpType::add, offset, idx_val_byte);
             Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(index, TypeFactory::create_vector_or_scalar_type(1, dt, true));
             body->push_back<GlobalStoreStmt>(bls_ptr, value);
+
+            /*
+            Stmt *cond1 = body->push_back<BinaryOpStmt>(BinaryOpType::cmp_eq, inital_offset, body->push_back<ConstStmt>(LaneAttribute<TypedConstant>{928924}));
+            Stmt *ifst = body->push_back<IfStmt>(cond1);
+            std::unique_ptr<Block> if_body = std::make_unique<Block>();
+            if_body->push_back<PrintStmt>("global_idx = ", global_offset, ", local_idx = ", index, ", value = ", value, "\n");
+            ifst->cast<IfStmt>()->set_true_statements(std::move(if_body));
+            */
           }
         );
+
+        // Replace relation access statement
+        std::vector<MeshRelationAccessStmt *> rel_access_stmts;
+        irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+          if (auto rel_access = stmt->cast<MeshRelationAccessStmt>()) {
+              rel_access_stmts.push_back(rel_access);
+          }
+          return false;
+        });
+
+        for (auto stmt : rel_access_stmts) {
+          VecStatement bls;
+          Stmt *to_size = bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{int32(to_num)});
+
+          
+          Stmt *bls_offset_bytes = bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{int32(rel_offset_in_bytes)});
+          Stmt *idx = bls.push_back<BinaryOpStmt>(BinaryOpType::add,
+            bls.push_back<BinaryOpStmt>(BinaryOpType::mul, stmt->mesh_idx, bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{int32(to_num)})),
+            stmt->neighbor_idx);
+          Stmt *idx_bytes = bls.push_back<BinaryOpStmt>(BinaryOpType::mul, idx, bls.push_back<ConstStmt>(TypedConstant(dsize)));
+          Stmt *final_offset = bls.push_back<BinaryOpStmt>(BinaryOpType::add, bls_offset_bytes, idx_bytes);
+          
+          Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(final_offset, TypeFactory::create_vector_or_scalar_type(1, dt, true));
+          Stmt *value = bls.push_back<GlobalLoadStmt>(bls_ptr);
+
+          /*
+          // E.g, v_2 = CV[(c + total_cells_offset) * 4 + 2]
+          Stmt *tmp0 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, total_element_offset, stmt->mesh_idx);
+          Stmt *tmp1 = bls.push_back<BinaryOpStmt>(BinaryOpType::mul, tmp0, to_size);
+          Stmt *index = bls.push_back<BinaryOpStmt>(BinaryOpType::add, tmp1, stmt->neighbor_idx);
+          Stmt *global_ptr = bls.push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{rel_value}, std::vector<Stmt *>{index});
+          Stmt *value_global = bls.push_back<GlobalLoadStmt>(global_ptr);
+
+          Stmt *cond = bls.push_back<BinaryOpStmt>(BinaryOpType::cmp_eq, value, value_global);
+          Stmt *cond1 = bls.push_back<BinaryOpStmt>(BinaryOpType::cmp_eq, inital_offset, bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{928924}));
+          IfStmt *ifst = bls.push_back<IfStmt>(cond1);
+          std::unique_ptr<Block> if_body = std::make_unique<Block>();
+          Stmt *assert_st = if_body->push_back<AssertStmt>(cond, "Fuck error=%d,l_idx=%d right=%d,g_idx=%d, total_offset=%d, mesh_idx=%d, neighor_idx=%d, patch_rel_num=%d, own_element_num=%d, initial_offset=%d", 
+            std::vector<Stmt *>({value, final_offset, value_global, index, total_element_offset, stmt->mesh_idx, stmt->neighbor_idx, patch_rel_num, owned_element_num, inital_offset}));
+          ifst->set_true_statements(std::move(if_body));
+          Stmt *value1 = bls.push_back<BinaryOpStmt>(BinaryOpType::add, value_global, bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>{0}));
+          */
+  
+          stmt->replace_with(std::move(bls));
+        }
       }
   }
 }

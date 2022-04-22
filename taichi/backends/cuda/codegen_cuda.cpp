@@ -631,6 +631,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
 
       if (stmt->bls_prologue) {
+        call("block_barrier");  // "__syncthreads()"
         stmt->bls_prologue->accept(this);
         call("block_barrier");  // "__syncthreads()"
       }

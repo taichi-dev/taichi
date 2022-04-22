@@ -64,8 +64,8 @@ class TypeCheck : public IRVisitor {
       auto cit = cft->get_digits_type()->as<CustomIntType>();
       dst_type = cit->get_physical_type();
     } else if (stmt->val->ret_type != dst_type) {
-      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision\n{}",
-              stmt->name(), atomic_op_type_name(stmt->op_type),
+      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision\n{}", stmt->name(),
+              atomic_op_type_name(stmt->op_type),
               data_type_name(stmt->val->ret_type), data_type_name(dst_type),
               stmt->tb);
       stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
@@ -292,10 +292,9 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
-        TI_WARN(
-            "[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
-            stmt->name(), stmt->lhs->ret_data_type_name(),
-            stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
+        TI_WARN("[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
+                stmt->name(), stmt->lhs->ret_data_type_name(),
+                stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
       } else {
         TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->tb);
       }

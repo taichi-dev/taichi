@@ -12,8 +12,6 @@ def _get_matrix_swizzle_apis():
     res = []
     for key_group in KEMAP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)
-        # len=1 accessors are handled specially
-        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         sw_patterns = map(lambda p: ''.join(p), sw_patterns)
         res += sw_patterns
     return sorted(res)
@@ -25,7 +23,7 @@ def _get_expected_matrix_apis():
         'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray',
         'norm', 'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product',
         'rotation2d', 'rows', 'sum', 'to_list', 'to_numpy', 'trace',
-        'transpose', 'unit', 'w', 'x', 'y', 'z', 'zero'
+        'transpose', 'unit', 'zero'
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)

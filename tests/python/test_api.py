@@ -74,8 +74,8 @@ user_api[ti.math] = [
     'csqrt', 'degrees', 'distance', 'dot', 'e', 'eye', 'fract', 'ivec2',
     'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'mod',
     'normalize', 'pi', 'radians', 'reflect', 'refract', 'rot2', 'rot3',
-    'rotate2d', 'rotate3d', 'sign', 'smoothstep', 'step', 'vec2', 'vec3',
-    'vec4'
+    'rotate2d', 'rotate3d', 'sign', 'smoothstep', 'step', 'uvec2', 'uvec3',
+    'uvec4', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [

@@ -39,7 +39,7 @@ The language has broad applications spanning real-time physical simulation, numb
 - Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi-lang.org/lang/articles/sparse)).
 - Performance: With the `@ti.kernel` decorator, Taichi's JIT compiler automatically compiles your Python functions into efficient GPU or CPU machine code for parallel execution.
 - Portability: Write your code once and run it everywhere. Currently, Taichi supports most mainstream GPU APIs, such as CUDA and Vulkan.
-- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
+- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi-lang.org/lang/articles/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
 ## Getting Started
 
@@ -120,17 +120,17 @@ for i in range(1000000):
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> </a><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-See [Get started](https://docs.taichi.graphics) for more information.
+See [Get started](https://docs.taichi-lang.org) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/dev_install).
+If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi-lang.org/lang/articles/dev_install).
 
 ## Documentation
 
-- [Technical documents](https://docs.taichi.graphics/)
-- [API Reference](https://docs.taichi.graphics/api/)
-- [Blog](https://docs.taichi.graphics/blog)
+- [Technical documents](https://docs.taichi-lang.org/)
+- [API Reference](https://docs.taichi-lang.org/api/)
+- [Blog](https://docs.taichi-lang.org/blog)
 
 ## Contributing
 

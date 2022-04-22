@@ -235,8 +235,8 @@ attributeref ::= primary "." identifier
 Attribute references are evaluated at compile time. The `primary` must be
 evaluated to a Python value with an attribute named `identifier`. Common use
 cases in Taichi include metadata queries of
-[field](https://docs.taichi.graphics/lang/articles/meta#field-metadata) and
-[matrices](https://docs.taichi.graphics/lang/articles/meta#matrix--vector-metadata).
+[field](https://docs.taichi-lang.org/lang/articles/meta#field-metadata) and
+[matrices](https://docs.taichi-lang.org/lang/articles/meta#matrix--vector-metadata).
 
 #### Subscriptions
 

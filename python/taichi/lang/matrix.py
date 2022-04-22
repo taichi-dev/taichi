@@ -1,6 +1,6 @@
+import functools
 import numbers
 from collections.abc import Iterable
-import functools
 
 import numpy as np
 from taichi._lib import core as ti_core
@@ -34,7 +34,7 @@ def _gen_swizzles(cls):
 
         @python_scope
         def prop_setter(index, instance, value):
-                instance[index] = value
+            instance[index] = value
 
         for key_group in KEYMAP_SET:
             for index, key in enumerate(key_group):

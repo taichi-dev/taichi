@@ -9,11 +9,11 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
-from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
+from taichi.lang.util import (cook_dtype, in_python_scope, in_taichi_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               warning)
 from taichi.types import primitive_types
@@ -340,7 +340,7 @@ class Matrix(TaichiOperations):
         j = 0 if len(indices) == 1 else indices[1]
         if isinstance(i, slice) or isinstance(j, slice):
             return self._get_slice(i, j)
-        return self(i, j)
+        return self._get_entry_and_read_if_in_pyscope([i, j])
 
     @python_scope
     def __setitem__(self, indices, item):
@@ -364,13 +364,26 @@ class Matrix(TaichiOperations):
             self.entries[idx] = item
 
     def __call__(self, *args, **kwargs):
-        # Can be invoked in both Python and Taichi scope. *args must be
-        # compile-time constants (e.g. Python values)
+        # TODO: It's quite hard to search for __call__, consider replacing this
+        # with a method of actual names?
         assert kwargs == {}
-        ret = self._get_entry(*args)
+        return self._get_entry_and_read_if_in_pyscope(args)
+
+    def _get_entry_and_read_if_in_pyscope(self, indices):
+        # Can be invoked in both Python and Taichi scope. `indices` must be
+        # compile-time constants (e.g. Python values)
+        ret = self._get_entry(*indices)
+
+        def ensure_pyscope():
+            if in_taichi_scope():
+                raise TaichiRuntimeError(
+                    'Cannot read host value in Taichi scope')
+
         if isinstance(ret, SNodeHostAccess):
+            ensure_pyscope()
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
+            ensure_pyscope()
             ret = ret.getter()
         return ret
 
@@ -1359,6 +1372,7 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
+
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1378,6 +1392,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
+
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1394,6 +1409,7 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
+
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1440,7 +1456,7 @@ class MatrixField(Field):
                        i + 1]._offset_bytes_in_parent_cell for path in paths):
                 return
         stride = paths[1][depth_below_lca]._offset_bytes_in_parent_cell - \
-                 paths[0][depth_below_lca]._offset_bytes_in_parent_cell
+            paths[0][depth_below_lca]._offset_bytes_in_parent_cell
         for i in range(2, num_members):
             if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
                     - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
@@ -1631,6 +1647,7 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1726,6 +1743,7 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

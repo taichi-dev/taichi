@@ -607,7 +607,8 @@ class Mesh:
         name_to_order = {"verts": 0, "edges": 1, "faces": 2, "cells": 3}
         for visit in x.visits:
             if visit[1] in name_to_order and visit[2] in name_to_order:
-                visit[0].update_relation(name_to_order[visit[1]], name_to_order[visit[2]])
+                visit[0].update_relation(name_to_order[visit[1]],
+                                         name_to_order[visit[2]])
 
 
 def TriMesh():

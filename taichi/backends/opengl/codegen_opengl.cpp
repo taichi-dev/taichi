@@ -122,7 +122,7 @@ class KernelGen : public IRVisitor {
   std::unordered_set<std::string> loaded_args_;
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 

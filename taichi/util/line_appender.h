@@ -23,7 +23,7 @@ class LineAppender {
   }
 
   template <typename... Args>
-  void append(std::string f, Args &&... args) {
+  void append(std::string f, Args &&...args) {
     lines_ += indent_ + fmt::format(f, std::forward<Args>(args)...) + '\n';
   }
 

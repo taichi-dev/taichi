@@ -226,7 +226,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
  protected:
   template <typename... Args>
-  void emit(Args &&... args) {
+  void emit(Args &&...args) {
     (this->get_ostream() << ... << std::forward<Args>(args));
   }
 

@@ -6,7 +6,7 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
     add_custom_target(
         "generate_llvm_runtime_${rtm_arch}"
         COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${rtm_arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${rtm_arch}" -I ${PROJECT_SOURCE_DIR};
-        # TODO, it's better to avoid polluting the source dir, keep in build 
+        # TODO, it's better to avoid polluting the source dir, keep in build
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${rtm_arch}")

@@ -515,4 +515,87 @@ def sym_eig(A, dt=None):
     raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
-__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd']
+@func
+def _gauss_elimination_2x2(Ab, dt):
+    if ops.abs(Ab[0, 0]) < ops.abs(Ab[1, 0]):
+        Ab[0, 0], Ab[1, 0] = Ab[1, 0], Ab[0, 0]
+        Ab[0, 1], Ab[1, 1] = Ab[1, 1], Ab[0, 1]
+        Ab[0, 2], Ab[1, 2] = Ab[1, 2], Ab[0, 2]
+    assert Ab[0, 0] != 0.0, "Matrix is singular in linear solve."
+    scale = Ab[1, 0] / Ab[0, 0]
+    Ab[1, 0] = 0.0
+    for k in static(range(1, 3)):
+        Ab[1, k] -= Ab[0, k] * scale
+    x = Vector.zero(dt, 2)
+    # Back substitution
+    x[1] = Ab[1, 2] / Ab[1, 1]
+    x[0] = (Ab[0, 2] - Ab[0, 1] * x[1]) / Ab[0, 0]
+    return x
+
+
+@func
+def _gauss_elimination_3x3(Ab, dt):
+    for i in static(range(3)):
+        max_row = i
+        max_v = ops.abs(Ab[i, i])
+        for j in static(range(i + 1, 3)):
+            if ops.abs(Ab[j, i]) > max_v:
+                max_row = j
+                max_v = ops.abs(Ab[j, i])
+        assert max_v != 0.0, "Matrix is singular in linear solve."
+        if i != max_row:
+            if max_row == 1:
+                for col in static(range(4)):
+                    Ab[i, col], Ab[1, col] = Ab[1, col], Ab[i, col]
+            else:
+                for col in static(range(4)):
+                    Ab[i, col], Ab[2, col] = Ab[2, col], Ab[i, col]
+        assert Ab[i, i] != 0.0, "Matrix is singular in linear solve."
+        for j in static(range(i + 1, 3)):
+            scale = Ab[j, i] / Ab[i, i]
+            Ab[j, i] = 0.0
+            for k in static(range(i + 1, 4)):
+                Ab[j, k] -= Ab[i, k] * scale
+    # Back substitution
+    x = Vector.zero(dt, 3)
+    for i in static(range(2, -1, -1)):
+        x[i] = Ab[i, 3]
+        for k in static(range(i + 1, 3)):
+            x[i] -= Ab[i, k] * x[k]
+        x[i] = x[i] / Ab[i, i]
+    return x
+
+
+def solve(A, b, dt=None):
+    """Solve a matrix using Gauss elimination method.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        b (ti.Vector(n, 1)): input nx1 vector `b`.
+        dt (DataType): The datatype for the `A` and `b`.
+
+    Returns:
+        x (ti.Vector(n, 1)): the solution of Ax=b.
+    """
+    assert A.n == A.m, "Only sqaure matrix is supported"
+    assert A.n >= 2 and A.n <= 3, "Only 2D and 3D matrices are supported"
+    assert A.m == b.n, "Matrix and Vector dimension dismatch"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    nrow, ncol = static(A.n, A.n + 1)
+    Ab = expr_init(Matrix.zero(dt, nrow, ncol))
+    lhs = tuple([e.ptr for e in A.entries])
+    rhs = tuple([e.ptr for e in b.entries])
+    for i in range(nrow):
+        for j in range(nrow):
+            Ab(i, j)._assign(lhs[nrow * i + j])
+    for i in range(nrow):
+        Ab(i, nrow)._assign(rhs[i])
+    if A.n == 2:
+        return _gauss_elimination_2x2(Ab, dt)
+    if A.n == 3:
+        return _gauss_elimination_3x3(Ab, dt)
+    raise Exception("Solver only supports 2D and 3D matrices.")
+
+
+__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

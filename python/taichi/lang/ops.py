@@ -1083,9 +1083,36 @@ def bit_shr(x1, x2):
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, x1, x2)
 
 
-# We don't have logic_and/or instructions yet:
-logical_or = bit_or
-logical_and = bit_and
+@binary
+def logical_and(a, b):
+    """Compute logical_and
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
+
+    Returns:
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-and RHS (with short-circuit semantics)
+
+    """
+    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b,
+                             a, b)
+
+
+@binary
+def logical_or(a, b):
+    """Compute logical_or
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
+
+    Returns:
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-or RHS (with short-circuit semantics)
+
+    """
+    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a,
+                             b)
 
 
 @ternary

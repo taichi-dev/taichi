@@ -60,6 +60,10 @@ FunctionCreationGuard::FunctionCreationGuard(
   old_entry = mb->entry_block;
   mb->entry_block = allocas;
 
+  final = llvm::BasicBlock::Create(*mb->llvm_context, "final", body);
+  old_final = mb->final_block;
+  mb->final_block = final;
+
   entry = llvm::BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
 
   ip = mb->builder->saveIP();
@@ -73,18 +77,20 @@ FunctionCreationGuard::FunctionCreationGuard(
 
 FunctionCreationGuard::~FunctionCreationGuard() {
   if (!mb->returned) {
-    mb->builder->CreateRetVoid();
+    mb->builder->CreateBr(final);
   }
-  mb->func = old_func;
-  mb->builder->restoreIP(ip);
+  mb->builder->SetInsertPoint(final);
+  mb->builder->CreateRetVoid();
   mb->returned = false;
 
-  {
-    llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
-    mb->builder->SetInsertPoint(allocas);
-    mb->builder->CreateBr(entry);
-    mb->entry_block = old_entry;
-  }
+  mb->builder->SetInsertPoint(allocas);
+  mb->builder->CreateBr(entry);
+
+  mb->entry_block = old_entry;
+  mb->final_block = old_final;
+  mb->func = old_func;
+  mb->builder->restoreIP(ip);
+
   TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
@@ -844,6 +850,12 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_int8(), true));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_uint8(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));
@@ -1118,7 +1130,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
            tlctx->get_constant<int32>(idx++)});
     }
   }
-  builder->CreateRetVoid();
+  builder->CreateBr(final_block);
   returned = true;
 }
 
@@ -1128,12 +1140,7 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  auto mask = stmt->parent->mask();
-  if (mask && stmt->width() != 1) {
-    TI_NOT_IMPLEMENTED
-  } else {
-    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
-  }
+  builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
@@ -1350,7 +1357,6 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->val]);
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
@@ -1667,6 +1673,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
+  this->final_block = llvm::BasicBlock::Create(*llvm_context, "final", func);
 
   // The real function body
   func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
@@ -1676,10 +1683,12 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
   if (!returned) {
-    builder->CreateRetVoid();
+    builder->CreateBr(final_block);
   } else {
     returned = false;
   }
+  builder->SetInsertPoint(final_block);
+  builder->CreateRetVoid();
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);
@@ -2380,7 +2389,7 @@ FunctionType CodeGenLLVM::gen() {
   std::string kernel_key;
   if (config.offline_cache && this->supports_offline_cache() &&
       !kernel->is_evaluator) {
-    kernel_key = get_offline_cache_key(&kernel->program->config, kernel);
+    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
     LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
     LlvmOfflineCache::KernelCacheData cache_data;

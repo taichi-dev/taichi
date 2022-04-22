@@ -67,13 +67,13 @@ The language has broad applications spanning real-time physical simulation, numb
 Use Python's package installer **pip** to install Taichi:
 
 ```bash
-pip install taichi
+pip install --upgrade taichi
 ```
 
-*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features.*
+*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features. The nightly packages can be installed from our self-hosted PyPI (Using self-hosted PyPI allows us to provide more frequent releases over a longer period of time)*
 
 ```bash
-pip install -i https://test.pypi.org/simple/ taichi-nightly
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 ```
 
 ### Run your "Hello, world!"
@@ -124,7 +124,7 @@ See [Get started](https://docs.taichi.graphics) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
+If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/dev_install).
 
 ## Documentation
 
@@ -139,6 +139,12 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 <a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
 
 *Contributor avatars are randomly shuffled.*
+
+## License
+
+Taichi is distributed under the terms of Apache License (Version 2.0).
+
+See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) for details.
 
 ## Community
 

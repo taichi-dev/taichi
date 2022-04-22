@@ -170,7 +170,7 @@ def func():
 
 There are two reasons to use `ti.static` with for loops:
 
-- Loop unrolling for improving runtime performance (see section [Compile-time evaluations](##Compile-time evaluations)).
+- Loop unrolling for improving runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
 - Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
 
 For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
@@ -190,7 +190,7 @@ def reset():
 
 A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines whether to recurse is evaluated at compile time.
 
-You can combine [compile-time branching](#compile-time-evaluations) and [template](#template-metaprogramming) to write compile-time recursive functions.
+You can combine [compile-time branching](#compile-time-branching) and [template](#template-metaprogramming) to write compile-time recursive functions.
 
 For example, `sum_from_one_to` is a compile-time recursive function that calculates the sum of numbers from `1` to `n`.
 

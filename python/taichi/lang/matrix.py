@@ -12,6 +12,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               warning)
@@ -19,6 +20,44 @@ from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 
 
+def _gen_swizzles(cls):
+    swizzle_gen = SwizzleGenerator()
+    # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
+    KEMAP_SET = ['xyzw', 'rgba', 'stpq']
+    for key_group in KEMAP_SET:
+        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        # len=1 accessors are handled specially
+        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
+
+        for pat in sw_patterns:
+            # Create a function for value capturing
+            def gen_property(pattern, key_group):
+                def prop_getter(instance):
+                    res = []
+                    for ch in pattern:
+                        res.append(instance._get_entry(key_group.index(ch)))
+                    return Vector(res, is_ref=True)
+
+                def prop_setter(instance, value):
+                    if len(pattern) != len(value):
+                        raise TaichiCompilationError(
+                            'values does not match the attribute')
+                    for ch, val in zip(pattern, value):
+                        if in_python_scope():
+                            instance[key_group.index(ch)] = val
+                        else:
+                            instance(key_group.index(ch))._assign(val)
+
+                prop = property(prop_getter, prop_setter)
+                prop_key = ''.join(pattern)
+                return prop_key, prop
+
+            prop_key, prop = gen_property(pat, key_group)
+            setattr(cls, prop_key, prop)
+    return cls
+
+
+@_gen_swizzles
 class Matrix(TaichiOperations):
     """The matrix class.
 
@@ -62,7 +101,7 @@ class Matrix(TaichiOperations):
     """
     _is_taichi_class = True
 
-    def __init__(self, arr, dt=None, suppress_warning=False):
+    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -77,10 +116,11 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         elif not isinstance(arr[0], Iterable):  # now init a Vector
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [[x] for x in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x)] for x in arr]
+                mat = [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                       for x in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -117,10 +157,13 @@ class Matrix(TaichiOperations):
                                 (len(arr), ), self.dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [list(row) for row in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x) for x in row] for row in arr]
+                mat = [[
+                    impl.expr_init(ops_mod.cast(x, dt) if dt else x)
+                    for x in row
+                ] for row in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -235,6 +278,11 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        # A hack way to check if this is a vector from `taichi.math`,
+        # to avoid importing a deleted name across modules.
+        if isinstance(other, Matrix) and (hasattr(other, "_DIM")):
+            return type(other)(*[x for x, in entries])
+
         return Matrix(entries)
 
     def _linearize_entry_id(self, *args):
@@ -265,7 +313,7 @@ class Matrix(TaichiOperations):
 
     def __call__(self, *args, **kwargs):
         assert kwargs == {}
-        ret = self.entries[self._linearize_entry_id(*args)]
+        ret = self._get_entry(*args)
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
@@ -283,6 +331,9 @@ class Matrix(TaichiOperations):
                 self.entries[idx].setter(e)
             else:
                 self.entries[idx] = e
+
+    def _get_entry(self, *args):
+        return self.entries[self._linearize_entry_id(*args)]
 
     def _get_slice(self, a, b):
         if not isinstance(a, slice):
@@ -1563,7 +1614,8 @@ class MatrixType(CompoundType):
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
-        return Matrix([[value for _ in range(self.m)] for _ in range(self.n)])
+        return self.cast(
+            Matrix([[value for _ in range(self.m)] for _ in range(self.n)]))
 
     def field(self, **kwargs):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)

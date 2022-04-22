@@ -105,6 +105,40 @@ VkImageLayout image_layout_ti_to_vk(ImageLayout layout) {
   return image_layout_ti_2_vk.at(layout);
 }
 
+const std::unordered_map<BlendOp, VkBlendOp> blend_op_ti_2_vk = {
+    {BlendOp::add, VK_BLEND_OP_ADD},
+    {BlendOp::subtract, VK_BLEND_OP_SUBTRACT},
+    {BlendOp::reverse_subtract, VK_BLEND_OP_REVERSE_SUBTRACT},
+    {BlendOp::min, VK_BLEND_OP_MIN},
+    {BlendOp::max, VK_BLEND_OP_MAX}};
+
+VkBlendOp blend_op_ti_to_vk(BlendOp op) {
+  if (blend_op_ti_2_vk.find(op) == blend_op_ti_2_vk.end()) {
+    TI_ERROR("BlendOp cannot be mapped to vk");
+  }
+  return blend_op_ti_2_vk.at(op);
+}
+
+const std::unordered_map<BlendFactor, VkBlendFactor> blend_factor_ti_2_vk = {
+    {BlendFactor::zero, VK_BLEND_FACTOR_ZERO},
+    {BlendFactor::one, VK_BLEND_FACTOR_ONE},
+    {BlendFactor::src_color, VK_BLEND_FACTOR_SRC_COLOR},
+    {BlendFactor::one_minus_src_color, VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR},
+    {BlendFactor::dst_color, VK_BLEND_FACTOR_DST_COLOR},
+    {BlendFactor::one_minus_dst_color, VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR},
+    {BlendFactor::src_alpha, VK_BLEND_FACTOR_SRC_ALPHA},
+    {BlendFactor::one_minus_src_alpha, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA},
+    {BlendFactor::dst_alpha, VK_BLEND_FACTOR_DST_ALPHA},
+    {BlendFactor::one_minus_dst_alpha, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA},
+};
+
+VkBlendFactor blend_factor_ti_to_vk(BlendFactor factor) {
+  if (blend_factor_ti_2_vk.find(factor) == blend_factor_ti_2_vk.end()) {
+    TI_ERROR("BlendFactor cannot be mapped to vk");
+  }
+  return blend_factor_ti_2_vk.at(factor);
+}
+
 VulkanPipeline::VulkanPipeline(const Params &params)
     : device_(params.device->vk_device()), name_(params.name) {
   create_descriptor_set_layout(params);
@@ -124,6 +158,9 @@ VulkanPipeline::VulkanPipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
     : device_(params.device->vk_device()), name_(params.name) {
+  this->graphics_pipeline_template_ =
+      std::make_unique<GraphicsPipelineTemplate>();
+
   create_descriptor_set_layout(params);
   create_shader_stages(params);
   create_pipeline_layout();
@@ -159,37 +196,11 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
     return graphics_pipeline_.at(renderpass);
   }
 
-  std::vector<VkPipelineColorBlendAttachmentState> blend_attachments(
-      renderpass_desc.color_attachments.size());
-  for (int i = 0; i < renderpass_desc.color_attachments.size(); i++) {
-    blend_attachments[i].colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blend_attachments[i].blendEnable = VK_TRUE;
-    blend_attachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_attachments[i].dstColorBlendFactor =
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_attachments[i].colorBlendOp = VK_BLEND_OP_ADD;
-    blend_attachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_attachments[i].dstAlphaBlendFactor =
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_attachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
-  }
-
-  graphics_pipeline_template_->color_blending.attachmentCount =
-      renderpass_desc.color_attachments.size();
-  graphics_pipeline_template_->color_blending.pAttachments =
-      blend_attachments.data();
-
   vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline(
       device_, &graphics_pipeline_template_->pipeline_info, renderpass,
       pipeline_layout_);
 
   graphics_pipeline_[renderpass] = pipeline;
-
-  graphics_pipeline_template_->color_blending.attachmentCount = 0;
-  graphics_pipeline_template_->color_blending.pAttachments = nullptr;
-  graphics_pipeline_template_->pipeline_info.renderPass = VK_NULL_HANDLE;
 
   return pipeline;
 }
@@ -252,6 +263,39 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     //     TI_WARN("attrib {}:{}", location, type->type_name);
     //   }
     // }
+
+    if (code_view.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+      uint32_t render_target_count = 0;
+      result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
+                                                  nullptr);
+      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+      std::vector<SpvReflectInterfaceVariable *> variables(render_target_count);
+      result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
+                                                  variables.data());
+
+      render_target_count = 0;
+
+      for (auto var : variables) {
+        // We want to remove auxiliary outputs such as frag depth
+        if (var->built_in == -1) {
+          render_target_count++;
+        }
+      }
+
+      graphics_pipeline_template_->blend_attachments.resize(
+          render_target_count);
+
+      VkPipelineColorBlendAttachmentState default_state{};
+      default_state.colorWriteMask =
+          VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      default_state.blendEnable = VK_FALSE;
+
+      std::fill(graphics_pipeline_template_->blend_attachments.begin(),
+                graphics_pipeline_template_->blend_attachments.end(),
+                default_state);
+    }
   }
 
   for (uint32_t set : sets_used) {
@@ -295,9 +339,6 @@ void VulkanPipeline::create_graphics_pipeline(
     const RasterParams &raster_params,
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs) {
-  this->graphics_pipeline_template_ =
-      std::make_unique<GraphicsPipelineTemplate>();
-
   // Use dynamic viewport state. These two are just dummies
   VkViewport viewport;
   viewport.width = 1;
@@ -356,23 +397,27 @@ void VulkanPipeline::create_graphics_pipeline(
       graphics_pipeline_template_->input_assembly;
   input_assembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  if (raster_params.prim_topology == TopologyType::Triangles) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  } else if (raster_params.prim_topology == TopologyType::Lines) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-  } else if (raster_params.prim_topology == TopologyType::Points) {
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-  } else {
-    throw std::runtime_error("invalid topology");
-  }
+  static const std::unordered_map<TopologyType, VkPrimitiveTopology>
+      topo_types = {
+          {TopologyType::Triangles, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
+          {TopologyType::Lines, VK_PRIMITIVE_TOPOLOGY_LINE_LIST},
+          {TopologyType::Points, VK_PRIMITIVE_TOPOLOGY_POINT_LIST},
+      };
+  input_assembly.topology = topo_types.at(raster_params.prim_topology);
   input_assembly.primitiveRestartEnable = VK_FALSE;
+
+  static const std::unordered_map<PolygonMode, VkPolygonMode> polygon_modes = {
+      {PolygonMode::Fill, VK_POLYGON_MODE_FILL},
+      {PolygonMode::Line, VK_POLYGON_MODE_LINE},
+      {PolygonMode::Point, VK_POLYGON_MODE_POINT},
+  };
 
   VkPipelineRasterizationStateCreateInfo &rasterizer =
       graphics_pipeline_template_->rasterizer;
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthClampEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterizer.polygonMode = polygon_modes.at(raster_params.polygon_mode);
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = 0;
   if (raster_params.front_face_cull) {
@@ -407,12 +452,44 @@ void VulkanPipeline::create_graphics_pipeline(
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color_blending.logicOpEnable = VK_FALSE;
   color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = 0;
-  color_blending.pAttachments = nullptr;  // Filled in later
+  color_blending.attachmentCount =
+      graphics_pipeline_template_->blend_attachments.size();
+  color_blending.pAttachments =
+      graphics_pipeline_template_->blend_attachments.data();
   color_blending.blendConstants[0] = 0.0f;
   color_blending.blendConstants[1] = 0.0f;
   color_blending.blendConstants[2] = 0.0f;
   color_blending.blendConstants[3] = 0.0f;
+
+  if (raster_params.blending.size()) {
+    TI_ASSERT_INFO(raster_params.blending.size() ==
+                       graphics_pipeline_template_->blend_attachments.size(),
+                   "RasterParams::blending (size={}) must either be zero sized "
+                   "or match the number of fragment shader outputs (size={}).",
+                   raster_params.blending.size(),
+                   graphics_pipeline_template_->blend_attachments.size());
+
+    for (int i = 0; i < raster_params.blending.size(); i++) {
+      auto &state = graphics_pipeline_template_->blend_attachments[i];
+      auto &ti_param = raster_params.blending[i];
+      state.blendEnable = ti_param.enable;
+      if (ti_param.enable) {
+        state.colorBlendOp = blend_op_ti_to_vk(ti_param.color.op);
+        state.srcColorBlendFactor =
+            blend_factor_ti_to_vk(ti_param.color.src_factor);
+        state.dstColorBlendFactor =
+            blend_factor_ti_to_vk(ti_param.color.dst_factor);
+        state.alphaBlendOp = blend_op_ti_to_vk(ti_param.alpha.op);
+        state.srcAlphaBlendFactor =
+            blend_factor_ti_to_vk(ti_param.alpha.src_factor);
+        state.dstAlphaBlendFactor =
+            blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
+        state.colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      }
+    }
+  }
 
   VkPipelineDynamicStateCreateInfo &dynamic_state =
       graphics_pipeline_template_->dynamic_state;
@@ -851,7 +928,8 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 
 void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto buffer = ti_device_->get_vkbuffer(ptr);
-  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset,
+                  (size == kBufferSizeEntireSize) ? VK_WHOLE_SIZE : size, data);
   buffer_->refs.push_back(buffer);
 }
 
@@ -2083,7 +2161,7 @@ void VulkanSurface::create_swap_chain() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
@@ -2193,7 +2271,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
   int width, height;
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getHeight(window_);
 #elif !defined(TI_EMSCRIPTENED)
   glfwGetFramebufferSize(window_, &width, &height);
 #endif

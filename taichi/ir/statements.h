@@ -657,7 +657,6 @@ class LocalStoreStmt : public Stmt {
 class IfStmt : public Stmt {
  public:
   Stmt *cond;
-  Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
   explicit IfStmt(Stmt *cond);
@@ -672,7 +671,7 @@ class IfStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
+  TI_STMT_DEF_FIELDS(cond);
   TI_DEFINE_ACCEPT
 };
 
@@ -1629,7 +1628,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1640,7 +1639,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 

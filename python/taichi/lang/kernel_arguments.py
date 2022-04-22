@@ -1,3 +1,5 @@
+import inspect
+
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops
@@ -7,6 +9,13 @@ from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import u64
+
+
+class KernelArgument:
+    def __init__(self, _annotation, _name, _default=inspect.Parameter.empty):
+        self.annotation = _annotation
+        self.name = _name
+        self.default = _default
 
 
 class SparseMatrixEntry:

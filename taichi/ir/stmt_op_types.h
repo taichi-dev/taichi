@@ -41,6 +41,10 @@ inline bool binary_is_bitwise(BinaryOpType t) {
          t == BinaryOpType ::bit_sar;
 }
 
+inline bool binary_is_logical(BinaryOpType t) {
+  return t == BinaryOpType ::logical_and || t == BinaryOpType ::logical_or;
+}
+
 std::string binary_op_type_name(BinaryOpType type);
 
 inline bool is_comparison(BinaryOpType type) {

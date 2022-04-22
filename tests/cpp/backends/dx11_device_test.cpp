@@ -39,6 +39,9 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   params.size = 1048576;
   const taichi::lang::DeviceAllocation device_alloc =
       device->allocate_memory(params);
+
+  // The purpose of the device_alloc_guard is to rule out double free
+  const taichi::lang::DeviceAllocationGuard device_alloc_guard(device_alloc);
   if (kD3d11DebugEnabled) {
     count1 = device->live_dx11_object_count();
     // Should have allocated an UAV and a Buffer, so 2 more objects.

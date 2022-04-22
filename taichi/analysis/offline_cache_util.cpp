@@ -14,8 +14,8 @@
 namespace taichi {
 namespace lang {
 
-static std::vector<std::uint8_t>
-get_offline_cache_key_of_compile_config(CompileConfig *config) {
+static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
+    CompileConfig *config) {
   TI_ASSERT(config);
   BinaryOutputSerializer serializer;
   serializer.initialize();

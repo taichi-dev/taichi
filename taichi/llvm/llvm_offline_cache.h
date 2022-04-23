@@ -9,9 +9,6 @@
 namespace taichi {
 namespace lang {
 
-std::string get_hashed_offline_cache_key_of_snode(SNode *snode);
-std::string get_hashed_offline_cache_key(CompileConfig *config, Kernel *kernel);
-
 struct LlvmOfflineCache {
   struct OffloadedTaskCacheData {
     std::string name;

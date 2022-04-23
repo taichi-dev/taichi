@@ -477,7 +477,8 @@ class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
  public:
   VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema) : semaphore(sema) {
   }
-  ~VulkanStreamSemaphoreObject() {}
+  ~VulkanStreamSemaphoreObject() {
+  }
 
   vkapi::IVkSemaphore semaphore{nullptr};
 };
@@ -490,7 +491,8 @@ class VulkanStream : public Stream {
   ~VulkanStream();
 
   std::unique_ptr<CommandList> new_command_list() override;
-  StreamSemaphore submit(CommandList *cmdlist,
+  StreamSemaphore submit(
+      CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   StreamSemaphore submit_synced(
       CommandList *cmdlist,

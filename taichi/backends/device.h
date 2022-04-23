@@ -407,7 +407,8 @@ using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 
 class Stream {
  public:
-  virtual ~Stream(){}
+  virtual ~Stream() {
+  }
 
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
   virtual StreamSemaphore submit(

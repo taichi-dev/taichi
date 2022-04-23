@@ -42,7 +42,7 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 class TI_DLL_EXPORT Renderer {
-public:
+ public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   void cleanup();
 

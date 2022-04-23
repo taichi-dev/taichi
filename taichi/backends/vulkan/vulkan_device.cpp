@@ -2273,11 +2273,13 @@ std::pair<DeviceAllocation, StreamSemaphore> VulkanSurface::get_target_image() {
     image_index_ = (image_index_ + 1) % swapchain_images_.size();
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                          image_available_->semaphore, VK_NULL_HANDLE, &image_index_);
+                          image_available_->semaphore, VK_NULL_HANDLE,
+                          &image_index_);
   }
 
-  return std::make_pair(swapchain_images_[image_index_],
-         std::make_shared<VulkanStreamSemaphoreObject>(image_available_));
+  return std::make_pair(
+      swapchain_images_[image_index_],
+      std::make_shared<VulkanStreamSemaphoreObject>(image_available_));
 }
 
 BufferFormat VulkanSurface::image_format() {

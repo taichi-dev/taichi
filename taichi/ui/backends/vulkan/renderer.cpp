@@ -159,11 +159,9 @@ void Renderer::draw_frame(Gui *gui) {
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
   if (semaphore) {
-    render_complete_semaphore_ =
-        stream->submit(cmd_list.get(), {semaphore});
+    render_complete_semaphore_ = stream->submit(cmd_list.get(), {semaphore});
   } else {
-    render_complete_semaphore_ =
-        stream->submit(cmd_list.get(), {});
+    render_complete_semaphore_ = stream->submit(cmd_list.get(), {});
   }
 }
 

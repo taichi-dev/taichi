@@ -2275,7 +2275,8 @@ StreamSemaphore VulkanSurface::acquire_next_image() {
     return nullptr;
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                          image_available_->semaphore, VK_NULL_HANDLE, &image_index_);
+                          image_available_->semaphore, VK_NULL_HANDLE,
+                          &image_index_);
     return std::make_shared<VulkanStreamSemaphoreObject>(image_available_);
   }
 }

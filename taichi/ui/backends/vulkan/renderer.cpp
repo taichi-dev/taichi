@@ -125,14 +125,15 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
+  app_context_.prog()->synchronize();
+
   auto stream = app_context_.device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
                                      background_color_[2], 1};
-  auto result = swap_chain_.surface().get_target_image();
-  auto image = result.first;
-  auto semaphore = result.second;
+  auto semaphore = swap_chain_.surface().acquire_next_image();
+  auto image = swap_chain_.surface().get_target_image();
   auto depth_image = swap_chain_.depth_allocation();
   cmd_list->begin_renderpass(
       /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
@@ -157,8 +158,13 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  render_complete_semaphore_ =
-      stream->submit_synced(cmd_list.get(), {semaphore});
+  if (semaphore) {
+    render_complete_semaphore_ =
+        stream->submit(cmd_list.get(), {semaphore});
+  } else {
+    render_complete_semaphore_ =
+        stream->submit(cmd_list.get(), {});
+  }
 }
 
 const AppContext &Renderer::app_context() const {

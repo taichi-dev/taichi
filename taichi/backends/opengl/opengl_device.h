@@ -278,7 +278,8 @@ class GLSurface : public Surface {
  public:
   ~GLSurface() override;
 
-  std::pair<DeviceAllocation, StreamSemaphore> get_target_image() override;
+  StreamSemaphore acquire_next_image() override;
+  DeviceAllocation get_target_image() override;
   void present_image(
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   std::pair<uint32_t, uint32_t> get_size() override;

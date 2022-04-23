@@ -647,9 +647,14 @@ GLSurface::~GLSurface() {
   TI_NOT_IMPLEMENTED;
 }
 
-std::pair<DeviceAllocation, StreamSemaphore> GLSurface::get_target_image() {
+StreamSemaphore GLSurface::acquire_next_image() {
   TI_NOT_IMPLEMENTED;
-  return std::make_pair(kDeviceNullAllocation, nullptr);
+  return nullptr;
+}
+
+DeviceAllocation GLSurface::get_target_image() {
+  TI_NOT_IMPLEMENTED;
+  return kDeviceNullAllocation;
 }
 
 void GLSurface::present_image(

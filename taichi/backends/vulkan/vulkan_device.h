@@ -428,7 +428,8 @@ class VulkanSurface : public Surface {
   VulkanSurface(VulkanDevice *device, const SurfaceConfig &config);
   ~VulkanSurface();
 
-  std::pair<DeviceAllocation, StreamSemaphore> get_target_image() override;
+  StreamSemaphore acquire_next_image() override;
+  DeviceAllocation get_target_image() override;
 
   void present_image(
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;

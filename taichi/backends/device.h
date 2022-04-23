@@ -513,7 +513,8 @@ class Surface {
   virtual ~Surface() {
   }
 
-  virtual std::pair<DeviceAllocation, StreamSemaphore> get_target_image() = 0;
+  virtual StreamSemaphore acquire_next_image() = 0;
+  virtual DeviceAllocation get_target_image() = 0;
   virtual void present_image(
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;

@@ -530,6 +530,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
                                     ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
+      last_semaphore_ = nullptr;
       ctx_buffers_.clear();
     }
   }

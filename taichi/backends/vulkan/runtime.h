@@ -126,6 +126,7 @@ class TI_DLL_EXPORT VkRuntime {
   std::vector<std::unique_ptr<DeviceAllocationGuard>> ctx_buffers_;
 
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
+  StreamSemaphore last_semaphore_{nullptr};
   high_res_clock::time_point current_cmdlist_pending_since_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;

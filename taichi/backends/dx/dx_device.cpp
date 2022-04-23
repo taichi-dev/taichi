@@ -739,6 +739,9 @@ void Dx11Device::image_to_buffer(DevicePtr dst_buf,
   TI_NOT_IMPLEMENTED;
 }
 
+void Dx11Device::wait_idle() {
+}
+
 ID3D11Buffer *Dx11Device::alloc_id_to_buffer(uint32_t alloc_id) {
   return alloc_id_to_buffer_.at(alloc_id);
 }
@@ -805,15 +808,23 @@ std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
   return std::make_unique<Dx11CommandList>(device_);
 }
 
-void Dx11Stream::submit(CommandList *cmdlist) {
+StreamSemaphore Dx11Stream::submit(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
   dx_cmd_list->run_commands();
+
+  return std::make_shared<StreamSemaphoreObject>();
 }
 
 // No difference for DX11
-void Dx11Stream::submit_synced(CommandList *cmdlist) {
+StreamSemaphore Dx11Stream::submit_synced(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
   dx_cmd_list->run_commands();
+
+  return std::make_shared<StreamSemaphoreObject>();
 }
 
 void Dx11Stream::command_sync() {

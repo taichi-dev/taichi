@@ -428,9 +428,10 @@ class VulkanSurface : public Surface {
   VulkanSurface(VulkanDevice *device, const SurfaceConfig &config);
   ~VulkanSurface();
 
-  DeviceAllocation get_target_image() override;
+  std::pair<DeviceAllocation, StreamSemaphore> get_target_image() override;
 
-  void present_image() override;
+  void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   std::pair<uint32_t, uint32_t> get_size() override;
   int get_image_count() override;
   BufferFormat image_format() override;
@@ -447,7 +448,7 @@ class VulkanSurface : public Surface {
   VulkanDevice *device_;
   VkSurfaceKHR surface_;
   VkSwapchainKHR swapchain_;
-  VkSemaphore image_available_;
+  vkapi::IVkSemaphore image_available_;
 #ifdef ANDROID
   ANativeWindow *window_;
 #elif !defined(TI_EMSCRIPTENED)
@@ -472,6 +473,15 @@ struct DescPool {
   }
 };
 
+class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
+ public:
+  VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema) : semaphore(sema) {
+  }
+  ~VulkanStreamSemaphoreObject() {}
+
+  vkapi::IVkSemaphore semaphore{nullptr};
+};
+
 class VulkanStream : public Stream {
  public:
   VulkanStream(VulkanDevice &device,
@@ -480,8 +490,11 @@ class VulkanStream : public Stream {
   ~VulkanStream();
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
 
   void command_sync() override;
 
@@ -490,8 +503,6 @@ class VulkanStream : public Stream {
   VkQueue queue_;
   uint32_t queue_family_index_;
 
-  vkapi::IVkSemaphore last_semaphore_{nullptr};
-
   // Command pools are per-thread
   vkapi::IVkFence cmd_sync_fence_;
   vkapi::IVkCommandPool command_pool_;
@@ -499,6 +510,8 @@ class VulkanStream : public Stream {
 };
 
 class VulkanDevice : public GraphicsDevice {
+  friend VulkanSurface;
+
  public:
   struct Params {
     VkInstance instance;
@@ -534,6 +547,8 @@ class VulkanDevice : public GraphicsDevice {
 
   Stream *get_compute_stream() override;
   Stream *get_graphics_stream() override;
+
+  void wait_idle() override;
 
   std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,

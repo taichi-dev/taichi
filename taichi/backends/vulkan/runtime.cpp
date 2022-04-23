@@ -139,7 +139,8 @@ class HostDeviceContextBlitter {
   bool device_to_host(
       CommandList *cmdlist,
       const std::unordered_map<int, DeviceAllocation> &ext_arrays,
-      const std::unordered_map<int, size_t> &ext_arr_size) {
+      const std::unordered_map<int, size_t> &ext_arr_size,
+      const std::vector<StreamSemaphore> &wait_semaphore) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -157,7 +158,7 @@ class HostDeviceContextBlitter {
     }
 
     if (require_sync) {
-      device_->get_compute_stream()->submit_synced(cmdlist);
+      device_->get_compute_stream()->submit_synced(cmdlist, wait_semaphore);
     } else {
       return false;
     }
@@ -520,9 +521,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // If we need to host sync, sync and remove in-flight references
+  std::vector<StreamSemaphore> wait_semaphore;
+  if (last_semaphore_) {
+    wait_semaphore.push_back(last_semaphore_);
+  }
+  
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
-                                    ext_array_size)) {
+                                    ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }
@@ -536,7 +542,8 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
-      device_->get_compute_stream()->submit(current_cmdlist_.get());
+      last_semaphore_ = device_->get_compute_stream()->submit(
+          current_cmdlist_.get(), wait_semaphore);
       current_cmdlist_ = nullptr;
     }
   }
@@ -553,10 +560,16 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
 void VkRuntime::synchronize() {
   if (current_cmdlist_) {
-    device_->get_compute_stream()->submit(current_cmdlist_.get());
+    std::vector<StreamSemaphore> wait_semaphore;
+    if (last_semaphore_) {
+      wait_semaphore.push_back(last_semaphore_);
+    }
+    device_->get_compute_stream()->submit(current_cmdlist_.get(),
+                                          wait_semaphore);
     current_cmdlist_ = nullptr;
+    last_semaphore_ = nullptr;
   }
-  device_->get_compute_stream()->command_sync();
+  device_->wait_idle();
   ctx_buffers_.clear();
 }
 

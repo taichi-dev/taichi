@@ -130,7 +130,9 @@ void Renderer::draw_frame(Gui *gui) {
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
                                      background_color_[2], 1};
-  auto image = swap_chain_.surface().get_target_image();
+  auto result = swap_chain_.surface().get_target_image();
+  auto image = result.first;
+  auto semaphore = result.second;
   auto depth_image = swap_chain_.depth_allocation();
   cmd_list->begin_renderpass(
       /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
@@ -155,7 +157,8 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  stream->submit_synced(cmd_list.get());
+  render_complete_semaphore_ =
+      stream->submit_synced(cmd_list.get(), {semaphore});
 }
 
 const AppContext &Renderer::app_context() const {
@@ -172,6 +175,10 @@ const SwapChain &Renderer::swap_chain() const {
 
 SwapChain &Renderer::swap_chain() {
   return swap_chain_;
+}
+
+taichi::lang::StreamSemaphore Renderer::get_render_complete_semaphore() {
+  return std::move(render_complete_semaphore_);
 }
 
 }  // namespace vulkan

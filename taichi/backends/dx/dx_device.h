@@ -94,8 +94,12 @@ class Dx11Stream : public Stream {
   ~Dx11Stream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   void command_sync() override;
 
  private:
@@ -247,6 +251,7 @@ class Dx11Device : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+  void wait_idle() override;
 
   int live_dx11_object_count();
   ID3D11DeviceContext *d3d11_context() {

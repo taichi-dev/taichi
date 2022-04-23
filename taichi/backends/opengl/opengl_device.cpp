@@ -431,14 +431,24 @@ std::unique_ptr<CommandList> GLStream::new_command_list() {
   return std::make_unique<GLCommandList>();
 }
 
-void GLStream::submit(CommandList *_cmdlist) {
+StreamSemaphore GLStream::submit(
+    CommandList *_cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   GLCommandList *cmdlist = static_cast<GLCommandList *>(_cmdlist);
   cmdlist->run_commands();
+
+  // OpenGL is fully serial
+  return std::make_shared<StreamSemaphoreObject>();
 }
 
-void GLStream::submit_synced(CommandList *cmdlist) {
+StreamSemaphore GLStream::submit_synced(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   submit(cmdlist);
   glFinish();
+
+  // OpenGL is fully serial
+  return std::make_shared<StreamSemaphoreObject>();
 }
 void GLStream::command_sync() {
   glFinish();
@@ -559,6 +569,9 @@ Stream *GLDevice::get_graphics_stream() {
   return nullptr;
 }
 
+void GLDevice::wait_idle() {
+}
+
 std::unique_ptr<Surface> GLDevice::create_surface(const SurfaceConfig &config) {
   TI_NOT_IMPLEMENTED;
   return nullptr;
@@ -634,12 +647,13 @@ GLSurface::~GLSurface() {
   TI_NOT_IMPLEMENTED;
 }
 
-DeviceAllocation GLSurface::get_target_image() {
+std::pair<DeviceAllocation, StreamSemaphore> GLSurface::get_target_image() {
   TI_NOT_IMPLEMENTED;
-  return kDeviceNullAllocation;
+  return std::make_pair(kDeviceNullAllocation, nullptr);
 }
 
-void GLSurface::present_image() {
+void GLSurface::present_image(
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   TI_NOT_IMPLEMENTED;
 }
 

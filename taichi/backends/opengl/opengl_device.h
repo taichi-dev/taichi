@@ -198,8 +198,12 @@ class GLStream : public Stream {
   ~GLStream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
 
   void command_sync() override;
 };
@@ -237,6 +241,8 @@ class GLDevice : public GraphicsDevice {
 
   Stream *get_graphics_stream() override;
 
+  void wait_idle() override;
+
   std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
@@ -272,8 +278,9 @@ class GLSurface : public Surface {
  public:
   ~GLSurface() override;
 
-  DeviceAllocation get_target_image() override;
-  void present_image() override;
+  std::pair<DeviceAllocation, StreamSemaphore> get_target_image() override;
+  void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;

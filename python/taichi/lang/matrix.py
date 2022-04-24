@@ -75,10 +75,13 @@ def _gen_swizzles(cls):
             setattr(cls, prop_key, prop)
     return cls
 
+
 class _MatrixBaseImpl:
-    def __init__(self, entries):
+    def __init__(self, m, n, entries):
+        self.m = m
+        self.n = n
         self.entries = entries
-    
+
     def _get_entry(self, *indices):
         return self.entries[self._linearize_entry_id(*indices)]
 
@@ -119,9 +122,10 @@ class _MatrixBaseImpl:
             f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
+
 class _PyScopeMatrixImpl(_MatrixBaseImpl):
-    def __init__(self, entries):
-        super().__init__(entries)
+    def __init__(self, m, n, entries):
+        super().__init__(m, n, entries)
 
     @python_scope
     def __getitem__(self, indices):
@@ -164,9 +168,29 @@ class _PyScopeMatrixImpl(_MatrixBaseImpl):
         else:
             self.entries[idx] = item
 
-class _TiScopeMatrixImpl:
-    def __init__(self, entries):
-        super().__init__(entries)
+    def _get_slice(self, a, b):
+        if not isinstance(a, slice):
+            a = [a]
+        else:
+            a = range(a.start or 0, a.stop or self.n, a.step or 1)
+        if not isinstance(b, slice):
+            b = [b]
+        else:
+            b = range(b.start or 0, b.stop or self.m, b.step or 1)
+        return Matrix([[self(i, j) for j in b] for i in a])
+
+    def _set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
+
+class _TiScopeMatrixImpl(_MatrixBaseImpl):
+    def __init__(self, m, n, entries):
+        super().__init__(m, n, entries)
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.dynamic_index_stride = None
@@ -211,6 +235,22 @@ class _TiScopeMatrixImpl:
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
         return self._get_entry(i, j)
+
+    def _calc_slice(self, index, dim):
+        start, stop, step = index.start or 0, index.stop or (
+            self.n if dim == 0 else self.m), index.step or 1
+
+        def helper(x):
+            #  TODO(mzmzm): support variable in slice
+            if isinstance(x, expr.Expr):
+                raise TaichiCompilationError(
+                    "Taichi does not support variables in slice now, please use constant instead of it."
+                )
+            return x
+
+        start, stop, step = helper(start), helper(stop), helper(step)
+        return [_ for _ in range(start, stop, step)]
+
 
 @_gen_swizzles
 class Matrix(TaichiOperations):
@@ -374,10 +414,11 @@ class Matrix(TaichiOperations):
                 ' for more details.',
                 UserWarning,
                 stacklevel=2)
+        m, n = self.m, self.n
         if in_python_scope():
-            self._impl = _PyScopeMatrixImpl(entries)
+            self._impl = _PyScopeMatrixImpl(m, n, entries)
         else:
-            self._impl = _TiScopeMatrixImpl(entries)
+            self._impl = _TiScopeMatrixImpl(m, n, entries)
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -537,16 +578,14 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def _set_entries(self, value):
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self[i, j] = value[i][j]
+        self._impl._set_entries(value)
 
-    def _get_entry(self, *args):
-        return self.entries[self._linearize_entry_id(*args)]
+    @property
+    def entries(self):
+        return self._impl.entries
+
+    # def _get_entry(self, *args):
+    #     return self.entries[self._linearize_entry_id(*args)]
 
     # def _get_slice(self, a, b):
     #     if not isinstance(a, slice):
@@ -559,20 +598,20 @@ class Matrix(TaichiOperations):
     #         b = range(b.start or 0, b.stop or self.m, b.step or 1)
     #     return Matrix([[self(i, j) for j in b] for i in a])
 
-    def _calc_slice(self, index, dim):
-        start, stop, step = index.start or 0, index.stop or (
-            self.n if dim == 0 else self.m), index.step or 1
+    # def _calc_slice(self, index, dim):
+    #     start, stop, step = index.start or 0, index.stop or (
+    #         self.n if dim == 0 else self.m), index.step or 1
 
-        def helper(x):
-            #  TODO(mzmzm): support variable in slice
-            if isinstance(x, expr.Expr):
-                raise TaichiCompilationError(
-                    "Taichi does not support variables in slice now, please use constant instead of it."
-                )
-            return x
+    #     def helper(x):
+    #         #  TODO(mzmzm): support variable in slice
+    #         if isinstance(x, expr.Expr):
+    #             raise TaichiCompilationError(
+    #                 "Taichi does not support variables in slice now, please use constant instead of it."
+    #             )
+    #         return x
 
-        start, stop, step = helper(start), helper(stop), helper(step)
-        return [_ for _ in range(start, stop, step)]
+    #     start, stop, step = helper(start), helper(stop), helper(step)
+    #     return [_ for _ in range(start, stop, step)]
 
     @taichi_scope
     def _subscript(self, *indices):
@@ -1408,12 +1447,14 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
+
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
         self.n = n
         self.m = m
-        self.entries = entries
+        # self.entries = entries
+        self._impl = _TiScopeMatrixImpl(m, n, entries)
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.dynamic_index_stride = None
@@ -1426,6 +1467,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
+
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1442,6 +1484,7 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
+
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1680,6 +1723,7 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1775,6 +1819,7 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

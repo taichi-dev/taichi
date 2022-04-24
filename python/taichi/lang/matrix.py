@@ -218,7 +218,8 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i])
-            return Matrix([[self._subscript(is_global_mat, a, b) for b in j] for a in i])
+            return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
+                           for a in i])
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)

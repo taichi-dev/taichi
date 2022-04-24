@@ -199,7 +199,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, is_global_mat, indices):
+    def _subscript(self, is_global_mat, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -217,8 +217,8 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             if not isinstance(j, list):
                 j = [j]
             if len(indices) == 1:
-                return Vector([self._subscript(a) for a in i])
-            return Matrix([[self._subscript(a, b) for b in j] for a in i])
+                return Vector([self._subscript(is_global_mat, a) for a in i])
+            return Matrix([[self._subscript(is_global_mat, a, b) for b in j] for a in i])
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -547,7 +547,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def _subscript(self, *indices):
         is_global_mat = isinstance(self, _MatrixFieldElement)
-        return self._impl._subscript(is_global_mat, indices)
+        return self._impl._subscript(is_global_mat, *indices)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

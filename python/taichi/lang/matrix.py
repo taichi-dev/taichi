@@ -54,7 +54,7 @@ def _gen_swizzles(cls):
                 def prop_getter(instance):
                     res = []
                     for ch in pattern:
-                        res.append(instance._get_entry(key_group.index(ch)))
+                        res.append(instance._impl._get_entry(key_group.index(ch)))
                     return Vector(res, is_ref=True)
 
                 def prop_setter(instance, value):

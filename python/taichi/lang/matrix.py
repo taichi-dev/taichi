@@ -480,32 +480,6 @@ class Matrix(TaichiOperations):
                 entries[i].append(acc)
         return Matrix(entries)
 
-    # def _linearize_entry_id(self, *args):
-    #     assert 1 <= len(args) <= 2
-    #     if len(args) == 1 and isinstance(args[0], (list, tuple)):
-    #         args = args[0]
-    #     if len(args) == 1:
-    #         args = args + (0, )
-    #     # TODO(#1004): See if it's possible to support indexing at runtime
-    #     for i, a in enumerate(args):
-    #         if not isinstance(a, int):
-    #             raise TaichiSyntaxError(
-    #                 f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
-    #                 f'integer, got {type(a)}.\n'
-    #                 'This is because matrix operations will be **unrolled** at compile-time '
-    #                 'for performance reason.\n'
-    #                 'If you want to *iterate through matrix elements*, use a static range:\n'
-    #                 '  for i in ti.static(range(3)):\n'
-    #                 '    print(i, "-th component is", vec[i])\n'
-    #                 'See https://docs.taichi.graphics/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
-    #                 'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
-    #             )
-    #     assert 0 <= args[0] < self.n, \
-    #         f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
-    #     assert 0 <= args[1] < self.m, \
-    #         f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
-    #     return args[0] * self.m + args[1]
-
     # host access & python scope operation
     def __len__(self):
         """Get the length of each row of a matrix"""
@@ -528,14 +502,6 @@ class Matrix(TaichiOperations):
             The value of the element at a specific position of a matrix.
 
         """
-        # if not isinstance(indices, (list, tuple)):
-        #     indices = [indices]
-        # assert len(indices) in [1, 2]
-        # i = indices[0]
-        # j = 0 if len(indices) == 1 else indices[1]
-        # if isinstance(i, slice) or isinstance(j, slice):
-        #     return self._get_slice(i, j)
-        # return self._get_entry_and_read([i, j])
         return self._impl[indices]
 
     @python_scope
@@ -546,18 +512,6 @@ class Matrix(TaichiOperations):
             indices (Sequence[Expr]): the indices of a element.
 
         """
-        # if not isinstance(indices, (list, tuple)):
-        #     indices = [indices]
-        # assert len(indices) in [1, 2]
-        # i = indices[0]
-        # j = 0 if len(indices) == 1 else indices[1]
-        # idx = self._linearize_entry_id(i, j)
-        # if isinstance(self.entries[idx], SNodeHostAccess):
-        #     self.entries[idx].accessor.setter(item, *self.entries[idx].key)
-        # elif isinstance(self.entries[idx], NdarrayHostAccess):
-        #     self.entries[idx].setter(item)
-        # else:
-        #     self.entries[idx] = item
         self._impl[indices] = item
 
     def __call__(self, *args, **kwargs):
@@ -565,17 +519,6 @@ class Matrix(TaichiOperations):
         # with a method of actual names?
         assert kwargs == {}
         return self._impl._get_entry_and_read(args)
-
-    # def _get_entry_and_read(self, indices):
-    #     # Can be invoked in both Python and Taichi scope. `indices` must be
-    #     # compile-time constants (e.g. Python values)
-    #     ret = self._get_entry(*indices)
-
-    #     if isinstance(ret, SNodeHostAccess):
-    #         ret = ret.accessor.getter(*ret.key)
-    #     elif isinstance(ret, NdarrayHostAccess):
-    #         ret = ret.getter()
-    #     return ret
 
     @python_scope
     def _set_entries(self, value):
@@ -601,77 +544,10 @@ class Matrix(TaichiOperations):
     def dynamic_index_stride(self):
         return self._impl.dynamic_index_stride
 
-    # def _get_entry(self, *args):
-    #     return self.entries[self._linearize_entry_id(*args)]
-
-    # def _get_slice(self, a, b):
-    #     if not isinstance(a, slice):
-    #         a = [a]
-    #     else:
-    #         a = range(a.start or 0, a.stop or self.n, a.step or 1)
-    #     if not isinstance(b, slice):
-    #         b = [b]
-    #     else:
-    #         b = range(b.start or 0, b.stop or self.m, b.step or 1)
-    #     return Matrix([[self(i, j) for j in b] for i in a])
-
-    # def _calc_slice(self, index, dim):
-    #     start, stop, step = index.start or 0, index.stop or (
-    #         self.n if dim == 0 else self.m), index.step or 1
-
-    #     def helper(x):
-    #         #  TODO(mzmzm): support variable in slice
-    #         if isinstance(x, expr.Expr):
-    #             raise TaichiCompilationError(
-    #                 "Taichi does not support variables in slice now, please use constant instead of it."
-    #             )
-    #         return x
-
-    #     start, stop, step = helper(start), helper(stop), helper(step)
-    #     return [_ for _ in range(start, stop, step)]
-
     @taichi_scope
     def _subscript(self, *indices):
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, indices)
-        # assert len(indices) in [1, 2]
-        # i = indices[0]
-        # j = 0 if len(indices) == 1 else indices[1]
-        # has_slice = False
-        # if isinstance(i, slice):
-        #     i = self._calc_slice(i, 0)
-        #     has_slice = True
-        # if isinstance(j, slice):
-        #     j = self._calc_slice(j, 1)
-        #     has_slice = True
-
-        # if has_slice:
-        #     if not isinstance(i, list):
-        #         i = [i]
-        #     if not isinstance(j, list):
-        #         j = [j]
-        #     if len(indices) == 1:
-        #         return Vector([self._subscript(a) for a in i])
-        #     return Matrix([[self._subscript(a, b) for b in j] for a in i])
-
-        # if self.any_array_access:
-        #     return self.any_array_access.subscript(i, j)
-        # if self.local_tensor_proxy is not None:
-        #     assert self.dynamic_index_stride is not None
-        #     if len(indices) == 1:
-        #         return impl.make_tensor_element_expr(self.local_tensor_proxy,
-        #                                              (i, ), (self.n, ),
-        #                                              self.dynamic_index_stride)
-        #     return impl.make_tensor_element_expr(self.local_tensor_proxy,
-        #                                          (i, j), (self.n, self.m),
-        #                                          self.dynamic_index_stride)
-        # if impl.current_cfg().dynamic_index and isinstance(
-        #         self,
-        #         _MatrixFieldElement) and self.dynamic_index_stride is not None:
-        #     return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
-        #                                          (self.n, self.m),
-        #                                          self.dynamic_index_stride)
-        # return self._get_entry(i, j)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

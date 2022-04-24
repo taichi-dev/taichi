@@ -188,12 +188,13 @@ class _PyScopeMatrixImpl(_MatrixBaseImpl):
             for j in range(self.m):
                 self[i, j] = value[i][j]
 
+
 class _TiScopeMatrixImpl(_MatrixBaseImpl):
-    def __init__(self, m, n, entries):
+    def __init__(self, m, n, entries, local_tensor_proxy, dynamic_index_stride):
         super().__init__(m, n, entries)
-        self.local_tensor_proxy = None
         self.any_array_access = None
-        self.dynamic_index_stride = None
+        self.local_tensor_proxy = local_tensor_proxy
+        self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
     def _subscript(self, *indices):
@@ -297,9 +298,8 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
 
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
-        self.local_tensor_proxy = None
-        self.any_array_access = None
-        self.dynamic_index_stride = None
+        local_tensor_proxy = None
+        dynamic_index_stride = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
             raise TaichiTypeError(
@@ -337,18 +337,18 @@ class Matrix(TaichiOperations):
                         raise Exception(
                             'dt required when using dynamic_index for local tensor'
                         )
-                self.local_tensor_proxy = impl.expr_init_local_tensor(
+                local_tensor_proxy = impl.expr_init_local_tensor(
                     [len(arr)], dt,
                     expr.make_expr_group([expr.Expr(x) for x in arr]))
-                self.dynamic_index_stride = 1
+                dynamic_index_stride = 1
                 mat = []
                 for i in range(len(arr)):
                     mat.append(
                         list([
                             impl.make_tensor_element_expr(
-                                self.local_tensor_proxy,
+                                local_tensor_proxy,
                                 (expr.Expr(i, dtype=primitive_types.i32), ),
-                                (len(arr), ), self.dynamic_index_stride)
+                                (len(arr), ), dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
             if in_python_scope() or is_ref:
@@ -380,22 +380,22 @@ class Matrix(TaichiOperations):
                         raise Exception(
                             'dt required when using dynamic_index for local tensor'
                         )
-                self.local_tensor_proxy = impl.expr_init_local_tensor(
+                local_tensor_proxy = impl.expr_init_local_tensor(
                     [len(arr), len(arr[0])], dt,
                     expr.make_expr_group(
                         [expr.Expr(x) for row in arr for x in row]))
-                self.dynamic_index_stride = 1
+                dynamic_index_stride = 1
                 mat = []
                 for i in range(len(arr)):
                     mat.append([])
                     for j in range(len(arr[0])):
                         mat[i].append(
                             impl.make_tensor_element_expr(
-                                self.local_tensor_proxy,
+                                local_tensor_proxy,
                                 (expr.Expr(i, dtype=primitive_types.i32),
                                  expr.Expr(j, dtype=primitive_types.i32)),
                                 (len(arr), len(arr[0])),
-                                self.dynamic_index_stride))
+                                dynamic_index_stride))
         self.n = len(mat)
         if len(mat) > 0:
             self.m = len(mat[0])
@@ -418,7 +418,8 @@ class Matrix(TaichiOperations):
         if in_python_scope():
             self._impl = _PyScopeMatrixImpl(m, n, entries)
         else:
-            self._impl = _TiScopeMatrixImpl(m, n, entries)
+            self._impl = _TiScopeMatrixImpl(
+                m, n, entries, local_tensor_proxy, dynamic_index_stride)
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -583,6 +584,22 @@ class Matrix(TaichiOperations):
     @property
     def entries(self):
         return self._impl.entries
+
+    @property
+    def any_array_access(self):
+        return self._impl.any_array_access
+
+    @any_array_access.setter
+    def any_array_access(self, value):
+        self._impl.any_array_access = value
+
+    @property
+    def local_tensor_proxy(self):
+        return self._impl.local_tensor_proxy
+
+    @property
+    def dynamic_index_stride(self):
+        return self._impl.dynamic_index_stride
 
     # def _get_entry(self, *args):
     #     return self.entries[self._linearize_entry_id(*args)]
@@ -1454,10 +1471,8 @@ class _IntermediateMatrix(Matrix):
         self.n = n
         self.m = m
         # self.entries = entries
-        self._impl = _TiScopeMatrixImpl(m, n, entries)
-        self.local_tensor_proxy = None
-        self.any_array_access = None
-        self.dynamic_index_stride = None
+        self._impl = _TiScopeMatrixImpl(
+            m, n, entries, local_tensor_proxy=None, dynamic_index_stride=None)
 
 
 class _MatrixFieldElement(_IntermediateMatrix):
@@ -1473,7 +1488,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
             expr.Expr(ti_core.subscript(e.ptr, indices))
             for e in field._get_field_members()
         ])
-        self.dynamic_index_stride = field.dynamic_index_stride
+        self._impl.dynamic_index_stride = field.dynamic_index_stride
 
 
 class MatrixField(Field):

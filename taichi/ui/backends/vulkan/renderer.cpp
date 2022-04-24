@@ -112,6 +112,7 @@ void Renderer::scene(Scene *scene) {
 }
 
 void Renderer::cleanup() {
+  render_complete_semaphore_ = nullptr;
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }

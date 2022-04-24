@@ -54,7 +54,8 @@ def _gen_swizzles(cls):
                 def prop_getter(instance):
                     res = []
                     for ch in pattern:
-                        res.append(instance._impl._get_entry(key_group.index(ch)))
+                        res.append(
+                            instance._impl._get_entry(key_group.index(ch)))
                     return Vector(res, is_ref=True)
 
                 def prop_setter(instance, value):
@@ -190,7 +191,8 @@ class _PyScopeMatrixImpl(_MatrixBaseImpl):
 
 
 class _TiScopeMatrixImpl(_MatrixBaseImpl):
-    def __init__(self, m, n, entries, local_tensor_proxy, dynamic_index_stride):
+    def __init__(self, m, n, entries, local_tensor_proxy,
+                 dynamic_index_stride):
         super().__init__(m, n, entries)
         self.any_array_access = None
         self.local_tensor_proxy = local_tensor_proxy
@@ -229,7 +231,8 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             return impl.make_tensor_element_expr(self.local_tensor_proxy,
                                                  (i, j), (self.n, self.m),
                                                  self.dynamic_index_stride)
-        if impl.current_cfg().dynamic_index and is_global_mat and self.dynamic_index_stride:
+        if impl.current_cfg(
+        ).dynamic_index and is_global_mat and self.dynamic_index_stride:
             return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
@@ -392,8 +395,7 @@ class Matrix(TaichiOperations):
                                 local_tensor_proxy,
                                 (expr.Expr(i, dtype=primitive_types.i32),
                                  expr.Expr(j, dtype=primitive_types.i32)),
-                                (len(arr), len(arr[0])),
-                                dynamic_index_stride))
+                                (len(arr), len(arr[0])), dynamic_index_stride))
         self.n = len(mat)
         if len(mat) > 0:
             self.m = len(mat[0])
@@ -416,8 +418,8 @@ class Matrix(TaichiOperations):
         if in_python_scope():
             self._impl = _PyScopeMatrixImpl(m, n, entries)
         else:
-            self._impl = _TiScopeMatrixImpl(
-                m, n, entries, local_tensor_proxy, dynamic_index_stride)
+            self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
+                                            dynamic_index_stride)
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -1463,15 +1465,17 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
-
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
         self.n = n
         self.m = m
         # self.entries = entries
-        self._impl = _TiScopeMatrixImpl(
-            m, n, entries, local_tensor_proxy=None, dynamic_index_stride=None)
+        self._impl = _TiScopeMatrixImpl(m,
+                                        n,
+                                        entries,
+                                        local_tensor_proxy=None,
+                                        dynamic_index_stride=None)
 
 
 class _MatrixFieldElement(_IntermediateMatrix):
@@ -1481,7 +1485,6 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
-
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1498,7 +1501,6 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1737,7 +1739,6 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1833,7 +1834,6 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

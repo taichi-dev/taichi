@@ -197,7 +197,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, *indices):
+    def _subscript(self, is_global_mat, indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -229,9 +229,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             return impl.make_tensor_element_expr(self.local_tensor_proxy,
                                                  (i, j), (self.n, self.m),
                                                  self.dynamic_index_stride)
-        if impl.current_cfg().dynamic_index and isinstance(
-                self,
-                _MatrixFieldElement) and self.dynamic_index_stride is not None:
+        if impl.current_cfg().dynamic_index and is_global_mat and self.dynamic_index_stride:
             return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
@@ -632,7 +630,8 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def _subscript(self, *indices):
-        return self._impl._subscript(*indices)
+        is_global_mat = isinstance(self, _MatrixFieldElement)
+        return self._impl._subscript(is_global_mat, indices)
         # assert len(indices) in [1, 2]
         # i = indices[0]
         # j = 0 if len(indices) == 1 else indices[1]

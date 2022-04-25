@@ -125,7 +125,6 @@ class _MatrixBaseImpl:
 
 
 class _PyScopeMatrixImpl(_MatrixBaseImpl):
-
     @python_scope
     def __getitem__(self, indices):
         """Access to the element at the given indices in a matrix.

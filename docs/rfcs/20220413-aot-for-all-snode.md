@@ -28,7 +28,7 @@ While this is convenient for Python users, it imposes challenges for the deploym
 
 1. Taichi fields are currently implemented as global variables.
 
-    This would result in the Taichi kernels being "not pure" and relying on implicit information. When saving such kernels into the AOT module, it is also necessary to save all the depdendant global states. Ideally, users should be able to create Taichi fields, and pass them into Taichi kernels are parameters.
+    This would result in the Taichi kernels being "not pure" and relying on implicit information. When saving such kernels into the AOT module, it is also necessary to save all the depdendant global states. Ideally, users should be able to create Taichi fields, and pass them into Taichi kernels as parameters.
 
 2. SNodes types are missing from the AOT module.
 
@@ -36,7 +36,7 @@ While this is convenient for Python users, it imposes challenges for the deploym
 
 3. Fields data are not managed by the users.
 
-    Because fields are global, the Taichi runtime have to create and manage them. By allowing the fields to be local and decoupled from the kernels, users can manage the memory resources for these fields.
+    Because fields are global, the Taichi runtime have to create and manage them. By localizing the fields, decoupling them from Taichi kernels, users can manage the memory resources for these fields.
 
 # Goals
 
@@ -91,7 +91,7 @@ Internally, as you are using Taichi's SNode system to construct hierarchies, you
 We will make the SNode tree and its type explicit by providing `SNodeTreeBuilder`. Each field needs to be registered into the builder via `add_field()`. `add_field()` does *not* actually do any memory allocation. Instead, it just returns a *field ID*, which can be used to retrieve a field from the tree inside the kernel.
 
 ```py
-builder = ti.SnodeTreeBuilder()
+builder = ti.SNodeTreeBuilder()
 
 x = builder.add_field(dtype=ti.f32, name='x')
 y = builder.add_field(dtype=ti.i32, name='y')
@@ -107,7 +107,7 @@ tree_t = builder.build()
 Similarly, `SNodeTreeBuilder.build()` doesn't allocate memory for the tree. It only builds *the type of* a SNode tree. You can later instantiate a tree with `tree_t.instantiate()`. There are a few reasons behind this type-tree decoupling design:
 
 1. We have explicit access to the SNode tree type. This is a must for AOT, but can also be used as type annotations for enhanced language formality.
-2. We can instantiate as many trees as necessary using this type.
+2. We can instantiate as many trees as we want from this type.
 
 Inside a Taichi kernel, the entire tree can be used in the following way:
 
@@ -128,7 +128,7 @@ There will be two ways to retrieve a field from a tree:
 * By name: `add_field()` takes in a `name` parameter. After building a SNode tree, Taichi will generate an attribute for each registered field on that tree. This allows you to directly write `tr.x` to access the field named `'x'`.
 * By field ID: You can also use the field ID returned by `add_field()` to access a field. Here's an example:
    ```py
-   builder = ti.SnodeTreeBuilder()
+   builder = ti.SNodeTreeBuilder()
    x_fid = builder.add_field(dtype=ti.f32, name='x')
    # boilerplate to generate tree type and instantiate a tree ...
 
@@ -158,12 +158,12 @@ tree_t = x.build()
 For SoA, things get a bit trickier. The current approach is to treat each compopnent of the composite type as a standalone scalar Taichi field. In the example below, we have to manually place the underlying 3 components of `x` separately.
 
 ```py
-x = ti.Vector(3, ti.f32).field()
+x = ti.Vector.field(3, ti.f32)
 for f in x._get_field_members():  # `x` consists three scalar f32 fields
   ti.root.dense(ti.ij).place(f)
 ```
 
-This introduces confusion in a few different ways:
+This introduces confusion at several spots:
 
 1. Type is not purely decided by `dtype`, but also by how the field is placed.
 2. It introduces the notion of "nested field", which Taichi doesn't currently have a good abstraction for. Because of this, it is quite complicated to apply certain kind of optimizations for a composite-typed field. For example, vectorized load/save consumes the same bandwidth as scalar ops on certain platforms. Without a good abstraction, the checking for whether a matrix field is AoS or SoA has to be spread across different passes in CHI IR.
@@ -291,7 +291,7 @@ def foo():
 In order to provide backward compatibility, we need some helper utils to make the following happen:
 
 * Maps `x@old` to `tr.x@new`. In addition, the runtime will need to know which SNode tree `x@old` belongs to.
-* `x@old` will be a placeholder for field, until the current SNode tree of `ti.root` is built and instantiated.
+* `x@old` returned by `ti.field()` will be a placeholder for field, until the current SNode tree of `ti.root` is built and instantiated.
 
 All these being considered, here's a possible solution.
 
@@ -324,6 +324,8 @@ tree = tree_t.instantiate()
 ti._runtime.global_snode_trees.append(tree)
 for ft in ti.root._field_thunks:
   ft.bind(tree)
+
+# Make `ti.root` a new SNodeTreeBuilder to allow for dynamic fields
 ti.root = SNodeTreeBuilder()
 ```
 

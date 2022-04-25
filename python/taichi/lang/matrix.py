@@ -125,8 +125,6 @@ class _MatrixBaseImpl:
 
 
 class _PyScopeMatrixImpl(_MatrixBaseImpl):
-    def __init__(self, m, n, entries):
-        super().__init__(m, n, entries)
 
     @python_scope
     def __getitem__(self, indices):

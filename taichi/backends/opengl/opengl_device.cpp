@@ -438,7 +438,7 @@ StreamSemaphore GLStream::submit(
   cmdlist->run_commands();
 
   // OpenGL is fully serial
-  return std::make_shared<StreamSemaphoreObject>();
+  return nullptr;
 }
 
 StreamSemaphore GLStream::submit_synced(
@@ -448,7 +448,7 @@ StreamSemaphore GLStream::submit_synced(
   glFinish();
 
   // OpenGL is fully serial
-  return std::make_shared<StreamSemaphoreObject>();
+  return nullptr;
 }
 void GLStream::command_sync() {
   glFinish();

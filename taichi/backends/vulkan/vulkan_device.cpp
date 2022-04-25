@@ -1528,9 +1528,9 @@ StreamSemaphore VulkanStream::submit(
 
   for (const StreamSemaphore &sema_ : wait_semaphores) {
     auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
-    vk_wait_semaphores.push_back(sema->semaphore->semaphore);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
     vk_wait_stages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-    buffer->refs.push_back(sema->semaphore);
+    buffer->refs.push_back(sema->vkapi_ref);
   }
 
   submit_info.pWaitSemaphores = vk_wait_semaphores.data();
@@ -2295,7 +2295,7 @@ void VulkanSurface::present_image(
 
   for (const StreamSemaphore &sema_ : wait_semaphores) {
     auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
-    vk_wait_semaphores.push_back(sema->semaphore->semaphore);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
   }
 
   VkPresentInfoKHR presentInfo{};

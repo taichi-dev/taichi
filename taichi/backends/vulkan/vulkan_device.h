@@ -476,12 +476,12 @@ struct DescPool {
 
 class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
  public:
-  VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema) : semaphore(sema) {
+  VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema) : vkapi_ref(sema) {
   }
   ~VulkanStreamSemaphoreObject() {
   }
 
-  vkapi::IVkSemaphore semaphore{nullptr};
+  vkapi::IVkSemaphore vkapi_ref{nullptr};
 };
 
 class VulkanStream : public Stream {

@@ -138,7 +138,8 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
     }
 
     if (indices.is_complete() && indices.is_complete_for_ui()) {
-      TI_INFO("Async compute queue {}, graphics queue {}", indices.compute_family.value(), indices.graphics_family.value());
+      TI_INFO("Async compute queue {}, graphics queue {}",
+              indices.compute_family.value(), indices.graphics_family.value());
       return indices;
     }
   }

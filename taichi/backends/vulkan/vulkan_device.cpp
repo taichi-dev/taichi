@@ -1738,7 +1738,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
   uint32_t queue_family_indices[] = {compute_queue_family_index_,
-                              graphics_queue_family_index_};
+                                     graphics_queue_family_index_};
 
   if (compute_queue_family_index_ == graphics_queue_family_index_) {
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

@@ -522,15 +522,11 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // If we need to host sync, sync and remove in-flight references
   std::vector<StreamSemaphore> wait_semaphore;
-  if (last_semaphore_) {
-    wait_semaphore.push_back(last_semaphore_);
-  }
 
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
                                     ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
-      last_semaphore_ = nullptr;
       ctx_buffers_.clear();
     }
   }
@@ -543,7 +539,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
-      last_semaphore_ = flush();
+      flush();
     }
   }
 
@@ -568,7 +564,6 @@ StreamSemaphore VkRuntime::flush() {
   if (current_cmdlist_) {
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
     current_cmdlist_ = nullptr;
-    last_semaphore_ = nullptr;
   } else {
     auto cmdlist = device_->get_compute_stream()->new_command_list();
     cmdlist->memory_barrier();

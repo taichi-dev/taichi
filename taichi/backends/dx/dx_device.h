@@ -96,10 +96,10 @@ class Dx11Stream : public Stream {
   std::unique_ptr<CommandList> new_command_list() override;
   StreamSemaphore submit(
       CommandList *cmdlist,
-      std::vector<StreamSemaphore> &&wait_semaphores = {}) override;
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   StreamSemaphore submit_synced(
       CommandList *cmdlist,
-      std::vector<StreamSemaphore> &&wait_semaphores = {}) override;
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   void command_sync() override;
 
  private:

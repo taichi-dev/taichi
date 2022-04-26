@@ -80,8 +80,8 @@ Dx11ResourceBinder::~Dx11ResourceBinder() {
 
 Dx11CommandList::Dx11CommandList(Dx11Device *ti_device) : device_(ti_device) {
   HRESULT hr;
-  hr = device_->d3d11_device()->CreateDeferredContext(
-      0, &d3d11_deferred_context_);
+  hr = device_->d3d11_device()->CreateDeferredContext(0,
+                                                      &d3d11_deferred_context_);
   check_dx_error(hr, "create deferred context");
 }
 
@@ -106,8 +106,8 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
   // UAV
   for (auto &[binding, alloc_id] : binder->uav_binding_to_alloc_id()) {
     ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(alloc_id);
-    d3d11_deferred_context_->CSSetUnorderedAccessViews(
-        binding, 1, &uav, nullptr);
+    d3d11_deferred_context_->CSSetUnorderedAccessViews(binding, 1, &uav,
+                                                       nullptr);
   }
 
   // CBV
@@ -124,8 +124,8 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
     box.bottom = 1;  // 1 past the end!
     box.front = 0;
     box.back = 1;
-    d3d11_deferred_context_->CopySubresourceRegion(
-        cb_buffer, 0, 0, 0, 0, buffer, 0, &box);
+    d3d11_deferred_context_->CopySubresourceRegion(cb_buffer, 0, 0, 0, 0,
+                                                   buffer, 0, &box);
     d3d11_deferred_context_->CSSetConstantBuffers(binding, 1, &cb_buffer);
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
@@ -164,7 +164,8 @@ void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
 void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
   // Set SPIRV_Cross_NumWorkgroups's CB slot based on the watermark
   auto cb_slot = cb_slot_watermark_ + 1;
-  auto spirv_cross_numworkgroups_cb = device_->set_spirv_cross_numworkgroups(x, y, z, cb_slot);
+  auto spirv_cross_numworkgroups_cb =
+      device_->set_spirv_cross_numworkgroups(x, y, z, cb_slot);
   d3d11_deferred_context_->CSSetConstantBuffers(cb_slot, 1,
                                                 &spirv_cross_numworkgroups_cb);
   used_spv_workgroup_cb.push_back(spirv_cross_numworkgroups_cb);
@@ -233,7 +234,8 @@ void Dx11CommandList::image_to_buffer(DevicePtr dst_buf,
 void Dx11CommandList::run_commands() {
   if (!d3d11_command_list_) {
     HRESULT hr;
-    hr = d3d11_deferred_context_->FinishCommandList(FALSE, &d3d11_command_list_);
+    hr =
+        d3d11_deferred_context_->FinishCommandList(FALSE, &d3d11_command_list_);
     check_dx_error(hr, "error finishing command list");
   }
 
@@ -735,16 +737,15 @@ ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
 }
 
 ID3D11Buffer *Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
-                                               uint32_t y,
-                                               uint32_t z,
-                                               int cb_slot) {
+                                                        uint32_t y,
+                                                        uint32_t z,
+                                                        int cb_slot) {
   ID3D11Buffer *spirv_cross_numworkgroups;
   ID3D11Buffer *temp;
   create_raw_buffer(device_, 16, nullptr, &temp);
-  create_cpu_accessible_buffer_copy(device_, temp,
-                                    &spirv_cross_numworkgroups);
+  create_cpu_accessible_buffer_copy(device_, temp, &spirv_cross_numworkgroups);
   temp->Release();
-  
+
   ID3D11Buffer *spirv_cross_numworkgroups_cb;
   create_constant_buffer_copy(device_, spirv_cross_numworkgroups,
                               &spirv_cross_numworkgroups_cb);
@@ -759,10 +760,10 @@ ID3D11Buffer *Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
   d3d11_context()->Unmap(spirv_cross_numworkgroups, 0);
 
   d3d11_context()->CopyResource(spirv_cross_numworkgroups_cb,
-                         spirv_cross_numworkgroups);
+                                spirv_cross_numworkgroups);
 
   spirv_cross_numworkgroups->Release();
-  
+
   return spirv_cross_numworkgroups_cb;
 }
 

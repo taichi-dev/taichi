@@ -221,9 +221,9 @@ class Dx11Device : public GraphicsDevice {
   // example: in the presence of args_t, cb_slot will be cb0
   // in the absence of args_t, cb_slot will be cb0
   ID3D11Buffer *set_spirv_cross_numworkgroups(uint32_t x,
-                                     uint32_t y,
-                                     uint32_t z,
-                                     int cb_slot);
+                                              uint32_t y,
+                                              uint32_t z,
+                                              int cb_slot);
 
  private:
   void create_dx11_device();

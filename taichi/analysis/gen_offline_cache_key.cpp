@@ -37,8 +37,10 @@ enum class ExternalFuncType : std::uint8_t {
 
 class ASTSerializer : public IRVisitor {
  public:
-  ASTSerializer(Program *prog, ExpressionPrinter *expr_printer, std::ostream *os)
-   : prog_(prog), os_(os), expr_printer_(expr_printer) {
+  ASTSerializer(Program *prog,
+                ExpressionPrinter *expr_printer,
+                std::ostream *os)
+      : prog_(prog), os_(os), expr_printer_(expr_printer) {
     this->allow_undefined_visitor = true;
     expr_printer_->set_ostream(os);
   }
@@ -95,7 +97,8 @@ class ASTSerializer : public IRVisitor {
     emit(stmt->op_type);
     emit(stmt->snode);
     std::size_t count = stmt->indices.size();
-    if (stmt->val.expr) ++count;
+    if (stmt->val.expr)
+      ++count;
     emit(count);
     for (const auto &i : stmt->indices.exprs) {
       emit(i);
@@ -184,7 +187,8 @@ class ASTSerializer : public IRVisitor {
   }
 
   void visit(FrontendExternalFuncStmt *stmt) override {
-    // Note: The result of serializing FrontendExternalFuncStmt is not parsable now
+    // Note: The result of serializing FrontendExternalFuncStmt is not parsable
+    // now
     emit(StmtOpCode::FrontendExternalFuncStmt);
     if (stmt->so_func != nullptr) {
       emit(ExternalFuncType::SO);
@@ -201,7 +205,8 @@ class ASTSerializer : public IRVisitor {
   }
 
   static void run(Program *prog, IRNode *ast, std::ostream *os) {
-    // Temporary: using ExpressionOfflineCacheKeyGenerator, which will be refactored
+    // Temporary: using ExpressionOfflineCacheKeyGenerator, which will be
+    // refactored
     ExpressionOfflineCacheKeyGenerator generator(prog);
     ASTSerializer serializer(prog, &generator, os);
     ast->accept(&serializer);
@@ -221,10 +226,10 @@ class ASTSerializer : public IRVisitor {
       for (auto &[func, visited] : real_funcs_) {
         if (!visited) {
           visited = true;
-          func->ir->accept(this); // Maybe add new func
+          func->ir->accept(this);  // Maybe add new func
         }
       }
-    } while(real_funcs_.size() > last_size);
+    } while (real_funcs_.size() > last_size);
     this->set_ostream(curr_os);
     expr_printer_->set_ostream(curr_os);
     emit(static_cast<std::size_t>(real_funcs_.size()));
@@ -243,7 +248,7 @@ class ASTSerializer : public IRVisitor {
     emit_bytes(string_pool_.data(), string_pool_.size());
   }
 
-  template<typename T>
+  template <typename T>
   void emit_pod(const T &val) {
     static_assert(std::is_pod<T>::value);
     TI_ASSERT(os_);
@@ -255,7 +260,7 @@ class ASTSerializer : public IRVisitor {
     os_->write(bytes, len);
   }
 
-  template<typename K, typename V>
+  template <typename K, typename V>
   void emit(const std::unordered_map<K, V> &map) {
     emit(static_cast<std::size_t>(map.size()));
     for (const auto &[k, v] : map) {
@@ -264,13 +269,13 @@ class ASTSerializer : public IRVisitor {
     }
   }
 
-  template<typename T1, typename T2>
+  template <typename T1, typename T2>
   void emit(const std::pair<T1, T2> &pair) {
     emit(pair.first);
     emit(pair.second);
   }
 
-  template<typename K, typename V>
+  template <typename K, typename V>
   void emit(const std::map<K, V> &map) {
     emit(static_cast<std::size_t>(map.size()));
     for (const auto &[k, v] : map) {
@@ -421,8 +426,8 @@ class ASTSerializer : public IRVisitor {
   Program *prog_{nullptr};
   std::ostream *os_{nullptr};
   ExpressionPrinter *expr_printer_{nullptr};
-  std::unordered_set<SNode*> snode_tree_roots_;
-  std::unordered_map<Function*, bool> real_funcs_;
+  std::unordered_set<SNode *> snode_tree_roots_;
+  std::unordered_map<Function *, bool> real_funcs_;
   std::vector<char> string_pool_;
 };
 

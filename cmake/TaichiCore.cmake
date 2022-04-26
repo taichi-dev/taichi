@@ -245,7 +245,7 @@ add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior
-    set_target_properties(${CORE_LIBRARY_NAME} 
+    set_target_properties(${CORE_LIBRARY_NAME}
       PROPERTIES INTERFACE_LINK_LIBRARIES "-undefined dynamic_lookup"
     )
 endif()

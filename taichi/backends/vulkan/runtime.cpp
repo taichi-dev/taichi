@@ -158,7 +158,7 @@ class HostDeviceContextBlitter {
     }
 
     if (require_sync) {
-      device_->get_compute_stream()->submit_synced(cmdlist, wait_semaphore);
+      device_->get_compute_stream()->submit_synced(cmdlist);
     } else {
       return false;
     }
@@ -543,9 +543,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
-      last_semaphore_ = device_->get_compute_stream()->submit(
-          current_cmdlist_.get(), wait_semaphore);
-      current_cmdlist_ = nullptr;
+      last_semaphore_ = flush();
     }
   }
 
@@ -560,18 +558,23 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 }
 
 void VkRuntime::synchronize() {
-  if (current_cmdlist_) {
-    std::vector<StreamSemaphore> wait_semaphore;
-    if (last_semaphore_) {
-      wait_semaphore.push_back(last_semaphore_);
-    }
-    device_->get_compute_stream()->submit(current_cmdlist_.get(),
-                                          wait_semaphore);
-    current_cmdlist_ = nullptr;
-    last_semaphore_ = nullptr;
-  }
+  flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+}
+
+StreamSemaphore VkRuntime::flush() {
+  StreamSemaphore sema;
+  if (current_cmdlist_) {
+    sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
+    current_cmdlist_ = nullptr;
+    last_semaphore_ = nullptr;
+  } else {
+    auto cmdlist = device_->get_compute_stream()->new_command_list();
+    cmdlist->memory_barrier();
+    sema = device_->get_compute_stream()->submit(cmdlist.get());
+  }
+  return sema;
 }
 
 Device *VkRuntime::get_ti_device() const {

@@ -1298,6 +1298,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.usage & AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
+  buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
@@ -1710,7 +1711,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  image_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
   alloc.format = image_info.format;
 
@@ -2171,7 +2172,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
   createInfo.preTransform = capabilities.currentTransform;

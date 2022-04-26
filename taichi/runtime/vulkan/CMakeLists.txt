@@ -1,8 +1,8 @@
 # ./taichi/runtime/vulkan/CMakeLists.txt
 
 add_library(vulkan_runtime)
-target_sources(vulkan_runtime 
-  PRIVATE 
+target_sources(vulkan_runtime
+  PRIVATE
     runtime.cpp
   )
 target_include_directories(vulkan_runtime

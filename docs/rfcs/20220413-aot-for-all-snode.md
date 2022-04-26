@@ -107,7 +107,7 @@ tree_t = builder.build()
 Similarly, `SNodeTreeBuilder.build()` doesn't allocate memory for the tree. It only builds *the type of* a SNode tree. You can later instantiate a tree with `tree_t.instantiate()`. There are a few reasons behind this type-tree decoupling design:
 
 1. We have explicit access to the SNode tree type. This is a must for AOT, but can also be used as type annotations for enhanced language formality.
-2. We can instantiate as many trees as we want from this type.
+2. We can instantiate as many trees as we want from this type, and pass them to the same kernel without re-compilation.
 
 Inside a Taichi kernel, the entire tree can be used in the following way:
 

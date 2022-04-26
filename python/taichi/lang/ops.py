@@ -2,7 +2,6 @@ import builtins
 import functools
 import math
 import operator as _bt_ops_mod  # bt for builtin
-import traceback
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
@@ -13,14 +12,7 @@ unary_ops = []
 
 
 def stack_info():
-    s = traceback.extract_stack()[3:-1]
-    for i, l in enumerate(s):
-        if 'taichi_ast_generator' in l:
-            s = s[i + 1:]
-            break
-    raw = ''.join(traceback.format_list(s))
-    # remove the confusing last line
-    return '\n'.join(raw.split('\n')[:-5]) + '\n'
+    return impl.get_runtime().get_current_src_info()
 
 
 def is_taichi_expr(a):

@@ -158,7 +158,15 @@ void Renderer::draw_frame(Gui *gui) {
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
 
-  std::vector<StreamSemaphore> wait_semaphores{app_context_.prog()->flush()};
+  std::vector<StreamSemaphore> wait_semaphores;
+
+  if (app_context_.prog()) {
+    auto sema = app_context_.prog()->flush();
+    if (sema) {
+      wait_semaphores.push_back(sema);
+    }
+  }
+
   if (semaphore) {
     wait_semaphores.push_back(semaphore);
   }

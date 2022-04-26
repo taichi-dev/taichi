@@ -142,10 +142,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
-  "taichi/backends/vulkan/runtime.h"
-  "taichi/backends/vulkan/runtime.cpp"
-)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -200,7 +196,7 @@ if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_REQUIRED_SOURCE})
+
 
 if (TI_WITH_DX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
@@ -388,7 +384,11 @@ if (TI_WITH_VULKAN)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
     endif()
+
+    add_subdirectory(taichi/runtime/vulkan)
+    target_link_libraries(${CORE_LIBRARY_NAME} vulkan_runtime)
 endif ()
+
 
 # Optional dependencies
 

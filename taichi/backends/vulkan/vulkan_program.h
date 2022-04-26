@@ -6,7 +6,7 @@
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"

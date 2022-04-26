@@ -34,7 +34,8 @@ class ResourceBinderImpl : public ResourceBinder {
                  uint32_t binding,
                  DevicePtr ptr,
                  size_t size) override {
-    TI_NOT_IMPLEMENTED;
+    TI_ERROR(
+        "DevicePtr not supported, please use the DeviceAllocation overload");
   }
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -47,7 +48,8 @@ class ResourceBinderImpl : public ResourceBinder {
               uint32_t binding,
               DevicePtr ptr,
               size_t size) override {
-    TI_NOT_IMPLEMENTED;
+    TI_ERROR(
+        "DevicePtr not supported, please use the DeviceAllocation overload");
   }
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override {
     bind_buffer(set, binding, alloc, /*is_constant=*/true);
@@ -136,9 +138,25 @@ class CommandListImpl : public CommandList {
   }
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override {
+    TI_ERROR_IF(dst.device != src.device,
+                "dst and src must be from the same MTLDevice");
+    TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
+    auto *dst_buf = alloc_buf_mapper_->find(dst).buffer;
+    TI_ASSERT(dst_buf != nullptr);
+    auto *src_buf = alloc_buf_mapper_->find(src).buffer;
+    TI_ASSERT(src_buf != nullptr);
+    auto encoder = new_blit_command_encoder(command_buffer_.get());
+    TI_ASSERT(encoder != nullptr);
+    if (!inflight_label_.empty()) {
+      metal::set_label(encoder.get(), inflight_label_);
+    }
+    copy_from_buffer_to_buffer(encoder.get(), src_buf, src.offset, dst_buf,
+                               dst.offset, size);
+    finish_encoder(encoder.get());
   }
 
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
+    TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
     if ((data & 0xff) != data) {
       // TODO: Maybe create a shader just for this filling purpose?
       TI_ERROR("Metal can only support 8-bit data for buffer_fill");
@@ -146,7 +164,9 @@ class CommandListImpl : public CommandList {
     }
     auto encoder = new_blit_command_encoder(command_buffer_.get());
     TI_ASSERT(encoder != nullptr);
-    metal::set_label(encoder.get(), inflight_label_);
+    if (!inflight_label_.empty()) {
+      metal::set_label(encoder.get(), inflight_label_);
+    }
     auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
     mac::TI_NSRange range;

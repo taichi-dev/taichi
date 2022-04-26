@@ -18,7 +18,9 @@ class TypeCheck : public IRVisitor {
  private:
   CompileConfig config_;
 
-  Type* type_check_store(Stmt *stmt, Stmt *dst, Stmt *&val,
+  Type *type_check_store(Stmt *stmt,
+                         Stmt *dst,
+                         Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
     if (dst_type->is<CustomIntType>() || dst_type->is<CustomFloatType>()) {
@@ -29,9 +31,9 @@ class TypeCheck : public IRVisitor {
     if (dst_type != val->ret_type) {
       auto promoted = promoted_type(dst_type, val->ret_type);
       if (dst_type != promoted) {
-        TI_WARN("[{}] {} may lose precision: {} <- {}\n{}",
-                stmt->name(), stmt_name, dst_type->to_string(),
-                val->ret_data_type_name(), stmt->tb);
+        TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
+                stmt_name, dst_type->to_string(), val->ret_data_type_name(),
+                stmt->tb);
       }
       val = insert_type_cast_before(stmt, val, dst_type);
     }
@@ -77,7 +79,9 @@ class TypeCheck : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
-    stmt->ret_type = type_check_store(stmt, stmt->dest, stmt->val, fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
+    stmt->ret_type = type_check_store(
+        stmt, stmt->dest, stmt->val,
+        fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -113,7 +117,8 @@ class TypeCheck : public IRVisitor {
       // Infer data type for alloca
       stmt->dest->ret_type = stmt->val->ret_type;
     }
-    stmt->ret_type = type_check_store(stmt, stmt->dest, stmt->val, "Local store");
+    stmt->ret_type =
+        type_check_store(stmt, stmt->dest, stmt->val, "Local store");
   }
 
   void visit(GlobalLoadStmt *stmt) override {

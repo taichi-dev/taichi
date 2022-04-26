@@ -1300,6 +1300,17 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   }
   buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                                     graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    buffer_info.queueFamilyIndexCount = 2;
+    buffer_info.pQueueFamilyIndices = queue_family_indices;
+  }
+
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
       VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
@@ -1544,10 +1555,24 @@ StreamSemaphore VulkanStream::submit(
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = &semaphore->semaphore;
 
-  submitted_cmdbuffers_.push_back(buffer);
+  auto fence = vkapi::create_fence(buffer->device, 0);
+
+  // Resource tracking, check previously submitted commands
+  // FIXME: Figure out why it doesn't work
+  /*
+  std::remove_if(submitted_cmdbuffers_.begin(), submitted_cmdbuffers_.end(),
+                 [&](const TrackedCmdbuf &tracked) {
+                   // If fence is signaled, cmdbuf has completed
+                   VkResult res =
+                       vkGetFenceStatus(buffer->device, tracked.fence->fence);
+                   return res == VK_SUCCESS;
+    });
+  */
+
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/VK_NULL_HANDLE),
+                                      /*fence=*/fence->fence),
                         "failed to submit command buffer");
 
   return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
@@ -1711,7 +1736,17 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                              graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    image_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    image_info.queueFamilyIndexCount = 2;
+    image_info.pQueueFamilyIndices = queue_family_indices;
+  }
 
   alloc.format = image_info.format;
 
@@ -2172,7 +2207,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+  createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
   createInfo.preTransform = capabilities.currentTransform;
@@ -2384,8 +2419,6 @@ VulkanStream::VulkanStream(VulkanDevice &device,
   command_pool_ = vkapi::create_command_pool(
       device_.vk_device(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
       queue_family_index);
-
-  cmd_sync_fence_ = vkapi::create_fence(device_.vk_device(), 0);
 }
 
 VulkanStream::~VulkanStream() {

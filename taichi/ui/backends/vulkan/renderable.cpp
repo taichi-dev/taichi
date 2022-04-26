@@ -45,7 +45,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   // load AOT modules
   Program *prog = app_context_->prog();
   if (prog) {
-    prog->synchronize();
+    prog->flush();
   }
 
   int num_vertices = info.vbo.shape[0];

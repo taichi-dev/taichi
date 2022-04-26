@@ -502,14 +502,18 @@ class VulkanStream : public Stream {
   void command_sync() override;
 
  private:
+  struct TrackedCmdbuf {
+    vkapi::IVkFence fence;
+    vkapi::IVkCommandBuffer buf;
+  };
+
   VulkanDevice &device_;
   VkQueue queue_;
   uint32_t queue_family_index_;
 
   // Command pools are per-thread
-  vkapi::IVkFence cmd_sync_fence_;
   vkapi::IVkCommandPool command_pool_;
-  std::vector<vkapi::IVkCommandBuffer> submitted_cmdbuffers_;
+  std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
 };
 
 class VulkanDevice : public GraphicsDevice {

@@ -1,4 +1,3 @@
-import functools
 import numbers
 from collections.abc import Iterable
 
@@ -24,34 +23,54 @@ from taichi.types.compound_types import CompoundType
 def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
-    KEYMAP_SET = ['xyzw', 'rgba', 'stpq']
+    KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
 
-    def add_single_swizzle_attrs(cls):
-        """Add property getter and setter for a single character in "xyzwrgbastpq".
-        """
-        def prop_getter(index, instance):
-            return instance(index)
+    def make_valid_attribs_checker(key_group):
+        def check(instance, pattern):
+            valid_attribs = set(key_group[:instance.n])
+            pattern_set = set(pattern)
+            diff = pattern_set - valid_attribs
+            if len(diff):
+                valid_attribs = tuple(sorted(valid_attribs))
+                pattern = tuple(pattern)
+                raise TaichiSyntaxError(
+                    f'vec{instance.n} only has '
+                    f'attributes={valid_attribs}, got={pattern}')
 
-        @python_scope
-        def prop_setter(index, instance, value):
-            instance[index] = value
+        return check
 
-        for key_group in KEYMAP_SET:
-            for index, key in enumerate(key_group):
-                prop = property(functools.partial(prop_getter, index),
-                                functools.partial(prop_setter, index))
-                setattr(cls, key, prop)
+    for key_group in KEYGROUP_SET:
+        for index, attr in enumerate(key_group):
 
-    add_single_swizzle_attrs(cls)
+            def gen_property(attr, attr_idx, key_group):
+                checker = make_valid_attribs_checker(key_group)
 
-    for key_group in KEYMAP_SET:
+                def prop_getter(instance):
+                    checker(instance, attr)
+                    return instance._get_entry_and_read([attr_idx])
+
+                @python_scope
+                def prop_setter(instance, value):
+                    checker(instance, attr)
+                    instance[attr_idx] = value
+
+                return property(prop_getter, prop_setter)
+
+            prop = gen_property(attr, index, key_group)
+            setattr(cls, attr, prop)
+
+    for key_group in KEYGROUP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)
         # len=1 accessors are handled specially above
         sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         for pat in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
+                checker = make_valid_attribs_checker(key_group)
+                prop_key = ''.join(pattern)
+
                 def prop_getter(instance):
+                    checker(instance, pattern)
                     res = []
                     for ch in pattern:
                         res.append(instance._get_entry(key_group.index(ch)))
@@ -60,7 +79,9 @@ def _gen_swizzles(cls):
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
                         raise TaichiCompilationError(
-                            'values does not match the attribute')
+                            f'value len does not match the swizzle pattern={prop_key}'
+                        )
+                    checker(instance, pattern)
                     for ch, val in zip(pattern, value):
                         if in_python_scope():
                             instance[key_group.index(ch)] = val
@@ -68,7 +89,6 @@ def _gen_swizzles(cls):
                             instance(key_group.index(ch))._assign(val)
 
                 prop = property(prop_getter, prop_setter)
-                prop_key = ''.join(pattern)
                 return prop_key, prop
 
             prop_key, prop = gen_property(pat, key_group)

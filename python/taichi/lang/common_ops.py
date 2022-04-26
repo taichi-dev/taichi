@@ -1,6 +1,7 @@
 import warnings
 
 from taichi.lang import ops
+from taichi.lang.util import in_python_scope
 
 
 class TaichiOperations:
@@ -176,52 +177,77 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic or."""
         return ops.atomic_or(self, other)
 
+    # In-place operators in python scope returns NotImplemented to fall back to normal operators
     def __iadd__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._atomic_add(other)
         return self
 
     def __isub__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._atomic_sub(other)
         return self
 
     def __iand__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._atomic_and(other)
         return self
 
     def __ixor__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._atomic_xor(other)
         return self
 
     def __ior__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._atomic_or(other)
         return self
 
     # we don't support atomic_mul/truediv/floordiv/mod yet:
     def __imul__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.mul(self, other))
         return self
 
     def __itruediv__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.truediv(self, other))
         return self
 
     def __ifloordiv__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.floordiv(self, other))
         return self
 
     def __imod__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.mod(self, other))
         return self
 
     def __ilshift__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.bit_shl(self, other))
         return self
 
     def __irshift__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.bit_shr(self, other))
         return self
 
     def __ipow__(self, other):
+        if in_python_scope():
+            return NotImplemented
         self._assign(ops.pow(self, other))
         return self
 

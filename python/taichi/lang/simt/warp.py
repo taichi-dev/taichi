@@ -2,14 +2,16 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr
 
 
-def all_nonzero():
-    # TODO
-    pass
+def all_nonzero(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_all_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
-def any_nonzero():
-    # TODO
-    pass
+def any_nonzero(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_any_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
 def unique():
@@ -66,6 +68,15 @@ def shfl_up_f32(mask, val, offset):
             "cuda_shfl_up_sync_f32",
             # lane offset is 0 for warp size 32
             expr.make_expr_group(mask, val, offset, 0),
+            False))
+
+
+def shfl_down_f32(mask, val, offset):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_down_sync_f32",
+            # lane offset is 31 for warp size 32
+            expr.make_expr_group(mask, val, offset, 31),
             False))
 
 

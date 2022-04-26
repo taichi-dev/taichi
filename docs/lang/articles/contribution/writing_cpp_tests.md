@@ -19,12 +19,11 @@ cmake .. -DTI_BUILD_TESTS=ON # ... other regular Taichi cmake args
 make
 
 # run the C++ test
-TI_LIB_DIR=$TAICHI_INSTALL_DIR/lib ./taichi_cpp_tests
+TI_LIB_DIR=$TAICHI_INSTALL_DIR/_lib/runtime ./taichi_cpp_tests
 ```
 
 :::note
-In order to run the C++ tests, please setup the environment variable, `$TI_LIB_DIR`, to point to `$TAICHI_INSTALL_DIR/_lib/runtime`. `$TAICHI_INSTALL_DIR` can be retrieved from `taichi.__path__[0]` in python.
-```
+`$TAICHI_INSTALL_DIR` can be retrieved from `taichi.__path__[0]` in python.
 :::
 
 :::note

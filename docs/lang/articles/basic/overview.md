@@ -49,4 +49,4 @@ While originally designed for physics simulation, Taichi has found its applicati
 
 **Maybe a new frontend?**
 
-The benefit of adopting the compiler approach is that you can decouple the frontend from the backend. Taichi is *currently* embedded in Python, but who says it needs to stay that way? Stay tuned [:](https://amesingflank.github.io/taichi.js/zoo/index.html)-)
+The benefit of adopting the compiler approach is that you can decouple the frontend from the backend. Taichi is *currently* embedded in Python, but who says it needs to stay that way? Stay tuned [:](https://taichi-js.com/playground)-)

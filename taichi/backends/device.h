@@ -9,6 +9,8 @@
 namespace taichi {
 namespace lang {
 
+constexpr size_t kBufferSizeEntireSize = size_t(-1);
+
 // For backend dependent code (e.g. codegen)
 // Or the backend runtime itself
 // Capabilities are per-device
@@ -44,6 +46,21 @@ enum class DeviceCapability : uint32_t {
   spirv_has_subgroup_ballot,
   // Graphics Caps,
   wide_lines
+};
+
+enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
+
+enum class BlendFactor : uint32_t {
+  zero,
+  one,
+  src_color,
+  one_minus_src_color,
+  dst_color,
+  one_minus_dst_color,
+  src_alpha,
+  one_minus_src_alpha,
+  dst_alpha,
+  one_minus_dst_alpha
 };
 
 class Device;
@@ -527,6 +544,18 @@ struct ImageParams {
   bool export_sharing{false};
 };
 
+struct BlendFunc {
+  BlendOp op{BlendOp::add};
+  BlendFactor src_factor{BlendFactor::src_alpha};
+  BlendFactor dst_factor{BlendFactor::one_minus_src_alpha};
+};
+
+struct BlendingParams {
+  bool enable{true};
+  BlendFunc color;
+  BlendFunc alpha;
+};
+
 struct RasterParams {
   TopologyType prim_topology{TopologyType::Triangles};
   PolygonMode polygon_mode{PolygonMode::Fill};
@@ -534,6 +563,7 @@ struct RasterParams {
   bool back_face_cull{false};
   bool depth_test{false};
   bool depth_write{false};
+  std::vector<BlendingParams> blending{};
 };
 
 class GraphicsDevice : public Device {

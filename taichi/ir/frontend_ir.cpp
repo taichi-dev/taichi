@@ -138,7 +138,7 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void UnaryOpExpression::type_check(CompileConfig *) {
+void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw TaichiTypeError(
@@ -150,7 +150,13 @@ void UnaryOpExpression::type_check(CompileConfig *) {
     throw TaichiTypeError(
         fmt::format("'{}' takes real inputs only, however '{}' is provided",
                     unary_op_type_name(type), operand->ret_type->to_string()));
-  ret_type = is_cast() ? cast_type : operand->ret_type;
+  if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
+       type == UnaryOpType::log) &&
+      !is_real(operand->ret_type)) {
+    ret_type = config->default_fp;
+  } else {
+    ret_type = is_cast() ? cast_type : operand->ret_type;
+  }
 }
 
 bool UnaryOpExpression::is_cast() const {
@@ -184,7 +190,10 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
     error();
-  if (is_comparison(type)) {
+  if (binary_is_logical(type) &&
+      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32))
+    error();
+  if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = PrimitiveType::i32;
     return;
   }
@@ -204,6 +213,34 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
   flatten_rvalue(lhs, ctx);
+  if (binary_is_logical(type)) {
+    auto result = ctx->push_back<AllocaStmt>(ret_type);
+    ctx->push_back<LocalStoreStmt>(result, lhs->stmt);
+    auto cond = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto if_stmt = ctx->push_back<IfStmt>(cond);
+
+    FlattenContext rctx;
+    rctx.current_block = ctx->current_block;
+    flatten_rvalue(rhs, &rctx);
+    rctx.push_back<LocalStoreStmt>(result, rhs->stmt);
+
+    auto true_block = std::make_unique<Block>();
+    if (type == BinaryOpType::logical_and) {
+      true_block->set_statements(std::move(rctx.stmts));
+    }
+    if_stmt->set_true_statements(std::move(true_block));
+
+    auto false_block = std::make_unique<Block>();
+    if (type == BinaryOpType::logical_or) {
+      false_block->set_statements(std::move(rctx.stmts));
+    }
+    if_stmt->set_false_statements(std::move(false_block));
+
+    auto ret = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    ret->tb = tb;
+    stmt = ret;
+    return;
+  }
   flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
   ctx->stmts.back()->tb = tb;
@@ -783,6 +820,10 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 
 void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
                                            const Expr &global) {
+  TI_WARN_IF(
+      for_loop_dec_.config.strictly_serialized,
+      "ti.loop_config(serialize=True) does not have effect on the struct for. "
+      "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global, arch_,
                                                        for_loop_dec_.config);
   for_loop_dec_.reset();
@@ -795,6 +836,10 @@ void ASTBuilder::begin_frontend_mesh_for(
     const Expr &i,
     const mesh::MeshPtr &mesh_ptr,
     const mesh::MeshElementType &element_type) {
+  TI_WARN_IF(
+      for_loop_dec_.config.strictly_serialized,
+      "ti.loop_config(serialize=True) does not have effect on the mesh for. "
+      "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
       i, mesh_ptr, element_type, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();

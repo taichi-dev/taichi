@@ -10,7 +10,7 @@ Developers who are interested in the compiler, computer graphics, or high-perfor
 
 :::danger IMPORTANT
 
-This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts.
+This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source.
 
 See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users.
 
@@ -441,7 +441,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>;/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 

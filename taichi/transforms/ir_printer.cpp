@@ -47,20 +47,21 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
 
 class IRPrinter : public IRVisitor {
  private:
-  ExpressionHumanFriendlyPrinter expr_printer_;
+  ExpressionPrinter *expr_printer_{nullptr};
 
  public:
-  int current_indent;
+  int current_indent{0};
 
-  std::string *output;
+  std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(std::string *output = nullptr) : output(output) {
-    current_indent = 0;
+  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+            std::string *output = nullptr)
+      : expr_printer_(expr_printer), output(output) {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 
@@ -75,7 +76,9 @@ class IRPrinter : public IRVisitor {
     }
   }
 
-  static void run(IRNode *node, std::string *output) {
+  static void run(ExpressionPrinter *expr_printer,
+                  IRNode *node,
+                  std::string *output) {
     if (node == nullptr) {
       TI_WARN("IRPrinter: Printing nullptr.");
       if (output) {
@@ -83,7 +86,7 @@ class IRPrinter : public IRVisitor {
       }
       return;
     }
-    auto p = IRPrinter(output);
+    auto p = IRPrinter(expr_printer, output);
     p.print("kernel {{");
     node->accept(&p);
     p.print("}}");
@@ -777,16 +780,18 @@ class IRPrinter : public IRVisitor {
   }
 
   std::string expr_to_string(Expression *expr) {
+    TI_ASSERT(expr_printer_);
     std::ostringstream oss;
-    expr_printer_.set_ostream(&oss);
-    expr->accept(&expr_printer_);
+    expr_printer_->set_ostream(&oss);
+    expr->accept(expr_printer_);
     return oss.str();
   }
 
   std::string expr_group_to_string(ExprGroup &expr_group) {
+    TI_ASSERT(expr_printer_);
     std::ostringstream oss;
-    expr_printer_.set_ostream(&oss);
-    expr_printer_.visit(expr_group);
+    expr_printer_->set_ostream(&oss);
+    expr_printer_->visit(expr_group);
     return oss.str();
   }
 };
@@ -796,7 +801,14 @@ class IRPrinter : public IRVisitor {
 namespace irpass {
 
 void print(IRNode *root, std::string *output) {
-  return IRPrinter::run(root, output);
+  ExpressionHumanFriendlyPrinter expr_printer;
+  return IRPrinter::run(&expr_printer, root, output);
+}
+
+void gen_offline_cache_key(Program *prog, IRNode *root, std::string *output) {
+  irpass::re_id(root);
+  ExpressionOfflineCacheKeyGenerator cache_key_generator(prog);
+  return IRPrinter::run(&cache_key_generator, root, output);
 }
 
 }  // namespace irpass

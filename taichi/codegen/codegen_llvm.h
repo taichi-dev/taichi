@@ -39,7 +39,7 @@ class FunctionCreationGuard {
   CodeGenLLVM *mb;
   llvm::Function *old_func;
   llvm::Function *body;
-  llvm::BasicBlock *old_entry, *allocas, *entry;
+  llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
   FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
@@ -71,6 +71,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   llvm::BasicBlock *func_body_bb;
+  llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
   bool returned{false};
 

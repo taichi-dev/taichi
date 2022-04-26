@@ -409,12 +409,6 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
-      if_stmt->true_mask = nullptr;
-      if_stmt->false_mask = nullptr;
-      modifier.mark_as_modified();
-      return;
-    }
     auto flatten = [&](stmt_vector &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
 

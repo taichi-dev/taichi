@@ -178,6 +178,7 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
+      .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -698,7 +699,10 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(bit_shr)
   DEFINE_EXPRESSION_OP(bit_sar)
   DEFINE_EXPRESSION_OP(bit_not)
+
   DEFINE_EXPRESSION_OP(logic_not)
+  DEFINE_EXPRESSION_OP(logical_and)
+  DEFINE_EXPRESSION_OP(logical_or)
 
   DEFINE_EXPRESSION_OP(add)
   DEFINE_EXPRESSION_OP(sub)
@@ -1066,9 +1070,9 @@ void export_lang(py::module &m) {
 
   m.def("set_relation_dynamic",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
-           SNode *offset) {
-          mesh_ptr.ptr->relations.insert(
-              std::pair(type, mesh::MeshLocalRelation(value, offset)));
+           SNode *patch_offset, SNode *offset) {
+          mesh_ptr.ptr->relations.insert(std::pair(
+              type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
 }
 

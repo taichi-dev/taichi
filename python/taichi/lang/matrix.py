@@ -34,8 +34,10 @@ def _gen_swizzles(cls):
             if len(diff):
                 valid_attribs = tuple(sorted(valid_attribs))
                 pattern = tuple(pattern)
-                raise TaichiSyntaxError(f'vec{instance.n} only has '
-                                        f'attributes={valid_attribs}, got={pattern}')
+                raise TaichiSyntaxError(
+                    f'vec{instance.n} only has '
+                    f'attributes={valid_attribs}, got={pattern}')
+
         return check
 
     for key_group in KEYGROUP_SET:
@@ -54,6 +56,7 @@ def _gen_swizzles(cls):
                     instance[attr_idx] = value
 
                 return property(prop_getter, prop_setter)
+
             prop = gen_property(attr, index, key_group)
             setattr(cls, attr, prop)
 
@@ -77,7 +80,8 @@ def _gen_swizzles(cls):
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
                         raise TaichiCompilationError(
-                            f'value len does not match the swizzle pattern={prop_key}')
+                            f'value len does not match the swizzle pattern={prop_key}'
+                        )
                     checker(instance, pattern)
                     for ch, val in zip(pattern, value):
                         if in_python_scope():
@@ -1288,7 +1292,6 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
-
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1308,7 +1311,6 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
-
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1325,7 +1327,6 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1564,7 +1565,6 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1660,7 +1660,6 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

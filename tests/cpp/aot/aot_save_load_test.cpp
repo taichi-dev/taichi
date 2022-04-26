@@ -104,7 +104,7 @@ using namespace lang;
   aot_builder->dump(".", "");
 }
 
-#ifdef TI_WITH_VULKAN
+#ifdef TI_WITH_VULKANN
 TEST(AotSaveLoad, Vulkan) {
   // Otherwise will segfault on macOS VM,
   // where Vulkan is installed but no devices are present

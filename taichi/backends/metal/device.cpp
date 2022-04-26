@@ -215,11 +215,13 @@ class StreamImpl : public Stream {
     return std::make_unique<CommandListImpl>(std::move(cb), alloc_buf_mapper_);
   }
 
-  void submit(CommandList *cmdlist) override {
+  StreamSemaphore submit(CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
   }
-  void submit_synced(CommandList *cmdlist) override {
+  StreamSemaphore submit_synced(CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
     wait_until_completed(cb);
@@ -338,6 +340,10 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     bm.buffer = itr->second.buffer.get();
     bm.mem = itr->second.buffer_mem.get();
     return bm;
+  }
+
+  void wait_idle() override {
+    
   }
 
  private:

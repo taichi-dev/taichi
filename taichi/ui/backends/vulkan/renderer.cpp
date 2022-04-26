@@ -126,8 +126,6 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
-  app_context_.prog()->synchronize();
-
   auto stream = app_context_.device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
   bool color_clear = true;
@@ -159,11 +157,13 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
+
+  std::vector<StreamSemaphore> wait_semaphores{ app_context_.prog()->flush() };
   if (semaphore) {
-    render_complete_semaphore_ = stream->submit(cmd_list.get(), {semaphore});
-  } else {
-    render_complete_semaphore_ = stream->submit(cmd_list.get(), {});
+    wait_semaphores.push_back(semaphore);
   }
+
+  render_complete_semaphore_ = stream->submit(cmd_list.get(), wait_semaphores);
 }
 
 const AppContext &Renderer::app_context() const {

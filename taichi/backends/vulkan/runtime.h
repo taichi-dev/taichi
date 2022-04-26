@@ -102,6 +102,8 @@ class TI_DLL_EXPORT VkRuntime {
 
   void synchronize();
 
+  StreamSemaphore flush();
+
   Device *get_ti_device() const;
 
   void add_root_buffer(size_t root_buffer_size);

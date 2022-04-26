@@ -156,16 +156,32 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
   return indices;
 }
 
-bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
   auto indices = find_queue_families(device, surface);
+  VkPhysicalDeviceFeatures features{};
+  vkGetPhysicalDeviceFeatures(device, &features);
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device, &properties);
+
+  size_t score = 0;
+
   if (surface != VK_NULL_HANDLE) {
     // this means we need ui
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(device, &features);
-    return indices.is_complete_for_ui();
+    score = size_t(indices.is_complete_for_ui()) * 1000;
   } else {
-    return indices.is_complete();
+    score = size_t(indices.is_complete()) * 1000;
   }
+
+  score += features.wideLines * 100;
+  score +=
+      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) *
+      500;
+  score +=
+      size_t(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) *
+      1000;
+  score += VK_API_VERSION_MINOR(properties.apiVersion) * 100;
+
+  return score;
 }
 
 }  // namespace
@@ -277,6 +293,12 @@ void VulkanDeviceCreator::create_instance() {
     } else if (name == VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) {
       extensions.insert(name);
       ti_device_->set_cap(DeviceCapability::vk_has_physical_features2, true);
+    } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
+      extensions.insert(name);
+    } else if (name == VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME) {
+      extensions.insert(name);
+    } else if (name == VK_EXT_DEBUG_UTILS_EXTENSION_NAME) {
+      extensions.insert(name);
     }
   }
 
@@ -323,6 +345,7 @@ void VulkanDeviceCreator::setup_debug_messenger() {
 
 void VulkanDeviceCreator::create_surface() {
   surface_ = params_.surface_creator(instance_);
+  TI_ASSERT_INFO(surface_, "failed to create window surface!");
 }
 
 void VulkanDeviceCreator::pick_physical_device() {
@@ -348,7 +371,7 @@ void VulkanDeviceCreator::pick_physical_device() {
         (id >= 0) && (id < device_count),
         "TI_VISIBLE_DEVICE={} is not valid, found {} devices available", id,
         device_count);
-    if (is_device_suitable(devices[id], surface_)) {
+    if (get_device_score(devices[id], surface_)) {
       physical_device_ = devices[id];
       has_visible_device = 1;
     }
@@ -356,10 +379,12 @@ void VulkanDeviceCreator::pick_physical_device() {
 
   if (!has_visible_device) {
     // could not find a user defined visible device, use the first one suitable
+    size_t max_score = 0;
     for (const auto &device : devices) {
-      if (is_device_suitable(device, surface_)) {
+      size_t score = get_device_score(device, surface_);
+      if (score > max_score) {
         physical_device_ = device;
-        break;
+        max_score = score;
       }
     }
   }
@@ -410,7 +435,7 @@ void VulkanDeviceCreator::create_logical_device() {
   ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
 
   if (physical_device_properties.apiVersion >= VK_API_VERSION_1_3) {
-    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10600);
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
   } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_2) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
   } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
@@ -572,8 +597,9 @@ void VulkanDeviceCreator::create_logical_device() {
     VkPhysicalDeviceFeatures2KHR features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-#define CHECK_EXTENSION(ext)                                              \
-  std::find(enabled_extensions.begin(), enabled_extensions.end(), ext) != \
+#define CHECK_EXTENSION(ext)                                          \
+  std::find_if(enabled_extensions.begin(), enabled_extensions.end(),  \
+               [=](const char *o) { return strcmp(ext, o) == 0; }) != \
       enabled_extensions.end()
 
 #define CHECK_VERSION(major, minor)        \

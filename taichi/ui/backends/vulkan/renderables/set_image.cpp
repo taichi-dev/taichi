@@ -28,10 +28,24 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
+  // We might not have a current program if GGUI is used in external apps to
+  // load AOT modules
   Program *prog = app_context_->prog();
-  prog->synchronize();
+  if (prog) {
+    prog->synchronize();
+  }
 
   const FieldInfo &img = info.img;
+
+  // Support configuring the internal image based on the data type of the field
+  // info.  We assume that the internal image is 4 channels and allow the user
+  // to configure either a classic RGBA8 (u8) or RGBA32F (f32). The latter is
+  // useful for target that support this texture type as it allows to re-use the
+  // result of a kernel directly without normalizing the value from [0; 1] to
+  // [0; 255]
+  //
+  // @TODO: Make the number of channel configurable?
+  texture_dtype_ = img.dtype;
 
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
@@ -49,8 +63,14 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  DevicePtr img_dev_ptr = get_device_ptr(prog, img.snode);
-  uint64_t img_size = pixels * 4;
+  uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
+
+  // If there is no current program, VBO information should be provided directly
+  // instead of accessing through the current SNode
+  DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
+  if (prog) {
+    img_dev_ptr = get_device_ptr(prog, img.snode);
+  }
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
@@ -93,6 +113,7 @@ void SetImage::init_set_image(AppContext *app_context,
       6,
       sizeof(UniformBufferObject),
       0,
+      false,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
       app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
       TopologyType::Triangles,
@@ -112,11 +133,14 @@ void SetImage::init_set_image(AppContext *app_context,
 }
 
 void SetImage::create_texture() {
-  size_t image_size = width * height * 4;
+  size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
 
   ImageParams params;
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
+  if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
+    params.format = BufferFormat::rgba32f;
+  }
   params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;

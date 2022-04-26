@@ -13,3 +13,7 @@ filterwarnings = [
     "ignore:Operator \"is\" in Taichi scope is deprecated",
     "ignore:Operator \"is not\" in Taichi scope is deprecated"
 ]
+
+[tool.yapf]
+based_on_style = "pep8"
+blank_line_before_nested_class_or_def = false

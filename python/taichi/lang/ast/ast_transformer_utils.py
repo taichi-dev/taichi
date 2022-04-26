@@ -5,6 +5,7 @@ from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
+from taichi.lang import impl
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError,
                                    handle_exception_from_cpp)
@@ -17,7 +18,10 @@ class Builder:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            return method(ctx, node)
+            info = ctx.get_pos_info(node) if isinstance(
+                node, (ast.stmt, ast.expr)) else ""
+            with impl.get_runtime().src_info_guard(info):
+                return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)
@@ -103,6 +107,12 @@ class LoopScopeGuard:
             self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
 
 
+class ReturnStatus(Enum):
+    NoReturn = 0
+    ReturnedVoid = 1
+    ReturnedValue = 2
+
+
 class ASTTransformerContext:
     def __init__(self,
                  excluded_parameters=(),
@@ -138,7 +148,7 @@ class ASTTransformerContext:
         self.raised = False
         self.non_static_control_flow_status = NonStaticControlFlowStatus()
         self.static_scope_status = StaticScopeStatus()
-        self.returned = False
+        self.returned = ReturnStatus.NoReturn
         self.ast_builder = ast_builder
         self.visited_funcdef = False
         self.is_real_function = is_real_function

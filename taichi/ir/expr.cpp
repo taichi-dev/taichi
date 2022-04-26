@@ -6,17 +6,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void Expr::serialize(std::ostream &ss) const {
-  TI_ASSERT(expr);
-  expr->serialize(ss);
-}
-
-std::string Expr::serialize() const {
-  std::stringstream ss;
-  serialize(ss);
-  return ss.str();
-}
-
 void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
 }
@@ -55,13 +44,6 @@ Expr &Expr::operator=(const Expr &o) {
   return *this;
 }
 
-Expr Expr::parent() const {
-  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
-                 "Cannot get snode parent of non-global variables.");
-  return Expr::make<GlobalVariableExpression>(
-      cast<GlobalVariableExpression>()->snode->parent);
-}
-
 SNode *Expr::snode() const {
   TI_ASSERT_INFO(is<GlobalVariableExpression>(),
                  "Cannot get snode of non-global variables.");
@@ -70,10 +52,6 @@ SNode *Expr::snode() const {
 
 Expr Expr::operator!() {
   return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
-}
-
-void Expr::declare(DataType dt) {
-  set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
 }
 
 void Expr::set_grad(const Expr &o) {
@@ -146,10 +124,5 @@ Expr global_new(Expr id_expr, DataType dt) {
   auto ret = Expr(std::make_shared<GlobalVariableExpression>(
       dt, id_expr.cast<IdExpression>()->id));
   return ret;
-}
-
-Expr global_new(DataType dt, std::string name) {
-  auto id_expr = std::make_shared<IdExpression>(name);
-  return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 TLANG_NAMESPACE_END

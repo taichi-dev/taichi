@@ -91,7 +91,7 @@ class TaichiMain:
     @staticmethod
     def _get_friend_links():
         return '\n' \
-               'Docs:   https://docs.taichi.graphics/\n' \
+               'Docs:   https://docs.taichi-lang.org/\n' \
                'GitHub: https://github.com/taichi-dev/taichi/\n' \
                'Forum:  https://forum.taichi.graphics/\n'
 
@@ -536,13 +536,13 @@ class TaichiMain:
     @register
     def format(arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
-        raise RuntimeError('Please run python misc/code_format.py instead')
+        raise RuntimeError('Please run `pre-commit run -a` instead')
 
     @staticmethod
     @register
     def format_all(arguments: list = sys.argv[2:]):
         """Reformat all source files"""
-        raise RuntimeError('Please run python misc/code_format.py instead')
+        raise RuntimeError('Please run `pre-commit run -a` instead')
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):

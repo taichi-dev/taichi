@@ -370,7 +370,7 @@ void print_traceback() {
   fmt::print(
       fg(fmt::color::orange),
       "\nInternal error occurred. Check out this page for possible solutions:\n"
-      "https://docs.taichi.graphics/lang/articles/misc/install\n");
+      "https://docs.taichi-lang.org/lang/articles/install\n");
 }
 
 TI_NAMESPACE_END

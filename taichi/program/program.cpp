@@ -516,7 +516,6 @@ void Program::finalize() {
 #endif
   }
 
-  Identifier::reset_counter();
   Stmt::reset_counter();
   TaskLaunchRecord::reset_counter();
 

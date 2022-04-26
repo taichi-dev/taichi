@@ -313,6 +313,7 @@ class VulkanPipeline : public Pipeline {
     VkPipelineMultisampleStateCreateInfo multisampling{};
     VkPipelineDepthStencilStateCreateInfo depth_stencil{};
     VkPipelineColorBlendStateCreateInfo color_blending{};
+    std::vector<VkPipelineColorBlendAttachmentState> blend_attachments{};
     std::vector<VkDynamicState> dynamic_state_enables = {
         VK_DYNAMIC_STATE_LINE_WIDTH, VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR};

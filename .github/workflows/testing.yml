@@ -57,45 +57,6 @@ jobs:
             echo "::set-output name=run_job::false"
           fi
 
-  check_code_format:
-    name: Check Code Format
-    runs-on: ubuntu-latest
-    needs: check_files
-    # This job will be required to pass before merging to master branch.
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Setup git & clang-format
-        run: |
-          git config user.email "taichigardener@gmail.com"
-          git config user.name "Taichi Gardener"
-          git checkout -b _fake_squash
-          git remote add upstream https://github.com/taichi-dev/taichi.git
-          git fetch upstream master
-          sudo apt install clang-format-10
-
-      - name: Cache PIP
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('requirements_dev.txt') }}
-
-      - name: Install requirements
-        run: |
-          python3 -m pip install --user -r requirements_dev.txt
-
-      - name: Check code format
-        run: |
-          python3 misc/code_format.py
-          git checkout -b _enforced_format
-          git commit -am "enforce code format" || true
-          # exit with 1 if there were differences:
-          git diff _fake_squash _enforced_format --exit-code
-
   check_static_analyzer:
     name: Check Static Analyzer
     runs-on: ubuntu-latest
@@ -103,29 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Pylint
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          python3 -m pip install --user pylint
-          # Make sure pylint doesn't regress
-          pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
-          if [ $? -eq 0 ]
-          then
-            echo "PASSED: pylint is happy"
-            exit 0
-          else
-            echo "FAILED: please run the pylint command above and make sure it passes"
-            exit 1
-          fi
+          submodules: 'recursive'
 
       - name: clang-tidy
         run: |
@@ -134,8 +73,8 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2
-          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 /bin/bash
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /bin/bash
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
           docker exec --user root check_clang_tidy apt install -y clang-tidy-10
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
@@ -145,7 +84,7 @@ jobs:
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
@@ -153,11 +92,11 @@ jobs:
           - os: ubuntu-latest
             python: py39
             with_cc: ON
-            wanted_archs: "cpu,cc"
+            wanted_archs: 'cpu,cc'
           - os: ubuntu-latest
             python: py310
             with_cc: ON
-            wanted_archs: "cpu,cc"
+            wanted_archs: 'cpu,cc'
     runs-on: ${{ matrix.os }}
     permissions:
       packages: read
@@ -165,7 +104,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -182,7 +121,7 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -194,7 +133,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -215,7 +154,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.2.2 /home/dev/unix_test.sh
+          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -234,7 +173,7 @@ jobs:
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
@@ -243,12 +182,12 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            wanted_archs: "cpu"
+            wanted_archs: 'cpu'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -302,13 +241,13 @@ jobs:
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
-    needs: [check_code_format, check_files]
+    needs: check_files
     runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -326,7 +265,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -351,7 +290,7 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
@@ -364,7 +303,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
+          TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
 
       - name: clean docker container
@@ -374,7 +313,7 @@ jobs:
 
   build_and_test_windows:
     name: Build and Test Windows
-    needs: [check_code_format, check_files]
+    needs: check_files
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
@@ -386,7 +325,7 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -421,12 +360,12 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
-          PYTHON: "3.7"
+          PYTHON: '3.7'
           TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
@@ -436,12 +375,12 @@ jobs:
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     runs-on: [self-hosted, m1]
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -472,7 +411,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,vulkan,cpu"
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PY: ${{ matrix.python }}
-          PLATFORM: "m1"
+          PLATFORM: 'm1'
           TI_CI: 1

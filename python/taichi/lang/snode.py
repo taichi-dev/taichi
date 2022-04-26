@@ -11,7 +11,7 @@ class SNode:
     For more information on Taichi's SNode system, please check out
     these references:
 
-    * https://docs.taichi.graphics/lang/articles/advanced/sparse
+    * https://docs.taichi-lang.org/lang/articles/sparse
     * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
 
     Arg:
@@ -236,7 +236,7 @@ class SNode:
         Returns:
             taichi_core.Expr: See above.
         """
-        return _ti_core.global_var_expr_from_snode(self.ptr)
+        return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
 
     @property
     def _name(self):

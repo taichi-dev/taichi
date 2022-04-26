@@ -18,6 +18,17 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
+if(ANDROID)
+    set(TI_WITH_VULKAN ON)
+    set(TI_EXPORT_CORE ON)
+    set(TI_WITH_LLVM OFF)
+    set(TI_WITH_METAL OFF)
+    set(TI_WITH_CUDA OFF)
+    set(TI_WITH_OPENGL OFF)
+    set(TI_WITH_CC OFF)
+    set(TI_WITH_DX11 OFF)
+endif()
+
 if(TI_EMSCRIPTENED)
     set(TI_WITH_LLVM OFF)
     set(TI_WITH_METAL OFF)
@@ -401,12 +412,14 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
-        # Avoid glibc dependencies
-        if (TI_WITH_VULKAN)
-            target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
-        else()
-            # Enforce compatibility with manylinux2014
-            target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
+        if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+            # Avoid glibc dependencies
+            if (TI_WITH_VULKAN)
+                target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f)
+            else()
+                # Enforce compatibility with manylinux2014
+                target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
+            endif()
         endif()
     endif()
 else()

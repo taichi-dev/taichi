@@ -465,9 +465,8 @@ class MCISO_Example(MCISO):
             ret_len = self.march()
             ret = self.r.to_numpy()[:ret_len] / self.N
             if self.dim == 2:
-                #gui.set_image(ti.imresize(self.m, *gui.res))
                 self.compute_grad()
-                gui.set_image(ti.imresize(self.g, *gui.res) * 0.5 + 0.5)
+                gui.set_image(ti.tools.imresize(self.g, *gui.res) * 0.5 + 0.5)
                 gui.lines(ret[:, 0], ret[:, 1], color=0xff66cc, radius=1.5)
             else:
                 gui.triangles(ret[:, 0, 0:2],
@@ -490,7 +489,7 @@ class MCISO_Example(MCISO):
                          (0, 1))
                 if gui.is_pressed(gui.SPACE):
                     num = ret.shape[0]
-                    writer = ti.PLYWriter(num_vertices=num * 3, num_faces=num)
+                    writer = ti.tools.PLYWriter(num_vertices=num * 3, num_faces=num)
                     vertices = ret.reshape(num * 3, 3) * 2 - 1
                     writer.add_vertex_pos(vertices[:, 0], vertices[:, 1],
                                           vertices[:, 2])

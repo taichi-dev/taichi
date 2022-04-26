@@ -39,8 +39,8 @@ def verify_image(window, image_name, tolerence=0.1):
             pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
         actual_name = get_temp_png()
         window.write_image(actual_name)
-        ground_truth_np = ti.imread(ground_truth_name)
-        actual_np = ti.imread(actual_name)
+        ground_truth_np = ti.tools.imread(ground_truth_name)
+        actual_np = ti.tools.imread(actual_name)
         assert len(ground_truth_np.shape) == len(actual_np.shape)
         for i in range(len(ground_truth_np.shape)):
             assert ground_truth_np.shape[i] == actual_np.shape[i]
@@ -290,3 +290,9 @@ def test_imgui():
     render()
     verify_image(window, 'test_imgui')
     window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_exit_without_showing():
+    window = ti.ui.Window("Taichi", (256, 256), show_window=False)

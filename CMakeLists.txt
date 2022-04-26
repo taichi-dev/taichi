@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.12)
 project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)
-    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/contribution/dev_install for more details.")
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/lang/articles/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
     set(TI_VERSION_MINOR 0)
     set(TI_VERSION_PATCH 0)
@@ -128,7 +128,7 @@ endmacro()
 
 if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "13")
+  set(CLANG_HIGHEST_VERSION "12")
 else()
   set(CLANG_HIGHEST_VERSION "11")
 endif()
@@ -163,6 +163,10 @@ configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/vers
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
+
+if(ANDROID)
+    set(TI_EXPORT_CORE ON)
+endif()
 
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)

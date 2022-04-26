@@ -83,21 +83,14 @@ class Expr {
 
   Expr operator[](const ExprGroup &indices) const;
 
-  std::string serialize() const;
-  void serialize(std::ostream &ss) const;
-
   Expr operator!();
 
   template <typename T, typename... Args>
-  static Expr make(Args &&... args) {
+  static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
   }
 
-  Expr parent() const;
-
   SNode *snode() const;
-
-  void declare(DataType dt);
 
   // traceback for type checking error message
   void set_tb(const std::string &tb);
@@ -158,6 +151,4 @@ Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
 Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
 
 Expr global_new(Expr id_expr, DataType dt);
-
-Expr global_new(DataType dt, std::string name = "");
 TLANG_NAMESPACE_END

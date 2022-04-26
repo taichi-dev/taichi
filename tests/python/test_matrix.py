@@ -166,7 +166,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 @test_utils.test()
 def test_matrix_non_constant_index_numpy():
     @ti.kernel
-    def func1(a: ti.any_arr(element_dim=2)):
+    def func1(a: ti.types.ndarray(element_dim=2)):
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -179,7 +179,7 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.any_arr(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j
@@ -524,3 +524,45 @@ def test_local_vector_initialized_in_a_loop():
                 assert p[i] == c * (i + 1)
 
     foo()
+
+
+@test_utils.test(debug=True)
+def test_vector_dtype():
+    @ti.kernel
+    def foo():
+        a = ti.Vector([1, 2, 3], ti.f32)
+        a /= 2
+        assert all(abs(a - (0.5, 1., 1.5)) < 1e-6)
+        b = ti.Vector([1.5, 2.5, 3.5], ti.i32)
+        assert all(b == (1, 2, 3))
+
+    foo()
+
+
+@test_utils.test(debug=True)
+def test_matrix_dtype():
+    @ti.kernel
+    def foo():
+        a = ti.Vector([[1, 2], [3, 4]], ti.f32)
+        a /= 2
+        assert all(abs(a - ((0.5, 1.), (1.5, 2.))) < 1e-6)
+        b = ti.Vector([[1.5, 2.5], [3.5, 4.5]], ti.i32)
+        assert all(b == ((1, 2), (3, 4)))
+
+    foo()
+
+
+inplace_operation_types = [
+    operator.iadd, operator.isub, operator.imul, operator.ifloordiv,
+    operator.imod, operator.ilshift, operator.irshift, operator.ior,
+    operator.ixor, operator.iand
+]
+
+
+@test_utils.test()
+def test_python_scope_inplace_operator():
+    for ops in inplace_operation_types:
+        a, b = test_matrix_arrays[:2]
+        m1, m2 = ti.Matrix(a), ti.Matrix(b)
+        m1 = ops(m1, m2)
+        assert np.allclose(m1.to_numpy(), ops(a, b))

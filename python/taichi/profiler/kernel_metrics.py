@@ -44,7 +44,7 @@ class CuptiMetric:
         >>> ti.profiler.print_kernel_profiler_info('trace')
 
     Note:
-        For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+        For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/lang/articles/profiler#advanced-mode.
     """
     def __init__(self,
                  name='',
@@ -216,6 +216,14 @@ predefined_cupti_metrics = {
 
 
 def get_predefined_cupti_metrics(name=''):
+    """Returns the specified cupti metric.
+
+    Accepted arguments are 'global_access', 'shared_access', 'atomic_access',
+    'cache_hit_rate', 'device_utilization'.
+
+    Args:
+        name (str): cupti metri name.
+    """
     if name not in predefined_cupti_metrics:
         _ti_core.warn("Valid Taichi predefined metrics list (str):")
         for key in predefined_cupti_metrics:
@@ -226,5 +234,8 @@ def get_predefined_cupti_metrics(name=''):
 
 # Default metrics list
 default_cupti_metrics = [dram_bytes_sum]
+"""The metrics list, each is an instace of the :class:`~taichi.profiler.CuptiMetric`.
+Default to `dram_bytes_sum`.
+"""
 
 __all__ = ['CuptiMetric', 'get_predefined_cupti_metrics']

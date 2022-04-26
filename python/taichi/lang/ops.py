@@ -2,7 +2,6 @@ import builtins
 import functools
 import math
 import operator as _bt_ops_mod  # bt for builtin
-import traceback
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
@@ -13,14 +12,7 @@ unary_ops = []
 
 
 def stack_info():
-    s = traceback.extract_stack()[3:-1]
-    for i, l in enumerate(s):
-        if 'taichi_ast_generator' in l:
-            s = s[i + 1:]
-            break
-    raw = ''.join(traceback.format_list(s))
-    # remove the confusing last line
-    return '\n'.join(raw.split('\n')[:-5]) + '\n'
+    return impl.get_runtime().get_current_src_info()
 
 
 def is_taichi_expr(a):
@@ -1083,9 +1075,36 @@ def bit_shr(x1, x2):
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, x1, x2)
 
 
-# We don't have logic_and/or instructions yet:
-logical_or = bit_or
-logical_and = bit_and
+@binary
+def logical_and(a, b):
+    """Compute logical_and
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
+
+    Returns:
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-and RHS (with short-circuit semantics)
+
+    """
+    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b,
+                             a, b)
+
+
+@binary
+def logical_or(a, b):
+    """Compute logical_or
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
+
+    Returns:
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-or RHS (with short-circuit semantics)
+
+    """
+    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a,
+                             b)
 
 
 @ternary

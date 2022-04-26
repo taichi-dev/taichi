@@ -17,7 +17,7 @@ namespace spirv {
 template <bool stop, std::size_t I, typename F>
 struct for_each_dispatcher {
   template <typename T, typename... Args>
-  static void run(const F &f, T &&value, Args &&... args) {  // NOLINT(*)
+  static void run(const F &f, T &&value, Args &&...args) {  // NOLINT(*)
     f(I, std::forward<T>(value));
     for_each_dispatcher<sizeof...(Args) == 0, (I + 1), F>::run(
         f, std::forward<Args>(args)...);
@@ -31,7 +31,7 @@ struct for_each_dispatcher<true, I, F> {
 };
 
 template <typename F, typename... Args>
-inline void for_each(const F &f, Args &&... args) {  // NOLINT(*)
+inline void for_each(const F &f, Args &&...args) {  // NOLINT(*)
   for_each_dispatcher<sizeof...(Args) == 0, 0, F>::run(
       f, std::forward<Args>(args)...);
 }
@@ -165,7 +165,7 @@ class InstrBuilder {
   }
 
   template <typename... Args>
-  InstrBuilder &add_seq(Args &&... args) {
+  InstrBuilder &add_seq(Args &&...args) {
     AddSeqHelper helper;
     helper.builder = this;
     for_each(helper, std::forward<Args>(args)...);
@@ -207,29 +207,29 @@ class IRBuilder {
   }
 
   template <typename... Args>
-  void debug(spv::Op op, Args &&... args) {
+  void debug(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
   }
 
   template <typename... Args>
-  void execution_mode(Value func, Args &&... args) {
+  void execution_mode(Value func, Args &&...args) {
     ib_.begin(spv::OpExecutionMode)
         .add_seq(func, std::forward<Args>(args)...)
         .commit(&exec_mode_);
   }
 
   template <typename... Args>
-  void decorate(spv::Op op, Args &&... args) {
+  void decorate(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&decorate_);
   }
 
   template <typename... Args>
-  void declare_global(spv::Op op, Args &&... args) {
+  void declare_global(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&global_);
   }
 
   template <typename... Args>
-  Instr make_inst(spv::Op op, Args &&... args) {
+  Instr make_inst(spv::Op op, Args &&...args) {
     return ib_.begin(op)
         .add_seq(std::forward<Args>(args)...)
         .commit(&function_);
@@ -267,7 +267,7 @@ class IRBuilder {
 
   // Make a new SSA value
   template <typename... Args>
-  Value make_value(spv::Op op, const SType &out_type, Args &&... args) {
+  Value make_value(spv::Op op, const SType &out_type, Args &&...args) {
     Value val = new_value(out_type, ValueKind::kNormal);
     make_inst(op, out_type, val, std::forward<Args>(args)...);
     if (out_type.flag == TypeKind::kPtr) {
@@ -401,6 +401,7 @@ class IRBuilder {
   Value get_num_work_groups(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
   Value get_subgroup_invocation_id();
+  Value get_subgroup_size();
 
   // Expressions
   Value add(Value a, Value b);
@@ -421,7 +422,7 @@ class IRBuilder {
 
   // Create a GLSL450 call
   template <typename... Args>
-  Value call_glsl450(const SType &ret_type, uint32_t inst_id, Args &&... args) {
+  Value call_glsl450(const SType &ret_type, uint32_t inst_id, Args &&...args) {
     Value val = new_value(ret_type, ValueKind::kNormal);
     ib_.begin(spv::OpExtInst)
         .add_seq(ret_type, val, ext_glsl450_, inst_id)
@@ -540,6 +541,7 @@ class IRBuilder {
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
   Value subgroup_local_invocation_id_;
+  Value subgroup_size_;
 
   // Random function and variables
   bool init_rand_{false};

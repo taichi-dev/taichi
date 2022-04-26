@@ -21,10 +21,10 @@ def kernel_executor(repeat, func, *args):
     # compile & warmup
     for i in range(repeat):
         func(*args)
-    ti.clear_kernel_profile_info()
+    ti.profiler.clear_kernel_profiler_info()
     for i in range(repeat):
         func(*args)
-    return ti.kernel_profiler_total_time() * 1000 / repeat  #ms
+    return ti.profiler.get_kernel_profiler_total_time() * 1000 / repeat  #ms
 
 
 class MetricType(BenchmarkItem):

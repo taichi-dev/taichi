@@ -111,7 +111,7 @@ def test_ndarray_1d():
     n = 4
 
     @ti.kernel
-    def run(x: ti.any_arr(), y: ti.any_arr()):
+    def run(x: ti.types.ndarray(), y: ti.types.ndarray()):
         for i in range(n):
             x[i] += i + y[i]
 
@@ -132,7 +132,7 @@ def _test_ndarray_2d():
     m = 7
 
     @ti.kernel
-    def run(x: ti.any_arr(), y: ti.any_arr()):
+    def run(x: ti.types.ndarray(), y: ti.types.ndarray()):
         for i in range(n):
             for j in range(m):
                 x[i, j] += i + j + y[i, j]
@@ -383,7 +383,7 @@ def test_matrix_ndarray_python_scope(layout):
 
 def _test_matrix_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr()):
+    def func(a: ti.types.ndarray()):
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -405,7 +405,7 @@ def test_matrix_ndarray_taichi_scope(layout):
 
 def _test_matrix_ndarray_taichi_scope_struct_for(layout):
     @ti.kernel
-    def func(a: ti.any_arr()):
+    def func(a: ti.types.ndarray()):
         for i in a:
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -443,7 +443,7 @@ def test_vector_ndarray_python_scope(layout):
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr()):
+    def func(a: ti.types.ndarray()):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -462,7 +462,7 @@ def test_vector_ndarray_taichi_scope(layout):
 
 def _test_compiled_functions():
     @ti.kernel
-    def func(a: ti.any_arr(element_dim=1)):
+    def func(a: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -491,7 +491,7 @@ def test_compiled_functions():
 
 def _test_arg_not_match():
     @ti.kernel
-    def func1(a: ti.any_arr(element_dim=1)):
+    def func1(a: ti.types.ndarray(element_dim=1)):
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
@@ -503,7 +503,7 @@ def _test_arg_not_match():
         func1(x)
 
     @ti.kernel
-    def func2(a: ti.any_arr(element_dim=2)):
+    def func2(a: ti.types.ndarray(element_dim=2)):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -515,7 +515,7 @@ def _test_arg_not_match():
         func2(x)
 
     @ti.kernel
-    def func3(a: ti.any_arr(layout=ti.Layout.AOS)):
+    def func3(a: ti.types.ndarray(layout=ti.Layout.AOS)):
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7), layout=ti.Layout.SOA)
@@ -527,7 +527,7 @@ def _test_arg_not_match():
         func3(x)
 
     @ti.kernel
-    def func4(a: ti.any_arr(layout=ti.Layout.SOA)):
+    def func4(a: ti.types.ndarray(layout=ti.Layout.SOA)):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -539,7 +539,7 @@ def _test_arg_not_match():
         func4(x)
 
     @ti.kernel
-    def func5(a: ti.any_arr(element_shape=(2, 3))):
+    def func5(a: ti.types.ndarray(element_shape=(2, 3))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -555,11 +555,11 @@ def _test_arg_not_match():
             match=r'Both element_shape and element_dim are specified'):
 
         @ti.kernel
-        def func6(a: ti.any_arr(element_dim=1, element_shape=(2, 3))):
+        def func6(a: ti.types.ndarray(element_dim=1, element_shape=(2, 3))):
             pass
 
     @ti.kernel
-    def func7(a: ti.any_arr(field_dim=2)):
+    def func7(a: ti.types.ndarray(field_dim=2)):
         pass
 
     x = ti.ndarray(ti.i32, shape=(3, ))
@@ -597,7 +597,7 @@ def test_different_shape():
     x = ti.ndarray(dtype=ti.f32, shape=(n1, n1))
 
     @ti.kernel
-    def init(d: ti.i32, arr: ti.any_arr()):
+    def init(d: ti.i32, arr: ti.types.ndarray()):
         for i, j in arr:
             arr[i, j] = d
 

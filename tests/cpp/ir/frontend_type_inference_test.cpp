@@ -49,6 +49,8 @@ TEST(FrontendTypeInference, BinaryOp) {
 }
 
 TEST(FrontendTypeInference, UnaryOp) {
+  auto prog = std::make_unique<Program>(Arch::x64);
+  prog->config.default_fp = PrimitiveType::f64;
   auto const_i16 = value<int16>(-(1 << 10));
   const_i16->type_check(nullptr);
   EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
@@ -58,6 +60,9 @@ TEST(FrontendTypeInference, UnaryOp) {
   auto bit_not_i16 = ~const_i16;
   bit_not_i16->type_check(nullptr);
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
+  auto log_f64 = expr_log(const_i16);
+  log_f64->type_check(&prog->config);
+  EXPECT_EQ(log_f64->ret_type, PrimitiveType::f64);
 }
 
 TEST(FrontendTypeInference, TernaryOp) {
@@ -78,7 +83,8 @@ TEST(FrontendTypeInference, TernaryOp) {
 TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   auto snode = std::make_unique<SNode>(0, SNodeType::root);
   snode->dt = PrimitiveType::u8;
-  auto global_var = Expr::make<GlobalVariableExpression>(snode.get());
+  auto global_var =
+      Expr::make<GlobalVariableExpression>(snode.get(), Identifier(0));
   auto index = value<float32>(2);
   index->type_check(nullptr);
   auto global_ptr = global_var[ExprGroup(index)];
@@ -100,9 +106,10 @@ TEST(FrontendTypeInference, TensorElement) {
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
+  auto ast_builder = prog->current_ast_builder();
   const std::vector<int> shape{3};
-  auto var = Expr(std::make_shared<IdExpression>());
-  prog->current_ast_builder()->insert(std::make_unique<FrontendAllocaStmt>(
+  auto var = Expr(std::make_shared<IdExpression>(ast_builder->get_next_id()));
+  ast_builder->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       PrimitiveType::u32));
   var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;
@@ -167,8 +174,8 @@ TEST(FrontendTypeInference, LoopUnique) {
 }
 
 TEST(FrontendTypeInference, InternalFuncCall) {
-  auto internal_func_call =
-      Expr::make<InternalFuncCallExpression>("do_nothing", std::vector<Expr>{});
+  auto internal_func_call = Expr::make<InternalFuncCallExpression>(
+      "do_nothing", std::vector<Expr>{}, /*with_runtime_context=*/true);
   internal_func_call->type_check(nullptr);
   EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }

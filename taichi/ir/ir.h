@@ -78,14 +78,13 @@ class MemoryAccessOptions {
 
 class Identifier {
  public:
-  static int id_counter;
   std::string name_;
+  int id{0};
 
-  int id;
+  // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(const std::string &name_ = "") : name_(name_) {
-    id = id_counter++;
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -100,10 +99,6 @@ class Identifier {
 
   bool operator==(const Identifier &o) const {
     return id == o.id;
-  }
-
-  static void reset_counter() {
-    id_counter = 0;
   }
 };
 
@@ -135,7 +130,7 @@ class VecStatement {
   Stmt *push_back(pStmt &&stmt);
 
   template <typename T, typename... Args>
-  T *push_back(Args &&... args) {
+  T *push_back(Args &&...args) {
     auto up = std::make_unique<T>(std::forward<Args>(args)...);
     auto ptr = up.get();
     stmts.push_back(std::move(up));
@@ -190,6 +185,7 @@ class IRVisitor {
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
+#undef DEFINE_VISIT
 };
 
 struct CompileConfig;
@@ -462,7 +458,7 @@ class StmtFieldManager {
   void operator()(const char *key, T &&value);
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &&t, Args &&... rest) {
+  void operator()(const char *key_, T &&t, Args &&...rest) {
     std::string key(key_);
     size_t pos = key.find(',');
     std::string first_name = key.substr(0, pos);
@@ -576,12 +572,12 @@ class Stmt : public IRNode {
   }
 
   template <typename T, typename... Args>
-  static std::unique_ptr<T> make_typed(Args &&... args) {
+  static std::unique_ptr<T> make_typed(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  static pStmt make(Args &&... args) {
+  static pStmt make(Args &&...args) {
     return make_typed<T>(std::forward<Args>(args)...);
   }
 
@@ -607,7 +603,6 @@ class Block : public IRNode {
   Stmt *parent_stmt{nullptr};
   stmt_vector statements;
   stmt_vector trash_bin;
-  Stmt *mask_var{nullptr};
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
@@ -615,7 +610,6 @@ class Block : public IRNode {
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
   Block() {
-    mask_var = nullptr;
     parent_stmt = nullptr;
     kernel = nullptr;
   }
@@ -652,7 +646,6 @@ class Block : public IRNode {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
-  Stmt *mask();
   IRNode *get_parent() const override;
 
   Stmt *back() const {
@@ -660,7 +653,7 @@ class Block : public IRNode {
   }
 
   template <typename T, typename... Args>
-  Stmt *push_back(Args &&... args) {
+  Stmt *push_back(Args &&...args) {
     auto stmt = std::make_unique<T>(std::forward<Args>(args)...);
     stmt->parent = this;
     statements.emplace_back(std::move(stmt));

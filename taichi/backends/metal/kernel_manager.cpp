@@ -531,6 +531,12 @@ class HostMetalCtxBlitter {
   std::string kernel_name_;
 };
 
+struct DevAllocWithInternals {
+  DeviceAllocation handle;
+  BufferMemoryView *mem{nullptr};
+  MTLBuffer *buffer{nullptr};
+};
+
 }  // namespace
 
 class KernelManager::Impl {
@@ -562,16 +568,11 @@ class KernelManager::Impl {
       devalloc_mapper_ = make_res.mapper;
     }
 
-    global_tmps_mem_ = std::make_unique<BufferMemoryView>(
-        taichi_global_tmp_buffer_size, mem_pool_);
+    global_tmps_idevalloc_ = make_idevalloc(taichi_global_tmp_buffer_size);
 
     ActionRecorder::get_instance().record(
         "allocate_global_tmp_buffer",
         {ActionArg("size_in_bytes", (int64)taichi_global_tmp_buffer_size)});
-
-    global_tmps_buffer_ = new_mtl_buffer_no_copy(
-        device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
-    TI_ASSERT(global_tmps_buffer_ != nullptr);
 
     const size_t mem_pool_bytes =
         (config_->device_memory_GB * 1024 * 1024 * 1024ULL);
@@ -608,23 +609,26 @@ class KernelManager::Impl {
     clear_print_assert_buffer();
   }
 
+  ~Impl() {
+    for (auto &rb : root_buffers_) {
+      rhi_device_->dealloc_memory(rb.idevalloc.handle);
+    }
+    rhi_device_->dealloc_memory(global_tmps_idevalloc_.handle);
+  }
+
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
     rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
-      rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
-                                                     mem_pool_);
-      rtbuf.buffer = new_mtl_buffer_no_copy(device_.get(), rtbuf.mem->ptr(),
-                                            rtbuf.mem->size());
-
-      TI_ASSERT(rtbuf.buffer != nullptr);
-      buffer_meta_data_.root_buffer_size += rtbuf.mem->size();
+      rtbuf.idevalloc = make_idevalloc(compiled_tree.root_size);
+      const auto buf_sz = rtbuf.idevalloc.mem->size();
+      buffer_meta_data_.root_buffer_size += buf_sz;
       TI_DEBUG("Metal root={} buffer_size={} bytes", compiled_tree.root_id,
-               rtbuf.mem->size());
+               buf_sz);
       ActionRecorder::get_instance().record(
           "allocate_root_buffer",
           {ActionArg("root_id={}", (int64)compiled_tree.root_id),
-           ActionArg("size_in_bytes", (int64)rtbuf.mem->size())});
+           ActionArg("size_in_bytes", (int64)buf_sz)});
     }
     init_snode_tree_sparse_runtime(compiled_tree);
 
@@ -671,9 +675,10 @@ class KernelManager::Impl {
 
     InputBuffersMap input_buffers;
     for (auto &rb : root_buffers_) {
-      input_buffers[rb.desc] = rb.buffer.get();
+      input_buffers[rb.desc] = rb.idevalloc.buffer;
     }
-    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] =
+        global_tmps_idevalloc_.buffer;
     input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
     input_buffers[BufferDescriptor::print()] = print_buffer_.get();
 
@@ -1095,14 +1100,29 @@ class KernelManager::Impl {
 
   template <typename T>
   inline T load_global_tmp(int offset) const {
-    return *reinterpret_cast<const T *>((const char *)global_tmps_mem_->ptr() +
-                                        offset);
+    return *reinterpret_cast<const T *>(
+        (const char *)global_tmps_idevalloc_.mem->ptr() + offset);
+  }
+
+  DevAllocWithInternals make_idevalloc(size_t size) {
+    Device::AllocParams params;
+    // host_read|write honestly don't matter at this point, because the Metal
+    // backend only uses .managed mode.
+    params.host_read = false;
+    params.host_write = false;
+    params.size = size;
+    params.usage = AllocUsage::Storage;
+    DevAllocWithInternals res;
+    res.handle = rhi_device_->allocate_memory(params);
+    auto bm = devalloc_mapper_->find(res.handle);
+    res.buffer = bm.buffer;
+    res.mem = bm.mem;
+    return res;
   }
 
   struct SNodesRootBuffer {
     BufferDescriptor desc;
-    std::unique_ptr<BufferMemoryView> mem{nullptr};
-    nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
+    DevAllocWithInternals idevalloc;
   };
 
   CompileConfig *const config_;
@@ -1121,8 +1141,7 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
   std::size_t command_buffer_id_{0};
   std::vector<SNodesRootBuffer> root_buffers_;
-  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
+  DevAllocWithInternals global_tmps_idevalloc_;
   std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> runtime_buffer_{nullptr};
   int last_snode_id_used_in_runtime_{-1};

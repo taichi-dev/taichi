@@ -77,6 +77,18 @@ def make_absolute(f, directory):
     return os.path.normpath(os.path.join(directory, f))
 
 
+def cmake_configure(source_path='.'):
+    import shlex
+
+    from skbuild.cmaker import CMaker
+    from skbuild.constants import CMAKE_BUILD_DIR
+
+    cmaker = CMaker()
+    cmake_args = shlex.split(os.getenv('CI_SETUP_CMAKE_ARGS', ''))
+    cmaker.configure(cmake_args)
+    return CMAKE_BUILD_DIR()
+
+
 def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
                         header_filter, extra_arg, extra_arg_before, quiet,
                         config):
@@ -265,8 +277,7 @@ def main():
     if args.build_path is not None:
         build_path = args.build_path
     else:
-        # Find our database
-        build_path = find_compilation_database(db_path)
+        build_path = cmake_configure('.')
 
     try:
         invocation = [args.clang_tidy_binary, '-list-checks']

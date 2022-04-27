@@ -10,6 +10,7 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${rtm_arch}")
+    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
 endfunction()
 
 # Build llvm-runtime for host arch and cuda (if available)

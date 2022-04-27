@@ -14,3 +14,6 @@ twine
 wheel
 astunparse
 pre-commit
+scikit-build
+numpy
+ninja; platform_system != 'Windows'

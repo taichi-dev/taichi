@@ -16,6 +16,9 @@ option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 # projects.
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+# Suppress warnings from submodules introduced by the above symbol visibility change
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(ANDROID)
@@ -140,10 +143,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
-  "taichi/backends/vulkan/runtime.h"
-  "taichi/backends/vulkan/runtime.cpp"
-)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -198,7 +197,7 @@ if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_REQUIRED_SOURCE})
+
 
 if (TI_WITH_DX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
@@ -389,7 +388,11 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
+
+    add_subdirectory(taichi/runtime/vulkan)
+    target_link_libraries(${CORE_LIBRARY_NAME} vulkan_runtime)
 endif ()
+
 
 # Optional dependencies
 

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "taichi/backends/vulkan/aot_utils.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
 #include "taichi/aot/module_loader.h"

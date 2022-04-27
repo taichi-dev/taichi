@@ -516,9 +516,7 @@ class VulkanStream : public Stream {
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
 };
 
-class VulkanDevice : public GraphicsDevice {
-  friend VulkanSurface;
-
+class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     VkInstance instance;
@@ -620,6 +618,8 @@ class VulkanDevice : public GraphicsDevice {
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
  private:
+  friend VulkanSurface;
+
   void create_vma_allocator();
   void new_descriptor_pool();
 

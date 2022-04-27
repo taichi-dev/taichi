@@ -153,8 +153,9 @@ Additionally, the last atomic add to the global memory `s[None]` is optimized us
 CUDA's warp-level intrinsics, further reducing the number of required atomic adds.
 
 Currently, Taichi supports TLS optimization for these reduction operators: `add`,
-`sub`, `min` and `max`. [Here](https://github.com/taichi-dev/taichi/pull/2956) is
-a benchmark comparison when running a global max reduction on a 1-D Taichi field
+`sub`, `min` and `max` on **0D** scalar/vector/matrix `ti.field`s. It is not yet
+supported on `ti.ndarray`s. [Here](https://github.com/taichi-dev/taichi/pull/2956)
+is a benchmark comparison when running a global max reduction on a 1-D Taichi field
 of 8M floats on an Nvidia GeForce RTX 3090 card:
 
 * TLS disabled: 5.2 x 1e3 us

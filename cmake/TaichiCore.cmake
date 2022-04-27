@@ -19,6 +19,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # Suppress warnings from submodules introduced by the above symbol visibility change
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(ANDROID)
     set(TI_WITH_VULKAN ON)
@@ -386,6 +387,9 @@ if (TI_WITH_VULKAN)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
+        if (EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
+            install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
+        endif()
     endif()
 
     add_subdirectory(taichi/runtime/vulkan)
@@ -456,7 +460,7 @@ if(NOT TI_EMSCRIPTENED)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
-        add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+        pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} ${TAICHI_PYBIND_SOURCE})
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()
@@ -478,6 +482,10 @@ if(NOT TI_EMSCRIPTENED)
         set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                 "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
     endif ()
+
+    install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
+            RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
+            LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
 endif()
 
 if(TI_EMSCRIPTENED)
@@ -505,4 +513,9 @@ else()
 endif()
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
 
+endif()
+
+if (NOT APPLE)
+    install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

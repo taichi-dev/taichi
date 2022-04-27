@@ -205,7 +205,12 @@ class Field:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape)
+        if len(key) != len(self.shape):
+            raise ValueError(
+                "Slicing an array or matrix from ti.field is not supported so far."
+                "The best you can achieve is to index a single element from ti.field"
+            )
+
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
     def _initialize_host_accessors(self):
@@ -289,7 +294,16 @@ class ScalarField(Field):
     @python_scope
     def __getitem__(self, key):
         self._initialize_host_accessors()
-        return self.host_accessors[0].getter(*self._pad_key(key))
+        # Check for potential slicing behaviour
+        # for instance: x[0, :]
+        padded_key = self._pad_key(key)
+        for key in padded_key:
+            if not isinstance(key, int):
+                raise TypeError(
+                    f"Detected ilegal element of type: {type(key)}. "
+                    f"Please be aware that slicing a ti.field is not supported so far."
+                )
+        return self.host_accessors[0].getter(*padded_key)
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization

@@ -49,7 +49,6 @@ else ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -157,6 +156,7 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
+  install(FILES "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
 endforeach()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)

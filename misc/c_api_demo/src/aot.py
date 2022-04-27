@@ -6,7 +6,7 @@ x = ti.ndarray(ti.i32, shape=(4, 4))
 
 
 @ti.kernel
-def fill(x: ti.types.any_arr(), base: int):
+def fill(x: ti.types.ndarray(), base: int):
     for i, j in x:
         x[i, j] = i * base + j
 
@@ -18,7 +18,7 @@ def run():
 
 def aot():
     m = ti.aot.Module(ti.vulkan)
-    m.add_kernel(fill, (x, ))
+    m.add_kernel(fill, template_args={'x': x})
     m.save('./generated', 'demo')
 
 

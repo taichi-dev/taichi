@@ -28,7 +28,44 @@ One feasible solution is `field.from_numpy(ti.tools.imread('filename.png'))`.
 
 ### Can Taichi interact with **other Python packages** such as `matplotlib`?
 
-Yes, Taichi supports various popular Python packages. Please check out [Interacting with other Python packages](/#interacting-with-other-python-packages).
+Yes, Taichi supports various popular Python packages. The following are some examples:
+
+#### Python-scope data access
+
+Everything outside Taichi-scopes (`ti.func` and `ti.kernel`) is simply Python code. In Python-scopes, you can access Taichi field elements using plain indexing syntax. For example, to access a single pixel of the rendered image in Python-scope, you can simply use:
+
+```python
+import taichi as ti
+pixels = ti.field(ti.f32, (1024, 512))
+pixels[42, 11] = 0.7  # store data into pixels
+print(pixels[42, 11]) # prints 0.7
+```
+
+### Sharing data with other packages
+
+Taichi provides helper functions such as `from_numpy` and `to_numpy` to transfer data between Taichi fields and NumPy arrays, so that you can also use your favorite Python packages (e.g., `numpy`, `pytorch`, `matplotlib`) together with Taichi as below:
+
+```python
+import taichi as ti
+pixels = ti.field(ti.f32, (1024, 512))
+import numpy as np
+arr = np.random.rand(1024, 512)
+pixels.from_numpy(arr)   # load numpy data into taichi fields
+import matplotlib.pyplot as plt
+arr = pixels.to_numpy()  # store taichi data into numpy arrays
+plt.imshow(arr)
+plt.show()
+import matplotlib.cm as cm
+cmap = cm.get_cmap('magma')
+gui = ti.GUI('Color map')
+while gui.running:
+    render_pixels()
+    arr = pixels.to_numpy()
+    gui.set_image(cmap(arr))
+    gui.show()
+```
+
+See [Interacting with external arrays](../basic/external.md#interacting-with-external-arrays) for more details.
 
 ### How do I declare a field with a **dynamic length**?
 

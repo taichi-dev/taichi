@@ -16,7 +16,12 @@ export TI_IN_DOCKER=$(check_in_docker)
 
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate "$PY"
+    conda init bash
+    if { ! conda env list | grep "py"$PY; } > /dev/null 2>&1; then
+        conda create -n "py"$PY python=$PY
+    fi
+    conda activate "py"$PY
+    python3 -m pip install "torch; python_version < '3.10'"
 fi
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then

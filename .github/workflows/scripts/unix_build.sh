@@ -43,7 +43,12 @@ setup_sccache() {
 setup_python() {
     if [[ "$IN_DOCKER" == "true" ]]; then
         source $HOME/miniconda/etc/profile.d/conda.sh
-        conda activate "$PY"
+        conda init bash
+        if { ! conda env list | grep "py"$PY; } > /dev/null 2>&1; then
+            conda create -n "py"$PY python=$PY
+        fi
+        conda activate "py"$PY
+        python3 -m pip install "torch; python_version < '3.10'"
     fi
     python3 -m pip uninstall taichi taichi-nightly -y
     python3 -m pip install -r requirements_dev.txt

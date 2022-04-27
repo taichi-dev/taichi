@@ -90,11 +90,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python: py39
+            python: 3.9
             with_cc: ON
             wanted_archs: 'cpu,cc'
           - os: ubuntu-latest
-            python: py310
+            python: 3.10
             with_cc: ON
             wanted_archs: 'cpu,cc'
     runs-on: ${{ matrix.os }}
@@ -277,7 +277,7 @@ jobs:
           docker cp taichi_build:/home/dev/taichi/dist shared/dist
           docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
-          PY: py38
+          PY: 3.8
           GPU_BUILD: ON
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
@@ -300,7 +300,7 @@ jobs:
           docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
         env:
-          PY: py38
+          PY: 3.8
           GPU_TEST: ON
           DISPLAY: :1
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'

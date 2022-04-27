@@ -46,16 +46,16 @@ RUN apt-get update && \
 
 # Install the latest version of CMAKE v3.20.5 from source
 WORKDIR /
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz
-RUN tar xf cmake-3.20.5-linux-x86_64.tar.gz && \
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz && \
+    tar xf cmake-3.20.5-linux-x86_64.tar.gz && \
     rm cmake-3.20.5-linux-x86_64.tar.gz
 ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
 
 # Intall LLVM 10
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
-RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip
-RUN unzip taichi-llvm-10.0.0-linux.zip && \
+RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip && \
+    unzip taichi-llvm-10.0.0-linux.zip && \
     rm taichi-llvm-10.0.0-linux.zip
 ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
 # Use Clang as the default compiler
@@ -67,8 +67,8 @@ ENV CXX="clang++-10"
 # [1] https://github.com/edowson/docker-nvidia-vulkan
 # [2] https://gitlab.com/nvidia/container-images/vulkan/-/tree/master/docker
 WORKDIR /vulkan
-RUN wget https://sdk.lunarg.com/sdk/download/1.2.189.0/linux/vulkansdk-linux-x86_64-1.2.189.0.tar.gz
-RUN tar xf vulkansdk-linux-x86_64-1.2.189.0.tar.gz && \
+RUN wget https://sdk.lunarg.com/sdk/download/1.2.189.0/linux/vulkansdk-linux-x86_64-1.2.189.0.tar.gz && \
+    tar xf vulkansdk-linux-x86_64-1.2.189.0.tar.gz && \
     rm vulkansdk-linux-x86_64-1.2.189.0.tar.gz
 # Locate Vulkan components
 ENV VULKAN_SDK="/vulkan/1.2.189.0/x86_64"
@@ -85,17 +85,18 @@ USER dev
 
 # Install miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    bash Miniconda3-latest-Linux-x86_64.sh -p /home/dev/miniconda -b
+    bash Miniconda3-latest-Linux-x86_64.sh -p /home/dev/miniconda -b && \
+    rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH="/home/dev/miniconda/bin:$PATH"
 
 # Set up multi-python environment
-RUN conda init bash
-RUN conda create -n py36 python=3.6 pytorch cudatoolkit=10.2 -c pytorch -y
-RUN conda create -n py37 python=3.7 pytorch cudatoolkit=10.2 -c pytorch -y
-RUN conda create -n py38 python=3.8 pytorch cudatoolkit=10.2 -c pytorch -y
-RUN conda create -n py39 python=3.9 pytorch cudatoolkit=10.2 -c pytorch -y
+RUN conda init bash && \
+    conda create -n py3.6 python=3.6 pytorch cudatoolkit=10.2 -c pytorch -y && \
+    conda create -n py3.7 python=3.7 pytorch cudatoolkit=10.2 -c pytorch -y && \
+    conda create -n py3.8 python=3.8 pytorch cudatoolkit=10.2 -c pytorch -y && \
+    conda create -n py3.9 python=3.9 pytorch cudatoolkit=10.2 -c pytorch -y && \
 # TODO add torch to 3.10 when supported
-RUN conda create -n py310 python=3.10 -y
+    conda create -n py3.10 python=3.10 -y
 
 WORKDIR /home/dev
 ENV LANG="C.UTF-8"

@@ -1,10 +1,10 @@
 import taichi as ti
 
+ti.init()
+
 x = ti.field(ti.i32)
 l = ti.field(ti.i32)
 n = 16
-
-ti.init()
 
 ti.root.dense(ti.i, n).dynamic(ti.j, n).place(x)
 ti.root.dense(ti.i, n).place(l)

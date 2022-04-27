@@ -26,7 +26,7 @@ class Expression {
     }
 
     template <typename T, typename... Args>
-    T *push_back(Args &&... args) {
+    T *push_back(Args &&...args) {
       return stmts.push_back<T>(std::forward<Args>(args)...);
     }
 

@@ -12,6 +12,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               warning)
@@ -19,6 +20,83 @@ from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 
 
+def _gen_swizzles(cls):
+    swizzle_gen = SwizzleGenerator()
+    # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
+    KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
+
+    def make_valid_attribs_checker(key_group):
+        def check(instance, pattern):
+            valid_attribs = set(key_group[:instance.n])
+            pattern_set = set(pattern)
+            diff = pattern_set - valid_attribs
+            if len(diff):
+                valid_attribs = tuple(sorted(valid_attribs))
+                pattern = tuple(pattern)
+                raise TaichiSyntaxError(
+                    f'vec{instance.n} only has '
+                    f'attributes={valid_attribs}, got={pattern}')
+
+        return check
+
+    for key_group in KEYGROUP_SET:
+        for index, attr in enumerate(key_group):
+
+            def gen_property(attr, attr_idx, key_group):
+                checker = make_valid_attribs_checker(key_group)
+
+                def prop_getter(instance):
+                    checker(instance, attr)
+                    return instance._get_entry_and_read([attr_idx])
+
+                @python_scope
+                def prop_setter(instance, value):
+                    checker(instance, attr)
+                    instance[attr_idx] = value
+
+                return property(prop_getter, prop_setter)
+
+            prop = gen_property(attr, index, key_group)
+            setattr(cls, attr, prop)
+
+    for key_group in KEYGROUP_SET:
+        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        # len=1 accessors are handled specially above
+        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
+        for pat in sw_patterns:
+            # Create a function for value capturing
+            def gen_property(pattern, key_group):
+                checker = make_valid_attribs_checker(key_group)
+                prop_key = ''.join(pattern)
+
+                def prop_getter(instance):
+                    checker(instance, pattern)
+                    res = []
+                    for ch in pattern:
+                        res.append(instance._get_entry(key_group.index(ch)))
+                    return Vector(res, is_ref=True)
+
+                def prop_setter(instance, value):
+                    if len(pattern) != len(value):
+                        raise TaichiCompilationError(
+                            f'value len does not match the swizzle pattern={prop_key}'
+                        )
+                    checker(instance, pattern)
+                    for ch, val in zip(pattern, value):
+                        if in_python_scope():
+                            instance[key_group.index(ch)] = val
+                        else:
+                            instance(key_group.index(ch))._assign(val)
+
+                prop = property(prop_getter, prop_setter)
+                return prop_key, prop
+
+            prop_key, prop = gen_property(pat, key_group)
+            setattr(cls, prop_key, prop)
+    return cls
+
+
+@_gen_swizzles
 class Matrix(TaichiOperations):
     """The matrix class.
 
@@ -62,7 +140,7 @@ class Matrix(TaichiOperations):
     """
     _is_taichi_class = True
 
-    def __init__(self, arr, dt=None, suppress_warning=False):
+    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -77,10 +155,11 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         elif not isinstance(arr[0], Iterable):  # now init a Vector
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [[x] for x in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x)] for x in arr]
+                mat = [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                       for x in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -117,10 +196,13 @@ class Matrix(TaichiOperations):
                                 (len(arr), ), self.dynamic_index_stride)
                         ]))
         else:  # now init a Matrix
-            if in_python_scope():
+            if in_python_scope() or is_ref:
                 mat = [list(row) for row in arr]
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(x) for x in row] for row in arr]
+                mat = [[
+                    impl.expr_init(ops_mod.cast(x, dt) if dt else x)
+                    for x in row
+                ] for row in arr]
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -173,7 +255,7 @@ class Matrix(TaichiOperations):
                 ' So the compilation time could be extremely long if the matrix size is too big.'
                 ' You may use a field to store a large matrix like this, e.g.:\n'
                 f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
-                ' See https://docs.taichi.graphics/lang/articles/field#matrix-size'
+                ' See https://docs.taichi-lang.org/lang/articles/field#matrix-size'
                 ' for more details.',
                 UserWarning,
                 stacklevel=2)
@@ -259,7 +341,7 @@ class Matrix(TaichiOperations):
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
-                    'See https://docs.taichi.graphics/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
+                    'See https://docs.taichi-lang.org/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
                     'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
                 )
         assert 0 <= args[0] < self.n, \
@@ -268,26 +350,87 @@ class Matrix(TaichiOperations):
             f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
+    # host access & python scope operation
+    def __len__(self):
+        """Get the length of each row of a matrix"""
+        # TODO: When this is a vector, should return its dimension?
+        return self.n
+
+    def __iter__(self):
+        if self.m == 1:
+            return (self(i) for i in range(self.n))
+        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+
+    @python_scope
+    def __getitem__(self, indices):
+        """Access to the element at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of the element.
+
+        Returns:
+            The value of the element at a specific position of a matrix.
+
+        """
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        if isinstance(i, slice) or isinstance(j, slice):
+            return self._get_slice(i, j)
+        return self._get_entry_and_read([i, j])
+
+    @python_scope
+    def __setitem__(self, indices, item):
+        """Set the element value at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of a element.
+
+        """
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        idx = self._linearize_entry_id(i, j)
+        if isinstance(self.entries[idx], SNodeHostAccess):
+            self.entries[idx].accessor.setter(item, *self.entries[idx].key)
+        elif isinstance(self.entries[idx], NdarrayHostAccess):
+            self.entries[idx].setter(item)
+        else:
+            self.entries[idx] = item
+
     def __call__(self, *args, **kwargs):
+        # TODO: It's quite hard to search for __call__, consider replacing this
+        # with a method of actual names?
         assert kwargs == {}
-        ret = self.entries[self._linearize_entry_id(*args)]
+        return self._get_entry_and_read(args)
+
+    def _get_entry_and_read(self, indices):
+        # Can be invoked in both Python and Taichi scope. `indices` must be
+        # compile-time constants (e.g. Python values)
+        ret = self._get_entry(*indices)
+
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         elif isinstance(ret, NdarrayHostAccess):
             ret = ret.getter()
         return ret
 
-    def _set_entry(self, i, j, e):
-        idx = self._linearize_entry_id(i, j)
-        if impl.inside_kernel():
-            self.entries[idx]._assign(e)
-        else:
-            if isinstance(self.entries[idx], SNodeHostAccess):
-                self.entries[idx].accessor.setter(e, *self.entries[idx].key)
-            elif isinstance(self.entries[idx], NdarrayHostAccess):
-                self.entries[idx].setter(e)
-            else:
-                self.entries[idx] = e
+    @python_scope
+    def _set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
+
+    def _get_entry(self, *args):
+        return self.entries[self._linearize_entry_id(*args)]
 
     def _get_slice(self, a, b):
         if not isinstance(a, slice):
@@ -354,120 +497,7 @@ class Matrix(TaichiOperations):
             return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
                                                  (self.n, self.m),
                                                  self.dynamic_index_stride)
-        return self(i, j)
-
-    @property
-    def x(self):
-        """Get the first element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.x
-            0
-        """
-        if impl.inside_kernel():
-            return self._subscript(0)
-        return self[0]
-
-    @property
-    def y(self):
-        """Get the second element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.y
-            1
-        """
-        if impl.inside_kernel():
-            return self._subscript(1)
-        return self[1]
-
-    @property
-    def z(self):
-        """Get the third element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.z
-            2
-        """
-        if impl.inside_kernel():
-            return self._subscript(2)
-        return self[2]
-
-    @property
-    def w(self):
-        """Get the fourth element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2, 3])
-            >>> m.w
-            3
-        """
-        if impl.inside_kernel():
-            return self._subscript(3)
-        return self[3]
-
-    # since Taichi-scope use v.x.assign() instead
-    @x.setter
-    @python_scope
-    def x(self, value):
-        """Set the first element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.x = -1
-            >>> m.x
-            -1
-        """
-        self[0] = value
-
-    @y.setter
-    @python_scope
-    def y(self, value):
-        """Set the second element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.y = -1
-            >>> m.y
-            -1
-        """
-        self[1] = value
-
-    @z.setter
-    @python_scope
-    def z(self, value):
-        """Set the third element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2])
-            >>> m.z = -1
-            >>> m.z
-            -1
-        """
-        self[2] = value
-
-    @w.setter
-    @python_scope
-    def w(self, value):
-        """Set the fourth element of a matrix.
-
-        Example::
-
-            >>> m = ti.Matrix([0, 1, 2, 3])
-            >>> m.w = -1
-            >>> m.w
-            -1
-        """
-        self[3] = value
+        return self._get_entry(i, j)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.
@@ -476,61 +506,6 @@ class Matrix(TaichiOperations):
         the difference is that this function always returns a new list.
         """
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
-
-    # host access & python scope operation
-    @python_scope
-    def __getitem__(self, indices):
-        """Access to the element at the given indices in a matrix.
-
-        Args:
-            indices (Sequence[Expr]): the indices of the element.
-
-        Returns:
-            The value of the element at a specific position of a matrix.
-
-        """
-        if not isinstance(indices, (list, tuple)):
-            indices = [indices]
-        assert len(indices) in [1, 2]
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        if isinstance(i, slice) or isinstance(j, slice):
-            return self._get_slice(i, j)
-        return self(i, j)
-
-    @python_scope
-    def __setitem__(self, indices, item):
-        """Set the element value at the given indices in a matrix.
-
-        Args:
-            indices (Sequence[Expr]): the indices of a element.
-
-        """
-        if not isinstance(indices, (list, tuple)):
-            indices = [indices]
-        assert len(indices) in [1, 2]
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        self._set_entry(i, j, item)
-
-    def __len__(self):
-        """Get the length of each row of a matrix"""
-        return self.n
-
-    def __iter__(self):
-        if self.m == 1:
-            return (self(i) for i in range(self.n))
-        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
-
-    @python_scope
-    def _set_entries(self, value):
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self[i, j] = value[i][j]
 
     @taichi_scope
     def cast(self, dtype):
@@ -1397,7 +1372,7 @@ class MatrixField(Field):
                        i + 1]._offset_bytes_in_parent_cell for path in paths):
                 return
         stride = paths[1][depth_below_lca]._offset_bytes_in_parent_cell - \
-                 paths[0][depth_below_lca]._offset_bytes_in_parent_cell
+            paths[0][depth_below_lca]._offset_bytes_in_parent_cell
         for i in range(2, num_members):
             if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
                     - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
@@ -1568,7 +1543,8 @@ class MatrixType(CompoundType):
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
-        return Matrix([[value for _ in range(self.m)] for _ in range(self.n)])
+        return self.cast(
+            Matrix([[value for _ in range(self.m)] for _ in range(self.n)]))
 
     def field(self, **kwargs):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)

@@ -178,6 +178,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
     if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+      llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+      builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();

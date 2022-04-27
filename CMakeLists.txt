@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.12)
 project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)
-    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/dev_install for more details.")
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/lang/articles/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
     set(TI_VERSION_MINOR 0)
     set(TI_VERSION_PATCH 0)
@@ -49,7 +49,6 @@ else ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -157,12 +156,17 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
+  install(FILES "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
 endforeach()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
+
+if(ANDROID)
+    set(TI_EXPORT_CORE ON)
+endif()
 
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)

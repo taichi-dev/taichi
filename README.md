@@ -36,10 +36,10 @@ The language has broad applications spanning real-time physical simulation, numb
 ## Why Taichi?
 
 - Built around Python: Taichi shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, including NumPy and PyTorch.
-- Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi.graphics/lang/articles/sparse)).
+- Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi-lang.org/lang/articles/sparse)).
 - Performance: With the `@ti.kernel` decorator, Taichi's JIT compiler automatically compiles your Python functions into efficient GPU or CPU machine code for parallel execution.
 - Portability: Write your code once and run it everywhere. Currently, Taichi supports most mainstream GPU APIs, such as CUDA and Vulkan.
-- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
+- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi-lang.org/lang/articles/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
 ## Getting Started
 
@@ -67,7 +67,7 @@ The language has broad applications spanning real-time physical simulation, numb
 Use Python's package installer **pip** to install Taichi:
 
 ```bash
-pip install taichi
+pip install --upgrade taichi
 ```
 
 *We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features. The nightly packages can be installed from our self-hosted PyPI (Using self-hosted PyPI allows us to provide more frequent releases over a longer period of time)*
@@ -120,17 +120,17 @@ for i in range(1000000):
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> </a><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-See [Get started](https://docs.taichi.graphics) for more information.
+See [Get started](https://docs.taichi-lang.org) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
+If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi-lang.org/lang/articles/dev_install).
 
 ## Documentation
 
-- [Technical documents](https://docs.taichi.graphics/)
-- [API Reference](https://docs.taichi.graphics/api/)
-- [Blog](https://docs.taichi.graphics/blog)
+- [Technical documents](https://docs.taichi-lang.org/)
+- [API Reference](https://docs.taichi-lang.org/api/)
+- [Blog](https://docs.taichi-lang.org/blog)
 
 ## Contributing
 
@@ -139,6 +139,12 @@ Kudos to all of our amazing contributors! Taichi thrives through open-source. In
 <a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
 
 *Contributor avatars are randomly shuffled.*
+
+## License
+
+Taichi is distributed under the terms of Apache License (Version 2.0).
+
+See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) for details.
 
 ## Community
 

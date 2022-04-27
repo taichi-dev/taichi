@@ -3,13 +3,15 @@
 #include "taichi/ir/expr.h"
 #include "taichi/ir/expression.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/program/program.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 namespace taichi {
 namespace lang {
 
-class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
+class ExpressionPrinter : public ExpressionVisitor {
  public:
-  ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr) : os_(os) {
+  ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
   }
 
   void set_ostream(std::ostream *os) {
@@ -19,6 +21,16 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
   std::ostream &get_ostream() {
     TI_ASSERT(os_);
     return *os_;
+  }
+
+ private:
+  std::ostream *os_{nullptr};
+};
+
+class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
+ public:
+  explicit ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr)
+      : ExpressionPrinter(os) {
   }
 
   void visit(ExprGroup &expr_group) override {
@@ -212,11 +224,10 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
     return oss.str();
   }
 
- private:
+ protected:
   template <typename... Args>
-  void emit(Args &&... args) {
-    TI_ASSERT(os_);
-    (*os_ << ... << std::forward<Args>(args));
+  void emit(Args &&...args) {
+    (this->get_ostream() << ... << std::forward<Args>(args));
   }
 
   template <typename T>
@@ -243,8 +254,76 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
       emit(std::forward<D>(e));
     }
   }
+};
 
-  std::ostream *os_{nullptr};
+// Temporary reuse ExpressionHumanFriendlyPrinter
+class ExpressionOfflineCacheKeyGenerator
+    : public ExpressionHumanFriendlyPrinter {
+ public:
+  explicit ExpressionOfflineCacheKeyGenerator(Program *prog,
+                                              std::ostream *os = nullptr)
+      : ExpressionHumanFriendlyPrinter(os), prog_(prog) {
+  }
+
+  void visit(GlobalVariableExpression *expr) override {
+    emit("#", expr->ident.name());
+    if (expr->snode) {
+      emit("(snode=", this->get_hashed_key_of_snode(expr->snode), ')');
+    } else {
+      emit("(dt=", expr->dt->to_string(), ')');
+    }
+  }
+
+  void visit(GlobalPtrExpression *expr) override {
+    if (expr->snode) {
+      emit(this->get_hashed_key_of_snode(expr->snode));
+    } else {
+      expr->var->accept(this);
+    }
+    emit('[');
+    emit_vector(expr->indices.exprs);
+    emit(']');
+  }
+
+  void visit(SNodeOpExpression *expr) override {
+    emit(snode_op_type_name(expr->op_type));
+    emit('(', this->get_hashed_key_of_snode(expr->snode), ", [");
+    emit_vector(expr->indices.exprs);
+    emit(']');
+    if (expr->value.expr) {
+      emit(' ');
+      expr->value->accept(this);
+    }
+    emit(')');
+  }
+
+ private:
+  const std::string &cache_snode_tree_key(int snode_tree_id,
+                                          std::string &&key) {
+    if (snode_tree_id >= snode_tree_key_cache_.size()) {
+      snode_tree_key_cache_.resize(snode_tree_id + 1);
+    }
+    return snode_tree_key_cache_[snode_tree_id] = std::move(key);
+  }
+
+  std::string get_hashed_key_of_snode(SNode *snode) {
+    TI_ASSERT(snode && prog_);
+    auto snode_tree_id = snode->get_snode_tree_id();
+    std::string res;
+    if (snode_tree_id < snode_tree_key_cache_.size() &&
+        !snode_tree_key_cache_[snode_tree_id].empty()) {
+      res = snode_tree_key_cache_[snode_tree_id];
+    } else {
+      auto *snode_tree_root = prog_->get_snode_root(snode_tree_id);
+      auto snode_tree_key =
+          get_hashed_offline_cache_key_of_snode(snode_tree_root);
+      res = cache_snode_tree_key(snode_tree_id, std::move(snode_tree_key));
+    }
+    return res.append(std::to_string(snode->id));
+  }
+
+  Program *prog_{nullptr};
+  std::vector<std::string> snode_tree_key_cache_;
 };
 
 }  // namespace lang

@@ -4,6 +4,7 @@ from pathlib import Path, PurePosixPath
 from taichi.lang import impl, kernel_impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
+from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
 from taichi.types.annotations import template
@@ -41,8 +42,8 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for anno in kernel.argument_annotations:
-            if isinstance(anno, template):
+        for arg in kernel.arguments:
+            if isinstance(arg.annotation, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
@@ -122,34 +123,48 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, example_ndarrays=None, name=None):
+    def add_kernel(self, kernel_fn, template_args=None, name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          example_ndarrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example ndarray input.
+          template_args (Dict[str, Any]): a dict where key is the template
+            parameter name, and value is the instantiating arg. Note that this
+            works for both :class:`~taichi.types.template` and for
+            `:class:`~taichi.types.ndarray`.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
         """
-        name = name or kernel_fn.__name__
+        kernel_name = name or kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
-        num_arr = len([
-            anno for anno in kernel.argument_annotations
-            if isinstance(anno, NdarrayType)
+        template_types = (NdarrayType, template)
+        num_template_args = len([
+            arg.annotation for arg in kernel.arguments
+            if isinstance(arg.annotation, template_types)
         ])
-        assert example_ndarrays is None or num_arr == len(
-            example_ndarrays
-        ), f'Need {num_arr} example ndarray inputs but got {len(example_ndarrays)}'
+        if template_args is not None and num_template_args != len(
+                template_args):
+            raise TaichiCompilationError(
+                f'Need {num_template_args} inputs to instantiate the template '
+                f'parameters, got {len(template_args)}')
         i = 0
-        for anno in kernel.argument_annotations:
-            if isinstance(anno, NdarrayType):
-                if example_ndarrays:
-                    injected_args.append(example_ndarrays[i])
+        for arg in kernel.arguments:
+            anno = arg.annotation
+            if isinstance(anno, template_types):
+                if template_args:
+                    injected_args.append(template_args[arg.name])
                 else:
-                    assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
+                    if not isinstance(anno, NdarrayType):
+                        raise TaichiCompilationError(
+                            f'Expected Ndaray type, got {anno}')
+                    if anno.element_shape is None or anno.field_dim is None:
+                        raise TaichiCompilationError(
+                            'Please either specify both `element_shape` and `field_dim` '
+                            'in the param annotation, or provide an example '
+                            f'ndarray for param={name}')
                     if anno.element_dim == 0:
                         injected_args.append(
                             ScalarNdarray(f32, (2, ) * anno.field_dim))
@@ -173,7 +188,7 @@ class Module:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
-        self._aot_builder.add(name, kernel.kernel_cpp)
+        self._aot_builder.add(kernel_name, kernel.kernel_cpp)
 
         # kernel AOT
         self._kernels.append(kernel)

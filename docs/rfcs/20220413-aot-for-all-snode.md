@@ -177,7 +177,7 @@ In addition, because type is currently coupled with Taichi field definition, a T
 builder = ti.SNodeTreeBuilder()
 vel = builder.add_field(dtype=ti.vec3, name='vel', layout=ti.Layout.SOA)
 
-for c in vel.compoenents():
+for c in vel.components():
   builder.tree().dense(ti.ij, 4).place(c)
 ```
 

@@ -197,6 +197,11 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     ret_type = PrimitiveType::i32;
     return;
   }
+  if (is_shift_op(type)) {
+    ret_type = lhs_type;
+    return;
+  }
+
   if (type == BinaryOpType::truediv) {
     auto default_fp = config->default_fp;
     if (!is_real(lhs_type)) {

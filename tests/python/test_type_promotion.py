@@ -60,3 +60,17 @@ def test_sqrt():
     func()
 
     assert np.allclose(y.to_numpy(), np.sqrt(x.to_numpy()))
+
+
+@test_utils.test()
+def test_shift_ops():
+    @ti.kernel
+    def test():
+        rhs = ti.cast(1, ti.i32)
+        lhs = ti.cast(16, ti.u8)
+
+        res = lhs << rhs
+        ti.static_assert(res.ptr.get_ret_type().to_string() == 'u8',
+                         "Incorrect type promotion for shift operations.")
+
+    test()

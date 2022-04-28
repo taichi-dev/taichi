@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
+#include <iostream>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -244,6 +245,43 @@ class TypeCheck : public IRVisitor {
     return stmt;
   }
 
+  void insert_shift_op_assertion_before(Stmt *stmt, Stmt *lhs, Stmt *rhs) {
+    int rhs_limit = 64;
+    if (lhs->ret_type->is_primitive(PrimitiveTypeID::u1)) {
+      rhs_limit = 1;
+    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u8) ||
+               lhs->ret_type->is_primitive(PrimitiveTypeID::i8)) {
+      rhs_limit = 8;
+    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u16) ||
+               lhs->ret_type->is_primitive(PrimitiveTypeID::i16) ||
+               lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      rhs_limit = 16;
+    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u32) ||
+               lhs->ret_type->is_primitive(PrimitiveTypeID::i32) ||
+               lhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+      rhs_limit = 32;
+    }
+    auto const_stmt =
+        Stmt::make<ConstStmt>(TypedConstant(rhs->ret_type, rhs_limit));
+    auto cond_stmt =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_le, rhs, const_stmt.get());
+
+    std::string msg =
+        "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
+        "%d.";
+    std::vector<Stmt *> args = {rhs, const_stmt.get()};
+    auto assert_stmt =
+        Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
+
+    const_stmt->accept(this);
+    cond_stmt->accept(this);
+    assert_stmt->accept(this);
+
+    stmt->insert_before_me(std::move(const_stmt));
+    stmt->insert_before_me(std::move(cond_stmt));
+    stmt->insert_before_me(std::move(assert_stmt));
+  }
+
   void cast(Stmt *&val, DataType dt) {
     auto cast_stmt = insert_type_cast_after(val, val, dt);
     val = cast_stmt;
@@ -287,7 +325,26 @@ class TypeCheck : public IRVisitor {
       };
       stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
       stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
-      auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+
+      DataType ret_type;
+      if (is_shift_op(stmt->op_type)) {
+        // shift_ops does not follow the same type promotion rule as numerical
+        // ops numerical ops: u8 + i32 = i32 shift_ops:     u8 << i32 = u8
+        // (return dtype follows that of the lhs)
+        //
+        // In the above example, while truncating rhs(i32) to u8 risks an
+        // overflow, the runtime value of rhs is very likely less than 8
+        // (otherwise meaningless). Nevertheless, we insert an AssertStmt here
+        // to warn user of this potential overflow.
+        ret_type = stmt->lhs->ret_type;
+
+        // Insert AssertStmt
+        insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
+
+      } else {
+        ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+      }
+
       if (ret_type != stmt->lhs->ret_type) {
         // promote lhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);

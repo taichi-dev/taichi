@@ -64,9 +64,11 @@ def test_sqrt():
 
 @test_utils.test()
 def test_shift_ops():
+    val = 1
+
     @ti.kernel
     def test():
-        rhs = ti.cast(1, ti.i32)
+        rhs = ti.cast(val, ti.i32)
         lhs = ti.cast(16, ti.u8)
 
         res = lhs << rhs

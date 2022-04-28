@@ -5,7 +5,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
-#include <iostream>
 
 TLANG_NAMESPACE_BEGIN
 

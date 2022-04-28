@@ -245,21 +245,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void insert_shift_op_assertion_before(Stmt *stmt, Stmt *lhs, Stmt *rhs) {
-    int rhs_limit = 64;
-    if (lhs->ret_type->is_primitive(PrimitiveTypeID::u1)) {
-      rhs_limit = 1;
-    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u8) ||
-               lhs->ret_type->is_primitive(PrimitiveTypeID::i8)) {
-      rhs_limit = 8;
-    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u16) ||
-               lhs->ret_type->is_primitive(PrimitiveTypeID::i16) ||
-               lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-      rhs_limit = 16;
-    } else if (lhs->ret_type->is_primitive(PrimitiveTypeID::u32) ||
-               lhs->ret_type->is_primitive(PrimitiveTypeID::i32) ||
-               lhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-      rhs_limit = 32;
-    }
+    int rhs_limit = data_type_bits(lhs->ret_type);
     auto const_stmt =
         Stmt::make<ConstStmt>(TypedConstant(rhs->ret_type, rhs_limit));
     auto cond_stmt =
@@ -338,8 +324,9 @@ class TypeCheck : public IRVisitor {
         ret_type = stmt->lhs->ret_type;
 
         // Insert AssertStmt
-        insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
-
+        if (config_.debug) {
+          insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
+        }
       } else {
         ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       }

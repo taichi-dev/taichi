@@ -1,6 +1,6 @@
 #include "taichi/backends/vulkan/snode_tree_manager.h"
 
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 
 namespace taichi {
 namespace lang {

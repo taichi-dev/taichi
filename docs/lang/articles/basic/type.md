@@ -100,10 +100,30 @@ As a rule of thumb, implicit type casting is a major source of bugs. And Taichi 
 
 #### Implicit type casting in binary operations
 
-Taichi follows the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) for the C programming language and implicitly casts operands in a [binary operation](https://en.wikipedia.org/wiki/Binary_operation) into a *common type* if the operation involves different data types. Following are two most straightforward rules for determining the common type in a binary operation:
+Taichi mostly follows the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) for the C programming language and implicitly casts operands in a [binary operation](https://en.wikipedia.org/wiki/Binary_operation) into a *common type* if the operation involves different data types. Following are two most straightforward rules for determining the common type in a binary operation:
 
 - `i32 + f32 = f32` (`int` + `float` = `float`)
 - `i32 + i64 = i64` (low precision bits + high precision bits = high precision bits)
+
+Note that in C++: `i8 + i8 = i32`, which makes no sense to Taichi use cases. Therefore we implemented our own rules for this kind of operations:
+```
+i8 + i8   = i8
+i8 + i16  = i16
+i8 + u8   = u8
+i8 + u16  = u16
+i16 + i8  = i16
+i16 + i16 = i16
+i16 + u8  = i16
+i16 + u16 = u16
+u8 + i8   = u8
+u8 + i16  = i16
+u8 + u8   = u8
+u8 + u16  = u16
+u16 + i8  = u16
+u16 + i16 = u16
+u16 + u8  = u16
+u16 + u16 = u16
+```
 
 #### Implicit type casting in assignments
 

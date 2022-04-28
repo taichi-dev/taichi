@@ -364,6 +364,9 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     bm.mem = itr->second.buffer_mem.get();
     return bm;
   }
+  // Un-shadow the overload from the base class
+  // https://stackoverflow.com/a/34466458/12003165
+  using AllocToMTLBufferMapper::find;
 
  private:
   struct AllocationInternal {

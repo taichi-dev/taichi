@@ -32,7 +32,9 @@ class AllocToMTLBufferMapper {
     MTLBuffer *buffer{nullptr};
     BufferMemoryView *mem{nullptr};
   };
+
   virtual BufferAndMem find(DeviceAllocationId alloc_id) const = 0;
+
   BufferAndMem find(DeviceAllocation alloc) const {
     return find(alloc.alloc_id);
   }

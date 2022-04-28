@@ -644,7 +644,7 @@ class Kernel:
                         tmp = v.value().get_tensor()
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
-                            v.element_size() * v.size(), v.shape)
+                            v.element_size() * v.size, v.shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:

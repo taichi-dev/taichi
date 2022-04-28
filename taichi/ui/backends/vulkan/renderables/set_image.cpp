@@ -31,8 +31,9 @@ void SetImage::update_data(const SetImageInfo &info) {
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();
+  StreamSemaphore data_ready_sema{nullptr};
   if (prog) {
-    prog->synchronize();
+    data_ready_sema = prog->flush();
   }
 
   const FieldInfo &img = info.img;
@@ -96,7 +97,11 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
                              ImageLayout::shader_read);
-  stream->submit_synced(cmd_list.get());
+  if (data_ready_sema) {
+    stream->submit(cmd_list.get(), {data_ready_sema});
+  } else {
+    stream->submit(cmd_list.get());
+  }
 }
 
 SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {

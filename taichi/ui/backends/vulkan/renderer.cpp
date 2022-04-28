@@ -112,6 +112,7 @@ void Renderer::scene(Scene *scene) {
 }
 
 void Renderer::cleanup() {
+  render_complete_semaphore_ = nullptr;
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
@@ -130,6 +131,7 @@ void Renderer::draw_frame(Gui *gui) {
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
                                      background_color_[2], 1};
+  auto semaphore = swap_chain_.surface().acquire_next_image();
   auto image = swap_chain_.surface().get_target_image();
   auto depth_image = swap_chain_.depth_allocation();
   cmd_list->begin_renderpass(
@@ -155,7 +157,21 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  stream->submit_synced(cmd_list.get());
+
+  std::vector<StreamSemaphore> wait_semaphores;
+
+  if (app_context_.prog()) {
+    auto sema = app_context_.prog()->flush();
+    if (sema) {
+      wait_semaphores.push_back(sema);
+    }
+  }
+
+  if (semaphore) {
+    wait_semaphores.push_back(semaphore);
+  }
+
+  render_complete_semaphore_ = stream->submit(cmd_list.get(), wait_semaphores);
 }
 
 const AppContext &Renderer::app_context() const {
@@ -172,6 +188,10 @@ const SwapChain &Renderer::swap_chain() const {
 
 SwapChain &Renderer::swap_chain() {
   return swap_chain_;
+}
+
+taichi::lang::StreamSemaphore Renderer::get_render_complete_semaphore() {
+  return std::move(render_complete_semaphore_);
 }
 
 }  // namespace vulkan

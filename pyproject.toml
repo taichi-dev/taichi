@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools", "wheel", "numpy", "pybind11", "cmake"]
+requires = [
+    "setuptools", "wheel",
+    "numpy", "pybind11", "cmake",
+    "scikit-build", "ninja; platform_system != 'Windows'",
+]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]

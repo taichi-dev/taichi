@@ -805,12 +805,6 @@ void print(IRNode *root, std::string *output) {
   return IRPrinter::run(&expr_printer, root, output);
 }
 
-void gen_offline_cache_key(Program *prog, IRNode *root, std::string *output) {
-  irpass::re_id(root);
-  ExpressionOfflineCacheKeyGenerator cache_key_generator(prog);
-  return IRPrinter::run(&cache_key_generator, root, output);
-}
-
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

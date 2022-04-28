@@ -161,7 +161,10 @@ of 8M floats on an Nvidia GeForce RTX 3090 card:
 * TLS disabled: 5.2 x 1e3 us
 * TLS enabled: 5.7 x 1e1 us
 
-TLS has led to an approximately 100x speedup.
+TLS has led to an approximately 100x speedup. We also show that TLS reduction sum
+achieves comparable performance with CUDA implementations, see 
+[benchmark](https://github.com/taichi-dev/taichi_benchmark/tree/main/reduce_sum) for 
+details.
 
 ### Block Local Storage (BLS)
 

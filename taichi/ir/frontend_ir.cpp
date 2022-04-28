@@ -493,6 +493,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
   }
   stmt = ctx->back_stmt();
+  stmt->tb = tb;
 }
 
 void SNodeOpExpression::type_check(CompileConfig *) {

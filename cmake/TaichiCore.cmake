@@ -16,6 +16,10 @@ option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 # projects.
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+# Suppress warnings from submodules introduced by the above symbol visibility change
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(ANDROID)
     set(TI_WITH_VULKAN ON)
@@ -139,10 +143,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
-  "taichi/backends/vulkan/runtime.h"
-  "taichi/backends/vulkan/runtime.cpp"
-)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -197,7 +197,7 @@ if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_REQUIRED_SOURCE})
+
 
 if (TI_WITH_DX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
@@ -384,8 +384,15 @@ if (TI_WITH_VULKAN)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
+        if (EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
+            install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
+        endif()
     endif()
+
+    add_subdirectory(taichi/runtime/vulkan)
+    target_link_libraries(${CORE_LIBRARY_NAME} vulkan_runtime)
 endif ()
+
 
 # Optional dependencies
 
@@ -437,7 +444,7 @@ if(NOT TI_EMSCRIPTENED)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
-        add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+        pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} ${TAICHI_PYBIND_SOURCE})
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()
@@ -459,6 +466,10 @@ if(NOT TI_EMSCRIPTENED)
         set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                 "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
     endif ()
+
+    install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
+            RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
+            LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
 endif()
 
 if(TI_EMSCRIPTENED)
@@ -486,4 +497,9 @@ else()
 endif()
     target_link_libraries(${CORE_LIBRARY_NAME} imgui)
 
+endif()
+
+if (NOT APPLE)
+    install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

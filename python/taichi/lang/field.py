@@ -205,8 +205,9 @@ class Field:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
+
         if len(key) != len(self.shape):
-            raise ValueError(
+            raise AssertionError(
                 "Slicing an array or matrix from ti.field is not supported so far."
                 "The best you can achieve is to index a single element from ti.field"
             )

@@ -188,6 +188,13 @@ def test_index_mismatch():
 
 
 @test_utils.test()
+def test_invalid_slicing():
+    with pytest.raises(TypeError):
+        val = ti.field(ti.i32, shape=(2, 2))
+        val[0, :]
+
+
+@test_utils.test()
 def test_numpy_zero():
     @ti.kernel
     def test_numpy(arr: ti.types.ndarray()):

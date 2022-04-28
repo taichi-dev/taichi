@@ -207,10 +207,7 @@ class Field:
             key = (key, )
 
         if len(key) != len(self.shape):
-            raise AssertionError(
-                "Slicing an array or matrix from ti.field is not supported so far."
-                "The best you can achieve is to index a single element from ti.field"
-            )
+            raise AssertionError("Slicing is not supported on ti.field")
 
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
@@ -301,7 +298,7 @@ class ScalarField(Field):
         for key in padded_key:
             if not isinstance(key, int):
                 raise TypeError(
-                    f"Detected ilegal element of type: {type(key)}. "
+                    f"Detected illegal element of type: {type(key)}. "
                     f"Please be aware that slicing a ti.field is not supported so far."
                 )
         return self.host_accessors[0].getter(*padded_key)

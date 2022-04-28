@@ -60,6 +60,11 @@ class ProgramImpl {
    */
   virtual void synchronize() = 0;
 
+  virtual StreamSemaphore flush() {
+    synchronize();
+    return nullptr;
+  }
+
   /**
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
    */

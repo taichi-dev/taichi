@@ -18,9 +18,8 @@ class ExpressionPrinter : public ExpressionVisitor {
     os_ = os;
   }
 
-  std::ostream &get_ostream() {
-    TI_ASSERT(os_);
-    return *os_;
+  std::ostream *get_ostream() {
+    return os_;
   }
 
  private:
@@ -227,7 +226,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
  protected:
   template <typename... Args>
   void emit(Args &&...args) {
-    (this->get_ostream() << ... << std::forward<Args>(args));
+    TI_ASSERT(this->get_ostream());
+    (*this->get_ostream() << ... << std::forward<Args>(args));
   }
 
   template <typename T>

@@ -168,6 +168,17 @@ void fill_buffer(MTLBlitCommandEncoder *encoder,
   call(encoder, "fillBuffer:bufferrange:rangevalue:", buffer, range, value);
 }
 
+void copy_from_buffer_to_buffer(MTLBlitCommandEncoder *encoder,
+                                MTLBuffer *source_buffer,
+                                size_t source_offset,
+                                MTLBuffer *destination_buffer,
+                                size_t destination_offset,
+                                size_t size) {
+  call(encoder, "copyFromBuffer:sourceOffset:toBuffer:destinationOffset:size:",
+       source_buffer, source_offset, destination_buffer, destination_offset,
+       size);
+}
+
 #endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available() {

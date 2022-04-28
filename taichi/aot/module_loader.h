@@ -166,6 +166,9 @@ class TargetDevice : public Device {
   Stream *get_compute_stream() override {
     TI_NOT_IMPLEMENTED;
   }
+  void wait_idle() override {
+    TI_NOT_IMPLEMENTED;
+  }
 };
 
 }  // namespace aot

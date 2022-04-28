@@ -172,15 +172,6 @@ If we further think about the problem, SoA `x` is not really a field. Instead, i
 
 In addition, because type is currently coupled with Taichi field definition, a Taichi field has to be implemented as individual fields in order to support the SoA scenario. Once we switch to the type builder pattern, we can control how the type is constructed first, and choose the field implementation later.
 
-
-```py
-builder = ti.SNodeTreeBuilder()
-vel = builder.add_field(dtype=ti.vec3, name='vel', layout=ti.Layout.SOA)
-
-for c in vel.components():
-  builder.tree().dense(ti.ij, 4).place(c)
-```
-
 If we want to make it explicit that this is a *field view*, we can do the following:
 
 ```py

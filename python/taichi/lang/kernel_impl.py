@@ -20,8 +20,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import (has_paddle, has_pytorch, to_paddle_type,
-                              to_taichi_type)
+from taichi.lang.util import (has_paddle, has_pytorch, to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
@@ -578,6 +577,36 @@ class Kernel:
                 callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
+    def get_paddle_callbacks(self, v, has_pp):
+        callbacks = []
+
+        def get_call_back(u, v):
+            def call_back():
+                u.copy_(v, False)
+
+            return call_back
+
+        assert has_pp
+        assert isinstance(v, paddle.Tensor)
+
+        tmp = v.value().get_tensor()
+        taichi_arch = self.runtime.prog.config.arch
+
+        if str(paddle.device.get_device()).startswith('gpu'):
+            # External tensor on cuda
+            if taichi_arch != _ti_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.cpu()
+                tmp = host_v.value().get_tensor()
+                callbacks.append(get_call_back(v, host_v))
+        else:
+            # External tensor on cpu
+            if taichi_arch == _ti_core.Arch.cuda:
+                gpu_v = v.cuda()
+                tmp = gpu_v.value().get_tensor()
+                callbacks.append(get_call_back(v, gpu_v))
+        return tmp, callbacks
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -640,8 +669,10 @@ class Kernel:
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)
                     else:
-                        # Only support PaddlePaddle on develop branch
-                        tmp = v.value().get_tensor()
+                        # For now, paddle.fluid.core.Tensor._ptr() is only available on PaddlePaddle's develop branch
+                        tmp, paddle_callbacks = self.get_paddle_callbacks(
+                            v, has_pp)
+                        callbacks += paddle_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
                             v.element_size() * v.size, v.shape)

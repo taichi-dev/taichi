@@ -50,7 +50,7 @@ while gui.running:
     gui.show()
 ```
 
-Besides, you can also pass numpy arrays or torch tensors into a Taichi kernel as arguments. See [Interacting with external arrays](../basic/external.md#interacting-with-external-arrays) for more details.
+Besides, you can also pass numpy arrays or torch tensors into a Taichi kernel as arguments. See [Interacting with external arrays](./basic/external.md) for more details.
 
 ### How do I declare a field with a **dynamic length**?
 

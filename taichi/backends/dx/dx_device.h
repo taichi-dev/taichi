@@ -94,8 +94,12 @@ class Dx11Stream : public Stream {
   ~Dx11Stream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   void command_sync() override;
 
  private:
@@ -151,62 +155,13 @@ class Dx11CommandList : public CommandList {
   void run_commands();
 
  private:
-  struct Cmd {
-    explicit Cmd(Dx11CommandList *cmdlist) : cmdlist_(cmdlist) {
-    }
-    virtual void execute() {
-    }
-    Dx11CommandList *cmdlist_;
-  };
+  ID3D11DeviceContext *d3d11_deferred_context_{nullptr};
+  ID3D11CommandList *d3d11_command_list_{nullptr};
 
-  struct CmdBufferFill : public Cmd {
-    explicit CmdBufferFill(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
-    }
-    ID3D11UnorderedAccessView *uav{nullptr};
-    size_t offset{0}, size{0};
-    uint32_t data{0};
-    void execute() override;
-  };
+  std::vector<ID3D11Buffer *> used_spv_workgroup_cb;
 
-  struct CmdBindPipeline : public Cmd {
-    explicit CmdBindPipeline(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
-    }
-    ID3D11ComputeShader *compute_shader_{nullptr};
-    void execute() override;
-  };
-
-  struct CmdBindUAVBufferToIndex : public Cmd {
-    explicit CmdBindUAVBufferToIndex(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
-    }
-    ID3D11UnorderedAccessView *uav;  // UAV of the buffer
-    uint32_t binding;                // U register; UAV slot
-    void execute() override;
-  };
-
-  struct CmdBindConstantBufferToIndex : public Cmd {
-    explicit CmdBindConstantBufferToIndex(Dx11CommandList *cmdlist)
-        : Cmd(cmdlist) {
-    }
-    ID3D11Buffer *buffer;     // Original buffer, can't be bound to CB slot
-    ID3D11Buffer *cb_buffer;  // Constant buffer-version of buffer, for binding
-                              // to CB slots
-    uint32_t binding;         // CB register; constant buffer slot
-    void execute() override;
-  };
-
-  struct CmdDispatch : public Cmd {
-    explicit CmdDispatch(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
-    }
-    uint32_t x{0}, y{0}, z{0};
-    // Constant Buffer slot for SPIRV_Cross_NumWorkgroups
-    uint32_t spirv_cross_num_wg_cb_slot_{0};
-    void execute() override;
-  };
-
-  std::vector<std::unique_ptr<Cmd>> recorded_commands_;
   Dx11Device *device_;
   int cb_slot_watermark_{-1};
-  int cb_count();
 };
 
 class Dx11Device : public GraphicsDevice {
@@ -247,6 +202,7 @@ class Dx11Device : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+  void wait_idle() override;
 
   int live_dx11_object_count();
   ID3D11DeviceContext *d3d11_context() {
@@ -264,10 +220,10 @@ class Dx11Device : public GraphicsDevice {
   // cb_slot should be 1 after pre-occupied buffers
   // example: in the presence of args_t, cb_slot will be cb0
   // in the absence of args_t, cb_slot will be cb0
-  void set_spirv_cross_numworkgroups(uint32_t x,
-                                     uint32_t y,
-                                     uint32_t z,
-                                     int cb_slot);
+  ID3D11Buffer *set_spirv_cross_numworkgroups(uint32_t x,
+                                              uint32_t y,
+                                              uint32_t z,
+                                              int cb_slot);
 
  private:
   void create_dx11_device();
@@ -285,8 +241,6 @@ class Dx11Device : public GraphicsDevice {
       alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
   int alloc_serial_;
   Dx11Stream *stream_;
-
-  ID3D11Buffer *spirv_cross_numworkgroups_{}, *spirv_cross_numworkgroups_cb_{};
 
   // temporary debug use
   std::unordered_map<uint32_t, void *> mapped_;

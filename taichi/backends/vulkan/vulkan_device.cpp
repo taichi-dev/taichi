@@ -1298,6 +1298,18 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.usage & AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
+  buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                                     graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    buffer_info.queueFamilyIndexCount = 2;
+    buffer_info.pQueueFamilyIndices = queue_family_indices;
+  }
 
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
@@ -1489,6 +1501,15 @@ Stream *VulkanDevice::get_graphics_stream() {
   }
 }
 
+void VulkanDevice::wait_idle() {
+  for (auto &[tid, stream] : compute_stream_) {
+    stream->command_sync();
+  }
+  for (auto &[tid, stream] : graphics_stream_) {
+    stream->command_sync();
+  }
+}
+
 std::unique_ptr<CommandList> VulkanStream::new_command_list() {
   vkapi::IVkCommandBuffer buffer =
       vkapi::allocate_command_buffer(command_pool_);
@@ -1496,7 +1517,9 @@ std::unique_ptr<CommandList> VulkanStream::new_command_list() {
   return std::make_unique<VulkanCommandList>(&device_, this, buffer);
 }
 
-void VulkanStream::submit(CommandList *cmdlist_) {
+StreamSemaphore VulkanStream::submit(
+    CommandList *cmdlist_,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
 
@@ -1507,67 +1530,66 @@ void VulkanStream::submit(CommandList *cmdlist_) {
   }
   */
 
-  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
-
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
 
-  if (last_semaphore_) {
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
-    submit_info.pWaitDstStageMask = &stage_flag;
+  std::vector<VkSemaphore> vk_wait_semaphores;
+  std::vector<VkPipelineStageFlags> vk_wait_stages;
+
+  for (const StreamSemaphore &sema_ : wait_semaphores) {
+    auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
+    vk_wait_stages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    buffer->refs.push_back(sema->vkapi_ref);
   }
 
+  submit_info.pWaitSemaphores = vk_wait_semaphores.data();
+  submit_info.waitSemaphoreCount = vk_wait_semaphores.size();
+  submit_info.pWaitDstStageMask = vk_wait_stages.data();
+
   auto semaphore = vkapi::create_semaphore(buffer->device, 0);
-  last_semaphore_ = semaphore;
   buffer->refs.push_back(semaphore);
 
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = &semaphore->semaphore;
 
-  submitted_cmdbuffers_.push_back(buffer);
+  auto fence = vkapi::create_fence(buffer->device, 0);
+
+  // Resource tracking, check previously submitted commands
+  // FIXME: Figure out why it doesn't work
+  /*
+  std::remove_if(submitted_cmdbuffers_.begin(), submitted_cmdbuffers_.end(),
+                 [&](const TrackedCmdbuf &tracked) {
+                   // If fence is signaled, cmdbuf has completed
+                   VkResult res =
+                       vkGetFenceStatus(buffer->device, tracked.fence->fence);
+                   return res == VK_SUCCESS;
+    });
+  */
+
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/VK_NULL_HANDLE),
+                                      /*fence=*/fence->fence),
                         "failed to submit command buffer");
+
+  return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
 }
 
-void VulkanStream::submit_synced(CommandList *cmdlist) {
-  vkapi::IVkCommandBuffer buffer =
-      static_cast<VulkanCommandList *>(cmdlist)->finalize();
-
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &buffer->buffer;
-
-  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
-
-  if (last_semaphore_) {
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
-    submit_info.pWaitDstStageMask = &stage_flag;
-  }
-
-  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/cmd_sync_fence_->fence),
-                        "failed to submit command buffer");
-
-  vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
-                  UINT64_MAX);
-  vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
-
-  submitted_cmdbuffers_.clear();
-  last_semaphore_ = nullptr;
+StreamSemaphore VulkanStream::submit_synced(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+  auto sema = submit(cmdlist, wait_semaphores);
+  command_sync();
+  return sema;
 }
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
   submitted_cmdbuffers_.clear();
-  last_semaphore_ = nullptr;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
@@ -1714,7 +1736,17 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                                     graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    image_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    image_info.queueFamilyIndexCount = 2;
+    image_info.pQueueFamilyIndices = queue_family_indices;
+  }
 
   alloc.format = image_info.format;
 
@@ -2088,12 +2120,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 
     create_swap_chain();
 
-    VkSemaphoreCreateInfo sema_create_info;
-    sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    sema_create_info.pNext = nullptr;
-    sema_create_info.flags = 0;
-    vkCreateSemaphore(device->vk_device(), &sema_create_info,
-                      kNoVkAllocCallbacks, &image_available_);
+    image_available_ = vkapi::create_semaphore(device->vk_device(), 0);
   } else {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
@@ -2246,7 +2273,7 @@ int VulkanSurface::get_image_count() {
 VulkanSurface::~VulkanSurface() {
   if (config_.window_handle) {
     destroy_swap_chain();
-    vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+    image_available_ = nullptr;
     vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
   } else {
     for (auto &img : swapchain_images_) {
@@ -2278,14 +2305,19 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
   return std::make_pair(width, height);
 }
 
-DeviceAllocation VulkanSurface::get_target_image() {
+StreamSemaphore VulkanSurface::acquire_next_image() {
   if (!config_.window_handle) {
     image_index_ = (image_index_ + 1) % swapchain_images_.size();
+    return nullptr;
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                          image_available_, VK_NULL_HANDLE, &image_index_);
+                          image_available_->semaphore, VK_NULL_HANDLE,
+                          &image_index_);
+    return std::make_shared<VulkanStreamSemaphoreObject>(image_available_);
   }
+}
 
+DeviceAllocation VulkanSurface::get_target_image() {
   return swapchain_images_[image_index_];
 }
 
@@ -2293,20 +2325,27 @@ BufferFormat VulkanSurface::image_format() {
   return image_format_;
 }
 
-void VulkanSurface::present_image() {
-  // TODO: In the future tie the wait semaphores.
-  // Currently we should just halt and wait on host before present
-  vkDeviceWaitIdle(device_->vk_device());
+void VulkanSurface::present_image(
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+  std::vector<VkSemaphore> vk_wait_semaphores;
+
+  for (const StreamSemaphore &sema_ : wait_semaphores) {
+    auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
+  }
+
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &image_available_;
-  presentInfo.swapchainCount = 1;
+  presentInfo.pWaitSemaphores = vk_wait_semaphores.data();
+  presentInfo.swapchainCount = vk_wait_semaphores.size();
   presentInfo.pSwapchains = &swapchain_;
   presentInfo.pImageIndices = &image_index_;
   presentInfo.pResults = nullptr;
 
   vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
+
+  device_->wait_idle();
 }
 
 DeviceAllocation VulkanSurface::get_image_data() {
@@ -2380,8 +2419,6 @@ VulkanStream::VulkanStream(VulkanDevice &device,
   command_pool_ = vkapi::create_command_pool(
       device_.vk_device(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
       queue_family_index);
-
-  cmd_sync_fence_ = vkapi::create_fence(device_.vk_device(), 0);
 }
 
 VulkanStream::~VulkanStream() {

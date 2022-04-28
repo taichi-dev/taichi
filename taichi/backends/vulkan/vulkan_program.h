@@ -54,6 +54,10 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->synchronize();
   }
 
+  StreamSemaphore flush() override {
+    return vulkan_runtime_->flush();
+  }
+
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {

@@ -139,7 +139,8 @@ class HostDeviceContextBlitter {
   bool device_to_host(
       CommandList *cmdlist,
       const std::unordered_map<int, DeviceAllocation> &ext_arrays,
-      const std::unordered_map<int, size_t> &ext_arr_size) {
+      const std::unordered_map<int, size_t> &ext_arr_size,
+      const std::vector<StreamSemaphore> &wait_semaphore) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -520,9 +521,11 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // If we need to host sync, sync and remove in-flight references
+  std::vector<StreamSemaphore> wait_semaphore;
+
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
-                                    ext_array_size)) {
+                                    ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }
@@ -536,8 +539,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
-      device_->get_compute_stream()->submit(current_cmdlist_.get());
-      current_cmdlist_ = nullptr;
+      flush();
     }
   }
 
@@ -552,12 +554,22 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 }
 
 void VkRuntime::synchronize() {
-  if (current_cmdlist_) {
-    device_->get_compute_stream()->submit(current_cmdlist_.get());
-    current_cmdlist_ = nullptr;
-  }
-  device_->get_compute_stream()->command_sync();
+  flush();
+  device_->wait_idle();
   ctx_buffers_.clear();
+}
+
+StreamSemaphore VkRuntime::flush() {
+  StreamSemaphore sema;
+  if (current_cmdlist_) {
+    sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
+    current_cmdlist_ = nullptr;
+  } else {
+    auto cmdlist = device_->get_compute_stream()->new_command_list();
+    cmdlist->memory_barrier();
+    sema = device_->get_compute_stream()->submit(cmdlist.get());
+  }
+  return sema;
 }
 
 Device *VkRuntime::get_ti_device() const {

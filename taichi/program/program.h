@@ -156,6 +156,8 @@ class TI_DLL_EXPORT Program {
 
   void synchronize();
 
+  StreamSemaphore flush();
+
   // See AsyncEngine::flush().
   // Only useful when async mode is enabled.
   void async_flush();

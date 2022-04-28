@@ -117,11 +117,10 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
       (~(VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT));
 
   // first try and find a queue that has just the compute bit set
-  // FIXME: Actually create two queues (async compute & graphics if supported)
   for (int i = 0; i < (int)queue_family_count; ++i) {
     const VkQueueFlags masked_flags = kFlagMask & queue_families[i].queueFlags;
     if ((masked_flags & VK_QUEUE_COMPUTE_BIT) &&
-        (masked_flags & VK_QUEUE_GRAPHICS_BIT)) {
+        !(masked_flags & VK_QUEUE_GRAPHICS_BIT)) {
       indices.compute_family = i;
     }
     if (masked_flags & VK_QUEUE_GRAPHICS_BIT) {
@@ -139,6 +138,8 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
     }
 
     if (indices.is_complete() && indices.is_complete_for_ui()) {
+      TI_INFO("Async compute queue {}, graphics queue {}",
+              indices.compute_family.value(), indices.graphics_family.value());
       return indices;
     }
   }
@@ -668,12 +669,8 @@ void VulkanDeviceCreator::create_logical_device() {
     }
 
     // F16 / I8
-#ifdef __APPLE__
-    {
-#else
     if (CHECK_VERSION(1, 2) ||
         CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
-#endif
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -681,10 +678,6 @@ void VulkanDeviceCreator::create_logical_device() {
         ti_device_->set_cap(DeviceCapability::spirv_has_float16, true);
       }
       if (shader_f16_i8_feature.shaderInt8) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
-      }
-      if (portability_subset_enabled) {
-        // TODO: investigate why MoltenVK isn't reporting int8 caps. See #3252
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
       *pNextEnd = &shader_f16_i8_feature;

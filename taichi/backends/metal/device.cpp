@@ -18,6 +18,7 @@ class ResourceBinderImpl : public ResourceBinder {
     DeviceAllocationId alloc_id{0};
     // Not sure if this info is necessary yet.
     // TODO: Make it an enum?
+    uint64_t offset{0};
     [[maybe_unused]] bool is_constant{false};
   };
   using BindingMap = std::unordered_map<uint32_t, Binding>;
@@ -34,13 +35,12 @@ class ResourceBinderImpl : public ResourceBinder {
                  uint32_t binding,
                  DevicePtr ptr,
                  size_t size) override {
-    TI_ERROR(
-        "DevicePtr not supported, please use the DeviceAllocation overload");
+    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
   }
   void rw_buffer(uint32_t set,
                  uint32_t binding,
                  DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*is_constant=*/false);
+    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/false);
   }
 
   // Constant buffers
@@ -48,11 +48,10 @@ class ResourceBinderImpl : public ResourceBinder {
               uint32_t binding,
               DevicePtr ptr,
               size_t size) override {
-    TI_ERROR(
-        "DevicePtr not supported, please use the DeviceAllocation overload");
+    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
   }
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*is_constant=*/true);
+    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/true);
   }
 
   const BindingMap &binding_map() const {
@@ -62,11 +61,12 @@ class ResourceBinderImpl : public ResourceBinder {
  private:
   void bind_buffer(uint32_t set,
                    uint32_t binding,
-                   DeviceAllocation alloc,
+                   const DeviceAllocation &alloc,
+                   uint64_t offset,
                    bool is_constant) {
     TI_ASSERT(set == 0);
     TI_ASSERT(alloc.device == dev_);
-    binding_map_[binding] = {alloc.alloc_id, is_constant};
+    binding_map_[binding] = {alloc.alloc_id, offset, is_constant};
   }
 
   const Device *const dev_;
@@ -190,6 +190,11 @@ class CommandListImpl : public CommandList {
     auto ceil_div = [](uint32_t a, uint32_t b) -> uint32_t {
       return (a + b - 1) / b;
     };
+    for (const auto &[idx, b] : builder.binding_map) {
+      auto *buf = alloc_buf_mapper_->find(b.alloc_id).buffer;
+      TI_ASSERT(buf != nullptr);
+      set_mtl_buffer(encoder.get(), buf, b.offset, idx);
+    }
     const auto num_blocks_x = ceil_div(grid_size.x, block_size.x);
     const auto num_blocks_y = ceil_div(grid_size.y, block_size.y);
     const auto num_blocks_z = ceil_div(grid_size.z, block_size.z);
@@ -349,9 +354,9 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     return stream_.get();
   }
 
-  BufferAndMem find(DeviceAllocation alloc) const override {
+  BufferAndMem find(DeviceAllocationId alloc_id) const override {
     BufferAndMem bm;
-    auto itr = allocations_.find(alloc.alloc_id);
+    auto itr = allocations_.find(alloc_id);
     if (itr == allocations_.end()) {
       return bm;
     }

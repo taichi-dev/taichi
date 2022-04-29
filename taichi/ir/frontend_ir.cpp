@@ -118,7 +118,6 @@ void ArgLoadExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
-  //  ret_type.set_is_pointer(is_ptr);
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {

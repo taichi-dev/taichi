@@ -408,7 +408,7 @@ class LowerAST : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
     } else {  // global variable
-      TI_ASSERT(dest.is<GlobalPtrExpression>());
+      TI_ASSERT(dest.is<GlobalPtrExpression>() || (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
       flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }

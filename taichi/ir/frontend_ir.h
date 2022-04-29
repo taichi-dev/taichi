@@ -286,6 +286,10 @@ class ArgLoadExpression : public Expression {
 
   void flatten(FlattenContext *ctx) override;
 
+  bool is_lvalue() const override {
+    return is_ptr;
+  }
+
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 

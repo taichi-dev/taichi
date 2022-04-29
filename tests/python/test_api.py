@@ -60,8 +60,8 @@ user_api[ti] = [
     'wasm', 'x64', 'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
-    'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'from_paddle',
+    'parent', 'shape', 'snode', 'to_numpy', 'to_torch', 'to_paddle'
 ]
 user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
@@ -77,8 +77,9 @@ user_api[ti.math] = [
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
-    'get_scalar_field', 'parent', 'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'from_paddle',
+    'get_scalar_field', 'parent', 'shape', 'snode', 'to_numpy', 'to_torch',
+    'to_paddle'
 ]
 user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
@@ -89,17 +90,17 @@ user_api[ti.SNode] = [
     'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
 ]
 user_api[ti.ScalarField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
-    'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'from_paddle',
+    'parent', 'shape', 'snode', 'to_numpy', 'to_torch', 'to_paddle'
 ]
 user_api[ti.ScalarNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
 ]
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'from_paddle',
     'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
-    'to_torch'
+    'to_torch', 'to_paddle'
 ]
 user_api[ti.VectorNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'

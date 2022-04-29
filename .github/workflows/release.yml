@@ -87,7 +87,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
@@ -110,7 +110,7 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.2.1 \
+            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt

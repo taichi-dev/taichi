@@ -71,6 +71,15 @@ def shfl_up_f32(mask, val, offset):
             False))
 
 
+def shfl_down_f32(mask, val, offset):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_shfl_down_sync_f32",
+            # lane offset is 31 for warp size 32
+            expr.make_expr_group(mask, val, offset, 31),
+            False))
+
+
 def shfl_xor_i32(mask, val, offset):
     return expr.Expr(
         _ti_core.insert_internal_func_call(

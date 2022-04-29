@@ -1,4 +1,5 @@
 #ifdef TI_WITH_LLVM
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
@@ -850,6 +851,12 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_int8(), true));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_uint8(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));
@@ -1137,12 +1144,7 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  auto mask = stmt->parent->mask();
-  if (mask && stmt->width() != 1) {
-    TI_NOT_IMPLEMENTED
-  } else {
-    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
-  }
+  builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
@@ -1359,7 +1361,6 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->val]);
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
@@ -2392,7 +2393,7 @@ FunctionType CodeGenLLVM::gen() {
   std::string kernel_key;
   if (config.offline_cache && this->supports_offline_cache() &&
       !kernel->is_evaluator) {
-    kernel_key = get_offline_cache_key(&kernel->program->config, kernel);
+    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
     LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
     LlvmOfflineCache::KernelCacheData cache_data;

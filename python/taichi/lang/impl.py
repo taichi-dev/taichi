@@ -119,8 +119,7 @@ def subscript(value, *_indices, skip_reordered=False):
             ind = [_index]
         flattened_indices += ind
     _indices = tuple(flattened_indices)
-    if isinstance(_indices,
-                  tuple) and len(_indices) == 1 and _indices[0] is None:
+    if len(_indices) == 1 and _indices[0] is None:
         _indices = ()
 
     if has_slice:
@@ -211,13 +210,25 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
                                           shape, stride))
 
 
+class SrcInfoGuard:
+    def __init__(self, info_stack, info):
+        self.info_stack = info_stack
+        self.info = info
+
+    def __enter__(self):
+        self.info_stack.append(self.info)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.info_stack.pop()
+
+
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
-        self.scope_stack = []
+        self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
@@ -231,6 +242,12 @@ class PyTaichi:
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
+
+    def src_info_guard(self, info):
+        return SrcInfoGuard(self.src_info_stack, info)
+
+    def get_current_src_info(self):
+        return self.src_info_stack[-1]
 
     def set_default_fp(self, fp):
         assert fp in [f16, f32, f64]
@@ -465,7 +482,7 @@ class _Root:
 root = _Root()
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
-See also https://docs.taichi.graphics/lang/articles/layout
+See also https://docs.taichi-lang.org/lang/articles/layout
 
 Example::
 
@@ -507,7 +524,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     actually defined. The data in a Taichi field can be directly accessed by
     a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
 
-    See also https://docs.taichi.graphics/lang/articles/field
+    See also https://docs.taichi-lang.org/lang/articles/field
 
     Args:
         dtype (DataType): data type of the field.
@@ -762,7 +779,7 @@ def static(x, *xs):
     `static()` is what enables the so-called metaprogramming in Taichi. It is
     in many ways similar to ``constexpr`` in C++.
 
-    See also https://docs.taichi.graphics/lang/articles/meta.
+    See also https://docs.taichi-lang.org/lang/articles/meta.
 
     Args:
         x (Any): an expression to be evaluated

@@ -49,6 +49,8 @@ TEST(FrontendTypeInference, BinaryOp) {
 }
 
 TEST(FrontendTypeInference, UnaryOp) {
+  auto prog = std::make_unique<Program>(Arch::x64);
+  prog->config.default_fp = PrimitiveType::f64;
   auto const_i16 = value<int16>(-(1 << 10));
   const_i16->type_check(nullptr);
   EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
@@ -58,6 +60,9 @@ TEST(FrontendTypeInference, UnaryOp) {
   auto bit_not_i16 = ~const_i16;
   bit_not_i16->type_check(nullptr);
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
+  auto log_f64 = expr_log(const_i16);
+  log_f64->type_check(&prog->config);
+  EXPECT_EQ(log_f64->ret_type, PrimitiveType::f64);
 }
 
 TEST(FrontendTypeInference, TernaryOp) {

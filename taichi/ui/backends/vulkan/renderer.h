@@ -71,11 +71,15 @@ class TI_DLL_EXPORT Renderer {
   const SwapChain &swap_chain() const;
   SwapChain &swap_chain();
 
+  taichi::lang::StreamSemaphore get_render_complete_semaphore();
+
  private:
   glm::vec3 background_color_ = glm::vec3(0.f, 0.f, 0.f);
 
   std::vector<std::unique_ptr<Renderable>> renderables_;
   int next_renderable_;
+
+  taichi::lang::StreamSemaphore render_complete_semaphore_{nullptr};
 
   SwapChain swap_chain_;
   AppContext app_context_;

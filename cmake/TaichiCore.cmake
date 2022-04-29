@@ -353,7 +353,6 @@ if (TI_WITH_OPENGL)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
-
     add_subdirectory(taichi/runtime/opengl)
 endif()
 

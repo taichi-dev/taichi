@@ -14,8 +14,8 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type, to_paddle_type,
-                              warning)
+                              taichi_scope, to_numpy_type, to_paddle_type,
+                              to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 
@@ -1471,8 +1471,8 @@ class MatrixField(Field):
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         # pylint: disable=E1101
         arr = paddle.empty(self.shape + shape_ext,
-                          dtype=to_paddle_type(self.dtype),
-                          device=device)
+                           dtype=to_paddle_type(self.dtype),
+                           device=device)
         from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
         matrix_to_ext_arr(self, arr, as_vector)
         runtime_ops.sync()

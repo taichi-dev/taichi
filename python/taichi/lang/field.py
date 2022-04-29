@@ -1,6 +1,7 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type, to_paddle_type
+from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
+                              to_pytorch_type)
 
 
 class Field:
@@ -298,8 +299,8 @@ class ScalarField(Field):
 
         # pylint: disable=E1101
         arr = paddle.zeros(size=self.shape,
-                          dtype=to_paddle_type(self.dtype),
-                          device=device)
+                           dtype=to_paddle_type(self.dtype),
+                           device=device)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()

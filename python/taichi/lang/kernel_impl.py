@@ -20,7 +20,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import (has_paddle, has_pytorch, to_taichi_type)
+from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
@@ -592,19 +592,25 @@ class Kernel:
         tmp = v.value().get_tensor()
         taichi_arch = self.runtime.prog.config.arch
 
-        if str(paddle.device.get_device()).startswith('gpu'):
+        if v.place.is_gpu_place():
             # External tensor on cuda
             if taichi_arch != _ti_core.Arch.cuda:
                 # copy data back to cpu
                 host_v = v.cpu()
                 tmp = host_v.value().get_tensor()
                 callbacks.append(get_call_back(v, host_v))
-        else:
+        elif v.place.is_cpu_place():
             # External tensor on cpu
             if taichi_arch == _ti_core.Arch.cuda:
                 gpu_v = v.cuda()
                 tmp = gpu_v.value().get_tensor()
                 callbacks.append(get_call_back(v, gpu_v))
+        else:
+            # Paddle do support many other backends like XPU, NPU, MLU, IPU.
+            raise TaichiRuntimeError(
+                f"Taichi do not support backend {v.place} that Paddle support."
+            )
+
         return tmp, callbacks
 
     def get_function_body(self, t_kernel):

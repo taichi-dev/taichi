@@ -516,7 +516,7 @@ class VulkanStream : public Stream {
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
 };
 
-class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
+class VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     VkInstance instance;

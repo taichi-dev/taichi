@@ -12,7 +12,7 @@ target_include_directories(opengl_runtime
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
     ${PROJECT_SOURCE_DIR}/external/eigen
   )
-target_include_directories(opengl_runtime 
+target_include_directories(opengl_runtime
   PRIVATE
     external/glad/include
   )

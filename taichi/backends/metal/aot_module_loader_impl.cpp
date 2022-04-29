@@ -15,7 +15,7 @@ class FieldImpl : public aot::Field {
   }
 
  private:
-  //KernelManager *const runtime_;
+  // KernelManager *const runtime_;
   CompiledFieldData field_;
 };
 

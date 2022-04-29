@@ -528,6 +528,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     uint32_t graphics_queue_family_index;
   };
 
+  VulkanDevice();
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
 

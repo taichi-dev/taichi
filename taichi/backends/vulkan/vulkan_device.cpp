@@ -1228,9 +1228,12 @@ struct VulkanDevice::ThreadLocalStreams {
   unordered_map<std::thread::id, std::unique_ptr<VulkanStream>> map;
 };
 
-void VulkanDevice::init_vulkan_structs(Params &params)
+VulkanDevice::VulkanDevice()
     : compute_streams_(std::make_unique<ThreadLocalStreams>()),
       graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
+}
+
+void VulkanDevice::init_vulkan_structs(Params &params) {
   instance_ = params.instance;
   device_ = params.device;
   physical_device_ = params.physical_device;
@@ -1508,10 +1511,10 @@ Stream *VulkanDevice::get_graphics_stream() {
 }
 
 void VulkanDevice::wait_idle() {
-  for (auto &[tid, stream] : compute_streams_.map) {
+  for (auto &[tid, stream] : compute_streams_->map) {
     stream->command_sync();
   }
-  for (auto &[tid, stream] : graphics_streams_.map) {
+  for (auto &[tid, stream] : graphics_streams_->map) {
     stream->command_sync();
   }
 }

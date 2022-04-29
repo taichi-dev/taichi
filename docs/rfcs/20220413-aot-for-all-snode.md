@@ -155,9 +155,10 @@ builder.dense(ti.i, 8).place(x)
 tree_t = x.build()
 ```
 
-For SoA, things get a bit trickier. The current approach is to treat each compopnent of the composite type as a standalone scalar Taichi field. In the example below, we have to manually place the underlying 3 components of `x` separately.
+For SoA, things get a bit trickier. The **current approach** is to treat each compopnent of the composite type as a standalone scalar Taichi field. In the example below, we have to manually place the underlying 3 components of `x` separately.
 
 ```py
+# Current way (as of v1.0.1) of doing SoA in Taichi
 x = ti.Vector.field(3, ti.f32)
 for f in x._get_field_members():  # `x` consists three scalar f32 fields
   ti.root.dense(ti.ij).place(f)

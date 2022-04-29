@@ -47,6 +47,11 @@ inline bool binary_is_logical(BinaryOpType t) {
 
 std::string binary_op_type_name(BinaryOpType type);
 
+inline bool is_shift_op(BinaryOpType type) {
+  return type == BinaryOpType::bit_sar || type == BinaryOpType::bit_shl ||
+         type == BinaryOpType::bit_shr;
+}
+
 inline bool is_comparison(BinaryOpType type) {
   return starts_with(binary_op_type_name(type), "cmp");
 }

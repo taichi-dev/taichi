@@ -172,12 +172,21 @@ class MeshElementField:
             v.from_torch(array_dict[k])
 
     @python_scope
+    def from_paddle(self, array_dict):
+        for k, v in self._items:
+            v.from_paddle(array_dict[k])
+
+    @python_scope
     def to_numpy(self):
         return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
         return {k: v.to_torch(device=device) for k, v in self._items}
+
+    @python_scope
+    def to_paddle(self, device=None):
+        return {k: v.to_paddle(device=device) for k, v in self._items}
 
     @python_scope
     def __len__(self):

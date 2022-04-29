@@ -14,7 +14,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type,
+                              taichi_scope, to_numpy_type, to_pytorch_type, to_paddle_type,
                               warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
@@ -1449,6 +1449,29 @@ class MatrixField(Field):
         # pylint: disable=E1101
         arr = torch.empty(self.shape + shape_ext,
                           dtype=to_pytorch_type(self.dtype),
+                          device=device)
+        from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
+        matrix_to_ext_arr(self, arr, as_vector)
+        runtime_ops.sync()
+        return arr
+
+    def to_paddle(self, device=None, keep_dims=False):
+        """Converts the field instance to a PaddlePaddle tensor.
+
+        Args:
+            device (paddle.CPUPlace()/CUDAPlace(), optional): The desired device of returned tensor.
+            keep_dims (bool, optional): Whether to keep the dimension after conversion.
+                See :meth:`~taichi.lang.field.MatrixField.to_numpy` for more detailed explanation.
+
+        Returns:
+            paddle.Tensor: The result paddle tensor.
+        """
+        import paddle  # pylint: disable=C0415
+        as_vector = self.m == 1 and not keep_dims
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        # pylint: disable=E1101
+        arr = paddle.empty(self.shape + shape_ext,
+                          dtype=to_paddle_type(self.dtype),
                           device=device)
         from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
         matrix_to_ext_arr(self, arr, as_vector)

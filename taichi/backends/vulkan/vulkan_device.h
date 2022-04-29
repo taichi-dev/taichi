@@ -516,9 +516,7 @@ class VulkanStream : public Stream {
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
 };
 
-class VulkanDevice : public GraphicsDevice {
-  friend VulkanSurface;
-
+class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     VkInstance instance;
@@ -530,6 +528,7 @@ class VulkanDevice : public GraphicsDevice {
     uint32_t graphics_queue_family_index;
   };
 
+  VulkanDevice();
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
 
@@ -620,6 +619,8 @@ class VulkanDevice : public GraphicsDevice {
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
  private:
+  friend VulkanSurface;
+
   void create_vma_allocator();
   void new_descriptor_pool();
 
@@ -635,9 +636,9 @@ class VulkanDevice : public GraphicsDevice {
   VkQueue graphics_queue_;
   uint32_t graphics_queue_family_index_;
 
-  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>> compute_stream_;
-  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>>
-      graphics_stream_;
+  struct ThreadLocalStreams;
+  std::unique_ptr<ThreadLocalStreams> compute_streams_{nullptr};
+  std::unique_ptr<ThreadLocalStreams> graphics_streams_{nullptr};
 
   // Memory allocation
   struct AllocationInternal {

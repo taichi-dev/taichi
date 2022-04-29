@@ -1224,6 +1224,15 @@ vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   return buffer_;
 }
 
+struct VulkanDevice::ThreadLocalStreams {
+  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>> map;
+};
+
+VulkanDevice::VulkanDevice()
+    : compute_streams_(std::make_unique<ThreadLocalStreams>()),
+      graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
+}
+
 void VulkanDevice::init_vulkan_structs(Params &params) {
   instance_ = params.instance;
   device_ = params.device;
@@ -1479,33 +1488,33 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
 
 Stream *VulkanDevice::get_compute_stream() {
   auto tid = std::this_thread::get_id();
-  auto iter = compute_stream_.find(tid);
-  if (iter == compute_stream_.end()) {
-    compute_stream_[tid] = std::make_unique<VulkanStream>(
+  auto &stream_map = compute_streams_->map;
+  auto iter = stream_map.find(tid);
+  if (iter == stream_map.end()) {
+    stream_map[tid] = std::make_unique<VulkanStream>(
         *this, compute_queue_, compute_queue_family_index_);
-    return compute_stream_.at(tid).get();
-  } else {
-    return iter->second.get();
+    return stream_map.at(tid).get();
   }
+  return iter->second.get();
 }
 
 Stream *VulkanDevice::get_graphics_stream() {
   auto tid = std::this_thread::get_id();
-  auto iter = graphics_stream_.find(tid);
-  if (iter == graphics_stream_.end()) {
-    graphics_stream_[tid] = std::make_unique<VulkanStream>(
+  auto &stream_map = graphics_streams_->map;
+  auto iter = stream_map.find(tid);
+  if (iter == stream_map.end()) {
+    stream_map[tid] = std::make_unique<VulkanStream>(
         *this, graphics_queue_, graphics_queue_family_index_);
-    return graphics_stream_.at(tid).get();
-  } else {
-    return iter->second.get();
+    return stream_map.at(tid).get();
   }
+  return iter->second.get();
 }
 
 void VulkanDevice::wait_idle() {
-  for (auto &[tid, stream] : compute_stream_) {
+  for (auto &[tid, stream] : compute_streams_->map) {
     stream->command_sync();
   }
-  for (auto &[tid, stream] : graphics_stream_) {
+  for (auto &[tid, stream] : graphics_streams_->map) {
     stream->command_sync();
   }
 }

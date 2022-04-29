@@ -734,16 +734,12 @@ class ReferenceExpression : public Expression {
   Expr var;
   void type_check(CompileConfig *config) override;
 
-  void serialize(std::ostream &ss) override {
-    ss << "ref(";
-    var->serialize(ss);
-    ss << ")";
-  }
-
   ReferenceExpression(const Expr &expr) : var(expr) {
   }
 
   void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class ASTBuilder {

@@ -907,6 +907,7 @@ class ReferenceStmt : public Stmt {
   bool global_side_effect{false};
 
   ReferenceStmt(Stmt *var) : var(var) {
+    TI_STMT_REG_FIELDS;
   }
 
   bool has_global_side_effect() const override {

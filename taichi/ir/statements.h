@@ -906,7 +906,8 @@ class ReferenceStmt : public Stmt {
   Stmt *var;
   bool global_side_effect{false};
 
-  ReferenceStmt(Stmt *var): var(var) {}
+  ReferenceStmt(Stmt *var) : var(var) {
+  }
 
   bool has_global_side_effect() const override {
     return global_side_effect;

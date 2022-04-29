@@ -118,7 +118,7 @@ void ArgLoadExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
-//  ret_type.set_is_pointer(is_ptr);
+  //  ret_type.set_is_pointer(is_ptr);
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
@@ -494,7 +494,9 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
   } else {
     TI_ASSERT(dest.is<GlobalPtrExpression>() ||
-              dest.is<TensorElementExpression>() || (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
+              dest.is<TensorElementExpression>() ||
+              (dest.is<ArgLoadExpression>() &&
+               dest.cast<ArgLoadExpression>()->is_ptr));
     flatten_lvalue(dest, ctx);
     ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
   }
@@ -956,7 +958,8 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     else {
       TI_NOT_IMPLEMENTED
     }
-  } else if (ptr.is<ArgLoadExpression>() && ptr.cast<ArgLoadExpression>()->is_ptr) {
+  } else if (ptr.is<ArgLoadExpression>() &&
+             ptr.cast<ArgLoadExpression>()->is_ptr) {
     flatten_global_load(ptr, ctx);
   }
 }

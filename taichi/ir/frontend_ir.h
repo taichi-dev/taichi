@@ -278,7 +278,8 @@ class ArgLoadExpression : public Expression {
   DataType dt;
   bool is_ptr;
 
-  ArgLoadExpression(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
+  ArgLoadExpression(int arg_id, DataType dt, bool is_ptr = false)
+      : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -739,7 +740,8 @@ class ReferenceExpression : public Expression {
     ss << ")";
   }
 
-  ReferenceExpression(const Expr &expr) : var(expr) {}
+  ReferenceExpression(const Expr &expr) : var(expr) {
+  }
 
   void flatten(FlattenContext *ctx) override;
 };

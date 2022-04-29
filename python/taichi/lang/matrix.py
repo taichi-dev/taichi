@@ -156,6 +156,9 @@ class _PyScopeMatrixImpl(_MatrixBaseImpl):
             The value of the element at a specific position of a matrix.
 
         """
+        return self.subscript_scope_ignored(indices)
+
+    def subscript_scope_ignored(self, indices):
         if not isinstance(indices, (list, tuple)):
             indices = [indices]
         assert len(indices) in [1, 2]
@@ -564,6 +567,11 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def _subscript(self, *indices):
+        if isinstance(self._impl, _PyScopeMatrixImpl):
+            # This can happpen in these cases:
+            # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
+            # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
+            return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, *indices)
 

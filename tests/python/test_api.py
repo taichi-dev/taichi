@@ -51,7 +51,7 @@ user_api[ti] = [
     'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max',
     'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange',
     'no_activate', 'one', 'opengl', 'polar_decompose', 'pow', 'profiler',
-    'randn', 'random', 'raw_div', 'raw_mod', 'rescale_index', 'reset',
+    'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
     'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator',

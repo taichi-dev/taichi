@@ -1,5 +1,5 @@
 #include "extension.h"
-//#include "taichi/backends/opengl/opengl_api.h"
+//#include "taichi/runtime/opengl/opengl_api.h"
 
 #include <unordered_map>
 #include <unordered_set>

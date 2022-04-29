@@ -3,7 +3,7 @@
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
 #include "taichi/backends/opengl/struct_opengl.h"
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/runtime/opengl/opengl_api.h"
 
 #include <string>
 #include <unordered_map>

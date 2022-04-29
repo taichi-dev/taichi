@@ -4,7 +4,7 @@
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/backends/opengl/opengl_utils.h"
-#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/runtime/opengl/shaders/runtime.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"

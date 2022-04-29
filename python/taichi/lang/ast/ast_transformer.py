@@ -486,8 +486,11 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
                             ctx.func.arguments[i].annotation))
-                elif isinstance(ctx.func.arguments[i].annotation, primitive_types.RefType):
-                    ctx.create_variable(arg.arg, kernel_arguments.decl_scalar_arg(
+                elif isinstance(ctx.func.arguments[i].annotation,
+                                primitive_types.RefType):
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_scalar_arg(
                             ctx.func.arguments[i].annotation))
                 else:
                     ctx.global_vars[

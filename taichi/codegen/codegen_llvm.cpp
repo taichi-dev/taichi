@@ -1112,7 +1112,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
     dest_ty =
-        llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
+        llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);

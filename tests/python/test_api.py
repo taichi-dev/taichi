@@ -19,11 +19,12 @@ def _get_matrix_swizzle_apis():
 
 def _get_expected_matrix_apis():
     base = [
-        'all', 'any', 'cast', 'cols', 'cross', 'determinant', 'diag', 'dot',
-        'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray',
-        'norm', 'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product',
-        'rotation2d', 'rows', 'sum', 'to_list', 'to_numpy', 'trace',
-        'transpose', 'unit', 'zero'
+        'all', 'any', 'any_array_access', 'cast', 'cols', 'cross',
+        'determinant', 'diag', 'dot', 'dynamic_index_stride', 'entries',
+        'field', 'fill', 'identity', 'inverse', 'local_tensor_proxy', 'max',
+        'min', 'ndarray', 'norm', 'norm_inv', 'norm_sqr', 'normalized', 'one',
+        'outer_product', 'rotation2d', 'rows', 'sum', 'to_list', 'to_numpy',
+        'trace', 'transpose', 'unit', 'zero',
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)

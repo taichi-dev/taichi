@@ -485,19 +485,19 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     op_type = AtomicOpType::add;
   }
   // expand rhs
-  auto expr = val;
-  flatten_rvalue(expr, ctx);
+  flatten_rvalue(val, ctx);
+  auto src_val = val->stmt;
   if (dest.is<IdExpression>()) {  // local variable
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
-    ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
+    ctx->push_back<AtomicOpStmt>(op_type, alloca, src_val);
   } else {
     TI_ASSERT(dest.is<GlobalPtrExpression>() ||
               dest.is<TensorElementExpression>() ||
               (dest.is<ArgLoadExpression>() &&
                dest.cast<ArgLoadExpression>()->is_ptr));
     flatten_lvalue(dest, ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, expr->stmt);
+    ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, src_val);
   }
   stmt = ctx->back_stmt();
   stmt->tb = tb;

@@ -516,7 +516,7 @@ class VulkanStream : public Stream {
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
 };
 
-class VulkanDevice : public GraphicsDevice {
+class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     VkInstance instance;
@@ -635,9 +635,9 @@ class VulkanDevice : public GraphicsDevice {
   VkQueue graphics_queue_;
   uint32_t graphics_queue_family_index_;
 
-  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>> compute_stream_;
-  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>>
-      graphics_stream_;
+  struct ThreadLocalStreams;
+  std::unique_ptr<ThreadLocalStreams> compute_streams_{nullptr};
+  std::unique_ptr<ThreadLocalStreams> graphics_streams_{nullptr};
 
   // Memory allocation
   struct AllocationInternal {

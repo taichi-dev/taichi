@@ -47,7 +47,7 @@ def _gen_swizzles(cls):
 
                 def prop_getter(instance):
                     checker(instance, attr)
-                    return instance._get_entry_and_read([attr_idx])
+                    return instance._impl._get_entry_and_read([attr_idx])
 
                 @python_scope
                 def prop_setter(instance, value):

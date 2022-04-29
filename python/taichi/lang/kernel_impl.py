@@ -658,7 +658,8 @@ class Kernel:
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
-                    is_torch = isinstance(v, torch.Tensor)
+                    is_torch = isinstance(v,
+                                          torch.Tensor) if has_torch else False
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!

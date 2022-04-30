@@ -11,7 +11,7 @@ if has_paddle():
 
 
 @pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
-@test_utils.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_devices():
     n = 32
     x = ti.field(dtype=ti.i32, shape=n)

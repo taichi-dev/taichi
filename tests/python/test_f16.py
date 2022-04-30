@@ -102,7 +102,7 @@ def test_from_torch():
 
 
 @pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
-@test_utils.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16, exclude=ti.vulkan)
 def test_to_paddle():
     import paddle
     n = 16
@@ -123,7 +123,7 @@ def test_to_paddle():
 
 
 @pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
-@test_utils.test(arch=archs_support_f16)
+@test_utils.test(arch=archs_support_f16, exclude=ti.vulkan)
 def test_from_paddle():
     import paddle
     n = 16

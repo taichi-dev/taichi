@@ -104,6 +104,7 @@ def test_from_torch():
 @pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
 @test_utils.test(arch=archs_support_f16)
 def test_to_paddle():
+    import paddle
     n = 16
     x = ti.field(ti.f16, shape=n)
 
@@ -114,6 +115,8 @@ def test_to_paddle():
 
     init()
     y = x.to_paddle()
+    # paddle's operator slice doesn't have kernel for f16, so cast to f32
+    y = y.cast(paddle.float32)
     print(y)
     for i in range(n):
         assert (y[i] == 2 * i)
@@ -136,6 +139,8 @@ def test_from_paddle():
 
     init()
     z = y.to_paddle()
+    # paddle's operator slice doesn't have kernel for f16, so cast to f32
+    z = z.cast(paddle.float32)
     for i in range(n):
         assert (z[i] == i * 3)
 

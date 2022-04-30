@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "taichi/backends/device.h"
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/runtime/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/common/core.h"
 #include "taichi/ir/offloaded_task_type.h"

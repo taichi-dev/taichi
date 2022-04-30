@@ -2336,9 +2336,9 @@ void VulkanSurface::present_image(
 
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.waitSemaphoreCount = vk_wait_semaphores.size();
   presentInfo.pWaitSemaphores = vk_wait_semaphores.data();
-  presentInfo.swapchainCount = vk_wait_semaphores.size();
+  presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = &swapchain_;
   presentInfo.pImageIndices = &image_index_;
   presentInfo.pResults = nullptr;

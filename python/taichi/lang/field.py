@@ -298,9 +298,7 @@ class ScalarField(Field):
         import paddle  # pylint: disable=C0415
 
         # pylint: disable=E1101
-        arr = paddle.zeros(size=self.shape,
-                           dtype=to_paddle_type(self.dtype),
-                           device=device)
+        arr = paddle.zeros(shape=self.shape, dtype=to_paddle_type(self.dtype))
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()

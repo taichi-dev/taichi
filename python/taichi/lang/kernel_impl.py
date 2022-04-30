@@ -676,7 +676,7 @@ class Kernel:
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)
                     else:
-                        # For now, paddle.fluid.core.Tensor._ptr() is only available on PaddlePaddle's develop branch
+                        # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
                         tmp, paddle_callbacks = self.get_paddle_callbacks(
                             v, has_pp)
                         callbacks += paddle_callbacks

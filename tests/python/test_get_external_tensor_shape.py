@@ -83,7 +83,7 @@ def test_get_external_tensor_shape_access_paddle(size):
     def func(x: ti.types.ndarray(), index: ti.template()) -> ti.i32:
         return x.shape[index]
 
-    x_hat = paddle.ones([size], dtype=paddle.int32)
+    x_hat = paddle.ones(shape=size, dtype=paddle.int32)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
         assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(

@@ -50,7 +50,7 @@ if [ -z "$GPU_TEST" ]; then
     else
         # Fail fast, give priority to the error-prone tests
         if [[ "$OSTYPE" == "linux-gnu" ]]; then
-            python3 tests/run_tests.py -vr2 -t4 -k "paddle" -a "$TI_WANTED_ARCHS"
+            python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
         fi
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi

@@ -15,7 +15,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
     pip install "paddlepaddle==0.0.0; python version < '3.10'" -f https://www.paddlepaddle.org.cn/whl/windows/cpu-mkl-avx/develop.html
 }
 # Fail fast, give priority to the error-prone tests
-python tests/run_tests.py -vr2 -t2 -k "paddle" -a "$env:TI_WANTED_ARCHS"
+python tests/run_tests.py -vr2 -t1 -k "paddle" -a "$env:TI_WANTED_ARCHS"
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
   python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
   if (-not $?) { exit 1 }
@@ -28,5 +28,5 @@ if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
   python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
   if (-not $?) { exit 1 }
 }
-python tests/run_tests.py -vr2 -t2 -k "torch" -a "$env:TI_WANTED_ARCHS"
+python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"
 if (-not $?) { exit 1 }

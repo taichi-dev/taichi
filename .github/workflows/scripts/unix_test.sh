@@ -23,7 +23,7 @@ if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
     python3 -m pip install "torch; python_version < '3.10'"
     # Paddle's develop package doesn't support CI's MACOS machine at present
-    if [[ $PLATFORM == *"linux"* ]]; then
+    if [[ $OSTYPE == "linux-"* ]]; then
         python3 -m pip install "paddlepaddle==0.0.0; python_version < '3.10'" -f https://www.paddlepaddle.org.cn/whl/linux/cpu-mkl/develop.html
     fi
 else
@@ -49,7 +49,7 @@ if [ -z "$GPU_TEST" ]; then
         python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     else
         # Fail fast, give priority to the error-prone tests
-        if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        if [[ $OSTYPE == "linux-"* ]]; then
             python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
         fi
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"

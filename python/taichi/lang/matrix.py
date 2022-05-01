@@ -1455,11 +1455,11 @@ class MatrixField(Field):
         runtime_ops.sync()
         return arr
 
-    def to_paddle(self, device=None, keep_dims=False):
+    def to_paddle(self, place=None, keep_dims=False):
         """Converts the field instance to a Paddle tensor.
 
         Args:
-            device (paddle.CPUPlace()/CUDAPlace(n), optional): The desired device of returned tensor.
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The desired place of returned tensor.
             keep_dims (bool, optional): Whether to keep the dimension after conversion.
                 See :meth:`~taichi.lang.field.MatrixField.to_numpy` for more detailed explanation.
 
@@ -1470,9 +1470,10 @@ class MatrixField(Field):
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         # pylint: disable=E1101
-        arr = paddle.empty(self.shape + shape_ext,
-                           dtype=to_paddle_type(self.dtype),
-                           device=device)
+        # paddle.empty() doesn't support argument `place``
+        arr = paddle.to_tensor(paddle.empty(self.shape + shape_ext,
+                                            to_paddle_type(self.dtype)),
+                               place=place)
         from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
         matrix_to_ext_arr(self, arr, as_vector)
         runtime_ops.sync()

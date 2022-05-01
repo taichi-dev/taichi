@@ -140,3 +140,111 @@ def test_io_zeros():
 
     zeros = mat.to_paddle()
     assert zeros[1, 2] == 4
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_io_struct():
+    n = 16
+    x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+    p1 = {
+        "a": paddle.Tensor(2 * np.ones(n, dtype=np.int32)),
+        "b": paddle.Tensor(3 * np.ones(n, dtype=np.float32)),
+    }
+
+    x1.from_paddle(p1)
+    for i in range(n):
+        assert x1[i].a == 2
+        assert x1[i].b == 3
+
+    p2 = x1.to_paddle()
+    for k in p1:
+        assert (p1[k] == p2[k]).all()
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_fused_kernels():
+    n = 12
+    X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
+    s = impl.get_runtime().get_num_compiled_functions()
+    p = X.to_paddle()
+    assert impl.get_runtime().get_num_compiled_functions() == s + 1
+    X.from_paddle(p)
+    assert impl.get_runtime().get_num_compiled_functions() == s + 2
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_devices():
+    n = 12
+    X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
+    assert X.to_paddle(place=paddle.CPUPlace()).place.is_cpu_place()
+
+    if paddle.device.is_compiled_with_cuda():
+        assert X.to_paddle(place=paddle.CUDAPlace(0)).place.is_gpu_place()
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_shape_matrix():
+    n = 12
+    x = ti.Matrix.field(3, 2, ti.f32, shape=(n, n))
+    X = x.to_paddle()
+    for i in range(n):
+        for j in range(n):
+            for k in range(3):
+                for l in range(2):
+                    X[i, j, k, l] = i * 10 + j + k * 100 + l * 1000
+
+    x.from_paddle(X)
+    X1 = x.to_paddle()
+    x.from_paddle(X1)
+    X1 = x.to_paddle()
+
+    assert (X == X1).all()
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_shape_vector():
+    n = 12
+    x = ti.Vector.field(3, ti.f32, shape=(n, n))
+    X = x.to_paddle()
+    for i in range(n):
+        for j in range(n):
+            for k in range(3):
+                X[i, j, k] = i * 10 + j + k * 100
+
+    x.from_paddle(X)
+    X1 = x.to_paddle()
+    x.from_paddle(X1)
+    X1 = x.to_paddle()
+
+    assert (X == X1).all()
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_paddle_zero():
+    @ti.kernel
+    def test_paddle(arr: ti.types.ndarray()):
+        pass
+
+    test_paddle(paddle.zeros([0], dtype=paddle.int32))
+    test_paddle(paddle.zeros([0, 5], dtype=paddle.int32))
+    test_paddle(paddle.zeros([5, 0, 5], dtype=paddle.int32))
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_paddle_view():
+    @ti.kernel
+    def copy(x: ti.types.ndarray(), y: ti.types.ndarray()):
+        for i, j in x:
+            y[i, j] = x[i, j]
+
+    x = paddle.to_tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).T
+    y = ti.ndarray(int, (3, 3))
+
+    copy(x, y)

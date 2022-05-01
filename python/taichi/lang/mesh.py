@@ -185,8 +185,8 @@ class MeshElementField:
         return {k: v.to_torch(device=device) for k, v in self._items}
 
     @python_scope
-    def to_paddle(self, device=None):
-        return {k: v.to_paddle(device=device) for k, v in self._items}
+    def to_paddle(self, place=None):
+        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __len__(self):

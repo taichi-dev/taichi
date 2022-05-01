@@ -134,11 +134,11 @@ class Field:
         raise NotImplementedError()
 
     @python_scope
-    def to_paddle(self, device=None):
+    def to_paddle(self, place=None):
         """Converts `self` to a paddle tensor.
 
         Args:
-            device (paddle.CPUPlace()/CUDAPlace(n), optional): The desired device of returned tensor.
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The desired place of returned tensor.
 
         Returns:
             paddle.Tensor: The result paddle tensor.
@@ -292,13 +292,16 @@ class ScalarField(Field):
         return arr
 
     @python_scope
-    def to_paddle(self, device=None):
+    def to_paddle(self, place=None):
         """Converts this field to a `paddle.Tensor`.
         """
         import paddle  # pylint: disable=C0415
 
         # pylint: disable=E1101
-        arr = paddle.zeros(shape=self.shape, dtype=to_paddle_type(self.dtype))
+        # paddle.empty() doesn't support argument `place``
+        arr = paddle.to_tensor(paddle.zeros(self.shape,
+                                            to_paddle_type(self.dtype)),
+                               place=place)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()

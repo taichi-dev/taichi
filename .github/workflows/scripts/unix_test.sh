@@ -31,6 +31,7 @@ else
     export PATH=$PATH:$HOME/.local/bin
     # pip will skip packages if already installed
     python3 -m pip install -r requirements_test.txt
+    # Import Paddle's develop GPU package will occur error `Illegal Instruction`.
 fi
 ti diagnose
 ti changelog

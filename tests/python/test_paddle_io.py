@@ -10,7 +10,7 @@ if has_paddle():
     import paddle
 
 
-@pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_devices():
     n = 32

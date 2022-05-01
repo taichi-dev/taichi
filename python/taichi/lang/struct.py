@@ -544,17 +544,17 @@ class StructField(Field):
 
     @python_scope
     def to_paddle(self, device=None):
-        """Converts the Struct field instance to a dictionary of PaddlePaddle tensors.
+        """Converts the Struct field instance to a dictionary of Paddle tensors.
 
         The dictionary may be nested when converting nested structs.
 
         Args:
-            device (paddle.CPUPlace()/CUDAPlace(), optional): The
+            device (paddle.CPUPlace()/CUDAPlace(n), optional): The
                 desired device of returned tensor.
 
         Returns:
             Dict[str, Union[paddle.Tensor, Dict]]: The result
-                PaddlePaddle tensor.
+                Paddle tensor.
         """
         return {k: v.to_paddle(device=device) for k, v in self._items}
 

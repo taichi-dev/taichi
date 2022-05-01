@@ -138,7 +138,7 @@ class Field:
         """Converts `self` to a paddle tensor.
 
         Args:
-            device (paddle.CPUPlace()/CUDAPlace(), optional): The desired device of returned tensor.
+            device (paddle.CPUPlace()/CUDAPlace(n), optional): The desired device of returned tensor.
 
         Returns:
             paddle.Tensor: The result paddle tensor.

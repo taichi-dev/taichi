@@ -75,7 +75,7 @@ def test_get_external_tensor_shape_access_ndarray(size):
             idx, y_ref, y_hat)
 
 
-@pytest.mark.skipif(not has_paddle(), reason='PaddlePaddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_get_external_tensor_shape_access_paddle(size):

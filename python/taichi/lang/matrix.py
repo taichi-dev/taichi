@@ -1456,10 +1456,10 @@ class MatrixField(Field):
         return arr
 
     def to_paddle(self, device=None, keep_dims=False):
-        """Converts the field instance to a PaddlePaddle tensor.
+        """Converts the field instance to a Paddle tensor.
 
         Args:
-            device (paddle.CPUPlace()/CUDAPlace(), optional): The desired device of returned tensor.
+            device (paddle.CPUPlace()/CUDAPlace(n), optional): The desired device of returned tensor.
             keep_dims (bool, optional): Whether to keep the dimension after conversion.
                 See :meth:`~taichi.lang.field.MatrixField.to_numpy` for more detailed explanation.
 

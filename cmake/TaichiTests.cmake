@@ -21,10 +21,6 @@ file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/struct/*.cpp"
         "tests/cpp/transforms/*.cpp")
 
-include_directories(
-    ${PROJECT_SOURCE_DIR},
-)
-
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
 if (WIN32)
     # Output the executable to bin/ instead of build/Debug/...
@@ -37,5 +33,17 @@ if (WIN32)
 endif()
 target_link_libraries(${TESTS_NAME} PRIVATE taichi_isolated_core)
 target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
+
+target_include_directories(${TESTS_NAME} 
+  PRIVATE 
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${PROJECT_SOURCE_DIR}/external/include
+    ${PROJECT_SOURCE_DIR}/external/eigen
+    ${PROJECT_SOURCE_DIR}/external/volk
+    ${PROJECT_SOURCE_DIR}/external/glad/include
+    ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
+    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+  )
 
 add_test(NAME ${TESTS_NAME} COMMAND ${TESTS_NAME})

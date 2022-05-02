@@ -584,7 +584,7 @@ struct RasterParams {
   std::vector<BlendingParams> blending{};
 };
 
-class GraphicsDevice : public Device {
+class TI_DLL_EXPORT GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,

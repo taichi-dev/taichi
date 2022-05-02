@@ -251,7 +251,6 @@ if (APPLE)
     )
 endif()
 
-# TODO: replace these includes per target basis
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/spdlog/include)

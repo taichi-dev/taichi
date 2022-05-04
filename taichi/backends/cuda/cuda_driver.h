@@ -96,6 +96,7 @@ class CUDADriverFunction {
 };
 
 class CUDADriver {
+  // TODO: make CUDADriver a derived class of CUDADriverBase.
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   CUDADriverFunction<__VA_ARGS__> name;

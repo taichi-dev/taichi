@@ -99,18 +99,17 @@ void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
   if (!loader_->loaded()) {
     TI_WARN("CUSPARSE lib not found.");
     return;
-  }
-  else {
+  } else {
     TI_TRACE("cusparse loaded!");
   }
 }
 
-CUSPARSEDriver::CUSPARSEDriver(){
+CUSPARSEDriver::CUSPARSEDriver() {
   load_lib("libcusparse.so", "cusparse.dll");
 }
 
-CUSPARSEDriver& CUSPARSEDriver::get_instance() {
-  static CUSPARSEDriver* instance = new CUSPARSEDriver();
+CUSPARSEDriver &CUSPARSEDriver::get_instance() {
+  static CUSPARSEDriver *instance = new CUSPARSEDriver();
   return *instance;
 }
 
@@ -118,8 +117,8 @@ CUSOLVERDriver::CUSOLVERDriver() {
   load_lib("libcusolver.so", "cusolver.dll");
 }
 
-CUSOLVERDriver& CUSOLVERDriver::get_instance() {
-  static CUSOLVERDriver* instance = new CUSOLVERDriver();
+CUSOLVERDriver &CUSOLVERDriver::get_instance() {
+  static CUSOLVERDriver *instance = new CUSOLVERDriver();
   return *instance;
 }
 

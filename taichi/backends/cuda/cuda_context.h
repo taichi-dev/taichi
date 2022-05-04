@@ -28,8 +28,8 @@ class CUDAContext {
   std::mutex lock_;
   KernelProfilerBase *profiler_;
   CUDADriver &driver_;
-  CUSPARSEDriver & cusparse_driver_;
-  CUSOLVERDriver & cusolver_driver_;
+  CUSPARSEDriver &cusparse_driver_;
+  CUSOLVERDriver &cusolver_driver_;
   bool debug_;
 
  public:

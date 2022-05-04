@@ -129,33 +129,27 @@ class CUDADriver {
 };
 
 class CUDADriverBase {
-
-protected:
+ protected:
   std::unique_ptr<DynamicLoader> loader_;
   CUDADriverBase();
 
   void load_lib(std::string lib_linux, std::string lib_windows);
-
 };
 
-class CUSPARSEDriver: protected CUDADriverBase {
-public:
+class CUSPARSEDriver : protected CUDADriverBase {
+ public:
   static CUSPARSEDriver &get_instance();
 
-private:
+ private:
   CUSPARSEDriver();
-
 };
 
-class CUSOLVERDriver: protected CUDADriverBase {
-public:
+class CUSOLVERDriver : protected CUDADriverBase {
+ public:
   static CUSOLVERDriver &get_instance();
 
-private:
+ private:
   CUSOLVERDriver();
-
 };
-
-
 
 TLANG_NAMESPACE_END

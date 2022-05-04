@@ -78,19 +78,20 @@ CUDADriver &CUDADriver::get_instance() {
   return get_instance_without_context();
 }
 
-
-CUSPARSEDriver::CUSPARSEDriver() {
+CUDADriverBase::CUDADriverBase() {
   // TODO: enable cusparse and cusolver flag env variable.
   auto disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
   if (disabled_by_env_) {
     TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
     return;
   }
+}
 
+void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
 #if defined(TI_PLATFORM_LINUX)
-  loader_ = std::make_unique<DynamicLoader>("libcusparse.so");
+  loader_ = std::make_unique<DynamicLoader>(lib_linux);
 #elif defined(TI_PLATFORM_WINDOWS)
-  loader_ = std::make_unique<DynamicLoader>("cusparse.dll");
+  loader_ = std::make_unique<DynamicLoader>(lib_windows);
 #else
   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
 #endif
@@ -104,34 +105,17 @@ CUSPARSEDriver::CUSPARSEDriver() {
   }
 }
 
+CUSPARSEDriver::CUSPARSEDriver(){
+  load_lib("libcusparse.so", "cusparse.dll");
+}
+
 CUSPARSEDriver& CUSPARSEDriver::get_instance() {
   static CUSPARSEDriver* instance = new CUSPARSEDriver();
   return *instance;
 }
 
 CUSOLVERDriver::CUSOLVERDriver() {
-  // TODO: enable cusparse and cusolver flag env variable.
-  auto disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
-  if (disabled_by_env_) {
-    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
-    return;
-  }
-
-#if defined(TI_PLATFORM_LINUX)
-  loader_ = std::make_unique<DynamicLoader>("libcusolver.so");
-#elif defined(TI_PLATFORM_WINDOWS)
-  loader_ = std::make_unique<DynamicLoader>("cusolver.dll");
-#else
-  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
-#endif
-
-  if (!loader_->loaded()) {
-    TI_WARN("cusolver lib not found.");
-    return;
-  }
-  else {
-    TI_TRACE("cusolver loaded!");
-  }
+  load_lib("libcusolver.so", "cusolver.dll");
 }
 
 CUSOLVERDriver& CUSOLVERDriver::get_instance() {

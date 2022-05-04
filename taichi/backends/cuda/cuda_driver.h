@@ -127,24 +127,30 @@ class CUDADriver {
   bool cuda_version_valid_{false};
 };
 
+class CUDADriverBase {
 
+protected:
+  std::unique_ptr<DynamicLoader> loader_;
+  CUDADriverBase();
 
-class CUSPARSEDriver {
+  void load_lib(std::string lib_linux, std::string lib_windows);
+
+};
+
+class CUSPARSEDriver: protected CUDADriverBase {
 public:
   static CUSPARSEDriver &get_instance();
 
 private:
-  std::unique_ptr<DynamicLoader> loader_;
   CUSPARSEDriver();
 
 };
 
-class CUSOLVERDriver {
+class CUSOLVERDriver: protected CUDADriverBase {
 public:
   static CUSOLVERDriver &get_instance();
 
 private:
-  std::unique_ptr<DynamicLoader> loader_;
   CUSOLVERDriver();
 
 };

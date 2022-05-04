@@ -20,7 +20,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_pytorch, to_taichi_type
+from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
@@ -28,6 +28,9 @@ from taichi import _logging
 
 if has_pytorch():
     import torch
+
+if has_paddle():
+    import paddle
 
 
 def func(fn, is_real_function=False):
@@ -574,6 +577,42 @@ class Kernel:
                 callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
+    def get_paddle_callbacks(self, v, has_pp):
+        callbacks = []
+
+        def get_call_back(u, v):
+            def call_back():
+                u.copy_(v, False)
+
+            return call_back
+
+        assert has_pp
+        assert isinstance(v, paddle.Tensor)
+
+        tmp = v.value().get_tensor()
+        taichi_arch = self.runtime.prog.config.arch
+
+        if v.place.is_gpu_place():
+            # External tensor on cuda
+            if taichi_arch != _ti_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.cpu()
+                tmp = host_v.value().get_tensor()
+                callbacks.append(get_call_back(v, host_v))
+        elif v.place.is_cpu_place():
+            # External tensor on cpu
+            if taichi_arch == _ti_core.Arch.cuda:
+                gpu_v = v.cuda()
+                tmp = gpu_v.value().get_tensor()
+                callbacks.append(get_call_back(v, gpu_v))
+        else:
+            # Paddle do support many other backends like XPU, NPU, MLU, IPU.
+            raise TaichiRuntimeError(
+                f"Taichi do not support backend {v.place} that Paddle support."
+            )
+
+        return tmp, callbacks
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -585,6 +624,7 @@ class Kernel:
             callbacks = []
             has_external_arrays = False
             has_torch = has_pytorch()
+            has_pp = has_paddle()
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -618,6 +658,8 @@ class Kernel:
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
+                    is_torch = isinstance(v,
+                                          torch.Tensor) if has_torch else False
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
@@ -625,7 +667,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, v.shape)
-                    else:
+                    elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
                             v, has_torch, is_ndarray)
@@ -633,6 +675,14 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)
+                    else:
+                        # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
+                        tmp, paddle_callbacks = self.get_paddle_callbacks(
+                            v, has_pp)
+                        callbacks += paddle_callbacks
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp._ptr()),
+                            v.element_size() * v.size, v.shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
@@ -725,6 +775,8 @@ class Kernel:
         has_array = isinstance(v, np.ndarray)
         if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
+        if not has_array and has_paddle():
+            has_array = isinstance(v, paddle.Tensor)
         return has_array
 
     def ensure_compiled(self, *args):

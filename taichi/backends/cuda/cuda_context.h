@@ -16,6 +16,7 @@ TLANG_NAMESPACE_BEGIN
 
 class CUDADriver;
 class CUSPARSEDriver;
+class CUSOLVERDriver;
 
 class CUDAContext {
  private:
@@ -28,6 +29,7 @@ class CUDAContext {
   KernelProfilerBase *profiler_;
   CUDADriver &driver_;
   CUSPARSEDriver & cusparse_driver_;
+  CUSOLVERDriver & cusolver_driver_;
   bool debug_;
 
  public:

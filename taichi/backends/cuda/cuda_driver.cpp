@@ -80,6 +80,7 @@ CUDADriver &CUDADriver::get_instance() {
 
 
 CUSPARSEDriver::CUSPARSEDriver() {
+  // TODO: enable cusparse and cusolver flag env variable.
   auto disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
   if (disabled_by_env_) {
     TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
@@ -87,7 +88,7 @@ CUSPARSEDriver::CUSPARSEDriver() {
   }
 
 #if defined(TI_PLATFORM_LINUX)
-  auto loader_ = std::make_unique<DynamicLoader>("libcusparse.so");
+  loader_ = std::make_unique<DynamicLoader>("libcusparse.so");
 #elif defined(TI_PLATFORM_WINDOWS)
   loader_ = std::make_unique<DynamicLoader>("cusparse.dll");
 #else
@@ -95,7 +96,7 @@ CUSPARSEDriver::CUSPARSEDriver() {
 #endif
 
   if (!loader_->loaded()) {
-    TI_WARN("CUSPARSE driver not found.");
+    TI_WARN("CUSPARSE lib not found.");
     return;
   }
   else {
@@ -105,6 +106,36 @@ CUSPARSEDriver::CUSPARSEDriver() {
 
 CUSPARSEDriver& CUSPARSEDriver::get_instance() {
   static CUSPARSEDriver* instance = new CUSPARSEDriver();
+  return *instance;
+}
+
+CUSOLVERDriver::CUSOLVERDriver() {
+  // TODO: enable cusparse and cusolver flag env variable.
+  auto disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
+  if (disabled_by_env_) {
+    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
+    return;
+  }
+
+#if defined(TI_PLATFORM_LINUX)
+  loader_ = std::make_unique<DynamicLoader>("libcusolver.so");
+#elif defined(TI_PLATFORM_WINDOWS)
+  loader_ = std::make_unique<DynamicLoader>("cusolver.dll");
+#else
+  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
+#endif
+
+  if (!loader_->loaded()) {
+    TI_WARN("cusolver lib not found.");
+    return;
+  }
+  else {
+    TI_TRACE("cusolver loaded!");
+  }
+}
+
+CUSOLVERDriver& CUSOLVERDriver::get_instance() {
+  static CUSOLVERDriver* instance = new CUSOLVERDriver();
   return *instance;
 }
 

@@ -127,15 +127,28 @@ class CUDADriver {
   bool cuda_version_valid_{false};
 };
 
+
+
 class CUSPARSEDriver {
 public:
   static CUSPARSEDriver &get_instance();
 
 private:
-  CUSPARSEDriver* instance;
+  std::unique_ptr<DynamicLoader> loader_;
   CUSPARSEDriver();
 
 };
+
+class CUSOLVERDriver {
+public:
+  static CUSOLVERDriver &get_instance();
+
+private:
+  std::unique_ptr<DynamicLoader> loader_;
+  CUSOLVERDriver();
+
+};
+
 
 
 TLANG_NAMESPACE_END

@@ -88,17 +88,17 @@ Internally, as you are using Taichi's SNode system to construct hierarchies, you
 
 ## A working design
 
-We will make the SNode tree and its type explicit by providing `SNodeTreeBuilder`. Each field needs to be registered into the builder via `add_field()`. `add_field()` does *not* actually do any memory allocation. Instead, it just returns a *field ID*, which can be used to retrieve a field from the tree inside the kernel.
+We will make the SNode tree and its type explicit by providing `SNodeTreeBuilder`. Each field needs to be registered into the builder via `add_field()`. `add_field()` does *not* actually do any memory allocation. Instead, it just returns a *field handle*, which can be used to retrieve a field from the tree inside the kernel.
 
 ```py
 builder = ti.SNodeTreeBuilder()
 
-x = builder.add_field(dtype=ti.f32, name='x')
-y = builder.add_field(dtype=ti.i32, name='y')
+builder.add_field(dtype=ti.f32, name='x')
+builder.add_field(dtype=ti.i32, name='y')
 builder.tree()
   .pointer(ti.ij, 4)
   .dense(ti.ij, 5)
-  .place(x, y)
+  .place('x', 'y')
 
 # `tree_t` stands for "tree type".
 tree_t = builder.build()
@@ -125,21 +125,21 @@ The only change from the existing API is that, you will need to prepend the fiel
 
 There will be two ways to retrieve a field from a tree:
 
-* By name: `add_field()` takes in a `name` parameter. After building a SNode tree, Taichi will generate an attribute for each registered field on that tree. This allows you to directly write `tr.x` to access the field named `'x'`.
-* By field ID: You can also use the field ID returned by `add_field()` to access a field. Here's an example:
+* By name: `add_field()` takes in a `name` parameter. After building a SNode tree, Taichi will generate an attribute for each registered field on that tree. This allows you to directly write `tr.x` to access the field named `'x'`. `name` serves as the unique identifer of the field in the tree. Note that when placing, it is the names being passed in.
+* By field handle: You can also use the field handle returned by `add_field()` to access a field. Here's an example:
    ```py
    builder = ti.SNodeTreeBuilder()
-   x_fid = builder.add_field(dtype=ti.f32, name='x')
+   x_handle = builder.add_field(dtype=ti.f32, name='x')
    # boilerplate to generate tree type and instantiate a tree ...
 
    @ti.kernel
    def foo(tr: tree_t):
-     x = ti.static(tr.get_field(x_fid))  # 1
+     x = ti.static(tr.get_field(x_handle))  # 1
      for i in x:
        x[i] = i * 2.0
    ```
 
-   Note that this design requires that part of the kernel (1) being evaluated inside Python. It also pulls in the global variable `x_fid`, which kind of violates our initial goal. We could require that `x_fid` is passed into the kernel as an argument. But maybe it's fine just to view that as a trivial Python constant?
+   Note that this design requires that part of the kernel (1) being evaluated inside Python. It also pulls in the global variable `x_handle`, which kind of violates our initial goal. We could require that `x_handle` is passed into the kernel as an argument. But maybe it's fine just to view that as a trivial Python constant?
 
 ## AoS vs SoA
 
@@ -150,8 +150,8 @@ AoS is quite straightforward. One can just use the composite type as the `dtype`
 ```py
 builder = ti.SNodeTreeBuilder()
 
-x = builder.add_field(dtype=ti.vec3, name='x')  # ti.vec3 is a vector of 3 ti.f32's
-builder.dense(ti.i, 8).place(x)
+builder.add_field(dtype=ti.vec3, name='x')  # ti.vec3 is a vector of 3 ti.f32's
+builder.dense(ti.i, 8).place('x')
 tree_t = x.build()
 ```
 
@@ -177,17 +177,17 @@ If we want to make it explicit that this is a *field view*, we can do the follow
 
 ```py
 builder = ti.SNodeTreeBuilder()
-v0 = builder.add_field(dtype=ti.f32)
-v1 = builder.add_field(dtype=ti.f32)
-v2 = builder.add_field(dtype=ti.f32)
-for v in [v0, v1, v2]:
+builder.add_field(dtype=ti.f32, name='v0')
+builder.add_field(dtype=ti.f32, name='v1')
+builder.add_field(dtype=ti.f32, name='v2')
+for v in ['v0', 'v1', 'v2']:
   builder.tree().dense(ti.ij, 4).place(v)
 
 # Checks that
 # 1. `components` and `dtype` are compatible.
 # 2. All the fields in `components` are homogeneous in their SNode hierarchy.
 # 3. `components` themselves are not field views.
-vel = builder.add_field_view(dtype=ti.vec3, name='vel', components=[v0, v1, v2])
+builder.add_field_view(dtype=ti.vec3, name='vel', components=['v0', 'v1', 'v2'])
 ```
 
 Matrix field view supports common matrix operations, and is equivalent to expanding each component into a local matrix variable.
@@ -212,6 +212,37 @@ v0[i, j] = vel_tmp[0]
 v1[i, j] = vel_tmp[1]
 v2[i, j] = vel_tmp[2]
 ```
+
+To make field view even more powerful, we can supported *nested field views*. For example:
+
+```py
+vertex_t = ti.types.struct({'pos': ti.vec3, 'normal': ti.vec3})
+sphere_t = ti.types.struct({'center': vertex_t, 'radius'; ti.f32})
+
+builder = ti.SNodeTreeBuilder()
+builder.add_field(dtype=ti.vec3, name='pos')
+builder.add_field(dtype=ti.vec3, name='normal')
+builder.add_field(dtype=ti.f32, name='radius')
+builder.add_field_view(dtype=sphere_t, name='spheres', 
+                       compoenents=[['pos', 'normal'], 'radius'])
+###                                 ^^^^^^^^^^^^^^^^^ Note this is nested
+```
+
+## Gradient and AutoDiff
+
+In order to support autodiff, `add_field()` still needs to take in a parameter named `needs_grad: bool`:
+
+```py
+b = ti.SNodeTreeBuilder()
+b.add_field(dtype=ti.f32, name='x', needs_grad=True)
+# AOS
+b.tree()....place('x', b.grad_of('x'))
+# or SOA
+b.tree()....place('x')
+b.tree()....place(b.grad_of('x'))
+```
+
+SNodes for the primal and adjoint fields will be generated inside the same tree.
 
 ## Python AOT API
 
@@ -242,10 +273,10 @@ alloc_params.size = tree_t->get_size();
 auto *tree_mem = device->allocate_memory(alloc_params);
 // By doing this, the kernel can verify that the passed in memory matches its
 // signature.
-auto *typed_tree_mem = taichi::make_memory_typed(tree_t, tree_mem);
+auto *tree = taichi::instantiate_tree(tree_t, tree_mem);
 
 auto foo_kernel = mod->get_kernel("foo");
-foo_kernel->launch(/*args=*/{typed_tree_mem});
+foo_kernel->launch(/*args=*/{tree});
 ```
 
 ## Backward Compatibility
@@ -268,8 +299,8 @@ The equivalent code using the new `SNodeTreeBuilder` API is shown below:
 
 ```py
 b = ti.SNodeTreeBuilder()
-x = b.add_field(ti.f32, name='x')
-b.tree().pointer(ti.i, 4).dense(ti.i, 8).place(x)
+b.add_field(ti.f32, name='x')
+b.tree().pointer(ti.i, 4).dense(ti.i, 8).place('x')
 tree_t = b.build()
 
 tr = tree_t.instantiate()
@@ -302,8 +333,8 @@ class FieldThunk:
 
 def field(dtype, name='', shape=None, offset=None, needs_grad=False):
   name = name or random_name()
-  f = ti.root.add_field(dtype, name)
-  ft = FieldThunk(f)
+  handle = ti.root.add_field(dtype, name)
+  ft = FieldThunk(handle)
   ti.root._field_thunks.append(ft)
   return ft
 ```

@@ -321,7 +321,10 @@ jobs:
       - name: Cleanup
         shell: powershell
         run: |
-          remove-item '${{ github.workspace }}\*' -recurse -Force
+          $env:paddle_file = ${{ github.workspace }}
+          $env:paddle_file = "del $env:paddle_file\venv\Lib\site-packages\paddle\fluid\core_avx.pyd"
+          cmd /c $env:paddle_file
+          remove-item '${{ github.workspace }}\*' -recurse -force
 
       - uses: actions/checkout@v2
         with:

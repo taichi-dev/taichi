@@ -1,6 +1,7 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
+from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
+                              to_pytorch_type)
 
 
 class Field:
@@ -133,6 +134,18 @@ class Field:
         raise NotImplementedError()
 
     @python_scope
+    def to_paddle(self, place=None):
+        """Converts `self` to a paddle tensor.
+
+        Args:
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The desired place of returned tensor.
+
+        Returns:
+            paddle.Tensor: The result paddle tensor.
+        """
+        raise NotImplementedError()
+
+    @python_scope
     def from_numpy(self, arr):
         """Loads all elements from a numpy array.
 
@@ -153,6 +166,17 @@ class Field:
             arr (torch.tensor): The source torch tensor.
         """
         self.from_numpy(arr.contiguous())
+
+    @python_scope
+    def from_paddle(self, arr):
+        """Loads all elements from a paddle tensor.
+
+        The shape of the paddle tensor needs to be the same as `self`.
+
+        Args:
+            arr (paddle.Tensor): The source paddle tensor.
+        """
+        self.from_numpy(arr)
 
     @python_scope
     def copy_from(self, other):
@@ -262,6 +286,22 @@ class ScalarField(Field):
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
+        taichi.lang.runtime_ops.sync()
+        return arr
+
+    @python_scope
+    def to_paddle(self, place=None):
+        """Converts this field to a `paddle.Tensor`.
+        """
+        import paddle  # pylint: disable=C0415
+
+        # pylint: disable=E1101
+        # paddle.empty() doesn't support argument `place``
+        arr = paddle.to_tensor(paddle.zeros(self.shape,
+                                            to_paddle_type(self.dtype)),
+                               place=place)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()

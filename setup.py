@@ -118,8 +118,12 @@ def get_cmake_args():
         cfg = 'MinSizeRel'
     else:
         cfg = None
+    build_options = []
     if cfg:
-        sys.argv[2:2] = ['--build-type', cfg]
+        build_options.extend(['--build-type', cfg])
+    if sys.platform == 'win32':
+        build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+    sys.argv[2:2] = build_options
 
     cmake_args += [
         f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',

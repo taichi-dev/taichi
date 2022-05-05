@@ -493,6 +493,13 @@ if(NOT TI_EMSCRIPTENED)
         ${PROJECT_SOURCE_DIR}/external/imgui/backends
       )
 
+    if (NOT ANDROID)
+      target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
+        PRIVATE
+          external/glfw/include
+        )
+    endif ()
+
     # These commands should apply to the DLL that is loaded from python, not the OBJECT library.
     if (MSVC)
         set_property(TARGET ${CORE_WITH_PYBIND_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)

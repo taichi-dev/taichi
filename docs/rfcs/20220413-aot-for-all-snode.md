@@ -5,6 +5,23 @@
 * Relevant Issue: https://github.com/taichi-dev/taichi/issues/4777
 ---
 
+- [RFC: AOT for All SNodes](#rfc-aot-for-all-snodes)
+  - [* Relevant Issue: https://github.com/taichi-dev/taichi/issues/4777](#-relevant-issue-httpsgithubcomtaichi-devtaichiissues4777)
+- [TL;DR](#tldr)
+- [Background](#background)
+- [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Detailed Design](#detailed-design)
+  - [A first attempt](#a-first-attempt)
+  - [A working design](#a-working-design)
+  - [AoS vs SoA](#aos-vs-soa)
+  - [Gradient and AutoDiff](#gradient-and-autodiff)
+  - [Python AOT API](#python-aot-api)
+  - [C++ AOT API](#c-aot-api)
+  - [Backward Compatibility](#backward-compatibility)
+- [Alternatives](#alternatives)
+- [FAQ](#faq)
+
 # TL;DR
 
 This RFC describes a design and API changes to make AOT support all kinds of SNodes and/or Taichi fields.

@@ -41,7 +41,6 @@ if(TI_EMSCRIPTENED)
     set(TI_WITH_DX11 OFF)
 
     set(TI_WITH_VULKAN ON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_EMSCRIPTENED")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -147,7 +146,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if(TI_WITH_LLVM)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
 else()
@@ -159,7 +157,6 @@ list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
 
 
 if (TI_WITH_CUDA)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
 
@@ -172,13 +169,11 @@ endif()
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
 if (TI_WITH_METAL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
 endif()
 
 
 if (TI_WITH_OPENGL)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
   # Q: Why not external/glad/src/*.c?
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
   file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/gl.c" "external/glad/src/egl.c")
@@ -188,19 +183,16 @@ endif()
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
 
 if (TI_WITH_CC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
 
 if (TI_WITH_VULKAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
 
 
 if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_DX11_SOURCE})
 endif()
 
@@ -338,7 +330,6 @@ if (TI_WITH_CUDA_TOOLKIT)
     else()
         message(STATUS "TI_WITH_CUDA_TOOLKIT = ON")
         message(STATUS "CUDA_TOOLKIT_ROOT_DIR=$ENV{CUDA_TOOLKIT_ROOT_DIR}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
         include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
         link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
         #libraries for cuda kernel profiler CuptiToolkit

@@ -519,22 +519,22 @@ if(TI_EMSCRIPTENED)
 endif()
 
 if(TI_WITH_GGUI)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glm)
+  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glm)
 
-    # Dear ImGui
-    add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-    set(IMGUI_DIR external/imgui)
-if(ANDROID)
+  # Dear ImGui
+  add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+  set(IMGUI_DIR external/imgui)
+
+  if(ANDROID)
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_android.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
     target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-else()
+  else()
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
     target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
     target_include_directories(imgui PRIVATE external/glfw/include)
-endif()
-
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
-
+  endif()
+  target_include_directories(imgui PRIVATE external/Vulkan-Headers/include)
+  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
 endif()
 
 if (NOT APPLE)

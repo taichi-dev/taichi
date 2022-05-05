@@ -223,7 +223,7 @@ builder = ti.SNodeTreeBuilder()
 builder.add_field(dtype=ti.vec3, name='pos')
 builder.add_field(dtype=ti.vec3, name='normal')
 builder.add_field(dtype=ti.f32, name='radius')
-builder.add_field_view(dtype=sphere_t, name='spheres', 
+builder.add_field_view(dtype=sphere_t, name='spheres',
                        compoenents=[['pos', 'normal'], 'radius'])
 ###                                 ^^^^^^^^^^^^^^^^^ Note this is nested
 ```

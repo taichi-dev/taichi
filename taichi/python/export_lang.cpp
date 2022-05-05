@@ -4,10 +4,6 @@
 #include <string>
 #include "taichi/ir/snode.h"
 
-#if TI_WITH_LLVM
-#include "llvm/Config/llvm-config.h"
-#endif
-
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/eigen.h"

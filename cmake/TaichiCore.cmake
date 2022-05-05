@@ -526,7 +526,8 @@ if(TI_EMSCRIPTENED)
 endif()
 
 if(TI_WITH_GGUI)
-  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glm)
+  # PUBLIC as required by python module
+  target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glm)
 
   # Dear ImGui
   add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)

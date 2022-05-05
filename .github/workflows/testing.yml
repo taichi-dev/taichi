@@ -321,7 +321,7 @@ jobs:
       - name: Cleanup
         shell: powershell
         run: |
-          remove-item '${{ github.workspace }}\*' -recurse -force
+          remove-item '${{ github.workspace }}\*' -recurse -Force
 
       - uses: actions/checkout@v2
         with:

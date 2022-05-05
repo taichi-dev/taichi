@@ -46,4 +46,11 @@ target_include_directories(${TESTS_NAME}
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
   )
 
+if (NOT ANDROID)
+  target_include_directories(${TESTS_NAME}
+  PRIVATE
+    external/glfw/include
+  )
+endif ()
+
 add_test(NAME ${TESTS_NAME} COMMAND ${TESTS_NAME})

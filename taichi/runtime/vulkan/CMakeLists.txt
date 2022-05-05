@@ -15,4 +15,5 @@ target_include_directories(vulkan_runtime
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/FP16/include
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )

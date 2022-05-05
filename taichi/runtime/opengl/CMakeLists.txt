@@ -18,4 +18,5 @@ target_include_directories(opengl_runtime
     ${PROJECT_SOURCE_DIR}/external/glfw/include
   PRIVATE
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )

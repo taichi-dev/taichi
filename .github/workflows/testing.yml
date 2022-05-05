@@ -361,7 +361,7 @@ jobs:
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
           PYTHON: '3.7'
-          TI_DEVICE_MEMORY_GB: '2.0'
+          TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

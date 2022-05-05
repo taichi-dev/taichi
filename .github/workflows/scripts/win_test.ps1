@@ -17,16 +17,20 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 # Fail fast, give priority to the error-prone tests
 python tests/run_tests.py -vr2 -t1 -k "paddle" -a "$env:TI_WANTED_ARCHS"
 if (-not $?) { exit 1 }
+
+# Disable paddle for the remaining test
+$env:TI_ENABLE_PADDLE = "0"
+
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  python tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a cuda
+  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
   if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
-  python tests/run_tests.py -vr2 -t1 -k "not torch and not paddle" -a cpu
+  python tests/run_tests.py -vr2 -t6 -k "not torch and not paddle" -a cpu
   if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
-  python tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a opengl
+  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
   if (-not $?) { exit 1 }
 }
 python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"

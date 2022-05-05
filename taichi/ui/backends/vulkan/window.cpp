@@ -80,7 +80,8 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
-  renderer_->swap_chain().surface().present_image();
+  renderer_->swap_chain().surface().present_image(
+      {renderer_->get_render_complete_semaphore()});
 }
 
 Window::~Window() {

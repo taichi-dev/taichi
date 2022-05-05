@@ -3,7 +3,7 @@
 #include <fstream>
 #include <type_traits>
 
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 
 namespace taichi {
 namespace lang {

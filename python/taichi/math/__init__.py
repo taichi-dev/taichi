@@ -2,8 +2,7 @@
 
 The math module supports glsl-style vectors, matrices and functions.
 """
-from taichi.math.mathimpl import *
-from taichi.math.vectypes import *
+from ._complex import *
+from .mathimpl import *
 
 del mathimpl
-del vectypes

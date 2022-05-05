@@ -2,12 +2,12 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)
-    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/dev_install for more details.")
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/lang/articles/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
     set(TI_VERSION_MINOR 0)
     set(TI_VERSION_PATCH 0)
@@ -49,7 +49,6 @@ else ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -149,15 +148,7 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   endif()
 endif()
 
-# Build llvm-runtime for host arch and cuda (if available)
-foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
-  add_custom_target(
-      "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
-  )
-  add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
-endforeach()
+add_subdirectory(taichi/runtime/llvm)
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)

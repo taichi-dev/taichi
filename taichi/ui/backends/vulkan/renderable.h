@@ -31,6 +31,7 @@ struct RenderableConfig {
   int indices_count{0};
   size_t ubo_size{0};
   size_t ssbo_size{0};
+  bool blending{false};
   std::string vertex_shader_path;
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type{

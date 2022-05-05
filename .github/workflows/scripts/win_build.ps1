@@ -76,7 +76,6 @@ python -m venv venv
 . venv\Scripts\activate.ps1
 python -m pip install wheel
 python -m pip install -r requirements_dev.txt
-python -m pip install -r requirements_test.txt
 if (-not $?) { exit 1 }
 WriteInfo("Building Taichi")
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$libsDir\\taichi_clang\\bin\\clang++.exe"

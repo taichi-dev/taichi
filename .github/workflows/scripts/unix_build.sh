@@ -49,7 +49,7 @@ setup_python() {
     python3 -m pip install -r requirements_dev.txt
 }
 
-build() {
+build_taichi_wheel() {
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""
@@ -69,12 +69,21 @@ build() {
     sccache -s
 }
 
+build_libtaichi_export() {
+    git fetch origin master
+    python3 setup.py build_ext
+}
+
 setup_sccache
 setup_python
-build
-cat "$SCCACHE_ERROR_LOG" || true
-NUM_WHL=$(ls dist/*.whl | wc -l)
-if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi
+
+if [ "$EXPORT_CORE" == "1" ]; then
+    build_libtaichi_export
+else
+    build_taichi_wheel
+    NUM_WHL=$(ls dist/*.whl | wc -l)
+    if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi
+fi
 
 chmod -R 777 "$SCCACHE_DIR"
 rm -f python/CHANGELOG.md

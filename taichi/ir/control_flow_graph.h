@@ -99,7 +99,7 @@ class ControlFlowGraph {
   int final_node{0};
 
   template <typename... Args>
-  CFGNode *push_back(Args &&... args) {
+  CFGNode *push_back(Args &&...args) {
     nodes.emplace_back(std::make_unique<CFGNode>(std::forward<Args>(args)...));
     return nodes.back().get();
   }

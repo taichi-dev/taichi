@@ -61,7 +61,7 @@ class IRPrinter : public IRVisitor {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 
@@ -803,12 +803,6 @@ namespace irpass {
 void print(IRNode *root, std::string *output) {
   ExpressionHumanFriendlyPrinter expr_printer;
   return IRPrinter::run(&expr_printer, root, output);
-}
-
-void gen_offline_cache_key(Program *prog, IRNode *root, std::string *output) {
-  irpass::re_id(root);
-  ExpressionOfflineCacheKeyGenerator cache_key_generator(prog);
-  return IRPrinter::run(&cache_key_generator, root, output);
 }
 
 }  // namespace irpass

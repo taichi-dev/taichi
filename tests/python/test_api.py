@@ -12,8 +12,6 @@ def _get_matrix_swizzle_apis():
     res = []
     for key_group in KEMAP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)
-        # len=1 accessors are handled specially
-        sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         sw_patterns = map(lambda p: ''.join(p), sw_patterns)
         res += sw_patterns
     return sorted(res)
@@ -25,7 +23,7 @@ def _get_expected_matrix_apis():
         'field', 'fill', 'identity', 'inverse', 'max', 'min', 'ndarray',
         'norm', 'norm_inv', 'norm_sqr', 'normalized', 'one', 'outer_product',
         'rotation2d', 'rows', 'sum', 'to_list', 'to_numpy', 'trace',
-        'transpose', 'unit', 'w', 'x', 'y', 'z', 'zero'
+        'transpose', 'unit', 'zero'
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)
@@ -62,8 +60,8 @@ user_api[ti] = [
     'wasm', 'x64', 'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
-    'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
+    'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
@@ -74,13 +72,14 @@ user_api[ti.math] = [
     'csqrt', 'degrees', 'distance', 'dot', 'e', 'eye', 'fract', 'ivec2',
     'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'mod',
     'normalize', 'pi', 'radians', 'reflect', 'refract', 'rot2', 'rot3',
-    'rotate2d', 'rotate3d', 'sign', 'smoothstep', 'step', 'vec2', 'vec3',
-    'vec4'
+    'rotate2d', 'rotate3d', 'sign', 'smoothstep', 'step', 'uvec2', 'uvec3',
+    'uvec4', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
-    'get_scalar_field', 'parent', 'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
+    'get_scalar_field', 'parent', 'shape', 'snode', 'to_numpy', 'to_paddle',
+    'to_torch'
 ]
 user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
@@ -91,17 +90,17 @@ user_api[ti.SNode] = [
     'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
 ]
 user_api[ti.ScalarField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch', 'parent',
-    'shape', 'snode', 'to_numpy', 'to_torch'
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
+    'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.ScalarNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
 ]
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
-    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_torch',
+    'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
     'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
-    'to_torch'
+    'to_paddle', 'to_torch'
 ]
 user_api[ti.VectorNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'

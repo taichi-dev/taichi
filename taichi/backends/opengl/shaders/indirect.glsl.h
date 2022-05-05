@@ -5,7 +5,7 @@
 "#version 430 core\nprecision highp float;\n"
 #define TI_INSIDE_OPENGL_CODEGEN
 #define TI_OPENGL_NESTED_INCLUDE
-#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/runtime/opengl/shaders/runtime.h"
 #undef TI_OPENGL_NESTED_INCLUDE
 #undef TI_INSIDE_OPENGL_CODEGEN
 STR(

@@ -67,8 +67,8 @@ To link to another section within the same article, you would use `[Return to ##
 We follow the best practices suggested by [Docusaurus](https://docusaurus.io/docs/docs-markdown-features#referencing-other-documents) to cross-reference other documents, so to link to sections in other articles, please use the following relative-path based syntax, which
 is docs-versioning and IDE/GitHub friendly:
 
-- `[Return to Contribution guidelines](./contributor_guide.md)`: [Return to Contribution guidelines](./contributor_guide.md)
-- `[Return to Getting Started](/#fields)`: [Return to Getting Started](/#fields)
+- `Return to [Contribution guidelines](./contributor_guide.md)`: Return to [Contribution guidelines](./contributor_guide.md)
+- `Return to [Getting Started](../get-started/index.md#fields)`: Return to [Getting Started](../get-started/index.md#fields)
 
 ## 4. Centered text blocks
 

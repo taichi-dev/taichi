@@ -397,13 +397,26 @@ inline bool operator&(AllocUsage a, AllocUsage b) {
   return static_cast<int>(a) & static_cast<int>(b);
 }
 
+class StreamSemaphoreObject {
+ public:
+  virtual ~StreamSemaphoreObject() {
+  }
+};
+
+using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
+
 class Stream {
  public:
-  virtual ~Stream(){};
+  virtual ~Stream() {
+  }
 
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
-  virtual void submit(CommandList *cmdlist) = 0;
-  virtual void submit_synced(CommandList *cmdlist) = 0;
+  virtual StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
+  virtual StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
 };
@@ -457,6 +470,9 @@ class Device {
   // Each thraed will acquire its own stream
   virtual Stream *get_compute_stream() = 0;
 
+  // Wait for all tasks to complete (task from all streams)
+  virtual void wait_idle() = 0;
+
   // Mapping can fail and will return nullptr
   virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
   virtual void *map(DeviceAllocation alloc) = 0;
@@ -498,8 +514,10 @@ class Surface {
   virtual ~Surface() {
   }
 
+  virtual StreamSemaphore acquire_next_image() = 0;
   virtual DeviceAllocation get_target_image() = 0;
-  virtual void present_image() = 0;
+  virtual void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
@@ -566,7 +584,7 @@ struct RasterParams {
   std::vector<BlendingParams> blending{};
 };
 
-class GraphicsDevice : public Device {
+class TI_DLL_EXPORT GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,

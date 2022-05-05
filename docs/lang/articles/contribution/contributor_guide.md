@@ -87,7 +87,7 @@ As part of the effort to increase visibility of the community and to improve dev
 - Documentation source files are hosted under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/).
 - We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing).
 - When it comes to writing, we adhere to the [Google Developer Documentation Style Guide](https://developers.google.com/style/).
-- For instructions on setting up a local server and previewing your updated documentation in real-time, see the [Local Development](https://github.com/taichi-dev/docs.taichi.graphics#local-development).
+- For instructions on setting up a local server and previewing your updated documentation in real-time, see the [Local Development](https://github.com/taichi-dev/docs.taichi-lang.org#local-development).
 
 ## Add test cases for your local changes
 

@@ -69,8 +69,13 @@ class CudaStream : public Stream {
   ~CudaStream() override{};
 
   std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
-  void submit(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
-  void submit_synced(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit(CommandList *cmdlist,
+                         const std::vector<StreamSemaphore> &wait_semaphores =
+                             {}) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override{
+      TI_NOT_IMPLEMENTED};
 
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
@@ -122,6 +127,8 @@ class CudaDevice : public LlvmDevice {
   DeviceAllocation import_memory(void *ptr, size_t size);
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
+
+  void wait_idle() override{TI_NOT_IMPLEMENTED};
 
  private:
   std::vector<AllocInfo> allocations_;

@@ -113,7 +113,7 @@ class LLVMModuleBuilder {
   template <typename... Args>
   llvm::Value *call(llvm::IRBuilder<> *builder,
                     const std::string &func_name,
-                    Args &&... args) {
+                    Args &&...args) {
     auto func = get_runtime_function(func_name);
     auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func, arglist);
@@ -121,7 +121,7 @@ class LLVMModuleBuilder {
   }
 
   template <typename... Args>
-  llvm::Value *call(const std::string &func_name, Args &&... args) {
+  llvm::Value *call(const std::string &func_name, Args &&...args) {
     return call(this->builder.get(), func_name, std::forward<Args>(args)...);
   }
 
@@ -183,7 +183,7 @@ class RuntimeObject {
   }
 
   template <typename... Args>
-  llvm::Value *call(const std::string &func_name, Args &&... args) {
+  llvm::Value *call(const std::string &func_name, Args &&...args) {
     auto func = get_func(func_name);
     auto arglist = std::vector<llvm::Value *>({ptr, args...});
     check_func_call_signature(func, arglist);

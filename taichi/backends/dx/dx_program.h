@@ -3,7 +3,7 @@
 #ifdef TI_WITH_DX11
 
 #include "taichi/backends/dx/dx_device.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
 

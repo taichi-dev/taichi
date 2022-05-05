@@ -245,6 +245,10 @@ void Program::synchronize() {
   }
 }
 
+StreamSemaphore Program::flush() {
+  return program_impl_->flush();
+}
+
 void Program::async_flush() {
   if (!config.async_mode) {
     TI_WARN("No point calling async_flush() when async mode is disabled.");

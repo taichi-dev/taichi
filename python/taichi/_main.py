@@ -91,7 +91,7 @@ class TaichiMain:
     @staticmethod
     def _get_friend_links():
         return '\n' \
-               'Docs:   https://docs.taichi.graphics/\n' \
+               'Docs:   https://docs.taichi-lang.org/\n' \
                'GitHub: https://github.com/taichi-dev/taichi/\n' \
                'Forum:  https://forum.taichi.graphics/\n'
 

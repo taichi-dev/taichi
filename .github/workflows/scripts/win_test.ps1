@@ -16,6 +16,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 }
 # Fail fast, give priority to the error-prone tests
 python tests/run_tests.py -vr2 -t1 -k "paddle" -a "$env:TI_WANTED_ARCHS"
+if (-not $?) { exit 1 }
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
   python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
   if (-not $?) { exit 1 }

@@ -34,8 +34,8 @@ endif()
 target_link_libraries(${TESTS_NAME} PRIVATE taichi_isolated_core)
 target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
 
-target_include_directories(${TESTS_NAME} 
-  PRIVATE 
+target_include_directories(${TESTS_NAME}
+  PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/include

@@ -7,7 +7,7 @@ target_sources(opengl_runtime
   )
 
 #TODO #4832, some path here should not be included as they are
-# dependencies of other targets. 
+# dependencies of other targets.
 target_include_directories(opengl_runtime
   PRIVATE
     ${PROJECT_SOURCE_DIR}

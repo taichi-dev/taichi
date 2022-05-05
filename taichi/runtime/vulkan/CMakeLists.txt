@@ -7,7 +7,7 @@ target_sources(vulkan_runtime
   )
 
 #TODO 4832, some dependencies here should not be required as they
-# are build requirements of other targets. 
+# are build requirements of other targets.
 target_include_directories(vulkan_runtime
   PRIVATE
     ${PROJECT_SOURCE_DIR}

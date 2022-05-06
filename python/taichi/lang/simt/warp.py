@@ -87,9 +87,11 @@ def shfl_xor_i32(mask, val, offset):
             expr.make_expr_group(mask, val, offset, 31), False))
 
 
-def match_any():
-    # TODO
-    pass
+def match_any(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_match_any_sync_i32",
+            expr.make_expr_group(mask, predicate), False))
 
 
 def match_all():

@@ -95,14 +95,14 @@ class SparseMatrix {
 template <class EigenMatrix>
 class EigenSparseMatrix : public SparseMatrix {
  public:
-  EigenSparseMatrix(int rows, int cols, DataType dt)
+  explicit EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
   explicit EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  EigenSparseMatrix(EigenSparseMatrix &&sm)
+  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
@@ -110,11 +110,11 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
   }
 
-  virtual ~EigenSparseMatrix() override = default;
-  virtual void build_triplets(void *triplets_adr) override;
-  virtual const std::string to_string() const override;
+  virtual ~EigenSparseMatrix() = default;
+  void build_triplets(void *triplets_adr) override;
+  const std::string to_string() const override;
 
-  virtual const void *get_matrix() const override {
+  const void *get_matrix() const override {
     return &matrix_;
   };
 

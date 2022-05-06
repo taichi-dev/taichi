@@ -262,7 +262,8 @@ def test_active_mask():
     foo()
 
     for i in range(32):
-        assert a[i] == 65535 
+        assert a[i] == 65535
+
 
 @test_utils.test(arch=ti.cuda)
 def test_sync():

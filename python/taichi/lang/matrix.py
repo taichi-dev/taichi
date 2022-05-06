@@ -285,23 +285,25 @@ class _MatrixEntriesInitializer:
     def with_dynamic_index(self, arr, dt):
         raise NotImplementedError('Override')
 
-    @staticmethod
-    def infer_dt(arr):
-        dt = None
-        if isinstance(arr[0], (int, np.integer)):
-            dt = impl.get_runtime().default_ip
-        elif isinstance(arr[0], float):
-            dt = impl.get_runtime().default_fp
-        elif isinstance(arr[0], expr.Expr):
-            dt = arr[0].ptr.get_ret_type()
+    def _get_entry_to_infer(self, arr):
+        raise NotImplementedError('Override')
+
+    def infer_dt(self, arr):
+        entry = self._get_entry_to_infer(arr)
+        if isinstance(entry, (int, np.integer)):
+            return impl.get_runtime().default_ip
+        elif isinstance(entry, float):
+            return impl.get_runtime().default_fp
+        elif isinstance(entry, expr.Expr):
+            dt = entry.ptr.get_ret_type()
             if dt == ti_core.DataType_unknown:
                 raise TypeError(
                     'Element type of the matrix cannot be inferred. Please set dt instead for now.'
                 )
-        else:
-            raise Exception(
-                'dt required when using dynamic_index for local tensor')
-        return dt
+            return dt
+        raise Exception(
+            'dt required when using dynamic_index for local tensor'
+        )
 
 
 def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
@@ -328,6 +330,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                             (len(arr), ), dynamic_index_stride)
                     ]))
             return local_tensor_proxy, dynamic_index_stride, mat
+
+        def _get_entry_to_infer(self, arr):
+            return arr[0]
 
     class _MatImpl(_MatrixEntriesInitializer):
         def pyscope_or_ref(self, arr):
@@ -356,6 +361,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                              expr.Expr(j, dtype=primitive_types.i32)),
                             (len(arr), len(arr[0])), dynamic_index_stride))
             return local_tensor_proxy, dynamic_index_stride, mat
+
+        def _get_entry_to_infer(self, arr):
+            return arr[0][0]
 
     return _MatImpl() if is_matrix else _VecImpl()
 
@@ -1384,6 +1392,7 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
+
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1403,6 +1412,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
+
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1419,6 +1429,7 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
+
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1681,6 +1692,7 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1776,6 +1788,7 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

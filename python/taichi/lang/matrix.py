@@ -285,7 +285,8 @@ class _MatrixEntriesInitializer:
     def with_dynamic_index(self, arr, dt):
         raise NotImplementedError('Override')
 
-    def infer_dt(self, arr):
+    @staticmethod
+    def infer_dt(arr):
         dt = None
         if isinstance(arr[0], (int, np.integer)):
             dt = impl.get_runtime().default_ip

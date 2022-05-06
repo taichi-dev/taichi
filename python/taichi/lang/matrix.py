@@ -275,6 +275,90 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         return [_ for _ in range(start, stop, step)]
 
 
+class _MatrixEntriesInitializer:
+    def pyscope_or_ref(self, arr):
+        raise NotImplementedError('Override')
+
+    def no_dynamic_index(self, arr, dt):
+        raise NotImplementedError('Override')
+
+    def with_dynamic_index(self, arr, dt):
+        raise NotImplementedError('Override')
+
+    def infer_dt(self, arr):
+        dt = None
+        if isinstance(arr[0], (int, np.integer)):
+            dt = impl.get_runtime().default_ip
+        elif isinstance(arr[0], float):
+            dt = impl.get_runtime().default_fp
+        elif isinstance(arr[0], expr.Expr):
+            dt = arr[0].ptr.get_ret_type()
+            if dt == ti_core.DataType_unknown:
+                raise TypeError(
+                    'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                )
+        else:
+            raise Exception(
+                'dt required when using dynamic_index for local tensor'
+            )
+        return dt
+
+
+def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
+    class _VecImpl(_MatrixEntriesInitializer):
+        def pyscope_or_ref(self, arr):
+            return [[x] for x in arr]
+
+        def no_dynamic_index(self, arr, dt):
+            return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                    for x in arr]
+
+        def with_dynamic_index(self, arr, dt):
+            local_tensor_proxy = impl.expr_init_local_tensor(
+                [len(arr)], dt,
+                expr.make_expr_group([expr.Expr(x) for x in arr]))
+            dynamic_index_stride = 1
+            mat = []
+            for i in range(len(arr)):
+                mat.append(
+                    list([
+                        impl.make_tensor_element_expr(
+                            local_tensor_proxy,
+                            (expr.Expr(i, dtype=primitive_types.i32), ),
+                            (len(arr), ), dynamic_index_stride)
+                    ]))
+            return local_tensor_proxy, dynamic_index_stride, mat
+
+    class _MatImpl(_MatrixEntriesInitializer):
+        def pyscope_or_ref(self, arr):
+            return [list(row) for row in arr]
+
+        def no_dynamic_index(self, arr, dt):
+            return [[
+                impl.expr_init(ops_mod.cast(x, dt) if dt else x)
+                    for x in row] for row in arr]
+
+        def with_dynamic_index(self, arr, dt):
+            local_tensor_proxy = impl.expr_init_local_tensor(
+                [len(arr), len(arr[0])], dt,
+                expr.make_expr_group(
+                    [expr.Expr(x) for row in arr for x in row]))
+
+            dynamic_index_stride = 1
+            mat = []
+            for i in range(len(arr)):
+                mat.append([])
+                for j in range(len(arr[0])):
+                    mat[i].append(
+                        impl.make_tensor_element_expr(
+                            local_tensor_proxy,
+                            (expr.Expr(i, dtype=primitive_types.i32),
+                                expr.Expr(j, dtype=primitive_types.i32)),
+                            (len(arr), len(arr[0])), dynamic_index_stride))
+            return local_tensor_proxy, dynamic_index_stride, mat
+    return _MatImpl() if is_matrix else _VecImpl()
+
+
 @_gen_swizzles
 class Matrix(TaichiOperations):
     """The matrix class.
@@ -331,12 +415,14 @@ class Matrix(TaichiOperations):
             mat = []
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
-        elif not isinstance(arr[0], Iterable):  # now init a Vector
+        else:
+            is_matrix = isinstance(arr[0], Iterable)
+            initializer = _make_entries_initializer(is_matrix)
+
             if in_python_scope() or is_ref:
-                mat = [[x] for x in arr]
+                mat = initializer.pyscope_or_ref(arr)
             elif not impl.current_cfg().dynamic_index:
-                mat = [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
-                       for x in arr]
+                mat = initializer.no_dynamic_index(arr, dt)
             else:
                 if not ti_core.is_extension_supported(
                         impl.current_cfg().arch,
@@ -345,83 +431,13 @@ class Matrix(TaichiOperations):
                         f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
                     )
                 if dt is None:
-                    if isinstance(arr[0], (int, np.integer)):
-                        dt = impl.get_runtime().default_ip
-                    elif isinstance(arr[0], float):
-                        dt = impl.get_runtime().default_fp
-                    elif isinstance(arr[0], expr.Expr):
-                        dt = arr[0].ptr.get_ret_type()
-                        if dt == ti_core.DataType_unknown:
-                            raise TypeError(
-                                'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                            )
-                    else:
-                        raise Exception(
-                            'dt required when using dynamic_index for local tensor'
-                        )
-                local_tensor_proxy = impl.expr_init_local_tensor(
-                    [len(arr)], dt,
-                    expr.make_expr_group([expr.Expr(x) for x in arr]))
-                dynamic_index_stride = 1
-                mat = []
-                for i in range(len(arr)):
-                    mat.append(
-                        list([
-                            impl.make_tensor_element_expr(
-                                local_tensor_proxy,
-                                (expr.Expr(i, dtype=primitive_types.i32), ),
-                                (len(arr), ), dynamic_index_stride)
-                        ]))
-        else:  # now init a Matrix
-            if in_python_scope() or is_ref:
-                mat = [list(row) for row in arr]
-            elif not impl.current_cfg().dynamic_index:
-                mat = [[
-                    impl.expr_init(ops_mod.cast(x, dt) if dt else x)
-                    for x in row
-                ] for row in arr]
-            else:
-                if not ti_core.is_extension_supported(
-                        impl.current_cfg().arch,
-                        ti_core.Extension.dynamic_index):
-                    raise Exception(
-                        f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
-                    )
-                if dt is None:
-                    if isinstance(arr[0][0], (int, np.integer)):
-                        dt = impl.get_runtime().default_ip
-                    elif isinstance(arr[0][0], float):
-                        dt = impl.get_runtime().default_fp
-                    elif isinstance(arr[0][0], expr.Expr):
-                        dt = arr[0][0].ptr.get_ret_type()
-                        if dt == ti_core.DataType_unknown:
-                            raise TypeError(
-                                'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                            )
-                    else:
-                        raise Exception(
-                            'dt required when using dynamic_index for local tensor'
-                        )
-                local_tensor_proxy = impl.expr_init_local_tensor(
-                    [len(arr), len(arr[0])], dt,
-                    expr.make_expr_group(
-                        [expr.Expr(x) for row in arr for x in row]))
-                dynamic_index_stride = 1
-                mat = []
-                for i in range(len(arr)):
-                    mat.append([])
-                    for j in range(len(arr[0])):
-                        mat[i].append(
-                            impl.make_tensor_element_expr(
-                                local_tensor_proxy,
-                                (expr.Expr(i, dtype=primitive_types.i32),
-                                 expr.Expr(j, dtype=primitive_types.i32)),
-                                (len(arr), len(arr[0])), dynamic_index_stride))
-        self.n = len(mat)
+                    dt = initializer.infer_dt(arr)
+                local_tensor_proxy, dynamic_index_stride, mat = initializer.with_dynamic_index(
+                    arr, dt)
+
+        self.n, self.m = len(mat), 1
         if len(mat) > 0:
             self.m = len(mat[0])
-        else:
-            self.m = 1
         entries = [x for row in mat for x in row]
 
         if self.n * self.m > 32 and not suppress_warning:
@@ -1367,6 +1383,7 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
+
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1386,6 +1403,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
+
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1402,6 +1420,7 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
+
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1664,6 +1683,7 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1759,6 +1779,7 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
+
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

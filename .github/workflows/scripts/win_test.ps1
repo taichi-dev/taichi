@@ -15,6 +15,11 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 }
 # Fail fast, give priority to the error-prone tests
 python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu
+if (-not $?) { exit 1 }
+
+# Disable paddle for the remaining test
+$env:TI_ENABLE_PADDLE = "0"
+
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
   python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
   if (-not $?) { exit 1 }

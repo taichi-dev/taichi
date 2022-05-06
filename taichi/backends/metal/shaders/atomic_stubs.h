@@ -9,9 +9,7 @@ struct _atomic {};
 namespace metal {
 
 using memory_order = bool;
-
-// Defined in atomic_stub.cpp
-extern memory_order memory_order_relaxed;
+memory_order memory_order_relaxed = false;
 
 }  // namespace metal
 

@@ -71,8 +71,8 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    VkRuntime *runtime,
                                    SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
-      std::move(run_codegen(kernel, runtime->get_ti_device(),
-                            snode_tree_mgr->get_compiled_structs())));
+      run_codegen(kernel, runtime->get_ti_device(),
+                  snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };

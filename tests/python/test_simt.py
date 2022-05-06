@@ -266,12 +266,13 @@ def test_sync():
             a[i] = i
         ti.simt.warp.sync(ti.u32(0xFFFFFFFF))
         for i in range(16):
-            a[i] = a[i+16]
-    
+            a[i] = a[i + 16]
+
     foo()
 
     for i in range(32):
         assert a[i] == i % 16 + 16
+
 
 # Higher level primitives test
 def _test_subgroup_reduce(op, group_op, np_op, size, initial_value, dtype):

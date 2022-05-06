@@ -102,9 +102,10 @@ def active_mask():
     pass
 
 
-def sync(mask): 
-    expr.Expr(_ti_core.insert_internal_func_call(
-            "warp_barrier", expr.make_expr_group(mask), False))
+def sync(mask):
+    expr.Expr(
+        _ti_core.insert_internal_func_call("warp_barrier",
+                                           expr.make_expr_group(mask), False))
 
 
 __all__ = [

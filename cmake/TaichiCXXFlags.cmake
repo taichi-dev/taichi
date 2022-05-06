@@ -46,7 +46,11 @@ else()
         message("Invalid compiler ${CMAKE_CXX_COMPILER_ID} detected.")
         message(FATAL_ERROR "clang and MSVC are the only supported compilers for Taichi compiler development. Consider using 'cmake -DCMAKE_CXX_COMPILER=clang' if you are on Linux.")
     endif()
+
+    # [Global] CXX compilation option to enable all warnings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
+    # [Global] CXX compilation option to suppress warnings when compiler ignores an attribute.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-attributes ")
 endif ()
 
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")

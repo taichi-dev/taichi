@@ -299,8 +299,7 @@ class _MatrixEntriesInitializer:
                 )
         else:
             raise Exception(
-                'dt required when using dynamic_index for local tensor'
-            )
+                'dt required when using dynamic_index for local tensor')
         return dt
 
 
@@ -335,8 +334,8 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
 
         def no_dynamic_index(self, arr, dt):
             return [[
-                impl.expr_init(ops_mod.cast(x, dt) if dt else x)
-                    for x in row] for row in arr]
+                impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in row
+            ] for row in arr]
 
         def with_dynamic_index(self, arr, dt):
             local_tensor_proxy = impl.expr_init_local_tensor(
@@ -353,9 +352,10 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                         impl.make_tensor_element_expr(
                             local_tensor_proxy,
                             (expr.Expr(i, dtype=primitive_types.i32),
-                                expr.Expr(j, dtype=primitive_types.i32)),
+                             expr.Expr(j, dtype=primitive_types.i32)),
                             (len(arr), len(arr[0])), dynamic_index_stride))
             return local_tensor_proxy, dynamic_index_stride, mat
+
     return _MatImpl() if is_matrix else _VecImpl()
 
 
@@ -1383,7 +1383,6 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
-
     def __init__(self, n, m, entries):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
@@ -1403,7 +1402,6 @@ class _MatrixFieldElement(_IntermediateMatrix):
         field (MatrixField): The matrix field.
         indices (taichi_core.ExprGroup): Indices of the element.
     """
-
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_core.subscript(e.ptr, indices))
@@ -1420,7 +1418,6 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-
     def __init__(self, _vars, n, m):
         assert len(_vars) == n * m
         super().__init__(_vars)
@@ -1683,7 +1680,6 @@ class MatrixNdarray(Ndarray):
 
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
         self.shape = shape
@@ -1779,7 +1775,6 @@ class VectorNdarray(Ndarray):
 
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
-
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
         self.shape = shape

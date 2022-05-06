@@ -247,17 +247,17 @@ def test_match_any():
         ti.loop_config(block_dim=32)
         for i in range(16):
             a[i] = 0
-            a[i+16] = 1
+            a[i + 16] = 1
 
         for i in range(32):
             b[i] = ti.simt.warp.match_any(ti.u32(0xFFFFFFFF), a[i])
 
     foo()
-    
+
     for i in range(16):
         assert b[i] == 65535
     for i in range(16):
-        assert b[i+16] == (2**32 - 2**16)
+        assert b[i + 16] == (2**32 - 2**16)
 
 
 @test_utils.test(arch=ti.cuda)

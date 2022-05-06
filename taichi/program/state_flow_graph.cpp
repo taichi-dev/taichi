@@ -447,7 +447,7 @@ bool StateFlowGraph::optimize_listgen() {
     for (int i = i_start; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
-      bool erased_any = false;
+      [[maybe_unused]] bool erased_any = false;
 
       auto new_i = i;
 

@@ -379,7 +379,9 @@ if (TI_WITH_VULKAN)
 
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
+
+    # By specifying SYSTEM, we suppressed the warnings from third-party headers.
+    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
 
     if (LINUX)
         # shaderc requires pthread

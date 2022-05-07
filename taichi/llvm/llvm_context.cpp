@@ -363,6 +363,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
     patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
     patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
 
+    patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
+    patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
+
     patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
     patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
 

@@ -8,6 +8,7 @@ option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
 option(TI_EMSCRIPTENED "Build using emscripten" OFF)
+option(TI_EXPORT_CORE "Export Taichi core library for AOT runtime" OFF)
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.

@@ -294,7 +294,7 @@ class _MatrixEntriesInitializer:
             return impl.get_runtime().default_ip
         if isinstance(entry, float):
             return impl.get_runtime().default_fp
-        elif isinstance(entry, expr.Expr):
+        if isinstance(entry, expr.Expr):
             dt = entry.ptr.get_ret_type()
             if dt == ti_core.DataType_unknown:
                 raise TypeError(

@@ -292,7 +292,7 @@ class _MatrixEntriesInitializer:
         entry = self._get_entry_to_infer(arr)
         if isinstance(entry, (int, np.integer)):
             return impl.get_runtime().default_ip
-        elif isinstance(entry, float):
+        if isinstance(entry, float):
             return impl.get_runtime().default_fp
         elif isinstance(entry, expr.Expr):
             dt = entry.ptr.get_ret_type()

@@ -287,6 +287,8 @@ b.tree()....place(b.grad_of('x'))
 
 If `needs_grad=True`, the primal and adjoint fields will be defined inside the same tree. You will need to use `b.grad_of(primal_name)` to access the handle of the adjoint field. The alternative would be to use `f'{primal_name}.grad'`, which feels too ad-hoc.
 
+Alternatively, if you don't want to place the gradient fields on your own, you could use `builder.lazy_grad()` by the end, which automatically places all the gradient fields.
+
 ## Python AOT API
 
 Here's the Python AOT API to save the SNodeTree type.

@@ -10,7 +10,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import i32, u16, u32
+from taichi.types import u16, u32
 from taichi.types.compound_types import CompoundType
 
 from taichi import lang

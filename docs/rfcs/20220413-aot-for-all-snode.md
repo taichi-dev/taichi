@@ -14,6 +14,7 @@
 - [Detailed Design](#detailed-design)
   - [A first attempt](#a-first-attempt)
   - [A working design](#a-working-design)
+  - [Defining `shape`](#defining-shape)
   - [AoS vs SoA](#aos-vs-soa)
   - [Gradient and AutoDiff](#gradient-and-autodiff)
   - [Python AOT API](#python-aot-api)
@@ -158,6 +159,31 @@ There will be two ways to retrieve a field from a tree:
 
    Note that this design requires that part of the kernel (1) being evaluated inside Python. It also pulls in the global variable `x_handle`, which kind of violates our initial goal. We could require that `x_handle` is passed into the kernel as an argument. But maybe it's fine just to view that as a trivial Python constant?
 
+## Defining `shape`
+
+Like how `ti.field()` works, `add_field` can take in a `shape` parameter. When doing so, the builder will automatically create a new `dense` field under the root of the tree. Note that you should *not* do another place if `shape` is defined.
+
+Here is an example:
+
+```py
+builder = ti.SNodeTreeBuilder()
+
+builder.add_field(dtype=ti.f32, name='x', shape=(4, 8))
+# This would result an error
+# builder.tree().dense(ti.ij, (4, 8)).place('x')
+tree_t = builder.build()
+```
+
+It is equivalent to this:
+
+```py
+builder = ti.SNodeTreeBuilder()
+
+builder.add_field(dtype=ti.f32, name='x')
+builder.tree().dense(ti.ij, (4, 8)).place('x')
+tree_t = builder.build()
+```
+
 ## AoS vs SoA
 
 Two composite types require the switch between AoS vs SoA, `ti.Matrix` and `ti.Struct`.
@@ -202,8 +228,8 @@ for v in ['v0', 'v1', 'v2']:
 
 # Checks that
 # 1. `components` and `dtype` are compatible.
-# 2. All the fields in `components` are homogeneous in their SNode hierarchy.
-# 3. `components` themselves are not field views.
+# 2. If `dtype` is a vector/matrix, then all the fields in `components` are homogeneous in their SNode hierarchy.
+#    See https://github.com/taichi-dev/taichi/issues/3810
 builder.add_field_view(dtype=ti.vec3, name='vel', components=['v0', 'v1', 'v2'])
 ```
 
@@ -259,7 +285,7 @@ b.tree()....place('x')
 b.tree()....place(b.grad_of('x'))
 ```
 
-SNodes for the primal and adjoint fields will be generated inside the same tree.
+If `needs_grad=True`, the primal and adjoint fields will be defined inside the same tree. You will need to use `b.grad_of(primal_name)` to access the handle of the adjoint field. The alternative would be to use `f'{primal_name}.grad'`, which feels too ad-hoc.
 
 ## Python AOT API
 

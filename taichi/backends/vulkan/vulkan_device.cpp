@@ -278,7 +278,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
 
       for (auto var : variables) {
         // We want to remove auxiliary outputs such as frag depth
-        if (var->built_in == -1) {
+        if (static_cast<int>(var->built_in) == -1) {
           render_target_count++;
         }
       }

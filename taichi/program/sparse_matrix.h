@@ -110,7 +110,7 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
   }
 
-  virtual ~EigenSparseMatrix() = default;
+  ~EigenSparseMatrix() override = default;
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
 

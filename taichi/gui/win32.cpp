@@ -153,7 +153,7 @@ void GUI::process_event() {
 }
 
 void GUI::create_window() {
-  const char* CLASS_NAME = "Taichi Win32 Window";
+  const char *CLASS_NAME = "Taichi Win32 Window";
 
   DWORD dwVersion = 0;
   DWORD dwMajorVersion = 0;
@@ -180,18 +180,18 @@ void GUI::create_window() {
 
   AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
 
-  hwnd = CreateWindowExA(0,           // Optional window styles.
-                        CLASS_NAME,  // Window class
-                        window_name.c_str(),  // Window text
-                        WS_OVERLAPPEDWINDOW,  // Window style
-                        // Size and position
-                        CW_USEDEFAULT, CW_USEDEFAULT,
-                        window_rect.right - window_rect.left,
-                        window_rect.bottom - window_rect.top,
-                        NULL,                // Parent window
-                        NULL,                // Menu
-                        GetModuleHandleA(0),  // Instance handle
-                        NULL                 // Additional application data
+  hwnd = CreateWindowExA(0,                    // Optional window styles.
+                         CLASS_NAME,           // Window class
+                         window_name.c_str(),  // Window text
+                         WS_OVERLAPPEDWINDOW,  // Window style
+                         // Size and position
+                         CW_USEDEFAULT, CW_USEDEFAULT,
+                         window_rect.right - window_rect.left,
+                         window_rect.bottom - window_rect.top,
+                         NULL,                 // Parent window
+                         NULL,                 // Menu
+                         GetModuleHandleA(0),  // Instance handle
+                         NULL                  // Additional application data
   );
   TI_ERROR_IF(hwnd == NULL, "Window creation failed");
   gui_from_hwnd[hwnd] = this;

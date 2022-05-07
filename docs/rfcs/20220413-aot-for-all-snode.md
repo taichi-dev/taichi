@@ -169,7 +169,7 @@ builder = ti.SNodeTreeBuilder()
 
 builder.add_field(dtype=ti.vec3, name='x')  # ti.vec3 is a vector of 3 ti.f32's
 builder.dense(ti.i, 8).place('x')
-tree_t = x.build()
+tree_t = builder.build()
 ```
 
 For SoA, things get a bit trickier. The **current approach** is to treat each compopnent of the composite type as a standalone scalar Taichi field. In the example below, we have to manually place the underlying 3 components of `x` separately.

@@ -246,6 +246,9 @@ class StreamImpl : public Stream {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
 
+    // FIXME: Implement semaphore mechanism for Metal backend
+    //        and return the actual semaphore corresponding to the submitted
+    //        cmds.
     return nullptr;
   }
   StreamSemaphore submit_synced(

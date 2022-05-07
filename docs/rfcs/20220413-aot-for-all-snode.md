@@ -234,7 +234,7 @@ To make field view even more powerful, we can supported *nested field views*. Fo
 
 ```py
 vertex_t = ti.types.struct({'pos': ti.vec3, 'normal': ti.vec3})
-sphere_t = ti.types.struct({'center': vertex_t, 'radius'; ti.f32})
+sphere_t = ti.types.struct({'center': vertex_t, 'radius': ti.f32})
 
 builder = ti.SNodeTreeBuilder()
 builder.add_field(dtype=ti.vec3, name='pos')

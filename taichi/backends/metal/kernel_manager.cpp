@@ -188,7 +188,7 @@ class UserMtlKernel : public CompiledMtlKernelBase {
     // 0 is valid for |num_threads|!
     TI_ASSERT(kernel_attribs_.advisory_total_num_threads >= 0);
     BindBuffers buffers;
-    for (const auto b : kernel_attribs_.buffers) {
+    for (const auto &b : kernel_attribs_.buffers) {
       buffers.push_back({input_buffers.find(b)->second, b});
     }
     launch_if_not_empty(std::move(buffers), command_buffer);
@@ -215,7 +215,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     BindBuffers buffers;
-    for (const auto b : kernel_attribs_.buffers) {
+    for (const auto &b : kernel_attribs_.buffers) {
       if (b.type() == BufferDescriptor::Type::Context) {
         buffers.push_back({args_buffer_.get(), b});
       } else {

@@ -245,6 +245,8 @@ class StreamImpl : public Stream {
       const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
+
+    return nullptr;
   }
   StreamSemaphore submit_synced(
       CommandList *cmdlist,
@@ -252,6 +254,8 @@ class StreamImpl : public Stream {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
     wait_until_completed(cb);
+
+    return nullptr;
   }
 
   void command_sync() override {

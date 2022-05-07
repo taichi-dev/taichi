@@ -190,7 +190,7 @@ class KernelCodegenImpl : public IRVisitor {
 
     for (int i = 0; i < compiled_snode_trees_.size(); ++i) {
       const auto &cst = compiled_snode_trees_[i];
-      for (const auto [node_id, _] : cst.snode_descriptors) {
+      for (const auto &[node_id, _] : cst.snode_descriptors) {
         RootInfo ri{};
         ri.snode_id = cst.root_id;
         ri.index_in_cst = i;

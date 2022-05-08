@@ -325,8 +325,14 @@ void AsyncEngine::debug_sfg(const std::string &stage) {
     std::ofstream dot_file(dot_fn + ".dot");
     dot_file << dot;
   }
-  std::system(
+
+  int return_code = std::system(
       fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn, dot_fn).c_str());
+  if (return_code != 0) {
+    throw std::runtime_error(
+        fmt::format("Unable to convert {dot_fn}.dot into {dot_fn}.pdf")
+            .c_str());
+  }
 }
 
 TLANG_NAMESPACE_END

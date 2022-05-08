@@ -98,13 +98,15 @@ def match_all():
 
 
 def active_mask():
-    # TODO
-    pass
+    return expr.Expr(
+        _ti_core.insert_internal_func_call("cuda_active_mask",
+                                           expr.make_expr_group(), False))
 
 
-def sync():
-    # TODO
-    pass
+def sync(mask):
+    expr.Expr(
+        _ti_core.insert_internal_func_call("warp_barrier",
+                                           expr.make_expr_group(mask), False))
 
 
 __all__ = [

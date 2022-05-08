@@ -251,9 +251,11 @@ if (APPLE)
     )
 endif()
 
+# TODO: replace these includes per target basis
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
 include_directories(external/spdlog/include)
+include_directories(external/glad/include)
 include_directories(external/SPIRV-Tools/include)
 include_directories(external/PicoSHA2)
 if (TI_WITH_OPENGL)
@@ -351,6 +353,9 @@ if (TI_WITH_OPENGL)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
+
+    add_subdirectory(taichi/runtime/opengl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
 endif()
 
 if (TI_WITH_DX11)
@@ -374,7 +379,9 @@ if (TI_WITH_VULKAN)
 
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
+
+    # By specifying SYSTEM, we suppressed the warnings from third-party headers.
+    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
 
     if (LINUX)
         # shaderc requires pthread

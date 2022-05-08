@@ -1206,7 +1206,7 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   store_var(rand_z_, _521288629u);
   store_var(rand_w_, _88675123u);
 
-  enum spv::Op add_op = spv::OpIAdd;
+  // enum spv::Op add_op = spv::OpIAdd;
   bool use_atomic_increment = false;
 
 // use atomic increment for DX API to avoid error X3694

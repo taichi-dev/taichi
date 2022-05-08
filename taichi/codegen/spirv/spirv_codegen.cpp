@@ -474,7 +474,6 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt = stmt->val->element_type();
 
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 

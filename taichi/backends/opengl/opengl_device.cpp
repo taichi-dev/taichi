@@ -1,5 +1,5 @@
 #include "opengl_device.h"
-#include "opengl_api.h"
+#include "taichi/runtime/opengl/opengl_api.h"
 
 namespace taichi {
 namespace lang {

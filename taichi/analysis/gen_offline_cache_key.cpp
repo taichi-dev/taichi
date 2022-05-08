@@ -1,4 +1,5 @@
-#include "taichi/analysis/offline_cache_util.h"
+#include "offline_cache_util.h"
+
 #include "taichi/ir/expr.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
@@ -274,6 +275,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(FrontendAssertStmt *stmt) override {
     emit(StmtOpCode::FrontendAssertStmt);
     emit(stmt->cond);
+    emit(stmt->text);
+    emit(stmt->args);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -389,8 +392,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
   static void run(Program *prog, IRNode *ast, std::ostream *os) {
-    // Temporary: using ExpressionOfflineCacheKeyGenerator, which will be
-    // refactored
     ASTSerializer serializer(prog, os);
     ast->accept(&serializer);
     serializer.emit_dependencies();
@@ -415,7 +416,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     } while (real_funcs_.size() > last_size);
     this->set_ostream(curr_os);
     emit(static_cast<std::size_t>(real_funcs_.size()));
-    emit(&temp_oss);
+    auto real_funcs_ast_string = temp_oss.str();
+    emit_bytes(real_funcs_ast_string.data(), real_funcs_ast_string.size());
 
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
@@ -473,11 +475,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       emit(k);
       emit(v);
     }
-  }
-
-  void emit(std::ostream *os) {
-    TI_ASSERT(os_ && os);
-    *os_ << os->rdbuf();
   }
 
   void emit(const std::string &str) {
@@ -546,7 +543,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     if (auto *p = type->cast<PrimitiveType>()) {
       emit(p->type);
     } else {
-      auto type_str = p->to_string();
+      auto type_str = type->to_string();
       emit(type_str);
     }
   }

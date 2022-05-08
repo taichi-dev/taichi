@@ -42,19 +42,17 @@ enum class ExternalFuncType : std::uint8_t {
 };
 
 enum class MeshRelationAccessType {
-  Access, // mesh_relation_access
-  Size, // mesh_relation_size
+  Access,  // mesh_relation_access
+  Size,    // mesh_relation_size
 };
 
 class ASTSerializer : public IRVisitor, public ExpressionVisitor {
  private:
-  using IRVisitor::visit;
   using ExpressionVisitor::visit;
+  using IRVisitor::visit;
 
  public:
-  ASTSerializer(Program *prog,
-                std::ostream *os)
-      : prog_(prog), os_(os) {
+  ASTSerializer(Program *prog, std::ostream *os) : prog_(prog), os_(os) {
     this->allow_undefined_visitor = true;
   }
 
@@ -441,7 +439,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void emit_bytes(const char *bytes, std::size_t len) {
     TI_ASSERT(os_);
-    if (!bytes) return;
+    if (!bytes)
+      return;
     os_->write(bytes, len);
   }
 
@@ -590,8 +589,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
 #define DEFINE_EMIT_ENUM(EnumType) \
-  void emit(EnumType type) { \
-    emit_pod(type); \
+  void emit(EnumType type) {       \
+    emit_pod(type);                \
   }
 
   DEFINE_EMIT_ENUM(ExprOpCode);

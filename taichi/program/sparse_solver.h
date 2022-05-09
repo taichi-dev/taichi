@@ -17,7 +17,7 @@ class SparseSolver {
   virtual bool info() = 0;
 };
 
-template <class EigenSolver>
+template <class EigenSolver, class EigenMatrix>
 class EigenSparseSolver : public SparseSolver {
  private:
   EigenSolver solver_;

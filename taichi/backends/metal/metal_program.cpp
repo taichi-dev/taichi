@@ -11,7 +11,7 @@ namespace {
 std::unordered_set<const SNode *> find_all_dense_snodes(
     const metal::SNodeDescriptorsMap &snodes_map) {
   std::unordered_set<const SNode *> res;
-  for (const auto [_, desc] : snodes_map) {
+  for (const auto &[_, desc] : snodes_map) {
     const auto *sn = desc.snode;
     if (sn->type == SNodeType::dense) {
       res.insert(sn);

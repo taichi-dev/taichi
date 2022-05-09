@@ -278,7 +278,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
 
       for (auto var : variables) {
         // We want to remove auxiliary outputs such as frag depth
-        if (var->built_in == -1) {
+        if (static_cast<int>(var->built_in) == -1) {
           render_target_count++;
         }
       }
@@ -1396,9 +1396,8 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT_INFO(map_pair != allocations_.end(),
                  "Invalid handle (double free?) {}", handle.alloc_id);
 
-  AllocationInternal &alloc = map_pair->second;
-
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+  AllocationInternal &alloc = map_pair->second;
   TI_TRACE("Dealloc VK buffer {}, alloc_id={}", (void *)alloc.buffer,
            handle.alloc_id);
 #endif
@@ -1830,8 +1829,6 @@ void VulkanDevice::destroy_image(DeviceAllocation handle) {
 
   TI_ASSERT_INFO(map_pair != image_allocations_.end(),
                  "Invalid handle (double free?) {}", handle.alloc_id);
-
-  ImageAllocInternal &alloc_int = map_pair->second;
 
   image_allocations_.erase(handle.alloc_id);
 }

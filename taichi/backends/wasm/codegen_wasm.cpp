@@ -31,7 +31,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
-    int step = 1;
+    [[maybe_unused]] int step = 1;
 
     // In parallel for-loops reversing the order doesn't make sense.
     // However, we may need to support serial offloaded range for's in the

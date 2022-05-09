@@ -1,4 +1,3 @@
-# pylint: disable=W0622
 """
 Math functions for glsl-like functions and other stuff.
 """

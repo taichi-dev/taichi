@@ -296,7 +296,7 @@ Here, we do not want to repeat some best practices summarized in the following G
 ## Compilation Warnings
 Taichi enforces warning-free codes by turning on `-Werror` (treat warning as error) by default. It is highly recommended to resolve a warning as soon as it raises.
 
-On the other hand, real world issues could be way complexer than what the compiler expected. So we prepared the following HOWTOs to help resolve some common problems. You are also more than welcome to open up an issue or consult the reviewer inplace for further discussions.
+On the other hand, real world issues could be way more complicated than what the compiler expected. So we prepared the following HOWTOs to help resolve some common problems. You are also more than welcome to open up an issue or consult the reviewer inplace for further discussions.
 
 ### How to deal with warnings from third-party header files
 There is little we can do about third-party warnings other than simply turning them off.
@@ -311,7 +311,7 @@ target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMe
 ```
 
 ### How to deal with warnings raised when compiling third-party libraries or targets
-Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of CMake system, CMake Variables from Taichi and its submodules could get massed up in certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
+Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of CMake system, CMake variables from Taichi and its submodules could get messed up in certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
 
 1. Separate submodule's `CMAKE_CXX_FLAGS` from that configured in Taichi.
 2. Remove "-Wall" option from submodule's `CMAKE_CXX_FLAGS`.
@@ -330,7 +330,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 ```
 
-### How to mute warnings for specific lines of codes
+### How to mute warnings for specific lines of codes (NOT RECOMMENDED)
+In rare situations where the warnings cannot be fixed nor muted via regular attempts, one of the last things you can try is to decorate your code with `#pragma clang diagnostic` macro. Be aware that `#pragma`s are not part of the C++ standard and strongly depend on the compiler's implementation. That is to say, the following solution is neither stable nor elegant.
+
 Wrap the lines of interest with the following two macros, warnings will be ignored for the codes in between.
 
 You may also replace the `-Wall` with a group of specific warning-types for finer control.

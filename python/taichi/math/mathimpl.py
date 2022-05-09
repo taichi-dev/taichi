@@ -4,12 +4,10 @@ Math functions for glsl-like functions and other stuff.
 from math import e, pi
 
 from taichi.lang import impl
+from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
+                             max, min, pow, round, sin, sqrt, tan, tanh)
 
 import taichi as ti
-
-from taichi.lang.ops import (sin, cos, asin, acos, sqrt, round,
-                             floor, ceil, tan, tanh, exp, log, pow,
-                             atan2, max, min)
 
 vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.
@@ -614,10 +612,11 @@ def length(x):
 
 
 __all__ = [
-    "acos", "asin", "atan2", "ceil",
-    "clamp", "cos", "cross", "degrees", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2", "mat3", "mat4", "max", "min",
-    "mix", "mod", "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
-    "rotate2d", "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3",
-    "uvec4", "vec2", "vec3", "vec4"
+    "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
+    "distance", "dot", "e", "exp", "eye", "floor", "fract", "ivec2", "ivec3",
+    "ivec4", "length", "log", "log2", "mat2", "mat3", "mat4", "max", "min",
+    "mix", "mod", "normalize", "pi", "pow", "radians", "reflect", "refract",
+    "rot2", "rot3", "rotate2d", "rotate3d", "round", "sign", "sin",
+    "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4",
+    "vec2", "vec3", "vec4"
 ]

@@ -97,7 +97,7 @@ user_api[ti.FieldsBuilder] = [
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
-    "acos", "asin", "atan2", "ceil", 'cconj', 'cdiv', 'cexp', 'cinv', 'clamp',
+    'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
     'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'distance',
     'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'ivec2', 'ivec3', 'ivec4',
     'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max', 'min', 'mix',

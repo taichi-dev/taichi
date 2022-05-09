@@ -1080,8 +1080,12 @@ i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
   return 0;
 }
 
-u32 cuda_match_all_sync_i32(u32 mask, i32 value, i32 predicate) {
+u32 cuda_match_all_sync_i32_addr(u32 mask, i32 value, i32 *predicate) {
   return 0;
+}
+
+u32 cuda_match_all_sync_i32(u32 mask, i32 value, i32 predicate) {
+  return cuda_match_all_sync_i32_addr(mask, value, &predicate);
 }
 
 i32 cuda_match_any_sync_i64(i32 mask, i64 value) {

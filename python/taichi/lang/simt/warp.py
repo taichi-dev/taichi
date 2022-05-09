@@ -98,6 +98,7 @@ def match_all(mask, value, predicate):
             "cuda_match_all_sync_i32",
             expr.make_expr_group(mask, value, predicate), False))
 
+
 def active_mask():
     # TODO
     pass

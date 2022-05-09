@@ -1,3 +1,4 @@
+# pylint: disable=W0622
 """
 Math functions for glsl-like functions and other stuff.
 """
@@ -5,7 +6,7 @@ from math import e, pi
 
 from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh)  # pylint: disable=W0622
+                             max, min, pow, round, sin, sqrt, tan, tanh)
 
 import taichi as ti
 

@@ -121,8 +121,8 @@ def get_cmake_args():
     build_options = []
     if cfg:
         build_options.extend(['--build-type', cfg])
-    if sys.platform == 'win32':
-        build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+    #if sys.platform == 'win32':
+    #    build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
     sys.argv[2:2] = build_options
 
     cmake_args += [

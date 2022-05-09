@@ -7,6 +7,10 @@ from taichi.lang import impl
 
 import taichi as ti
 
+from taichi.lang.ops import (sin, cos, asin, acos, sqrt, round,
+                             floor, ceil, tan, tanh, exp, log, pow,
+                             atan2, max, min)
+
 vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
 """2D float vector type.
 """
@@ -576,7 +580,7 @@ def rot3(axis, ang):
         >>> from taichi.math import *
         >>> @ti.kernel
         >>> def test():
-        >>>     M = rot3(vec3(1, 1, 1), radians(30))
+        >>>     M = rot3(normalize(vec3(1, 1, 1)), radians(30))
         [[0.732051, -0.366025, 0.633975],
          [0.633975, 0.732051, -0.366025],
          [-0.366025, 0.633975, 0.732051]]
@@ -588,10 +592,32 @@ def rot3(axis, ang):
     return I + sa * K + (1.0 - ca) * K @ K
 
 
+@ti.func
+def length(x):
+    """Calculate the length of a vector.
+
+    This function is equivalent to the `length` function is GLSL.
+
+    Args:
+        x (:class:`~taichi.Matrix`): The vector of which to calculate the length.
+
+    Returns:
+        The Euclidean norm of the vector.
+
+    Example::
+
+        >>> x = ti.Vector([1, 1, 1])
+        >>> length(x)
+        1.732051
+    """
+    return x.norm()
+
+
 __all__ = [
-    "clamp", "cross", "degrees", "distance", "dot", "e", "eye", "fract",
-    "ivec2", "ivec3", "ivec4", "log2", "mat2", "mat3", "mat4", "mix", "mod",
-    "normalize", "pi", "radians", "reflect", "refract", "rot2", "rot3",
-    "rotate2d", "rotate3d", "sign", "smoothstep", "step", "uvec2", "uvec3",
+    "acos", "asin", "atan2", "ceil",
+    "clamp", "cos", "cross", "degrees", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2", "mat3", "mat4", "max", "min",
+    "mix", "mod", "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
+    "rotate2d", "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3",
     "uvec4", "vec2", "vec3", "vec4"
 ]

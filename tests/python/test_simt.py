@@ -64,8 +64,38 @@ def test_any_nonzero():
 
 @test_utils.test(arch=ti.cuda)
 def test_unique():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def check():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.unique(ti.u32(0xFFFFFFFF), b[i])
+
+    for i in range(32):
+        b[i] = 0
+        a[i] = -1
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 1
+
+    for i in range(32):
+        b[i] = i + 100
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 1
+
+    b[np.random.randint(0, 32)] = 0
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 0
 
 
 @test_utils.test(arch=ti.cuda)

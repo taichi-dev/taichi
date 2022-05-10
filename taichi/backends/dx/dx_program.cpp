@@ -51,10 +51,8 @@ void Dx11ProgramImpl::synchronize() {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11ProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer_ptr) {
+void Dx11ProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                             uint64 *result_buffer_ptr) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 

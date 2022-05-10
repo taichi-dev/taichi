@@ -1,7 +1,7 @@
 import numpy as np
 from taichi.lang.field import Field
-from taichi.lang.matrix import VectorNdarray
 from taichi.lang.impl import get_runtime
+from taichi.lang.matrix import VectorNdarray
 from taichi.lang.util import warning
 from taichi.types import annotations, f32
 

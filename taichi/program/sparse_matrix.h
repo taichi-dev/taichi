@@ -58,7 +58,9 @@ class SparseMatrix {
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr){};
-  virtual SparseMatrix& build_from_ndarray(const Ndarray &ndarray) {return *this;}
+  virtual SparseMatrix &build_from_ndarray(const Ndarray &ndarray) {
+    return *this;
+  }
   inline const int num_rows() const {
     return rows_;
   }

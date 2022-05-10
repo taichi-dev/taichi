@@ -141,7 +141,8 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
 }
 
 template <class EigenMatrix>
-SparseMatrix &EigenSparseMatrix<EigenMatrix>::build_from_ndarray(const Ndarray &ndarray) {
+SparseMatrix &EigenSparseMatrix<EigenMatrix>::build_from_ndarray(
+    const Ndarray &ndarray) {
   using T = float32;
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;

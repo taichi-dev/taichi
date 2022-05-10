@@ -140,6 +140,21 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
   }
 }
 
+template <class EigenMatrix>
+SparseMatrix &EigenSparseMatrix<EigenMatrix>::build_from_ndarray(const Ndarray &ndarray) {
+  using T = float32;
+  using V = Eigen::Triplet<T>;
+  std::vector<V> triplets;
+  T *data = reinterpret_cast<T *>(ndarray.get_data_ptr_as_int());
+  auto num_triplets = ndarray.get_nelement() / 3;
+  for (int i = 0; i < num_triplets; i++) {
+    triplets.push_back(
+        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
+  }
+  this->matrix_.setFromTriplets(triplets.begin(), triplets.end());
+  return *this;
+}
+
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
     int cols,
@@ -160,20 +175,6 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
   } else
     TI_ERROR("Unsupported sparse matrix data type: {}, storage format: {}", tdt,
              storage_format);
-}
-
-SparseMatrix &SparseMatrix::build_from_ndarray(const Ndarray &ndarray) {
-  using T = float32;
-  using V = Eigen::Triplet<T>;
-  std::vector<V> triplets;
-  T *data = reinterpret_cast<T *>(ndarray.get_data_ptr_as_int());
-  auto num_triplets = ndarray.get_nelement() / 3;
-  for (int i = 0; i < num_triplets; i++) {
-    triplets.push_back(
-        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
-  }
-  this->matrix_.setFromTriplets(triplets.begin(), triplets.end());
-  return *this;
 }
 
 }  // namespace lang

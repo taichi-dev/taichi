@@ -58,7 +58,7 @@ class SparseMatrix {
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr){};
-
+  virtual SparseMatrix& build_from_ndarray(const Ndarray &ndarray) {return *this;}
   inline const int num_rows() const {
     return rows_;
   }
@@ -180,7 +180,7 @@ class EigenSparseMatrix : public SparseMatrix {
     return matrix_ * b;
   }
 
-  SparseMatrix &build_from_ndarray(const Ndarray &ndarray);
+  SparseMatrix &build_from_ndarray(const Ndarray &ndarray) override;
 
  private:
   EigenMatrix matrix_;

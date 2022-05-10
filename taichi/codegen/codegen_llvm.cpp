@@ -2304,7 +2304,8 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
         uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
                               ->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
-        context.set_array_is_device_allocation(i, /*is_device_allocation=*/false);
+        context.set_array_is_device_allocation(i,
+                                               /*is_device_allocation=*/false);
       }
     }
     for (auto task : offloaded_tasks_local) {

@@ -79,7 +79,8 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+          if (!host_ctx_->array_metadata[i].is_device_allocation &&
+              ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
@@ -150,7 +151,8 @@ class HostDeviceContextBlitter {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+          if (!host_ctx_->array_metadata[i].is_device_allocation &&
+              ext_arr_size.at(i)) {
             require_sync = true;
           }
         }
@@ -166,7 +168,8 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+        if (!host_ctx_->array_metadata[i].is_device_allocation &&
+            ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
@@ -455,7 +458,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (host_ctx->is_device_allocation[i]) {
+        if (host_ctx->array_metadata[i].is_device_allocation) {
           // NDArray
           if (host_ctx->args[i]) {
             any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
@@ -464,6 +467,8 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           }
         } else {
           // Compute ext arr sizes
+          // TODO: Consider using `arr_metadata.runtime_size` instead of
+          // computing on our own?
           size_t size = arg.stride;
           bool has_zero_axis = false;
 
@@ -546,7 +551,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Dealloc external arrays
   for (auto pair : any_arrays) {
     if (pair.second != kDeviceNullAllocation) {
-      if (!host_ctx->is_device_allocation[pair.first]) {
+      if (!host_ctx->array_metadata[pair.first].is_device_allocation) {
         device_->dealloc_memory(pair.second);
       }
     }

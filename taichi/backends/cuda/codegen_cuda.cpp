@@ -16,6 +16,8 @@
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
 
+#define TI_WITH_CUDA 1
+
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -65,13 +67,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_array) {
-          if (args[i].size == 0)
+          const auto &arr_meta = context.array_metadata[i];
+          const auto arr_runtime_sz = arr_meta.runtime_size;
+          if (arr_runtime_sz == 0) {
             continue;
+          }
           arg_buffers[i] = context.get_arg<void *>(i);
-          if (!context.is_device_allocation[i]) {
+          if (!arr_meta.is_device_allocation) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // args[i].size = 0.
+            // `arr_runtime_sz` zero.
             unsigned int attr_val = 0;
             uint32_t ret_code =
                 CUDADriver::get_instance().mem_get_attribute.call(
@@ -87,18 +92,18 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               // See CUDA driver API `cuPointerGetAttribute` for more details.
               transferred = true;
               CUDADriver::get_instance().malloc(&device_buffers[i],
-                                                args[i].size);
+                                                arr_runtime_sz);
               CUDADriver::get_instance().memcpy_host_to_device(
-                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
+                  (void *)device_buffers[i], arg_buffers[i], arr_runtime_sz);
             } else {
               device_buffers[i] = arg_buffers[i];
             }
             // device_buffers[i] saves a raw ptr on CUDA device.
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_runtime_sz,
                                                /*is_device_allocation=*/false);
 
-          } else if (args[i].size > 0) {
+          } else if (arr_runtime_sz > 0) {
             // arg_buffers[i] is a DeviceAllocation*
             // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
             // it's shared by cpu and cuda.
@@ -110,11 +115,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             // if transfer happened.
             // TODO: this logic can be improved but I'll leave it to a followup
             // PR.
+            // FIXME: What if after the kernel launch, we still need the old
+            // `arg_buffers[i]`?
             arg_buffers[i] = device_buffers[i];
 
             // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_runtime_sz,
                                                /*is_device_allocation=*/false);
           }
         }
@@ -134,8 +141,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
         for (int i = 0; i < (int)args.size(); i++) {
           if (device_buffers[i] != arg_buffers[i]) {
+            TI_ASSERT(args[i].is_array);
             CUDADriver::get_instance().memcpy_device_to_host(
-                arg_buffers[i], (void *)device_buffers[i], args[i].size);
+                arg_buffers[i], (void *)device_buffers[i],
+                context.array_metadata[i].runtime_size);
             CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
           }
         }

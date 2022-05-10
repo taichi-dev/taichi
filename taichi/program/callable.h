@@ -30,7 +30,6 @@ class TI_DLL_EXPORT Callable {
                  std::vector<int> element_shape = {})
         : dt(dt),
           is_array(is_array),
-          size(size),
           total_dim(total_dim),
           element_shape(std::move(element_shape)) {
     }

@@ -74,7 +74,7 @@ def test_sparse_matrix_shape(dtype, storage_format):
 
     fill(Abuilder)
     A = Abuilder.build()
-    assert A.shape() == (n, m)
+    assert A.shape == (n, m)
 
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),

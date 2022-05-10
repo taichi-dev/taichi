@@ -245,30 +245,37 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
+std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
+    SNodeTree *tree) {
   auto *const root = tree->root();
   const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
+  std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
         has_multiple_snode_trees, llvm_context_host_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
         has_multiple_snode_trees, llvm_context_device_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module), tree->id());
   }
-  struct_compiler_->run(*root);
+  struct_compiler->run(*root);
   ++num_snode_trees_processed_;
+  return struct_compiler;
+}
+
+void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
+  compile_snode_tree_types_impl(tree);
 }
 
 void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                              uint64 *result_buffer) {
-  compile_snode_tree_types(tree);
-  initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  initialize_llvm_runtime_snodes(tree, struct_compiler.get(), result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {

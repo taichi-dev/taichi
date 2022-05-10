@@ -1,6 +1,7 @@
+#include "taichi/codegen/codegen_llvm.h"
+
 #ifdef TI_WITH_LLVM
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
 #include "taichi/struct/struct_llvm.h"

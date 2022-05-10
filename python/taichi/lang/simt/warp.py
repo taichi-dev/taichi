@@ -14,9 +14,10 @@ def any_nonzero(mask, predicate):
             "cuda_any_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
-def unique():
-    # TODO
-    pass
+def unique(mask, predicate):
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_uni_sync_i32", expr.make_expr_group(mask, predicate), False))
 
 
 def ballot(predicate):

@@ -10,7 +10,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import i32, u16, u32
+from taichi.types import u16, u32
 from taichi.types.compound_types import CompoundType
 
 from taichi import lang
@@ -383,15 +383,15 @@ class MeshMetadata:
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
             self.element_fields[element_type]["owned"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["total"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=i32, shape=element["l2g_mapping"].shape[0])
+                dtype=u32, shape=element["l2g_mapping"].shape[0])
             self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=i32, shape=element["l2r_mapping"].shape[0])
+                dtype=u32, shape=element["l2r_mapping"].shape[0])
             self.element_fields[element_type]["g2r"] = impl.field(
-                dtype=i32, shape=element["g2r_mapping"].shape[0])
+                dtype=u32, shape=element["g2r_mapping"].shape[0])
 
         for relation in data["relations"]:
             from_order = relation["from_order"]

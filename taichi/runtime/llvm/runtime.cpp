@@ -1064,6 +1064,14 @@ int32 cuda_any_sync_i32(u32 mask, int32 predicate) {
   return (int32)cuda_any_sync(mask, (bool)predicate);
 }
 
+bool cuda_uni_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_uni_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_uni_sync(mask, (bool)predicate);
+}
+
 int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }

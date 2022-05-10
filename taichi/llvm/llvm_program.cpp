@@ -147,10 +147,11 @@ void LlvmProgramImpl::synchronize() {
 
 std::unique_ptr<llvm::Module>
 LlvmProgramImpl::clone_struct_compiler_initial_context(
-    const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    bool has_multiple_snode_trees,
     TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
+  if (has_multiple_snode_trees) {
     return tlctx->clone_struct_module();
+  }
   return tlctx->clone_runtime_module();
 }
 
@@ -244,31 +245,29 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   auto *const root = tree->root();
+  const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_host_.get());
+        has_multiple_snode_trees, llvm_context_host_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_device_.get());
+        has_multiple_snode_trees, llvm_context_device_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module), tree->id());
   }
   struct_compiler_->run(*root);
+  ++num_snode_trees_processed_;
 }
 
-void LlvmProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
-  compile_snode_tree_types(tree, snode_trees_);
+void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                             uint64 *result_buffer) {
+  compile_snode_tree_types(tree);
   initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
 }
 

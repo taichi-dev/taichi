@@ -85,7 +85,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 As part of the effort to increase visibility of the community and to improve developer experience, we highly recommend including documentation updates in your PR if applicable. Here are some of the documentation-specific references and tips:
 
 - Documentation source files are hosted under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/).
-- We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing).
+- We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing.md).
 - When it comes to writing, we adhere to the [Google Developer Documentation Style Guide](https://developers.google.com/style/).
 - For instructions on setting up a local server and previewing your updated documentation in real-time, see the [Local Development](https://github.com/taichi-dev/docs.taichi.graphics#local-development).
 
@@ -93,8 +93,8 @@ As part of the effort to increase visibility of the community and to improve dev
 
 If your PR is to implement a new feature, we recommend that you write your own test cases to cover corner cases for your codes before filing a PR.
 
-- To write a Python test case, see the [Workflow for writing a Python test](./write_test).
-- To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests).
+- To write a Python test case, see the [Workflow for writing a Python test](./write_test.md).
+- To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests.md).
 
 ## Conduct style checks and integration tests locally
 
@@ -136,7 +136,7 @@ No problem, the CI bot will run the code checkers and format your codes automati
 
 <!-- Todo: Make this a reusable fragment. -->
 
-> For more style information for your C++ code, see [our C++ style](./cpp_style).
+> For more style information for your C++ code, see [our C++ style](./cpp_style.md).
 
 ### Run integration tests
 

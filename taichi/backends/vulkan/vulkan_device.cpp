@@ -105,6 +105,40 @@ VkImageLayout image_layout_ti_to_vk(ImageLayout layout) {
   return image_layout_ti_2_vk.at(layout);
 }
 
+const std::unordered_map<BlendOp, VkBlendOp> blend_op_ti_2_vk = {
+    {BlendOp::add, VK_BLEND_OP_ADD},
+    {BlendOp::subtract, VK_BLEND_OP_SUBTRACT},
+    {BlendOp::reverse_subtract, VK_BLEND_OP_REVERSE_SUBTRACT},
+    {BlendOp::min, VK_BLEND_OP_MIN},
+    {BlendOp::max, VK_BLEND_OP_MAX}};
+
+VkBlendOp blend_op_ti_to_vk(BlendOp op) {
+  if (blend_op_ti_2_vk.find(op) == blend_op_ti_2_vk.end()) {
+    TI_ERROR("BlendOp cannot be mapped to vk");
+  }
+  return blend_op_ti_2_vk.at(op);
+}
+
+const std::unordered_map<BlendFactor, VkBlendFactor> blend_factor_ti_2_vk = {
+    {BlendFactor::zero, VK_BLEND_FACTOR_ZERO},
+    {BlendFactor::one, VK_BLEND_FACTOR_ONE},
+    {BlendFactor::src_color, VK_BLEND_FACTOR_SRC_COLOR},
+    {BlendFactor::one_minus_src_color, VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR},
+    {BlendFactor::dst_color, VK_BLEND_FACTOR_DST_COLOR},
+    {BlendFactor::one_minus_dst_color, VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR},
+    {BlendFactor::src_alpha, VK_BLEND_FACTOR_SRC_ALPHA},
+    {BlendFactor::one_minus_src_alpha, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA},
+    {BlendFactor::dst_alpha, VK_BLEND_FACTOR_DST_ALPHA},
+    {BlendFactor::one_minus_dst_alpha, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA},
+};
+
+VkBlendFactor blend_factor_ti_to_vk(BlendFactor factor) {
+  if (blend_factor_ti_2_vk.find(factor) == blend_factor_ti_2_vk.end()) {
+    TI_ERROR("BlendFactor cannot be mapped to vk");
+  }
+  return blend_factor_ti_2_vk.at(factor);
+}
+
 VulkanPipeline::VulkanPipeline(const Params &params)
     : device_(params.device->vk_device()), name_(params.name) {
   create_descriptor_set_layout(params);
@@ -124,6 +158,9 @@ VulkanPipeline::VulkanPipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
     : device_(params.device->vk_device()), name_(params.name) {
+  this->graphics_pipeline_template_ =
+      std::make_unique<GraphicsPipelineTemplate>();
+
   create_descriptor_set_layout(params);
   create_shader_stages(params);
   create_pipeline_layout();
@@ -159,37 +196,11 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
     return graphics_pipeline_.at(renderpass);
   }
 
-  std::vector<VkPipelineColorBlendAttachmentState> blend_attachments(
-      renderpass_desc.color_attachments.size());
-  for (int i = 0; i < renderpass_desc.color_attachments.size(); i++) {
-    blend_attachments[i].colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blend_attachments[i].blendEnable = VK_TRUE;
-    blend_attachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_attachments[i].dstColorBlendFactor =
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_attachments[i].colorBlendOp = VK_BLEND_OP_ADD;
-    blend_attachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_attachments[i].dstAlphaBlendFactor =
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_attachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
-  }
-
-  graphics_pipeline_template_->color_blending.attachmentCount =
-      renderpass_desc.color_attachments.size();
-  graphics_pipeline_template_->color_blending.pAttachments =
-      blend_attachments.data();
-
   vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline(
       device_, &graphics_pipeline_template_->pipeline_info, renderpass,
       pipeline_layout_);
 
   graphics_pipeline_[renderpass] = pipeline;
-
-  graphics_pipeline_template_->color_blending.attachmentCount = 0;
-  graphics_pipeline_template_->color_blending.pAttachments = nullptr;
-  graphics_pipeline_template_->pipeline_info.renderPass = VK_NULL_HANDLE;
 
   return pipeline;
 }
@@ -252,6 +263,39 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     //     TI_WARN("attrib {}:{}", location, type->type_name);
     //   }
     // }
+
+    if (code_view.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+      uint32_t render_target_count = 0;
+      result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
+                                                  nullptr);
+      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+      std::vector<SpvReflectInterfaceVariable *> variables(render_target_count);
+      result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
+                                                  variables.data());
+
+      render_target_count = 0;
+
+      for (auto var : variables) {
+        // We want to remove auxiliary outputs such as frag depth
+        if (static_cast<int>(var->built_in) == -1) {
+          render_target_count++;
+        }
+      }
+
+      graphics_pipeline_template_->blend_attachments.resize(
+          render_target_count);
+
+      VkPipelineColorBlendAttachmentState default_state{};
+      default_state.colorWriteMask =
+          VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      default_state.blendEnable = VK_FALSE;
+
+      std::fill(graphics_pipeline_template_->blend_attachments.begin(),
+                graphics_pipeline_template_->blend_attachments.end(),
+                default_state);
+    }
   }
 
   for (uint32_t set : sets_used) {
@@ -295,9 +339,6 @@ void VulkanPipeline::create_graphics_pipeline(
     const RasterParams &raster_params,
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs) {
-  this->graphics_pipeline_template_ =
-      std::make_unique<GraphicsPipelineTemplate>();
-
   // Use dynamic viewport state. These two are just dummies
   VkViewport viewport;
   viewport.width = 1;
@@ -411,12 +452,44 @@ void VulkanPipeline::create_graphics_pipeline(
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color_blending.logicOpEnable = VK_FALSE;
   color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = 0;
-  color_blending.pAttachments = nullptr;  // Filled in later
+  color_blending.attachmentCount =
+      graphics_pipeline_template_->blend_attachments.size();
+  color_blending.pAttachments =
+      graphics_pipeline_template_->blend_attachments.data();
   color_blending.blendConstants[0] = 0.0f;
   color_blending.blendConstants[1] = 0.0f;
   color_blending.blendConstants[2] = 0.0f;
   color_blending.blendConstants[3] = 0.0f;
+
+  if (raster_params.blending.size()) {
+    TI_ASSERT_INFO(raster_params.blending.size() ==
+                       graphics_pipeline_template_->blend_attachments.size(),
+                   "RasterParams::blending (size={}) must either be zero sized "
+                   "or match the number of fragment shader outputs (size={}).",
+                   raster_params.blending.size(),
+                   graphics_pipeline_template_->blend_attachments.size());
+
+    for (int i = 0; i < raster_params.blending.size(); i++) {
+      auto &state = graphics_pipeline_template_->blend_attachments[i];
+      auto &ti_param = raster_params.blending[i];
+      state.blendEnable = ti_param.enable;
+      if (ti_param.enable) {
+        state.colorBlendOp = blend_op_ti_to_vk(ti_param.color.op);
+        state.srcColorBlendFactor =
+            blend_factor_ti_to_vk(ti_param.color.src_factor);
+        state.dstColorBlendFactor =
+            blend_factor_ti_to_vk(ti_param.color.dst_factor);
+        state.alphaBlendOp = blend_op_ti_to_vk(ti_param.alpha.op);
+        state.srcAlphaBlendFactor =
+            blend_factor_ti_to_vk(ti_param.alpha.src_factor);
+        state.dstAlphaBlendFactor =
+            blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
+        state.colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+      }
+    }
+  }
 
   VkPipelineDynamicStateCreateInfo &dynamic_state =
       graphics_pipeline_template_->dynamic_state;
@@ -855,7 +928,8 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 
 void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto buffer = ti_device_->get_vkbuffer(ptr);
-  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset,
+                  (size == kBufferSizeEntireSize) ? VK_WHOLE_SIZE : size, data);
   buffer_->refs.push_back(buffer);
 }
 
@@ -1150,6 +1224,15 @@ vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   return buffer_;
 }
 
+struct VulkanDevice::ThreadLocalStreams {
+  unordered_map<std::thread::id, std::unique_ptr<VulkanStream>> map;
+};
+
+VulkanDevice::VulkanDevice()
+    : compute_streams_(std::make_unique<ThreadLocalStreams>()),
+      graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
+}
+
 void VulkanDevice::init_vulkan_structs(Params &params) {
   instance_ = params.instance;
   device_ = params.device;
@@ -1223,6 +1306,18 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   }
   if (params.usage & AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  }
+  buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                                     graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    buffer_info.queueFamilyIndexCount = 2;
+    buffer_info.pQueueFamilyIndices = queue_family_indices;
   }
 
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
@@ -1301,9 +1396,8 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT_INFO(map_pair != allocations_.end(),
                  "Invalid handle (double free?) {}", handle.alloc_id);
 
-  AllocationInternal &alloc = map_pair->second;
-
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+  AllocationInternal &alloc = map_pair->second;
   TI_TRACE("Dealloc VK buffer {}, alloc_id={}", (void *)alloc.buffer,
            handle.alloc_id);
 #endif
@@ -1393,25 +1487,34 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
 
 Stream *VulkanDevice::get_compute_stream() {
   auto tid = std::this_thread::get_id();
-  auto iter = compute_stream_.find(tid);
-  if (iter == compute_stream_.end()) {
-    compute_stream_[tid] = std::make_unique<VulkanStream>(
+  auto &stream_map = compute_streams_->map;
+  auto iter = stream_map.find(tid);
+  if (iter == stream_map.end()) {
+    stream_map[tid] = std::make_unique<VulkanStream>(
         *this, compute_queue_, compute_queue_family_index_);
-    return compute_stream_.at(tid).get();
-  } else {
-    return iter->second.get();
+    return stream_map.at(tid).get();
   }
+  return iter->second.get();
 }
 
 Stream *VulkanDevice::get_graphics_stream() {
   auto tid = std::this_thread::get_id();
-  auto iter = graphics_stream_.find(tid);
-  if (iter == graphics_stream_.end()) {
-    graphics_stream_[tid] = std::make_unique<VulkanStream>(
+  auto &stream_map = graphics_streams_->map;
+  auto iter = stream_map.find(tid);
+  if (iter == stream_map.end()) {
+    stream_map[tid] = std::make_unique<VulkanStream>(
         *this, graphics_queue_, graphics_queue_family_index_);
-    return graphics_stream_.at(tid).get();
-  } else {
-    return iter->second.get();
+    return stream_map.at(tid).get();
+  }
+  return iter->second.get();
+}
+
+void VulkanDevice::wait_idle() {
+  for (auto &[tid, stream] : compute_streams_->map) {
+    stream->command_sync();
+  }
+  for (auto &[tid, stream] : graphics_streams_->map) {
+    stream->command_sync();
   }
 }
 
@@ -1422,7 +1525,9 @@ std::unique_ptr<CommandList> VulkanStream::new_command_list() {
   return std::make_unique<VulkanCommandList>(&device_, this, buffer);
 }
 
-void VulkanStream::submit(CommandList *cmdlist_) {
+StreamSemaphore VulkanStream::submit(
+    CommandList *cmdlist_,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
 
@@ -1433,67 +1538,66 @@ void VulkanStream::submit(CommandList *cmdlist_) {
   }
   */
 
-  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
-
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
 
-  if (last_semaphore_) {
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
-    submit_info.pWaitDstStageMask = &stage_flag;
+  std::vector<VkSemaphore> vk_wait_semaphores;
+  std::vector<VkPipelineStageFlags> vk_wait_stages;
+
+  for (const StreamSemaphore &sema_ : wait_semaphores) {
+    auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
+    vk_wait_stages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    buffer->refs.push_back(sema->vkapi_ref);
   }
 
+  submit_info.pWaitSemaphores = vk_wait_semaphores.data();
+  submit_info.waitSemaphoreCount = vk_wait_semaphores.size();
+  submit_info.pWaitDstStageMask = vk_wait_stages.data();
+
   auto semaphore = vkapi::create_semaphore(buffer->device, 0);
-  last_semaphore_ = semaphore;
   buffer->refs.push_back(semaphore);
 
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = &semaphore->semaphore;
 
-  submitted_cmdbuffers_.push_back(buffer);
+  auto fence = vkapi::create_fence(buffer->device, 0);
+
+  // Resource tracking, check previously submitted commands
+  // FIXME: Figure out why it doesn't work
+  /*
+  std::remove_if(submitted_cmdbuffers_.begin(), submitted_cmdbuffers_.end(),
+                 [&](const TrackedCmdbuf &tracked) {
+                   // If fence is signaled, cmdbuf has completed
+                   VkResult res =
+                       vkGetFenceStatus(buffer->device, tracked.fence->fence);
+                   return res == VK_SUCCESS;
+    });
+  */
+
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/VK_NULL_HANDLE),
+                                      /*fence=*/fence->fence),
                         "failed to submit command buffer");
+
+  return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
 }
 
-void VulkanStream::submit_synced(CommandList *cmdlist) {
-  vkapi::IVkCommandBuffer buffer =
-      static_cast<VulkanCommandList *>(cmdlist)->finalize();
-
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &buffer->buffer;
-
-  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
-
-  if (last_semaphore_) {
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
-    submit_info.pWaitDstStageMask = &stage_flag;
-  }
-
-  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/cmd_sync_fence_->fence),
-                        "failed to submit command buffer");
-
-  vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
-                  UINT64_MAX);
-  vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
-
-  submitted_cmdbuffers_.clear();
-  last_semaphore_ = nullptr;
+StreamSemaphore VulkanStream::submit_synced(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+  auto sema = submit(cmdlist, wait_semaphores);
+  command_sync();
+  return sema;
 }
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
   submitted_cmdbuffers_.clear();
-  last_semaphore_ = nullptr;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
@@ -1640,7 +1744,17 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  uint32_t queue_family_indices[] = {compute_queue_family_index_,
+                                     graphics_queue_family_index_};
+
+  if (compute_queue_family_index_ == graphics_queue_family_index_) {
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  } else {
+    image_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    image_info.queueFamilyIndexCount = 2;
+    image_info.pQueueFamilyIndices = queue_family_indices;
+  }
 
   alloc.format = image_info.format;
 
@@ -1715,8 +1829,6 @@ void VulkanDevice::destroy_image(DeviceAllocation handle) {
 
   TI_ASSERT_INFO(map_pair != image_allocations_.end(),
                  "Invalid handle (double free?) {}", handle.alloc_id);
-
-  ImageAllocInternal &alloc_int = map_pair->second;
 
   image_allocations_.erase(handle.alloc_id);
 }
@@ -1892,6 +2004,10 @@ void VulkanDevice::create_vma_allocator() {
   vk_vma_functions.vkGetPhysicalDeviceMemoryProperties2KHR =
       PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
+  vk_vma_functions.vkGetDeviceBufferMemoryRequirements =
+      table.vkGetDeviceBufferMemoryRequirements;
+  vk_vma_functions.vkGetDeviceImageMemoryRequirements =
+      table.vkGetDeviceImageMemoryRequirements;
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
@@ -2014,12 +2130,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 
     create_swap_chain();
 
-    VkSemaphoreCreateInfo sema_create_info;
-    sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    sema_create_info.pNext = nullptr;
-    sema_create_info.flags = 0;
-    vkCreateSemaphore(device->vk_device(), &sema_create_info,
-                      kNoVkAllocCallbacks, &image_available_);
+    image_available_ = vkapi::create_semaphore(device->vk_device(), 0);
   } else {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
@@ -2172,7 +2283,7 @@ int VulkanSurface::get_image_count() {
 VulkanSurface::~VulkanSurface() {
   if (config_.window_handle) {
     destroy_swap_chain();
-    vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+    image_available_ = nullptr;
     vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
   } else {
     for (auto &img : swapchain_images_) {
@@ -2204,14 +2315,19 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
   return std::make_pair(width, height);
 }
 
-DeviceAllocation VulkanSurface::get_target_image() {
+StreamSemaphore VulkanSurface::acquire_next_image() {
   if (!config_.window_handle) {
     image_index_ = (image_index_ + 1) % swapchain_images_.size();
+    return nullptr;
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                          image_available_, VK_NULL_HANDLE, &image_index_);
+                          image_available_->semaphore, VK_NULL_HANDLE,
+                          &image_index_);
+    return std::make_shared<VulkanStreamSemaphoreObject>(image_available_);
   }
+}
 
+DeviceAllocation VulkanSurface::get_target_image() {
   return swapchain_images_[image_index_];
 }
 
@@ -2219,20 +2335,27 @@ BufferFormat VulkanSurface::image_format() {
   return image_format_;
 }
 
-void VulkanSurface::present_image() {
-  // TODO: In the future tie the wait semaphores.
-  // Currently we should just halt and wait on host before present
-  vkDeviceWaitIdle(device_->vk_device());
+void VulkanSurface::present_image(
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+  std::vector<VkSemaphore> vk_wait_semaphores;
+
+  for (const StreamSemaphore &sema_ : wait_semaphores) {
+    auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
+    vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
+  }
+
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &image_available_;
+  presentInfo.waitSemaphoreCount = vk_wait_semaphores.size();
+  presentInfo.pWaitSemaphores = vk_wait_semaphores.data();
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = &swapchain_;
   presentInfo.pImageIndices = &image_index_;
   presentInfo.pResults = nullptr;
 
   vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
+
+  device_->wait_idle();
 }
 
 DeviceAllocation VulkanSurface::get_image_data() {
@@ -2306,8 +2429,6 @@ VulkanStream::VulkanStream(VulkanDevice &device,
   command_pool_ = vkapi::create_command_pool(
       device_.vk_device(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
       queue_family_index);
-
-  cmd_sync_fence_ = vkapi::create_fence(device_.vk_device(), 0);
 }
 
 VulkanStream::~VulkanStream() {

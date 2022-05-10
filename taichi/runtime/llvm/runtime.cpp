@@ -151,7 +151,7 @@ T ifloordiv(T a, T b) {
 
 struct LLVMRuntime;
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
 
 extern "C" {
 
@@ -594,7 +594,7 @@ struct LLVMRuntime {
   }
 
   template <typename T, typename... Args>
-  T *create(Args &&... args) {
+  T *create(Args &&...args) {
     auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
@@ -1062,6 +1062,14 @@ bool cuda_any_sync(u32 mask, bool bit) {
 
 int32 cuda_any_sync_i32(u32 mask, int32 predicate) {
   return (int32)cuda_any_sync(mask, (bool)predicate);
+}
+
+bool cuda_uni_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_uni_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_uni_sync(mask, (bool)predicate);
 }
 
 int32 cuda_ballot_sync(int32 mask, bool bit) {
@@ -1736,7 +1744,7 @@ struct printf_helper {
   }
 
   template <typename... Args, typename T>
-  void push_back(T t, Args &&... args) {
+  void push_back(T t, Args &&...args) {
     *(T *)&buffer[tail] = t;
     if (tail % sizeof(T) != 0)
       tail += sizeof(T) - tail % sizeof(T);
@@ -1753,7 +1761,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

@@ -20,7 +20,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_pytorch, to_taichi_type
+from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template)
 
@@ -28,6 +28,9 @@ from taichi import _logging
 
 if has_pytorch():
     import torch
+
+if has_paddle():
+    import paddle
 
 
 def func(fn, is_real_function=False):
@@ -58,8 +61,8 @@ def func(fn, is_real_function=False):
     fun = Func(fn, _classfunc=is_classfunc, is_real_function=is_real_function)
 
     @functools.wraps(fn)
-    def decorated(*args):
-        return fun.__call__(*args)
+    def decorated(*args, **kwargs):
+        return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
     decorated._is_real_function = is_real_function
@@ -89,8 +92,8 @@ def pyfunc(fn):
     fun = Func(fn, _classfunc=is_classfunc, _pyfunc=True)
 
     @functools.wraps(fn)
-    def decorated(*args):
-        return fun.__call__(*args)
+    def decorated(*args, **kwargs):
+        return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
     return decorated
@@ -140,6 +143,37 @@ def _get_tree_and_ctx(self,
                                        is_real_function=is_real_function)
 
 
+def _process_args(self, args, kwargs):
+    ret = [argument.default for argument in self.arguments]
+    len_args = len(args)
+
+    if len_args > len(ret):
+        raise TaichiSyntaxError("Too many arguments.")
+
+    for i, arg in enumerate(args):
+        ret[i] = arg
+
+    for key, value in kwargs.items():
+        found = False
+        for i, arg in enumerate(self.arguments):
+            if key == arg.name:
+                if i < len_args:
+                    raise TaichiSyntaxError(
+                        f"Multiple values for argument '{key}'.")
+                ret[i] = value
+                found = True
+                break
+        if not found:
+            raise TaichiSyntaxError(f"Unexpected argument '{key}'.")
+
+    for i, arg in enumerate(ret):
+        if arg is inspect.Parameter.empty:
+            raise TaichiSyntaxError(
+                f"Parameter '{self.arguments[i].name}' missing.")
+
+    return ret
+
+
 class Func:
     function_counter = 0
 
@@ -166,7 +200,9 @@ class Func:
             self.arguments, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
+        args = _process_args(self, args, kwargs)
+
         if not impl.inside_kernel():
             if not self.pyfunc:
                 raise TaichiSyntaxError(
@@ -232,7 +268,7 @@ class Func:
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
-        if sig.return_annotation not in (inspect._empty, None):
+        if sig.return_annotation not in (inspect.Signature.empty, None):
             self.return_type = sig.return_annotation
         params = sig.parameters
         arg_names = params.keys()
@@ -270,7 +306,8 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name))
+            self.arguments.append(
+                KernelArgument(annotation, param.name, param.default))
 
 
 class TaichiCallableTemplateMapper:
@@ -442,7 +479,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.arguments.append(KernelArgument(annotation, param.name))
+            self.arguments.append(
+                KernelArgument(annotation, param.name, param.default))
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
@@ -464,6 +502,9 @@ class Kernel:
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
+
+        if impl.current_cfg().use_mesh:
+            taichi.lang.Mesh.update_relation(tree, ctx)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -536,6 +577,42 @@ class Kernel:
                 callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
+    def get_paddle_callbacks(self, v, has_pp):
+        callbacks = []
+
+        def get_call_back(u, v):
+            def call_back():
+                u.copy_(v, False)
+
+            return call_back
+
+        assert has_pp
+        assert isinstance(v, paddle.Tensor)
+
+        tmp = v.value().get_tensor()
+        taichi_arch = self.runtime.prog.config.arch
+
+        if v.place.is_gpu_place():
+            # External tensor on cuda
+            if taichi_arch != _ti_core.Arch.cuda:
+                # copy data back to cpu
+                host_v = v.cpu()
+                tmp = host_v.value().get_tensor()
+                callbacks.append(get_call_back(v, host_v))
+        elif v.place.is_cpu_place():
+            # External tensor on cpu
+            if taichi_arch == _ti_core.Arch.cuda:
+                gpu_v = v.cuda()
+                tmp = gpu_v.value().get_tensor()
+                callbacks.append(get_call_back(v, gpu_v))
+        else:
+            # Paddle do support many other backends like XPU, NPU, MLU, IPU.
+            raise TaichiRuntimeError(
+                f"Taichi do not support backend {v.place} that Paddle support."
+            )
+
+        return tmp, callbacks
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -547,6 +624,7 @@ class Kernel:
             callbacks = []
             has_external_arrays = False
             has_torch = has_pytorch()
+            has_pp = has_paddle()
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
@@ -580,6 +658,8 @@ class Kernel:
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
+                    is_torch = isinstance(v,
+                                          torch.Tensor) if has_torch else False
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
@@ -587,7 +667,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, v.shape)
-                    else:
+                    elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
                             v, has_torch, is_ndarray)
@@ -595,6 +675,14 @@ class Kernel:
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), v.shape)
+                    else:
+                        # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
+                        tmp, paddle_callbacks = self.get_paddle_callbacks(
+                            v, has_pp)
+                        callbacks += paddle_callbacks
+                        launch_ctx.set_arg_external_array_with_shape(
+                            actual_argument_slot, int(tmp._ptr()),
+                            v.element_size() * v.size, v.shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
@@ -687,6 +775,8 @@ class Kernel:
         has_array = isinstance(v, np.ndarray)
         if not has_array and has_pytorch():
             has_array = isinstance(v, torch.Tensor)
+        if not has_array and has_paddle():
+            has_array = isinstance(v, paddle.Tensor)
         return has_array
 
     def ensure_compiled(self, *args):
@@ -699,12 +789,12 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
+        args = _process_args(self, args, kwargs)
         if self.is_grad and impl.current_cfg().opt_level == 0:
             _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1
-        assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
 
@@ -798,7 +888,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/lang/articles/syntax#kernel.
+    See also https://docs.taichi-lang.org/lang/articles/syntax#kernel.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -847,7 +937,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/lang/articles/odop
+    See also https://docs.taichi-lang.org/lang/articles/odop
 
     Example::
 

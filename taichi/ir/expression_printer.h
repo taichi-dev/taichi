@@ -4,7 +4,7 @@
 #include "taichi/ir/expression.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
-#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 namespace taichi {
 namespace lang {
@@ -18,9 +18,8 @@ class ExpressionPrinter : public ExpressionVisitor {
     os_ = os;
   }
 
-  std::ostream &get_ostream() {
-    TI_ASSERT(os_);
-    return *os_;
+  std::ostream *get_ostream() {
+    return os_;
   }
 
  private:
@@ -226,8 +225,9 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
  protected:
   template <typename... Args>
-  void emit(Args &&... args) {
-    (this->get_ostream() << ... << std::forward<Args>(args));
+  void emit(Args &&...args) {
+    TI_ASSERT(this->get_ostream());
+    (*this->get_ostream() << ... << std::forward<Args>(args));
   }
 
   template <typename T>

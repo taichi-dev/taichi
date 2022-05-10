@@ -45,7 +45,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   // load AOT modules
   Program *prog = app_context_->prog();
   if (prog) {
-    prog->synchronize();
+    prog->flush();
   }
 
   int num_vertices = info.vbo.shape[0];
@@ -144,6 +144,10 @@ void Renderable::create_graphics_pipeline() {
   raster_params.prim_topology = config_.topology_type;
   raster_params.depth_test = true;
   raster_params.depth_write = true;
+
+  if (config_.blending) {
+    raster_params.blending.push_back(BlendingParams());
+  }
 
   std::vector<VertexInputBinding> vertex_inputs = {
       {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};

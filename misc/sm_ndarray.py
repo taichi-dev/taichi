@@ -27,3 +27,4 @@ print_triplets(triplets)
 
 A.build_from_ndarray(triplets)
 print(A)
+print(A.shape)

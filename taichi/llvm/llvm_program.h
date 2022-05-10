@@ -24,19 +24,20 @@
 
 namespace llvm {
 class Module;
-}
+}  // namespace llvm
 
 namespace taichi {
 namespace lang {
+
 class StructCompiler;
 
 namespace cuda {
 class CudaDevice;
-}
+}  // namespace cuda
 
 namespace cpu {
 class CpuDevice;
-}
+}  // namespace cpu
 
 class LlvmProgramImpl : public ProgramImpl {
  public:
@@ -123,6 +124,8 @@ class LlvmProgramImpl : public ProgramImpl {
       bool has_multiple_snode_trees,
       TaichiLLVMContext *tlctx);
 
+  std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
+      SNodeTree *tree);
   /**
    * Initializes the SNodes for LLVM based backends.
    */
@@ -170,7 +173,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<ThreadPool> thread_pool_{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
-  std::unique_ptr<StructCompiler> struct_compiler_{nullptr};
   std::size_t num_snode_trees_processed_{0};
   void *llvm_runtime_{nullptr};
   void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator

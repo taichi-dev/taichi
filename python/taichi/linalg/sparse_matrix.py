@@ -1,5 +1,6 @@
 import numpy as np
 from taichi.lang.field import Field
+from taichi.lang.matrix import VectorNdarray
 from taichi.lang.impl import get_runtime
 from taichi.lang.util import warning
 from taichi.types import annotations, f32
@@ -158,7 +159,6 @@ class SparseMatrix:
         Args:
             ndarray (~taichi.lang.matrix.VectorNdarray): the ndarray to build the sparse matrix from.
         """
-        from taichi.lang.matrix import VectorNdarray
         if isinstance(ndarray, VectorNdarray):
             self.matrix.build_from_ndarray(ndarray.arr)
         else:

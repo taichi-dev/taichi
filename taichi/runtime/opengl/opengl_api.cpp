@@ -402,11 +402,11 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     int i = item.first;
     TI_ASSERT(args[i].is_array);
     const auto arr_sz = ctx.array_runtime_sizes[i];
-    if (arr_sz == 0 || ctx.is_device_allocation[i]) {
+    if (arr_sz == 0 || ctx.is_device_allocations[i]) {
       continue;
     }
     has_ext_arr = true;
-    if (arr_sz != item.second.total_size ||
+    if (arr_sz != item.second.runtime_size ||
         ext_arr_bufs_[i] == kDeviceNullAllocation) {
       if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
         device_->dealloc_memory(ext_arr_bufs_[i]);
@@ -414,7 +414,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
       ext_arr_bufs_[i] = device_->allocate_memory({arr_sz, /*host_write=*/true,
                                                    /*host_read=*/true,
                                                    /*export_sharing=*/false});
-      item.second.total_size = arr_sz;
+      item.second.runtime_size = arr_sz;
     }
     void *host_ptr = (void *)ctx.args[i];
     void *baseptr = device_->map(ext_arr_bufs_[i]);
@@ -471,7 +471,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
     for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      if (ctx.is_device_allocation[arg_id]) {
+      if (ctx.is_device_allocations[arg_id]) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
@@ -507,7 +507,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     for (auto &item : program_.arr_args) {
       int i = item.first;
       const auto arr_sz = ctx.array_runtime_sizes[i];
-      if (arr_sz > 0 && !ctx.is_device_allocation[i]) {
+      if (arr_sz > 0 && !ctx.is_device_allocations[i]) {
         uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
         memcpy((void *)ctx.args[i], baseptr, arr_sz);
         device_->unmap(ext_arr_bufs_[i]);

@@ -402,6 +402,7 @@ jobs:
           . venv\Scripts\activate.ps1
           python -c "import taichi"
           pip install torch
+          pip install -r requirements_test.txt
           ti diagnose
           python tests/run_tests.py -vr2 -t2
         env:

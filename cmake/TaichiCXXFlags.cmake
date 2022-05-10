@@ -50,12 +50,14 @@ else()
     # [Global] CXX compilation option to enable all warnings.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
 
+if(CLANG_EXECUTABLE)
     # [Global] CXX compilation option to treat all warnings as errors.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror ")
+endif()
 
     # [Global] By default, CXX compiler will throw a warning if it decides to ignore an attribute, for example "[[ maybe unused ]]".
     # However, this behaviour diverges across different compilers (GCC/CLANG), as well as different compiler versions.
-    # Therefore we disable such warnings for now.
+    # Therefore we disable such warnings for nowset(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=ignored-attributes ")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-attributes ")
 
     # [Global] Clang warns if a C++ pointer's nullability wasn't marked explicitly (__nonnull, nullable, ...).

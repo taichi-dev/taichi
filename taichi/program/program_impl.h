@@ -37,17 +37,13 @@ class ProgramImpl {
   /**
    * JIT compiles @param tree to backend-specific data types.
    */
-  virtual void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees);
+  virtual void compile_snode_tree_types(SNodeTree *tree);
 
   /**
    * Compiles the @param tree types and allocates runtime buffer for it.
    */
-  virtual void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer_ptr) = 0;
+  virtual void materialize_snode_tree(SNodeTree *tree,
+                                      uint64 *result_buffer_ptr) = 0;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) = 0;
 

@@ -24,10 +24,8 @@ class Dx11ProgramImpl : public ProgramImpl {
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
-  virtual void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer_ptr) override;
+  virtual void materialize_snode_tree(SNodeTree *tree,
+                                      uint64 *result_buffer_ptr) override;
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override;
   void synchronize() override;
 

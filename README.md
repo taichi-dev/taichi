@@ -148,8 +148,13 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 
 ## Community
 
+### Event
+
+Taichi voxel challenge is open for the [submission](https://github.com/taichi-dev/voxel-challenge/issues/11) until 18th May. Find our more [here](https://github.com/taichi-dev/community/tree/main/events/voxel-challenge).
+
 ### Join our discussions
 
+- [Slack Channel](https://join.slack.com/t/taichicommunity/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg)
 - [GitHub Discussions](https://github.com/taichi-dev/taichi/discussions)
 - [Taichi 中文论坛](https://forum.taichi.graphics/)
 
@@ -160,7 +165,7 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 
 ### Contact us
 
-You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:contact@taichi.graphics">contact@taichi.graphics</a> first, and we'll follow up.
+You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
 
 ## Reference
 

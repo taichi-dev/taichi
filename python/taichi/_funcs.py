@@ -115,7 +115,7 @@ def polar_decompose2d(A, dt):
     zero = ops.cast(0.0, dt)
     # if A is the zero matrix we simply return the pair (I, A)
     if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero
-            and A[0, 0] == zero):
+            and A[1, 1] == zero):
         pass
     else:
         detA = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]

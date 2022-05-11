@@ -467,8 +467,6 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           }
         } else {
           // Compute ext arr sizes
-          // TODO: Consider using `arr_metadata.runtime_size` instead of
-          // computing on our own?
           size_t size = arg.stride;
           bool has_zero_axis = false;
 

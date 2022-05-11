@@ -66,7 +66,7 @@ struct CompiledArrayArg {
   bool is_scalar{false};
   std::vector<int> element_shape;
   size_t shape_offset_in_bytes_in_args_buf{0};
-  size_t runtime_size{0};  // Runtime information
+  size_t total_size{0};  // Runtime information
 
   TI_IO_DEF(field_dim,
             is_scalar,

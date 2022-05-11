@@ -232,7 +232,6 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   for (int i = 0; i < arg_count; i++) {
     const auto dtype_name = kernel->args[i].dt.to_string();
     if (kernel->args[i].is_array) {
-      constexpr uint64 kUnkownRuntimeSize = 0;
       arr_args[i] = CompiledArrayArg(
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
            /*field_dim=*/kernel->args[i].total_dim -
@@ -241,7 +240,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
            /*element_shape=*/kernel->args[i].element_shape,
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int),
-           kUnkownRuntimeSize});
+           /*total_size=*/kernel->args[i].size});
     } else {
       scalar_args[i] = ScalarArg(
           {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
@@ -401,26 +400,23 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   for (auto &item : program_.arr_args) {
     int i = item.first;
     TI_ASSERT(args[i].is_array);
-    const auto &arr_meta = ctx.array_metadata[i];
-    const auto arr_runtime_sz = arr_meta.runtime_size;
-    if ((arr_runtime_sz == 0) || arr_meta.is_device_allocation) {
+    if (args[i].size == 0 || ctx.array_metadata[i].is_device_allocation)
       continue;
-    }
     has_ext_arr = true;
-    if (arr_runtime_sz != item.second.runtime_size ||
+    if (args[i].size != item.second.total_size ||
         ext_arr_bufs_[i] == kDeviceNullAllocation) {
       if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
         device_->dealloc_memory(ext_arr_bufs_[i]);
       }
       ext_arr_bufs_[i] = device_->allocate_memory(
-          {arr_runtime_sz, /*host_write=*/true, /*host_read=*/true,
+          {args[i].size, /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false});
-      item.second.runtime_size = arr_runtime_sz;
+      item.second.total_size = args[i].size;
     }
     void *host_ptr = (void *)ctx.args[i];
     void *baseptr = device_->map(ext_arr_bufs_[i]);
     if (program_.check_ext_arr_read(i)) {
-      std::memcpy((char *)baseptr, host_ptr, arr_runtime_sz);
+      std::memcpy((char *)baseptr, host_ptr, args[i].size);
     }
     device_->unmap(ext_arr_bufs_[i]);
   }
@@ -507,10 +503,9 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   if (has_ext_arr) {
     for (auto &item : program_.arr_args) {
       int i = item.first;
-      const auto &arr_meta = ctx.array_metadata[i];
-      if (arr_meta.runtime_size != 0 && !arr_meta.is_device_allocation) {
+      if (args[i].size != 0 && !ctx.array_metadata[i].is_device_allocation) {
         uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
-        memcpy((void *)ctx.args[i], baseptr, arr_meta.runtime_size);
+        memcpy((void *)ctx.args[i], baseptr, args[i].size);
         device_->unmap(ext_arr_bufs_[i]);
       }
     }

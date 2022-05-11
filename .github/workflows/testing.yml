@@ -245,9 +245,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        tags: |
-          - [self-hosted, cuda, vulkan, cn, driver470]
-          - [self-hosted, cuda, vulkan, cn, driver510]
+        tags: [[self-hosted, cuda, vulkan, cn, driver470], [self-hosted, cuda, vulkan, cn, driver510]]
 
     runs-on: ${{ matrix.tags }}
     steps:

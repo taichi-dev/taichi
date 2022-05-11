@@ -44,7 +44,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
 void LlvmOfflineCacheFileWriter::dump(const std::string &path) {
   taichi::create_directories(path);
   for (auto &[k, v] : data_.kernels) {
-    std::string filename_prefix = path_ + "/" + k;
+    std::string filename_prefix = path + "/" + k;
     {
       std::string filename = filename_prefix + ".ll";
       std::ofstream os(filename, std::ios::out | std::ios::binary);

@@ -35,7 +35,9 @@ def broadcast_first(value):
 
 
 def broadcast(value, index):
-    return impl.call_internal("subgroupBroadcast", value, index,
+    return impl.call_internal("subgroupBroadcast",
+                              value,
+                              index,
                               with_runtime_context=False)
 
 
@@ -77,37 +79,44 @@ def reduce_xor(value):
 
 
 def inclusive_add(value):
-    return impl.call_internal("subgroupInclusiveAdd", value,
+    return impl.call_internal("subgroupInclusiveAdd",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_mul(value):
-    return impl.call_internal("subgroupInclusiveMul", value,
+    return impl.call_internal("subgroupInclusiveMul",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_min(value):
-    return impl.call_internal("subgroupInclusiveMin", value,
+    return impl.call_internal("subgroupInclusiveMin",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_max(value):
-    return impl.call_internal("subgroupInclusiveMax", value,
+    return impl.call_internal("subgroupInclusiveMax",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_and(value):
-    return impl.call_internal("subgroupInclusiveAnd", value,
+    return impl.call_internal("subgroupInclusiveAnd",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_or(value):
-    return impl.call_internal("subgroupInclusiveOr", value,
+    return impl.call_internal("subgroupInclusiveOr",
+                              value,
                               with_runtime_context=False)
 
 
 def inclusive_xor(value):
-    return impl.call_internal("subgroupInclusiveXor", value,
+    return impl.call_internal("subgroupInclusiveXor",
+                              value,
                               with_runtime_context=False)
 
 

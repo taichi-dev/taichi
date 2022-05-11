@@ -2,63 +2,98 @@ from taichi.lang import impl
 
 
 def all_nonzero(mask, predicate):
-    return impl.call_internal("cuda_all_sync_i32", mask, predicate,
+    return impl.call_internal("cuda_all_sync_i32",
+                              mask,
+                              predicate,
                               with_runtime_context=False)
 
 
 def any_nonzero(mask, predicate):
-    return impl.call_internal("cuda_any_sync_i32", mask, predicate,
+    return impl.call_internal("cuda_any_sync_i32",
+                              mask,
+                              predicate,
                               with_runtime_context=False)
 
 
 def unique(mask, predicate):
-    return impl.call_internal("cuda_uni_sync_i32", mask, predicate,
+    return impl.call_internal("cuda_uni_sync_i32",
+                              mask,
+                              predicate,
                               with_runtime_context=False)
 
 
 def ballot(predicate):
-    return impl.call_internal("cuda_ballot_i32", predicate,
+    return impl.call_internal("cuda_ballot_i32",
+                              predicate,
                               with_runtime_context=False)
 
 
 def shfl_sync_i32(mask, val, offset):
     # lane offset is 31 for warp size 32
-    return impl.call_internal("cuda_shfl_sync_i32", mask, val, offset, 31,
+    return impl.call_internal("cuda_shfl_sync_i32",
+                              mask,
+                              val,
+                              offset,
+                              31,
                               with_runtime_context=False)
 
 
 def shfl_sync_f32(mask, val, offset):
     # lane offset is 31 for warp size 32
-    return impl.call_internal("cuda_shfl_sync_f32", mask, val, offset, 31,
+    return impl.call_internal("cuda_shfl_sync_f32",
+                              mask,
+                              val,
+                              offset,
+                              31,
                               with_runtime_context=False)
 
 
 def shfl_up_i32(mask, val, offset):
     # lane offset is 0 for warp size 32
-    return impl.call_internal("cuda_shfl_up_sync_i32", mask, val, offset, 0,
+    return impl.call_internal("cuda_shfl_up_sync_i32",
+                              mask,
+                              val,
+                              offset,
+                              0,
                               with_runtime_context=False)
 
 
 def shfl_up_f32(mask, val, offset):
     # lane offset is 0 for warp size 32
-    return impl.call_internal("cuda_shfl_up_sync_f32", mask, val, offset, 0,
+    return impl.call_internal("cuda_shfl_up_sync_f32",
+                              mask,
+                              val,
+                              offset,
+                              0,
                               with_runtime_context=False)
 
 
 def shfl_down_i32(mask, val, offset):
     # lane offset is 31 for warp size 32
-    return impl.call_internal("cuda_shfl_down_sync_i32", mask, val, offset, 31,
+    return impl.call_internal("cuda_shfl_down_sync_i32",
+                              mask,
+                              val,
+                              offset,
+                              31,
                               with_runtime_context=False)
 
 
 def shfl_down_f32(mask, val, offset):
     # lane offset is 31 for warp size 32
-    return impl.call_internal("cuda_shfl_down_sync_f32", mask, val, offset, 31,
+    return impl.call_internal("cuda_shfl_down_sync_f32",
+                              mask,
+                              val,
+                              offset,
+                              31,
                               with_runtime_context=False)
 
 
 def shfl_xor_i32(mask, val, offset):
-    return impl.call_internal("cuda_shfl_xor_sync_i32", mask, val, offset, 31,
+    return impl.call_internal("cuda_shfl_xor_sync_i32",
+                              mask,
+                              val,
+                              offset,
+                              31,
                               with_runtime_context=False)
 
 

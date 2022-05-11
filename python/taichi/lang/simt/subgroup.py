@@ -6,8 +6,8 @@ def barrier():
 
 
 def memory_barrier():
-    return impl.call_internal(
-        "subgroupMemoryBarrier", with_runtime_context=False)
+    return impl.call_internal("subgroupMemoryBarrier",
+                              with_runtime_context=False)
 
 
 def elect():
@@ -35,8 +35,10 @@ def broadcast_first(value):
 
 
 def broadcast(value, index):
-    return impl.call_internal(
-        "subgroupBroadcast", value, index, with_runtime_context=False)
+    return impl.call_internal("subgroupBroadcast",
+                              value,
+                              index,
+                              with_runtime_context=False)
 
 
 def group_size():
@@ -44,8 +46,8 @@ def group_size():
 
 
 def invocation_id():
-    return impl.call_internal(
-        "subgroupInvocationId", with_runtime_context=False)
+    return impl.call_internal("subgroupInvocationId",
+                              with_runtime_context=False)
 
 
 def reduce_add(value):
@@ -77,38 +79,45 @@ def reduce_xor(value):
 
 
 def inclusive_add(value):
-    return impl.call_internal(
-        "subgroupInclusiveAdd", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveAdd",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_mul(value):
-    return impl.call_internal(
-        "subgroupInclusiveMul", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveMul",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_min(value):
-    return impl.call_internal(
-        "subgroupInclusiveMin", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveMin",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_max(value):
-    return impl.call_internal(
-        "subgroupInclusiveMax", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveMax",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_and(value):
-    return impl.call_internal(
-        "subgroupInclusiveAnd", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveAnd",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_or(value):
-    return impl.call_internal(
-        "subgroupInclusiveOr", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveOr",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_xor(value):
-    return impl.call_internal(
-        "subgroupInclusiveXor", value, with_runtime_context=False)
+    return impl.call_internal("subgroupInclusiveXor",
+                              value,
+                              with_runtime_context=False)
 
 
 def exclusive_add(value):

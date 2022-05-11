@@ -595,8 +595,7 @@ def rot3(axis, ang):
 def length(x):
     """Calculate the length of a vector.
 
-    This function is equivalent to the `length` function is GLSL.
-
+    This function is equivalent to the `length` function in GLSL.
     Args:
         x (:class:`~taichi.Matrix`): The vector of which to calculate the length.
 

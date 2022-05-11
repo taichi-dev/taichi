@@ -113,7 +113,7 @@ def polar_decompose2d(A, dt):
     U = Matrix.identity(dt, 2)
     P = ops.cast(A, dt)
     zero = ops.cast(0.0, dt)
-    # if A is the zero matrix we simply return the pair (I, A)
+    # if A is a zero matrix we simply return the pair (I, A)
     if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero
             and A[1, 1] == zero):
         pass

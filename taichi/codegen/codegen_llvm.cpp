@@ -2493,7 +2493,9 @@ FunctionType ModuleToFunctionConverter::convert(
     TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
     task_funcs.push_back((TaskFunc)(func_ptr));
   }
-  return [this, args, kernel_name, task_funcs](RuntimeContext &context) {
+  // Do NOT capture `this`...
+  return [program = this->program_, args, kernel_name,
+          task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
@@ -2502,8 +2504,7 @@ FunctionType ModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr =
-            (uint64)this->program_->get_ndarray_alloc_info_ptr(*ptr);
+        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_is_device_allocation(i,
                                                /*is_device_allocation=*/false);

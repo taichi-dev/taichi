@@ -16,6 +16,8 @@
 # existing tests in the `taichi::test::main` function as
 # you need.
 
+time = 5s
+
 function taichi::utils::set_debug {
     if [ ${DEBUG} == "true" ]; then
         set -x
@@ -80,6 +82,11 @@ function taichi::utils::pause {
     read -p "Press enter to continue"
 }
 
+function taichi::utils::pkill {
+    sleep 5
+    pkill -f "$1"
+}
+
 function taichi::test::ggui {
     local WORKDIR=${1}
     local PATTERN="*_ggui.py"
@@ -96,9 +103,10 @@ function taichi::test::ggui {
 
     # run tests
     for match in $(find ./ -name "${PATTERN}"); do
-        python "${match}"
+        python "${match}" &
+        taichi::utils::pkill "${match}" 
         taichi::utils::line
-        taichi::utils::pause
+        # taichi::utils::pause
     done
 
     # go back to workdir
@@ -121,9 +129,10 @@ function taichi::test::difftaichi {
 
     # run tests
     for match in $(find ./ -name "${PATTERN}"); do
-        python "${match}"
+        python "${match}" &
+        taichi::utils::pkill "${match}" 
         taichi::utils::line
-        taichi::utils::pause
+        # taichi::utils::pause
     done
 
     # go back to workdir
@@ -145,14 +154,16 @@ function taichi::test::taichi_elements {
     cd "${REPO}"
 
     # install dependencies
-    python "download_ply.py"
+    python "download_ply.py" 
+
 
     # run tests
     cd "${REPO}/demo"
     for match in $(find ./ -name "${PATTERN}"); do
-        python "${match}"
+        python "${match}" &
+        taichi::utils::pkill "${match}" 
         taichi::utils::line
-        taichi::utils::pause
+        # taichi::utils::pause
     done
 
     # run special tests
@@ -186,6 +197,7 @@ function taichi::test::stannum {
 
     # run tests
     pytest -v -s ./
+    taichi::utils::line
 
     # go back to workdir
     cd "${WORKDIR}"
@@ -210,8 +222,9 @@ function taichi::test::sandyfluid {
     pip install -r requirements.txt
 
     # run tests
-    python src/main.py
-
+    python src/main.py &
+    taichi::utils::pkill "src/main.py" 
+    taichi::utils::line
     # go back to workdir
     cd "${WORKDIR}"
 }
@@ -230,7 +243,9 @@ function taichi::test::voxel_editor {
     cd "${REPO}"
 
     # run tests
-    python voxel_editor.py
+    python voxel_editor.py &
+    taichi::utils::pkill "voxel_editor.py" 
+    taichi::utils::line
 
     # go back to workdir
     cd "${WORKDIR}"

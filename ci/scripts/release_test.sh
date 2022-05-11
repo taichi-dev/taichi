@@ -104,7 +104,7 @@ function taichi::test::ggui {
     # run tests
     for match in $(find ./ -name "${PATTERN}"); do
         python "${match}" &
-        taichi::utils::pkill "${match}" 
+        taichi::utils::pkill "${match}"
         taichi::utils::line
         # taichi::utils::pause
     done
@@ -130,7 +130,7 @@ function taichi::test::difftaichi {
     # run tests
     for match in $(find ./ -name "${PATTERN}"); do
         python "${match}" &
-        taichi::utils::pkill "${match}" 
+        taichi::utils::pkill "${match}"
         taichi::utils::line
         # taichi::utils::pause
     done
@@ -154,14 +154,14 @@ function taichi::test::taichi_elements {
     cd "${REPO}"
 
     # install dependencies
-    python "download_ply.py" 
+    python "download_ply.py"
 
 
     # run tests
     cd "${REPO}/demo"
     for match in $(find ./ -name "${PATTERN}"); do
         python "${match}" &
-        taichi::utils::pkill "${match}" 
+        taichi::utils::pkill "${match}"
         taichi::utils::line
         # taichi::utils::pause
     done
@@ -223,7 +223,7 @@ function taichi::test::sandyfluid {
 
     # run tests
     python src/main.py &
-    taichi::utils::pkill "src/main.py" 
+    taichi::utils::pkill "src/main.py"
     taichi::utils::line
     # go back to workdir
     cd "${WORKDIR}"
@@ -244,7 +244,7 @@ function taichi::test::voxel_editor {
 
     # run tests
     python voxel_editor.py &
-    taichi::utils::pkill "voxel_editor.py" 
+    taichi::utils::pkill "voxel_editor.py"
     taichi::utils::line
 
     # go back to workdir

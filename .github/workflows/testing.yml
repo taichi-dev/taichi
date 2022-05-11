@@ -242,7 +242,14 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    runs-on: [self-hosted, cuda, vulkan, cn]
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-20-04
+            gpu_driver: driver470
+          - os: ubuntu-20-04
+            gpu_driver: driver510
+    runs-on: [self-hosted, cuda, vulkan, cn, ${{ matrix.gpu_driver }}]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2

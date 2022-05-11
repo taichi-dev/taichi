@@ -150,7 +150,7 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 
 ### Event
 
-Taichi voxel challenge is open for the [submission](https://github.com/taichi-dev/voxel-challenge/issues/11) until 18th May. Find our more [here](https://github.com/taichi-dev/community/tree/main/events/voxel-challenge).
+Taichi voxel challenge is open for the [submission](https://github.com/taichi-dev/voxel-challenge/issues/11) until 18th May. Find out more [here](https://github.com/taichi-dev/community/tree/main/events/voxel-challenge).
 
 ### Join our discussions
 

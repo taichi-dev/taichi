@@ -79,8 +79,7 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] &&
-              ext_arr_size.at(i)) {
+          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
@@ -151,8 +150,7 @@ class HostDeviceContextBlitter {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] &&
-              ext_arr_size.at(i)) {
+          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
             require_sync = true;
           }
         }
@@ -168,8 +166,7 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (!host_ctx_->is_device_allocation[i] &&
-            ext_arr_size.at(i)) {
+        if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =

@@ -245,8 +245,11 @@ jobs:
     strategy:
       matrix:
         gpu_driver: [driver470, driver510]
+
     runs-on: [self-hosted, cuda, vulkan, cn, ${{ matrix.gpu_driver }}]
+
     timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@v2
         with:

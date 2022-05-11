@@ -2389,8 +2389,8 @@ FunctionType CodeGenLLVM::gen() {
   bool needs_cache = false;
   const auto &config = prog->config;
   std::string kernel_key;
-  if (config.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
     LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);

@@ -4,10 +4,18 @@ param(
     [string] $LlvmDir = "",
     [string] $ClangDir = "",
     # Install python package in user-space.
-    [switch] $UserSpace = $false
+    [switch] $UserSpace = $false,
+    # Clean up compilation intermediates instead of building Taichi. Note that
+    # downloaded artifacts (like LLVM and Clang) will not be removed.
+    [switch] $Clean = $false
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($Clean) {
+    & python setup.py clean
+    exit
+}
 
 $TempDir = "${pwd}/tmp"
 $DownloadDir = "${TempDir}/download"

@@ -244,11 +244,9 @@ jobs:
     needs: check_files
     strategy:
       matrix:
-        include:
-          - os: ubuntu-20-04
-            gpu_driver: driver470
-          - os: ubuntu-20-04
-            gpu_driver: driver510
+        os: [ubuntu-20-04]
+        gpu_driver: [driver470, driver510]
+
     runs-on: [self-hosted, cuda, vulkan, cn, ${{ matrix.gpu_driver }}]
     timeout-minutes: 60
     steps:

@@ -275,8 +275,29 @@ def test_match_any():
 
 @test_utils.test(arch=ti.cuda)
 def test_match_all():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.i32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
+    c = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = 0
+        for i in range(32):
+            b[i] = ti.simt.warp.match_all(ti.u32(0xFFFFFFFF), a[i])
+
+        a[0] = 1
+        for i in range(32):
+            c[i] = ti.simt.warp.match_all(ti.u32(0xFFFFFFFF), a[i])
+
+    foo()
+
+    for i in range(32):
+        assert b[i] == (2**32 - 1)
+
+    for i in range(32):
+        assert c[i] == 0
 
 
 @test_utils.test(arch=ti.cuda)

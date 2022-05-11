@@ -103,9 +103,10 @@ def match_any():
 
 
 def match_all():
-    # TODO
-    pass
-
+    return expr.Expr(
+        _ti_core.insert_internal_func_call(
+            "cuda_match_all_sync_i32",
+            expr.make_expr_group(mask, val), False))
 
 def active_mask():
     return impl.call_internal("cuda_active_mask", with_runtime_context=False)

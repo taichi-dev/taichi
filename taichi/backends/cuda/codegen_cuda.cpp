@@ -68,7 +68,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           if (args[i].size == 0)
             continue;
           arg_buffers[i] = context.get_arg<void *>(i);
-          if (!context.array_metadata[i].is_device_allocation) {
+          if (!context.is_device_allocation[i]) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
             // args[i].size = 0.

@@ -22,12 +22,16 @@ struct RuntimeContext {
   uint64 args[taichi_max_num_args_total];
   int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;
-  // |is_device_allocation| is true iff args[i] is a DeviceAllocation*.
-  struct ArrayMetadata {
-    uint64 runtime_size{0};
-    bool is_device_allocation{false};
-  };
-  ArrayMetadata array_metadata[taichi_max_num_args_total];
+
+  // Note that I've tried to group `array_runtime_size` and
+  // `is_device_allocation` into a small struct. However, it caused some test
+  // cases to stuck.
+
+  // `array_runtime_size` records the runtime size of the
+  // corresponding array arguments.
+  uint64 array_runtime_size[taichi_max_num_args_total]{0};
+  // `is_device_allocation` is true iff args[i] is a DeviceAllocation*.
+  bool is_device_allocation[taichi_max_num_args_total]{false};
   // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
   // because each real function need a place to store its result, but
   // LLVMRuntime is shared among functions. So we moved the pointer to
@@ -53,11 +57,11 @@ struct RuntimeContext {
   }
 
   void set_array_runtime_size(int i, uint64 size) {
-    array_metadata[i].runtime_size = size;
+    this->array_runtime_size[i] = size;
   }
 
   void set_array_is_device_allocation(int i, bool is_device_allocation) {
-    array_metadata[i].is_device_allocation = is_device_allocation;
+    this->is_device_allocation[i] = is_device_allocation;
   }
 
   template <typename T>

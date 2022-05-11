@@ -400,7 +400,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   for (auto &item : program_.arr_args) {
     int i = item.first;
     TI_ASSERT(args[i].is_array);
-    if (args[i].size == 0 || ctx.array_metadata[i].is_device_allocation)
+    if (args[i].size == 0 || ctx.is_device_allocation[i])
       continue;
     has_ext_arr = true;
     if (args[i].size != item.second.total_size ||
@@ -468,7 +468,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
     for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      if (ctx.array_metadata[arg_id].is_device_allocation) {
+      if (ctx.is_device_allocation[arg_id]) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
@@ -503,7 +503,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   if (has_ext_arr) {
     for (auto &item : program_.arr_args) {
       int i = item.first;
-      if (args[i].size != 0 && !ctx.array_metadata[i].is_device_allocation) {
+      if (args[i].size != 0 && !ctx.is_device_allocation[i]) {
         uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
         memcpy((void *)ctx.args[i], baseptr, args[i].size);
         device_->unmap(ext_arr_bufs_[i]);

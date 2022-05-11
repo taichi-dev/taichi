@@ -79,7 +79,7 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->array_metadata[i].is_device_allocation &&
+          if (!host_ctx_->is_device_allocation[i] &&
               ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
@@ -151,7 +151,7 @@ class HostDeviceContextBlitter {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {
-          if (!host_ctx_->array_metadata[i].is_device_allocation &&
+          if (!host_ctx_->is_device_allocation[i] &&
               ext_arr_size.at(i)) {
             require_sync = true;
           }
@@ -168,7 +168,7 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (!host_ctx_->array_metadata[i].is_device_allocation &&
+        if (!host_ctx_->is_device_allocation[i] &&
             ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
@@ -458,7 +458,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (host_ctx->array_metadata[i].is_device_allocation) {
+        if (host_ctx->is_device_allocation[i]) {
           // NDArray
           if (host_ctx->args[i]) {
             any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
@@ -549,7 +549,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Dealloc external arrays
   for (auto pair : any_arrays) {
     if (pair.second != kDeviceNullAllocation) {
-      if (!host_ctx->array_metadata[pair.first].is_device_allocation) {
+      if (!host_ctx->is_device_allocation[pair.first]) {
         device_->dealloc_memory(pair.second);
       }
     }

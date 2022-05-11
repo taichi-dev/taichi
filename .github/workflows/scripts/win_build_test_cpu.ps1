@@ -50,15 +50,14 @@ Set-Location .\taichi
 WriteInfo("Setting up Python environment")
 conda activate py37
 
-python -m pip install numpy
-
 python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
 if (-not $?) { exit 1 }
 
-# Wheel has to be re-installed here to avoid strange certificate issue
-python -m pip uninstall -y wheel
-python -m pip install wheel
+# These have to be re-installed to avoid strange certificate issue
+# on CPU docker environment
+python -m pip install --upgrade --force-reinstall numpy
+python -m pip install --upgrade --force-reinstall wheel 
 
 WriteInfo("Building Taichi")
 python setup.py install

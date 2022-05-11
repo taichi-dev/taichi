@@ -29,7 +29,7 @@ struct RuntimeContext {
 
   // `array_runtime_size` records the runtime size of the
   // corresponding array arguments.
-  uint64 array_runtime_size[taichi_max_num_args_total]{0};
+  uint64 array_runtime_sizes[taichi_max_num_args_total]{0};
   // `is_device_allocation` is true iff args[i] is a DeviceAllocation*.
   bool is_device_allocation[taichi_max_num_args_total]{false};
   // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
@@ -57,7 +57,7 @@ struct RuntimeContext {
   }
 
   void set_array_runtime_size(int i, uint64 size) {
-    this->array_runtime_size[i] = size;
+    this->array_runtime_sizes[i] = size;
   }
 
   void set_array_is_device_allocation(int i, bool is_device_allocation) {

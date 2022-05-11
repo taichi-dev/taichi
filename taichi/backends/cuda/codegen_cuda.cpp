@@ -65,13 +65,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_array) {
-          if (args[i].size == 0)
+          const auto arr_sz = context.array_runtime_sizes[i];
+          if (arr_sz == 0) {
             continue;
+          }
           arg_buffers[i] = context.get_arg<void *>(i);
           if (!context.is_device_allocation[i]) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // args[i].size = 0.
+            // `arr_sz` zero.
             unsigned int attr_val = 0;
             uint32_t ret_code =
                 CUDADriver::get_instance().mem_get_attribute.call(
@@ -86,19 +88,18 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               //   host.
               // See CUDA driver API `cuPointerGetAttribute` for more details.
               transferred = true;
-              CUDADriver::get_instance().malloc(&device_buffers[i],
-                                                args[i].size);
+              CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
               CUDADriver::get_instance().memcpy_host_to_device(
-                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
+                  (void *)device_buffers[i], arg_buffers[i], arr_sz);
             } else {
               device_buffers[i] = arg_buffers[i];
             }
             // device_buffers[i] saves a raw ptr on CUDA device.
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_sz,
                                                /*is_device_allocation=*/false);
 
-          } else if (args[i].size > 0) {
+          } else if (arr_sz > 0) {
             // arg_buffers[i] is a DeviceAllocation*
             // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
             // it's shared by cpu and cuda.
@@ -114,7 +115,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
             // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_sz,
                                                /*is_device_allocation=*/false);
           }
         }
@@ -135,7 +136,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         for (int i = 0; i < (int)args.size(); i++) {
           if (device_buffers[i] != arg_buffers[i]) {
             CUDADriver::get_instance().memcpy_device_to_host(
-                arg_buffers[i], (void *)device_buffers[i], args[i].size);
+                arg_buffers[i], (void *)device_buffers[i],
+                context.array_runtime_sizes[i]);
             CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
           }
         }

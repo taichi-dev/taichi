@@ -662,9 +662,9 @@ void LlvmProgramImpl::cache_kernel(
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache && !cache_data_.kernels.empty()) {
-    LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
+    LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
-    writer.dump();
+    writer.dump(config->offline_cache_file_path);
   }
 }
 

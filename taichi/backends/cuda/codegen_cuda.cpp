@@ -16,8 +16,6 @@
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
 
-#define TI_WITH_CUDA 1
-
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;

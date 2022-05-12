@@ -6,6 +6,8 @@
 #include "taichi/aot/module_data.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
 
+#include <filesystem>
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -120,9 +122,14 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on vulkan backend.");
-  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
-  write_to_binary_file(ti_aot_data_, bin_path);
 
+  std::cout << "[DEBUG] AotModuleBuilderImpl::dump...  " << std::endl;
+
+  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
+
+  std::cout << "[DEBUG] current path is " << std::filesystem::current_path() << std::endl;
+
+  write_to_binary_file(ti_aot_data_, bin_path);
   auto converted = AotDataConverter::convert(ti_aot_data_);
   for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
     auto &k = ti_aot_data_.kernels[i];

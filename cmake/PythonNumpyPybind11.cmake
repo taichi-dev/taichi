@@ -26,8 +26,7 @@ message("    pybind11 include: ${pybind11_DIR}")
 
 
 include_directories(${NUMPY_INCLUDE_DIR})
-include_directories(${PYTHON_INCLUDE_DIRS})
-include_directories(${pybind11_DIR})
+include_directories(${PYBIND11_INCLUDE_DIR})
 
 find_package(pybind11 CONFIG REQUIRED)
 

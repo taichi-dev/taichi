@@ -30,5 +30,3 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${pybind11_DIR})
 
 find_package(pybind11 CONFIG REQUIRED)
-
-

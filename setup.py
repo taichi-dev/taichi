@@ -66,7 +66,7 @@ def remove_tmp(taichi_dir):
 class EggInfo(egg_info):
     def finalize_options(self, *args, **kwargs):
         if '' not in self.distribution.package_dir:
-            # XXX: skbuild loses the root package dir
+            #4975: skbuild loses the root package dir
             self.distribution.package_dir[''] = package_dir
         return super().finalize_options(*args, **kwargs)
 

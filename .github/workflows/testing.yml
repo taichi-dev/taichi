@@ -243,6 +243,7 @@ jobs:
     name: Build and Test Windows (CPU)
     needs: check_files
     timeout-minutes: 90
+    runs-on: windows-2019
     container:
       image: ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
       credentials:

@@ -726,7 +726,9 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &>);
+        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+
+  m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,

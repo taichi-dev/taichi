@@ -1086,6 +1086,9 @@ llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
 
 llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   auto intermediate_bits = 0;
+  if (type.is_pointer()) {
+    return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
+  }
   if (auto cit = type->cast<CustomIntType>()) {
     intermediate_bits = data_type_bits(cit->get_compute_type());
   } else {
@@ -1109,8 +1112,8 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
-    dest_ty =
-        llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
+    dest_ty = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
@@ -2458,6 +2461,10 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   }
 
   return xlogue;
+}
+
+void CodeGenLLVM::visit(ReferenceStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->var];
 }
 
 void CodeGenLLVM::visit(FuncCallStmt *stmt) {

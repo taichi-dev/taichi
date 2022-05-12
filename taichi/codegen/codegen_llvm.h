@@ -369,6 +369,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(MeshPatchIndexStmt *stmt) override;
 
+  void visit(ReferenceStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);

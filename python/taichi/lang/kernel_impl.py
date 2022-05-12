@@ -244,6 +244,9 @@ class Func:
             if not isinstance(anno, template):
                 if id(anno) in primitive_types.type_ids:
                     non_template_args.append(ops.cast(args[i], anno))
+                elif isinstance(anno, primitive_types.RefType):
+                    non_template_args.append(
+                        _ti_core.make_reference(args[i].ptr))
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
@@ -302,7 +305,8 @@ class Func:
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
-                              annotation, template):
+                              annotation, template) and not isinstance(
+                                  annotation, primitive_types.RefType):
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )

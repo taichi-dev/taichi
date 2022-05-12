@@ -11,6 +11,8 @@ from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 from taichi.types.primitive_types import f32
 
+print(taichi.__file__)
+
 
 class KernelTemplate:
     def __init__(self, kernel_fn, aot_module):

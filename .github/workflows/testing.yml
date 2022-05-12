@@ -285,8 +285,14 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
+    strategy:
+      matrix:
+        tags:
+          - [self-hosted, cuda, vulkan, cn, driver470]
+          - [self-hosted, cuda, vulkan, cn, driver510]
+
+    runs-on: ${{ matrix.tags }}
     steps:
       - uses: actions/checkout@v2
         with:

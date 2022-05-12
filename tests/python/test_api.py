@@ -80,7 +80,7 @@ user_api[ti] = [
     'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max',
     'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange',
     'no_activate', 'one', 'opengl', 'polar_decompose', 'pow', 'profiler',
-    'randn', 'random', 'raw_div', 'raw_mod', 'rescale_index', 'reset',
+    'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
     'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator',
@@ -97,12 +97,14 @@ user_api[ti.FieldsBuilder] = [
     'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
-    'cconj', 'cdiv', 'cexp', 'cinv', 'clamp', 'clog', 'cmul', 'cpow', 'cross',
-    'csqrt', 'degrees', 'distance', 'dot', 'e', 'eye', 'fract', 'ivec2',
-    'ivec3', 'ivec4', 'log2', 'mat2', 'mat3', 'mat4', 'mix', 'mod',
-    'normalize', 'pi', 'radians', 'reflect', 'refract', 'rot2', 'rot3',
-    'rotate2d', 'rotate3d', 'sign', 'smoothstep', 'step', 'uvec2', 'uvec3',
-    'uvec4', 'vec2', 'vec3', 'vec4'
+    'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
+    'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'distance',
+    'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'ivec2', 'ivec3', 'ivec4',
+    'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max', 'min', 'mix',
+    'mod', 'normalize', 'pi', 'pow', 'radians', 'reflect', 'refract', 'rot2',
+    'rot3', 'rotate2d', 'rotate3d', 'round', 'sign', 'sin', 'smoothstep',
+    'sqrt', 'step', 'tan', 'tanh', 'uvec2', 'uvec3', 'uvec4', 'vec2', 'vec3',
+    'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [

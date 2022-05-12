@@ -1086,6 +1086,9 @@ llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
 
 llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   auto intermediate_bits = 0;
+  if (type.is_pointer()) {
+    return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
+  }
   if (auto cit = type->cast<CustomIntType>()) {
     intermediate_bits = data_type_bits(cit->get_compute_type());
   } else {
@@ -1109,8 +1112,8 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
-    dest_ty =
-        llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
+    dest_ty = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
@@ -2296,14 +2299,15 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocation[i] &&
-          args[i].size > 0) {
+      if (args[i].is_array && context.is_device_allocations[i] &&
+          context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
                               ->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
-        context.set_device_allocation(i, false);
+        context.set_array_is_device_allocation(i,
+                                               /*is_device_allocation=*/false);
       }
     }
     for (auto task : offloaded_tasks_local) {
@@ -2389,8 +2393,8 @@ FunctionType CodeGenLLVM::gen() {
   bool needs_cache = false;
   const auto &config = prog->config;
   std::string kernel_key;
-  if (config.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
     LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
@@ -2457,6 +2461,10 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   }
 
   return xlogue;
+}
+
+void CodeGenLLVM::visit(ReferenceStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->var];
 }
 
 void CodeGenLLVM::visit(FuncCallStmt *stmt) {

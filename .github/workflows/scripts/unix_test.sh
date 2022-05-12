@@ -25,6 +25,16 @@ if [ -z "$GPU_TEST" ]; then
     # Paddle's develop package doesn't support CI's MACOS machine at present
     if [[ $OSTYPE == "linux-"* ]]; then
         python3 -m pip install "paddlepaddle==0.0.0; python_version < '3.10'" -f https://www.paddlepaddle.org.cn/whl/linux/cpu-mkl/develop.html
+
+        echo "Try Importing Paddle - Start"
+        python3 -c "
+try:
+    import paddle
+except Exception as e:
+    print(e)
+"
+        echo "Try Importing Paddle - End"
+
     fi
 else
     ## Only GPU machine uses system python.

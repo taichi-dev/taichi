@@ -244,21 +244,42 @@ jobs:
     needs: check_files
     timeout-minutes: 90
     runs-on: windows-2019
-    container:
-      image: ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
 
-      - name: Build and Test
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+      - name: Get docker images
+        shell: bash
         run: |
-          .\.github\workflows\scripts\win_build_test_cpu.ps1
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Test
+        shell: bash
+        run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          docker create --name taichi_build_test \
+            ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
+            C:/win_build_test_cpu.ps1
+          docker cp .github/workflows/scripts/win_build_test_cpu.ps1 taichi_build_test:C:/
+          docker start -a taichi_build_test
+
+      - name: clean docker container
+        shell: bash
+        if: always()
+        run: |
+          docker rm taichi_build_test -f
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)

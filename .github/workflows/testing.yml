@@ -269,11 +269,10 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
+            C:/win_build_test_cpu.ps1
+          docker cp .github/workflows/scripts/win_build_test_cpu.ps1 taichi_build_test:C:/
           docker start -a taichi_build_test
 
       - name: clean docker container

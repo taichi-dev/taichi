@@ -9,7 +9,7 @@ namespace lang {
 
 class TestProgram {
  public:
-  void setup();
+  void setup(Arch arch = Arch::x64);
 
   Program *prog() {
     return prog_.get();

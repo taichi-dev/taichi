@@ -165,7 +165,8 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 ### Contact us
 
-You can also join our community from Slack or WeChat. Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
+- [Slack](https://taichicommunity.slack.com/join/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg#/shared-invite/email) 
+- WeChat: Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
 
 ## Reference
 

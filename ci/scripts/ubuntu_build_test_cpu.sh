@@ -23,7 +23,7 @@ cd taichi
 git checkout $SHA
 python3 -m pip install -r requirements_dev.txt -i http://repo.taichigraphics.com/repository/pypi/simple --trusted-host repo.taichigraphics.com
 # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch
-python3 -m pip install paddlepaddle==0.0.0 -f https://www.paddlepaddle.org.cn/whl/linux/cpu-mkl/develop.html
+python3 -m pip install paddlepaddle==2.3.0
 TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF" python3 setup.py install
 
 # Add Docker specific ENV

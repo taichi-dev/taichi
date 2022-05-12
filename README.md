@@ -2,7 +2,6 @@
   <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png"/>
 </div>
 
-TESTING
 ---
 
 [![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue&label=Latest%20Release)](https://github.com/taichi-dev/taichi/releases/latest)

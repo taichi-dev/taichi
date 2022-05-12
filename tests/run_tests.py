@@ -110,7 +110,7 @@ def test():
     parser.add_argument('-c',
                         '--cpp',
                         dest='cpp',
-                        default=True,
+                        default=False,
                         action='store_true',
                         help='Run the C++ tests')
     parser.add_argument('-s',

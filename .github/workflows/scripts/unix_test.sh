@@ -24,7 +24,7 @@ if [ -z "$GPU_TEST" ]; then
     python3 -m pip install "torch; python_version < '3.10'"
     # Paddle's develop package doesn't support CI's MACOS machine at present
     if [[ $OSTYPE == "linux-"* ]]; then
-        python3 -m pip install "paddlepaddle==0.0.0; python_version < '3.10'" -f https://www.paddlepaddle.org.cn/whl/linux/cpu-mkl/develop.html
+        python3 -m pip install "paddlepaddle==2.3.0; python_version < '3.10'"
     fi
 else
     ## Only GPU machine uses system python.
@@ -33,6 +33,7 @@ else
     python3 -m pip install -r requirements_test.txt
     # Import Paddle's develop GPU package will occur error `Illegal Instruction`.
 fi
+
 ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"

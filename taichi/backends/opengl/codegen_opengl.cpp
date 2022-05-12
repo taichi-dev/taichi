@@ -224,7 +224,7 @@ class KernelGen : public IRVisitor {
         kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
       std::unordered_set<int> arr_ids;
-      for ([[maybe_unused]] const auto [arr_id, bind_idx] :
+      for ([[maybe_unused]] const auto &[arr_id, bind_idx] :
            used.arr_arg_to_bind_idx) {
         arr_ids.insert(arr_id);
       }

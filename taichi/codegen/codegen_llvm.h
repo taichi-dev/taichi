@@ -1,5 +1,6 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
+
 #ifdef TI_WITH_LLVM
 
 #include <set>
@@ -367,6 +368,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(ExternalFuncCallStmt *stmt) override;
 
   void visit(MeshPatchIndexStmt *stmt) override;
+
+  void visit(ReferenceStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 

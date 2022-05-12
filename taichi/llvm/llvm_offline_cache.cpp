@@ -1,5 +1,7 @@
 #include "llvm_offline_cache.h"
 
+#include <sstream>
+
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
@@ -41,9 +43,12 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   return true;
 }
 
-void LlvmOfflineCacheFileWriter::dump() {
+void LlvmOfflineCacheFileWriter::dump(const std::string &path) {
+  taichi::create_directories(path);
   for (auto &[k, v] : data_.kernels) {
-    std::string filename_prefix = path_ + "/" + k;
+    std::stringstream filename_ss;
+    filename_ss << path << "/" << k;
+    std::string filename_prefix = filename_ss.str();
     {
       std::string filename = filename_prefix + ".ll";
       std::ofstream os(filename, std::ios::out | std::ios::binary);

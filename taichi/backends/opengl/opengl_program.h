@@ -33,14 +33,9 @@ class OpenglProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
   }

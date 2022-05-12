@@ -71,8 +71,8 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    VkRuntime *runtime,
                                    SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
-      std::move(run_codegen(kernel, runtime->get_ti_device(),
-                            snode_tree_mgr->get_compiled_structs())));
+      run_codegen(kernel, runtime->get_ti_device(),
+                  snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -151,9 +151,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       std::make_unique<vulkan::SNodeTreeManager>(vulkan_runtime_.get());
 }
 
-void VulkanProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void VulkanProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   if (vulkan_runtime_) {
     snode_tree_mgr_->materialize_snode_tree(tree);
   } else {
@@ -163,10 +161,8 @@ void VulkanProgramImpl::compile_snode_tree_types(
   }
 }
 
-void VulkanProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
+void VulkanProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                               uint64 *result_buffer) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 

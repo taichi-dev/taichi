@@ -45,10 +45,6 @@ class LlvmOfflineCacheFileReader {
 
 class LlvmOfflineCacheFileWriter {
  public:
-  LlvmOfflineCacheFileWriter(const std::string &path) : path_(path) {
-    taichi::create_directories(path);
-  }
-
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -59,7 +55,7 @@ class LlvmOfflineCacheFileWriter {
     data_.kernels[key] = std::move(kernel_cache);
   }
 
-  void dump();
+  void dump(const std::string &path);
 
  private:
   void mangle_offloaded_task_name(
@@ -68,7 +64,6 @@ class LlvmOfflineCacheFileWriter {
       std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
           &offloaded_task_list);
 
-  std::string path_;
   LlvmOfflineCache data_;
   bool mangled_{false};
 };

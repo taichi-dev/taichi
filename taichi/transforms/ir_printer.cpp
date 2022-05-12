@@ -774,6 +774,10 @@ class IRPrinter : public IRVisitor {
     print(")");
   }
 
+  void visit(ReferenceStmt *stmt) override {
+    print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
+  }
+
  private:
   std::string expr_to_string(Expr &expr) {
     return expr_to_string(expr.expr.get());

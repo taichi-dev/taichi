@@ -245,7 +245,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        tags: 
+        tags:
           - [self-hosted, cuda, vulkan, cn, driver470]
           - [self-hosted, cuda, vulkan, cn, driver510]
 

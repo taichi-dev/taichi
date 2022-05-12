@@ -16,8 +16,6 @@ def _test_cpp():
     cpp_test_filename = 'taichi_cpp_tests'
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
-    print("build dir is")
-    print(build_dir)
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
         env_copy = os.environ.copy()
         env_copy['TI_LIB_DIR'] = ti_lib_dir

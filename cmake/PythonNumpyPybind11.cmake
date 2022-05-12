@@ -29,5 +29,3 @@ include_directories(${NUMPY_INCLUDE_DIR})
 include_directories(${PYBIND11_INCLUDE_DIR})
 
 find_package(pybind11 CONFIG REQUIRED)
-
-

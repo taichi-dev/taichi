@@ -13,6 +13,8 @@ message("    numpy include: ${NUMPY_INCLUDE_DIR}")
 
 include_directories(${NUMPY_INCLUDE_DIR})
 
+include_directories(${pybind11_DIR})
+
 find_package(pybind11 CONFIG REQUIRED)
 
 

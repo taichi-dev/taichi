@@ -36,7 +36,7 @@ $env:LLVM_DIR = "C://taichi_llvm"
 #TODO failed build test
 $env:TAICHI_CMAKE_ARGS = "-DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF"
 
-#TODO: For now we have to hard code the compiler path from the image with build tools 2019 
+#TODO: For now we have to hard code the compiler path from the image with build tools 2019
 $env:TAICHI_CMAKE_ARGS +=' -DCMAKE_CXX_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang++.exe -DCMAKE_C_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang.exe'
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=C:\\taichi_clang\\bin\\clang++.exe"
 $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=C:\\taichi_llvm\\bin\\llvm-as.exe -DTI_WITH_VULKAN:BOOL=OFF"
@@ -57,7 +57,7 @@ if (-not $?) { exit 1 }
 # These have to be re-installed to avoid strange certificate issue
 # on CPU docker environment
 python -m pip install --upgrade --force-reinstall numpy
-python -m pip install --upgrade --force-reinstall wheel 
+python -m pip install --upgrade --force-reinstall wheel
 
 WriteInfo("Building Taichi")
 python setup.py install

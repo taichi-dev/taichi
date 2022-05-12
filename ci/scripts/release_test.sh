@@ -16,8 +16,6 @@
 # existing tests in the `taichi::test::main` function as
 # you need.
 
-time = 5s
-
 function taichi::utils::set_debug {
     if [ ${DEBUG} == "true" ]; then
         set -x

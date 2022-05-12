@@ -21,11 +21,10 @@ namespace vulkan {
 
 class VulkanEnvSettings {
  public:
-
   // This version number is used to create a vkInstance, it should be
   // the highest API version that is designed to use.
   // Reference:
-  // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkApplicationInfo.html 
+  // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkApplicationInfo.html
   static constexpr uint32_t kApiVersion() {
     return VK_API_VERSION_1_3;
   }

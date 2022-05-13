@@ -1,4 +1,5 @@
-#include "llvm_program.h"
+#include "taichi/llvm/llvm_program.h"
+
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -430,7 +431,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       llvm_runtime_,
                                       (void *)assert_failed_host);
   }
-  if (arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
     // Profiler functions can only be called on CPU kernels
     runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);

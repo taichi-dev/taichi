@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
@@ -19,8 +20,6 @@
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
-
-#include <memory>
 
 namespace llvm {
 class Module;
@@ -119,6 +118,10 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
 
+  Device *get_compute_device() override {
+    return device_.get();
+  }
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       bool has_multiple_snode_trees,
@@ -157,10 +160,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
     TI_NOT_IMPLEMENTED;
-  }
-
-  Device *get_compute_device() override {
-    return device_.get();
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;

@@ -30,8 +30,6 @@ class OffloadedTask {
   void end();
 };
 
-#ifdef TI_WITH_LLVM
-
 class FunctionCreationGuard {
  public:
   CodeGenLLVM *mb;

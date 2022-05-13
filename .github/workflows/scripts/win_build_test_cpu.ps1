@@ -62,7 +62,7 @@ python -m pip install --upgrade --force-reinstall wheel
 if (-not $?) { exit 1 }
 
 WriteInfo("Building Taichi")
-python setup.py install 
+python setup.py install
 if (-not $?) { exit 1 }
 WriteInfo("Build finished")
 

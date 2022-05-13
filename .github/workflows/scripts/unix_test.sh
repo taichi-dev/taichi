@@ -32,6 +32,11 @@ else
     # pip will skip packages if already installed
     python3 -m pip install -r requirements_test.txt
     # Import Paddle's develop GPU package will occur error `Illegal Instruction`.
+
+    # Log hardware info for the current CI-bot
+    # There's random CI failure caused by "import paddle"
+    # Top suspect is an issue with MKL support for specific CPU
+    lscpu | grep "Model name"
 fi
 
 ti diagnose

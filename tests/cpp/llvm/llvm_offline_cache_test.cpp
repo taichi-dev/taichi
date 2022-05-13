@@ -4,8 +4,6 @@
 
 // Clang on macOS CI seems not to have <filesystem>...
 #if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
-
-#define TI_WITH_LLVM 1
 #ifdef TI_WITH_LLVM
 
 #include <filesystem>

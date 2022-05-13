@@ -388,7 +388,13 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
                     Intrinsic::nvvm_match_any_sync_i32);
 
     // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    // Notice: On this intrinsic function, the third arg is a ptr
+    /* 
+    nvvm_match_all_sync_i32
+    Args:
+        1. u32 mask
+        2. i32 value
+        3. i32 *pred
+    */
     /*
     patch_intrinsic("cuda_match_all_sync_i32p",
                     Intrinsic::nvvm_math_all_sync_i32);

@@ -2,7 +2,7 @@
 # TODO unify this with the other Win scripts
 
 param (
-    [switch]$clone = $true,
+    [switch]$clone = $false,
     [switch]$install = $false,
     [string]$libsDir = "C:\"
 )
@@ -46,11 +46,8 @@ $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=C:\\taichi_llvm\\bin\\llvm-as.e
 WriteInfo("Checking clang compiler")
 clang --version
 
-if ($clone) {
-    WriteInfo("Clone the repository")
-    git clone --recurse-submodules $RepoURL
-    Set-Location .\taichi
-}
+WriteInfo("Enter the repository")
+Set-Location .\taichi
 
 WriteInfo("Setting up Python environment")
 conda activate py37

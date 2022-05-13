@@ -124,7 +124,8 @@ TEST(IRBuilder, ExternalPtr) {
 TEST(IRBuilder, Ndarray) {
   TestProgram test_prog;
 #ifdef TI_WITH_VULKAN
-  Arch arch = taichi::lang::vulkan::is_vulkan_api_available() ? Arch::vulkan : Arch::x64;
+  Arch arch = taichi::lang::vulkan::is_vulkan_api_available() ? Arch::vulkan
+                                                              : Arch::x64;
 #else
   Arch arch = Arch::x64;
 #endif
@@ -151,7 +152,8 @@ TEST(IRBuilder, Ndarray) {
     builder1.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
   }
   auto block1 = builder1.extract_ir();
-  auto ker1 = std::make_unique<Kernel>(*test_prog.prog(), std::move(block1), "ker1");
+  auto ker1 =
+      std::make_unique<Kernel>(*test_prog.prog(), std::move(block1), "ker1");
   ker1->insert_arg(get_data_type<int>(), /*is_array=*/true);
   auto launch_ctx1 = ker1->make_launch_context();
   launch_ctx1.set_arg_external_array(
@@ -173,7 +175,8 @@ TEST(IRBuilder, Ndarray) {
     builder2.create_global_store(a1ptr, arg1);  // a[1] = arg1
   }
   auto block2 = builder2.extract_ir();
-  auto ker2 = std::make_unique<Kernel>(*test_prog.prog(), std::move(block2), "ker2");
+  auto ker2 =
+      std::make_unique<Kernel>(*test_prog.prog(), std::move(block2), "ker2");
   ker2->insert_arg(get_data_type<int>(), /*is_array=*/true);
   ker2->insert_arg(get_data_type<int>(), /*is_array=*/false);
   auto launch_ctx2 = ker2->make_launch_context();

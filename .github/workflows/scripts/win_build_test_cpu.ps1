@@ -56,9 +56,11 @@ WriteInfo("Setting up Python environment")
 conda activate py37
 python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
+
 # These have to be re-installed to avoid strange certificate issue
 # on CPU docker environment
 python -m pip install --upgrade --force-reinstall numpy
+python -m pip install --upgrade --force-reinstall cmake
 python -m pip install --upgrade --force-reinstall wheel
 if (-not $?) { exit 1 }
 

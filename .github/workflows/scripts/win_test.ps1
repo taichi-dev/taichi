@@ -11,7 +11,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
     pip install "torch==1.10.1+cu113; python_version < '3.10'" -f https://download.pytorch.org/whl/cu113/torch_stable.html
 } else {
     pip install "torch; python_version < '3.10'"
-    pip install "paddlepaddle==0.0.0; python_version < '3.10'" -f https://www.paddlepaddle.org.cn/whl/windows/cpu-mkl-avx/develop.html
+    pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 }
 # Fail fast, give priority to the error-prone tests
 python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu

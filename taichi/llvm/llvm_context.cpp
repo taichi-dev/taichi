@@ -216,8 +216,9 @@ std::unique_ptr<llvm::Module> LlvmModuleBitcodeLoader::load(
   return std::move(runtime.get());
 }
 
-std::unique_ptr<llvm::Module> module_from_bitcode_file(const std::string& bitcode_path,
-                                                       llvm::LLVMContext *ctx) {
+std::unique_ptr<llvm::Module> module_from_bitcode_file(
+    const std::string &bitcode_path,
+    llvm::LLVMContext *ctx) {
   LlvmModuleBitcodeLoader loader;
   return loader.set_bitcode_path(bitcode_path)
       .set_buffer_id("runtime_bitcode")

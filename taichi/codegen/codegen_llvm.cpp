@@ -3,16 +3,18 @@
 #include <algorithm>
 
 #ifdef TI_WITH_LLVM
+
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Linker/Linker.h"
+
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
+#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/llvm/llvm_program.h"
-
-#include "llvm/IR/Module.h"
-#include "llvm/Bitcode/BitcodeReader.h"
-#include "llvm/Linker/Linker.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -2271,15 +2273,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
       });
 }
 
-FunctionType CodeGenLLVM::compile_module_to_executable() {
-  TI_AUTO_PROF;
-
-  ModuleToFunctionConverter converter{tlctx,
-                                      kernel->program->get_llvm_program_impl()};
-  return converter.convert(kernel, std::move(module),
-                           std::move(offloaded_tasks));
-}
-
 FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
     std::vector<llvm::Type *> argument_types) {
   return FunctionCreationGuard(this, argument_types);
@@ -2353,7 +2346,7 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-FunctionType CodeGenLLVM::gen() {
+CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   bool needs_cache = false;
   const auto &config = prog->config;
   std::string kernel_key;
@@ -2376,7 +2369,10 @@ FunctionType CodeGenLLVM::gen() {
         t.grid_dim = task.grid_dim;
       }
       kernel->set_from_offline_cache();
-      return compile_module_to_executable();
+      CompiledData res;
+      res.offloaded_tasks = std::move(this->offloaded_tasks);
+      res.llvm_module = std::move(this->module);
+      return res;
     } else {
       needs_cache = true;
     }
@@ -2390,7 +2386,19 @@ FunctionType CodeGenLLVM::gen() {
   if (needs_cache) {
     cache_module(kernel_key);
   }
-  return compile_module_to_executable();
+  CompiledData res;
+  res.offloaded_tasks = std::move(this->offloaded_tasks);
+  res.llvm_module = std::move(this->module);
+  return res;
+}
+
+FunctionType CodeGenLLVM::gen() {
+  auto compiled_res = run_compilation();
+
+  ModuleToFunctionConverter converter{tlctx,
+                                      kernel->program->get_llvm_program_impl()};
+  return converter.convert(kernel, std::move(compiled_res.llvm_module),
+                           std::move(compiled_res.offloaded_tasks));
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {

@@ -14,7 +14,7 @@ struct DeviceAllocation;
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
 struct RuntimeContext {
-  LLVMRuntime *runtime;
+  LLVMRuntime *runtime{nullptr};
   // args can contain:
   // - primitive_types
   // - raw ptrs: for external array, or torch-based ndarray

@@ -1,16 +1,17 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
 
-#ifdef TI_WITH_LLVM
-
 #include <set>
 #include <unordered_map>
 
-#include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#ifdef TI_WITH_LLVM
 
-TLANG_NAMESPACE_BEGIN
+#include "taichi/ir/ir.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/program/program.h"
+
+namespace taichi {
+namespace lang {
 
 class CodeGenLLVM;
 
@@ -119,8 +120,20 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  virtual FunctionType compile_module_to_executable();
+  struct CompiledData {
+    std::vector<OffloadedTask> offloaded_tasks;
+    std::unique_ptr<llvm::Module> llvm_module{nullptr};
+  };
+  /**
+   * @brief Runs the codegen and produces the compiled result.
+   *
+   * After this call, `module` and `offloaded_tasks` will be moved.
+   *
+   * @return CompiledData
+   */
+  CompiledData run_compilation();
 
+  // TODO: This function relies largely on `run_compilation()`. Name it better.
   virtual FunctionType gen();
 
   virtual bool supports_offline_cache() const {
@@ -422,6 +435,7 @@ class ModuleToFunctionConverter {
   LlvmProgramImpl *program_{nullptr};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi
 
 #endif  // #ifdef TI_WITH_LLVM

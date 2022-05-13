@@ -18,8 +18,6 @@ class OffloadedTask {
  public:
   std::string name;
   CodeGenLLVM *codegen;
-  using task_fp_type = int32 (*)(void *);
-  task_fp_type func;
 
   int block_dim{0};
   int grid_dim{0};
@@ -29,10 +27,6 @@ class OffloadedTask {
   void begin(const std::string &name);
 
   void end();
-
-  void compile();
-
-  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {
@@ -398,6 +392,34 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
  private:
   void cache_module(const std::string &kernel_key);
+};
+
+class LlvmProgramImpl;
+
+// This is for CPU, we need one for CUDA (AMDGPU) as well.
+class ModuleToFunctionConverter {
+ public:
+  struct ArgInfo {
+    bool is_array{false};
+  };
+
+  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                     LlvmProgramImpl *program);
+
+  virtual ~ModuleToFunctionConverter() = default;
+
+  virtual FunctionType convert(const std::string &kernel_name,
+                               const std::vector<ArgInfo> &args,
+                               std::unique_ptr<llvm::Module> mod,
+                               std::vector<OffloadedTask> &&tasks) const;
+
+  FunctionType convert(const Kernel *kernel,
+                       std::unique_ptr<llvm::Module> mod,
+                       std::vector<OffloadedTask> &&tasks) const;
+
+ protected:
+  TaichiLLVMContext *tlctx_{nullptr};
+  LlvmProgramImpl *program_{nullptr};
 };
 
 TLANG_NAMESPACE_END

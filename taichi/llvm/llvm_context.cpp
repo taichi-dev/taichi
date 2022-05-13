@@ -388,7 +388,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
                     Intrinsic::nvvm_match_any_sync_i32);
 
     // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    /* 
+    /*
     nvvm_match_all_sync_i32
     Args:
         1. u32 mask

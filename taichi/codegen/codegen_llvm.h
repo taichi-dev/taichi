@@ -1,7 +1,6 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
 
-#define TI_WITH_LLVM 1
 
 #ifdef TI_WITH_LLVM
 

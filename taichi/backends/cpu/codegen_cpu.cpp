@@ -202,11 +202,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 }  // namespace
 
+#ifdef TI_WITH_LLVM
 // static
 std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
                                                            IRNode *ir) {
   return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
 }
+#endif  // TI_WITH_LLVM
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;

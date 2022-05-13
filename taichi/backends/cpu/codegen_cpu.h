@@ -14,8 +14,11 @@ class CodeGenCPU : public KernelCodeGen {
   CodeGenCPU(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
   }
 
+  // TODO: Stop defining this macro guards in the headers
+#ifdef TI_WITH_LLVM
   static std::unique_ptr<CodeGenLLVM> make_codegen_llvm(Kernel *kernel,
                                                         IRNode *ir);
+#endif  // TI_WITH_LLVM
 
   FunctionType codegen() override;
 };

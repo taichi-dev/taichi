@@ -1,16 +1,17 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
 
-#ifdef TI_WITH_LLVM
-
 #include <set>
 #include <unordered_map>
+
+#ifdef TI_WITH_LLVM
 
 #include "taichi/ir/ir.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class CodeGenLLVM;
 
@@ -28,6 +29,8 @@ class OffloadedTask {
 
   void end();
 };
+
+#ifdef TI_WITH_LLVM
 
 class FunctionCreationGuard {
  public:
@@ -434,6 +437,7 @@ class ModuleToFunctionConverter {
   LlvmProgramImpl *program_{nullptr};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi
 
 #endif  // #ifdef TI_WITH_LLVM

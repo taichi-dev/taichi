@@ -3,9 +3,11 @@
 #include <sstream>
 
 #include "llvm/AsmParser/Parser.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/IR/Module.h"
+
 #include "taichi/ir/transforms.h"
 
 namespace taichi {
@@ -43,28 +45,41 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   return true;
 }
 
-void LlvmOfflineCacheFileWriter::dump(const std::string &path) {
+void LlvmOfflineCacheFileWriter::dump(const std::string &path, Format format) {
   taichi::create_directories(path);
   for (auto &[k, v] : data_.kernels) {
     std::stringstream filename_ss;
     filename_ss << path << "/" << k;
     std::string filename_prefix = filename_ss.str();
+
+    auto write_llvm_module =
+        [&filename_prefix](
+            const std::string &suffix,
+            std::function<void(llvm::raw_os_ostream & os)> writer) {
+          const std::string filename = filename_prefix + suffix;
+          std::ofstream os(filename, std::ios::out | std::ios::binary);
+          TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
+          llvm::raw_os_ostream llvm_os{os};
+          writer(llvm_os);
+        };
     {
-      std::string filename = filename_prefix + ".ll";
-      std::ofstream os(filename, std::ios::out | std::ios::binary);
-      TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
-      llvm::SMDiagnostic err;
-      llvm::LLVMContext ctx;
-      llvm::raw_os_ostream llvm_os(os);
-      if (v.module) {
-        mangle_offloaded_task_name(k, v.module, v.offloaded_task_list);
-        v.module->print(llvm_os, nullptr);
-      } else if (v.owned_module) {
-        mangle_offloaded_task_name(k, v.owned_module.get(),
-                                   v.offloaded_task_list);
-        v.owned_module->print(llvm_os, nullptr);
-      } else
-        TI_ASSERT(false);
+      auto *mod = v.module;
+      if (!mod) {
+        mod = v.owned_module.get();
+      }
+      TI_ASSERT(mod != nullptr);
+
+      mangle_offloaded_task_name(k, mod, v.offloaded_task_list);
+      if (format & Format::LL) {
+        write_llvm_module(".ll", [mod](llvm::raw_os_ostream &os) {
+          mod->print(os, /*AAW=*/nullptr);
+        });
+      }
+      if (format & Format::BC) {
+        write_llvm_module(".bc", [mod](llvm::raw_os_ostream &os) {
+          llvm::WriteBitcodeToFile(*mod, os);
+        });
+      }
     }
     {
       std::string filename = filename_prefix + "_otnl.txt";

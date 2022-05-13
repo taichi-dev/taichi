@@ -15,6 +15,7 @@ struct LlvmOfflineCache {
     int block_dim{0};
     int grid_dim{0};
   };
+
   struct KernelCacheData {
     std::string kernel_key;
     std::unique_ptr<llvm::Module> owned_module{nullptr};
@@ -45,6 +46,11 @@ class LlvmOfflineCacheFileReader {
 
 class LlvmOfflineCacheFileWriter {
  public:
+  enum Format {
+    LL = 0x01,
+    BC = 0x10,
+  };
+
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -55,7 +61,7 @@ class LlvmOfflineCacheFileWriter {
     data_.kernels[key] = std::move(kernel_cache);
   }
 
-  void dump(const std::string &path);
+  void dump(const std::string &path, Format format = Format::LL);
 
  private:
   void mangle_offloaded_task_name(

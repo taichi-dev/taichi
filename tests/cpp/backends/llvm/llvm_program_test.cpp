@@ -25,6 +25,10 @@ TEST(LlvmProgramTest, FullPipeline) {
   uint64 *result_buffer{nullptr};
   prog.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
 
+  constexpr int kArrLen = 32;
+  constexpr int kArrBytes = kArrLen * sizeof(int32_t);
+  auto arr_devalloc = prog.allocate_memory_ndarray(kArrBytes, result_buffer);
+
   cpu::AotModuleParams aot_params;
   aot_params.module_path = "generated";
   aot_params.program = &prog;
@@ -32,7 +36,16 @@ TEST(LlvmProgramTest, FullPipeline) {
   auto *k_run = mod->get_kernel("run");
   RuntimeContext ctx;
   ctx.runtime = prog.get_llvm_runtime();
+  ctx.set_arg(0, /*v=*/0);
+  ctx.set_arg_devalloc(/*arg_id=*/1, arr_devalloc, /*shape=*/{kArrLen});
+  ctx.set_array_runtime_size(/*arg_id=*/1, kArrBytes);
   k_run->launch(&ctx);
+
+  auto *data = reinterpret_cast<int32_t *>(
+      prog.get_ndarray_alloc_info_ptr(arr_devalloc));
+  for (int i = 0; i < kArrLen; ++i) {
+    EXPECT_EQ(data[i], i);
+  }
 }
 
 }  // namespace lang

@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#define TI_WITH_LLVM 1
+
 #ifdef TI_WITH_LLVM
 
 #include "llvm/Bitcode/BitcodeReader.h"

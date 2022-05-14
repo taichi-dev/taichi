@@ -24,6 +24,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   kcache.module = compiled.llvm_module.get();
   kcache.owned_module = std::move(compiled.llvm_module);
   const auto &tasks = compiled.offloaded_tasks;
+  kcache.args = LlvmOfflineCache::infer_args(kernel);
   kcache.offloaded_task_list.resize(tasks.size());
   std::transform(tasks.begin(), tasks.end(), kcache.offloaded_task_list.begin(),
                  [](const auto &t) -> LlvmOfflineCache::OffloadedTaskCacheData {

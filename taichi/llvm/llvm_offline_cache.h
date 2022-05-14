@@ -27,6 +27,12 @@ struct LlvmOfflineCache {
   };
 
   struct KernelCacheData {
+    struct ArgInfo {
+      bool is_array{false};
+
+      TI_IO_DEF(is_array);
+    };
+
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
     std::vector<OffloadedTaskCacheData> offloaded_task_list;
@@ -41,6 +47,8 @@ struct LlvmOfflineCache {
 
     TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
+
+  static std::vector<KernelCacheData::ArgInfo> infer_args(const Kernel *kernel);
 
   std::unordered_map<std::string, KernelCacheData> kernels;
 

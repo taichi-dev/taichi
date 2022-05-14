@@ -112,7 +112,7 @@ typename std::enable_if<!std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&...rest) {
+                  Args &&... rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head);
@@ -126,7 +126,7 @@ typename std::enable_if<std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&...rest) {
+                  Args &&... rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head, true);
@@ -588,7 +588,7 @@ class BinarySerializer : public Serializer {
   void handle_associative_container(const M &val) {
     if constexpr (writing) {
       this->process(val.size());
-      for (auto iter : val) {
+      for (auto &iter : val) {
         auto first = iter.first;
         this->process(first);
         this->process(iter.second);
@@ -601,7 +601,7 @@ class BinarySerializer : public Serializer {
       for (std::size_t i = 0; i < n; i++) {
         typename M::value_type record;
         this->process(record);
-        wval.insert(record);
+        wval.insert(std::move(record));
       }
     }
   }

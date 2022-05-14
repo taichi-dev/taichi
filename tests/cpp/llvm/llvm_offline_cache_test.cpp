@@ -2,11 +2,17 @@
 
 #include "taichi/common/platform_macros.h"
 
-// Clang on macOS CI seems not to have <filesystem>...
-#if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
 #ifdef TI_WITH_LLVM
 
+#if __has_include(<filesystem>)
 #include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+error "Missing the <filesystem> header."
+#endif  //  __has_include(<filesystem>)
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -73,10 +79,9 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
 
 TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto llvm_fmt = GetParam();
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path() /=
-                                std::tmpnam(nullptr)};
+  fs::path tmp_dir{fs::temp_directory_path() /= std::tmpnam(nullptr)};
   const auto tmp_dir_str{tmp_dir.u8string()};
-  const bool dir_ok = std::filesystem::create_directories(tmp_dir);
+  const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
@@ -109,7 +114,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     const auto res = my_add(40, 2);
     EXPECT_EQ(res, 42);
   }
-  std::filesystem::remove_all(tmp_dir);
+  fs::remove_all(tmp_dir);
 }
 
 INSTANTIATE_TEST_SUITE_P(Format,
@@ -121,4 +126,3 @@ INSTANTIATE_TEST_SUITE_P(Format,
 }  // namespace taichi
 
 #endif  // #ifdef TI_WITH_LLVM
-#endif  // #if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)

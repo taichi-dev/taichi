@@ -10,6 +10,11 @@ namespace taichi {
 namespace lang {
 
 struct LlvmOfflineCache {
+  enum Format {
+    LL = 0x01,
+    BC = 0x10,
+  };
+
   struct OffloadedTaskCacheData {
     std::string name;
     int block_dim{0};
@@ -33,7 +38,10 @@ struct LlvmOfflineCache {
 
 class LlvmOfflineCacheFileReader {
  public:
-  LlvmOfflineCacheFileReader(const std::string &path) : path_(path) {
+  LlvmOfflineCacheFileReader(
+      const std::string &path,
+      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL)
+      : path_(path), format_(format) {
   }
 
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
@@ -42,15 +50,11 @@ class LlvmOfflineCacheFileReader {
 
  private:
   std::string path_;
+  LlvmOfflineCache::Format format_;
 };
 
 class LlvmOfflineCacheFileWriter {
  public:
-  enum Format {
-    LL = 0x01,
-    BC = 0x10,
-  };
-
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -61,7 +65,12 @@ class LlvmOfflineCacheFileWriter {
     data_.kernels[key] = std::move(kernel_cache);
   }
 
-  void dump(const std::string &path, Format format = Format::LL);
+  void dump(const std::string &path,
+            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
+  void set_no_mangle() {
+    mangled_ = true;
+  }
 
  private:
   void mangle_offloaded_task_name(

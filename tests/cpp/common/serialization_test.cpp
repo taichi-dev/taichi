@@ -122,6 +122,29 @@ TEST(Serialization, Basic) {
   ts.print();
 }
 
+struct MoveOnlyObj {
+  int foo{0};
+  std::string bar;
+  std::unique_ptr<int> ptr{nullptr};
+
+  TI_IO_DEF(foo, bar);
+};
+
+TEST(Serialization, MoveOnly) {
+  std::unordered_map<std::string, MoveOnlyObj> m;
+  m["1"] = MoveOnlyObj{42, "abc", nullptr};
+  m["2"] = MoveOnlyObj{100, "def", nullptr};
+
+  BinIoPair bp;
+  const auto actual = bp.run(m);
+  EXPECT_EQ(actual.size(), m.size());
+  const auto &exp_item1 = m.at("1");
+  const auto &act_item1 = actual.at("1");
+  EXPECT_EQ(act_item1.foo, exp_item1.foo);
+  EXPECT_EQ(act_item1.bar, exp_item1.bar);
+  EXPECT_EQ(act_item1.ptr, nullptr);
+}
+
 }  // namespace
 }  // namespace lang
 }  // namespace taichi

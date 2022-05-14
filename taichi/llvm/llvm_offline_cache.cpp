@@ -19,6 +19,15 @@ namespace {
 using Format = LlvmOfflineCache::Format;
 }  // namespace
 
+LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
+    const std::string &path,
+    LlvmOfflineCache::Format format)
+    : path_(path), format_(format) {
+  std::stringstream metafile_path_ss;
+  metafile_path_ss << path_ << "/" << kMetadataFilename << ".tcb";
+  read_from_binary_file(data_, metafile_path_ss.str());
+}
+
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
     const std::string &key,

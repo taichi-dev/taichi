@@ -16,7 +16,10 @@
 namespace taichi {
 namespace lang {
 namespace {
+
 using Format = LlvmOfflineCache::Format;
+constexpr char kMetadataFilename[] = "metadata";
+
 }  // namespace
 
 LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(

@@ -4,6 +4,7 @@
 
 #ifdef TI_WITH_LLVM
 
+#if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
 #if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -125,4 +126,5 @@ INSTANTIATE_TEST_SUITE_P(Format,
 }  // namespace lang
 }  // namespace taichi
 
+#endif  // #if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
 #endif  // #ifdef TI_WITH_LLVM

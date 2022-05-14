@@ -324,7 +324,7 @@ def test_block_sync():
         ti.loop_config(block_dim=N)
         for i in range(N):
             # Make 0-th thread runs slower intentionally
-            for j in range(N-i):
+            for j in range(N - i):
                 a[i] = j
             ti.simt.block.sync()
             if i > 0:
@@ -333,13 +333,13 @@ def test_block_sync():
     foo()
 
     for i in range(N):
-        assert a[i] == N-1
+        assert a[i] == N - 1
 
 
 # TODO: replace this with a stronger test case
 @test_utils.test(arch=ti.cuda)
 def test_grid_memfence():
-    
+
     N = 1000
     BLOCK_SIZE = 1
     a = ti.field(dtype=ti.u32, shape=N)
@@ -356,14 +356,14 @@ def test_grid_memfence():
 
             # Execute a prefix sum after all blocks finish
             actual_order_of_block = ti.atomic_add(block_counter, 1)
-            if actual_order_of_block == N-1:
+            if actual_order_of_block == N - 1:
                 for j in range(1, N):
-                    a[j] += a[j-1]
+                    a[j] += a[j - 1]
 
     foo()
 
     for i in range(N):
-        assert a[i] == i+1
+        assert a[i] == i + 1
 
 
 # Higher level primitives test

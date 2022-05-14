@@ -8,6 +8,7 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #include "taichi/ir/transforms.h"
 #include "taichi/llvm/llvm_context.h"
@@ -22,44 +23,44 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
     const std::string &key,
     llvm::LLVMContext &llvm_ctx) {
+  auto itr = data_.kernels.find(key);
+  if (itr == data_.kernels.end()) {
+    TI_ERROR("Cannot find kernel={}", key);
+    return false;
+  }
+
+  auto &kernel_data = itr->second;
+  if (kernel_data.owned_module == nullptr) {
+    const std::string filename_prefix = path_ + "/" + key;
+    kernel_data.owned_module = load_module(filename_prefix, key, llvm_ctx);
+    TI_ASSERT(kernel_data.owned_module != nullptr);
+    kernel_data.module = kernel_data.owned_module.get();
+  }
+
   res.kernel_key = key;
-  const std::string filename_prefix = path_ + "/" + key;
+  res.owned_module = llvm::CloneModule(*kernel_data.module);
+  res.module = res.owned_module.get();
+  res.offloaded_task_list = kernel_data.offloaded_task_list;
+  return true;
+}
+
+std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
+    const std::string &path_prefix,
+    const std::string &key,
+    llvm::LLVMContext &llvm_ctx) const {
   if (format_ & Format::BC) {
     LlvmModuleBitcodeLoader loader;
-    res.owned_module = loader.set_bitcode_path(filename_prefix + ".bc")
-                           .set_buffer_id(key)
-                           .set_inline_funcs(false)
-                           .load(&llvm_ctx);
+    return loader.set_bitcode_path(path_prefix + ".bc")
+        .set_buffer_id(key)
+        .set_inline_funcs(false)
+        .load(&llvm_ctx);
   } else if (format_ & Format::LL) {
-    const std::string filename = filename_prefix + ".ll";
+    const std::string filename = path_prefix + ".ll";
     llvm::SMDiagnostic err;
-    res.owned_module = llvm::parseAssemblyFile(filename, err, llvm_ctx);
-  } else {
-    TI_ERROR("Unknown LLVM format={}", format_);
-    return false;
+    return llvm::parseAssemblyFile(filename, err, llvm_ctx);
   }
-
-  res.module = res.owned_module.get();
-  if (!res.module) {
-    return false;
-  }
-
-  {
-    const std::string filename = filename_prefix + "_otnl.txt";
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
-    if (!in.is_open())
-      return false;
-    while (true) {
-      std::string line;
-      std::getline(in, line, '\n');
-      if (line.empty())
-        break;
-      std::istringstream iss(line);
-      auto &task = res.offloaded_task_list.emplace_back();
-      iss >> task.name >> task.block_dim >> task.grid_dim;
-    }
-  }
-  return true;
+  TI_ERROR("Unknown LLVM format={}", format_);
+  return nullptr;
 }
 
 void LlvmOfflineCacheFileWriter::dump(const std::string &path,
@@ -99,15 +100,16 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         });
       }
     }
-    {
-      std::string filename = filename_prefix + "_otnl.txt";
-      std::ofstream os(filename, std::ios::out | std::ios::binary);
-      TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
-      for (const auto &task : v.offloaded_task_list) {
-        os << task.name << ' ' << task.block_dim << ' ' << task.grid_dim
-           << '\n';
-      }
-    }
+  }
+  {
+    std::stringstream prefix_ss;
+    prefix_ss << path << "/" << kMetadataFilename;
+    const std::string file_prefix = prefix_ss.str();
+    write_to_binary_file(data_, file_prefix + ".tcb");
+    // For debugging
+    TextSerializer ts;
+    ts.serialize_to_json("cache", data_);
+    ts.write_to_file(file_prefix + ".json");
   }
 }
 

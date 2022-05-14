@@ -112,7 +112,7 @@ typename std::enable_if<!std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&...rest) {
+                  Args &&... rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head);
@@ -126,7 +126,7 @@ typename std::enable_if<std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&...rest) {
+                  Args &&... rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head, true);

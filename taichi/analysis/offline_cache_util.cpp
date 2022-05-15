@@ -76,9 +76,9 @@ static void get_offline_cache_key_of_snode_impl(
   if (auto iter = visited.find(snode->id); iter != visited.end()) {
     serializer(snode->id);  // Use snode->id as placeholder to identify a snode
     return;
-  } else {
-    visited.insert(snode->id);
   }
+
+  visited.insert(snode->id);
   for (auto &c : snode->ch) {
     get_offline_cache_key_of_snode_impl(c.get(), serializer, visited);
   }

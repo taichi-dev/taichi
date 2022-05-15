@@ -74,7 +74,7 @@ static void get_offline_cache_key_of_snode_impl(
     BinaryOutputSerializer &serializer,
     std::unordered_set<int> &visited) {
   if (auto iter = visited.find(snode->id); iter != visited.end()) {
-    serializer(snode->id);  // Node: Use snode-id as placeholder
+    serializer(snode->id);  // Use snode->id as placeholder to identify a snode
     return;
   } else {
     visited.insert(snode->id);
@@ -146,7 +146,7 @@ std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
   BinaryOutputSerializer serializer;
   serializer.initialize();
   {
-    std::unordered_set<int> visited;  // Node: snode-id
+    std::unordered_set<int> visited;
     get_offline_cache_key_of_snode_impl(snode, serializer, visited);
   }
   serializer.finalize();

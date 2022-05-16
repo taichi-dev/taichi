@@ -95,14 +95,11 @@ class LlvmOfflineCacheFileWriter {
   void dump(const std::string &path,
             LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
 
-  void set_no_mangle() {
-    mangled_ = true;
-  }
+  void set_no_mangle() { mangled_ = true; }
 
  private:
   void mangle_offloaded_task_name(
-      const std::string &kernel_key,
-      llvm::Module *module,
+      const std::string &kernel_key, llvm::Module *module,
       std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
           &offloaded_task_list);
 

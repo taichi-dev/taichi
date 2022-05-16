@@ -25,8 +25,8 @@ class KernelImpl : public aot::Kernel {
 class AotModuleImpl : public aot::Module {
  public:
   explicit AotModuleImpl(const AotModuleParams &params)
-      : program_(params.program), cache_reader_(params.module_path) {
-  }
+      : program_(params.program),
+        cache_reader_(LlvmOfflineCacheFileReader::make(params.module_path)) {}
 
   Arch arch() const override {
     return Arch::x64;
@@ -43,10 +43,11 @@ class AotModuleImpl : public aot::Module {
  private:
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override {
+    TI_ASSERT(cache_reader_ != nullptr);
     auto *tlctx = program_->get_llvm_context(program_->config->arch);
     LlvmOfflineCache::KernelCacheData loaded;
-    auto ok = cache_reader_.get_kernel_cache(loaded, name,
-                                             *tlctx->get_this_thread_context());
+    auto ok = cache_reader_->get_kernel_cache(
+        loaded, name, *tlctx->get_this_thread_context());
     TI_ERROR_IF(!ok, "Failed to load kernel={}", name);
 
     const auto &tasks = loaded.offloaded_task_list;
@@ -87,7 +88,7 @@ class AotModuleImpl : public aot::Module {
   }
 
   LlvmProgramImpl *const program_{nullptr};
-  LlvmOfflineCacheFileReader cache_reader_;
+  std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_{nullptr};
 };
 
 }  // namespace

@@ -44,6 +44,27 @@ std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
       new LlvmOfflineCacheFileReader(path, std::move(data), format));
 }
 
+// static
+std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
+    const std::string &path, LlvmOfflineCache::Format format) {
+  std::stringstream tcb_ss;
+  tcb_ss << path << "/" << kMetadataFilename << ".tcb";
+  const auto tcb_path = tcb_ss.str();
+  {
+    // No the best way to check for filepath existence, but whatever... See
+    // https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exists-using-standard-c-c11-14-17-c
+    std::ifstream fs(tcb_path, std::ios::in | std::ios::binary);
+    if (!fs.good()) {
+      TI_DEBUG("LLVM cache {} does not exist", path);
+      return nullptr;
+    }
+  }
+  LlvmOfflineCache data;
+  read_from_binary_file(data, tcb_path);
+  return std::unique_ptr<LlvmOfflineCacheFileReader>(
+      new LlvmOfflineCacheFileReader(path, std::move(data), format));
+}
+
 LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
     const std::string &path,
     LlvmOfflineCache &&data,
@@ -52,8 +73,7 @@ LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
 }
 
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
-    LlvmOfflineCache::KernelCacheData &res,
-    const std::string &key,
+    LlvmOfflineCache::KernelCacheData &res, const std::string &key,
     llvm::LLVMContext &llvm_ctx) {
   auto itr = data_.kernels.find(key);
   if (itr == data_.kernels.end()) {
@@ -78,8 +98,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
 }
 
 std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
-    const std::string &path_prefix,
-    const std::string &key,
+    const std::string &path_prefix, const std::string &key,
     llvm::LLVMContext &llvm_ctx) const {
   if (format_ & Format::BC) {
     LlvmModuleBitcodeLoader loader;
@@ -147,8 +166,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
 }
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
-    const std::string &kernel_key,
-    llvm::Module *module,
+    const std::string &kernel_key, llvm::Module *module,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &offloaded_task_list) {
   if (!mangled_) {

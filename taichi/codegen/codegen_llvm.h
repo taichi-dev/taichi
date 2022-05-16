@@ -79,13 +79,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel,
-              IRNode *ir = nullptr,
+  CodeGenLLVM(Kernel *kernel, IRNode *ir = nullptr,
               std::unique_ptr<llvm::Module> &&module = nullptr);
 
-  Arch current_arch() {
-    return kernel->arch;
-  }
+  Arch current_arch() { return kernel->arch; }
 
   void initialize_context();
 
@@ -109,8 +106,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_runtime();
 
-  void emit_struct_meta_base(const std::string &name,
-                             llvm::Value *node_meta,
+  void emit_struct_meta_base(const std::string &name, llvm::Value *node_meta,
                              SNode *snode);
 
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode);
@@ -137,19 +133,15 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   // TODO: This function relies largely on `run_compilation()`. Name it better.
   virtual FunctionType gen();
 
-  virtual bool supports_offline_cache() const {
-    return false;
-  }
+  virtual bool supports_offline_cache() const { return false; }
 
   // For debugging only
-  virtual llvm::Value *create_print(std::string tag,
-                                    DataType dt,
+  virtual llvm::Value *create_print(std::string tag, DataType dt,
                                     llvm::Value *value);
 
   llvm::Value *create_print(std::string tag, llvm::Value *value);
 
-  llvm::Value *cast_pointer(llvm::Value *val,
-                            std::string dest_ty_name,
+  llvm::Value *cast_pointer(llvm::Value *val, std::string dest_ty_name,
                             int addr_space = 0);
 
   void emit_list_gen(OffloadedStmt *listgen);
@@ -161,8 +153,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_call(std::string func_name,
                            llvm::ArrayRef<llvm::Value *> args = {});
-  llvm::Value *call(SNode *snode,
-                    llvm::Value *node_ptr,
+  llvm::Value *call(SNode *snode, llvm::Value *node_ptr,
                     const std::string &method,
                     const std::vector<llvm::Value *> &arguments);
 
@@ -226,8 +217,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
-  llvm::Value *float_to_custom_int(CustomFloatType *cft,
-                                   CustomIntType *cit,
+  llvm::Value *float_to_custom_int(CustomFloatType *cft, CustomIntType *cit,
                                    llvm::Value *real);
 
   void visit(AtomicOpStmt *stmt) override;
@@ -236,27 +226,18 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(PtrOffsetStmt *stmt) override;
 
-  void store_custom_int(llvm::Value *bit_ptr,
-                        CustomIntType *cit,
-                        llvm::Value *value,
-                        bool atomic);
+  void store_custom_int(llvm::Value *bit_ptr, CustomIntType *cit,
+                        llvm::Value *value, bool atomic);
 
-  void store_custom_int(llvm::Value *byte_ptr,
-                        llvm::Value *bit_offset,
-                        CustomIntType *cit,
-                        llvm::Value *value,
-                        bool atomic);
+  void store_custom_int(llvm::Value *byte_ptr, llvm::Value *bit_offset,
+                        CustomIntType *cit, llvm::Value *value, bool atomic);
 
-  void store_masked(llvm::Value *byte_ptr,
-                    uint64 mask,
-                    Type *physical_type,
-                    llvm::Value *value,
-                    bool atomic);
+  void store_masked(llvm::Value *byte_ptr, uint64 mask, Type *physical_type,
+                    llvm::Value *value, bool atomic);
 
   void visit(GlobalStoreStmt *stmt) override;
 
-  llvm::Value *custom_type_to_bits(llvm::Value *val,
-                                   Type *input_type,
+  llvm::Value *custom_type_to_bits(llvm::Value *val, Type *input_type,
                                    Type *output_type);
 
   void visit(BitStructStoreStmt *stmt) override;
@@ -269,8 +250,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
   llvm::Value *extract_custom_int(llvm::Value *physical_value,
-                                  llvm::Value *bit_offset,
-                                  Type *load_type);
+                                  llvm::Value *bit_offset, Type *load_type);
 
   llvm::Value *reconstruct_custom_float(llvm::Value *digits,
                                         CustomFloatType *load_type);
@@ -393,8 +373,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
   llvm::Value *atomic_op_using_cas(
-      llvm::Value *dest,
-      llvm::Value *val,
+      llvm::Value *dest, llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
 
   void visit(FuncCallStmt *stmt) override;
@@ -426,8 +405,7 @@ class ModuleToFunctionConverter {
                                std::unique_ptr<llvm::Module> mod,
                                std::vector<OffloadedTask> &&tasks) const;
 
-  FunctionType convert(const Kernel *kernel,
-                       std::unique_ptr<llvm::Module> mod,
+  FunctionType convert(const Kernel *kernel, std::unique_ptr<llvm::Module> mod,
                        std::vector<OffloadedTask> &&tasks) const;
 
  protected:

@@ -36,8 +36,7 @@ void OffloadedTask::end() {
 
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
-    CodeGenLLVM *mb,
-    std::vector<llvm::Type *> arguments)
+    CodeGenLLVM *mb, std::vector<llvm::Type *> arguments)
     : mb(mb) {
   // Create the loop body function
   auto body_function_type = llvm::FunctionType::get(
@@ -96,12 +95,9 @@ class CodeGenStmtGuard {
   using Setter = std::function<void(llvm::BasicBlock *)>;
 
   explicit CodeGenStmtGuard(Getter getter, Setter setter)
-      : saved_stmt_(getter()), setter_(std::move(setter)) {
-  }
+      : saved_stmt_(getter()), setter_(std::move(setter)) {}
 
-  ~CodeGenStmtGuard() {
-    setter_(saved_stmt_);
-  }
+  ~CodeGenStmtGuard() { setter_(saved_stmt_); }
 
   CodeGenStmtGuard(CodeGenStmtGuard &&) = default;
   CodeGenStmtGuard &operator=(CodeGenStmtGuard &&) = default;
@@ -251,8 +247,7 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
 }
 
 void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
-                                        llvm::Value *node_meta,
-                                        SNode *snode) {
+                                        llvm::Value *node_meta, SNode *snode) {
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
   std::size_t element_size;
   if (snode->type == SNodeType::dense) {
@@ -302,8 +297,7 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
-                         IRNode *ir,
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir,
                          std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
@@ -326,11 +320,9 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
   kernel_name = kernel->name + "_kernel";
 }
 
-llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
-                                   Type *from,
+llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val, Type *from,
                                    Type *to) {
-  if (from == to)
-    return input_val;
+  if (from == to) return input_val;
   auto from_size = 0;
   if (from->is<CustomIntType>()) {
     from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
@@ -348,8 +340,7 @@ llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
   }
 }
 
-void CodeGenLLVM::visit(DecorationStmt *stmt) {
-}
+void CodeGenLLVM::visit(DecorationStmt *stmt) {}
 
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
@@ -752,8 +743,7 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
   builder->SetInsertPoint(after_if);
 }
 
-llvm::Value *CodeGenLLVM::create_print(std::string tag,
-                                       DataType dt,
+llvm::Value *CodeGenLLVM::create_print(std::string tag, DataType dt,
                                        llvm::Value *value) {
   if (!arch_is_cpu(kernel->arch)) {
     TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
@@ -1210,8 +1200,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
 }
 
 llvm::Value *CodeGenLLVM::atomic_op_using_cas(
-    llvm::Value *dest,
-    llvm::Value *val,
+    llvm::Value *dest, llvm::Value *val,
     std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
@@ -1440,8 +1429,7 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   }
 }
 
-llvm::Value *CodeGenLLVM::call(SNode *snode,
-                               llvm::Value *node_ptr,
+llvm::Value *CodeGenLLVM::call(SNode *snode, llvm::Value *node_ptr,
                                const std::string &method,
                                const std::vector<llvm::Value *> &arguments) {
   auto prefix = get_runtime_snode_name(snode);
@@ -1665,8 +1653,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
   }
   kernel_args[0]->setName("context");
 
-  if (kernel_argument_by_val())
-    func->addParamAttr(0, llvm::Attribute::ByVal);
+  if (kernel_argument_by_val()) func->addParamAttr(0, llvm::Attribute::ByVal);
 
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
@@ -1994,8 +1981,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     for (auto &bb : *patched_struct_for_func) {
       for (llvm::Instruction &inst : bb) {
         auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!alloca || alloca->getAlignment() != 8)
-          continue;
+        if (!alloca || alloca->getAlignment() != 8) continue;
         auto alloca_type = alloca->getAllocatedType();
         auto char_type = llvm::Type::getInt8Ty(*llvm_context);
         // Allocated type should be array [1 x i8]
@@ -2117,8 +2103,7 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   std::vector<llvm::Value *> args;
 
-  if (stmt->with_runtime_context)
-    args.push_back(get_context());
+  if (stmt->with_runtime_context) args.push_back(get_context());
 
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
@@ -2197,8 +2182,7 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
 void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
   std::vector<llvm::Value *> arg_values;
-  for (const auto &s : stmt->arg_stmts)
-    arg_values.push_back(llvm_val[s]);
+  for (const auto &s : stmt->arg_stmts) arg_values.push_back(llvm_val[s]);
   // Link external module to the core module
   if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {
     linked_modules.insert(stmt->bc_filename);
@@ -2255,9 +2239,7 @@ void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   create_call(func, arg_values);
 }
 
-void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
-  TI_NOT_IMPLEMENTED
-}
+void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) { TI_NOT_IMPLEMENTED }
 
 void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   llvm_val[stmt] = get_arg(2);
@@ -2267,8 +2249,7 @@ void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {
         for (auto &task : offloaded_tasks) {
-          if (task.name == func_name)
-            return true;
+          if (task.name == func_name) return true;
         }
         return false;
       });
@@ -2293,13 +2274,9 @@ llvm::Value *CodeGenLLVM::get_arg(int i) {
   return args[i];
 }
 
-llvm::Value *CodeGenLLVM::get_context() {
-  return get_arg(0);
-}
+llvm::Value *CodeGenLLVM::get_context() { return get_arg(0); }
 
-llvm::Value *CodeGenLLVM::get_tls_base_ptr() {
-  return get_arg(1);
-}
+llvm::Value *CodeGenLLVM::get_tls_base_ptr() { return get_arg(1); }
 
 llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
   return llvm::Type::getInt8PtrTy(*llvm_context);
@@ -2354,11 +2331,26 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix to pointer
+>>>>>>> fix to pointer
     CompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
     }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+  } else {
+>>>>>>> fix to pointer
+>>>>>>> fix to pointer
     needs_cache = true;
   }
 
@@ -2499,12 +2491,15 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
                                                      LlvmProgramImpl *program)
-    : tlctx_(tlctx), program_(program) {
-}
+    : tlctx_(tlctx), program_(program) {}
 
 FunctionType ModuleToFunctionConverter::convert(
+<<<<<<< HEAD
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
+=======
+    const std::string &kernel_name, const std::vector<ArgInfo> &args,
+>>>>>>> fix to pointer
     std::unique_ptr<llvm::Module> mod,
     std::vector<OffloadedTask> &&tasks) const {
   tlctx_->add_module(std::move(mod));
@@ -2541,8 +2536,7 @@ FunctionType ModuleToFunctionConverter::convert(
 }
 
 FunctionType ModuleToFunctionConverter::convert(
-    const Kernel *kernel,
-    std::unique_ptr<llvm::Module> mod,
+    const Kernel *kernel, std::unique_ptr<llvm::Module> mod,
     std::vector<OffloadedTask> &&tasks) const {
   return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
                  std::move(tasks));

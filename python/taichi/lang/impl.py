@@ -41,7 +41,7 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict())
+        return Struct(rhs.to_dict(include_methods=True))
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -168,9 +168,10 @@ def subscript(value, *_indices, skip_reordered=False):
         if isinstance(value, MatrixField):
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
+            entries = {k: subscript(v, *_indices) for k, v in value._items}
+            entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(
-                {k: subscript(v, *_indices)
-                 for k, v in value._items})
+                entries)
         return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
@@ -210,18 +211,6 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
                                           shape, stride))
 
 
-class SrcInfoGuard:
-    def __init__(self, info_stack, info):
-        self.info_stack = info_stack
-        self.info = info
-
-    def __enter__(self):
-        self.info_stack.append(self.info)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.info_stack.pop()
-
-
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
@@ -242,12 +231,6 @@ class PyTaichi:
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
-
-    def src_info_guard(self, info):
-        return SrcInfoGuard(self.src_info_stack, info)
-
-    def get_current_src_info(self):
-        return self.src_info_stack[-1]
 
     def set_default_fp(self, fp):
         assert fp in [f16, f32, f64]

@@ -10,6 +10,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
+from functools import partial
 
 
 class Struct(TaichiOperations):
@@ -22,6 +23,10 @@ class Struct(TaichiOperations):
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
             keys and values for struct members.
+
+        entries can optionally include a dictionary of functions with the key
+        "__struct_methods" which will be attached to the struct
+        for executing on the struct data.
 
     Returns:
         An instance of this struct.
@@ -49,6 +54,11 @@ class Struct(TaichiOperations):
             raise TaichiSyntaxError(
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
+        self.methods = self.entries.pop("__struct_methods", {})
+        for name, method in self.methods.items():
+            # use partial to pass self (this object) to the method
+            setattr(self, name, partial(method, self))
+
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
                 v = Matrix(v)
@@ -233,7 +243,7 @@ class Struct(TaichiOperations):
     def __repr__(self):
         return str(self.to_dict())
 
-    def to_dict(self):
+    def to_dict(self, include_methods=False):
         """Converts the Struct to a dictionary.
 
         Args:
@@ -241,16 +251,19 @@ class Struct(TaichiOperations):
         Returns:
             Dict: The result dictionary.
         """
-        return {
+        dict = {
             k: v.to_dict() if isinstance(v, Struct) else
             v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
+        if include_methods: 
+            dict['__struct_methods'] = self.methods
+        return dict
 
     @classmethod
     @python_scope
     def field(cls,
-              members,
+              members, methods={},
               shape=None,
               name="<Struct>",
               offset=None,
@@ -336,7 +349,7 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
-        return StructField(field_dict, name=name)
+        return StructField(field_dict, methods, name=name)
 
 
 class _IntermediateStruct(Struct):
@@ -347,6 +360,9 @@ class _IntermediateStruct(Struct):
     """
     def __init__(self, entries):
         assert isinstance(entries, dict)
+        self.methods = entries.pop('__struct_methods', {})
+        for name, method in self.methods.items():
+            setattr(self, name, partial(method, self))
         self.entries = entries
         self._register_members()
 
@@ -361,9 +377,10 @@ class StructField(Field):
         field_dict (Dict[str, Field]): Struct field members.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, name=None):
+    def __init__(self, field_dict, methods, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
+        self.struct_methods = methods
         self.name = name
         self._register_fields()
 
@@ -572,14 +589,18 @@ class StructField(Field):
                 v, ScalarField) else v[indices]
             for k, v in self._items
         }
+        entries['__struct_methods'] = self.struct_methods
         return Struct(entries)
 
 
 class StructType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
+        self.methods = {}
         for k, dtype in kwargs.items():
-            if isinstance(dtype, CompoundType):
+            if k == '__struct_methods':
+                self.methods = dtype
+            elif isinstance(dtype, CompoundType):
                 self.members[k] = dtype
             else:
                 self.members[k] = cook_dtype(dtype)
@@ -620,6 +641,7 @@ class StructType(CompoundType):
                     ) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
+        entries['__struct_methods'] = self.methods
         return Struct(entries)
 
     def filled_with_scalar(self, value):
@@ -632,7 +654,36 @@ class StructType(CompoundType):
         return Struct(entries)
 
     def field(self, **kwargs):
-        return Struct.field(self.members, **kwargs)
+        return Struct.field(self.members, self.methods, **kwargs)
 
 
-__all__ = ["Struct", "StructField"]
+def struct_class(cls):
+    ''' Turns a Class with field annotations into a struct type for use as a data field
+        ex:
+
+        @ti.stuct_class
+        class Sphere:
+            center: vec3
+            radius: ti.f32
+
+            @ti.func
+            def area(self):
+                return 4 * 3.14 * self.radius * self.radius
+
+        Classes with this decorator can be treated as a normal taichi struct, and fields generated
+        from them.  Functions in the class can be run on the struct instance.  
+
+        my_spheres = Sphere.field(shape=(n,))
+        my_sphere[2].area()
+    
+        This class decorator inspects the class for annotations and methods and
+            1.  Sets the annotations as fields for the struct
+            2.  Attaches the methods to __struct_methods
+     '''
+    # save the annotaion fields for the struct
+    fields = cls.__annotations__
+    # get the class methods to be attached to the struct types
+    fields['__struct_methods'] = {attribute: ti.func(getattr(cls, attribute)) for attribute in dir(cls) if callable(getattr(cls, attribute)) and not attribute.startswith('__')}
+    return StructType(**fields)
+
+__all__ = ["Struct", "StructField", "struct_class"]

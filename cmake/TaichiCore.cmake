@@ -467,7 +467,8 @@ if(NOT TI_EMSCRIPTENED)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
-        pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} ${TAICHI_PYBIND_SOURCE})
+	# NO_EXTRAS is required here to avoid llvm symbol error during build
+	pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} NO_EXTRAS ${TAICHI_PYBIND_SOURCE})
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()

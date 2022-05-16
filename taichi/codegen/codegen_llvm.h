@@ -1,16 +1,17 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
 
-#ifdef TI_WITH_LLVM
-
 #include <set>
 #include <unordered_map>
 
-#include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#ifdef TI_WITH_LLVM
 
-TLANG_NAMESPACE_BEGIN
+#include "taichi/ir/ir.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/program/program.h"
+
+namespace taichi {
+namespace lang {
 
 class CodeGenLLVM;
 
@@ -18,8 +19,6 @@ class OffloadedTask {
  public:
   std::string name;
   CodeGenLLVM *codegen;
-  using task_fp_type = int32 (*)(void *);
-  task_fp_type func;
 
   int block_dim{0};
   int grid_dim{0};
@@ -29,10 +28,6 @@ class OffloadedTask {
   void begin(const std::string &name);
 
   void end();
-
-  void compile();
-
-  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {
@@ -125,8 +120,20 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  virtual FunctionType compile_module_to_executable();
+  struct CompiledData {
+    std::vector<OffloadedTask> offloaded_tasks;
+    std::unique_ptr<llvm::Module> llvm_module{nullptr};
+  };
+  /**
+   * @brief Runs the codegen and produces the compiled result.
+   *
+   * After this call, `module` and `offloaded_tasks` will be moved.
+   *
+   * @return CompiledData
+   */
+  CompiledData run_compilation();
 
+  // TODO: This function relies largely on `run_compilation()`. Name it better.
   virtual FunctionType gen();
 
   virtual bool supports_offline_cache() const {
@@ -400,6 +407,35 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void cache_module(const std::string &kernel_key);
 };
 
-TLANG_NAMESPACE_END
+class LlvmProgramImpl;
+
+// This is for CPU, we need one for CUDA (AMDGPU) as well.
+class ModuleToFunctionConverter {
+ public:
+  struct ArgInfo {
+    bool is_array{false};
+  };
+
+  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                     LlvmProgramImpl *program);
+
+  virtual ~ModuleToFunctionConverter() = default;
+
+  virtual FunctionType convert(const std::string &kernel_name,
+                               const std::vector<ArgInfo> &args,
+                               std::unique_ptr<llvm::Module> mod,
+                               std::vector<OffloadedTask> &&tasks) const;
+
+  FunctionType convert(const Kernel *kernel,
+                       std::unique_ptr<llvm::Module> mod,
+                       std::vector<OffloadedTask> &&tasks) const;
+
+ protected:
+  TaichiLLVMContext *tlctx_{nullptr};
+  LlvmProgramImpl *program_{nullptr};
+};
+
+}  // namespace lang
+}  // namespace taichi
 
 #endif  // #ifdef TI_WITH_LLVM

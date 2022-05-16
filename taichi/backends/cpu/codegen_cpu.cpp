@@ -1,6 +1,5 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 
-#include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
@@ -11,6 +10,8 @@
 #include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
+
+namespace {
 
 class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
@@ -199,8 +200,18 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 };
 
+}  // namespace
+
+#ifdef TI_WITH_LLVM
+// static
+std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
+                                                           IRNode *ir) {
+  return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
+}
+#endif  // TI_WITH_LLVM
+
 FunctionType CodeGenCPU::codegen() {
-  TI_AUTO_PROF
+  TI_AUTO_PROF;
   return CodeGenLLVMCPU(kernel, ir).gen();
 }
 

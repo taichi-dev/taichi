@@ -3,6 +3,7 @@ param(
     [string] $BuildType = "Release",
     [string] $LlvmDir = "",
     [string] $ClangDir = "",
+    [string] $VisualStudioVersion = "",
     # Install python package in user-space.
     [switch] $UserSpace = $false,
     # Clean up compilation intermediates instead of building Taichi. Note that
@@ -45,12 +46,53 @@ function DownloadArchiveAndExpand($Uri, $ArchiveName) {
 
 
 
+# Identify Visual Studio version.
+if (-not $VisualStudioVersion) {
+    $VisualStudioVersion = (Get-CimInstance MSFT_VSInstance).Version.Split('.')[0]
+    Write-Host "Identified Visual Studio version from installation."
+}
+switch ($VisualStudioVersion) {
+    "2019" { $VisualStudioVersion = "16" }
+    "2022" { $VisualStudioVersion = "17" }
+}
+switch ($VisualStudioVersion) {
+    "16" {
+        Write-Host "Using MSVC from Visual Studio 2019."
+        $PrebuiltLlvmUri = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip"
+        $LlvmArchiveName = "taichi-llvm-10.0.0-msvc2019"
+    }
+    "17" {
+        Write-Host "Using MSVC from Visual Studio 2022."
+        $PrebuiltLlvmUri = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip"
+        $LlvmArchiveName = "taichi-llvm-10.0.0-msvc2022"
+    }
+    default {
+        Write-Error "Unsupported Visual Studio Version"
+    }
+}
+
 # Select build type, by default it's `Release`.
 switch ($BuildType) {
-    "Debug" { $env:DEBUG = 1; }
-    "Release" {}
-    "RelWithDebInfo" { $env:RELWITHDEBINFO = 1; }
-    "MinSizeRel" { $env:MINSIZEREL = 1; }
+    "Debug" {
+        $env:DEBUG = 1;
+        $env:RELWITHDEBINFO = 0;
+        $env:MINSIZEREL = 0;
+    }
+    "Release" {
+        $env:DEBUG = 0;
+        $env:RELWITHDEBINFO = 0;
+        $env:MINSIZEREL = 0;
+    }
+    "RelWithDebInfo" {
+        $env:DEBUG = 0;
+        $env:RELWITHDEBINFO = 1;
+        $env:MINSIZEREL = 0;
+    }
+    "MinSizeRel" {
+        $env:DEBUG = 0;
+        $env:RELWITHDEBINFO = 0;
+        $env:MINSIZEREL = 1;
+    }
     Default {
         Write-Error "Unknown build type '$BuildType'"
     }
@@ -63,8 +105,8 @@ if ($env:LLVM_DIR) {
     $LlvmDir = $env:LLVM_DIR;
 }
 if (-not $LlvmDir) {
-    DownloadArchiveAndExpand -Uri "https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip" -ArchiveName "taichi-llvm"
-    $LlvmDir = "$TempDir/taichi-llvm"
+    DownloadArchiveAndExpand -Uri $PrebuiltLlvmUri -ArchiveName $LlvmArchiveName
+    $LlvmDir = "$TempDir/$LlvmArchiveName"
 }
 if (-not $LlvmDir -or -not (Test-Path $LlvmDir)) {
     throw "LLVM cannot be found in local environment and the script failed to download a prebuilt archive. " +

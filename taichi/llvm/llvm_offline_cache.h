@@ -46,15 +46,18 @@ struct LlvmOfflineCache {
 
 class LlvmOfflineCacheFileReader {
  public:
-  LlvmOfflineCacheFileReader(
-      const std::string &path,
-      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
-
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
                         const std::string &key,
                         llvm::LLVMContext &llvm_ctx);
 
+  static std::unique_ptr<LlvmOfflineCacheFileReader> make(
+      const std::string &path,
+      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
  private:
+  LlvmOfflineCacheFileReader(const std::string &path, LlvmOfflineCache &&data,
+                             LlvmOfflineCache::Format format);
+
   std::unique_ptr<llvm::Module> load_module(const std::string &path_prefix,
                                             const std::string &key,
                                             llvm::LLVMContext &llvm_ctx) const;

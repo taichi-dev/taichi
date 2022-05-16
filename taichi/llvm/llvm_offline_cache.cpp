@@ -22,14 +22,31 @@ constexpr char kMetadataFilename[] = "metadata";
 
 }  // namespace
 
-LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
-    const std::string &path,
-    LlvmOfflineCache::Format format)
-    : path_(path), format_(format) {
-  std::stringstream metafile_path_ss;
-  metafile_path_ss << path_ << "/" << kMetadataFilename << ".tcb";
-  read_from_binary_file(data_, metafile_path_ss.str());
+// static
+std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
+    const std::string &path, LlvmOfflineCache::Format format) {
+  std::stringstream tcb_ss;
+  tcb_ss << path << "/" << kMetadataFilename << ".tcb";
+  const auto tcb_path = tcb_ss.str();
+  {
+    // No the best way to check for filepath existence, but whatever... See
+    // https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exists-using-standard-c-c11-14-17-c
+    std::ifstream fs(tcb_path, std::ios::in | std::ios::binary);
+    if (!fs.good()) {
+      TI_DEBUG("LLVM cache {} does not exist", path);
+      return nullptr;
+    }
+  }
+  LlvmOfflineCache data;
+  read_from_binary_file(data, tcb_path);
+  return std::unique_ptr<LlvmOfflineCacheFileReader>(
+      new LlvmOfflineCacheFileReader(path, std::move(data), format));
 }
+
+LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
+    const std::string &path, LlvmOfflineCache &&data,
+    LlvmOfflineCache::Format format)
+    : path_(path), data_(std::move(data)), format_(format) {}
 
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,

@@ -4,6 +4,8 @@
 #include <set>
 #include <unordered_map>
 
+#define TI_WITH_LLVM 1
+
 #ifdef TI_WITH_LLVM
 
 #include "taichi/ir/ir.h"
@@ -404,6 +406,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~CodeGenLLVM() override = default;
 
  private:
+  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
+                                         CompiledData *data);
+
   void cache_module(const std::string &kernel_key);
 };
 

@@ -103,10 +103,10 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   }
 
   auto *llvm_ctx = tlctx_->get_this_thread_context();
-  LlvmOfflineCacheFileReader reader{tmp_dir_str, llvm_fmt};
+  auto reader = LlvmOfflineCacheFileReader::make(tmp_dir_str, llvm_fmt);
   {
     LlvmOfflineCache::KernelCacheData kcache;
-    const bool ok = reader.get_kernel_cache(kcache, kKernelName, *llvm_ctx);
+    const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
     EXPECT_EQ(kcache.kernel_key, kKernelName);
     EXPECT_EQ(kcache.offloaded_task_list.size(), 1);
@@ -124,7 +124,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   {
     // Do it twice. No file IO this time.
     LlvmOfflineCache::KernelCacheData kcache;
-    const bool ok = reader.get_kernel_cache(kcache, kKernelName, *llvm_ctx);
+    const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
   };
 }

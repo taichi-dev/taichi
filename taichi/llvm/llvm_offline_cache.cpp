@@ -57,7 +57,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     llvm::LLVMContext &llvm_ctx) {
   auto itr = data_.kernels.find(key);
   if (itr == data_.kernels.end()) {
-    TI_ERROR("Cannot find kernel={}", key);
+    TI_DEBUG("Cannot find kernel={}", key);
     return false;
   }
 

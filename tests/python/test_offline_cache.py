@@ -162,8 +162,6 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
                ) - count_of_cache_file == get_expected_num_cache_files(0)
     res2 = kernel(*args)
 
-    import pdb
-    pdb.set_trace()
     assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
         res2)
 
@@ -411,7 +409,6 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
                ) - count_of_cache_file == get_expected_num_cache_files(2)
-
     ti.init(arch=curr_arch,
             enable_fallback=False,
             default_fp=ti.f32,

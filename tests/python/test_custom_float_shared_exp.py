@@ -8,12 +8,12 @@ from tests import test_utils
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponents(exponent_bits):
-    exp = ti.types.quantized_types.quant.int(exponent_bits, False)
-    cit1 = ti.types.quantized_types.quant.int(10, False)
-    cit2 = ti.types.quantized_types.quant.int(14, False)
-    cft1 = ti.types.quantized_types.type_factory.custom_float(
+    exp = ti.types.quant.int(exponent_bits, False)
+    cit1 = ti.types.quant.int(10, False)
+    cit2 = ti.types.quant.int(14, False)
+    cft1 = ti.types.quant._custom_float(
         significand_type=cit1, exponent_type=exp, scale=1)
-    cft2 = ti.types.quantized_types.type_factory.custom_float(
+    cft2 = ti.types.quant._custom_float(
         significand_type=cit2, exponent_type=exp, scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
@@ -76,12 +76,12 @@ def test_shared_exponents(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
-    exp = ti.types.quantized_types.quant.int(exponent_bits, False)
-    cit1 = ti.types.quantized_types.quant.int(10, False)
-    cit2 = ti.types.quantized_types.quant.int(14, False)
-    cft1 = ti.types.quantized_types.type_factory.custom_float(
+    exp = ti.types.quant.int(exponent_bits, False)
+    cit1 = ti.types.quant.int(10, False)
+    cit2 = ti.types.quant.int(14, False)
+    cft1 = ti.types.quant._custom_float(
         significand_type=cit1, exponent_type=exp, scale=1)
-    cft2 = ti.types.quantized_types.type_factory.custom_float(
+    cft2 = ti.types.quant._custom_float(
         significand_type=cit2, exponent_type=exp, scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
@@ -114,12 +114,12 @@ def test_shared_exponent_add(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_borrow(exponent_bits):
-    exp = ti.types.quantized_types.quant.int(exponent_bits, False)
-    cit1 = ti.types.quantized_types.quant.int(10, False)
-    cit2 = ti.types.quantized_types.quant.int(14, False)
-    cft1 = ti.types.quantized_types.type_factory.custom_float(
+    exp = ti.types.quant.int(exponent_bits, False)
+    cit1 = ti.types.quant.int(10, False)
+    cit2 = ti.types.quant.int(14, False)
+    cft1 = ti.types.quant._custom_float(
         significand_type=cit1, exponent_type=exp, scale=1)
-    cft2 = ti.types.quantized_types.type_factory.custom_float(
+    cft2 = ti.types.quant._custom_float(
         significand_type=cit2, exponent_type=exp, scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
@@ -145,12 +145,12 @@ def test_shared_exponent_borrow(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_negative(exponent_bits):
-    exp = ti.types.quantized_types.quant.int(exponent_bits, False)
-    cit1 = ti.types.quantized_types.quant.int(10, False)
-    cit2 = ti.types.quantized_types.quant.int(14, True)
-    cft1 = ti.types.quantized_types.type_factory.custom_float(
+    exp = ti.types.quant.int(exponent_bits, False)
+    cit1 = ti.types.quant.int(10, False)
+    cit2 = ti.types.quant.int(14, True)
+    cft1 = ti.types.quant._custom_float(
         significand_type=cit1, exponent_type=exp, scale=1)
-    cft2 = ti.types.quantized_types.type_factory.custom_float(
+    cft2 = ti.types.quant._custom_float(
         significand_type=cit2, exponent_type=exp, scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)

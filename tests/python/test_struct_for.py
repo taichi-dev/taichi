@@ -267,7 +267,7 @@ def test_struct_for_pointer_block():
 def test_struct_for_quant():
     n = 8
 
-    ci13 = ti.types.quantized_types.quant.int(13, True)
+    ci13 = ti.types.quant.int(13, True)
     x = ti.field(dtype=ci13)
 
     ti.root.dense(ti.i, n).bit_struct(num_bits=32).place(x)

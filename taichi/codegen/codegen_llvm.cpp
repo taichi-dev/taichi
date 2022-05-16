@@ -2378,7 +2378,8 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
 }
 
 bool CodeGenLLVM::maybe_read_compilation_from_cache(
-    const std::string &kernel_key, CompiledData *data) {
+    const std::string &kernel_key,
+    CompiledData *data) {
   const auto &config = prog->config;
   auto reader =
       LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);

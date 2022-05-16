@@ -24,7 +24,8 @@ constexpr char kMetadataFilename[] = "metadata";
 
 // static
 std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
-    const std::string &path, LlvmOfflineCache::Format format) {
+    const std::string &path,
+    LlvmOfflineCache::Format format) {
   std::stringstream tcb_ss;
   tcb_ss << path << "/" << kMetadataFilename << ".tcb";
   const auto tcb_path = tcb_ss.str();
@@ -44,9 +45,11 @@ std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
 }
 
 LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
-    const std::string &path, LlvmOfflineCache &&data,
+    const std::string &path,
+    LlvmOfflineCache &&data,
     LlvmOfflineCache::Format format)
-    : path_(path), data_(std::move(data)), format_(format) {}
+    : path_(path), data_(std::move(data)), format_(format) {
+}
 
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,

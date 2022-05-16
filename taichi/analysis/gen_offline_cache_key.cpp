@@ -236,6 +236,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->conv_type);
   }
 
+  void visit(ReferenceExpression *expr) override {
+    emit(ExprOpCode::ReferenceExpression);
+    emit(expr->var);
+  }
+
   void visit(Block *block) override {
     emit(StmtOpCode::EnterBlock);
     emit(static_cast<std::size_t>(block->statements.size()));

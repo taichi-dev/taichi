@@ -10,8 +10,9 @@ from tests import test_utils
 def test_custom_float_unsigned():
     cu13 = ti.types.quant.int(13, False)
     exp = ti.types.quant.int(6, False)
-    cft = ti.types.quant._custom_float(
-        significand_type=cu13, exponent_type=exp, scale=1)
+    cft = ti.types.quant._custom_float(significand_type=cu13,
+                                       exponent_type=exp,
+                                       scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -32,8 +33,9 @@ def test_custom_float_unsigned():
 def test_custom_float_signed():
     cu13 = ti.types.quant.int(13, True)
     exp = ti.types.quant.int(6, False)
-    cft = ti.types.quant._custom_float(
-        significand_type=cu13, exponent_type=exp, scale=1)
+    cft = ti.types.quant._custom_float(significand_type=cu13,
+                                       exponent_type=exp,
+                                       scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -63,8 +65,9 @@ def test_custom_float_signed():
 def test_custom_float_precision(digits_bits):
     cu24 = ti.types.quant.int(digits_bits, True)
     exp = ti.types.quant.int(8, False)
-    cft = ti.types.quant._custom_float(
-        significand_type=cu24, exponent_type=exp, scale=1)
+    cft = ti.types.quant._custom_float(significand_type=cu24,
+                                       exponent_type=exp,
+                                       scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -87,8 +90,9 @@ def test_custom_float_precision(digits_bits):
 def test_custom_float_truncation(signed):
     cit = ti.types.quant.int(2, signed)
     exp = ti.types.quant.int(5, False)
-    cft = ti.types.quant._custom_float(
-        significand_type=cit, exponent_type=exp, scale=1)
+    cft = ti.types.quant._custom_float(significand_type=cit,
+                                       exponent_type=exp,
+                                       scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -118,8 +122,9 @@ def test_custom_float_truncation(signed):
 def test_custom_float_atomic_demotion():
     cit = ti.types.quant.int(2, True)
     exp = ti.types.quant.int(5, False)
-    cft = ti.types.quant._custom_float(
-        significand_type=cit, exponent_type=exp, scale=1)
+    cft = ti.types.quant._custom_float(significand_type=cit,
+                                       exponent_type=exp,
+                                       scale=1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)

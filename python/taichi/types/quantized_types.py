@@ -6,7 +6,6 @@ from taichi._lib.utils import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.types.primitive_types import i32
 
-
 _type_factory = _ti_core.get_type_factory_instance()
 
 

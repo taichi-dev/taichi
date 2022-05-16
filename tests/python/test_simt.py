@@ -323,7 +323,7 @@ def test_block_sync():
     def foo():
         ti.loop_config(block_dim=N)
         for i in range(N):
-            # Make 0-th thread runs slower intentionally
+            # Make the 0-th thread runs slower intentionally
             for j in range(N - i):
                 a[i] = j
             ti.simt.block.sync()

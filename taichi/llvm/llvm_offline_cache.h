@@ -64,8 +64,8 @@ class LlvmOfflineCacheFileReader {
                                             llvm::LLVMContext &llvm_ctx) const;
 
   std::string path_;
-  LlvmOfflineCache::Format format_;
   LlvmOfflineCache data_;
+  LlvmOfflineCache::Format format_;
 };
 
 class LlvmOfflineCacheFileWriter {

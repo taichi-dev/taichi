@@ -4,8 +4,6 @@
 #include <set>
 #include <unordered_map>
 
-#define TI_WITH_LLVM 1
-
 #ifdef TI_WITH_LLVM
 
 #include "taichi/ir/ir.h"

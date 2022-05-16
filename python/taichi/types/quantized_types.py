@@ -52,7 +52,7 @@ def _custom_float(significand_type,
                                                scale=scale)
 
 
-def int(bits, signed=False, compute=None):
+def int(bits, signed=False, compute=None):  # pylint: disable=W0622
     """Generates a quantized type for integers.
 
     Args:
@@ -91,7 +91,7 @@ def fixed(frac, signed=True, num_range=1.0, compute=None):
     return _custom_float(frac_type, None, compute, scale)
 
 
-def float(exp, frac, signed=True, compute=None):
+def float(exp, frac, signed=True, compute=None):  # pylint: disable=W0622
     """Generates a quantized type for floating-point real numbers.
 
     Args:

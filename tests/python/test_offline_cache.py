@@ -162,7 +162,8 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
                ) - count_of_cache_file == get_expected_num_cache_files(0)
     res2 = kernel(*args)
 
-    import pdb; pdb.set_trace()
+    import pdb
+    pdb.set_trace()
     assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
         res2)
 

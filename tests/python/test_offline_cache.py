@@ -80,9 +80,9 @@ def python_kernel3(a, mat):
 
 
 simple_kernels_to_test = [
-    # (kernel0, (), python_kernel0),
-    # (kernel1, (100, 200, 10.2), python_kernel1),
-    # (kernel2, (1024, ), python_kernel2),
+    (kernel0, (), python_kernel0),
+    (kernel1, (100, 200, 10.2), python_kernel1),
+    (kernel2, (1024, ), python_kernel2),
     (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]], ti.i32)), python_kernel3),
 ]
 

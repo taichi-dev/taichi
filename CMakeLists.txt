@@ -2,7 +2,7 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
 
 project(taichi)
 
@@ -68,6 +68,19 @@ if (USE_MOLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=mold")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+endif()
+
+if (WIN32)
+  # For `Debug` configs MSVC links to a debuggable runtime by default which has
+  # symbol conflicts with the prebuilt LLVM in `Release`. We shoule be providing
+  # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
+  # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
+  # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
+  # every component in LLVM.
+  #
+  # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
+  # someday we can distribute `Debug` libraries, if it's ever needed.
+  SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
 
 # No support of Python for Android build

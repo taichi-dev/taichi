@@ -89,9 +89,6 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<vulkan::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
-
-  // This is a hack until NDArray is properlly owned by programs
-  std::vector<std::unique_ptr<DeviceAllocationGuard>> ref_ndarry_;
 };
 }  // namespace lang
 }  // namespace taichi

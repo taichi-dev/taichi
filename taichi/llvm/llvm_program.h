@@ -107,8 +107,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
 
-  std::shared_ptr<Device> get_device_shared() override;
-
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
                     uint32_t data);

@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "taichi/common/platform_macros.h"
+#include "taichi/common/cleanup.h"
 
 #ifdef TI_WITH_LLVM
 
@@ -81,6 +82,7 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
 TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto llvm_fmt = GetParam();
   fs::path tmp_dir{fs::temp_directory_path() /= std::tmpnam(nullptr)};
+  auto cleanup = make_cleanup([tmp_dir]() { fs::remove_all(tmp_dir); });
   const auto tmp_dir_str{tmp_dir.u8string()};
   const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
@@ -100,12 +102,16 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     writer.dump(tmp_dir_str, llvm_fmt);
   }
 
+  auto *llvm_ctx = tlctx_->get_this_thread_context();
+  auto reader = LlvmOfflineCacheFileReader::make(tmp_dir_str, llvm_fmt);
   {
-    auto *llvm_ctx = tlctx_->get_this_thread_context();
-    LlvmOfflineCacheFileReader reader{tmp_dir_str, llvm_fmt};
     LlvmOfflineCache::KernelCacheData kcache;
-    const bool ok = reader.get_kernel_cache(kcache, kKernelName, *llvm_ctx);
+    const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
+    EXPECT_EQ(kcache.kernel_key, kKernelName);
+    EXPECT_EQ(kcache.offloaded_task_list.size(), 1);
+    const auto &task0 = kcache.offloaded_task_list.front();
+    EXPECT_EQ(task0.name, kTaskName);
 
     ASSERT_NE(kcache.owned_module, nullptr);
     kcache.module->dump();
@@ -114,8 +120,13 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     FuncType my_add = (FuncType)tlctx_->lookup_function_pointer(kTaskName);
     const auto res = my_add(40, 2);
     EXPECT_EQ(res, 42);
-  }
-  fs::remove_all(tmp_dir);
+  };
+  {
+    // Do it twice. No file IO this time.
+    LlvmOfflineCache::KernelCacheData kcache;
+    const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
+    ASSERT_TRUE(ok);
+  };
 }
 
 INSTANTIATE_TEST_SUITE_P(Format,

@@ -2354,28 +2354,13 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
       this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
-    LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
-    LlvmOfflineCache::KernelCacheData cache_data;
-    auto *tlctx =
-        this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
-    auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-    if (reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-      this->module = std::move(cache_data.owned_module);
-      for (auto &task : cache_data.offloaded_task_list) {
-        auto &t = this->offloaded_tasks.emplace_back(this);
-        t.name = std::move(task.name);
-        t.block_dim = task.block_dim;
-        t.grid_dim = task.grid_dim;
-      }
-      kernel->set_from_offline_cache();
-      CompiledData res;
-      res.offloaded_tasks = std::move(this->offloaded_tasks);
-      res.llvm_module = std::move(this->module);
+    CompiledData res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
+    if (ok) {
       return res;
-    } else {
-      needs_cache = true;
     }
+
+    needs_cache = true;
   }
 
   if (!kernel->lowered()) {
@@ -2390,6 +2375,37 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   res.offloaded_tasks = std::move(this->offloaded_tasks);
   res.llvm_module = std::move(this->module);
   return res;
+}
+
+bool CodeGenLLVM::maybe_read_compilation_from_cache(
+    const std::string &kernel_key,
+    CompiledData *data) {
+  const auto &config = prog->config;
+  auto reader =
+      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  if (!reader) {
+    return false;
+  }
+
+  LlvmOfflineCache::KernelCacheData cache_data;
+  auto *tlctx =
+      this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+  auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+    return false;
+  }
+  this->module = std::move(cache_data.owned_module);
+  for (auto &task : cache_data.offloaded_task_list) {
+    auto &t = this->offloaded_tasks.emplace_back(this);
+    t.name = std::move(task.name);
+    t.block_dim = task.block_dim;
+    t.grid_dim = task.grid_dim;
+  }
+  kernel->set_from_offline_cache();
+  data->offloaded_tasks = std::move(this->offloaded_tasks);
+  data->llvm_module = std::move(this->module);
+  return true;
 }
 
 FunctionType CodeGenLLVM::gen() {

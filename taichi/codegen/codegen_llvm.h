@@ -404,6 +404,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~CodeGenLLVM() override = default;
 
  private:
+  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
+                                         CompiledData *data);
+
   void cache_module(const std::string &kernel_key);
 };
 

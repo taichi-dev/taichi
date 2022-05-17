@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/common/serialization.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
 
@@ -19,37 +20,51 @@ struct LlvmOfflineCache {
     std::string name;
     int block_dim{0};
     int grid_dim{0};
+
+    TI_IO_DEF(name, block_dim, grid_dim);
   };
 
   struct KernelCacheData {
     std::string kernel_key;
+    std::vector<OffloadedTaskCacheData> offloaded_task_list;
+
     std::unique_ptr<llvm::Module> owned_module{nullptr};
     llvm::Module *module{nullptr};
-    std::vector<OffloadedTaskCacheData> offloaded_task_list;
 
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
+
+    TI_IO_DEF(kernel_key, offloaded_task_list);
   };
 
   std::unordered_map<std::string, KernelCacheData> kernels;
+
+  TI_IO_DEF(kernels);
 };
 
 class LlvmOfflineCacheFileReader {
  public:
-  LlvmOfflineCacheFileReader(
-      const std::string &path,
-      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL)
-      : path_(path), format_(format) {
-  }
-
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
                         const std::string &key,
                         llvm::LLVMContext &llvm_ctx);
 
+  static std::unique_ptr<LlvmOfflineCacheFileReader> make(
+      const std::string &path,
+      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
  private:
+  LlvmOfflineCacheFileReader(const std::string &path,
+                             LlvmOfflineCache &&data,
+                             LlvmOfflineCache::Format format);
+
+  std::unique_ptr<llvm::Module> load_module(const std::string &path_prefix,
+                                            const std::string &key,
+                                            llvm::LLVMContext &llvm_ctx) const;
+
   std::string path_;
+  LlvmOfflineCache data_;
   LlvmOfflineCache::Format format_;
 };
 

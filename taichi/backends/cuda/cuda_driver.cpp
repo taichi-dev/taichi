@@ -62,7 +62,6 @@ CUDADriver &CUDADriver::get_instance() {
 }
 
 CUDADriverBase::CUDADriverBase() {
-  // TODO: enable cusparse and cusolver flag env variable.
   disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
   if (disabled_by_env_) {
     TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");

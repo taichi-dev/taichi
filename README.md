@@ -32,7 +32,7 @@ The language has broad applications spanning real-time physical simulation, numb
 
 [...More](#demos)
 
-## Why Taichi?
+## Why Taichi Lang?
 
 - Built around Python: Taichi Lang shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, including NumPy and PyTorch.
 - Flexibility: Taichi Lang provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi-lang.org/docs/sparse)).
@@ -63,7 +63,7 @@ The language has broad applications spanning real-time physical simulation, numb
   - WebAssembly (experiemental)
  </details>
 
-Use Python's package installer **pip** to install Taichi:
+Use Python's package installer **pip** to install Taichi Lang:
 
 ```bash
 pip install --upgrade taichi
@@ -150,7 +150,7 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 ### Join our discussions
 
 - [GitHub Discussions](https://github.com/taichi-dev/taichi/discussions)
-- [Taichi 中文论坛](https://forum.taichi.graphics/)
+- [太极编程语言中文论坛](https://forum.taichi.graphics/)
 
 ### Report an issue
 

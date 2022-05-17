@@ -1435,7 +1435,6 @@ class MatrixField(Field):
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member.
-        Only used for quant.
 
         Args:
             indices (Tuple[Int]): Specified indices of the field member.

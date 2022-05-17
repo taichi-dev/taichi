@@ -41,10 +41,9 @@ def test_primitives():
 
 @test_utils.test(arch=ti.cpu)
 def test_bit_struct():
-    cit = ti.types.quantized_types.quant.int(16, False)
+    cit = ti.types.quant.int(16, False)
     x = ti.field(dtype=cit)
-    y = ti.field(dtype=ti.types.quantized_types.type_factory.custom_float(
-        significand_type=cit))
+    y = ti.field(dtype=ti.types.quant._custom_float(significand_type=cit))
     z = ti.field(dtype=ti.f32)
 
     n1 = ti.root.dense(ti.i, 32)

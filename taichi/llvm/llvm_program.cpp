@@ -12,6 +12,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
@@ -646,6 +647,7 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
+    std::vector<LlvmLaunchArgInfo> &&args,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &&offloaded_task_list) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
@@ -654,7 +656,8 @@ void LlvmProgramImpl::cache_kernel(
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
-  kernel_cache.offloaded_task_list = offloaded_task_list;
+  kernel_cache.args = std::move(args);
+  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {

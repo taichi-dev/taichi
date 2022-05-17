@@ -7,14 +7,13 @@
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Linker/Linker.h"
-
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
+#include "taichi/llvm/launch_arg_info.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
-#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -2353,13 +2352,11 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
-
     CompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
     }
-
     needs_cache = true;
   }
 
@@ -2494,6 +2491,7 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
     task_cache.grid_dim = task.grid_dim;
   }
   prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
+                                              infer_launch_args(kernel),
                                               std::move(offloaded_task_list));
 }
 
@@ -2504,7 +2502,7 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
 
 FunctionType ModuleToFunctionConverter::convert(
     const std::string &kernel_name,
-    const std::vector<ArgInfo> &args,
+    const std::vector<LlvmLaunchArgInfo> &args,
     std::unique_ptr<llvm::Module> mod,
     std::vector<OffloadedTask> &&tasks) const {
   tlctx_->add_module(std::move(mod));
@@ -2544,16 +2542,8 @@ FunctionType ModuleToFunctionConverter::convert(
     const Kernel *kernel,
     std::unique_ptr<llvm::Module> mod,
     std::vector<OffloadedTask> &&tasks) const {
-  const auto &kargs = kernel->args;
-  std::vector<ArgInfo> args;
-  args.resize(kargs.size());
-  std::transform(kargs.begin(), kargs.end(), args.begin(),
-                 [](const auto &arg) -> ArgInfo {
-                   ArgInfo res;
-                   res.is_array = arg.is_array;
-                   return res;
-                 });
-  return convert(kernel->name, args, std::move(mod), std::move(tasks));
+  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
+                 std::move(tasks));
 }
 
 TLANG_NAMESPACE_END

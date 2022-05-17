@@ -10,6 +10,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
 #include "taichi/llvm/llvm_context.h"
+#include "taichi/llvm/launch_arg_info.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/struct/struct.h"
@@ -113,6 +114,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
+                    std::vector<LlvmLaunchArgInfo> &&args,
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
 
@@ -156,9 +158,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 

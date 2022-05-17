@@ -1,11 +1,13 @@
 #pragma once
 
-#include "taichi/common/core.h"
-#include "taichi/common/serialization.h"
-#include "taichi/program/kernel.h"
-#include "taichi/util/io.h"
+#include <memory>
 
 #include "llvm/IR/Module.h"
+#include "taichi/common/core.h"
+#include "taichi/common/serialization.h"
+#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/program/kernel.h"
+#include "taichi/util/io.h"
 
 namespace taichi {
 namespace lang {
@@ -26,6 +28,7 @@ struct LlvmOfflineCache {
 
   struct KernelCacheData {
     std::string kernel_key;
+    std::vector<LlvmLaunchArgInfo> args;
     std::vector<OffloadedTaskCacheData> offloaded_task_list;
 
     std::unique_ptr<llvm::Module> owned_module{nullptr};
@@ -36,7 +39,7 @@ struct LlvmOfflineCache {
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
-    TI_IO_DEF(kernel_key, offloaded_task_list);
+    TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
 
   std::unordered_map<std::string, KernelCacheData> kernels;

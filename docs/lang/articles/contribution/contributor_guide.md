@@ -294,6 +294,7 @@ Here, we do not want to repeat some best practices summarized in the following G
   - [How to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)
 
 ## Compilation Warnings
+
 Taichi enforces warning-free codes by turning on `-Werror` (treat warning as error) by default. It is highly recommended to resolve a warning as soon as it raises.
 
 On the other hand, real world issues could be way more complicated than what the compiler expected. So we prepared the following HOWTOs to help resolve some common problems. You are also more than welcome to open up an issue or consult the reviewer inplace for further discussions.
@@ -311,7 +312,7 @@ target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMe
 ```
 
 ### How to deal with warnings raised when compiling third-party libraries or targets
-Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of CMake system, CMake variables from Taichi and its submodules could get messed up in certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
+Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of the CMake system, CMake variables from Taichi and its submodules could get messed up under certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
 
 1. Separate submodule's `CMAKE_CXX_FLAGS` from that configured in Taichi.
 2. Remove "-Wall" option from submodule's `CMAKE_CXX_FLAGS`.

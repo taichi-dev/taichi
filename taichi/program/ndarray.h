@@ -16,10 +16,21 @@ class NdarrayRwAccessorsBank;
 
 class Ndarray {
  public:
+  /* Constructs a Ndarray managed by Program.
+   * Memory allocation and deallocation is handled by Program.
+   * TODO: Ideally Ndarray shouldn't worry about memory alloc/dealloc at all.
+   */
   explicit Ndarray(Program *prog,
                    const DataType type,
                    const std::vector<int> &shape);
 
+  /* Constructs a Ndarray from an existing DeviceAllocation
+   * It doesn't handle the allocation and deallocation.
+   */
+  explicit Ndarray(DeviceAllocation &devalloc,
+                   const DataType type,
+                   const std::vector<int> &shape);
+  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;
   // Invariant: Since ndarray indices are flattened for vector/matrix, this is
   // always true:
@@ -44,7 +55,6 @@ class Ndarray {
  private:
   void buffer_fill(uint32_t val);
 
-  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   // Invariant:
   //   data_ptr_ is not nullptr iff arch is a llvm backend
   uint64_t *data_ptr_{nullptr};
@@ -56,6 +66,10 @@ class Ndarray {
   LlvmProgramImpl *prog_impl_{nullptr};
   NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
+
+// TODO: move this as a method inside RuntimeContext once Ndarray is decoupled
+// with Program
+void set_runtime_ctx_ndarray(RuntimeContext &ctx, int arg_id, Ndarray &ndarray);
 
 }  // namespace lang
 }  // namespace taichi

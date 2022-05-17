@@ -111,7 +111,6 @@ protected:
 };
 
 class CUDADriver: protected CUDADriverBase {
-  // TODO: make CUDADriver a derived class of CUDADriverBase.
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   CUDADriverFunction<__VA_ARGS__> name;
@@ -126,8 +125,6 @@ class CUDADriver: protected CUDADriverBase {
 
   bool detected();
 
-  // ~CUDADriver() = default;
-
   static CUDADriver &get_instance();
 
   static CUDADriver &get_instance_without_context();
@@ -135,25 +132,24 @@ class CUDADriver: protected CUDADriverBase {
  private:
   CUDADriver();
 
-  // std::unique_ptr<DynamicLoader> loader_;
-
   std::mutex lock_;
 
-  // bool disabled_by_env_{false};
   bool cuda_version_valid_{false};
 };
 
 
-class CUSPARSEDriver : protected CUDADriverBase {
+class CUSPARSEDriver: protected CUDADriverBase {
  public:
+  // TODO: Add cusparse function APIs
   static CUSPARSEDriver &get_instance();
 
  private:
   CUSPARSEDriver();
 };
 
-class CUSOLVERDriver : protected CUDADriverBase {
+class CUSOLVERDriver: protected CUDADriverBase {
  public:
+  // TODO: Add cusolver function APIs
   static CUSOLVERDriver &get_instance();
 
  private:

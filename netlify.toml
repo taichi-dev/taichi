@@ -3,4 +3,4 @@
 
   publish = "docs.taichi.graphics/website/build"
   # Cancel the build if there're no changes detected in docs/ folder.
-  ignore = "git remote add upstream https://github.com/taichi-dev/taichi.git; git fetch upstream master; git diff --quiet $COMMIT_REF upstream/master -- docs/ python/"
+  ignore = "git remote add upstream https://github.com/taichi-dev/taichi.git; git fetch upstream master; git diff --quiet $COMMIT_REF upstream/master -- docs/ python/ netlify.toml"

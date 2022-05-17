@@ -110,7 +110,7 @@ if (-not $LlvmDir) {
 }
 if (-not $LlvmDir -or -not (Test-Path $LlvmDir)) {
     throw "LLVM cannot be found in local environment and the script failed to download a prebuilt archive. " +
-        "Please follow the instructions at 'https://docs.taichi-lang.org/lang/articles/dev_install' to manually configure LLVM for Taichi."
+        "Please follow the instructions at 'https://docs.taichi-lang.org/docs/dev_install' to manually configure LLVM for Taichi."
 } else {
     $LlvmDir = (Resolve-Path $LlvmDir).Path;
     $env:LLVM_DIR = $LlvmDir
@@ -124,7 +124,7 @@ if (-not $ClangDir) {
 }
 if (-not $ClangDir -or -not (Test-Path $ClangDir)) {
     throw "Clang cannot be found in local environment and the script failed to download a prebuilt archive. " +
-        "Please follow the instructions at 'https://docs.taichi-lang.org/lang/articles/dev_install' to manually configure Clang for Taichi."
+        "Please follow the instructions at 'https://docs.taichi-lang.org/docs/dev_install' to manually configure Clang for Taichi."
 } else {
     $ClangDir = (Resolve-Path $ClangDir).Path;
     Write-Host "Using Clang at '$ClangDir'."

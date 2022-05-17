@@ -44,7 +44,7 @@ class CuptiMetric:
         >>> ti.profiler.print_kernel_profiler_info('trace')
 
     Note:
-        For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/lang/articles/profiler#advanced-mode.
+        For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/docs/profiler#advanced-mode.
     """
     def __init__(self,
                  name='',

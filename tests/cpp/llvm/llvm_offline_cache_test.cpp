@@ -131,7 +131,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     LlvmOfflineCache::KernelCacheData kcache;
     const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
-    const auto& actual_arg_infos = kcache.args;
+    const auto &actual_arg_infos = kcache.args;
     EXPECT_EQ(actual_arg_infos, arg_infos);
   };
 }

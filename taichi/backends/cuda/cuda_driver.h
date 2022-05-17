@@ -95,7 +95,22 @@ class CUDADriverFunction {
   std::mutex *driver_lock_{nullptr};
 };
 
-class CUDADriver {
+
+class CUDADriverBase {
+
+public:
+  ~CUDADriverBase() = default;
+
+protected:
+  std::unique_ptr<DynamicLoader> loader_;
+  CUDADriverBase();
+
+  void load_lib(std::string lib_linux, std::string lib_windows);
+
+  bool disabled_by_env_{false};
+};
+
+class CUDADriver: protected CUDADriverBase {
   // TODO: make CUDADriver a derived class of CUDADriverBase.
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
@@ -111,7 +126,7 @@ class CUDADriver {
 
   bool detected();
 
-  ~CUDADriver() = default;
+  // ~CUDADriver() = default;
 
   static CUDADriver &get_instance();
 
@@ -120,21 +135,14 @@ class CUDADriver {
  private:
   CUDADriver();
 
-  std::unique_ptr<DynamicLoader> loader_;
+  // std::unique_ptr<DynamicLoader> loader_;
 
   std::mutex lock_;
 
-  bool disabled_by_env_{false};
+  // bool disabled_by_env_{false};
   bool cuda_version_valid_{false};
 };
 
-class CUDADriverBase {
- protected:
-  std::unique_ptr<DynamicLoader> loader_;
-  CUDADriverBase();
-
-  void load_lib(std::string lib_linux, std::string lib_windows);
-};
 
 class CUSPARSEDriver : protected CUDADriverBase {
  public:

@@ -20,24 +20,26 @@ bool CUDADriver::detected() {
 }
 
 CUDADriver::CUDADriver() {
-  disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
-  if (disabled_by_env_) {
-    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
-    return;
-  }
+//   disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
+//   if (disabled_by_env_) {
+//     TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
+//     return;
+//   }
 
-#if defined(TI_PLATFORM_LINUX)
-  loader_ = std::make_unique<DynamicLoader>("libcuda.so");
-#elif defined(TI_PLATFORM_WINDOWS)
-  loader_ = std::make_unique<DynamicLoader>("nvcuda.dll");
-#else
-  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
-#endif
+// #if defined(TI_PLATFORM_LINUX)
+//   loader_ = std::make_unique<DynamicLoader>("libcuda.so");
+// #elif defined(TI_PLATFORM_WINDOWS)
+//   loader_ = std::make_unique<DynamicLoader>("nvcuda.dll");
+// #else
+//   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
+// #endif
 
-  if (!loader_->loaded()) {
-    TI_WARN("CUDA driver not found.");
-    return;
-  }
+  // if (!loader_->loaded()) {
+  //   TI_WARN("CUDA driver not found.");
+  //   return;
+  // }
+
+  load_lib("libcuda.so", "nvcuda.dll");
 
   loader_->load_function("cuGetErrorName", get_error_name);
   loader_->load_function("cuGetErrorString", get_error_string);
@@ -80,7 +82,7 @@ CUDADriver &CUDADriver::get_instance() {
 
 CUDADriverBase::CUDADriverBase() {
   // TODO: enable cusparse and cusolver flag env variable.
-  auto disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
+  disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
   if (disabled_by_env_) {
     TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
     return;
@@ -89,18 +91,26 @@ CUDADriverBase::CUDADriverBase() {
 
 void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
 #if defined(TI_PLATFORM_LINUX)
-  loader_ = std::make_unique<DynamicLoader>(lib_linux);
+  auto lib_name = lib_linux;
 #elif defined(TI_PLATFORM_WINDOWS)
-  loader_ = std::make_unique<DynamicLoader>(lib_windows);
+  auto lib_name = lib_windows;
 #else
   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
 #endif
-
+// #if defined(TI_PLATFORM_LINUX)
+//   loader_ = std::make_unique<DynamicLoader>(lib_linux);
+// #elif defined(TI_PLATFORM_WINDOWS)
+//   loader_ = std::make_unique<DynamicLoader>(lib_windows);
+// #else
+//   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
+// #endif
+  loader_ = std::make_unique<DynamicLoader>(lib_name);
   if (!loader_->loaded()) {
-    TI_WARN("CUSPARSE lib not found.");
+    TI_WARN("{} lib not found.", lib_name);
     return;
-  } else {
-    TI_TRACE("cusparse loaded!");
+  }
+  else {
+    TI_TRACE("{} loaded!", lib_name);
   }
 }
 

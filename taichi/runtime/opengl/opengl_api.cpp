@@ -543,7 +543,7 @@ DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
-  device = std::make_shared<GLDevice>();
+  device = std::make_unique<GLDevice>();
 
   impl = std::make_unique<OpenGlRuntimeImpl>();
 

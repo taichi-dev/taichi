@@ -158,7 +158,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
+    TI_NOT_IMPLEMENTED;
+    return nullptr;
+  }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 

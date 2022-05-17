@@ -12,7 +12,6 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 

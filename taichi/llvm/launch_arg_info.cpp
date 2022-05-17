@@ -5,6 +5,11 @@
 namespace taichi {
 namespace lang {
 
+bool LlvmLaunchArgInfo::operator==(const LlvmLaunchArgInfo &other) const {
+  return is_array == other.is_array;
+}
+
+
 std::vector<LlvmLaunchArgInfo> infer_launch_args(const Kernel *kernel) {
   std::vector<LlvmLaunchArgInfo> res;
   res.reserve(kernel->args.size());

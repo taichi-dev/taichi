@@ -14,6 +14,11 @@ struct LlvmLaunchArgInfo {
   bool is_array{false};
 
   TI_IO_DEF(is_array);
+
+  bool operator==(const LlvmLaunchArgInfo &other) const;
+  bool operator!=(const LlvmLaunchArgInfo &other) const {
+    return !(*this == other);
+  }
 };
 
 class Kernel;

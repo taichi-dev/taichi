@@ -26,7 +26,8 @@ class AotModuleImpl : public aot::Module {
  public:
   explicit AotModuleImpl(const AotModuleParams &params)
       : program_(params.program),
-        cache_reader_(LlvmOfflineCacheFileReader::make(params.module_path)) {}
+        cache_reader_(LlvmOfflineCacheFileReader::make(params.module_path)) {
+  }
 
   Arch arch() const override {
     return Arch::x64;
@@ -61,19 +62,10 @@ class AotModuleImpl : public aot::Module {
       offloaded_tasks.push_back(std::move(ot));
     }
     ModuleToFunctionConverter converter{tlctx, program_};
-    auto fn = converter.convert(name, convert(loaded.args),
-                                std::move(loaded.owned_module),
-                                std::move(offloaded_tasks));
+    auto fn =
+        converter.convert(name, loaded.args, std::move(loaded.owned_module),
+                          std::move(offloaded_tasks));
     return std::make_unique<KernelImpl>(fn);
-  }
-
-  static std::vector<ModuleToFunctionConverter::ArgInfo> convert(
-      const std::vector<LlvmOfflineCache::KernelCacheData::ArgInfo> &args) {
-    std::vector<ModuleToFunctionConverter::ArgInfo> res;
-    for (const auto &a : args) {
-      res.push_back(ModuleToFunctionConverter::ArgInfo{a.is_array});
-    }
-    return res;
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

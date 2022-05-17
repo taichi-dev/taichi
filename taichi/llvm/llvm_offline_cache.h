@@ -27,12 +27,6 @@ struct LlvmOfflineCache {
   };
 
   struct KernelCacheData {
-    struct ArgInfo {
-      bool is_array{false};
-
-      TI_IO_DEF(is_array);
-    };
-
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
     std::vector<OffloadedTaskCacheData> offloaded_task_list;
@@ -47,8 +41,6 @@ struct LlvmOfflineCache {
 
     TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
-
-  static std::vector<KernelCacheData::ArgInfo> infer_args(const Kernel *kernel);
 
   std::unordered_map<std::string, KernelCacheData> kernels;
 
@@ -77,7 +69,6 @@ class LlvmOfflineCacheFileReader {
   std::string path_;
   LlvmOfflineCache data_;
   LlvmOfflineCache::Format format_;
-  LlvmOfflineCache data_;
 };
 
 class LlvmOfflineCacheFileWriter {
@@ -95,11 +86,14 @@ class LlvmOfflineCacheFileWriter {
   void dump(const std::string &path,
             LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
 
-  void set_no_mangle() { mangled_ = true; }
+  void set_no_mangle() {
+    mangled_ = true;
+  }
 
  private:
   void mangle_offloaded_task_name(
-      const std::string &kernel_key, llvm::Module *module,
+      const std::string &kernel_key,
+      llvm::Module *module,
       std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
           &offloaded_task_list);
 

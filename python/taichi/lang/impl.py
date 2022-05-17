@@ -355,10 +355,20 @@ def get_runtime():
     return pytaichi
 
 
+generation = 0
+
+
+def get_generation():
+    global generation
+    return generation
+
+
 def reset():
     global pytaichi
+    global generation
     old_kernels = pytaichi.kernels
     pytaichi.clear()
+    generation += 1
     pytaichi = PyTaichi(old_kernels)
     for k in old_kernels:
         k.reset()

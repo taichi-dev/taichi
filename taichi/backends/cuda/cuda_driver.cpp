@@ -83,8 +83,7 @@ void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
   if (!loader_->loaded()) {
     TI_WARN("{} lib not found.", lib_name);
     return;
-  }
-  else {
+  } else {
     TI_TRACE("{} loaded!", lib_name);
   }
 }

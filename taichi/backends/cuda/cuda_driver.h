@@ -95,13 +95,11 @@ class CUDADriverFunction {
   std::mutex *driver_lock_{nullptr};
 };
 
-
 class CUDADriverBase {
-
-public:
+ public:
   ~CUDADriverBase() = default;
 
-protected:
+ protected:
   std::unique_ptr<DynamicLoader> loader_;
   CUDADriverBase();
 
@@ -110,7 +108,7 @@ protected:
   bool disabled_by_env_{false};
 };
 
-class CUDADriver: protected CUDADriverBase {
+class CUDADriver : protected CUDADriverBase {
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   CUDADriverFunction<__VA_ARGS__> name;
@@ -137,8 +135,7 @@ class CUDADriver: protected CUDADriverBase {
   bool cuda_version_valid_{false};
 };
 
-
-class CUSPARSEDriver: protected CUDADriverBase {
+class CUSPARSEDriver : protected CUDADriverBase {
  public:
   // TODO: Add cusparse function APIs
   static CUSPARSEDriver &get_instance();
@@ -147,7 +144,7 @@ class CUSPARSEDriver: protected CUDADriverBase {
   CUSPARSEDriver();
 };
 
-class CUSOLVERDriver: protected CUDADriverBase {
+class CUSOLVERDriver : protected CUDADriverBase {
  public:
   // TODO: Add cusolver function APIs
   static CUSOLVERDriver &get_instance();

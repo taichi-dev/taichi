@@ -46,8 +46,7 @@ def import_ti_core():
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
                   "check this page for possible solutions:\n"
-                  "https://docs.taichi-lang.org/docs/install" +
-                  Fore.RESET)
+                  "https://docs.taichi-lang.org/docs/install" + Fore.RESET)
             if get_os_name() == 'win':
                 # pylint: disable=E1101
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'

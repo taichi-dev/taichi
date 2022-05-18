@@ -83,8 +83,10 @@ if (WIN32)
   SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
 
-# No support of Python for Android build
-if (NOT ANDROID)
+# No support of Python for Android build; or in any case taichi is integrated
+# in another project as submodule.
+option(TI_WITH_PYTHON "Build with Python language binding" ON)
+if (TI_WITH_PYTHON AND NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
 endif()
 include(cmake/TaichiCXXFlags.cmake)
@@ -161,7 +163,9 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   endif()
 endif()
 
-add_subdirectory(taichi/runtime/llvm)
+if (TI_WITH_LLVM)
+  add_subdirectory(taichi/runtime/llvm)
+endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)

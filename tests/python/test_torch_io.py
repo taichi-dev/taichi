@@ -273,7 +273,7 @@ def test_torch_zero():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@test_utils.test(exclude=[ti.opengl, ti.vulkan])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl, ti.vulkan])
 def test_torch_view():
     @ti.kernel
     def copy(x: ti.types.ndarray(), y: ti.types.ndarray()):

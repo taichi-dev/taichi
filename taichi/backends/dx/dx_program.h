@@ -1,7 +1,9 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/dx/dx_device.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
 
@@ -22,10 +24,8 @@ class Dx11ProgramImpl : public ProgramImpl {
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
-  virtual void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer_ptr) override;
+  virtual void materialize_snode_tree(SNodeTree *tree,
+                                      uint64 *result_buffer_ptr) override;
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override;
   void synchronize() override;
 
@@ -37,3 +37,5 @@ class Dx11ProgramImpl : public ProgramImpl {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif

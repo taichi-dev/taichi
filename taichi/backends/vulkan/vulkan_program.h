@@ -6,7 +6,7 @@
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
@@ -38,20 +38,20 @@ class VulkanProgramImpl : public ProgramImpl {
     return 0;  // TODO: support sparse in vulkan
   }
 
-  void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void materialize_snode_tree(SNodeTree *tree,
-                              std::vector<std::unique_ptr<SNodeTree>> &,
-                              uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
     vulkan_runtime_->synchronize();
+  }
+
+  StreamSemaphore flush() override {
+    return vulkan_runtime_->flush();
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
@@ -89,9 +89,6 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<vulkan::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
-
-  // This is a hack until NDArray is properlly owned by programs
-  std::vector<std::unique_ptr<DeviceAllocationGuard>> ref_ndarry_;
 };
 }  // namespace lang
 }  // namespace taichi

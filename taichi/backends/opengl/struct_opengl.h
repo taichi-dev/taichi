@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/runtime/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/ir/snode.h"
 

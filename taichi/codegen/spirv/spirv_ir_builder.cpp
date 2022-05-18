@@ -1,4 +1,5 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
+#include "taichi/backends/dx/dx_device.h"
 
 namespace taichi {
 namespace lang {
@@ -211,6 +212,11 @@ Value IRBuilder::float_immediate_number(const SType &dtype,
   } else if (data_type_bits(dtype.dt) == 32) {
     float fvalue = static_cast<float>(value);
     uint32_t *ptr = reinterpret_cast<uint32_t *>(&fvalue);
+    uint64_t data = ptr[0];
+    return get_const(dtype, &data, cache);
+  } else if (data_type_bits(dtype.dt) == 16) {
+    float fvalue = static_cast<float>(value);
+    uint16_t *ptr = reinterpret_cast<uint16_t *>(&fvalue);
     uint64_t data = ptr[0];
     return get_const(dtype, &data, cache);
   } else {
@@ -771,40 +777,55 @@ Value IRBuilder::cast(const SType &dst_type, Value value) {
                to.to_string());
       return Value();
     }
-  } else if (is_integral(from) && is_signed(from) && is_integral(to) &&
-             is_signed(to)) {  // Int -> Int
-    return make_value(spv::OpSConvert, dst_type, value);
-  } else if (is_integral(from) && is_unsigned(from) && is_integral(to) &&
-             is_unsigned(to)) {  // UInt -> UInt
-    return make_value(spv::OpUConvert, dst_type, value);
-  } else if (is_integral(from) && is_unsigned(from) && is_integral(to) &&
-             is_signed(to)) {  // UInt -> Int
-    if (data_type_bits(from) != data_type_bits(to)) {
-      auto to_signed = [](DataType dt) -> DataType {
-        TI_ASSERT(is_unsigned(dt));
-        if (dt->is_primitive(PrimitiveTypeID::u8))
+  } else if (is_integral(from) && is_integral(to)) {
+    auto ret = value;
+
+    if (data_type_bits(from) == data_type_bits(to)) {
+      // Same width conversion
+      ret = make_value(spv::OpBitcast, dst_type, ret);
+    } else {
+      // Different width
+      // Step 1. Sign extend / truncate value to width of `to`
+      // Step 2. Bitcast to signess of `to`
+      auto get_signed_type = [](DataType dt) -> DataType {
+        // Create a output signed type with the same width as `dt`
+        if (data_type_bits(dt) == 8)
           return PrimitiveType::i8;
-        else if (dt->is_primitive(PrimitiveTypeID::u16))
+        else if (data_type_bits(dt) == 16)
           return PrimitiveType::i16;
-        else if (dt->is_primitive(PrimitiveTypeID::u32))
+        else if (data_type_bits(dt) == 32)
           return PrimitiveType::i32;
-        else if (dt->is_primitive(PrimitiveTypeID::u64))
+        else if (data_type_bits(dt) == 64)
           return PrimitiveType::i64;
         else
           return PrimitiveType::unknown;
       };
+      auto get_unsigned_type = [](DataType dt) -> DataType {
+        // Create a output unsigned type with the same width as `dt`
+        if (data_type_bits(dt) == 8)
+          return PrimitiveType::u8;
+        else if (data_type_bits(dt) == 16)
+          return PrimitiveType::u16;
+        else if (data_type_bits(dt) == 32)
+          return PrimitiveType::u32;
+        else if (data_type_bits(dt) == 64)
+          return PrimitiveType::u64;
+        else
+          return PrimitiveType::unknown;
+      };
 
-      value = make_value(spv::OpUConvert, get_primitive_type(to_signed(from)),
-                         value);
+      if (is_signed(from)) {
+        ret = make_value(spv::OpSConvert,
+                         get_primitive_type(get_signed_type(to)), ret);
+      } else {
+        ret = make_value(spv::OpUConvert,
+                         get_primitive_type(get_unsigned_type(to)), ret);
+      }
+
+      ret = make_value(spv::OpBitcast, dst_type, ret);
     }
-    return make_value(spv::OpBitcast, dst_type, value);
-  } else if (is_integral(from) && is_signed(from) && is_integral(to) &&
-             is_unsigned(to)) {  // Int -> UInt
-    if (data_type_bits(from) != data_type_bits(to)) {
-      value = make_value(spv::OpSConvert, get_primitive_type(to_unsigned(from)),
-                         value);
-    }
-    return make_value(spv::OpBitcast, dst_type, value);
+
+    return ret;
   } else if (is_real(from) && is_integral(to) &&
              is_signed(to)) {  // Float -> Int
     return make_value(spv::OpConvertFToS, dst_type, value);
@@ -1184,17 +1205,37 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   store_var(rand_y_, _362436069u);
   store_var(rand_z_, _521288629u);
   store_var(rand_w_, _88675123u);
-  // Yes, this is not an atomic operation, but just fine since no matter
-  // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
-  // us to set different seeds for different threads.
-  // Discussion:
-  // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
-  Value tmp9 = load_var(rand_gtmp_, t_uint32_);
-  Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
-  ib_.begin(spv::OpIAdd)
-      .add_seq(t_uint32_, tmp10, tmp9, _1)
-      .commit(&func_header_);
-  store_var(rand_gtmp_, tmp10);
+
+  // enum spv::Op add_op = spv::OpIAdd;
+  bool use_atomic_increment = false;
+
+// use atomic increment for DX API to avoid error X3694
+#ifdef TI_WITH_DX11
+  if (dynamic_cast<const taichi::lang::directx11::Dx11Device *>(device_)) {
+    use_atomic_increment = true;
+  }
+#endif
+
+  if (use_atomic_increment) {
+    Value tmp9 = new_value(t_uint32_, ValueKind::kNormal);
+    ib_.begin(spv::Op::OpAtomicIIncrement)
+        .add_seq(t_uint32_, tmp9, rand_gtmp_,
+                 /*scope_id*/ const_i32_one_,
+                 /*semantics*/ const_i32_zero_)
+        .commit(&func_header_);
+  } else {
+    // Yes, this is not an atomic operation, but just fine since no matter
+    // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
+    // us to set different seeds for different threads.
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
+    Value tmp9 = load_var(rand_gtmp_, t_uint32_);
+    Value tmp10 = new_value(t_uint32_, ValueKind::kNormal);
+    ib_.begin(spv::Op::OpIAdd)
+        .add_seq(t_uint32_, tmp10, tmp9, _1)
+        .commit(&func_header_);
+    store_var(rand_gtmp_, tmp10);
+  }
 
   init_rand_ = true;
 }

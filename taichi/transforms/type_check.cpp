@@ -18,6 +18,28 @@ class TypeCheck : public IRVisitor {
  private:
   CompileConfig config_;
 
+  Type *type_check_store(Stmt *stmt,
+                         Stmt *dst,
+                         Stmt *&val,
+                         const std::string &stmt_name) {
+    auto dst_type = dst->ret_type.ptr_removed();
+    if (dst_type->is<CustomIntType>() || dst_type->is<CustomFloatType>()) {
+      // We force the value type to be the compute_type of the bit pointer.
+      // Casting from compute_type to physical_type is handled in codegen.
+      dst_type = dst_type->get_compute_type();
+    }
+    if (dst_type != val->ret_type) {
+      auto promoted = promoted_type(dst_type, val->ret_type);
+      if (dst_type != promoted) {
+        TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
+                stmt_name, dst_type->to_string(), val->ret_data_type_name(),
+                stmt->tb);
+      }
+      val = insert_type_cast_before(stmt, val, dst_type);
+    }
+    return dst_type;
+  }
+
  public:
   explicit TypeCheck(const CompileConfig &config) : config_(config) {
     allow_undefined_visitor = true;
@@ -57,20 +79,9 @@ class TypeCheck : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
-    auto dst_type = stmt->dest->ret_type.ptr_removed();
-    if (auto cit = dst_type->cast<CustomIntType>()) {
-      dst_type = cit->get_physical_type();
-    } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      auto cit = cft->get_digits_type()->as<CustomIntType>();
-      dst_type = cit->get_physical_type();
-    } else if (stmt->val->ret_type != dst_type) {
-      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}",
-              stmt->name(), atomic_op_type_name(stmt->op_type),
-              data_type_name(stmt->val->ret_type), data_type_name(dst_type),
-              stmt->tb);
-      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
-    }
-    stmt->ret_type = dst_type;
+    stmt->ret_type = type_check_store(
+        stmt, stmt->dest, stmt->val,
+        fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -102,49 +113,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->dest->is<PtrOffsetStmt>() &&
-        stmt->dest->cast<PtrOffsetStmt>()->is_local_ptr()) {
-      auto dst_value_type = stmt->dest->ret_type.ptr_removed();
-      if (dst_value_type->is<CustomIntType>() ||
-          dst_value_type->is<CustomFloatType>()) {
-        // We force the value type to be the compute_type of the bit pointer.
-        // Casting from compute_type to physical_type is handled in codegen.
-        dst_value_type = dst_value_type->get_compute_type();
-      }
-      auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
-      auto input_type = stmt->val->ret_data_type_name();
-      if (dst_value_type != stmt->val->ret_type) {
-        stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
-      }
-      if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-        TI_WARN("[{}] Local store may lose precision: {} <- {}, at\n{}",
-                stmt->name(), dst_value_type->to_string(), input_type,
-                stmt->tb);
-      }
-      stmt->ret_type = dst_value_type;
-      return;
-    }
-
     if (stmt->dest->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
       stmt->dest->ret_type = stmt->val->ret_type;
     }
-    auto common_container_type =
-        promoted_type(stmt->dest->ret_type, stmt->val->ret_type);
-
-    auto old_data = stmt->val;
-    if (stmt->dest->ret_type != stmt->val->ret_type) {
-      stmt->val =
-          insert_type_cast_before(stmt, stmt->val, stmt->dest->ret_type);
-    }
-    if (stmt->dest->ret_type != common_container_type) {
-      TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {}), "
-          "at\n{}",
-          stmt->name(), stmt->dest->ret_data_type_name(),
-          old_data->ret_data_type_name(), stmt->id, stmt->tb);
-    }
-    stmt->ret_type = stmt->dest->ret_type;
+    stmt->ret_type =
+        type_check_store(stmt, stmt->dest, stmt->val, "Local store");
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -208,24 +182,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    auto dst_value_type = stmt->dest->ret_type.ptr_removed();
-    if (dst_value_type->is<CustomIntType>() ||
-        dst_value_type->is<CustomFloatType>()) {
-      // We force the value type to be the compute_type of the bit pointer.
-      // Casting from compute_type to physical_type is handled in codegen.
-      dst_value_type = dst_value_type->get_compute_type();
-    }
-    auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
-    auto input_type = stmt->val->ret_data_type_name();
-    if (dst_value_type != stmt->val->ret_type) {
-      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
-    }
-    // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
-    // u8 to u8 leads to extra warnings.
-    if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
-      TI_WARN("[{}] Global store may lose precision: {} <- {}, at\n{}",
-              stmt->name(), dst_value_type->to_string(), input_type, stmt->tb);
-    }
+    type_check_store(stmt, stmt->dest, stmt->val, "Global store");
   }
 
   void visit(RangeForStmt *stmt) override {
@@ -258,6 +215,7 @@ class TypeCheck : public IRVisitor {
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
         cast(stmt->operand, config_.default_fp);
+        stmt->ret_type = config_.default_fp;
       }
     }
   }
@@ -286,6 +244,29 @@ class TypeCheck : public IRVisitor {
     return stmt;
   }
 
+  void insert_shift_op_assertion_before(Stmt *stmt, Stmt *lhs, Stmt *rhs) {
+    int rhs_limit = data_type_bits(lhs->ret_type);
+    auto const_stmt =
+        Stmt::make<ConstStmt>(TypedConstant(rhs->ret_type, rhs_limit));
+    auto cond_stmt =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_le, rhs, const_stmt.get());
+
+    std::string msg =
+        "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
+        "%d.";
+    std::vector<Stmt *> args = {rhs, const_stmt.get()};
+    auto assert_stmt =
+        Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
+
+    const_stmt->accept(this);
+    cond_stmt->accept(this);
+    assert_stmt->accept(this);
+
+    stmt->insert_before_me(std::move(const_stmt));
+    stmt->insert_before_me(std::move(cond_stmt));
+    stmt->insert_before_me(std::move(assert_stmt));
+  }
+
   void cast(Stmt *&val, DataType dt) {
     auto cast_stmt = insert_type_cast_after(val, val, dt);
     val = cast_stmt;
@@ -294,13 +275,11 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
-        TI_WARN(
-            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}), "
-            "at\n{}",
-            stmt->name(), stmt->lhs->ret_data_type_name(),
-            stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
+        TI_WARN("[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
+                stmt->name(), stmt->lhs->ret_data_type_name(),
+                stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
       } else {
-        TI_WARN("[{}] {} at\n{}", stmt->name(), comment, stmt->tb);
+        TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->tb);
       }
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
@@ -331,7 +310,27 @@ class TypeCheck : public IRVisitor {
       };
       stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
       stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
-      auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+
+      DataType ret_type;
+      if (is_shift_op(stmt->op_type)) {
+        // shift_ops does not follow the same type promotion rule as numerical
+        // ops numerical ops: u8 + i32 = i32 shift_ops:     u8 << i32 = u8
+        // (return dtype follows that of the lhs)
+        //
+        // In the above example, while truncating rhs(i32) to u8 risks an
+        // overflow, the runtime value of rhs is very likely less than 8
+        // (otherwise meaningless). Nevertheless, we insert an AssertStmt here
+        // to warn user of this potential overflow.
+        ret_type = stmt->lhs->ret_type;
+
+        // Insert AssertStmt
+        if (config_.debug) {
+          insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
+        }
+      } else {
+        ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+      }
+
       if (ret_type != stmt->lhs->ret_type) {
         // promote lhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
@@ -534,6 +533,11 @@ class TypeCheck : public IRVisitor {
 
   void visit(BitStructStoreStmt *stmt) override {
     // do nothing
+  }
+
+  void visit(ReferenceStmt *stmt) override {
+    stmt->ret_type = stmt->var->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 };
 

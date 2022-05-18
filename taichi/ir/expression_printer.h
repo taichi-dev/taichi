@@ -3,22 +3,33 @@
 #include "taichi/ir/expr.h"
 #include "taichi/ir/expression.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/program/program.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 namespace taichi {
 namespace lang {
 
-class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
+class ExpressionPrinter : public ExpressionVisitor {
  public:
-  ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr) : os_(os) {
+  ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
   }
 
   void set_ostream(std::ostream *os) {
     os_ = os;
   }
 
-  std::ostream &get_ostream() {
-    TI_ASSERT(os_);
-    return *os_;
+  std::ostream *get_ostream() {
+    return os_;
+  }
+
+ private:
+  std::ostream *os_{nullptr};
+};
+
+class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
+ public:
+  explicit ExpressionHumanFriendlyPrinter(std::ostream *os = nullptr)
+      : ExpressionPrinter(os) {
   }
 
   void visit(ExprGroup &expr_group) override {
@@ -205,6 +216,12 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
     emit(")");
   }
 
+  void visit(ReferenceExpression *expr) override {
+    emit("ref(");
+    expr->var->accept(this);
+    emit(")");
+  }
+
   static std::string expr_to_string(Expr &expr) {
     std::ostringstream oss;
     ExpressionHumanFriendlyPrinter printer(&oss);
@@ -212,11 +229,11 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
     return oss.str();
   }
 
- private:
+ protected:
   template <typename... Args>
-  void emit(Args &&... args) {
-    TI_ASSERT(os_);
-    (*os_ << ... << std::forward<Args>(args));
+  void emit(Args &&...args) {
+    TI_ASSERT(this->get_ostream());
+    (*this->get_ostream() << ... << std::forward<Args>(args));
   }
 
   template <typename T>
@@ -243,8 +260,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionVisitor {
       emit(std::forward<D>(e));
     }
   }
-
-  std::ostream *os_{nullptr};
 };
 
 }  // namespace lang

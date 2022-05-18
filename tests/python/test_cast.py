@@ -145,8 +145,8 @@ def test_custom_int_extension():
     x = ti.field(dtype=ti.i32, shape=2)
     y = ti.field(dtype=ti.u32, shape=2)
 
-    ci5 = ti.types.quantized_types.quant.int(5, True, ti.i16)
-    cu7 = ti.types.quantized_types.quant.int(7, False, ti.u16)
+    ci5 = ti.types.quant.int(5, True, ti.i16)
+    cu7 = ti.types.quant.int(7, False, ti.u16)
 
     a = ti.field(dtype=ci5)
     b = ti.field(dtype=cu7)

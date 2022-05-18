@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 template <typename Tf, typename Ti>
 Expr svd_bitwise_or(const Expr &a, const Expr &b) {
-  return bit_cast<Tf>(bit_cast<Ti>(a) || bit_cast<Ti>(b));
+  return bit_cast<Tf>(bit_cast<Ti>(a) | bit_cast<Ti>(b));
 }
 
 template <typename Tf, typename Ti>
@@ -17,7 +17,7 @@ Expr svd_bitwise_xor(const Expr &a, const Expr &b) {
 
 template <typename Tf, typename Ti>
 Expr svd_bitwise_and(const Expr &a, const Expr &b) {
-  return bit_cast<Tf>(bit_cast<Ti>(a) && bit_cast<Ti>(b));
+  return bit_cast<Tf>(bit_cast<Ti>(a) & bit_cast<Ti>(b));
 }
 
 template <typename Tf, typename Ti>

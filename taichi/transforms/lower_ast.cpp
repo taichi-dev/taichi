@@ -87,21 +87,11 @@ class LowerAST : public IRVisitor {
 
     auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
 
-    new_if->true_mask = fctx.push_back<AllocaStmt>(PrimitiveType::i32);
-    new_if->false_mask = fctx.push_back<AllocaStmt>(PrimitiveType::i32);
-
-    fctx.push_back<LocalStoreStmt>(new_if->true_mask, stmt->condition->stmt);
-    auto lnot_stmt_ptr = fctx.push_back<UnaryOpStmt>(UnaryOpType::logic_not,
-                                                     stmt->condition->stmt);
-    fctx.push_back<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr);
-
     if (stmt->true_statements) {
       new_if->set_true_statements(std::move(stmt->true_statements));
-      new_if->true_statements->mask_var = new_if->true_mask;
     }
     if (stmt->false_statements) {
       new_if->set_false_statements(std::move(stmt->false_statements));
-      new_if->false_statements->mask_var = new_if->false_mask;
     }
     auto pif = new_if.get();
     fctx.push_back(std::move(new_if));
@@ -166,7 +156,6 @@ class LowerAST : public IRVisitor {
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         fctx.stmts.size());
-    stmt->insert_before_me(std::make_unique<AllocaStmt>(PrimitiveType::i32));
     auto &&const_stmt =
         std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
     auto const_stmt_ptr = const_stmt.get();
@@ -174,7 +163,6 @@ class LowerAST : public IRVisitor {
     stmt->insert_before_me(std::move(const_stmt));
     stmt->insert_before_me(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
-    new_while->body->mask_var = new_while->mask;
     auto pwhile = new_while.get();
     stmt->parent->replace_with(stmt, std::move(new_while));
     pwhile->accept(this);
@@ -264,7 +252,6 @@ class LowerAST : public IRVisitor {
         stmt->insert_before_me(std::move(const_stmt));
         stmt->insert_before_me(
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
-        new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
       }
     } else if (stmt->mesh_for) {
@@ -421,7 +408,9 @@ class LowerAST : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
     } else {  // global variable
-      TI_ASSERT(dest.is<GlobalPtrExpression>());
+      TI_ASSERT(dest.is<GlobalPtrExpression>() ||
+                (dest.is<ArgLoadExpression>() &&
+                 dest.cast<ArgLoadExpression>()->is_ptr));
       flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }

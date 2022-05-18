@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef TI_WITH_DX11
+
 #include "taichi/backends/device.h"
 #include "taichi/backends/dx/dx_info_queue.h"
 #include <d3d11.h>
@@ -9,12 +11,15 @@ namespace lang {
 namespace directx11 {
 
 // Only enable debug layer when the corresponding testing facility is enabled
-constexpr bool kD3d11DebugEnabled = true;
-constexpr bool kD3d11ForceRef = false;  // Force REF device. May be used to
-                                        // force software rendering.
+constexpr bool kD3d11DebugEnabled = false;
+// Verbose outputs, prints the contents of command lists
+constexpr bool kD3d11Verbose = false;
+// Force REF device. May be used to
+// force software rendering.
+constexpr bool kD3d11ForceRef = false;
+// Enable to spawn a debug window and swapchain
+//#define TAICHI_DX11_DEBUG_WINDOW
 
-void debug_enabled(bool);
-void force_ref(bool);
 void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceBinder : public ResourceBinder {
@@ -46,12 +51,17 @@ class Dx11ResourceBinder : public ResourceBinder {
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
-  const std::unordered_map<uint32_t, uint32_t> &binding_to_alloc_id() {
-    return binding_to_alloc_id_;
+  const std::unordered_map<uint32_t, uint32_t> &uav_binding_to_alloc_id() {
+    return uav_binding_to_alloc_id_;
+  }
+
+  const std::unordered_map<uint32_t, uint32_t> &cb_binding_to_alloc_id() {
+    return cb_binding_to_alloc_id_;
   }
 
  private:
-  std::unordered_map<uint32_t, uint32_t> binding_to_alloc_id_;
+  std::unordered_map<uint32_t, uint32_t> uav_binding_to_alloc_id_;
+  std::unordered_map<uint32_t, uint32_t> cb_binding_to_alloc_id_;
 };
 
 class Dx11Device;
@@ -63,11 +73,19 @@ class Dx11Pipeline : public Pipeline {
                Dx11Device *device);
   ~Dx11Pipeline() override;
   ResourceBinder *resource_binder() override;
+  ID3D11ComputeShader *get_program() {
+    return compute_shader_;
+  }
+  const std::string &name() {
+    return name_;
+  }
 
  private:
-  std::shared_ptr<Dx11Device> device_{};
+  Dx11Device *device_{};  // Can't use shared_ptr b/c this can cause device_ to
+                          // be deallocated pre-maturely
   ID3D11ComputeShader *compute_shader_{};
   Dx11ResourceBinder binder_{};
+  std::string name_;
 };
 
 class Dx11Stream : public Stream {
@@ -76,8 +94,12 @@ class Dx11Stream : public Stream {
   ~Dx11Stream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   void command_sync() override;
 
  private:
@@ -133,25 +155,13 @@ class Dx11CommandList : public CommandList {
   void run_commands();
 
  private:
-  struct Cmd {
-    explicit Cmd(Dx11CommandList *cmdlist) : cmdlist_(cmdlist) {
-    }
-    virtual void execute() {
-    }
-    Dx11CommandList *cmdlist_;
-  };
+  ID3D11DeviceContext *d3d11_deferred_context_{nullptr};
+  ID3D11CommandList *d3d11_command_list_{nullptr};
 
-  struct CmdBufferFill : public Cmd {
-    explicit CmdBufferFill(Dx11CommandList *cmdlist) : Cmd(cmdlist) {
-    }
-    ID3D11UnorderedAccessView *uav{nullptr};
-    size_t offset{0}, size{0};
-    uint32_t data{0};
-    void execute() override;
-  };
+  std::vector<ID3D11Buffer *> used_spv_workgroup_cb;
 
-  std::vector<std::unique_ptr<Cmd>> recorded_commands_;
   Dx11Device *device_;
+  int cb_slot_watermark_{-1};
 };
 
 class Dx11Device : public GraphicsDevice {
@@ -192,6 +202,7 @@ class Dx11Device : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+  void wait_idle() override;
 
   int live_dx11_object_count();
   ID3D11DeviceContext *d3d11_context() {
@@ -204,6 +215,15 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Device *d3d11_device() {
     return device_;
   }
+  ID3D11Buffer *create_or_get_cb_buffer(uint32_t alloc_id);
+
+  // cb_slot should be 1 after pre-occupied buffers
+  // example: in the presence of args_t, cb_slot will be cb0
+  // in the absence of args_t, cb_slot will be cb0
+  ID3D11Buffer *set_spirv_cross_numworkgroups(uint32_t x,
+                                              uint32_t y,
+                                              uint32_t z,
+                                              int cb_slot);
 
  private:
   void create_dx11_device();
@@ -217,10 +237,17 @@ class Dx11Device : public GraphicsDevice {
       alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
   std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
       alloc_id_to_uav_;  // binding ID to UAV
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
   int alloc_serial_;
   Dx11Stream *stream_;
+
+  // temporary debug use
+  std::unordered_map<uint32_t, void *> mapped_;
 };
 
 }  // namespace directx11
 }  // namespace lang
 }  // namespace taichi
+
+#endif

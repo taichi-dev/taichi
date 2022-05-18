@@ -9,6 +9,8 @@
 namespace taichi {
 namespace lang {
 
+constexpr size_t kBufferSizeEntireSize = size_t(-1);
+
 // For backend dependent code (e.g. codegen)
 // Or the backend runtime itself
 // Capabilities are per-device
@@ -44,6 +46,21 @@ enum class DeviceCapability : uint32_t {
   spirv_has_subgroup_ballot,
   // Graphics Caps,
   wide_lines
+};
+
+enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
+
+enum class BlendFactor : uint32_t {
+  zero,
+  one,
+  src_color,
+  one_minus_src_color,
+  dst_color,
+  one_minus_dst_color,
+  src_alpha,
+  one_minus_src_alpha,
+  dst_alpha,
+  one_minus_dst_alpha
 };
 
 class Device;
@@ -166,7 +183,14 @@ enum class PipelineStageType {
   raytracing
 };
 
+// FIXME: Drop the plural form?
 enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
+
+enum class PolygonMode : int {
+  Fill = 0,
+  Line = 1,
+  Point = 2,
+};
 
 enum class BufferFormat : uint32_t {
   r8,
@@ -373,13 +397,26 @@ inline bool operator&(AllocUsage a, AllocUsage b) {
   return static_cast<int>(a) & static_cast<int>(b);
 }
 
+class StreamSemaphoreObject {
+ public:
+  virtual ~StreamSemaphoreObject() {
+  }
+};
+
+using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
+
 class Stream {
  public:
-  virtual ~Stream(){};
+  virtual ~Stream() {
+  }
 
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
-  virtual void submit(CommandList *cmdlist) = 0;
-  virtual void submit_synced(CommandList *cmdlist) = 0;
+  virtual StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
+  virtual StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
 };
@@ -433,6 +470,9 @@ class Device {
   // Each thraed will acquire its own stream
   virtual Stream *get_compute_stream() = 0;
 
+  // Wait for all tasks to complete (task from all streams)
+  virtual void wait_idle() = 0;
+
   // Mapping can fail and will return nullptr
   virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
   virtual void *map(DeviceAllocation alloc) = 0;
@@ -474,8 +514,10 @@ class Surface {
   virtual ~Surface() {
   }
 
+  virtual StreamSemaphore acquire_next_image() = 0;
   virtual DeviceAllocation get_target_image() = 0;
-  virtual void present_image() = 0;
+  virtual void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
@@ -520,15 +562,29 @@ struct ImageParams {
   bool export_sharing{false};
 };
 
+struct BlendFunc {
+  BlendOp op{BlendOp::add};
+  BlendFactor src_factor{BlendFactor::src_alpha};
+  BlendFactor dst_factor{BlendFactor::one_minus_src_alpha};
+};
+
+struct BlendingParams {
+  bool enable{true};
+  BlendFunc color;
+  BlendFunc alpha;
+};
+
 struct RasterParams {
-  TopologyType prim_topology;
+  TopologyType prim_topology{TopologyType::Triangles};
+  PolygonMode polygon_mode{PolygonMode::Fill};
   bool front_face_cull{false};
   bool back_face_cull{false};
   bool depth_test{false};
   bool depth_write{false};
+  std::vector<BlendingParams> blending{};
 };
 
-class GraphicsDevice : public Device {
+class TI_DLL_EXPORT GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,

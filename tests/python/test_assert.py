@@ -108,16 +108,6 @@ def test_assert_ok():
 
 
 @test_utils.test(arch=get_host_arch_list())
-def test_static_assert_is_static():
-    @ti.kernel
-    def func():
-        x = 0
-        ti.static_assert(x)  # Expr is not None
-
-    func()
-
-
-@test_utils.test(arch=get_host_arch_list())
 def test_static_assert_message():
     x = 3
 
@@ -149,3 +139,15 @@ def test_static_assert_data_type_ok():
         ti.static_assert(x.dtype == ti.f32)
 
     func()
+
+
+@test_utils.test()
+def test_static_assert_nonstatic_condition():
+    @ti.kernel
+    def foo():
+        value = False
+        ti.static_assert(value, "Oh, no!")
+
+    with pytest.raises(ti.TaichiTypeError,
+                       match="Static assert with non-static condition"):
+        foo()

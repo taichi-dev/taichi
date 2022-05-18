@@ -178,6 +178,7 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
+      .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -365,16 +366,18 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype) {
+              DataType dtype, const std::string &storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype);
+             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
+                                        storage_format);
            })
       .def("create_sparse_matrix",
-           [](Program *program, int n, int m) {
+           [](Program *program, int n, int m, DataType dtype,
+              std::string storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrix(n, m);
+             return make_sparse_matrix(n, m, dtype, storage_format);
            })
       .def(
           "dump_dot",
@@ -413,6 +416,14 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
            })
+      .def(
+          "create_ndarray",
+          [&](Program *program, const DataType &dt,
+              const std::vector<int> &shape) -> Ndarray * {
+            return program->create_ndarray(dt, shape);
+          },
+          py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
       .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
         return Expr::make<GlobalVariableExpression>(
             snode, program->get_next_global_id());
@@ -492,7 +503,6 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Ndarray>(m, "Ndarray")
-      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
@@ -698,7 +708,10 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(bit_shr)
   DEFINE_EXPRESSION_OP(bit_sar)
   DEFINE_EXPRESSION_OP(bit_not)
+
   DEFINE_EXPRESSION_OP(logic_not)
+  DEFINE_EXPRESSION_OP(logical_and)
+  DEFINE_EXPRESSION_OP(logical_or)
 
   DEFINE_EXPRESSION_OP(add)
   DEFINE_EXPRESSION_OP(sub)
@@ -720,7 +733,9 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &>);
+        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+
+  m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
@@ -932,27 +947,56 @@ void export_lang(py::module &m) {
       },
       py::return_value_policy::reference);
 
+  // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def(py::init<>())
+      .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
+           py::arg("dt") = PrimitiveType::f32)
+      .def(py::init<SparseMatrix &>())
       .def("to_string", &SparseMatrix::to_string)
-      .def(py::self + py::self, py::return_value_policy::reference_internal)
-      .def(py::self - py::self, py::return_value_policy::reference_internal)
-      .def(float() * py::self, py::return_value_policy::reference_internal)
-      .def(py::self * float(), py::return_value_policy::reference_internal)
-      .def(py::self * py::self, py::return_value_policy::reference_internal)
-      .def("matmul", &SparseMatrix::matmul,
-           py::return_value_policy::reference_internal)
-      .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
-      .def("transpose", &SparseMatrix::transpose,
-           py::return_value_policy::reference_internal)
-      .def("get_element", &SparseMatrix::get_element)
-      .def("set_element", &SparseMatrix::set_element)
+      .def("get_element", &SparseMatrix::get_element<float32>)
+      .def("set_element", &SparseMatrix::set_element<float32>)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
+
+#define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
+  using STORAGE##TYPE##EigenMatrix =                                         \
+      Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;                      \
+  py::class_<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>, SparseMatrix>(   \
+      m, #VTYPE #STORAGE "_EigenSparseMatrix")                               \
+      .def(py::init<int, int, DataType>())                                   \
+      .def(py::init<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> &>())      \
+      .def(py::init<const STORAGE##TYPE##EigenMatrix &>())                   \
+      .def(py::self += py::self)                                             \
+      .def(py::self + py::self)                                              \
+      .def(py::self -= py::self)                                             \
+      .def(py::self - py::self)                                              \
+      .def(py::self *= float##TYPE())                                        \
+      .def(py::self *float##TYPE())                                          \
+      .def(float##TYPE() * py::self)                                         \
+      .def(py::self *py::self)                                               \
+      .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
+      .def("transpose",                                                      \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
+      .def("get_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element<      \
+               float##TYPE>)                                                 \
+      .def("set_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element<      \
+               float##TYPE>)                                                 \
+      .def("mat_vec_mul",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
+               Eigen::VectorX##VTYPE>);
+
+  MAKE_SPARSE_MATRIX(32, ColMajor, f);
+  MAKE_SPARSE_MATRIX(32, RowMajor, f);
+  MAKE_SPARSE_MATRIX(64, ColMajor, d);
+  MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)
@@ -1066,9 +1110,9 @@ void export_lang(py::module &m) {
 
   m.def("set_relation_dynamic",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
-           SNode *offset) {
-          mesh_ptr.ptr->relations.insert(
-              std::pair(type, mesh::MeshLocalRelation(value, offset)));
+           SNode *patch_offset, SNode *offset) {
+          mesh_ptr.ptr->relations.insert(std::pair(
+              type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
 }
 

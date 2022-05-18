@@ -37,17 +37,13 @@ class ProgramImpl {
   /**
    * JIT compiles @param tree to backend-specific data types.
    */
-  virtual void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees);
+  virtual void compile_snode_tree_types(SNodeTree *tree);
 
   /**
    * Compiles the @param tree types and allocates runtime buffer for it.
    */
-  virtual void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer_ptr) = 0;
+  virtual void materialize_snode_tree(SNodeTree *tree,
+                                      uint64 *result_buffer_ptr) = 0;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) = 0;
 
@@ -59,6 +55,11 @@ class ProgramImpl {
    * Perform a backend synchronization.
    */
   virtual void synchronize() = 0;
+
+  virtual StreamSemaphore flush() {
+    synchronize();
+    return nullptr;
+  }
 
   /**
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
@@ -76,10 +77,6 @@ class ProgramImpl {
   }
 
   virtual Device *get_graphics_device() {
-    return nullptr;
-  }
-
-  virtual std::shared_ptr<Device> get_device_shared() {
     return nullptr;
   }
 

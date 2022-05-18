@@ -1,4 +1,5 @@
 import numbers
+from itertools import count
 from types import FunctionType, MethodType
 from typing import Iterable
 
@@ -8,7 +9,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import TaichiRuntimeError
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -36,6 +37,8 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
+    if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
+        return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
@@ -117,8 +120,7 @@ def subscript(value, *_indices, skip_reordered=False):
             ind = [_index]
         flattened_indices += ind
     _indices = tuple(flattened_indices)
-    if isinstance(_indices,
-                  tuple) and len(_indices) == 1 and _indices[0] is None:
+    if len(_indices) == 1 and _indices[0] is None:
         _indices = ()
 
     if has_slice:
@@ -209,13 +211,27 @@ def make_tensor_element_expr(_var, _indices, shape, stride):
                                           shape, stride))
 
 
+class SrcInfoGuard:
+    def __init__(self, info_stack, info):
+        self.info_stack = info_stack
+        self.info = info
+
+    def __enter__(self):
+        self.info_stack.append(self.info)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.info_stack.pop()
+
+
 class PyTaichi:
+    _gen = count(0)
+
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
-        self.scope_stack = []
+        self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
@@ -226,9 +242,16 @@ class PyTaichi:
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
+        self.generation = next(self._gen)
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
+
+    def src_info_guard(self, info):
+        return SrcInfoGuard(self.src_info_stack, info)
+
+    def get_current_src_info(self):
+        return self.src_info_stack[-1]
 
     def set_default_fp(self, fp):
         assert fp in [f16, f32, f64]
@@ -374,6 +397,8 @@ def static_assert(cond, msg=None):
         >>>     ti.static_assert(year % 4 == 0, "the year must be a lunar year")
         AssertionError: the year must be a lunar year
     """
+    if isinstance(cond, Expr):
+        raise TaichiTypeError("Static assert with non-static condition")
     if msg is not None:
         assert cond, msg
     else:
@@ -461,7 +486,7 @@ class _Root:
 root = _Root()
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
-See also https://docs.taichi.graphics/lang/articles/layout
+See also https://docs.taichi-lang.org/docs/layout
 
 Example::
 
@@ -503,7 +528,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     actually defined. The data in a Taichi field can be directly accessed by
     a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
 
-    See also https://docs.taichi.graphics/lang/articles/field
+    See also https://docs.taichi-lang.org/docs/field
 
     Args:
         dtype (DataType): data type of the field.
@@ -758,7 +783,7 @@ def static(x, *xs):
     `static()` is what enables the so-called metaprogramming in Taichi. It is
     in many ways similar to ``constexpr`` in C++.
 
-    See also https://docs.taichi.graphics/lang/articles/meta.
+    See also https://docs.taichi-lang.org/docs/meta.
 
     Args:
         x (Any): an expression to be evaluated

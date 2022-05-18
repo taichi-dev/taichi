@@ -16,10 +16,21 @@ class NdarrayRwAccessorsBank;
 
 class Ndarray {
  public:
+  /* Constructs a Ndarray managed by Program.
+   * Memory allocation and deallocation is handled by Program.
+   * TODO: Ideally Ndarray shouldn't worry about memory alloc/dealloc at all.
+   */
   explicit Ndarray(Program *prog,
                    const DataType type,
                    const std::vector<int> &shape);
 
+  /* Constructs a Ndarray from an existing DeviceAllocation
+   * It doesn't handle the allocation and deallocation.
+   */
+  explicit Ndarray(DeviceAllocation &devalloc,
+                   const DataType type,
+                   const std::vector<int> &shape);
+  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;
   // Invariant: Since ndarray indices are flattened for vector/matrix, this is
   // always true:
@@ -42,23 +53,23 @@ class Ndarray {
   ~Ndarray();
 
  private:
-  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
+  void buffer_fill(uint32_t val);
+
   // Invariant:
   //   data_ptr_ is not nullptr iff arch is a llvm backend
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
-  // Ndarrays manage their own |DeviceAllocation| so this must be shared with
-  // |OpenGlRuntime|. Without the ownership, when the program exits |device_|
-  // might be destructed earlier than Ndarray object, leaving a segfault when
-  // you try to deallocate in Ndarray destructor.
-  // Note that we might consider changing this logic later if we implement
-  // dynamic tensor rematerialization.
-  std::shared_ptr<Device> device_{nullptr};
-  void buffer_fill(uint32_t val);
+
+  Program *prog_{nullptr};
+  // TODO: maybe remove these?
   LlvmProgramImpl *prog_impl_{nullptr};
   NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
+
+// TODO: move this as a method inside RuntimeContext once Ndarray is decoupled
+// with Program
+void set_runtime_ctx_ndarray(RuntimeContext &ctx, int arg_id, Ndarray &ndarray);
 
 }  // namespace lang
 }  // namespace taichi

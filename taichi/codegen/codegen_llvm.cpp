@@ -1,13 +1,20 @@
-#ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
-#include "taichi/llvm/llvm_offline_cache.h"
+
+#include <algorithm>
+
+#ifdef TI_WITH_LLVM
+
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Linker/Linker.h"
+
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
+#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
-
-#include "llvm/IR/Module.h"
-#include "llvm/Bitcode/BitcodeReader.h"
-#include "llvm/Linker/Linker.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -16,7 +23,6 @@ TLANG_NAMESPACE_BEGIN
 // OffloadedTask
 
 OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-  func = nullptr;
 }
 
 void OffloadedTask::begin(const std::string &name) {
@@ -25,19 +31,6 @@ void OffloadedTask::begin(const std::string &name) {
 
 void OffloadedTask::end() {
   codegen->offloaded_tasks.push_back(*this);
-}
-
-void OffloadedTask::operator()(RuntimeContext *context) {
-  TI_ASSERT(func);
-  func(context);
-}
-
-void OffloadedTask::compile() {
-  TI_ASSERT(!func);
-  auto kernel_symbol = codegen->tlctx->lookup_function_pointer(name);
-  TI_ASSERT_INFO(kernel_symbol, "Function not found");
-
-  func = (task_fp_type)kernel_symbol;
 }
 
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
@@ -60,6 +53,10 @@ FunctionCreationGuard::FunctionCreationGuard(
   old_entry = mb->entry_block;
   mb->entry_block = allocas;
 
+  final = llvm::BasicBlock::Create(*mb->llvm_context, "final", body);
+  old_final = mb->final_block;
+  mb->final_block = final;
+
   entry = llvm::BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
 
   ip = mb->builder->saveIP();
@@ -73,18 +70,20 @@ FunctionCreationGuard::FunctionCreationGuard(
 
 FunctionCreationGuard::~FunctionCreationGuard() {
   if (!mb->returned) {
-    mb->builder->CreateRetVoid();
+    mb->builder->CreateBr(final);
   }
-  mb->func = old_func;
-  mb->builder->restoreIP(ip);
+  mb->builder->SetInsertPoint(final);
+  mb->builder->CreateRetVoid();
   mb->returned = false;
 
-  {
-    llvm::IRBuilderBase::InsertPointGuard gurad(*mb->builder);
-    mb->builder->SetInsertPoint(allocas);
-    mb->builder->CreateBr(entry);
-    mb->entry_block = old_entry;
-  }
+  mb->builder->SetInsertPoint(allocas);
+  mb->builder->CreateBr(entry);
+
+  mb->entry_block = old_entry;
+  mb->final_block = old_final;
+  mb->func = old_func;
+  mb->builder->restoreIP(ip);
+
   TI_ASSERT(!llvm::verifyFunction(*body, &llvm::errs()));
 }
 
@@ -844,6 +843,12 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_int8(), true));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u8)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(8, (uint64)val.val_uint8(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));
@@ -1072,6 +1077,9 @@ llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
 
 llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   auto intermediate_bits = 0;
+  if (type.is_pointer()) {
+    return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
+  }
   if (auto cit = type->cast<CustomIntType>()) {
     intermediate_bits = data_type_bits(cit->get_compute_type());
   } else {
@@ -1095,8 +1103,8 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
-    dest_ty =
-        llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
+    dest_ty = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
@@ -1118,7 +1126,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
            tlctx->get_constant<int32>(idx++)});
     }
   }
-  builder->CreateRetVoid();
+  builder->CreateBr(final_block);
   returned = true;
 }
 
@@ -1128,12 +1136,7 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  auto mask = stmt->parent->mask();
-  if (mask && stmt->width() != 1) {
-    TI_NOT_IMPLEMENTED
-  } else {
-    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
-  }
+  builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
@@ -1350,7 +1353,6 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->val]);
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
@@ -1667,6 +1669,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
+  this->final_block = llvm::BasicBlock::Create(*llvm_context, "final", func);
 
   // The real function body
   func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
@@ -1676,10 +1679,12 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
 void CodeGenLLVM::finalize_offloaded_task_function() {
   if (!returned) {
-    builder->CreateRetVoid();
+    builder->CreateBr(final_block);
   } else {
     returned = false;
   }
+  builder->SetInsertPoint(final_block);
+  builder->CreateRetVoid();
 
   // entry_block should jump to the body after all allocas are inserted
   builder->SetInsertPoint(entry_block);
@@ -2268,39 +2273,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
       });
 }
 
-FunctionType CodeGenLLVM::compile_module_to_executable() {
-  TI_AUTO_PROF
-
-  tlctx->add_module(std::move(module));
-
-  for (auto &task : offloaded_tasks) {
-    task.compile();
-  }
-  auto offloaded_tasks_local = offloaded_tasks;
-  auto kernel_name_ = kernel_name;
-  return [offloaded_tasks_local, kernel_name_,
-          kernel = this->kernel](RuntimeContext &context) {
-    TI_TRACE("Launching kernel {}", kernel_name_);
-    auto args = kernel->args;
-    // For taichi ndarrays, context.args saves pointer to its
-    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocation[i] &&
-          args[i].size > 0) {
-        DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
-                              ->get_ndarray_alloc_info_ptr(*ptr);
-        context.set_arg(i, host_ptr);
-        context.set_device_allocation(i, false);
-      }
-    }
-    for (auto task : offloaded_tasks_local) {
-      task(&context);
-    }
-  };
-}
-
 FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
     std::vector<llvm::Type *> argument_types) {
   return FunctionCreationGuard(this, argument_types);
@@ -2374,33 +2346,21 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-FunctionType CodeGenLLVM::gen() {
+CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   bool needs_cache = false;
   const auto &config = prog->config;
   std::string kernel_key;
-  if (config.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
-    kernel_key = get_offline_cache_key(&kernel->program->config, kernel);
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
+    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
 
-    LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
-    LlvmOfflineCache::KernelCacheData cache_data;
-    auto *tlctx =
-        this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
-    auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-    if (reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-      this->module = std::move(cache_data.owned_module);
-      for (auto &task : cache_data.offloaded_task_list) {
-        auto &t = this->offloaded_tasks.emplace_back(this);
-        t.name = std::move(task.name);
-        t.block_dim = task.block_dim;
-        t.grid_dim = task.grid_dim;
-      }
-      kernel->set_from_offline_cache();
-      return compile_module_to_executable();
-    } else {
-      needs_cache = true;
+    CompiledData res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
+    if (ok) {
+      return res;
     }
+
+    needs_cache = true;
   }
 
   if (!kernel->lowered()) {
@@ -2411,7 +2371,50 @@ FunctionType CodeGenLLVM::gen() {
   if (needs_cache) {
     cache_module(kernel_key);
   }
-  return compile_module_to_executable();
+  CompiledData res;
+  res.offloaded_tasks = std::move(this->offloaded_tasks);
+  res.llvm_module = std::move(this->module);
+  return res;
+}
+
+bool CodeGenLLVM::maybe_read_compilation_from_cache(
+    const std::string &kernel_key,
+    CompiledData *data) {
+  const auto &config = prog->config;
+  auto reader =
+      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  if (!reader) {
+    return false;
+  }
+
+  LlvmOfflineCache::KernelCacheData cache_data;
+  auto *tlctx =
+      this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+  auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+    return false;
+  }
+  this->module = std::move(cache_data.owned_module);
+  for (auto &task : cache_data.offloaded_task_list) {
+    auto &t = this->offloaded_tasks.emplace_back(this);
+    t.name = std::move(task.name);
+    t.block_dim = task.block_dim;
+    t.grid_dim = task.grid_dim;
+  }
+  kernel->set_from_offline_cache();
+  data->offloaded_tasks = std::move(this->offloaded_tasks);
+  data->llvm_module = std::move(this->module);
+  return true;
+}
+
+FunctionType CodeGenLLVM::gen() {
+  auto compiled_res = run_compilation();
+
+  ModuleToFunctionConverter converter{tlctx,
+                                      kernel->program->get_llvm_program_impl()};
+  return converter.convert(kernel, std::move(compiled_res.llvm_module),
+                           std::move(compiled_res.offloaded_tasks));
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2446,6 +2449,10 @@ llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   }
 
   return xlogue;
+}
+
+void CodeGenLLVM::visit(ReferenceStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->var];
 }
 
 void CodeGenLLVM::visit(FuncCallStmt *stmt) {
@@ -2489,6 +2496,66 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
   prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
                                               std::move(offloaded_task_list));
 }
+
+ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                                     LlvmProgramImpl *program)
+    : tlctx_(tlctx), program_(program) {
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<ArgInfo> &args,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  tlctx_->add_module(std::move(mod));
+
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs;
+  task_funcs.reserve(tasks.size());
+  for (auto &task : tasks) {
+    auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+    TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
+    task_funcs.push_back((TaskFunc)(func_ptr));
+  }
+  // Do NOT capture `this`...
+  return [program = this->program_, args, kernel_name,
+          task_funcs](RuntimeContext &context) {
+    TI_TRACE("Launching kernel {}", kernel_name);
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array && context.is_device_allocations[i] &&
+          context.array_runtime_sizes[i] > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_array_is_device_allocation(i,
+                                               /*is_device_allocation=*/false);
+      }
+    }
+    for (auto task : task_funcs) {
+      task(&context);
+    }
+  };
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  const auto &kargs = kernel->args;
+  std::vector<ArgInfo> args;
+  args.resize(kargs.size());
+  std::transform(kargs.begin(), kargs.end(), args.begin(),
+                 [](const auto &arg) -> ArgInfo {
+                   ArgInfo res;
+                   res.is_array = arg.is_array;
+                   return res;
+                 });
+  return convert(kernel->name, args, std::move(mod), std::move(tasks));
+}
+
 TLANG_NAMESPACE_END
 
 #endif  // #ifdef TI_WITH_LLVM

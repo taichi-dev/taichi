@@ -8,20 +8,94 @@ from tests import test_utils
 
 @test_utils.test(arch=ti.cuda)
 def test_all_nonzero():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.i32, shape=32)
+    b = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.all_nonzero(ti.u32(0xFFFFFFFF), b[i])
+
+    for i in range(32):
+        b[i] = 1
+        a[i] = -1
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == 1
+
+    b[np.random.randint(0, 32)] = 0
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == 0
 
 
 @test_utils.test(arch=ti.cuda)
 def test_any_nonzero():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.i32, shape=32)
+    b = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.any_nonzero(ti.u32(0xFFFFFFFF), b[i])
+
+    for i in range(32):
+        b[i] = 0
+        a[i] = -1
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == 0
+
+    b[np.random.randint(0, 32)] = 1
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == 1
 
 
 @test_utils.test(arch=ti.cuda)
 def test_unique():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def check():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.unique(ti.u32(0xFFFFFFFF), b[i])
+
+    for i in range(32):
+        b[i] = 0
+        a[i] = -1
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 1
+
+    for i in range(32):
+        b[i] = i + 100
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 1
+
+    b[np.random.randint(0, 32)] = 0
+
+    check()
+
+    for i in range(32):
+        assert a[i] == 0
 
 
 @test_utils.test(arch=ti.cuda)
@@ -47,15 +121,71 @@ def test_ballot():
 
 
 @test_utils.test(arch=ti.cuda)
-def test_shfl_i32():
-    # TODO
-    pass
+def test_shfl_sync_i32():
+    a = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_sync_i32(ti.u32(0xFFFFFFFF), a[i], 0)
+
+    for i in range(32):
+        a[i] = i + 1
+
+    foo()
+
+    for i in range(1, 32):
+        assert a[i] == 1
+
+
+@test_utils.test(arch=ti.cuda)
+def test_shfl_sync_f32():
+    a = ti.field(dtype=ti.f32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_sync_f32(ti.u32(0xFFFFFFFF), a[i], 0)
+
+    for i in range(32):
+        a[i] = i + 1.0
+
+    foo()
+
+    for i in range(1, 32):
+        assert a[i] == approx(1.0, abs=1e-4)
 
 
 @test_utils.test(arch=ti.cuda)
 def test_shfl_up_i32():
     # TODO
     pass
+
+
+@test_utils.test(arch=ti.cuda)
+def test_shfl_xor_i32():
+    a = ti.field(dtype=ti.i32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            for j in range(5):
+                offset = 1 << j
+                a[i] += ti.simt.warp.shfl_xor_i32(ti.u32(0xFFFFFFFF), a[i],
+                                                  offset)
+
+    value = 0
+    for i in range(32):
+        a[i] = i
+        value += i
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == value
 
 
 @test_utils.test(arch=ti.cuda)
@@ -119,6 +249,25 @@ def test_shfl_up_f32():
 
 
 @test_utils.test(arch=ti.cuda)
+def test_shfl_down_f32():
+    a = ti.field(dtype=ti.f32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = ti.simt.warp.shfl_down_f32(ti.u32(0xFFFFFFFF), a[i], 1)
+
+    for i in range(32):
+        a[i] = i * i * 0.9
+
+    foo()
+
+    for i in range(31):
+        assert a[i] == approx((i + 1) * (i + 1) * 0.9, abs=1e-4)
+
+
+@test_utils.test(arch=ti.cuda)
 def test_match_any():
     # TODO
     pass
@@ -132,14 +281,89 @@ def test_match_all():
 
 @test_utils.test(arch=ti.cuda)
 def test_active_mask():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=16)
+        for i in range(32):
+            a[i] = ti.simt.warp.active_mask()
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == 65535
 
 
 @test_utils.test(arch=ti.cuda)
-def test_sync():
-    # TODO
-    pass
+def test_warp_sync():
+    a = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(32):
+            a[i] = i
+        ti.simt.warp.sync(ti.u32(0xFFFFFFFF))
+        for i in range(16):
+            a[i] = a[i + 16]
+
+    foo()
+
+    for i in range(32):
+        assert a[i] == i % 16 + 16
+
+
+@test_utils.test(arch=ti.cuda)
+def test_block_sync():
+    N = 1024
+    a = ti.field(dtype=ti.u32, shape=N)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=N)
+        for i in range(N):
+            # Make the 0-th thread runs slower intentionally
+            for j in range(N - i):
+                a[i] = j
+            ti.simt.block.sync()
+            if i > 0:
+                a[i] = a[0]
+
+    foo()
+
+    for i in range(N):
+        assert a[i] == N - 1
+
+
+# TODO: replace this with a stronger test case
+@test_utils.test(arch=ti.cuda)
+def test_grid_memfence():
+
+    N = 1000
+    BLOCK_SIZE = 1
+    a = ti.field(dtype=ti.u32, shape=N)
+
+    @ti.kernel
+    def foo():
+
+        block_counter = 0
+        ti.loop_config(block_dim=BLOCK_SIZE)
+        for i in range(N):
+
+            a[i] = 1
+            ti.simt.grid.memfence()
+
+            # Execute a prefix sum after all blocks finish
+            actual_order_of_block = ti.atomic_add(block_counter, 1)
+            if actual_order_of_block == N - 1:
+                for j in range(1, N):
+                    a[j] += a[j - 1]
+
+    foo()
+
+    for i in range(N):
+        assert a[i] == i + 1
 
 
 # Higher level primitives test

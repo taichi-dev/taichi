@@ -22,7 +22,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      device_(prog->get_device_shared()),
+      prog_(prog),
       prog_impl_(prog->get_llvm_program_impl()),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
@@ -38,9 +38,23 @@ Ndarray::Ndarray(Program *prog,
 #endif
 }
 
+Ndarray::Ndarray(DeviceAllocation &devalloc,
+                 const DataType type,
+                 const std::vector<int> &shape)
+    : ndarray_alloc_(devalloc),
+      dtype(type),
+      shape(shape),
+      num_active_indices(shape.size()),
+      nelement_(std::accumulate(std::begin(shape),
+                                std::end(shape),
+                                1,
+                                std::multiplies<>())),
+      element_size_(data_type_size(dtype)) {
+}
+
 Ndarray::~Ndarray() {
-  if (device_) {
-    device_->dealloc_memory(ndarray_alloc_);
+  if (prog_) {
+    ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);
   }
 }
 
@@ -104,5 +118,12 @@ void Ndarray::buffer_fill(uint32_t val) {
   TI_ERROR("Llvm disabled");
 #endif
 }
+
+void set_runtime_ctx_ndarray(RuntimeContext &ctx,
+                             int arg_id,
+                             Ndarray &ndarray) {
+  ctx.set_arg_devalloc(arg_id, ndarray.ndarray_alloc_, ndarray.shape);
+}
+
 }  // namespace lang
 }  // namespace taichi

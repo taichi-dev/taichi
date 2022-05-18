@@ -1,4 +1,8 @@
 #pragma once
+
+#include <cstddef>
+#include <memory>
+
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/system/snode_tree_buffer_manager.h"
@@ -17,23 +21,22 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-#include <memory>
-
 namespace llvm {
 class Module;
-}
+}  // namespace llvm
 
 namespace taichi {
 namespace lang {
+
 class StructCompiler;
 
 namespace cuda {
 class CudaDevice;
-}
+}  // namespace cuda
 
 namespace cpu {
 class CpuDevice;
-}
+}  // namespace cpu
 
 class LlvmProgramImpl : public ProgramImpl {
  public:
@@ -62,14 +65,9 @@ class LlvmProgramImpl : public ProgramImpl {
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
-  void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   template <typename T>
   T fetch_result(int i, uint64 *result_buffer) {
@@ -109,8 +107,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
 
-  std::shared_ptr<Device> get_device_shared() override;
-
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
                     uint32_t data);
@@ -120,11 +116,17 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
 
+  Device *get_compute_device() override {
+    return device_.get();
+  }
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
-      const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      bool has_multiple_snode_trees,
       TaichiLLVMContext *tlctx);
 
+  std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
+      SNodeTree *tree);
   /**
    * Initializes the SNodes for LLVM based backends.
    */
@@ -158,10 +160,6 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
-  Device *get_compute_device() override {
-    return device_.get();
-  }
-
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 
   void dump_cache_data_to_disk() override;
@@ -172,7 +170,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<ThreadPool> thread_pool_{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
-  std::unique_ptr<StructCompiler> struct_compiler_{nullptr};
+  std::size_t num_snode_trees_processed_{0};
   void *llvm_runtime_{nullptr};
   void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
 

@@ -204,10 +204,9 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
-    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_);
+    program_impl_->compile_snode_tree_types(tree.get());
   } else {
-    program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
-                                          result_buffer);
+    program_impl_->materialize_snode_tree(tree.get(), result_buffer);
   }
   if (id < snode_trees_.size()) {
     snode_trees_[id] = std::move(tree);
@@ -243,6 +242,10 @@ void Program::synchronize() {
     }
     sync = true;
   }
+}
+
+StreamSemaphore Program::flush() {
+  return program_impl_->flush();
 }
 
 void Program::async_flush() {
@@ -505,6 +508,8 @@ void Program::finalize() {
     }
   }
 
+  ndarrays_.clear();
+
   synchronize();
   memory_pool_->terminate();
 
@@ -548,6 +553,20 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
             config.arch == Arch::vulkan || config.arch == Arch::opengl);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
+}
+
+Ndarray *Program::create_ndarray(const DataType type,
+                                 const std::vector<int> &shape) {
+  // TODO: allocate DeviceAllocation first and then create Ndarray
+  auto arr = std::make_unique<Ndarray>(this, type, shape);
+  auto arr_ptr = arr.get();
+  ndarrays_.insert({arr_ptr, std::move(arr)});
+  return arr_ptr;
+}
+
+void Program::delete_ndarray(Ndarray *ndarray) {
+  TI_ASSERT(ndarrays_.count(ndarray));
+  ndarrays_.erase(ndarray);
 }
 
 Program::~Program() {

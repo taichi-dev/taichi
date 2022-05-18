@@ -10,9 +10,9 @@ Developers who are interested in the compiler, computer graphics, or high-perfor
 
 :::danger IMPORTANT
 
-This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts.
+This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source.
 
-See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users.
+See the [Get Started](https://docs.taichi-lang.org/) for more information on quickly setting up Taichi for end users.
 
 :::
 
@@ -168,7 +168,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     {label: 'LLVM 10.0.0 for Linux', value: 'llvm_linux'},
     {label: 'LLVM 10.0.0 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
     {label: 'LLVM 10.0.0 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
-    {label: 'LLVM 10.0.0 for Windows MSVC 2019', value: 'llvm_windows'},
+    {label: 'LLVM 10.0.0 for Windows', value: 'llvm_windows'},
   ]}>
 
 <TabItem value="llvm_linux">
@@ -182,6 +182,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 </TabItem>
 <TabItem value="llvm_windows">
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip">LLVM 10.0.0 for Windows MSVC 2019</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
 
@@ -269,12 +270,13 @@ llvm-config --version  # You should get 10.0.0
 
 # LLVM 10.0.0 + MSVC 2019
 
-cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_CXX_STANDARD=17
+cmake --build . --target=INSTALL --config=Release
 ```
 
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
 2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
-3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
+3. If you use MSVC 2019+, ensure that you use **C++17** for the `INSTALL` project.
 4. When the build completes, add an environment variable `LLVM_DIR` with value `<PATH_TO_BUILD>/build/installed/lib/cmake/llvm`.
 
 </TabItem>
@@ -441,7 +443,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>;/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 

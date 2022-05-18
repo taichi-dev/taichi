@@ -119,7 +119,7 @@ class SNode {
   std::string name;
   // Product of the |shape| of all the activated axes identified by
   // |extractors|.
-  // See https://docs.taichi.graphics/lang/articles/internal for terms
+  // See https://docs.taichi-lang.org/docs/internal for terms
   // like cell and container.
   int64 num_cells_per_container{1};
   int total_num_bits{0};

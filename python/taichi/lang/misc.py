@@ -170,9 +170,6 @@ When this is used, Taichi automatically picks the matching CPU backend.
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
-# Legacy API
-type_factory_ = _ti_core.get_type_factory_instance()
-
 extension = _ti_core.Extension
 """An instance of Taichi extension.
 
@@ -259,7 +256,7 @@ class _SpecialConfig:
     def __init__(self):
         self.log_level = 'info'
         self.gdb_trigger = False
-        self.short_circuit_operators = False
+        self.short_circuit_operators = True
 
 
 def prepare_sandbox():
@@ -341,10 +338,14 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/layout.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
+
+    # FIXME(https://github.com/taichi-dev/taichi/issues/4811): save the current working directory since it may be
+    # changed by the Vulkan backend initialization on OS X.
+    current_dir = os.getcwd()
 
     cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
@@ -457,6 +458,8 @@ def init(arch=None,
     if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
         impl.get_runtime()._register_signal_handlers()
 
+    # Recover the current working directory (https://github.com/taichi-dev/taichi/issues/4811)
+    os.chdir(current_dir)
     return None
 
 
@@ -470,7 +473,7 @@ def no_activate(*args):
 def block_local(*args):
     """Hints Taichi to cache the fields and to enable the BLS optimization.
 
-    Please visit https://docs.taichi.graphics/lang/articles/performance
+    Please visit https://docs.taichi-lang.org/docs/performance
     for how BLS is used.
 
     Args:
@@ -486,6 +489,33 @@ def block_local(*args):
 
 
 def mesh_local(*args):
+    """Hints the compiler to cache the mesh attributes
+    and to enable the mesh BLS optimization,
+    only available for backends supporting `ti.extension.mesh` and to use with mesh-for loop.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+
+    Args:
+        *args (List[Attribute]): A list of mesh attributes or fields accessed as attributes.
+
+    Examples::
+
+        # instantiate model
+        mesh_builder = ti.Mesh.tri()
+        mesh_builder.verts.place({
+            'x' : ti.f32,
+            'y' : ti.f32
+        })
+        model = mesh_builder.build(meta)
+
+        @ti.kernel
+        def foo():
+            # hint the compiler to cache mesh vertex attribute `x` and `y`.
+            ti.mesh_local(model.verts.x, model.verts.y)
+            for v0 in model.verts: # mesh-for loop
+                for v1 in v0.verts:
+                    v0.x += v1.y
+    """
     for a in args:
         for v in a._get_field_members():
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(
@@ -620,6 +650,11 @@ def global_thread_idx():
 
 
 def mesh_patch_idx():
+    """Returns the internal mesh patch id of this running thread,
+    only available for backends supporting `ti.extension.mesh` and to use within mesh-for loop.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+    """
     return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
     )
 

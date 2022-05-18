@@ -305,7 +305,7 @@ class CCTransformer : public IRVisitor {
   static inline std::string invoke_libc(std::string name,
                                         DataType dt,
                                         std::string const &fmt,
-                                        Args &&... args) {
+                                        Args &&...args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -594,12 +594,12 @@ class CCTransformer : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
-  void emit_header(std::string f, Args &&... args) {
+  void emit_header(std::string f, Args &&...args) {
     line_appender_header_.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp

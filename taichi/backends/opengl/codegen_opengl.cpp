@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/runtime/opengl/opengl_api.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/ir/ir.h"
@@ -31,7 +31,7 @@ namespace shaders {
 
 #define TI_INSIDE_OPENGL_CODEGEN
 #include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
-#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/runtime/opengl/shaders/runtime.h"
 #include "taichi/backends/opengl/shaders/random.glsl.h"
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
 #include "taichi/backends/opengl/shaders/print.glsl.h"
@@ -122,7 +122,7 @@ class KernelGen : public IRVisitor {
   std::unordered_set<std::string> loaded_args_;
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
@@ -224,7 +224,7 @@ class KernelGen : public IRVisitor {
         kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
       std::unordered_set<int> arr_ids;
-      for ([[maybe_unused]] const auto [arr_id, bind_idx] :
+      for ([[maybe_unused]] const auto &[arr_id, bind_idx] :
            used.arr_arg_to_bind_idx) {
         arr_ids.insert(arr_id);
       }

@@ -2,7 +2,6 @@
   <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png"/>
 </div>
 
-
 ---
 
 [![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue&label=Latest%20Release)](https://github.com/taichi-dev/taichi/releases/latest)
@@ -15,9 +14,9 @@
 import taichi as ti
 ```
 
-## What is Taichi?
+## What is Taichi Lang?
 
-Taichi is an open-source, imperative, parallel programming language for high-performance numerical computation. It is embedded in Python and uses just-in-time (JIT) compiler frameworks, for example LLVM, to offload the compute-intensive Python code to the native GPU or CPU instructions.
+Taichi Lang is an open-source, imperative, parallel programming language for high-performance numerical computation. It is embedded in Python and uses just-in-time (JIT) compiler frameworks, for example LLVM, to offload the compute-intensive Python code to the native GPU or CPU instructions.
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/fractal_code.png" height="270px"></a>  <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
@@ -35,11 +34,11 @@ The language has broad applications spanning real-time physical simulation, numb
 
 ## Why Taichi?
 
-- Built around Python: Taichi shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, including NumPy and PyTorch.
-- Flexibility: Taichi provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi.graphics/lang/articles/sparse)).
-- Performance: With the `@ti.kernel` decorator, Taichi's JIT compiler automatically compiles your Python functions into efficient GPU or CPU machine code for parallel execution.
-- Portability: Write your code once and run it everywhere. Currently, Taichi supports most mainstream GPU APIs, such as CUDA and Vulkan.
-- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi.graphics/lang/articles/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
+- Built around Python: Taichi Lang shares almost the same syntax with Python, allowing you to write algorithms with minimal language barrier. It is also well integrated into the Python ecosystem, including NumPy and PyTorch.
+- Flexibility: Taichi Lang provides a set of generic data containers known as *SNode* (/ˈsnoʊd/), an effective mechanism for composing hierarchical, multi-dimensional fields. This can cover many use patterns in numerical simulation (e.g. [spatially sparse computing](https://docs.taichi-lang.org/docs/sparse)).
+- Performance: With the `@ti.kernel` decorator, Taichi Lang's JIT compiler automatically compiles your Python functions into efficient GPU or CPU machine code for parallel execution.
+- Portability: Write your code once and run it everywhere. Currently, Taichi Lang supports most mainstream GPU APIs, such as CUDA and Vulkan.
+- ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi-lang.org/docs/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
 ## Getting Started
 
@@ -67,13 +66,13 @@ The language has broad applications spanning real-time physical simulation, numb
 Use Python's package installer **pip** to install Taichi:
 
 ```bash
-pip install taichi
+pip install --upgrade taichi
 ```
 
-*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features.*
+*We also provide a nightly package. Note that nighly packages may crash because they are not fully tested.  We cannot guarantee their validity, and you are at your own risk trying out our latest, untested features. The nightly packages can be installed from our self-hosted PyPI (Using self-hosted PyPI allows us to provide more frequent releases over a longer period of time)*
 
 ```bash
-pip install -i https://test.pypi.org/simple/ taichi-nightly
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 ```
 
 ### Run your "Hello, world!"
@@ -116,29 +115,35 @@ for i in range(1000000):
     gui.show()
 ```
 
-*If Taichi is properly installed, you should get the animation below 🎉:*
+*If Taichi Lang is properly installed, you should get the animation below 🎉:*
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31"> </a><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-See [Get started](https://docs.taichi.graphics) for more information.
+See [Get started](https://docs.taichi-lang.org) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi for your own environments, see [Developer installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install).
+If you wish to try our our experimental features or build Taichi Lang for your own environments, see [Developer installation](https://docs.taichi-lang.org/docs/dev_install).
 
 ## Documentation
 
-- [Technical documents](https://docs.taichi.graphics/)
-- [API Reference](https://docs.taichi.graphics/api/)
-- [Blog](https://docs.taichi.graphics/blog)
+- [Technical documents](https://docs.taichi-lang.org/)
+- [API Reference](https://docs.taichi-lang.org/api/)
+- [Blog](https://docs.taichi-lang.org/blog)
 
 ## Contributing
 
-Kudos to all of our amazing contributors! Taichi thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
+Kudos to all of our amazing contributors! Taichi Lang thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
 
 <a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
 
 *Contributor avatars are randomly shuffled.*
+
+## License
+
+Taichi Lang is distributed under the terms of Apache License (Version 2.0).
+
+See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) for details.
 
 ## Community
 
@@ -160,8 +165,8 @@ You can also join our community from Slack or WeChat. Drop us a message at <a hr
 
 ### Demos
 
-- [Taichi examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
-- [Advanced Taichi examples](https://github.com/taichi-dev/advanced_examples)
+- [Taichi Lang examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
+- [Advanced Taichi Lang examples](https://github.com/taichi-dev/advanced_examples)
 - [DiffTaichi](https://github.com/taichi-dev/difftaichi)
 - [Taichi elements](https://github.com/taichi-dev/taichi_elements)
 - [Taichi Houdini](https://github.com/taichi-dev/taichi_houdini)
@@ -178,7 +183,7 @@ You can also join our community from Slack or WeChat. Drop us a message at <a hr
 
 ### Citations
 
-If you use Taichi in your research, please cite the corresponding papers:
+If you use Taichi Lang in your research, please cite the corresponding papers:
 
 - [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
 - [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)

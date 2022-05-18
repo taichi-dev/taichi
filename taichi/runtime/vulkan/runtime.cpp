@@ -1,4 +1,4 @@
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/program/program.h"
 
 #include <chrono>
@@ -79,7 +79,7 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+          if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
@@ -139,7 +139,8 @@ class HostDeviceContextBlitter {
   bool device_to_host(
       CommandList *cmdlist,
       const std::unordered_map<int, DeviceAllocation> &ext_arrays,
-      const std::unordered_map<int, size_t> &ext_arr_size) {
+      const std::unordered_map<int, size_t> &ext_arr_size,
+      const std::vector<StreamSemaphore> &wait_semaphore) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -149,7 +150,7 @@ class HostDeviceContextBlitter {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+          if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
             require_sync = true;
           }
         }
@@ -165,7 +166,7 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (!host_ctx_->is_device_allocation[i] && ext_arr_size.at(i)) {
+        if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
@@ -357,7 +358,7 @@ void CompiledTaichiKernel::generate_command_list(
         if (bind.buffer.type == BufferType::ListGen) {
           // FIXME: properlly support multiple list
           cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
-                               kListGenBufferSize,
+                               kBufferSizeEntireSize,
                                /*data=*/0);
           cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
         }
@@ -454,7 +455,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (host_ctx->is_device_allocation[i]) {
+        if (host_ctx->is_device_allocations[i]) {
           // NDArray
           if (host_ctx->args[i]) {
             any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
@@ -520,9 +521,11 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // If we need to host sync, sync and remove in-flight references
+  std::vector<StreamSemaphore> wait_semaphore;
+
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
-                                    ext_array_size)) {
+                                    ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }
@@ -536,15 +539,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
-      device_->get_compute_stream()->submit(current_cmdlist_.get());
-      current_cmdlist_ = nullptr;
+      flush();
     }
   }
 
   // Dealloc external arrays
   for (auto pair : any_arrays) {
     if (pair.second != kDeviceNullAllocation) {
-      if (!host_ctx->is_device_allocation[pair.first]) {
+      if (!host_ctx->is_device_allocations[pair.first]) {
         device_->dealloc_memory(pair.second);
       }
     }
@@ -552,12 +554,22 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 }
 
 void VkRuntime::synchronize() {
-  if (current_cmdlist_) {
-    device_->get_compute_stream()->submit(current_cmdlist_.get());
-    current_cmdlist_ = nullptr;
-  }
-  device_->get_compute_stream()->command_sync();
+  flush();
+  device_->wait_idle();
   ctx_buffers_.clear();
+}
+
+StreamSemaphore VkRuntime::flush() {
+  StreamSemaphore sema;
+  if (current_cmdlist_) {
+    sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
+    current_cmdlist_ = nullptr;
+  } else {
+    auto cmdlist = device_->get_compute_stream()->new_command_list();
+    cmdlist->memory_barrier();
+    sema = device_->get_compute_stream()->submit(cmdlist.get());
+  }
+  return sema;
 }
 
 Device *VkRuntime::get_ti_device() const {
@@ -579,9 +591,9 @@ void VkRuntime::init_nonroot_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kGtmpBufferSize,
+  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kListGenBufferSize,
+  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());
 }
@@ -597,7 +609,8 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
            /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
-  cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);
+  cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
+                       /*data=*/0);
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
   // cache the root buffer size

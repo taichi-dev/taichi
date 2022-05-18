@@ -50,9 +50,6 @@ class Ndarray {
   ~Ndarray();
 
  private:
-  // Invariant:
-  //   data_ptr_ is not nullptr iff arch is a llvm backend
-  uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
 

@@ -41,15 +41,6 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    @property
-    def _data_handle(self):
-        """Gets the pointer to underlying data.
-
-        Returns:
-            int: The pointer to underlying data.
-        """
-        return self.arr.data_ptr()
-
     @python_scope
     def __setitem__(self, key, value):
         """Sets ndarray element in Python scope.

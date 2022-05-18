@@ -26,15 +26,6 @@ Ndarray::Ndarray(Program *prog,
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
-#ifdef TI_WITH_LLVM
-  if (arch_is_cpu(prog->config.arch) || prog->config.arch == Arch::cuda) {
-    // For the LLVM backends, device allocation is a physical pointer.
-    data_ptr_ = prog->get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
-        ndarray_alloc_);
-  }
-#else
-  TI_ERROR("Llvm disabled");
-#endif
 }
 
 Ndarray::Ndarray(DeviceAllocation &devalloc,
@@ -55,10 +46,6 @@ Ndarray::~Ndarray() {
   if (prog_) {
     ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);
   }
-}
-
-intptr_t Ndarray::get_data_ptr_as_int() const {
-  return reinterpret_cast<intptr_t>(data_ptr_);
 }
 
 intptr_t Ndarray::get_device_allocation_ptr_as_int() const {

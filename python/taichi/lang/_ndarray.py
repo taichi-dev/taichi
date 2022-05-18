@@ -18,6 +18,19 @@ class Ndarray:
         self.dtype = cook_dtype(dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
             cook_dtype(dtype), arr_shape)
+        self._gen = impl.get_runtime().generation
+
+    def __del__(self):
+        # - impl.get_runtime().prog == None:
+        #   ti.reset() is called but ti.init() isn't re-initialized yet.
+        #   At this point all ndarrays allocated in the previous program
+        #   are freed along with program destruction.
+        # - impl.get_generation() != self.gen
+        #   This ndarray was created from previous prog which was destructed.
+        #   So its memory was freed already.
+        if impl.get_runtime().prog is not None and impl.get_runtime(
+        ).generation == self._gen:
+            impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property
     def element_shape(self):

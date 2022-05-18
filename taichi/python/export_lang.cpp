@@ -423,6 +423,7 @@ void export_lang(py::module &m) {
             return program->create_ndarray(dt, shape);
           },
           py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
       .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
         return Expr::make<GlobalVariableExpression>(
             snode, program->get_next_global_id());

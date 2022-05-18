@@ -282,6 +282,8 @@ jobs:
             C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
+          rm -rf ccache_cache
+          docker cp taichi_build_test:C:/taichi/ccache_cache ccache_cache
 
       - name: clean docker container
         shell: bash

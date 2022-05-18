@@ -312,7 +312,7 @@ target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMe
 ```
 
 ### How to deal with warnings raised when compiling third-party libraries or targets
-Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of the CMake system, CMake variables from Taichi and its submodules could get messed up under certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
+Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of the CMake system, CMake variables from Taichi and its submodules could be mixed together under certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
 
 1. Separate submodule's `CMAKE_CXX_FLAGS` from that configured in Taichi.
 2. Remove "-Wall" option from submodule's `CMAKE_CXX_FLAGS`.

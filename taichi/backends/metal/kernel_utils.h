@@ -198,7 +198,8 @@ class KernelContextAttributes {
  private:
   // Attributes that are shared by the input arg and the return value.
   struct AttribsBase {
-    // For array arg, this is #elements * stride(dt). Unit: byte
+    // For scalar arg, this is stride(dt). For array arg, this is 0.
+    // Unit: byte.
     size_t stride = 0;
     // Offset in the argument buffer
     size_t offset_in_mem = 0;

@@ -384,7 +384,7 @@ class CompiledTaichiKernel {
         continue;
       }
       const int arg_id = arg.index;
-      if (host_ctx.is_device_allocation[arg_id] ||
+      if (host_ctx.is_device_allocations[arg_id] ||
           (ext_arr_arg_to_dev_alloc.count(arg_id) > 0)) {
         continue;
       }
@@ -470,7 +470,7 @@ class HostMetalCtxBlitter {
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
-        if (host_ctx_->is_device_allocation[i]) {
+        if (host_ctx_->is_device_allocations[i]) {
           // Do nothing for Ndarray, yet
         } else {
           const void *host_ptr = host_ctx_->get_arg<void *>(i);
@@ -740,11 +740,12 @@ class KernelManager::Impl {
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             RuntimeContext *ctx) {
     mac::ScopedAutoreleasePool pool;
-    auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    ctk.maybe_init_host_arr_dev_allocs(*ctx);
+    auto &cti_kernel =
+        *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
+    cti_kernel.maybe_init_host_arr_dev_allocs(*ctx);
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
-        ctk, ctx, rhi_device_.get(), devalloc_mapper_, host_result_buffer_,
-        taichi_kernel_name);
+        cti_kernel, ctx, rhi_device_.get(), devalloc_mapper_,
+        host_result_buffer_, taichi_kernel_name);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
@@ -760,16 +761,16 @@ class KernelManager::Impl {
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = cti_kernel.ctx_buffer.get();
     }
-    auto ndarray_buffers = get_dev_alloc_buffers(ctk, *ctx);
+    auto ndarray_buffers = get_dev_alloc_buffers(cti_kernel, *ctx);
     input_buffers.insert(ndarray_buffers.begin(), ndarray_buffers.end());
 
-    for (const auto &mk : ctk.compiled_mtl_kernels) {
+    for (const auto &mk : cti_kernel.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
 
-    const auto &used = ctk.ti_kernel_attribs.used_features;
+    const auto &used = cti_kernel.ti_kernel_attribs.used_features;
     const bool used_print_assert = (used.print || used.assertion);
     if (ctx_blitter || used_print_assert) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely

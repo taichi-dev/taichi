@@ -58,9 +58,7 @@ class SparseMatrix {
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr){};
-  virtual SparseMatrix &build_from_ndarray(const Ndarray &ndarray) {
-    return *this;
-  }
+
   inline const int num_rows() const {
     return rows_;
   }
@@ -76,6 +74,8 @@ class SparseMatrix {
   virtual const void *get_matrix() const {
     return nullptr;
   }
+
+ inline DataType get_data_type(){return dtype_;}
 
   template <class T>
   T get_element(int row, int col) {
@@ -182,8 +182,6 @@ class EigenSparseMatrix : public SparseMatrix {
     return matrix_ * b;
   }
 
-  SparseMatrix &build_from_ndarray(const Ndarray &ndarray) override;
-
  private:
   EigenMatrix matrix_;
 };
@@ -193,5 +191,9 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int cols,
     DataType dt,
     const std::string &storage_format);
+
+void make_sparse_matrix_from_ndarray(
+    SparseMatrix &sm,
+    const Ndarray &ndarray);
 }  // namespace lang
 }  // namespace taichi

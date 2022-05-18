@@ -1,5 +1,6 @@
 import numpy as np
 
+from taichi._lib import core as _ti_core
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
@@ -164,7 +165,7 @@ class SparseMatrix:
             ndarray (~taichi.lang.matrix.VectorNdarray): the ndarray to build the sparse matrix from.
         """
         if isinstance(ndarray, VectorNdarray):
-            self.matrix.build_from_ndarray(ndarray.arr)
+            _ti_core.make_sparse_matrix_from_ndarray(self.matrix, ndarray.arr)
         else:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from ti.Vector.ndarray')

@@ -944,6 +944,8 @@ void export_lang(py::module &m) {
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
+  m.def("make_sparse_matrix_from_ndarray", &make_sparse_matrix_from_ndarray);
+
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def(py::init<>())
       .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
@@ -953,8 +955,7 @@ void export_lang(py::module &m) {
       .def("get_element", &SparseMatrix::get_element<float32>)
       .def("set_element", &SparseMatrix::set_element<float32>)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols)
-      .def("build_from_ndarray", &SparseMatrix::build_from_ndarray);
+      .def("num_cols", &SparseMatrix::num_cols);
 
 #define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
   using STORAGE##TYPE##EigenMatrix =                                         \

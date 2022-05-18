@@ -394,6 +394,8 @@ class CompiledTaichiKernel {
         continue;
       }
       if (already_allocated) {
+        TI_TRACE("Dealloc dev_alloc for extarr size old={} new={}",
+                 itr->second.size, arr_sz);
         rhi_device_->dealloc_memory(itr->second.alloc);
       }
       // This are the device buffers for "ext_arr". Unlike Ndarray, an ext_arr
@@ -479,7 +481,8 @@ class HostMetalCtxBlitter {
       }
       if (arg.is_array) {
         if (host_ctx_->is_device_allocations[i]) {
-          // Do nothing for Ndarray, yet
+          // There is no way to write from host into Ndarray directly (yet), so
+          // we don't have to do anything here.
         } else {
           const void *host_ptr = host_ctx_->get_arg<void *>(i);
           const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
@@ -545,7 +548,6 @@ class HostMetalCtxBlitter {
         void *host_ptr = host_ctx_->get_arg<void *>(i);
         const auto arr_size = host_ctx_->array_runtime_sizes[i];
         std::memcpy(host_ptr, mem->ptr(), arr_size);
-
         if (!ti_kernel_attribs_->is_jit_evaluator) {
           ActionRecorder::get_instance().record(
               "context_metal_to_host",

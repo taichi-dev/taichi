@@ -18,7 +18,7 @@ data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 ndarray_shapes = [(), 8, (6, 12)]
 vector_dims = [3]
 matrix_dims = [(1, 2), (2, 3)]
-supported_archs_taichi_ndarray = [ti.cpu, ti.cuda, ti.opengl, ti.vulkan]
+supported_archs_taichi_ndarray = [ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal]
 
 
 def _test_scalar_ndarray(dtype, shape):

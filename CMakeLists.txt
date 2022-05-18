@@ -163,7 +163,9 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   endif()
 endif()
 
-add_subdirectory(taichi/runtime/llvm)
+if (TI_WITH_LLVM)
+  add_subdirectory(taichi/runtime/llvm)
+endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)

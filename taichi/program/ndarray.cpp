@@ -23,7 +23,6 @@ Ndarray::Ndarray(Program *prog,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
       prog_(prog),
-      prog_impl_(prog->get_llvm_program_impl()),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
@@ -77,18 +76,6 @@ std::size_t Ndarray::get_nelement() const {
   return nelement_;
 }
 
-void Ndarray::fill_float(float val) {
-  buffer_fill(reinterpret_cast<uint32_t &>(val));
-}
-
-void Ndarray::fill_int(int32_t val) {
-  buffer_fill(reinterpret_cast<uint32_t &>(val));
-}
-
-void Ndarray::fill_uint(uint32_t val) {
-  buffer_fill(reinterpret_cast<uint32_t &>(val));
-}
-
 int64 Ndarray::read_int(const std::vector<int> &i) {
   return rw_accessors_bank_->get(this).read_int(i);
 }
@@ -107,16 +94,6 @@ void Ndarray::write_int(const std::vector<int> &i, int64 val) {
 
 void Ndarray::write_float(const std::vector<int> &i, float64 val) {
   rw_accessors_bank_->get(this).write_float(i, val);
-}
-
-void Ndarray::buffer_fill(uint32_t val) {
-  // This is a temporary solution to bypass device api
-  // should be moved to commandList when available in CUDA
-#ifdef TI_WITH_LLVM
-  prog_impl_->fill_ndarray(ndarray_alloc_, nelement_, val);
-#else
-  TI_ERROR("Llvm disabled");
-#endif
 }
 
 void set_runtime_ctx_ndarray(RuntimeContext &ctx,

@@ -1,5 +1,4 @@
 import numpy as np
-
 from taichi._lib import core as _ti_core
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field

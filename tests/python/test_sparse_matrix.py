@@ -53,6 +53,7 @@ def test_sparse_matrix_builder(dtype, storage_format):
         for j in range(n):
             assert A[i, j] == i + j
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -61,18 +62,23 @@ def test_sparse_matrix_builder(dtype, storage_format):
 def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
     n = 8
     triplets = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=n)
-    A = ti.linalg.SparseMatrix(n=10, m=10, dtype=ti.f32, storage_format=storage_format)
+    A = ti.linalg.SparseMatrix(n=10,
+                               m=10,
+                               dtype=ti.f32,
+                               storage_format=storage_format)
 
     @ti.kernel
     def fill(triplets: ti.types.ndarray()):
         for i in range(n):
             triplet = ti.Vector([i, i, i], dt=ti.f32)
             triplets[i] = triplet
+
     fill(triplets)
     A.build_from_ndarray(triplets)
-    
+
     for i in range(n):
         assert A[i, i] == i
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),

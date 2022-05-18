@@ -75,7 +75,9 @@ class SparseMatrix {
     return nullptr;
   }
 
- inline DataType get_data_type(){return dtype_;}
+  inline DataType get_data_type() {
+    return dtype_;
+  }
 
   template <class T>
   T get_element(int row, int col) {
@@ -192,8 +194,6 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     DataType dt,
     const std::string &storage_format);
 
-void make_sparse_matrix_from_ndarray(
-    SparseMatrix &sm,
-    const Ndarray &ndarray);
+void make_sparse_matrix_from_ndarray(SparseMatrix &sm, const Ndarray &ndarray);
 }  // namespace lang
 }  // namespace taichi

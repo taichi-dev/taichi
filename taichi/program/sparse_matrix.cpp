@@ -175,9 +175,7 @@ void build_ndarray_template(SparseMatrix &sm, const Ndarray &ndarray) {
   sm.build_triplets(static_cast<void *>(&triplets));
 }
 
-void make_sparse_matrix_from_ndarray(
-    SparseMatrix &sm,
-    const Ndarray &ndarray){
+void make_sparse_matrix_from_ndarray(SparseMatrix &sm, const Ndarray &ndarray) {
   std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
   if (sdtype == "f32") {
     build_ndarray_template<float32>(sm, ndarray);

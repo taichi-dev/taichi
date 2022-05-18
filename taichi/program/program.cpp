@@ -553,6 +553,12 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
                                                             result_buffer);
 }
 
+Ndarray *Program::create_ndarray(const DataType type,
+                                 const std::vector<int> &shape) {
+  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape));
+  return ndarrays_.back().get();
+}
+
 Program::~Program() {
   if (!finalized_)
     finalize();

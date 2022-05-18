@@ -22,7 +22,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      device_(prog->get_device_shared()),
+      prog_(prog),
       prog_impl_(prog->get_llvm_program_impl()),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
@@ -39,8 +39,8 @@ Ndarray::Ndarray(Program *prog,
 }
 
 Ndarray::~Ndarray() {
-  if (device_) {
-    device_->dealloc_memory(ndarray_alloc_);
+  if (prog_) {
+    ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);
   }
 }
 

@@ -615,10 +615,6 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
        result_buffer});
 }
 
-std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
-  return device_;
-}
-
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {

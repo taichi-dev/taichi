@@ -16,8 +16,8 @@ class Ndarray:
     def __init__(self, dtype, arr_shape):
         self.host_accessor = None
         self.dtype = cook_dtype(dtype)
-        self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype),
-                                    arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(dtype), arr_shape)
 
     @property
     def element_shape(self):

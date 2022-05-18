@@ -148,7 +148,7 @@ def test_bit_struct_struct_for():
     block_size = 16
     N = 64
     cell = ti.root.pointer(ti.i, N // block_size)
-    fixed32 = ti.types.quant.fixed(frac=32, num_range=1024)
+    fixed32 = ti.types.quant.fixed(frac=32, range=1024)
 
     x = ti.field(dtype=fixed32)
     cell.dense(ti.i, block_size).bit_struct(32).place(x)

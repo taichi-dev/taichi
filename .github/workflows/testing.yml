@@ -51,11 +51,12 @@ jobs:
             fi
           done
 
-          if ${run_job}; then
-            echo "::set-output name=run_job::true"
-          else
-            echo "::set-output name=run_job::false"
-          fi
+          # if ${run_job}; then
+          #   echo "::set-output name=run_job::true"
+          # else
+          #   echo "::set-output name=run_job::false"
+          # fi
+          echo "::set-output name=run_job::false"
 
   check_static_analyzer:
     name: Check Static Analyzer
@@ -252,12 +253,20 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ccache_cache
+          key: ccache-win64-cpu-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-cpu-
+
       - name: Get docker images
         shell: bash
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
+          # if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+          #   exit 0
+          # fi
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
         env:

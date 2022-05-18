@@ -49,6 +49,20 @@ clang --version
 WriteInfo("Enter the repository")
 Set-Location .\taichi
 
+# Get sccache
+WriteInfo("Downloading sccache")
+$env:CCACHE_DIR="${pwd}/ccache_cache"
+$env:CCACHE_MAXSIZE="128M"
+$env:CCACHE_LOGFILE="${pwd}/ccache_error.log"
+WriteInfo("ccache dir: $Env:CCACHE_DIR")
+md "$Env:CCACHE_DIR" -ea 0
+if (-not (Test-Path "ccache-4.5.1-windows-64")) {
+    curl.exe --retry 10 --retry-delay 5 https://github.com/ccache/ccache/releases/download/v4.5.1/ccache-4.5.1-windows-64.zip -LO
+    7z x ccache-4.5.1-windows-64.zip
+    $env:PATH += ";${pwd}/ccache-4.5.1-windows-64"
+}
+ccache -v -s
+
 WriteInfo("Setting up Python environment")
 conda activate py37
 python -m pip install -r requirements_dev.txt
@@ -65,6 +79,7 @@ WriteInfo("Building Taichi")
 python setup.py install
 if (-not $?) { exit 1 }
 WriteInfo("Build finished")
+ccache -s -v
 
 $env:TI_ENABLE_PADDLE = "0"
 WriteInfo("Testing Taichi")

@@ -68,13 +68,13 @@ def int(bits, signed=False, compute=None):  # pylint: disable=W0622
     return _custom_int(bits, signed, compute)
 
 
-def fixed(frac, signed=True, num_range=1.0, compute=None):
+def fixed(frac, signed=True, range=1.0, compute=None):  # pylint: disable=W0622
     """Generates a quantized type for fixed-point real numbers.
 
     Args:
         frac (int): Number of bits.
         signed (bool): Signed or unsigned.
-        num_range (float): Range of the number.
+        range (float): Range of the number.
         compute (DataType): Type for computation.
 
     Returns:
@@ -83,9 +83,9 @@ def fixed(frac, signed=True, num_range=1.0, compute=None):
     # TODO: handle cases with frac > 32
     frac_type = int(bits=frac, signed=signed, compute=i32)
     if signed:
-        scale = num_range / 2**(frac - 1)
+        scale = range / 2**(frac - 1)
     else:
-        scale = num_range / 2**frac
+        scale = range / 2**frac
     if compute is None:
         compute = impl.get_runtime().default_fp
     return _custom_float(frac_type, None, compute, scale)

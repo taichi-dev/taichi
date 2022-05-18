@@ -623,8 +623,9 @@ def test_generation():
     curr_arch = ti.lang.impl.current_cfg().arch
     n1 = 4
     x = ti.ndarray(dtype=ti.f32, shape=(n1, n1))
-    curr_gen = x._gen
+    prev_gen = x._gen
     ti.reset()  # gen++
     ti.init(curr_arch)  # calls ti.reset(), gen++
     y = ti.ndarray(dtype=ti.f32, shape=(n1, ))
-    assert y._gen == curr_gen + 2
+    assert y._gen > prev_gen
+    del x

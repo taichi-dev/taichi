@@ -569,6 +569,17 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   ndarrays_.erase(ndarray);
 }
 
+void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
+// This is a temporary solution to bypass device api.
+// Should be moved to CommandList once available in CUDA.
+#ifdef TI_WITH_LLVM
+  get_llvm_program_impl()->fill_ndarray(ndarray->ndarray_alloc_,
+                                        ndarray->get_nelement(), val);
+#else
+  TI_ERROR("Not supported");
+#endif
+}
+
 Program::~Program() {
   if (!finalized_)
     finalize();

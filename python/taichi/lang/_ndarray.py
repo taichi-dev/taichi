@@ -83,11 +83,11 @@ class Ndarray:
         ).arch != _ti_core.Arch.x64:
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
-            self.arr.fill_float(val)
+            impl.get_runtime().prog.fill_float(self.arr, val)
         elif self.dtype == primitive_types.i32:
-            self.arr.fill_int(val)
+            impl.get_runtime().prog.fill_int(self.arr, val)
         elif self.dtype == primitive_types.u32:
-            self.arr.fill_uint(val)
+            impl.get_runtime().prog.fill_uint(self.arr, val)
         else:
             self._fill_by_kernel(val)
 

@@ -373,32 +373,40 @@ class CompiledTaichiKernel {
   }
 
   ~CompiledTaichiKernel() {
-    for (auto [_, alloc_sz] : ext_arr_arg_to_dev_alloc) {
-      rhi_device_->dealloc_memory(alloc_sz.alloc);
+    for (auto [_, alloc_n_sz] : ext_arr_arg_to_dev_alloc) {
+      rhi_device_->dealloc_memory(alloc_n_sz.alloc);
     }
   }
 
-  void maybe_init_host_arr_dev_allocs(const RuntimeContext &host_ctx) {
+  void maybe_make_dev_alloc_for_ext_arrs(const RuntimeContext &host_ctx) {
     for (const auto &arg : ctx_attribs.args()) {
       if (!arg.is_array) {
         continue;
       }
       const int arg_id = arg.index;
-      if (host_ctx.is_device_allocations[arg_id] ||
-          (ext_arr_arg_to_dev_alloc.count(arg_id) > 0)) {
+      if (host_ctx.is_device_allocations[arg_id]) {
         continue;
+      }
+      const auto arr_sz = host_ctx.array_runtime_sizes[arg.index];
+      auto itr = ext_arr_arg_to_dev_alloc.find(arg_id);
+      const bool already_allocated = (itr != ext_arr_arg_to_dev_alloc.end());
+      if (already_allocated && (itr->second.size >= arr_sz)) {
+        continue;
+      }
+      if (already_allocated) {
+        rhi_device_->dealloc_memory(itr->second.alloc);
       }
       // This are the device buffers for "ext_arr". Unlike Ndarray, an ext_arr
       // is actually a template param, so its size is always fixed per
       // instantiated kernel.
       Device::AllocParams aparams;
-      aparams.size = kernel_->args[arg.index].size;
+      aparams.size = arr_sz;
       aparams.host_read = true;
       aparams.host_write = true;
-      AllocAndSize alloc_sz;
-      alloc_sz.alloc = rhi_device_->allocate_memory(aparams);
-      alloc_sz.size = aparams.size;
-      ext_arr_arg_to_dev_alloc[arg_id] = alloc_sz;
+      AllocAndSize alloc_n_sz;
+      alloc_n_sz.alloc = rhi_device_->allocate_memory(aparams);
+      alloc_n_sz.size = aparams.size;
+      ext_arr_arg_to_dev_alloc[arg_id] = alloc_n_sz;
     }
   }
 
@@ -474,13 +482,16 @@ class HostMetalCtxBlitter {
           // Do nothing for Ndarray, yet
         } else {
           const void *host_ptr = host_ctx_->get_arg<void *>(i);
-          const auto alloc_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
-          auto buf_mem = alloc_mapper_->find(alloc_sz.alloc);
+          const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
+          auto buf_mem = alloc_mapper_->find(alloc_n_sz.alloc);
           TI_ASSERT(buf_mem.buffer != nullptr);
           auto *mem = buf_mem.mem;
           TI_ASSERT(mem != nullptr);
-          std::memcpy(mem->ptr(), host_ptr, alloc_sz.size);
-          buf_sz.push_back(BufferAndSize{buf_mem.buffer, alloc_sz.size});
+          // NOTE: DO NOT use `alloc_n_sz.size`. That is the size for the
+          // allocation, NOT the array size.
+          const auto arr_size = host_ctx_->array_runtime_sizes[i];
+          std::memcpy(mem->ptr(), host_ptr, arr_size);
+          buf_sz.push_back(BufferAndSize{buf_mem.buffer, arr_size});
         }
       } else if (dt == MetalDataType::i32) {
         TO_METAL(int32);
@@ -525,14 +536,15 @@ class HostMetalCtxBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (host_ctx_->is_device_allocation[i]) {
+        if (host_ctx_->is_device_allocations[i]) {
           continue;
         }
-        const auto alloc_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
-        auto *mem = alloc_mapper_->find(alloc_sz.alloc).mem;
+        const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
+        auto *mem = alloc_mapper_->find(alloc_n_sz.alloc).mem;
         TI_ASSERT(mem != nullptr);
         void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, mem->ptr(), alloc_sz.size);
+        const auto arr_size = host_ctx_->array_runtime_sizes[i];
+        std::memcpy(host_ptr, mem->ptr(), arr_size);
 
         if (!ti_kernel_attribs_->is_jit_evaluator) {
           ActionRecorder::get_instance().record(
@@ -742,7 +754,7 @@ class KernelManager::Impl {
     mac::ScopedAutoreleasePool pool;
     auto &cti_kernel =
         *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    cti_kernel.maybe_init_host_arr_dev_allocs(*ctx);
+    cti_kernel.maybe_make_dev_alloc_for_ext_arrs(*ctx);
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
         cti_kernel, ctx, rhi_device_.get(), devalloc_mapper_,
         host_result_buffer_, taichi_kernel_name);
@@ -1211,7 +1223,7 @@ class KernelManager::Impl {
         continue;
       }
       DeviceAllocation dev_alloc;
-      if (host_ctx.is_device_allocation[arg.index]) {
+      if (host_ctx.is_device_allocations[arg.index]) {
         dev_alloc = *reinterpret_cast<const DeviceAllocation *>(
             host_ctx.args[arg.index]);
         TI_TRACE("Ndarray arg_id={} alloc_id={}", arg.index,

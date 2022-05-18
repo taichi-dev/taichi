@@ -1,4 +1,6 @@
 import numpy as np
+
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
 from taichi.lang.matrix import VectorNdarray
@@ -133,7 +135,9 @@ class SparseMatrix:
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
-        assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
+        raise TaichiRuntimeError(
+            f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy ndarray."
+        )
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
@@ -162,7 +166,8 @@ class SparseMatrix:
         if isinstance(ndarray, VectorNdarray):
             self.matrix.build_from_ndarray(ndarray.arr)
         else:
-            assert False, "Sparse matrix only supports building from ti.Vector.ndarray"
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from ti.Vector.ndarray')
 
 
 class SparseMatrixBuilder:

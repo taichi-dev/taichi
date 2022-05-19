@@ -122,7 +122,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ret_attribs_vec_.push_back(mr);
   }
 
-  auto arrange_scalar_before_array = [&bytes = this->ctx_bytes_](auto *vec) {
+  auto arrange_scalar_before_array = [&bytes = this->ctx_bytes_](
+                                         auto *vec, bool allow_arr_mem_offset) {
     std::vector<int> scalar_indices;
     std::vector<int> array_indices;
     for (int i = 0; i < vec->size(); ++i) {
@@ -144,13 +145,21 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      // Array args are no longer embedded, they have dedicated MTLBuffers.
-      attribs.offset_in_mem = -1;
+      if (allow_arr_mem_offset) {
+        const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+        bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+        attribs.offset_in_mem = bytes;
+        bytes += attribs.stride;
+      } else {
+        // Array args are no longer embedded, they have dedicated MTLBuffers.
+        attribs.offset_in_mem = -1;
+      }
     }
   };
 
-  arrange_scalar_before_array(&arg_attribs_vec_);
-  arrange_scalar_before_array(&ret_attribs_vec_);
+  arrange_scalar_before_array(&arg_attribs_vec_,
+                              /*allow_arr_mem_offset=*/false);
+  arrange_scalar_before_array(&ret_attribs_vec_, /*allow_arr_mem_offset=*/true);
 }
 
 }  // namespace metal

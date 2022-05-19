@@ -1123,12 +1123,14 @@ class KernelCodegenImpl : public IRVisitor {
         emit("}}");
       }
       for (const auto &ret : ctx_attribs_.rets()) {
-        if (ret.is_array) {
-          continue;
-        }
+        // TODO: Why return still needs this?
         const auto dt_name = metal_data_type_name(ret.dt);
         emit("device {}* ret{}() {{", dt_name, ret.index);
-        emit("  // scalar, size={} B", ret.stride);
+        if (ret.is_array) {
+          emit("  // array, size={} B", ret.stride);
+        } else {
+          emit("  // scalar, size={} B", ret.stride);
+        }
         emit("  return (device {}*)(addr_ + {});", dt_name, ret.offset_in_mem);
         emit("}}");
       }

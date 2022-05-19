@@ -2,8 +2,9 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(arch=ti.metal)
 def test_arch():
+    ti.init(ti.metal, print_kernel_llvm_ir=True)
     @ti.kernel
     def func() -> ti.types.vector(3, ti.i32):
         return ti.Vector([1, 2, 3])

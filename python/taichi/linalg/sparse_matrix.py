@@ -164,7 +164,7 @@ class SparseMatrix:
         """
         if isinstance(ndarray, VectorNdarray):
             get_runtime().prog.make_sparse_matrix_from_ndarray(
-            self.matrix, ndarray.arr)
+                self.matrix, ndarray.arr)
         else:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from ti.Vector.ndarray')

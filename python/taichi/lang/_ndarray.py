@@ -31,8 +31,8 @@ class Ndarray:
 
         # TODO: Not sure if it is correct, related PR:4841.
         if impl.get_runtime is None:
-            return 
-            
+            return
+
         if impl.get_runtime().prog is not None and impl.get_runtime(
         ).generation == self._gen:
             impl.get_runtime().prog.delete_ndarray(self.arr)

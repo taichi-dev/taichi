@@ -163,7 +163,9 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
 }
 
 template <typename T>
-void build_ndarray_template(SparseMatrix &sm, intptr_t data_ptr, size_t num_triplets) {
+void build_ndarray_template(SparseMatrix &sm,
+                            intptr_t data_ptr,
+                            size_t num_triplets) {
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;
   T *data = reinterpret_cast<T *>(data_ptr);
@@ -174,8 +176,9 @@ void build_ndarray_template(SparseMatrix &sm, intptr_t data_ptr, size_t num_trip
   sm.build_triplets(static_cast<void *>(&triplets));
 }
 
-void make_sparse_matrix_from_ndarray(Program* prog, SparseMatrix &sm, 
-  const Ndarray &ndarray) {
+void make_sparse_matrix_from_ndarray(Program *prog,
+                                     SparseMatrix &sm,
+                                     const Ndarray &ndarray) {
   std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
   auto data_ptr = prog->get_ndarray_data_ptr_as_int(&ndarray);
   auto num_triplets = ndarray.get_nelement() / 3;

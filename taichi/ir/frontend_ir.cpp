@@ -481,6 +481,11 @@ void AtomicOpExpression::type_check(CompileConfig *) {
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
+    if (val->ret_type != ret_type) {
+      val.set(Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, val,
+                                            ret_type));
+    }
+
     val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val));
     op_type = AtomicOpType::add;
   }

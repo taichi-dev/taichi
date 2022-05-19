@@ -223,6 +223,47 @@ def test_local_atomic_with_if():
     assert ret[None] == 1
 
 
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_atomic_sub_with_type_promotion():
+    # Test Case 1
+    @ti.kernel
+    def test_u16_sub_u8() -> ti.uint16:
+        x: ti.uint16 = 1000
+        y: ti.uint8 = 255
+
+        ti.atomic_sub(x, y)
+        return x
+
+    res = test_u16_sub_u8()
+    assert res == 745
+
+    # Test Case 2
+    @ti.kernel
+    def test_u8_sub_u16() -> ti.uint8:
+        x: ti.uint8 = 255
+        y: ti.uint16 = 100
+
+        ti.atomic_sub(x, y)
+        return x
+
+    res = test_u8_sub_u16()
+    assert res == 155
+
+    # Test Case 3
+    A = ti.field(ti.uint8, shape=())
+    B = ti.field(ti.uint16, shape=())
+
+    @ti.kernel
+    def test_with_field():
+        v: ti.uint16 = 1000
+        v -= A[None]
+        B[None] = v
+
+    A[None] = 255
+    test_with_field()
+    assert B[None] == 745
+
+
 @test_utils.test()
 def test_atomic_sub_expr_evaled():
     c = ti.field(ti.i32)

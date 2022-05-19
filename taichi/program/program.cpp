@@ -569,7 +569,7 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   ndarrays_.erase(ndarray);
 }
 
-intptr_t Program::get_ndarray_data_ptr_as_int(Ndarray *ndarray) {
+intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {

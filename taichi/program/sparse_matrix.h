@@ -4,6 +4,7 @@
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/program.h"
 
 #include "Eigen/Sparse"
 
@@ -194,6 +195,6 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     DataType dt,
     const std::string &storage_format);
 
-void make_sparse_matrix_from_ndarray(SparseMatrix &sm, const Ndarray &ndarray);
+void make_sparse_matrix_from_ndarray(Program* prog, SparseMatrix &sm, const Ndarray &ndarray);
 }  // namespace lang
 }  // namespace taichi

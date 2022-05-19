@@ -164,7 +164,8 @@ class SparseMatrix:
             ndarray (~taichi.lang.matrix.VectorNdarray): the ndarray to build the sparse matrix from.
         """
         if isinstance(ndarray, VectorNdarray):
-            _ti_core.make_sparse_matrix_from_ndarray(self.matrix, ndarray.arr)
+            get_runtime().prog.make_sparse_matrix_from_ndarray(
+            self.matrix, ndarray.arr)
         else:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from ti.Vector.ndarray')

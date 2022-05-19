@@ -321,7 +321,7 @@ class TI_DLL_EXPORT Program {
 
   void delete_ndarray(Ndarray *ndarray);
 
-  intptr_t get_ndarray_data_ptr_as_int(Ndarray *ndarray);
+  intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
   void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
 

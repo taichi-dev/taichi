@@ -387,7 +387,10 @@ class CompiledTaichiKernel {
       if (host_ctx.is_device_allocations[arg_id]) {
         continue;
       }
-      const auto arr_sz = host_ctx.array_runtime_sizes[arg.index];
+      // Even in the face that external array has 0-length, we still allocate
+      // something, to prevent runtime edge cases.
+      const auto arr_sz =
+          std::max(host_ctx.array_runtime_sizes[arg.index], (uint64)4);
       auto itr = ext_arr_arg_to_dev_alloc.find(arg_id);
       const bool already_allocated = (itr != ext_arr_arg_to_dev_alloc.end());
       if (already_allocated && (itr->second.size >= arr_sz)) {

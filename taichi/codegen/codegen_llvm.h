@@ -7,6 +7,7 @@
 #ifdef TI_WITH_LLVM
 
 #include "taichi/ir/ir.h"
+#include "taichi/llvm/launch_arg_info.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
 #include "taichi/program/program.h"
 
@@ -415,17 +416,13 @@ class LlvmProgramImpl;
 // This is for CPU, we need one for CUDA (AMDGPU) as well.
 class ModuleToFunctionConverter {
  public:
-  struct ArgInfo {
-    bool is_array{false};
-  };
-
   explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
                                      LlvmProgramImpl *program);
 
   virtual ~ModuleToFunctionConverter() = default;
 
   virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<ArgInfo> &args,
+                               const std::vector<LlvmLaunchArgInfo> &args,
                                std::unique_ptr<llvm::Module> mod,
                                std::vector<OffloadedTask> &&tasks) const;
 

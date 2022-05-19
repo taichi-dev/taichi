@@ -1,4 +1,4 @@
-#include "codegen_cuda.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
 
 #include <vector>
 #include <set>
@@ -35,23 +35,30 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;
   }
 
-  FunctionType compile_module_to_executable() override {
+  FunctionType gen() override {
+    auto compiled_res = run_compilation();
+    return compile_module_to_executable(this->kernel, std::move(compiled_res));
+  }
+
+  static FunctionType compile_module_to_executable(
+      Kernel *kernel,
+      CompiledData &&compiled_data) {
 #ifdef TI_WITH_CUDA
-    auto offloaded_local = offloaded_tasks;
-    for (auto &task : offloaded_local) {
-      llvm::Function *func = module->getFunction(task.name);
+    auto *tlctx =
+        kernel->program->get_llvm_program_impl()->get_llvm_context(Arch::cuda);
+    for (auto &task : compiled_data.offloaded_tasks) {
+      llvm::Function *func = compiled_data.llvm_module->getFunction(task.name);
       TI_ASSERT(func);
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = kernel->program->get_llvm_program_impl()
-                   ->get_llvm_context(Arch::cuda)
-                   ->jit.get();
-    auto cuda_module =
-        jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
+    auto jit = tlctx->jit.get();
+    auto cuda_module = jit->add_module(std::move(compiled_data.llvm_module),
+                                       kernel->program->config.gpu_max_reg);
 
-    return [offloaded_local, cuda_module,
-            kernel = this->kernel](RuntimeContext &context) {
+    return [cuda_module, kernel,
+            offloaded_tasks =
+                compiled_data.offloaded_tasks](RuntimeContext &context) {
       CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -65,13 +72,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_array) {
-          if (args[i].size == 0)
+          const auto arr_sz = context.array_runtime_sizes[i];
+          if (arr_sz == 0) {
             continue;
+          }
           arg_buffers[i] = context.get_arg<void *>(i);
-          if (!context.is_device_allocation[i]) {
+          if (!context.is_device_allocations[i]) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // args[i].size = 0.
+            // `arr_sz` zero.
             unsigned int attr_val = 0;
             uint32_t ret_code =
                 CUDADriver::get_instance().mem_get_attribute.call(
@@ -86,19 +95,18 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               //   host.
               // See CUDA driver API `cuPointerGetAttribute` for more details.
               transferred = true;
-              CUDADriver::get_instance().malloc(&device_buffers[i],
-                                                args[i].size);
+              CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
               CUDADriver::get_instance().memcpy_host_to_device(
-                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
+                  (void *)device_buffers[i], arg_buffers[i], arr_sz);
             } else {
               device_buffers[i] = arg_buffers[i];
             }
             // device_buffers[i] saves a raw ptr on CUDA device.
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_sz,
                                                /*is_device_allocation=*/false);
 
-          } else if (args[i].size > 0) {
+          } else if (arr_sz > 0) {
             // arg_buffers[i] is a DeviceAllocation*
             // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
             // it's shared by cpu and cuda.
@@ -114,7 +122,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
             // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
+                                               arr_sz,
                                                /*is_device_allocation=*/false);
           }
         }
@@ -123,7 +131,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
 
-      for (auto task : offloaded_local) {
+      for (auto task : offloaded_tasks) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
         cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
@@ -135,7 +143,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         for (int i = 0; i < (int)args.size(); i++) {
           if (device_buffers[i] != arg_buffers[i]) {
             CUDADriver::get_instance().memcpy_device_to_host(
-                arg_buffers[i], (void *)device_buffers[i], args[i].size);
+                arg_buffers[i], (void *)device_buffers[i],
+                context.array_runtime_sizes[i]);
             CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
           }
         }

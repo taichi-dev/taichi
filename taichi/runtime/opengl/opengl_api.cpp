@@ -232,6 +232,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   for (int i = 0; i < arg_count; i++) {
     const auto dtype_name = kernel->args[i].dt.to_string();
     if (kernel->args[i].is_array) {
+      constexpr uint64 kUnkownRuntimeSize = 0;
       arr_args[i] = CompiledArrayArg(
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt), dtype_name,
            /*field_dim=*/kernel->args[i].total_dim -
@@ -240,7 +241,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
            /*element_shape=*/kernel->args[i].element_shape,
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int),
-           /*total_size=*/kernel->args[i].size});
+           kUnkownRuntimeSize});
     } else {
       scalar_args[i] = ScalarArg(
           {dtype_name, /*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
@@ -400,23 +401,25 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   for (auto &item : program_.arr_args) {
     int i = item.first;
     TI_ASSERT(args[i].is_array);
-    if (args[i].size == 0 || ctx.is_device_allocation[i])
+    const auto arr_sz = ctx.array_runtime_sizes[i];
+    if (arr_sz == 0 || ctx.is_device_allocations[i]) {
       continue;
+    }
     has_ext_arr = true;
-    if (args[i].size != item.second.total_size ||
+    if (arr_sz != item.second.runtime_size ||
         ext_arr_bufs_[i] == kDeviceNullAllocation) {
       if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
         device_->dealloc_memory(ext_arr_bufs_[i]);
       }
-      ext_arr_bufs_[i] = device_->allocate_memory(
-          {args[i].size, /*host_write=*/true, /*host_read=*/true,
-           /*export_sharing=*/false});
-      item.second.total_size = args[i].size;
+      ext_arr_bufs_[i] = device_->allocate_memory({arr_sz, /*host_write=*/true,
+                                                   /*host_read=*/true,
+                                                   /*export_sharing=*/false});
+      item.second.runtime_size = arr_sz;
     }
     void *host_ptr = (void *)ctx.args[i];
     void *baseptr = device_->map(ext_arr_bufs_[i]);
     if (program_.check_ext_arr_read(i)) {
-      std::memcpy((char *)baseptr, host_ptr, args[i].size);
+      std::memcpy((char *)baseptr, host_ptr, arr_sz);
     }
     device_->unmap(ext_arr_bufs_[i]);
   }
@@ -468,7 +471,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
     for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      if (ctx.is_device_allocation[arg_id]) {
+      if (ctx.is_device_allocations[arg_id]) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
@@ -503,9 +506,10 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   if (has_ext_arr) {
     for (auto &item : program_.arr_args) {
       int i = item.first;
-      if (args[i].size != 0 && !ctx.is_device_allocation[i]) {
+      const auto arr_sz = ctx.array_runtime_sizes[i];
+      if (arr_sz > 0 && !ctx.is_device_allocations[i]) {
         uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
-        memcpy((void *)ctx.args[i], baseptr, args[i].size);
+        memcpy((void *)ctx.args[i], baseptr, arr_sz);
         device_->unmap(ext_arr_bufs_[i]);
       }
     }
@@ -539,7 +543,7 @@ DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
-  device = std::make_shared<GLDevice>();
+  device = std::make_unique<GLDevice>();
 
   impl = std::make_unique<OpenGlRuntimeImpl>();
 

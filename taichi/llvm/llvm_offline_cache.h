@@ -1,54 +1,78 @@
 #pragma once
 
-#include "taichi/common/core.h"
-#include "taichi/program/kernel.h"
-#include "taichi/util/io.h"
+#include <memory>
 
 #include "llvm/IR/Module.h"
+#include "taichi/common/core.h"
+#include "taichi/common/serialization.h"
+#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/program/kernel.h"
+#include "taichi/util/io.h"
 
 namespace taichi {
 namespace lang {
 
 struct LlvmOfflineCache {
+  enum Format {
+    LL = 0x01,
+    BC = 0x10,
+  };
+
   struct OffloadedTaskCacheData {
     std::string name;
     int block_dim{0};
     int grid_dim{0};
+
+    TI_IO_DEF(name, block_dim, grid_dim);
   };
+
   struct KernelCacheData {
     std::string kernel_key;
+    std::vector<LlvmLaunchArgInfo> args;
+    std::vector<OffloadedTaskCacheData> offloaded_task_list;
+
     std::unique_ptr<llvm::Module> owned_module{nullptr};
     llvm::Module *module{nullptr};
-    std::vector<OffloadedTaskCacheData> offloaded_task_list;
 
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
+
+    TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
 
   std::unordered_map<std::string, KernelCacheData> kernels;
+
+  TI_IO_DEF(kernels);
 };
 
 class LlvmOfflineCacheFileReader {
  public:
-  LlvmOfflineCacheFileReader(const std::string &path) : path_(path) {
-  }
-
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
                         const std::string &key,
                         llvm::LLVMContext &llvm_ctx);
 
+  static std::unique_ptr<LlvmOfflineCacheFileReader> make(
+      const std::string &path,
+      LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
  private:
+  LlvmOfflineCacheFileReader(const std::string &path,
+                             LlvmOfflineCache &&data,
+                             LlvmOfflineCache::Format format);
+
+  std::unique_ptr<llvm::Module> load_module(const std::string &path_prefix,
+                                            const std::string &key,
+                                            llvm::LLVMContext &llvm_ctx) const;
+
   std::string path_;
+  LlvmOfflineCache data_;
+  LlvmOfflineCache::Format format_;
 };
 
 class LlvmOfflineCacheFileWriter {
  public:
-  LlvmOfflineCacheFileWriter(const std::string &path) : path_(path) {
-    taichi::create_directories(path);
-  }
-
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -59,7 +83,12 @@ class LlvmOfflineCacheFileWriter {
     data_.kernels[key] = std::move(kernel_cache);
   }
 
-  void dump();
+  void dump(const std::string &path,
+            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
+  void set_no_mangle() {
+    mangled_ = true;
+  }
 
  private:
   void mangle_offloaded_task_name(
@@ -68,7 +97,6 @@ class LlvmOfflineCacheFileWriter {
       std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
           &offloaded_task_list);
 
-  std::string path_;
   LlvmOfflineCache data_;
   bool mangled_{false};
 };

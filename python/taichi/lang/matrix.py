@@ -134,7 +134,7 @@ class _MatrixBaseImpl:
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
-                    'See https://docs.taichi-lang.org/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
+                    'See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-with-for-loops for more details.'
                     'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
                 )
         assert 0 <= args[0] < self.n, \
@@ -455,7 +455,7 @@ class Matrix(TaichiOperations):
                 ' So the compilation time could be extremely long if the matrix size is too big.'
                 ' You may use a field to store a large matrix like this, e.g.:\n'
                 f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
-                ' See https://docs.taichi-lang.org/lang/articles/field#matrix-size'
+                ' See https://docs.taichi-lang.org/docs/field#matrix-size'
                 ' for more details.',
                 UserWarning,
                 stacklevel=2)
@@ -1435,7 +1435,6 @@ class MatrixField(Field):
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member.
-        Only used for quant.
 
         Args:
             indices (Tuple[Int]): Specified indices of the field member.

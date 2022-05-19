@@ -534,6 +534,11 @@ class TypeCheck : public IRVisitor {
   void visit(BitStructStoreStmt *stmt) override {
     // do nothing
   }
+
+  void visit(ReferenceStmt *stmt) override {
+    stmt->ret_type = stmt->var->ret_type;
+    stmt->ret_type.set_is_pointer(true);
+  }
 };
 
 namespace irpass {

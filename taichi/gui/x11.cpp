@@ -151,7 +151,7 @@ void GUI::create_window() {
                  "Taichi fails to create a window."
                  " This is probably due to the lack of an X11 GUI environment."
                  " Consider using the `ti.GUI(show_gui=False)` option, see"
-                 " https://docs.taichi-lang.org/lang/articles/gui_system");
+                 " https://docs.taichi-lang.org/docs/gui_system");
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),

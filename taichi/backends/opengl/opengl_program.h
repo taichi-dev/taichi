@@ -33,22 +33,15 @@ class OpenglProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
   }
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
-
-  std::shared_ptr<Device> get_device_shared() override;
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 

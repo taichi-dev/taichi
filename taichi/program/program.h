@@ -311,15 +311,19 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_graphics_device();
   }
 
-  std::shared_ptr<Device> get_device_shared() {
-    return program_impl_->get_device_shared();
-  }
-
   // TODO: do we still need result_buffer?
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
+
+  Ndarray *create_ndarray(const DataType type, const std::vector<int> &shape);
+
+  void delete_ndarray(Ndarray *ndarray);
+
+  intptr_t get_ndarray_data_ptr_as_int(Ndarray *ndarray);
+
+  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
 
   ASTBuilder *current_ast_builder() {
     return current_callable ? &current_callable->context->builder() : nullptr;
@@ -351,6 +355,7 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
+  std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
 };
 
 }  // namespace lang

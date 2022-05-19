@@ -244,6 +244,9 @@ class Func:
             if not isinstance(anno, template):
                 if id(anno) in primitive_types.type_ids:
                     non_template_args.append(ops.cast(args[i], anno))
+                elif isinstance(anno, primitive_types.RefType):
+                    non_template_args.append(
+                        _ti_core.make_reference(args[i].ptr))
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
@@ -302,7 +305,8 @@ class Func:
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
-                              annotation, template):
+                              annotation, template) and not isinstance(
+                                  annotation, primitive_types.RefType):
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
@@ -888,7 +892,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi-lang.org/lang/articles/syntax#kernel.
+    See also https://docs.taichi-lang.org/docs/syntax#kernel.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -937,7 +941,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi-lang.org/lang/articles/odop
+    See also https://docs.taichi-lang.org/docs/odop
 
     Example::
 

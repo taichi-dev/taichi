@@ -1,4 +1,5 @@
-#include "llvm_program.h"
+#include "taichi/llvm/llvm_program.h"
+
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -147,10 +148,11 @@ void LlvmProgramImpl::synchronize() {
 
 std::unique_ptr<llvm::Module>
 LlvmProgramImpl::clone_struct_compiler_initial_context(
-    const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    bool has_multiple_snode_trees,
     TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
+  if (has_multiple_snode_trees) {
     return tlctx->clone_struct_module();
+  }
   return tlctx->clone_runtime_module();
 }
 
@@ -244,32 +246,37 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
+    SNodeTree *tree) {
   auto *const root = tree->root();
+  const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
+  std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_host_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        has_multiple_snode_trees, llvm_context_host_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_device_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        has_multiple_snode_trees, llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module), tree->id());
   }
-  struct_compiler_->run(*root);
+  struct_compiler->run(*root);
+  ++num_snode_trees_processed_;
+  return struct_compiler;
 }
 
-void LlvmProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
-  compile_snode_tree_types(tree, snode_trees_);
-  initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
+void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
+  compile_snode_tree_types_impl(tree);
+}
+
+void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                             uint64 *result_buffer) {
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  initialize_llvm_runtime_snodes(tree, struct_compiler.get(), result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -424,7 +431,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       llvm_runtime_,
                                       (void *)assert_failed_host);
   }
-  if (arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
     // Profiler functions can only be called on CPU kernels
     runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);
@@ -608,10 +615,6 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
        result_buffer});
 }
 
-std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
-  return device_;
-}
-
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
@@ -643,6 +646,7 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
+    std::vector<LlvmLaunchArgInfo> &&args,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &&offloaded_task_list) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
@@ -651,14 +655,15 @@ void LlvmProgramImpl::cache_kernel(
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
-  kernel_cache.offloaded_task_list = offloaded_task_list;
+  kernel_cache.args = std::move(args);
+  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache && !cache_data_.kernels.empty()) {
-    LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
+    LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
-    writer.dump();
+    writer.dump(config->offline_cache_file_path);
   }
 }
 

@@ -16,8 +16,21 @@ class Ndarray:
     def __init__(self, dtype, arr_shape):
         self.host_accessor = None
         self.dtype = cook_dtype(dtype)
-        self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype),
-                                    arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(dtype), arr_shape)
+        self._gen = impl.get_runtime().generation
+
+    def __del__(self):
+        # - impl.get_runtime().prog == None:
+        #   ti.reset() is called but ti.init() isn't re-initialized yet.
+        #   At this point all ndarrays allocated in the previous program
+        #   are freed along with program destruction.
+        # - impl.get_generation() != self.gen
+        #   This ndarray was created from previous prog which was destructed.
+        #   So its memory was freed already.
+        if impl.get_runtime().prog is not None and impl.get_runtime(
+        ).generation == self._gen:
+            impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property
     def element_shape(self):
@@ -27,15 +40,6 @@ class Ndarray:
             Tuple[Int]: Ndarray element shape.
         """
         raise NotImplementedError()
-
-    @property
-    def _data_handle(self):
-        """Gets the pointer to underlying data.
-
-        Returns:
-            int: The pointer to underlying data.
-        """
-        return self.arr.data_ptr()
 
     @python_scope
     def __setitem__(self, key, value):
@@ -70,11 +74,11 @@ class Ndarray:
         ).arch != _ti_core.Arch.x64:
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
-            self.arr.fill_float(val)
+            impl.get_runtime().prog.fill_float(self.arr, val)
         elif self.dtype == primitive_types.i32:
-            self.arr.fill_int(val)
+            impl.get_runtime().prog.fill_int(self.arr, val)
         elif self.dtype == primitive_types.u32:
-            self.arr.fill_uint(val)
+            impl.get_runtime().prog.fill_uint(self.arr, val)
         else:
             self._fill_by_kernel(val)
 

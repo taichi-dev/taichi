@@ -221,8 +221,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     auto offloaded_task_name = init_taichi_kernel_function();
     ir->accept(this);
     finalize_taichi_kernel_function();
-
-    // compile_module_to_executable
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [offloaded_task_name](const std::string &func_name) {

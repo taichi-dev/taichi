@@ -1191,7 +1191,7 @@ class KernelCodegenImpl : public IRVisitor {
   static void append_arr_buffer_descriptors(
       const std::unordered_map<int, int> &arr_bindings,
       std::vector<BufferDescriptor> *descs) {
-    for (const auto [arr_id, _] : arr_bindings) {
+    for (const auto &[arr_id, _] : arr_bindings) {
       descs->push_back(BufferDescriptor::ndarray(arr_id));
     }
   }

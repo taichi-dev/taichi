@@ -1,12 +1,12 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to Taichi! Please check out the [Contribution Guidelines](https://docs.taichi-lang.org/lang/articles/contributor_guide) for how to make a contribution.
+Thank you for your interest in contributing to Taichi! Please check out the [Contribution Guidelines](https://docs.taichi-lang.org/docs/contributor_guide) for how to make a contribution.
 
 All contributors are expected to follow the [code of conduct](https://github.com/taichi-dev/taichi/blob/master/CODE_OF_CONDUCT.md).
 
 ## Developer installation
 
-Taichi is developed mainly in C++17 and Python3. Please check out the [Developer Installation](https://docs.taichi-lang.org/lang/articles/dev_install) to build Taichi from source. Note that Taichi is LLVM-10.0.0 dependent and that we recommend installing [our pre-built LLVM libraries](https://docs.taichi-lang.org/lang/articles/dev_install#install-llvm) for your platform.
+Taichi is developed mainly in C++17 and Python3. Please check out the [Developer Installation](https://docs.taichi-lang.org/docs/dev_install) to build Taichi from source. Note that Taichi is LLVM-10.0.0 dependent and that we recommend installing [our pre-built LLVM libraries](https://docs.taichi-lang.org/docs/dev_install#install-llvm) for your platform.
 
 ## Contribution opportunities
 

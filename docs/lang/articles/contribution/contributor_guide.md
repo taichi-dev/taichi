@@ -85,16 +85,16 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 As part of the effort to increase visibility of the community and to improve developer experience, we highly recommend including documentation updates in your PR if applicable. Here are some of the documentation-specific references and tips:
 
 - Documentation source files are hosted under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/).
-- We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing).
+- We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing.md).
 - When it comes to writing, we adhere to the [Google Developer Documentation Style Guide](https://developers.google.com/style/).
-- For instructions on setting up a local server and previewing your updated documentation in real-time, see the [Local Development](https://github.com/taichi-dev/docs.taichi-lang.org#local-development).
+- For instructions on setting up a local server and previewing your updated documentation in real-time, see the [Local Development](https://github.com/taichi-dev/docs.taichi.graphics#local-development).
 
 ## Add test cases for your local changes
 
 If your PR is to implement a new feature, we recommend that you write your own test cases to cover corner cases for your codes before filing a PR.
 
-- To write a Python test case, see the [Workflow for writing a Python test](./write_test).
-- To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests).
+- To write a Python test case, see the [Workflow for writing a Python test](./write_test.md).
+- To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests.md).
 
 ## Conduct style checks and integration tests locally
 
@@ -102,7 +102,7 @@ We highly recommend that you complete code style checks and integration tests on
 
 ### Enforce code style
 
-Taichi enfoces code style via [pre-commit](https://pre-commit.com/) hooks, which includes the following checks:
+Taichi enforces code style via [pre-commit](https://pre-commit.com/) hooks, which includes the following checks:
 
 1. C++ codes are formatted by `clang-format-10`.
 2. Python codes are formatted by `yapf v0.31.0` based on PEP 8 rules.
@@ -136,7 +136,7 @@ No problem, the CI bot will run the code checkers and format your codes automati
 
 <!-- Todo: Make this a reusable fragment. -->
 
-> For more style information for your C++ code, see [our C++ style](./cpp_style).
+> For more style information for your C++ code, see [our C++ style](./cpp_style.md).
 
 ### Run integration tests
 
@@ -292,6 +292,64 @@ Here, we do not want to repeat some best practices summarized in the following G
   - [Code Health: Understanding Code In Review](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
   - [Code Health: Respectful Reviews == Useful Reviews](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
   - [How to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)
+
+## Compilation Warnings
+
+Taichi enforces warning-free codes by turning on `-Werror` (treat warning as error) by default. It is highly recommended to resolve a warning as soon as it raises.
+
+On the other hand, real world issues could be way more complicated than what the compiler expected. So we prepared the following HOWTOs to help resolve some common problems. You are also more than welcome to open up an issue or consult the reviewer inplace for further discussions.
+
+### How to deal with warnings from third-party header files
+There is little we can do about third-party warnings other than simply turning them off.
+
+To mute warnings from specific third-party header files, you can apply `SYSTEM` option when including third-party directories in CMakeFiles. The following example can be found in [cmake/TaichiCore.cmake](https://github.com/taichi-dev/taichi/blob/master/cmake/TaichiCore.cmake):
+```
+# Treat files under "external/Vulkan-Headers/include" as system headers, warnings of which will be muted.
+include_directories(SYSTEM external/Vulkan-Headers/include)
+
+# Treat files under "external/VulkanMemoryAllocator/include" as system headers for target "${CORE_LIBRARY_NAME}"
+target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
+```
+
+### How to deal with warnings raised when compiling third-party libraries or targets
+Ideally, third-party submodules should be built completely independent of Taichi project except for the topological dependency. Unfortunately, due to the design of the CMake system, CMake variables from Taichi and its submodules could be mixed together under certain circumstances. Refer to the following two steps to mute warnings from third-party targets.
+
+1. Separate submodule's `CMAKE_CXX_FLAGS` from that configured in Taichi.
+2. Remove "-Wall" option from submodule's `CMAKE_CXX_FLAGS`.
+
+### How to mute specific warning-types across the entire Taichi project
+Search for the option to mute certain warning-types on [Clang Compiler User Manual](https://clang.llvm.org/docs/UsersManual.html), usually it starts with `-Wno-`. In the comments, please explain what the warning does and why we should ignore it.
+
+The following example can be found in [cmake/TaichiCXXFlags.cmake](https://github.com/taichi-dev/taichi/blob/master/cmake/TaichiCXXFlags.cmake)
+```
+# [Global] Clang warns if a C++ pointer's nullability wasn't marked explicitly (__nonnull, nullable, ...).
+# Nullability seems to be a clang-specific feature, thus we disable this warning.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness ")
+
+# [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
+# However, some of these "constexpr" are debug flags and will be manually enabled upon debuging.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
+```
+
+### How to mute warnings for specific lines of codes (NOT RECOMMENDED)
+In rare situations where the warnings cannot be fixed nor muted via regular attempts, one of the last things you can try is to decorate your code with `#pragma clang diagnostic` macro. Be aware that `#pragma`s are not part of the C++ standard and strongly depend on the compiler's implementation. That is to say, the following solution is neither stable nor elegant.
+
+Wrap the lines of interest with the following two macros, warnings will be ignored for the codes in between.
+
+You may also replace the `-Wall` with a group of specific warning-types for finer control.
+
+```
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wall"
+#endif
+
+{Your Code Goes Here}
+
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
+```
 
 ##  Still have issues?
 

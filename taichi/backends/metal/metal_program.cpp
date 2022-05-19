@@ -11,7 +11,7 @@ namespace {
 std::unordered_set<const SNode *> find_all_dense_snodes(
     const metal::SNodeDescriptorsMap &snodes_map) {
   std::unordered_set<const SNode *> res;
-  for (const auto [_, desc] : snodes_map) {
+  for (const auto &[_, desc] : snodes_map) {
     const auto *sn = desc.snode;
     if (sn->type == SNodeType::dense) {
       res.insert(sn);
@@ -80,16 +80,12 @@ void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   metal_kernel_mgr_ = std::make_unique<metal::KernelManager>(std::move(params));
 }
 
-void MetalProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void MetalProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   (void)compile_snode_tree_types_impl(tree);
 }
 
-void MetalProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
+void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                              uint64 *result_buffer) {
   const auto &csnode_tree = compile_snode_tree_types_impl(tree);
   metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
 }

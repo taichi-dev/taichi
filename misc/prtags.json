@@ -46,5 +46,6 @@
   "type"            : "Type system",
   "simt"            : "SIMT programming",
   "release"         : "Release",
-  "build"           : "Build system"
+  "build"           : "Build system",
+  "rfc"             : "RFC"
 }

@@ -39,7 +39,7 @@ bool check_cupti_availability() {
         "7.0 , fallback to default kernel profiler");
     TI_WARN(
         "See also: "
-        "https://docs.taichi-lang.org/lang/articles/profiler");
+        "https://docs.taichi-lang.org/docs/profiler");
     return false;
   }
   return true;
@@ -106,7 +106,7 @@ bool check_cupti_privileges() {
         "=================================================================");
     TI_WARN(
         "See also: "
-        "https://docs.taichi-lang.org/lang/articles/profiler");
+        "https://docs.taichi-lang.org/docs/profiler");
     return false;
   }
   // For other errors , CuptiToolkit::init_cupti() will send error message.

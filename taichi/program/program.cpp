@@ -415,16 +415,17 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
         ExprGroup(Expr(Expr::make<ExternalTensorExpression>(
-            keys.dtype, keys.num_active_indices, keys.num_active_indices,
-            0))[indices]));
+            keys.dtype, keys.num_active_indices,
+            /*arg_id=*/keys.num_active_indices, 0))[indices]));
     this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(keys.dtype, true);
+  for (int i = 0; i < keys.num_active_indices; i++) {
+    ker.insert_arg(PrimitiveType::i32, /*is_array=*/false);
+  }
+  ker.insert_arg(keys.dtype, /*is_array=*/true);
   ker.insert_ret(keys.dtype);
   return ker;
 }
@@ -439,8 +440,8 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto expr = Expr(Expr::make<ExternalTensorExpression>(
-        keys.dtype, keys.num_active_indices, keys.num_active_indices + 1,
-        0))[indices];
+        keys.dtype, keys.num_active_indices,
+        /*arg_id=*/keys.num_active_indices + 1, 0))[indices];
     this->current_ast_builder()->insert_assignment(
         expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
                                             keys.dtype->get_compute_type()));

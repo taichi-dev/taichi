@@ -486,19 +486,25 @@ class KernelCodegenImpl : public IRVisitor {
       const int arr_shape_len = num_indices - element_shape.size();
       int index_i = 0;
       const auto add_elem_shape_exprs = [&]() {
-        for (int i : element_shape) {
-          size_exprs.push_back(std::to_string(i));
+        for (int es : element_shape) {
+          size_exprs.push_back(std::to_string(es));
           ++index_i;
         }
       };
+      int arr_shape_offset = 0;
       if (layout == layout_SOA) {
         add_elem_shape_exprs();
+        // When the layout is SOA, element shape comes before array shape, so
+        // we have to skip the element shapes first.
+        // TODO: Element shape is a compile-time known information, so extra
+        // args will always only need the array shape.
+        arr_shape_offset = element_shape.size();
       }
       for (int i = 0; i < arr_shape_len; i++) {
         std::string var_name =
             fmt::format("{}_arr_dim{}_", stmt->raw_name(), i);
         emit("const int {} = {}.extra_arg({}, {});", var_name, kContextVarName,
-             arg_id, i);
+             arg_id, i + arr_shape_offset);
         size_exprs.push_back(std::move(var_name));
         ++index_i;
       }

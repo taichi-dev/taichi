@@ -68,7 +68,7 @@ class SparseSolver:
         else:
             self._type_assert(sparse_matrix)
 
-    def solve(self, b):
+    def solve(self, b): # pylint: disable=R1710
         """Computes the solution of the linear systems.
         Args:
             b (numpy.array or Field): The right-hand side of the linear systems.

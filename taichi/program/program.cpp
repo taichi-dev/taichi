@@ -569,6 +569,21 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   ndarrays_.erase(ndarray);
 }
 
+intptr_t Program::get_ndarray_data_ptr_as_int(Ndarray *ndarray) {
+  uint64_t *data_ptr{nullptr};
+#ifdef TI_WITH_LLVM
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+    // For the LLVM backends, device allocation is a physical pointer.
+    data_ptr = get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
+        ndarray->ndarray_alloc_);
+  }
+#else
+  TI_ERROR("Llvm disabled");
+#endif
+
+  return reinterpret_cast<intptr_t>(data_ptr);
+}
+
 void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
 // This is a temporary solution to bypass device api.
 // Should be moved to CommandList once available in CUDA.

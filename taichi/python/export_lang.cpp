@@ -424,6 +424,10 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
+      .def("get_ndarray_data_ptr_as_int",
+           [](Program *program, Ndarray *ndarray) {
+             return program->get_ndarray_data_ptr_as_int(ndarray);
+           })
       .def("fill_float",
            [](Program *program, Ndarray *ndarray, float val) {
              program->fill_ndarray_fast(ndarray,

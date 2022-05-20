@@ -1,18 +1,18 @@
 import numbers
 from functools import partial
+from types import MethodType
 
 from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
-from taichi.lang.kernel_impl import func
-from types import MethodType
 
 
 class Struct(TaichiOperations):

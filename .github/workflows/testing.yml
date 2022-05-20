@@ -51,12 +51,11 @@ jobs:
             fi
           done
 
-          # if ${run_job}; then
-          #   echo "::set-output name=run_job::true"
-          # else
-          #   echo "::set-output name=run_job::false"
-          # fi
-          echo "::set-output name=run_job::false"
+          if ${run_job}; then
+            echo "::set-output name=run_job::true"
+          else
+            echo "::set-output name=run_job::false"
+          fi
 
   check_static_analyzer:
     name: Check Static Analyzer
@@ -255,7 +254,7 @@ jobs:
 
       - name: Get sccache cache
         uses: actions/cache@v2
-        # if: needs.check_files.outputs.run_job == 'true'
+        if: needs.check_files.outputs.run_job == 'true'
         with:
           path: ccache_cache
           key: ccache-win64-cpu-${{ github.sha }}
@@ -264,7 +263,7 @@ jobs:
 
       - name: Get docker images
         shell: bash
-        # if: needs.check_files.outputs.run_job == 'true'
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
@@ -274,9 +273,9 @@ jobs:
       - name: Build and Test
         shell: bash
         run: |
-          # if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-          #   exit 0 trigger CI
-          # fi
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0 trigger CI
+          fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
             C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1

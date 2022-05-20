@@ -1,15 +1,15 @@
 #include "llvm_offline_cache.h"
 
+#include <fstream>
 #include <sstream>
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Transforms/Utils/Cloning.h"
-
 #include "taichi/ir/transforms.h"
 #include "taichi/llvm/llvm_context.h"
 
@@ -70,9 +70,10 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   }
 
   res.kernel_key = key;
+  res.args = kernel_data.args;
+  res.offloaded_task_list = kernel_data.offloaded_task_list;
   res.owned_module = llvm::CloneModule(*kernel_data.module);
   res.module = res.owned_module.get();
-  res.offloaded_task_list = kernel_data.offloaded_task_list;
   return true;
 }
 

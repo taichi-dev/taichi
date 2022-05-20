@@ -86,6 +86,10 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto tmp_dir_str{tmp_dir.u8string()};
   const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
+  const std::vector<LlvmLaunchArgInfo> arg_infos = {
+      LlvmLaunchArgInfo{/*is_array=*/false},
+      LlvmLaunchArgInfo{/*is_array=*/true},
+  };
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
@@ -97,6 +101,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.offloaded_task_list.push_back(
         LlvmOfflineCache::OffloadedTaskCacheData{kTaskName, kBlockDim,
                                                  kGridDim});
+    kcache.args = arg_infos;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();
     writer.dump(tmp_dir_str, llvm_fmt);
@@ -126,6 +131,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     LlvmOfflineCache::KernelCacheData kcache;
     const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
+    const auto &actual_arg_infos = kcache.args;
+    EXPECT_EQ(actual_arg_infos, arg_infos);
   };
 }
 

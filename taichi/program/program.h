@@ -318,7 +318,13 @@ class TI_DLL_EXPORT Program {
   }
 
   Ndarray *create_ndarray(const DataType type, const std::vector<int> &shape);
+
   void delete_ndarray(Ndarray *ndarray);
+
+  intptr_t get_ndarray_data_ptr_as_int(Ndarray *ndarray);
+
+  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
+
   ASTBuilder *current_ast_builder() {
     return current_callable ? &current_callable->context->builder() : nullptr;
   }

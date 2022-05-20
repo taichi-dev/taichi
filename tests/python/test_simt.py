@@ -269,8 +269,25 @@ def test_shfl_down_f32():
 
 @test_utils.test(arch=ti.cuda)
 def test_match_any():
-    # TODO
-    pass
+    a = ti.field(dtype=ti.i32, shape=32)
+    b = ti.field(dtype=ti.u32, shape=32)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=32)
+        for i in range(16):
+            a[i] = 0
+            a[i + 16] = 1
+
+        for i in range(32):
+            b[i] = ti.simt.warp.match_any(ti.u32(0xFFFFFFFF), a[i])
+
+    foo()
+
+    for i in range(16):
+        assert b[i] == 65535
+    for i in range(16):
+        assert b[i + 16] == (2**32 - 2**16)
 
 
 @test_utils.test(arch=ti.cuda)

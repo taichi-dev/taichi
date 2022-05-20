@@ -42,9 +42,6 @@ class Ndarray {
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
-  void fill_float(float val);
-  void fill_int(int32_t val);
-  void fill_uint(uint32_t val);
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);
   float64 read_float(const std::vector<int> &i);
@@ -53,17 +50,11 @@ class Ndarray {
   ~Ndarray();
 
  private:
-  void buffer_fill(uint32_t val);
-
-  // Invariant:
-  //   data_ptr_ is not nullptr iff arch is a llvm backend
-  uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
 
   Program *prog_{nullptr};
   // TODO: maybe remove these?
-  LlvmProgramImpl *prog_impl_{nullptr};
   NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
 

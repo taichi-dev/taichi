@@ -16,6 +16,21 @@ namespace vulkan {
 
 class VkRuntime;
 
+class KernelImpl : public aot::Kernel {
+ public:
+  explicit KernelImpl(VkRuntime *runtime, VkRuntime::RegisterParams &&params)
+      : runtime_(runtime), params_(std::move(params)) {
+  }
+
+  void launch(RuntimeContext *ctx) override {
+    auto handle = runtime_->register_taichi_kernel(params_);
+    runtime_->launch_kernel(handle, ctx);
+  }
+
+ private:
+  VkRuntime *const runtime_;
+  const VkRuntime::RegisterParams params_;
+};
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
   VkRuntime *runtime{nullptr};

@@ -83,10 +83,10 @@ void Ndarray::write_float(const std::vector<int> &i, float64 val) {
   rw_accessors_bank_->get(this).write_float(i, val);
 }
 
-void set_runtime_ctx_ndarray(RuntimeContext &ctx,
+void set_runtime_ctx_ndarray(RuntimeContext *ctx,
                              int arg_id,
-                             Ndarray &ndarray) {
-  ctx.set_arg_devalloc(arg_id, ndarray.ndarray_alloc_, ndarray.shape);
+                             Ndarray *ndarray) {
+  ctx->set_arg_devalloc(arg_id, ndarray->ndarray_alloc_, ndarray->shape);
 }
 
 }  // namespace lang

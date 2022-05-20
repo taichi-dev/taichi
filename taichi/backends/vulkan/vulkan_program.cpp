@@ -2,6 +2,7 @@
 
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/backends/vulkan/aot_module_loader_impl.h"
 
 #if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
 #include "GLFW/glfw3.h"
@@ -181,6 +182,16 @@ DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
   return get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false});
+}
+
+std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
+    Kernel &kernel) {
+  spirv::lower(&kernel);
+  std::vector<CompiledSNodeStructs> compiled_structs;
+  VkRuntime::RegisterParams kparams =
+      run_codegen(&kernel, get_compute_device(), compiled_structs);
+  return std::make_unique<KernelImpl>(vulkan_runtime_.get(),
+                                      std::move(kparams));
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

@@ -312,10 +312,10 @@ TEST(AotSaveLoad, VulkanNdarray) {
   auto seq = g->seq();
   auto arr_arg = aot::Arg{
       "arr", PrimitiveType::i32.to_string(), aot::ArgKind::NDARRAY, {}};
-  seq->emplace(ker1.get(), {arr_arg});
-  seq->emplace(ker2.get(),
-               {arr_arg, aot::Arg{"x", PrimitiveType::i32.to_string(),
-                                  aot::ArgKind::SCALAR}});
+  seq->dispatch(ker1.get(), {arr_arg});
+  seq->dispatch(ker2.get(),
+                {arr_arg, aot::Arg{"x", PrimitiveType::i32.to_string(),
+                                   aot::ArgKind::SCALAR}});
   g->compile();
 
   aot_builder->add_graph(g->name(), g->compiled_graph());

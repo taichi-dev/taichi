@@ -10,9 +10,9 @@ class AotModuleBuilder;
 class Ndarray;
 namespace aot {
 // Currently only scalar and ndarray are supported.
-enum ArgKind { SCALAR, NDARRAY, UNKNOWN };
+enum class ArgKind { SCALAR, NDARRAY, UNKNOWN };
 
-/*
+/**
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.
  */
 struct Arg {
@@ -25,7 +25,7 @@ struct Arg {
   TI_IO_DEF(name, dtype_name, tag, element_shape);
 };
 
-/*
+/**
  * Runtime value used in graph execution.
  */
 struct IValue {
@@ -37,7 +37,8 @@ struct IValue {
     return IValue(reinterpret_cast<intptr_t>(&ndarray), ArgKind::NDARRAY);
   }
 
-  template <typename T>
+  template <typename T,
+            typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
   static IValue create(T v) {
     return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
                   ArgKind::SCALAR);
@@ -47,6 +48,7 @@ struct IValue {
   IValue(uint64 val, ArgKind tag) : val(val), tag(tag) {
   }
 };
+
 class TI_DLL_EXPORT Kernel {
  public:
   // Rule of 5 to make MSVC happy
@@ -65,10 +67,6 @@ class TI_DLL_EXPORT Kernel {
    * @param ctx Host context
    */
   virtual void launch(RuntimeContext *ctx) = 0;
-
-  virtual void save_to_module(AotModuleBuilder *builder) {
-    TI_NOT_IMPLEMENTED;
-  }
 };
 
 struct CompiledDispatch {

@@ -10,6 +10,8 @@ namespace lang {
 
 void Dispatch::compile(
     std::vector<aot::CompiledDispatch> &compiled_dispatches) {
+  if (compiled_kernel_)
+    return;
   compiled_kernel_ = kernel_->compile_to_aot_kernel();
   aot::CompiledDispatch dispatch{kernel_->get_name(), symbolic_args_,
                                  compiled_kernel_.get()};
@@ -28,21 +30,21 @@ void Sequential::append(Node *node) {
   sequence_.push_back(node);
 }
 
-void Sequential::emplace(Kernel *kernel, const std::vector<aot::Arg> &args) {
-  Node *n = owning_graph_->create_dispatch(kernel, args);
+void Sequential::dispatch(Kernel *kernel, const std::vector<aot::Arg> &args) {
+  Node *n = owning_graph_->new_dispatch_node(kernel, args);
   sequence_.push_back(n);
 }
 
 Graph::Graph(std::string name) : name_(name) {
   seq_ = std::make_unique<Sequential>(this);
 }
-Node *Graph::create_dispatch(Kernel *kernel,
-                             const std::vector<aot::Arg> &args) {
+Node *Graph::new_dispatch_node(Kernel *kernel,
+                               const std::vector<aot::Arg> &args) {
   all_nodes_.push_back(std::make_unique<Dispatch>(kernel, args));
   return all_nodes_.back().get();
 }
 
-Sequential *Graph::create_sequential() {
+Sequential *Graph::new_sequential_node() {
   all_nodes_.push_back(std::make_unique<Sequential>(this));
   return static_cast<Sequential *>(all_nodes_.back().get());
 }
@@ -55,8 +57,8 @@ Sequential *Graph::seq() const {
   return seq_.get();
 }
 
-void Graph::emplace(Kernel *kernel, const std::vector<aot::Arg> &args) {
-  seq()->emplace(kernel, args);
+void Graph::dispatch(Kernel *kernel, const std::vector<aot::Arg> &args) {
+  seq()->dispatch(kernel, args);
 }
 
 void Graph::run(

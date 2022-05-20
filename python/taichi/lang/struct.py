@@ -1,4 +1,5 @@
 import numbers
+from functools import partial
 
 from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
@@ -260,14 +261,15 @@ class Struct(TaichiOperations):
             v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
-        if include_methods: 
+        if include_methods:
             dict['__struct_methods'] = self.methods
         return dict
 
     @classmethod
     @python_scope
     def field(cls,
-              members, methods={},
+              members,
+              methods={},
               shape=None,
               name="<Struct>",
               offset=None,
@@ -679,11 +681,11 @@ def struct_class(cls):
                 return 4 * 3.14 * self.radius * self.radius
 
         Classes with this decorator can be treated as a normal taichi struct, and fields generated
-        from them.  Functions in the class can be run on the struct instance.  
+        from them.  Functions in the class can be run on the struct instance.
 
         my_spheres = Sphere.field(shape=(n,))
         my_sphere[2].area()
-    
+
         This class decorator inspects the class for annotations and methods and
             1.  Sets the annotations as fields for the struct
             2.  Attaches the methods to __struct_methods
@@ -691,7 +693,12 @@ def struct_class(cls):
     # save the annotaion fields for the struct
     fields = cls.__annotations__
     # get the class methods to be attached to the struct types
-    fields['__struct_methods'] = {attribute: ti.func(getattr(cls, attribute)) for attribute in dir(cls) if callable(getattr(cls, attribute)) and not attribute.startswith('__')}
+    fields['__struct_methods'] = {
+        attribute: ti.func(getattr(cls, attribute))
+        for attribute in dir(cls)
+        if callable(getattr(cls, attribute)) and not attribute.startswith('__')
+    }
     return StructType(**fields)
+
 
 __all__ = ["Struct", "StructField", "struct_class"]

@@ -30,7 +30,7 @@ TEST(GraphTest, SimpleGraphRun) {
   auto g = std::make_unique<Graph>("test");
   auto seq = g->seq();
   auto arr_arg = aot::Arg{
-      "arr", PrimitiveType::i32.to_string(), aot::ArgKind::NDARRAY, {size}};
+      "arr", PrimitiveType::i32.to_string(), aot::ArgKind::NDARRAY, {}};
   seq->emplace(ker1.get(), {arr_arg});
   seq->emplace(ker2.get(),
                {arr_arg, aot::Arg{"x", PrimitiveType::i32.to_string(),

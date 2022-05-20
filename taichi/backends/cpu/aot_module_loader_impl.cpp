@@ -27,6 +27,7 @@ class AotModuleImpl : public aot::Module {
   explicit AotModuleImpl(const AotModuleParams &params)
       : program_(params.program),
         cache_reader_(LlvmOfflineCacheFileReader::make(params.module_path)) {
+    TI_ASSERT(program_ != nullptr);
   }
 
   Arch arch() const override {

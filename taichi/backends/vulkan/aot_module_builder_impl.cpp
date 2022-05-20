@@ -5,6 +5,7 @@
 
 #include "taichi/aot/module_data.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
+#include "taichi/backends/vulkan/vulkan_graph_data.h"
 
 namespace taichi {
 namespace lang {
@@ -150,7 +151,9 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 void AotModuleBuilderImpl::add_compiled_kernel(aot::Kernel *kernel) {
-  kernel->save_to_module(this);
+  const auto register_params = static_cast<KernelImpl *>(kernel)->params();
+  ti_aot_data_.kernels.push_back(register_params.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(register_params.task_spirv_source_codes);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,

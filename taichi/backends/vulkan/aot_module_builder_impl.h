@@ -21,6 +21,11 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
+  // FIXME: remove me once TaichiAotData is no longer backend specific.
+  TaichiAotData &aot_data() {
+    return ti_aot_data_;
+  }
+
  private:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
@@ -35,6 +40,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,
                             Kernel *kernel) override;
+
+  void add_compiled_kernel(aot::Kernel *kernel) override;
 
   std::string write_spv_file(const std::string &output_dir,
                              const TaskAttributes &k,

@@ -16,7 +16,7 @@ namespace taichi {
 namespace lang {
 
 struct RuntimeContext;
-
+class Graph;
 namespace aot {
 
 class TI_DLL_EXPORT Field {
@@ -90,11 +90,16 @@ class TI_DLL_EXPORT Module {
   KernelTemplate *get_kernel_template(const std::string &name);
   Field *get_field(const std::string &name);
 
+  virtual std::unique_ptr<Graph> get_graph(std::string name) {
+    TI_NOT_IMPLEMENTED;
+  }
+
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
   virtual std::unique_ptr<KernelTemplate> make_new_kernel_template(
       const std::string &name) = 0;
   virtual std::unique_ptr<Field> make_new_field(const std::string &name) = 0;
+  std::unordered_map<std::string, CompiledGraph> graphs_;
 
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;

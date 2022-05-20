@@ -135,6 +135,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
   const std::string json_path = fmt::format("{}/metadata.json", output_dir);
   converted.dump_json(json_path);
+
+  dump_graph(output_dir);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -145,6 +147,10 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+}
+
+void AotModuleBuilderImpl::add_compiled_kernel(aot::Kernel *kernel) {
+  kernel->save_to_module(this);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,

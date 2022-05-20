@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/program/graph.h"
 
 namespace taichi {
 namespace lang {
@@ -39,6 +40,20 @@ class AotModuleImpl : public aot::Module {
       }
       ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
     }
+
+    const std::string graph_path =
+        fmt::format("{}/graphs.tcb", params.module_path);
+    read_from_binary_file(graphs_, graph_path);
+  }
+
+  std::unique_ptr<Graph> get_graph(std::string name) override {
+    TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
+    auto &compiled_graph = graphs_[name];
+    for (auto &dispatch : compiled_graph.dispatches) {
+      dispatch.compiled_kernel = get_kernel(dispatch.kernel_name);
+    }
+    auto graph = std::make_unique<Graph>(name, compiled_graph);
+    return graph;
   }
 
   size_t get_root_size() const override {

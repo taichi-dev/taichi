@@ -10,7 +10,8 @@ from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
-from functools import partial
+from taichi.lang.kernel_impl import func
+from types import MethodType
 
 
 class Struct(TaichiOperations):
@@ -56,8 +57,11 @@ class Struct(TaichiOperations):
             )
         self.methods = self.entries.pop("__struct_methods", {})
         for name, method in self.methods.items():
-            # use partial to pass self (this object) to the method
-            setattr(self, name, partial(method, self))
+            # use MethodType to pass self (this object) to the method
+            setattr(self, name, MethodType(method, self))
+            if getattr(method, '_is_taichi_function', False) is True:
+                # mark as a taichi function
+                func(getattr(self, name))
 
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
@@ -362,7 +366,11 @@ class _IntermediateStruct(Struct):
         assert isinstance(entries, dict)
         self.methods = entries.pop('__struct_methods', {})
         for name, method in self.methods.items():
-            setattr(self, name, partial(method, self))
+            # use MethodType to pass self (this object) to the method
+            setattr(self, name, MethodType(method, self))
+            if getattr(method, '_is_taichi_function', False) is True:
+                # mark as a taichi function
+                func(getattr(self, name))
         self.entries = entries
         self._register_members()
 

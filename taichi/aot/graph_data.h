@@ -16,10 +16,10 @@ enum ArgKind { SCALAR, NDARRAY, UNKNOWN };
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.
  */
 struct Arg {
+  ArgKind tag;
   std::string name;
   // TODO: real element dtype = dtype + element_shape
   std::string dtype_name;
-  ArgKind tag;
   std::vector<int> element_shape;
 
   TI_IO_DEF(name, dtype_name, tag, element_shape);

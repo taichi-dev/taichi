@@ -30,11 +30,13 @@ TEST(GraphTest, SimpleGraphRun) {
   auto g = std::make_unique<Graph>("test");
   auto seq = g->seq();
   auto arr_arg = aot::Arg{
-      "arr", PrimitiveType::i32.to_string(), aot::ArgKind::NDARRAY, {size}};
+      aot::ArgKind::NDARRAY, "arr", PrimitiveType::i32.to_string(), {size}};
   seq->emplace(ker1.get(), {arr_arg});
-  seq->emplace(ker2.get(),
-               {arr_arg, aot::Arg{"x", PrimitiveType::i32.to_string(),
-                                  aot::ArgKind::SCALAR}});
+  seq->emplace(ker2.get(), {arr_arg, aot::Arg{
+                                         aot::ArgKind::SCALAR,
+                                         "x",
+                                         PrimitiveType::i32.to_string(),
+                                     }});
   g->compile();
 
   auto array = Ndarray(test_prog.prog(), PrimitiveType::i32, {size});

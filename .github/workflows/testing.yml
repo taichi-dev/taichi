@@ -274,7 +274,7 @@ jobs:
         shell: bash
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0 trigger CI
+            exit 0
           fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \

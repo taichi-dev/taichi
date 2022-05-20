@@ -10,7 +10,7 @@
 #include "taichi/aot/module_data.h"
 #include "taichi/backends/device.h"
 #include "taichi/ir/snode.h"
-#include "taichi/aot/module_data.h"
+#include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
@@ -28,26 +28,6 @@ class TI_DLL_EXPORT Field {
   Field &operator=(const Field &) = delete;
   Field(Field &&) = default;
   Field &operator=(Field &&) = default;
-};
-
-class TI_DLL_EXPORT Kernel {
- public:
-  // Rule of 5 to make MSVC happy
-  Kernel() = default;
-  virtual ~Kernel() = default;
-  Kernel(const Kernel &) = delete;
-  Kernel &operator=(const Kernel &) = delete;
-  Kernel(Kernel &&) = default;
-  Kernel &operator=(Kernel &&) = default;
-
-  /**
-   * @brief Launches the kernel to the device
-   *
-   * This does not manage the device to host synchronization.
-   *
-   * @param ctx Host context
-   */
-  virtual void launch(RuntimeContext *ctx) = 0;
 };
 
 class TI_DLL_EXPORT KernelTemplateArg {

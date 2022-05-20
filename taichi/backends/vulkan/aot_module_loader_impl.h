@@ -31,6 +31,7 @@ class KernelImpl : public aot::Kernel {
   VkRuntime *const runtime_;
   const VkRuntime::RegisterParams params_;
 };
+
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
   VkRuntime *runtime{nullptr};

@@ -50,7 +50,7 @@ class Sequential : public Node {
 
   void append(Node *node);
 
-  void emplace(Kernel *kernel, const std::vector<aot::Arg> &args);
+  void dispatch(Kernel *kernel, const std::vector<aot::Arg> &args);
 
   void compile(
       std::vector<aot::CompiledDispatch> &compiled_dispatches) override;
@@ -86,11 +86,11 @@ class Graph {
 
   void run(const std::unordered_map<std::string, aot::IValue> &args) const;
 
-  Node *create_dispatch(Kernel *kernel, const std::vector<aot::Arg> &args);
+  Node *new_dispatch_node(Kernel *kernel, const std::vector<aot::Arg> &args);
 
-  Sequential *create_sequential();
+  Sequential *new_sequential_node();
 
-  void emplace(Kernel *kernel, const std::vector<aot::Arg> &args);
+  void dispatch(Kernel *kernel, const std::vector<aot::Arg> &args);
 
   Sequential *seq() const;
 

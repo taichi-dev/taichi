@@ -300,11 +300,11 @@ def test_match_all():
     def foo():
         ti.loop_config(block_dim=32)
         for i in range(32):
-            a[i] = 0
+            a[i] = 1
         for i in range(32):
             b[i] = ti.simt.warp.match_all(ti.u32(0xFFFFFFFF), a[i])
 
-        a[0] = 1
+        a[0] = 2
         for i in range(32):
             c[i] = ti.simt.warp.match_all(ti.u32(0xFFFFFFFF), a[i])
 

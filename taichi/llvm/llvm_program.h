@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
@@ -9,6 +10,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
 #include "taichi/llvm/llvm_context.h"
+#include "taichi/llvm/launch_arg_info.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/struct/struct.h"
@@ -19,8 +21,6 @@
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
-
-#include <memory>
 
 namespace llvm {
 class Module;
@@ -108,16 +108,19 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
 
-  std::shared_ptr<Device> get_device_shared() override;
-
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
                     uint32_t data);
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
+                    std::vector<LlvmLaunchArgInfo> &&args,
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
+
+  Device *get_compute_device() override {
+    return device_.get();
+  }
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -155,13 +158,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  Device *get_compute_device() override {
-    return device_.get();
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 

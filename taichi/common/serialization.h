@@ -588,7 +588,7 @@ class BinarySerializer : public Serializer {
   void handle_associative_container(const M &val) {
     if constexpr (writing) {
       this->process(val.size());
-      for (auto iter : val) {
+      for (auto &iter : val) {
         auto first = iter.first;
         this->process(first);
         this->process(iter.second);
@@ -601,7 +601,7 @@ class BinarySerializer : public Serializer {
       for (std::size_t i = 0; i < n; i++) {
         typename M::value_type record;
         this->process(record);
-        wval.insert(record);
+        wval.insert(std::move(record));
       }
     }
   }

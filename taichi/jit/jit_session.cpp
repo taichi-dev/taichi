@@ -10,6 +10,7 @@ TLANG_NAMESPACE_BEGIN
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
     LlvmProgramImpl *llvm_prog,
     Arch arch);
+
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     LlvmProgramImpl *llvm_prog,
     Arch arch);

@@ -62,7 +62,7 @@ def test_no_dyn():
             r'If you want to \*iterate through matrix elements\*, use a static range:\n'
             r'  for i in ti.static\(range\(3\)\):\n'
             r'    print\(i, "-th component is", vec\[i\]\)\n'
-            r'See https://docs.taichi-lang.org/lang/articles/meta#when-to-use-tistatic-with-for-loops for more details.'
+            r'See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-with-for-loops for more details.'
             r'Or turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!'
     ):
         test_one_col_slice()

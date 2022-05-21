@@ -84,8 +84,11 @@ def test_matrix_ndarray(n, m, dtype, shape):
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_fp_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray, default_fp=dtype)
+    arch = ti.lang.impl.current_cfg().arch
+    ti.reset()
+    ti.init(arch=arch, default_fp=dtype)
 
     x = ti.Vector.ndarray(2, float, ())
 
@@ -93,8 +96,11 @@ def test_default_fp_ndarray(dtype):
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_ip_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray, default_ip=dtype)
+    arch = ti.lang.impl.current_cfg().arch
+    ti.reset()
+    ti.init(arch=arch, default_ip=dtype)
 
     x = ti.Vector.ndarray(2, int, ())
 
@@ -254,8 +260,8 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
+@test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
 def test_ndarray_cuda_caching_allocator():
-    ti.init(arch=ti.cuda, ndarray_use_cached_allocator=True)
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)
@@ -333,6 +339,15 @@ def _test_ndarray_numpy_io():
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_numpy_io():
     _test_ndarray_numpy_io()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_reset():
+    n = 8
+    c = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
+    del c
+    d = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
+    ti.reset()
 
 
 def _test_ndarray_matrix_numpy_io(layout):
@@ -607,3 +622,16 @@ def test_different_shape():
     y = ti.ndarray(dtype=ti.f32, shape=(n2, n2))
     init(3, y)
     assert (y.to_numpy() == (np.ones(shape=(n2, n2)) * 3)).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_generation():
+    curr_arch = ti.lang.impl.current_cfg().arch
+    n1 = 4
+    x = ti.ndarray(dtype=ti.f32, shape=(n1, n1))
+    prev_gen = x._gen
+    ti.reset()  # gen++
+    ti.init(curr_arch)  # calls ti.reset(), gen++
+    y = ti.ndarray(dtype=ti.f32, shape=(n1, ))
+    assert y._gen > prev_gen
+    del x

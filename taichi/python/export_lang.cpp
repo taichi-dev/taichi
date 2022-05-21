@@ -416,6 +416,32 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
            })
+      .def(
+          "create_ndarray",
+          [&](Program *program, const DataType &dt,
+              const std::vector<int> &shape) -> Ndarray * {
+            return program->create_ndarray(dt, shape);
+          },
+          py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
+      .def("get_ndarray_data_ptr_as_int",
+           [](Program *program, Ndarray *ndarray) {
+             return program->get_ndarray_data_ptr_as_int(ndarray);
+           })
+      .def("fill_float",
+           [](Program *program, Ndarray *ndarray, float val) {
+             program->fill_ndarray_fast(ndarray,
+                                        reinterpret_cast<uint32_t &>(val));
+           })
+      .def("fill_int",
+           [](Program *program, Ndarray *ndarray, int32_t val) {
+             program->fill_ndarray_fast(ndarray,
+                                        reinterpret_cast<int32_t &>(val));
+           })
+      .def("fill_uint",
+           [](Program *program, Ndarray *ndarray, uint32_t val) {
+             program->fill_ndarray_fast(ndarray, val);
+           })
       .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
         return Expr::make<GlobalVariableExpression>(
             snode, program->get_next_global_id());
@@ -495,14 +521,9 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Ndarray>(m, "Ndarray")
-      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
-      .def("data_ptr", &Ndarray::get_data_ptr_as_int)
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
-      .def("fill_float", &Ndarray::fill_float)
-      .def("fill_int", &Ndarray::fill_int)
-      .def("fill_uint", &Ndarray::fill_uint)
       .def("read_int", &Ndarray::read_int)
       .def("read_uint", &Ndarray::read_uint)
       .def("read_float", &Ndarray::read_float)

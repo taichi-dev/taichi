@@ -1,15 +1,19 @@
 #include "taichi/codegen/codegen_llvm.h"
 
+#include <algorithm>
+
 #ifdef TI_WITH_LLVM
+
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Linker/Linker.h"
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/ir/statements.h"
+#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
-
-#include "llvm/IR/Module.h"
-#include "llvm/Bitcode/BitcodeReader.h"
-#include "llvm/Linker/Linker.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -18,7 +22,6 @@ TLANG_NAMESPACE_BEGIN
 // OffloadedTask
 
 OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-  func = nullptr;
 }
 
 void OffloadedTask::begin(const std::string &name) {
@@ -27,19 +30,6 @@ void OffloadedTask::begin(const std::string &name) {
 
 void OffloadedTask::end() {
   codegen->offloaded_tasks.push_back(*this);
-}
-
-void OffloadedTask::operator()(RuntimeContext *context) {
-  TI_ASSERT(func);
-  func(context);
-}
-
-void OffloadedTask::compile() {
-  TI_ASSERT(!func);
-  auto kernel_symbol = codegen->tlctx->lookup_function_pointer(name);
-  TI_ASSERT_INFO(kernel_symbol, "Function not found");
-
-  func = (task_fp_type)kernel_symbol;
 }
 
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
@@ -2282,40 +2272,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
       });
 }
 
-FunctionType CodeGenLLVM::compile_module_to_executable() {
-  TI_AUTO_PROF
-
-  tlctx->add_module(std::move(module));
-
-  for (auto &task : offloaded_tasks) {
-    task.compile();
-  }
-  auto offloaded_tasks_local = offloaded_tasks;
-  auto kernel_name_ = kernel_name;
-  return [offloaded_tasks_local, kernel_name_,
-          kernel = this->kernel](RuntimeContext &context) {
-    TI_TRACE("Launching kernel {}", kernel_name_);
-    auto args = kernel->args;
-    // For taichi ndarrays, context.args saves pointer to its
-    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocations[i] &&
-          context.array_runtime_sizes[i] > 0) {
-        DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
-                              ->get_ndarray_alloc_info_ptr(*ptr);
-        context.set_arg(i, host_ptr);
-        context.set_array_is_device_allocation(i,
-                                               /*is_device_allocation=*/false);
-      }
-    }
-    for (auto task : offloaded_tasks_local) {
-      task(&context);
-    }
-  };
-}
-
 FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
     std::vector<llvm::Type *> argument_types) {
   return FunctionCreationGuard(this, argument_types);
@@ -2389,33 +2345,19 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-FunctionType CodeGenLLVM::gen() {
+CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   bool needs_cache = false;
   const auto &config = prog->config;
   std::string kernel_key;
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
     kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
-
-    LlvmOfflineCacheFileReader reader(config.offline_cache_file_path);
-    LlvmOfflineCache::KernelCacheData cache_data;
-    auto *tlctx =
-        this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
-    auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-    if (reader.get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-      this->module = std::move(cache_data.owned_module);
-      for (auto &task : cache_data.offloaded_task_list) {
-        auto &t = this->offloaded_tasks.emplace_back(this);
-        t.name = std::move(task.name);
-        t.block_dim = task.block_dim;
-        t.grid_dim = task.grid_dim;
-      }
-      kernel->set_from_offline_cache();
-      return compile_module_to_executable();
-    } else {
-      needs_cache = true;
+    CompiledData res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
+    if (ok) {
+      return res;
     }
+    needs_cache = true;
   }
 
   if (!kernel->lowered()) {
@@ -2426,7 +2368,50 @@ FunctionType CodeGenLLVM::gen() {
   if (needs_cache) {
     cache_module(kernel_key);
   }
-  return compile_module_to_executable();
+  CompiledData res;
+  res.offloaded_tasks = std::move(this->offloaded_tasks);
+  res.llvm_module = std::move(this->module);
+  return res;
+}
+
+bool CodeGenLLVM::maybe_read_compilation_from_cache(
+    const std::string &kernel_key,
+    CompiledData *data) {
+  const auto &config = prog->config;
+  auto reader =
+      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  if (!reader) {
+    return false;
+  }
+
+  LlvmOfflineCache::KernelCacheData cache_data;
+  auto *tlctx =
+      this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+  auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+    return false;
+  }
+  this->module = std::move(cache_data.owned_module);
+  for (auto &task : cache_data.offloaded_task_list) {
+    auto &t = this->offloaded_tasks.emplace_back(this);
+    t.name = std::move(task.name);
+    t.block_dim = task.block_dim;
+    t.grid_dim = task.grid_dim;
+  }
+  kernel->set_from_offline_cache();
+  data->offloaded_tasks = std::move(this->offloaded_tasks);
+  data->llvm_module = std::move(this->module);
+  return true;
+}
+
+FunctionType CodeGenLLVM::gen() {
+  auto compiled_res = run_compilation();
+
+  ModuleToFunctionConverter converter{tlctx,
+                                      kernel->program->get_llvm_program_impl()};
+  return converter.convert(kernel, std::move(compiled_res.llvm_module),
+                           std::move(compiled_res.offloaded_tasks));
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2506,8 +2491,61 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
     task_cache.grid_dim = task.grid_dim;
   }
   prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
+                                              infer_launch_args(kernel),
                                               std::move(offloaded_task_list));
 }
+
+ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                                     LlvmProgramImpl *program)
+    : tlctx_(tlctx), program_(program) {
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<LlvmLaunchArgInfo> &args,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  tlctx_->add_module(std::move(mod));
+
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs;
+  task_funcs.reserve(tasks.size());
+  for (auto &task : tasks) {
+    auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+    TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
+    task_funcs.push_back((TaskFunc)(func_ptr));
+  }
+  // Do NOT capture `this`...
+  return [program = this->program_, args, kernel_name,
+          task_funcs](RuntimeContext &context) {
+    TI_TRACE("Launching kernel {}", kernel_name);
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array && context.is_device_allocations[i] &&
+          context.array_runtime_sizes[i] > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_array_is_device_allocation(i,
+                                               /*is_device_allocation=*/false);
+      }
+    }
+    for (auto task : task_funcs) {
+      task(&context);
+    }
+  };
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
+                 std::move(tasks));
+}
+
 TLANG_NAMESPACE_END
 
 #endif  // #ifdef TI_WITH_LLVM

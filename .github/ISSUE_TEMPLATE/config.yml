@@ -2,7 +2,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Contributor Guideline
-    url: https://docs.taichi-lang.org/lang/articles/contributor_guide
+    url: https://docs.taichi-lang.org/docs/contributor_guide
     about: Please check this out if you'd like to contribute by opening a PR :)
   - name: Taichi Forum
     url: https://forum.taichi.graphics

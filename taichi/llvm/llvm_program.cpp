@@ -1,4 +1,5 @@
-#include "llvm_program.h"
+#include "taichi/llvm/llvm_program.h"
+
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -11,6 +12,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
@@ -335,6 +337,14 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       size_MB);
 }
 
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
+  if (config->arch == Arch::x64) {
+    return std::make_unique<cpu::AotModuleBuilderImpl>();
+  }
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+}
+
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {
@@ -430,7 +440,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       llvm_runtime_,
                                       (void *)assert_failed_host);
   }
-  if (arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
     // Profiler functions can only be called on CPU kernels
     runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);
@@ -614,10 +624,6 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
        result_buffer});
 }
 
-std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
-  return device_;
-}
-
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
@@ -649,6 +655,7 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
+    std::vector<LlvmLaunchArgInfo> &&args,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &&offloaded_task_list) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
@@ -657,7 +664,8 @@ void LlvmProgramImpl::cache_kernel(
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
-  kernel_cache.offloaded_task_list = offloaded_task_list;
+  kernel_cache.args = std::move(args);
+  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {

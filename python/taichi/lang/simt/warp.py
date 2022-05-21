@@ -97,9 +97,11 @@ def shfl_xor_i32(mask, val, offset):
                               with_runtime_context=False)
 
 
-def match_any():
-    # TODO
-    pass
+def match_any(mask, value):
+    return impl.call_internal("cuda_match_any_sync_i32",
+                              mask,
+                              value,
+                              with_runtime_context=False)
 
 
 def match_all(mask, val):

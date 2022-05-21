@@ -1,4 +1,4 @@
-#include "codegen_cuda.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
 
 #include <vector>
 #include <set>
@@ -35,23 +35,30 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;
   }
 
-  FunctionType compile_module_to_executable() override {
+  FunctionType gen() override {
+    auto compiled_res = run_compilation();
+    return compile_module_to_executable(this->kernel, std::move(compiled_res));
+  }
+
+  static FunctionType compile_module_to_executable(
+      Kernel *kernel,
+      CompiledData &&compiled_data) {
 #ifdef TI_WITH_CUDA
-    auto offloaded_local = offloaded_tasks;
-    for (auto &task : offloaded_local) {
-      llvm::Function *func = module->getFunction(task.name);
+    auto *tlctx =
+        kernel->program->get_llvm_program_impl()->get_llvm_context(Arch::cuda);
+    for (auto &task : compiled_data.offloaded_tasks) {
+      llvm::Function *func = compiled_data.llvm_module->getFunction(task.name);
       TI_ASSERT(func);
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = kernel->program->get_llvm_program_impl()
-                   ->get_llvm_context(Arch::cuda)
-                   ->jit.get();
-    auto cuda_module =
-        jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
+    auto jit = tlctx->jit.get();
+    auto cuda_module = jit->add_module(std::move(compiled_data.llvm_module),
+                                       kernel->program->config.gpu_max_reg);
 
-    return [offloaded_local, cuda_module,
-            kernel = this->kernel](RuntimeContext &context) {
+    return [cuda_module, kernel,
+            offloaded_tasks =
+                compiled_data.offloaded_tasks](RuntimeContext &context) {
       CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -124,7 +131,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
 
-      for (auto task : offloaded_local) {
+      for (auto task : offloaded_tasks) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
         cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,

@@ -3,6 +3,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/program.h"
+#include "tests/cpp/ir/ndarray_kernel.h"
+#include "tests/cpp/program/test_program.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #include "taichi/backends/device.h"
@@ -104,7 +106,40 @@ using namespace lang;
   aot_builder->dump(".", "");
 }
 
+[[maybe_unused]] static void save_ndarray_kernels(Arch arch) {
+  TestProgram test_prog;
+  test_prog.setup(arch);
+  auto aot_builder = test_prog.prog()->make_aot_module_builder(arch);
+  auto ker1 = setup_kernel1(test_prog.prog());
+  auto ker2 = setup_kernel2(test_prog.prog());
+  aot_builder->add("ker1", ker1.get());
+  aot_builder->add("ker2", ker2.get());
+  aot_builder->dump(".", "");
+}
+
 #ifdef TI_WITH_VULKAN
+[[maybe_unused]] static void write_devalloc(
+    taichi::lang::vulkan::VkRuntime *vulkan_runtime,
+    taichi::lang::DeviceAllocation &alloc,
+    const void *data,
+    size_t size) {
+  char *const device_arr_ptr =
+      reinterpret_cast<char *>(vulkan_runtime->get_ti_device()->map(alloc));
+  std::memcpy(device_arr_ptr, data, size);
+  vulkan_runtime->get_ti_device()->unmap(alloc);
+}
+
+[[maybe_unused]] static void load_devalloc(
+    taichi::lang::vulkan::VkRuntime *vulkan_runtime,
+    taichi::lang::DeviceAllocation &alloc,
+    void *data,
+    size_t size) {
+  char *const device_arr_ptr =
+      reinterpret_cast<char *>(vulkan_runtime->get_ti_device()->map(alloc));
+  std::memcpy(data, device_arr_ptr, size);
+  vulkan_runtime->get_ti_device()->unmap(alloc);
+}
+
 TEST(AotSaveLoad, Vulkan) {
   // Otherwise will segfault on macOS VM,
   // where Vulkan is installed but no devices are present
@@ -176,5 +211,92 @@ TEST(AotSaveLoad, Vulkan) {
   // Retrieve data
   auto x_field = vk_module->get_field("place");
   EXPECT_NE(x_field, nullptr);
+}
+
+TEST(AotSaveLoad, VulkanNdarray) {
+  // Otherwise will segfault on macOS VM,
+  // where Vulkan is installed but no devices are present
+  if (!vulkan::is_vulkan_api_available()) {
+    return;
+  }
+
+  save_ndarray_kernels(Arch::vulkan);
+
+  // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
+  // Initialize Vulkan program
+  taichi::uint64 *result_buffer{nullptr};
+  taichi::lang::RuntimeContext host_ctx;
+  auto memory_pool =
+      std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
+  result_buffer = (taichi::uint64 *)memory_pool->allocate(
+      sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
+  host_ctx.result_buffer = result_buffer;
+
+  // Create Taichi Device for computation
+  lang::vulkan::VulkanDeviceCreator::Params evd_params;
+  evd_params.api_version =
+      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  auto embedded_device =
+      std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
+
+  // Create Vulkan runtime
+  vulkan::VkRuntime::Params params;
+  params.host_result_buffer = result_buffer;
+  params.device = embedded_device->device();
+  auto vulkan_runtime =
+      std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
+
+  // Run AOT module loader
+  vulkan::AotModuleParams mod_params;
+  mod_params.module_path = ".";
+  mod_params.runtime = vulkan_runtime.get();
+
+  std::unique_ptr<aot::Module> vk_module =
+      aot::Module::load(Arch::vulkan, mod_params);
+  EXPECT_TRUE(vk_module);
+
+  // Retrieve kernels/fields/etc from AOT module
+  auto root_size = vk_module->get_root_size();
+  EXPECT_EQ(root_size, 0);
+  vulkan_runtime->add_root_buffer(root_size);
+
+  auto ker1 = vk_module->get_kernel("ker1");
+  EXPECT_TRUE(ker1);
+
+  const int size = 10;
+  taichi::lang::Device::AllocParams alloc_params;
+  alloc_params.host_write = true;
+  alloc_params.size = size * sizeof(int);
+  alloc_params.usage = taichi::lang::AllocUsage::Storage;
+  DeviceAllocation devalloc_arr_ =
+      embedded_device->device()->allocate_memory(alloc_params);
+  Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
+  taichi::lang::set_runtime_ctx_ndarray(&host_ctx, 0, &arr);
+  int src[size] = {0};
+  src[0] = 2;
+  src[2] = 40;
+  write_devalloc(vulkan_runtime.get(), devalloc_arr_, src, sizeof(src));
+  ker1->launch(&host_ctx);
+  vulkan_runtime->synchronize();
+
+  int dst[size] = {33};
+  load_devalloc(vulkan_runtime.get(), devalloc_arr_, dst, sizeof(dst));
+  EXPECT_EQ(dst[0], 2);
+  EXPECT_EQ(dst[1], 1);
+  EXPECT_EQ(dst[2], 42);
+
+  auto ker2 = vk_module->get_kernel("ker2");
+  EXPECT_TRUE(ker2);
+
+  host_ctx.set_arg(1, 3);
+  ker2->launch(&host_ctx);
+  vulkan_runtime->synchronize();
+  load_devalloc(vulkan_runtime.get(), devalloc_arr_, dst, sizeof(dst));
+  EXPECT_EQ(dst[0], 2);
+  EXPECT_EQ(dst[1], 3);
+  EXPECT_EQ(dst[2], 42);
+
+  // Deallocate
+  embedded_device->device()->dealloc_memory(devalloc_arr_);
 }
 #endif

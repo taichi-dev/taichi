@@ -472,7 +472,7 @@ class StructField(Field):
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
-        """Creates a ScalarField using a specific field member. Only used for quant.
+        """Creates a ScalarField using a specific field member.
 
         Args:
             key (str): Specified key of the field member.

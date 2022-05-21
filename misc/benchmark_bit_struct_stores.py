@@ -7,7 +7,7 @@ quant = True
 n = 1024 * 1024 * 256
 
 if quant:
-    ci16 = ti.types.quantized_types.quant.int(16, True)
+    ci16 = ti.types.quant.int(16, True)
 
     x = ti.field(dtype=ci16)
     y = ti.field(dtype=ci16)

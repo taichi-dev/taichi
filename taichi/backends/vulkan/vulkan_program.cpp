@@ -2,6 +2,7 @@
 
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/backends/vulkan/aot_module_loader_impl.h"
 
 #if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
 #include "GLFW/glfw3.h"
@@ -178,15 +179,22 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
 DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  auto &ndarray =
-      ref_ndarry_.emplace_back(get_compute_device()->allocate_memory_unique(
-          {alloc_size, /*host_write=*/false, /*host_read=*/false,
-           /*export_sharing=*/false}));
-  return *ndarray;
+  return get_compute_device()->allocate_memory(
+      {alloc_size, /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false});
+}
+
+std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
+    Kernel &kernel) {
+  spirv::lower(&kernel);
+  std::vector<CompiledSNodeStructs> compiled_structs;
+  VkRuntime::RegisterParams kparams =
+      run_codegen(&kernel, get_compute_device(), compiled_structs);
+  return std::make_unique<KernelImpl>(vulkan_runtime_.get(),
+                                      std::move(kparams));
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {
-  ref_ndarry_.clear();
   vulkan_runtime_.reset();
   embedded_device_.reset();
 }

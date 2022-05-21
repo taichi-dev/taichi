@@ -1686,7 +1686,7 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   AllocationInternal alloc_int{};
   alloc_int.external = true;
   alloc_int.buffer = buffer;
-  alloc_int.mapped = false;
+  alloc_int.mapped = nullptr;
   alloc_int.addr = 0;
 
   DeviceAllocation alloc;

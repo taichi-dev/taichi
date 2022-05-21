@@ -423,7 +423,6 @@ void export_lang(py::module &m) {
             return program->create_ndarray(dt, shape);
           },
           py::return_value_policy::reference)
-      .def("delete_ndarray", &Program::delete_ndarray)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);

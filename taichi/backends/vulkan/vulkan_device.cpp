@@ -1682,6 +1682,22 @@ vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
   return framebuffer;
 }
 
+DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
+  AllocationInternal alloc_int{};
+  alloc_int.external = true;
+  alloc_int.buffer = buffer;
+  alloc_int.mapped = nullptr;
+  alloc_int.addr = 0;
+
+  DeviceAllocation alloc;
+  alloc.device = this;
+  alloc.alloc_id = alloc_cnt_++;
+
+  allocations_[alloc.alloc_id] = alloc_int;
+
+  return alloc;
+}
+
 DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
                                                VkFormat format) {

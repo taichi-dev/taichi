@@ -12,6 +12,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
@@ -334,6 +335,14 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
       list_manager_len, num_active_chunks, elements_per_chunk, element_size,
       size_MB);
+}
+
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
+  if (config->arch == Arch::x64) {
+    return std::make_unique<cpu::AotModuleBuilderImpl>();
+  }
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,

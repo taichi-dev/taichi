@@ -34,9 +34,11 @@ else
     # Import Paddle's develop GPU package will occur error `Illegal Instruction`.
 
     # Log hardware info for the current CI-bot
-    # There's random CI failure caused by "import paddle"
+    # There's random CI failure caused by "import paddle" (Linux)
     # Top suspect is an issue with MKL support for specific CPU
-    lscpu | grep "Model name"
+    if [[ $OSTYPE == "linux-"* ]]; then
+        lscpu | grep "Model name"
+    fi
 fi
 
 ti diagnose

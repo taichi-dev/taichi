@@ -495,7 +495,7 @@ class ASTTransformer(Builder):
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation)
+                        ctx.func.arguments[i].annotation)
             # remove original args
             node.args.args = []
 
@@ -591,7 +591,7 @@ class ASTTransformer(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
-            ast.Pow: lambda l, r: l**r,
+            ast.Pow: lambda l, r: l ** r,
             ast.LShift: lambda l, r: l << r,
             ast.RShift: lambda l, r: l >> r,
             ast.BitOr: lambda l, r: l | r,
@@ -1108,17 +1108,7 @@ class ASTTransformer(Builder):
                 node.ptr = build_stmt(ctx, node.orelse)
             return node.ptr
 
-        val = impl.expr_init(None)
-
-        impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
-        ctx.ast_builder.begin_frontend_if_true()
-        val._assign(node.body.ptr)
-        ctx.ast_builder.pop_scope()
-        ctx.ast_builder.begin_frontend_if_false()
-        val._assign(node.orelse.ptr)
-        ctx.ast_builder.pop_scope()
-
-        node.ptr = val
+        node.ptr = ti_ops.ifte(node.test.ptr, node.body.ptr, node.orelse.ptr)
         return node.ptr
 
     @staticmethod
@@ -1142,7 +1132,7 @@ class ASTTransformer(Builder):
         msg = build_stmt(ctx, node.left)
         args = build_stmt(ctx, node.right)
         if not isinstance(args, collections.abc.Sequence):
-            args = (args, )
+            args = (args,)
         args = [expr.Expr(x).ptr for x in args]
         return msg, args
 

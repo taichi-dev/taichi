@@ -344,6 +344,7 @@ def rsqrt(x):
     Returns:
         The reciprocal of `sqrt(x)`.
     """
+
     def _rsqrt(x):
         return 1 / math.sqrt(x)
 
@@ -691,6 +692,7 @@ def mod(x1, x2):
         >>> test()
         [1.0, 0.0, 4.0]
     """
+
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
         quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
@@ -840,6 +842,7 @@ def raw_div(x1, x2):
         >>>     z = 4.0
         >>>     print(raw_div(x, z))  # 1.25
     """
+
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -869,6 +872,7 @@ def raw_mod(x1, x2):
         >>>     print(ti.mod(-4, 3))  # 2
         >>>     print(ti.raw_mod(-4, 3))  # -1
     """
+
     def c_mod(x, y):
         return x - y * int(float(x) / y)
 
@@ -1141,6 +1145,29 @@ def select(cond, x1, x2):
         return x1 * cond + x2 * (1 - cond)
 
     return _ternary_operation(_ti_core.expr_select, py_select, cond, x1, x2)
+
+
+@ternary
+def ifte(cond, x1, x2):
+    """Evaluate and return `x1` if `cond` is true; otherwise evaluate and return `x2`. This operator guarantees
+    short-circuit semantics: exactly one of `x1` or `x2` will be evaluated.
+
+    Args:
+        cond (:mod:`~taichi.types.primitive_types`): \
+            The condition.
+        x1, x2 (:mod:`~taichi.types.primitive_types`): \
+            The outputs.
+
+    Returns:
+        `x1` if `cond` is true and `x2` otherwise.
+    """
+    # TODO: systematically resolve `-1 = True` problem by introducing u1:
+    cond = logical_not(logical_not(cond))
+
+    def py_ifte(cond, x1, x2):
+        return x1 if cond else x2
+
+    return _ternary_operation(_ti_core.expr_ifte, py_ifte, cond, x1, x2)
 
 
 @writeback_binary

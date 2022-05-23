@@ -22,9 +22,9 @@ void CompiledGraph::run(
       TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
                   symbolic_arg.name);
       const aot::IValue &ival = found->second;
-      if (ival.tag == aot::ArgKind::NDARRAY) {
+      if (ival.tag == aot::ArgKind::kNdarray) {
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
-        TI_ERROR_IF(ival.tag != aot::ArgKind::NDARRAY,
+        TI_ERROR_IF(ival.tag != aot::ArgKind::kNdarray,
                     "Required a ndarray for argument {}", symbolic_arg.name);
         auto ndarray_elem_shape = std::vector<int>(
             arr->shape.end() - symbolic_arg.element_shape.size(),
@@ -34,7 +34,7 @@ void CompiledGraph::run(
                     symbolic_arg.name);
         set_runtime_ctx_ndarray(&ctx, i, arr);
       } else {
-        TI_ERROR_IF(ival.tag != aot::ArgKind::SCALAR,
+        TI_ERROR_IF(ival.tag != aot::ArgKind::kScalar,
                     "Required a scalar for argument {}", symbolic_arg.name);
         ctx.set_arg(i, ival.val);
       }

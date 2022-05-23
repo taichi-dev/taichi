@@ -16,6 +16,7 @@
 #include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/graph_builder.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/program/ndarray.h"
@@ -27,6 +28,7 @@
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
+#include "taichi/aot/graph_data.h"
 #include "taichi/ir/mesh.h"
 
 #include "taichi/program/kernel_profiler.h"
@@ -450,6 +452,7 @@ void export_lang(py::module &m) {
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
+      .def("add_graph", &AotModuleBuilder::add_graph)
       .def("dump", &AotModuleBuilder::dump);
 
   py::class_<Axis>(m, "Axis").def(py::init<int>());
@@ -530,6 +533,45 @@ void export_lang(py::module &m) {
       .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
+
+  py::enum_<aot::ArgKind>(m, "ArgKind")
+      .value("SCALAR", aot::ArgKind::kScalar)
+      .value("NDARRAY", aot::ArgKind::kNdarray)
+      .export_values();
+
+  py::class_<aot::Arg>(m, "Arg")
+      .def(py::init<aot::ArgKind, std::string, std::string, std::vector<int>>(),
+           py::arg("tag"), py::arg("name"), py::arg("dtype_name"),
+           py::arg("element_shape"))
+      .def_readonly("name", &aot::Arg::name)
+      .def_readonly("element_shape", &aot::Arg::element_shape);
+
+  py::class_<Node>(m, "Node");
+
+  py::class_<Sequential, Node>(m, "Sequential")
+      .def(py::init<GraphBuilder *>())
+      .def("append", &Sequential::append)
+      .def("dispatch", &Sequential::dispatch);
+
+  py::class_<GraphBuilder>(m, "GraphBuilder")
+      .def(py::init<>())
+      .def("dispatch", &GraphBuilder::dispatch)
+      .def("compile", &GraphBuilder::compile)
+      .def("create_sequential", &GraphBuilder::new_sequential_node,
+           py::return_value_policy::reference)
+      .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
+
+  py::class_<aot::CompiledGraph>(m, "CompiledGraph")
+      .def("run", [](aot::CompiledGraph *self, const py::dict &d) {
+        std::unordered_map<std::string, aot::IValue> args;
+        for (auto &it : d) {
+          // FIXME: there're also primitive types
+          auto &val = it.second.cast<Ndarray &>();
+          args.insert(
+              {py::cast<std::string>(it.first), aot::IValue::create(val)});
+        }
+        self->run(args);
+      });
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)

@@ -633,8 +633,8 @@ def determinant(m):
 
 @ti.func
 def _inverse2x2(m):
-    return mat2(m[1, 1], -m[0, 1], -m[1, 0],
-                m[0, 0]) / (m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0])
+    return mat2([[m[1, 1], -m[0, 1]], [-m[1, 0], m[0, 0]]
+                 ]) / (m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0])
 
 
 @ti.func
@@ -652,9 +652,9 @@ def _inverse3x3(m):
     b11 = -a22 * a10 + a12 * a20
     b21 = a21 * a10 - a11 * a20
     det = a00 * b01 + a01 * b11 + a02 * b21
-    return mat3(b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11), b11,
-                (a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10), b21,
-                (-a21 * a00 + a01 * a20), (a11 * a00 - a01 * a10)) / det
+    return mat3([[b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11), b11],
+                 [(a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10), b21],
+                 [(-a21 * a00 + a01 * a20), (a11 * a00 - a01 * a10)]]) / det
 
 
 @ti.func
@@ -688,16 +688,25 @@ def _inverse4x4(m):
     b10 = a21 * a33 - a23 * a31
     b11 = a22 * a33 - a23 * a32
     det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06
-    return mat4(
+    return mat4([[
         a11 * b11 - a12 * b10 + a13 * b09, a02 * b10 - a01 * b11 - a03 * b09,
-        a31 * b05 - a32 * b04 + a33 * b03, a22 * b04 - a21 * b05 - a23 * b03,
-        a12 * b08 - a10 * b11 - a13 * b07, a00 * b11 - a02 * b08 + a03 * b07,
-        a32 * b02 - a30 * b05 - a33 * b01, a20 * b05 - a22 * b02 + a23 * b01,
-        a10 * b10 - a11 * b08 + a13 * b06, a01 * b08 - a00 * b10 - a03 * b06,
-        a30 * b04 - a31 * b02 + a33 * b00, a21 * b02 - a20 * b04 - a23 * b00,
-        a11 * b07 - a10 * b09 - a12 * b06, a00 * b09 - a01 * b07 + a02 * b06,
-        a31 * b01 - a30 * b03 - a32 * b00,
-        a20 * b03 - a21 * b01 + a22 * b00) / det
+        a31 * b05 - a32 * b04 + a33 * b03, a22 * b04 - a21 * b05 - a23 * b03
+    ],
+                 [
+                     a12 * b08 - a10 * b11 - a13 * b07, a00 * b11 - a02 * b08 +
+                     a03 * b07, a32 * b02 - a30 * b05 - a33 * b01,
+                     a20 * b05 - a22 * b02 + a23 * b01
+                 ],
+                 [
+                     a10 * b10 - a11 * b08 + a13 * b06, a01 * b08 - a00 * b10 -
+                     a03 * b06, a30 * b04 - a31 * b02 + a33 * b00,
+                     a21 * b02 - a20 * b04 - a23 * b00
+                 ],
+                 [
+                     a11 * b07 - a10 * b09 - a12 * b06, a00 * b09 - a01 * b07 +
+                     a02 * b06, a31 * b01 - a30 * b03 - a32 * b00,
+                     a20 * b03 - a21 * b01 + a22 * b00
+                 ]]) / det
 
 
 @ti.func
@@ -711,11 +720,6 @@ def inverse(mat):  # pylint: disable=R1710
 
     Returns:
         Inverse of the input matrix.
-
-    Example::
-
-        >>> m = mat3(vec3(1, 1, 0), vec3(0, 1, 1), vec3(0, 0, 1))
-        >>> inverse(m)
     """
     assert mat.m == mat.n and 2 <= mat.m <= 4, "A 2x2, 3x3 or 4x4 matrix is expected"
     if ti.static(mat.m == 2):

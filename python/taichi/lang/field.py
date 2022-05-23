@@ -19,6 +19,7 @@ class Field:
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
+        self.dual = None
 
     @property
     def snode(self):
@@ -99,6 +100,14 @@ class Field:
             grad (Field): Corresponding gradient field.
         """
         self.grad = grad
+    
+    def _set_dual(self, dual):
+        """Sets corresponding gradient field.
+
+        Args:
+            dual (Field): Corresponding gradient field for forward mode autodiff.
+        """
+        self.dual = dual
 
     @python_scope
     def fill(self, val):

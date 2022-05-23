@@ -97,6 +97,8 @@ class Expr {
 
   void set_grad(const Expr &o);
 
+  void set_dual(const Expr &o);
+
   void set_attribute(const std::string &key, const std::string &value);
 
   std::string get_attribute(const std::string &key) const;

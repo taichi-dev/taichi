@@ -341,15 +341,6 @@ def test_ndarray_numpy_io():
     _test_ndarray_numpy_io()
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_reset():
-    n = 8
-    c = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
-    del c
-    d = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
-    ti.reset()
-
-
 def _test_ndarray_matrix_numpy_io(layout):
     n = 5
     m = 2
@@ -622,16 +613,3 @@ def test_different_shape():
     y = ti.ndarray(dtype=ti.f32, shape=(n2, n2))
     init(3, y)
     assert (y.to_numpy() == (np.ones(shape=(n2, n2)) * 3)).all()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_generation():
-    curr_arch = ti.lang.impl.current_cfg().arch
-    n1 = 4
-    x = ti.ndarray(dtype=ti.f32, shape=(n1, n1))
-    prev_gen = x._gen
-    ti.reset()  # gen++
-    ti.init(curr_arch)  # calls ti.reset(), gen++
-    y = ti.ndarray(dtype=ti.f32, shape=(n1, ))
-    assert y._gen > prev_gen
-    del x

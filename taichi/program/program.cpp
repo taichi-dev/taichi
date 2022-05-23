@@ -508,8 +508,6 @@ void Program::finalize() {
     }
   }
 
-  ndarrays_.clear();
-
   synchronize();
   memory_pool_->terminate();
 
@@ -557,16 +555,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape) {
-  // TODO: allocate DeviceAllocation first and then create Ndarray
-  auto arr = std::make_unique<Ndarray>(this, type, shape);
-  auto arr_ptr = arr.get();
-  ndarrays_.insert({arr_ptr, std::move(arr)});
-  return arr_ptr;
-}
-
-void Program::delete_ndarray(Ndarray *ndarray) {
-  TI_ASSERT(ndarrays_.count(ndarray));
-  ndarrays_.erase(ndarray);
+  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape));
+  return ndarrays_.back().get();
 }
 
 intptr_t Program::get_ndarray_data_ptr_as_int(Ndarray *ndarray) {

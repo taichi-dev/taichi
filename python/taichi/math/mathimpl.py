@@ -4,7 +4,7 @@ Math functions for glsl-like functions and other stuff.
 """
 from math import e, pi
 
-from taichi.lang import exception, impl
+from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
                              max, min, pow, round, sin, sqrt, tan, tanh)
 
@@ -68,50 +68,17 @@ def uvec4(*args):
     return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
-def _gen_matrix_type(n, *args):
-    dt = impl.get_runtime().default_fp
-    if len(args) == n:
-        for x in args:
-            if isinstance(x, ti.Matrix):
-                assert x.m == 1 and x.n == n, f"Non-vector object encoutered: {x}"
+mat2 = ti.types.matrix(2, 2, impl.get_runtime().default_fp)  # pylint: disable=E1101
+"""2x2 floating matrix type.
+"""
 
-            if isinstance(x, (tuple, list)):
-                assert len(x) == n, f"A list of length != {n} encoutered"
+mat3 = ti.types.matrix(3, 3, impl.get_runtime().default_fp)  # pylint: disable=E1101
+"""3x3 floating matrix type.
+"""
 
-        data = [[v[k] for k in range(n)] for v in args]
-        return ti.Matrix(data, dt)
-
-    if len(args) == 1:
-        x, = args
-        if isinstance(x, (tuple, list)) and len(x) == n * n:
-            x = [[x[i * n + k] for k in range(n)] for i in range(n)]
-
-        return ti.Matrix(x, dt)
-
-    if len(args) == n * n:
-        data = [[args[i * n + k] for k in range(n)] for i in range(n)]
-        return ti.Matrix(data, dt)
-
-    raise exception.TaichiTypeError(
-        "A matrix, a list of scalars or vectors are expected")
-
-
-def mat2(*args):
-    """2x2 floating matrix type.
-    """
-    return _gen_matrix_type(2, *args)  # pylint: disable=E1101
-
-
-def mat3(*args):
-    """3x3 floating matrix type.
-    """
-    return _gen_matrix_type(3, *args)  # pylint: disable=E1101
-
-
-def mat4(*args):
-    """4x4 floating matrix type.
-    """
-    return _gen_matrix_type(4, *args)  # pylint: disable=E1101
+mat4 = ti.types.matrix(4, 4, impl.get_runtime().default_fp)  # pylint: disable=E1101
+"""4x4 floating matrix type.
+"""
 
 
 @ti.func
@@ -657,12 +624,116 @@ def length(x):
     return x.norm()
 
 
+@ti.func
+def determinant(m):
+    """Alias for :func:`taichi.Matrix.determinant`.
+    """
+    return m.determinant()
+
+
+@ti.func
+def _inverse2x2(m):
+    return mat2(m[1, 1], -m[0, 1], -m[1, 0],
+                m[0, 0]) / (m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0])
+
+
+@ti.func
+def _inverse3x3(m):
+    a00 = m[0, 0]
+    a01 = m[0, 1]
+    a02 = m[0, 2]
+    a10 = m[1, 0]
+    a11 = m[1, 1]
+    a12 = m[1, 2]
+    a20 = m[2, 0]
+    a21 = m[2, 1]
+    a22 = m[2, 2]
+    b01 = a22 * a11 - a12 * a21
+    b11 = -a22 * a10 + a12 * a20
+    b21 = a21 * a10 - a11 * a20
+    det = a00 * b01 + a01 * b11 + a02 * b21
+    return mat3(b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11), b11,
+                (a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10), b21,
+                (-a21 * a00 + a01 * a20), (a11 * a00 - a01 * a10)) / det
+
+
+@ti.func
+def _inverse4x4(m):
+    a00 = m[0, 0]
+    a01 = m[0, 1]
+    a02 = m[0, 2]
+    a03 = m[0, 3]
+    a10 = m[1, 0]
+    a11 = m[1, 1]
+    a12 = m[1, 2]
+    a13 = m[1, 3]
+    a20 = m[2, 0]
+    a21 = m[2, 1]
+    a22 = m[2, 2]
+    a23 = m[2, 3]
+    a30 = m[3, 0]
+    a31 = m[3, 1]
+    a32 = m[3, 2]
+    a33 = m[3, 3]
+    b00 = a00 * a11 - a01 * a10
+    b01 = a00 * a12 - a02 * a10
+    b02 = a00 * a13 - a03 * a10
+    b03 = a01 * a12 - a02 * a11
+    b04 = a01 * a13 - a03 * a11
+    b05 = a02 * a13 - a03 * a12
+    b06 = a20 * a31 - a21 * a30
+    b07 = a20 * a32 - a22 * a30
+    b08 = a20 * a33 - a23 * a30
+    b09 = a21 * a32 - a22 * a31
+    b10 = a21 * a33 - a23 * a31
+    b11 = a22 * a33 - a23 * a32
+    det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06
+    return mat4(
+        a11 * b11 - a12 * b10 + a13 * b09, a02 * b10 - a01 * b11 - a03 * b09,
+        a31 * b05 - a32 * b04 + a33 * b03, a22 * b04 - a21 * b05 - a23 * b03,
+        a12 * b08 - a10 * b11 - a13 * b07, a00 * b11 - a02 * b08 + a03 * b07,
+        a32 * b02 - a30 * b05 - a33 * b01, a20 * b05 - a22 * b02 + a23 * b01,
+        a10 * b10 - a11 * b08 + a13 * b06, a01 * b08 - a00 * b10 - a03 * b06,
+        a30 * b04 - a31 * b02 + a33 * b00, a21 * b02 - a20 * b04 - a23 * b00,
+        a11 * b07 - a10 * b09 - a12 * b06, a00 * b09 - a01 * b07 + a02 * b06,
+        a31 * b01 - a30 * b03 - a32 * b00,
+        a20 * b03 - a21 * b01 + a22 * b00) / det
+
+
+@ti.func
+def inverse(mat):  # pylint: disable=R1710
+    """Calculate the inverse of a matrix.
+
+    This function is equivalent to the `inverse` function in GLSL.
+
+    Args:
+        mat (:class:`taichi.Matrix`): The matrix of which to take the inverse.
+
+    Returns:
+        Inverse of the input matrix.
+
+    Example::
+
+        >>> m = mat3(vec3(1, 1, 0), vec3(0, 1, 1), vec3(0, 0, 1))
+        >>> inverse(m)
+    """
+    assert mat.m == mat.n and 2 <= mat.m <= 4, "A 2x2, 3x3 or 4x4 matrix is expected"
+    if ti.static(mat.m == 2):
+        return _inverse2x2(mat)
+
+    if ti.static(mat.m == 3):
+        return _inverse3x3(mat)
+
+    if ti.static(mat.m == 4):
+        return _inverse4x4(mat)
+
+
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "distance", "dot", "e", "exp", "eye", "floor", "fract", "ivec2", "ivec3",
-    "ivec4", "length", "log", "log2", "mat2", "mat3", "mat4", "max", "min",
-    "mix", "mod", "normalize", "pi", "pow", "radians", "reflect", "refract",
-    "rot2", "rot3", "rotate2d", "rotate3d", "round", "sign", "sin",
-    "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4",
-    "vec2", "vec3", "vec4"
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
+    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
+    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
+    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
+    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

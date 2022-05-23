@@ -14,7 +14,7 @@ class Program;
 class LlvmProgramImpl;
 class NdarrayRwAccessorsBank;
 
-class Ndarray {
+class TI_DLL_EXPORT Ndarray {
  public:
   /* Constructs a Ndarray managed by Program.
    * Memory allocation and deallocation is handled by Program.

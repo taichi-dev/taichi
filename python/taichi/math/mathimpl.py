@@ -734,7 +734,7 @@ def inverse(mat):  # pylint: disable=R1710
          [0.000000, 1.000000, -1.000000],
          [0.000000, 0.000000, 1.000000]]
     """
-    assert mat.m == mat.n and 2 <= mat.m <= 4, "A 2x2, 3x3 or 4x4 matrix is expected"
+    assert mat.m == mat.n and 2 <= mat.m <= 4, "A 2x2 or a 3x3 or a 4x4 matrix is expected"
     if ti.static(mat.m == 2):
         return _inverse2x2(mat)
 

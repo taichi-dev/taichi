@@ -64,6 +64,10 @@ void Kernel::compile() {
   compiled_ = program->compile(*this);
 }
 
+std::unique_ptr<aot::Kernel> Kernel::compile_to_aot_kernel() {
+  return program->make_aot_kernel(*this);
+}
+
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
   TI_ASSERT(supports_lowering(arch));

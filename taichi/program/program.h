@@ -199,6 +199,10 @@ class TI_DLL_EXPORT Program {
   // future.
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
+  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
+    return program_impl_->make_aot_kernel(kernel);
+  }
+
   void check_runtime_error();
 
   Kernel &get_snode_reader(SNode *snode);
@@ -319,8 +323,6 @@ class TI_DLL_EXPORT Program {
 
   Ndarray *create_ndarray(const DataType type, const std::vector<int> &shape);
 
-  void delete_ndarray(Ndarray *ndarray);
-
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
   void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
@@ -355,7 +357,7 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
-  std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
+  std::vector<std::unique_ptr<Ndarray>> ndarrays_;
 };
 
 }  // namespace lang

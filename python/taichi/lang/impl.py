@@ -1,5 +1,4 @@
 import numbers
-from itertools import count
 from types import FunctionType, MethodType
 from typing import Iterable
 
@@ -224,8 +223,6 @@ class SrcInfoGuard:
 
 
 class PyTaichi:
-    _gen = count(0)
-
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
@@ -242,7 +239,6 @@ class PyTaichi:
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
-        self.generation = next(self._gen)
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)

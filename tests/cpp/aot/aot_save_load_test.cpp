@@ -3,6 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/program.h"
+#include "tests/cpp/ir/ndarray_kernel.h"
 #include "tests/cpp/program/test_program.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
@@ -109,42 +110,8 @@ using namespace lang;
   TestProgram test_prog;
   test_prog.setup(arch);
   auto aot_builder = test_prog.prog()->make_aot_module_builder(arch);
-  IRBuilder builder1, builder2;
-
-  {
-    auto *arg = builder1.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
-                                         /*is_ptr=*/true);
-    auto *zero = builder1.get_int32(0);
-    auto *one = builder1.get_int32(1);
-    auto *two = builder1.get_int32(2);
-    auto *a1ptr = builder1.create_external_ptr(arg, {one});
-    builder1.create_global_store(a1ptr, one);  // a[1] = 1
-    auto *a0 =
-        builder1.create_global_load(builder1.create_external_ptr(arg, {zero}));
-    auto *a2ptr = builder1.create_external_ptr(arg, {two});
-    auto *a2 = builder1.create_global_load(a2ptr);
-    auto *a0plusa2 = builder1.create_add(a0, a2);
-    builder1.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
-  }
-  auto block = builder1.extract_ir();
-  auto ker1 =
-      std::make_unique<Kernel>(*test_prog.prog(), std::move(block), "ker1");
-  ker1->insert_arg(get_data_type<int>(), /*is_array=*/true);
-  {
-    auto *arg0 = builder2.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
-                                          /*is_ptr=*/true);
-    auto *arg1 = builder2.create_arg_load(/*arg_id=*/1, get_data_type<int>(),
-                                          /*is_ptr=*/false);
-    auto *one = builder2.get_int32(1);
-    auto *a1ptr = builder2.create_external_ptr(arg0, {one});
-    builder2.create_global_store(a1ptr, arg1);  // a[1] = arg1
-  }
-  auto block2 = builder2.extract_ir();
-  auto ker2 =
-      std::make_unique<Kernel>(*test_prog.prog(), std::move(block2), "ker2");
-  ker2->insert_arg(get_data_type<int>(), /*is_array=*/true);
-  ker2->insert_arg(get_data_type<int>(), /*is_array=*/false);
-
+  auto ker1 = setup_kernel1(test_prog.prog());
+  auto ker2 = setup_kernel2(test_prog.prog());
   aot_builder->add("ker1", ker1.get());
   aot_builder->add("ker2", ker2.get());
   aot_builder->dump(".", "");
@@ -304,8 +271,7 @@ TEST(AotSaveLoad, VulkanNdarray) {
   DeviceAllocation devalloc_arr_ =
       embedded_device->device()->allocate_memory(alloc_params);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
-  taichi::lang::set_runtime_ctx_ndarray(host_ctx, 0, arr);
-
+  taichi::lang::set_runtime_ctx_ndarray(&host_ctx, 0, &arr);
   int src[size] = {0};
   src[0] = 2;
   src[2] = 40;

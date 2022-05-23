@@ -7,31 +7,14 @@
 #include "taichi/backends/vulkan/aot_utils.h"
 #include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-
+#include "taichi/aot/module_builder.h"
 #include "taichi/aot/module_loader.h"
+#include "taichi/backends/vulkan/aot_module_builder_impl.h"
+#include "taichi/backends/vulkan/vulkan_graph_data.h"
 
 namespace taichi {
 namespace lang {
 namespace vulkan {
-
-class VkRuntime;
-
-class KernelImpl : public aot::Kernel {
- public:
-  explicit KernelImpl(VkRuntime *runtime, VkRuntime::RegisterParams &&params)
-      : runtime_(runtime), params_(std::move(params)) {
-  }
-
-  void launch(RuntimeContext *ctx) override {
-    auto handle = runtime_->register_taichi_kernel(params_);
-    runtime_->launch_kernel(handle, ctx);
-  }
-
- private:
-  VkRuntime *const runtime_;
-  const VkRuntime::RegisterParams params_;
-};
-
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
   VkRuntime *runtime{nullptr};

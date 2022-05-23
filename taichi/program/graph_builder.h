@@ -2,18 +2,14 @@
 
 #include <string>
 #include <vector>
-#include <unordered_set>
 
-#include "taichi/program/ndarray.h"
-#include "taichi/program/program.h"
 #include "taichi/ir/type.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/aot/module_builder.h"
 
 namespace taichi {
 namespace lang {
 class Kernel;
-class Graph;
+class GraphBuilder;
 
 class Node {
  public:
@@ -27,6 +23,7 @@ class Node {
   virtual void compile(
       std::vector<aot::CompiledDispatch> &compiled_dispatches) = 0;
 };
+
 class Dispatch : public Node {
  public:
   explicit Dispatch(Kernel *kernel, const std::vector<aot::Arg> &args)
@@ -45,7 +42,7 @@ class Dispatch : public Node {
 
 class Sequential : public Node {
  public:
-  explicit Sequential(Graph *graph) : owning_graph_(graph) {
+  explicit Sequential(GraphBuilder *graph) : owning_graph_(graph) {
   }
 
   void append(Node *node);
@@ -57,34 +54,15 @@ class Sequential : public Node {
 
  private:
   std::vector<Node *> sequence_;
-  Graph *owning_graph_{nullptr};
+  GraphBuilder *owning_graph_{nullptr};
 };
 
-/*
- * Graph class works as both builder and runner.
- *
- * Two typical workflows using Graph:
- * - build graph -> compile -> run
- * - build graph -> compile -> serialize -> deserialize -> run
- *
- * Thus Graph can be constructed in two ways, either as an empty object
- * or from an `aot::CompiledGraph` loaded from aot module.
- *
- * Currently Graph only supports sequential launches without returning value
- * to host.
- */
-class Graph {
+class GraphBuilder {
  public:
-  explicit Graph(std::string name);
-
-  explicit Graph(std::string name, const aot::CompiledGraph &compiled)
-      : name_(name), compiled_graph_(compiled) {
-  }
+  explicit GraphBuilder();
 
   // TODO: compile() can take in Arch argument
-  void compile();
-
-  void run(const std::unordered_map<std::string, aot::IValue> &args) const;
+  std::unique_ptr<aot::CompiledGraph> compile();
 
   Node *new_dispatch_node(Kernel *kernel, const std::vector<aot::Arg> &args);
 
@@ -94,19 +72,9 @@ class Graph {
 
   Sequential *seq() const;
 
-  aot::CompiledGraph compiled_graph() const {
-    return compiled_graph_;
-  }
-
-  std::string name() const {
-    return name_;
-  }
-
  private:
-  std::string name_;
   std::unique_ptr<Sequential> seq_{nullptr};
   std::vector<std::unique_ptr<Node>> all_nodes_;
-  aot::CompiledGraph compiled_graph_;
 };
 
 }  // namespace lang

@@ -1,6 +1,8 @@
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
+from taichi.lang._ndarray import Ndarray
+from taichi.lang.exception import TaichiRuntimeError
 
 ArgKind = _ti_core.ArgKind
 Arg = _ti_core.Arg
@@ -44,8 +46,23 @@ class Graph:
         self._compiled_graph = self._graph_builder.compile()
 
     def run(self, args):
-        arg_ptrs = {k: args[k].arr for k in args.keys()}
-        self._compiled_graph.run(arg_ptrs)
+        arg_ptrs = {}
+        # Only support native python numerical types (int, float) for now.
+        arg_ints = {}
+        arg_floats = {}
+
+        for k, v in args.items():
+            if isinstance(v, Ndarray):
+                arg_ptrs[k] = v.arr
+            elif isinstance(v, int):
+                arg_ints[k] = v
+            elif isinstance(v, float):
+                arg_floats[k] = v
+            else:
+                raise TaichiRuntimeError(
+                    'Only python int, float and ti.Ndarray are supported as runtime arguments'
+                )
+        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
 
 
 __all__ = ['Graph', 'Arg', 'ArgKind']

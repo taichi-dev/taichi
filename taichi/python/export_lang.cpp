@@ -562,13 +562,21 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &d) {
+      .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
+                     const py::dict &arg_ints, const py::dict &arg_floats) {
         std::unordered_map<std::string, aot::IValue> args;
-        for (auto &it : d) {
-          // FIXME: there're also primitive types
+        for (const auto &it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
           args.insert(
               {py::cast<std::string>(it.first), aot::IValue::create(val)});
+        }
+        for (const auto &it : arg_ints) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<int>(it.second))});
+        }
+        for (const auto &it : arg_floats) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<double>(it.second))});
         }
         self->run(args);
       });

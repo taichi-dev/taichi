@@ -14,16 +14,16 @@ class Ndarray;
 struct RuntimeContext;
 namespace aot {
 // Currently only scalar and ndarray are supported.
-enum class ArgKind { SCALAR, NDARRAY, UNKNOWN };
+enum class ArgKind { kScalar, kNdarray, kUnknown };
 
 /**
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.
  */
 struct Arg {
+  ArgKind tag;
   std::string name;
   // TODO: real element dtype = dtype + element_shape
   std::string dtype_name;
-  ArgKind tag;
   std::vector<int> element_shape;
 
   TI_IO_DEF(name, dtype_name, tag, element_shape);
@@ -38,14 +38,14 @@ struct IValue {
   ArgKind tag;
 
   static IValue create(const Ndarray &ndarray) {
-    return IValue(reinterpret_cast<intptr_t>(&ndarray), ArgKind::NDARRAY);
+    return IValue(reinterpret_cast<intptr_t>(&ndarray), ArgKind::kNdarray);
   }
 
   template <typename T,
             typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
   static IValue create(T v) {
     return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
-                  ArgKind::SCALAR);
+                  ArgKind::kScalar);
   }
 
  private:

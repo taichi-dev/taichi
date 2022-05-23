@@ -4,7 +4,7 @@ Math functions for glsl-like functions and other stuff.
 """
 from math import e, pi
 
-from taichi.lang import impl
+from taichi.lang import exception, impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
                              max, min, pow, round, sin, sqrt, tan, tanh)
 
@@ -68,22 +68,43 @@ def uvec4(*args):
     return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
+def _gen_matrix_type(n, *args):
+    dt = impl.get_runtime().default_fp
+    if len(args) == n:
+        for x in args:
+            assert isinstance(x, ti.Matrix) and x.m == 1 and x.n == n
+
+        data = [[v[k] for k in range(n)] for v in args]
+        return ti.Matrix(data, dt)
+
+    if len(args) == 1:
+        x, = args
+        return ti.Matrix(x, dt)
+
+    if len(args) == n * n:
+        data = [[args[i * n + k] for k in range(n)] for i in range(n)]
+        return ti.Matrix(data, dt)
+
+    raise exception.TaichiTypeError(
+        "A matrix, a list of scalars or vectors are expected")
+
+
 def mat2(*args):
     """2x2 floating matrix type.
     """
-    return ti.types.matrix(2, 2, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return _gen_matrix_type(2, *args)  # pylint: disable=E1101
 
 
 def mat3(*args):
     """3x3 floating matrix type.
     """
-    return ti.types.matrix(3, 3, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return _gen_matrix_type(3, *args)  # pylint: disable=E1101
 
 
 def mat4(*args):
     """4x4 floating matrix type.
     """
-    return ti.types.matrix(4, 4, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return _gen_matrix_type(4, *args)  # pylint: disable=E1101
 
 
 @ti.func

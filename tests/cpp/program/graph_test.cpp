@@ -4,8 +4,9 @@
 #include "taichi/inc/constants.h"
 #include "taichi/program/program.h"
 #include "tests/cpp/program/test_program.h"
-#include "taichi/program/graph.h"
+#include "taichi/aot/graph_data.h"
 #include "tests/cpp/ir/ndarray_kernel.h"
+#include "taichi/program/graph_builder.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
@@ -27,8 +28,8 @@ TEST(GraphTest, SimpleGraphRun) {
   auto ker1 = setup_kernel1(test_prog.prog());
   auto ker2 = setup_kernel2(test_prog.prog());
 
-  auto g = std::make_unique<Graph>("test");
-  auto seq = g->seq();
+  auto g_builder = std::make_unique<GraphBuilder>();
+  auto seq = g_builder->seq();
   auto arr_arg = aot::Arg{
       aot::ArgKind::kNdarray, "arr", PrimitiveType::i32.to_string(), {}};
   seq->dispatch(ker1.get(), {arr_arg});
@@ -37,7 +38,8 @@ TEST(GraphTest, SimpleGraphRun) {
                                           "x",
                                           PrimitiveType::i32.to_string(),
                                       }});
-  g->compile();
+
+  auto g = g_builder->compile();
 
   auto array = Ndarray(test_prog.prog(), PrimitiveType::i32, {size});
   array.write_int({0}, 2);

@@ -5,7 +5,8 @@
 #include "taichi/program/program.h"
 #include "tests/cpp/ir/ndarray_kernel.h"
 #include "tests/cpp/program/test_program.h"
-#include "taichi/program/graph.h"
+#include "taichi/aot/graph_data.h"
+#include "taichi/program/graph_builder.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #include "taichi/backends/device.h"
@@ -308,17 +309,17 @@ TEST(AotSaveLoad, VulkanNdarray) {
   auto ker1 = setup_kernel1(test_prog.prog());
   auto ker2 = setup_kernel2(test_prog.prog());
 
-  auto g = std::make_unique<Graph>("test");
-  auto seq = g->seq();
+  auto g_builder = std::make_unique<GraphBuilder>();
+  auto seq = g_builder->seq();
   auto arr_arg = aot::Arg{
       aot::ArgKind::kNdarray, "arr", PrimitiveType::i32.to_string(), {}};
   seq->dispatch(ker1.get(), {arr_arg});
   seq->dispatch(ker2.get(),
                 {arr_arg, aot::Arg{aot::ArgKind::kScalar, "x",
                                    PrimitiveType::i32.to_string()}});
-  g->compile();
+  auto graph = g_builder->compile();
 
-  aot_builder->add_graph(g->name(), g->compiled_graph());
+  aot_builder->add_graph("test", *graph);
   aot_builder->dump(".", "");
 }
 

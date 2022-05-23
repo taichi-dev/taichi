@@ -40,7 +40,7 @@ class AotModuleBuilder {
 
   void dump_graph(std::string output_dir) const;
 
-  void add_graph(const std::string &name, aot::CompiledGraph &&graph);
+  void add_graph(const std::string &name, const aot::CompiledGraph &graph);
 
  protected:
   /**
@@ -54,7 +54,10 @@ class AotModuleBuilder {
                                      DataType dt,
                                      std::vector<int> shape,
                                      int row_num,
-                                     int column_num) = 0;
+                                     int column_num) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   virtual void add_ndarray_per_backend(const std::string &identifier,
                                        bool is_scalar,
                                        DataType dt,
@@ -70,7 +73,9 @@ class AotModuleBuilder {
 
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
-                                    Kernel *kernel) = 0;
+                                    Kernel *kernel) {
+    TI_NOT_IMPLEMENTED;
+  }
 
   static bool all_fields_are_dense_in_container(const SNode *container);
 

@@ -83,7 +83,7 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
 
   build_and_test_cpu_linux:
-    name: Build and Test linux (CPU)
+    name: Build and Test Linux (CPU)
     needs: check_files
     timeout-minutes: 60
     strategy:
@@ -172,13 +172,14 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_cpu_mac:
-    name: Build and Test macos (CPU)
+    name: Build and Test MacOS (Intel)
     needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
         include:
           - os: macos-10.15
+            cpu: 'Intel'
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
@@ -291,7 +292,7 @@ jobs:
           docker rm taichi_build_test -f
 
   build_and_test_gpu_linux:
-    name: Build and Test (GPU)
+    name: Build and Test Linux (GPU)
     needs: check_files
     timeout-minutes: 60
     strategy:
@@ -369,7 +370,7 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test Windows
+    name: Build and Test Windows (GPU)
     needs: check_files
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
@@ -421,13 +422,14 @@ jobs:
           TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
-    name: Build and Test (Apple M1)
+    name: Build and Test MacOS (M1)
     needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
         include:
           - os: macos-latest
+            cpu: 'M1'
             python: 3.8
     defaults:
       run:
@@ -474,7 +476,7 @@ jobs:
           TI_CI: 1
 
   build_libtaichi_export:
-    name: Build libtaichi_export.so(GPU)
+    name: Build libtaichi_export.so (GPU)
     needs: check_files
     runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60

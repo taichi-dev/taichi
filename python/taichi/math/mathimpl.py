@@ -10,44 +10,44 @@ from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
 
 import taichi as ti
 
-vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
-"""2D float vector type.
-"""
-
-vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
-"""3D float vector type.
-"""
-
-vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
-"""4D float vector type.
-"""
-
-ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
-"""2D int vector type.
-"""
-
-ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
-"""3D int vector type.
-"""
-
-ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
-"""4D int vector type.
-"""
-
-mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
-"""2x2 float matrix type.
-"""
-
-mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
-"""3x3 float matrix type.
-"""
-
-mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
-"""4x4 float matrix type.
-"""
-
 _get_uint_ip = lambda: ti.u32 if impl.get_runtime(
 ).default_ip == ti.i32 else ti.u64
+
+
+def vec2(*args):
+    """2D floating vector type.
+    """
+    return ti.types.vector(2, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+
+
+def vec3(*args):
+    """3D floating vector type.
+    """
+    return ti.types.vector(3, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+
+
+def vec4(*args):
+    """4D floating vector type.
+    """
+    return ti.types.vector(4, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+
+
+def ivec2(*args):
+    """2D signed int vector type.
+    """
+    return ti.types.vector(2, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
+
+
+def ivec3(*args):
+    """3D signed int vector type.
+    """
+    return ti.types.vector(3, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
+
+
+def ivec4(*args):
+    """4D signed int vector type.
+    """
+    return ti.types.vector(4, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
 
 
 def uvec2(*args):
@@ -66,6 +66,24 @@ def uvec4(*args):
     """4D unsigned int vector type.
     """
     return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def mat2(*args):
+    """2x2 floating matrix type.
+    """
+    return ti.types.matrix(2, 2, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+
+
+def mat3(*args):
+    """3x3 floating matrix type.
+    """
+    return ti.types.matrix(3, 3, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+
+
+def mat4(*args):
+    """4x4 floating matrix type.
+    """
+    return ti.types.matrix(4, 4, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
 
 
 @ti.func

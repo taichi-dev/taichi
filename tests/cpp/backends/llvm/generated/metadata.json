@@ -1,0 +1,14 @@
+{
+"cache": {
+  "kernels": {"run": {
+      "kernel_key": "run",
+      "args": [{
+          "is_array": false},{
+          "is_array": true}],
+      "offloaded_task_list": [{
+          "name": "run0",
+          "block_dim": 0,
+          "grid_dim": 0},{
+          "name": "run1",
+          "block_dim": 0,
+          "grid_dim": 0}]}}}}

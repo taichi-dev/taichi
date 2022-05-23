@@ -8,11 +8,11 @@ class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(VkRuntime *runtime, VkRuntime::RegisterParams &&params)
       : runtime_(runtime), params_(std::move(params)) {
+    handle_ = runtime_->register_taichi_kernel(params_);
   }
 
   void launch(RuntimeContext *ctx) override {
-    auto handle = runtime_->register_taichi_kernel(params_);
-    runtime_->launch_kernel(handle, ctx);
+    runtime_->launch_kernel(handle_, ctx);
   }
 
   const VkRuntime::RegisterParams &params() {
@@ -21,6 +21,7 @@ class KernelImpl : public aot::Kernel {
 
  private:
   VkRuntime *const runtime_;
+  VkRuntime::KernelHandle handle_;
   const VkRuntime::RegisterParams params_;
 };
 }  // namespace vulkan

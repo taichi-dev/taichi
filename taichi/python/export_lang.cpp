@@ -565,16 +565,16 @@ void export_lang(py::module &m) {
       .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
                      const py::dict &arg_ints, const py::dict &arg_floats) {
         std::unordered_map<std::string, aot::IValue> args;
-        for (const auto &it : arg_ptrs) {
+        for (auto it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
           args.insert(
               {py::cast<std::string>(it.first), aot::IValue::create(val)});
         }
-        for (const auto &it : arg_ints) {
+        for (auto it : arg_ints) {
           args.insert({py::cast<std::string>(it.first),
                        aot::IValue::create(py::cast<int>(it.second))});
         }
-        for (const auto &it : arg_floats) {
+        for (auto it : arg_floats) {
           args.insert({py::cast<std::string>(it.first),
                        aot::IValue::create(py::cast<double>(it.second))});
         }

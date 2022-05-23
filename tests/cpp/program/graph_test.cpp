@@ -31,11 +31,13 @@ TEST(GraphTest, SimpleGraphRun) {
   auto g_builder = std::make_unique<GraphBuilder>();
   auto seq = g_builder->seq();
   auto arr_arg = aot::Arg{
-      "arr", PrimitiveType::i32.to_string(), aot::ArgKind::NDARRAY, {}};
+      aot::ArgKind::kNdarray, "arr", PrimitiveType::i32.to_string(), {}};
   seq->dispatch(ker1.get(), {arr_arg});
-  seq->dispatch(ker2.get(),
-                {arr_arg, aot::Arg{"x", PrimitiveType::i32.to_string(),
-                                   aot::ArgKind::SCALAR}});
+  seq->dispatch(ker2.get(), {arr_arg, aot::Arg{
+                                          aot::ArgKind::kScalar,
+                                          "x",
+                                          PrimitiveType::i32.to_string(),
+                                      }});
 
   auto g = g_builder->compile();
 

@@ -71,10 +71,11 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
         r, g, b = 0, 0, 0
         color = img[i, img.shape[1] - 1 - j]
         if static(img.dtype in [f16, f32, f64]):
-            r, g, b = min(255, max(0, int(color * 255)))
+            r, g, b = min(255, max(0, int(color * 255)))[:3]
         else:
             static_assert(img.dtype == u8)
-            r, g, b = color
+            r, g, b = color[:3]
+
         idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
         if static(get_os_name() != 'osx'):

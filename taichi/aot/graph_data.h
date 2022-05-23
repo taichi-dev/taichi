@@ -32,7 +32,7 @@ struct Arg {
 /**
  * Runtime value used in graph execution.
  */
-struct IValue {
+struct TI_DLL_EXPORT IValue {
  public:
   uint64 val;
   ArgKind tag;
@@ -81,7 +81,7 @@ struct CompiledDispatch {
   TI_IO_DEF(kernel_name, symbolic_args);
 };
 
-struct CompiledGraph {
+struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;

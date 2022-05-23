@@ -38,8 +38,6 @@ class AotModuleBuilder {
   virtual void dump(const std::string &output_dir,
                     const std::string &filename) const = 0;
 
-  void dump_graph(std::string output_dir) const;
-
   void add_graph(const std::string &name, const aot::CompiledGraph &graph);
 
  protected:
@@ -76,6 +74,8 @@ class AotModuleBuilder {
                                     Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
+
+  void dump_graph(std::string output_dir) const;
 
   static bool all_fields_are_dense_in_container(const SNode *container);
 

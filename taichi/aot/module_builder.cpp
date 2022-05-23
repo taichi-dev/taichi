@@ -52,5 +52,21 @@ void AotModuleBuilder::load(const std::string &output_dir) {
   TI_ERROR("Aot loader not supported");
 }
 
+void AotModuleBuilder::dump_graph(std::string output_dir) const {
+  const std::string graph_file = fmt::format("{}/graphs.tcb", output_dir);
+  write_to_binary_file(graphs_, graph_file);
+}
+
+void AotModuleBuilder::add_graph(const std::string &name,
+                                 const aot::CompiledGraph &graph) {
+  if (graphs_.count(name) != 0) {
+    TI_ERROR("Graph {} already exists", name);
+  }
+  // Handle adding kernels separately.
+  for (const auto &dispatch : graph.dispatches) {
+    add_compiled_kernel(dispatch.compiled_kernel);
+  }
+  graphs_[name] = graph;
+}
 }  // namespace lang
 }  // namespace taichi

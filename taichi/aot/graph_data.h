@@ -4,10 +4,14 @@
 #include <unordered_map>
 #include "taichi/aot/module_data.h"
 
+template <typename T, typename G>
+T taichi_union_cast_with_different_sizes(G g);
+
 namespace taichi {
 namespace lang {
 class AotModuleBuilder;
 class Ndarray;
+struct RuntimeContext;
 namespace aot {
 // Currently only scalar and ndarray are supported.
 enum class ArgKind { SCALAR, NDARRAY, UNKNOWN };
@@ -67,10 +71,6 @@ class TI_DLL_EXPORT Kernel {
    * @param ctx Host context
    */
   virtual void launch(RuntimeContext *ctx) = 0;
-
-  virtual void save_to_module(AotModuleBuilder *builder) {
-    TI_NOT_IMPLEMENTED;
-  }
 };
 
 struct CompiledDispatch {
@@ -83,6 +83,8 @@ struct CompiledDispatch {
 
 struct CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
+
+  void run(const std::unordered_map<std::string, IValue> &args) const;
 
   TI_IO_DEF(dispatches);
 };

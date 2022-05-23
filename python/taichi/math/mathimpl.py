@@ -652,9 +652,10 @@ def _inverse3x3(m):
     b11 = -a22 * a10 + a12 * a20
     b21 = a21 * a10 - a11 * a20
     det = a00 * b01 + a01 * b11 + a02 * b21
-    return mat3([[b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11), b11],
-                 [(a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10), b21],
-                 [(-a21 * a00 + a01 * a20), (a11 * a00 - a01 * a10)]]) / det
+    return mat3([[b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11)],
+                 [b11, (a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10)],
+                 [b21, (-a21 * a00 + a01 * a20),
+                  (a11 * a00 - a01 * a10)]]) / det
 
 
 @ti.func
@@ -720,6 +721,18 @@ def inverse(mat):  # pylint: disable=R1710
 
     Returns:
         Inverse of the input matrix.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     m = mat3([(1, 1, 0), (0, 1, 1), (0, 0, 1)])
+        >>>     print(inverse(m))
+        >>>
+        >>> test()
+        [[1.000000, -1.000000, 1.000000],
+         [0.000000, 1.000000, -1.000000],
+         [0.000000, 0.000000, 1.000000]]
     """
     assert mat.m == mat.n and 2 <= mat.m <= 4, "A 2x2, 3x3 or 4x4 matrix is expected"
     if ti.static(mat.m == 2):

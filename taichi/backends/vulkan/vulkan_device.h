@@ -604,6 +604,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
+
+  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer);
+
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
                                    VkFormat format);
@@ -642,6 +645,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   // Memory allocation
   struct AllocationInternal {
+    bool external{false};
     VmaAllocationInfo alloc_info;
     vkapi::IVkBuffer buffer;
     void *mapped{nullptr};

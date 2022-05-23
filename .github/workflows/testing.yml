@@ -252,12 +252,19 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        if: needs.check_files.outputs.run_job == 'true'
+        with:
+          path: ccache_cache
+          key: ccache-win64-cpu-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-cpu-
+
       - name: Get docker images
         shell: bash
+        if: needs.check_files.outputs.run_job == 'true'
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
         env:
@@ -274,6 +281,8 @@ jobs:
             C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
+          rm -rf ccache_cache
+          docker cp taichi_build_test:C:/taichi/ccache_cache ccache_cache
 
       - name: clean docker container
         shell: bash

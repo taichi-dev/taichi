@@ -72,13 +72,20 @@ def _gen_matrix_type(n, *args):
     dt = impl.get_runtime().default_fp
     if len(args) == n:
         for x in args:
-            assert isinstance(x, ti.Matrix) and x.m == 1 and x.n == n
+            if isinstance(x, ti.Matrix):
+                assert x.m == 1 and x.n == n, f"Non-vector object encoutered: {x}"
+
+            if isinstance(x, (tuple, list)):
+                assert len(x) == n, f"A list of length != {n} encoutered"
 
         data = [[v[k] for k in range(n)] for v in args]
         return ti.Matrix(data, dt)
 
     if len(args) == 1:
         x, = args
+        if isinstance(x, (tuple, list)) and len(x) == n * n:
+            x = [[x[i * n + k] for k in range(n)] for i in range(n)]
+
         return ti.Matrix(x, dt)
 
     if len(args) == n * n:

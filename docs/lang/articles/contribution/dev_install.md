@@ -37,7 +37,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 <Tabs
   defaultValue="unix"
   values={[
-    {label: 'Linux/Unix/Mac', value: 'unix'},
+    {label: 'Linux/Mac', value: 'unix'},
     {label: 'Windows', value: 'windows'}
   ]}>
 

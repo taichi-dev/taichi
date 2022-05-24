@@ -120,7 +120,7 @@ def test():
                         dest='cpp',
                         default=True,
                         action='store_true',
-                        help='Run the C++ tests')
+                        help='Only run the C++ tests')
     parser.add_argument('-s',
                         '--show',
                         dest='show_output',
@@ -217,6 +217,7 @@ def test():
 
     if args.cpp:
         _test_cpp()
+        return
 
     if _test_python(args) != 0:
         exit(1)

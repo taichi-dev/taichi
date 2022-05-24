@@ -28,10 +28,8 @@ def _custom_float(significand_type,
         compute_type = impl.get_runtime().default_fp
     if isinstance(compute_type, _ti_core.DataType):
         compute_type = compute_type.get_ptr()
-    return _type_factory.get_custom_float_type(significand_type,
-                                               exponent_type,
-                                               compute_type,
-                                               scale)
+    return _type_factory.get_custom_float_type(significand_type, exponent_type,
+                                               compute_type, scale)
 
 
 def int(bits, signed=True, compute=None):  # pylint: disable=W0622

@@ -9,7 +9,11 @@ import taichi as ti
 
 
 def _build_cpp_test_artifacts(script_dir):
-    subprocess.call(['python', os.path.join(script_dir, 'cpp', 'backends', 'llvm', 'cpu_aot.py')])
+    subprocess.call([
+        'python',
+        os.path.join(script_dir, 'cpp', 'backends', 'llvm', 'cpu_aot.py')
+    ])
+
 
 def _test_cpp():
     ti.reset()

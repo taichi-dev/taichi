@@ -8,7 +8,7 @@ ti.init(arch=ti.x64)
 ti.set_logging_level(ti.TRACE)
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-BUILD_DIR =  os.path.join(SCRIPT_DIR, '..', '..', '..', '..', 'build')
+BUILD_DIR = os.path.join(SCRIPT_DIR, '..', '..', '..', '..', 'build')
 
 
 @ti.kernel

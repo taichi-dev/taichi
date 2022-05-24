@@ -24,6 +24,14 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return adj.snode();
   }
 
+  SNode *dual_snode() const override {
+    auto &dual = glb_var_->dual;
+    if (dual.expr == nullptr) {
+      return nullptr;
+    }
+    return dual.snode();
+  }
+
  private:
   GlobalVariableExpression *glb_var_;
 };

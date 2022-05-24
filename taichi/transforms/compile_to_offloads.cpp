@@ -41,7 +41,9 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
-  if (grad) {
+  bool ad_reverse_mode = false;
+
+  if (grad && ad_reverse_mode) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -90,7 +92,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir, config);
 
     irpass::full_simplify(ir, config, {false, kernel->program});
-    irpass::auto_diff(ir, config, ad_use_stack);
+    irpass::auto_diff(ir, config, ad_use_stack, ad_reverse_mode);
     irpass::full_simplify(ir, config, {false, kernel->program});
     print("Gradient");
     irpass::analysis::verify(ir);

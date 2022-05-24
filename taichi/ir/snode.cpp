@@ -313,6 +313,15 @@ SNode *SNode::get_grad() const {
   return grad_info->grad_snode();
 }
 
+bool SNode::has_dual() const {
+  return is_primal() && (grad_info->dual_snode() != nullptr);
+}
+
+SNode *SNode::get_dual() const {
+  TI_ASSERT(has_grad());
+  return grad_info->dual_snode();
+}
+
 void SNode::set_snode_tree_id(int id) {
   snode_tree_id_ = id;
 }

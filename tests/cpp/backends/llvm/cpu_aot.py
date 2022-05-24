@@ -8,7 +8,7 @@ ti.init(arch=ti.x64)
 ti.set_logging_level(ti.TRACE)
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-BUILD_DIR = SCRIPT_DIR
+BUILD_DIR =  os.path.join(SCRIPT_DIR, '..', '..', '..', '..', 'build')
 
 
 @ti.kernel
@@ -21,7 +21,7 @@ arr = ti.ndarray(int, shape=16)
 run(42, arr)
 print(arr.to_numpy())
 
-dir_name = os.path.join(BUILD_DIR, 'generated')
+dir_name = os.path.join(BUILD_DIR, 'llvm_aot_test')
 shutil.rmtree(dir_name, ignore_errors=True)
 pathlib.Path(dir_name).mkdir(parents=True, exist_ok=False)
 

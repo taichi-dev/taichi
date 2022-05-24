@@ -301,6 +301,22 @@ class TypeCheck : public IRVisitor {
       stmt->op_type = BinaryOpType::div;
     }
 
+    // Consistent with type promotion for std::atan2
+    // https://en.cppreference.com/w/cpp/numeric/math/atan2
+    if (stmt->op_type == BinaryOpType::atan2) {
+      if (stmt->rhs->ret_type != PrimitiveType::f32 ||
+          stmt->lhs->ret_type != PrimitiveType::f32) {
+        stmt->ret_type = PrimitiveType::f64;
+        if (stmt->rhs->ret_type != PrimitiveType::f64) {
+          cast(stmt->rhs, PrimitiveType::f64);
+        }
+
+        if (stmt->lhs->ret_type != PrimitiveType::f64) {
+          cast(stmt->lhs, PrimitiveType::f64);
+        }
+      }
+    }
+
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
       auto promote_custom_int_type = [&](Stmt *stmt, Stmt *hs) {
         if (auto cit = hs->ret_type->cast<CustomIntType>()) {

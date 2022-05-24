@@ -127,6 +127,7 @@ A few exceptions:
 
 2. logical operations: always return i32
 3. comparison operations: always return i32
+4. atan2 operation: follows the same type promotion rule as [std::atan2](https://en.cppreference.com/w/cpp/numeric/math/atan2).
 
 #### Implicit type casting in assignments
 

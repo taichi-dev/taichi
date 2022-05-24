@@ -202,6 +202,15 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     return;
   }
 
+  // Consistent with type promotion for std::atan2
+  // https://en.cppreference.com/w/cpp/numeric/math/atan2
+  if (type == BinaryOpType::atan2) {
+    if (lhs_type != PrimitiveType::f32 || rhs_type != PrimitiveType::f32) {
+      ret_type = PrimitiveType::f64;
+    }
+    return;
+  }
+
   if (type == BinaryOpType::truediv) {
     auto default_fp = config->default_fp;
     if (!is_real(lhs_type)) {

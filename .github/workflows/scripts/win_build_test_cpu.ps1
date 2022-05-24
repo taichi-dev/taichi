@@ -81,7 +81,8 @@ if (-not $?) { exit 1 }
 WriteInfo("Build finished")
 ccache -s -v
 
-$env:TI_ENABLE_PADDLE = "0"
-WriteInfo("Testing Taichi")
-python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
-WriteInfo("Test finished")
+# We skip the test for the moment due to the long job execution time.
+#$env:TI_ENABLE_PADDLE = "0"
+#WriteInfo("Testing Taichi")
+#python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
+#WriteInfo("Test finished")

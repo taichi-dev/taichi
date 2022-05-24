@@ -33,8 +33,7 @@ TEST(LlvmProgramTest, FullPipeline) {
   const auto libdir = getenv("TI_LIB_DIR");
   std::stringstream aot_mod_ss;
   // So ugly, I know...
-  aot_mod_ss << libdir << "/../../../.."
-             << "/tests/cpp/backends/llvm/generated";
+  aot_mod_ss << libdir << "/../../../../build/llvm_aot_test";
   aot_params.module_path = aot_mod_ss.str();
   aot_params.program = &prog;
   auto mod = cpu::make_aot_module(aot_params);

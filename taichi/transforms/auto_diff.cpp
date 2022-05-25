@@ -1360,8 +1360,8 @@ class MakeDual : public IRVisitor {
     //   auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
     //   accumulate(bin->lhs, sel(cmp, dual(bin), zero));
     //   accumulate(bin->rhs, sel(cmp, zero, dual(bin)));
-    // } 
-    
+    // }
+
     else if (bin->op_type == BinaryOpType::floordiv) {
       // do nothing
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {

@@ -10,44 +10,44 @@ from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
 
 import taichi as ti
 
-vec2 = ti.types.vector(2, float)  # pylint: disable=E1101
-"""2D float vector type.
-"""
-
-vec3 = ti.types.vector(3, float)  # pylint: disable=E1101
-"""3D float vector type.
-"""
-
-vec4 = ti.types.vector(4, float)  # pylint: disable=E1101
-"""4D float vector type.
-"""
-
-ivec2 = ti.types.vector(2, int)  # pylint: disable=E1101
-"""2D int vector type.
-"""
-
-ivec3 = ti.types.vector(3, int)  # pylint: disable=E1101
-"""3D int vector type.
-"""
-
-ivec4 = ti.types.vector(4, int)  # pylint: disable=E1101
-"""4D int vector type.
-"""
-
-mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
-"""2x2 float matrix type.
-"""
-
-mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
-"""3x3 float matrix type.
-"""
-
-mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
-"""4x4 float matrix type.
-"""
-
 _get_uint_ip = lambda: ti.u32 if impl.get_runtime(
 ).default_ip == ti.i32 else ti.u64
+
+
+def vec2(*args):
+    """2D floating vector type.
+    """
+    return ti.types.vector(2, float)(*args)  # pylint: disable=E1101
+
+
+def vec3(*args):
+    """3D floating vector type.
+    """
+    return ti.types.vector(3, float)(*args)  # pylint: disable=E1101
+
+
+def vec4(*args):
+    """4D floating vector type.
+    """
+    return ti.types.vector(4, float)(*args)  # pylint: disable=E1101
+
+
+def ivec2(*args):
+    """2D signed int vector type.
+    """
+    return ti.types.vector(2, int)(*args)  # pylint: disable=E1101
+
+
+def ivec3(*args):
+    """3D signed int vector type.
+    """
+    return ti.types.vector(3, int)(*args)  # pylint: disable=E1101
+
+
+def ivec4(*args):
+    """4D signed int vector type.
+    """
+    return ti.types.vector(4, int)(*args)  # pylint: disable=E1101
 
 
 def uvec2(*args):
@@ -66,6 +66,24 @@ def uvec4(*args):
     """4D unsigned int vector type.
     """
     return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def mat2(*args):
+    """2x2 floating matrix type.
+    """
+    return ti.types.matrix(2, 2, float)(*args)  # pylint: disable=E1101
+
+
+def mat3(*args):
+    """3x3 floating matrix type.
+    """
+    return ti.types.matrix(3, 3, float)(*args)  # pylint: disable=E1101
+
+
+def mat4(*args):
+    """4x4 floating matrix type.
+    """
+    return ti.types.matrix(4, 4, float)(*args)  # pylint: disable=E1101
 
 
 @ti.func
@@ -611,12 +629,46 @@ def length(x):
     return x.norm()
 
 
+@ti.func
+def determinant(m):
+    """Alias for :func:`taichi.Matrix.determinant`.
+    """
+    return m.determinant()
+
+
+@ti.func
+def inverse(mat):  # pylint: disable=R1710
+    """Calculate the inverse of a matrix.
+
+    This function is equivalent to the `inverse` function in GLSL.
+
+    Args:
+        mat (:class:`taichi.Matrix`): The matrix of which to take the inverse.
+
+    Returns:
+        Inverse of the input matrix.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     m = mat3([(1, 1, 0), (0, 1, 1), (0, 0, 1)])
+        >>>     print(inverse(m))
+        >>>
+        >>> test()
+        [[1.000000, -1.000000, 1.000000],
+         [0.000000, 1.000000, -1.000000],
+         [0.000000, 0.000000, 1.000000]]
+    """
+    return mat.inverse()
+
+
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "distance", "dot", "e", "exp", "eye", "floor", "fract", "ivec2", "ivec3",
-    "ivec4", "length", "log", "log2", "mat2", "mat3", "mat4", "max", "min",
-    "mix", "mod", "normalize", "pi", "pow", "radians", "reflect", "refract",
-    "rot2", "rot3", "rotate2d", "rotate3d", "round", "sign", "sin",
-    "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4",
-    "vec2", "vec3", "vec4"
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
+    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
+    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
+    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
+    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

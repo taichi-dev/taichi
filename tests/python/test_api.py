@@ -98,13 +98,13 @@ user_api[ti.FieldsBuilder] = [
 ]
 user_api[ti.math] = [
     'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
-    'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'distance',
-    'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'ivec2', 'ivec3', 'ivec4',
-    'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max', 'min', 'mix',
-    'mod', 'normalize', 'pi', 'pow', 'radians', 'reflect', 'refract', 'rot2',
-    'rot3', 'rotate2d', 'rotate3d', 'round', 'sign', 'sin', 'smoothstep',
-    'sqrt', 'step', 'tan', 'tanh', 'uvec2', 'uvec3', 'uvec4', 'vec2', 'vec3',
-    'vec4'
+    'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'determinant',
+    'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inverse', 'ivec2',
+    'ivec3', 'ivec4', 'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max',
+    'min', 'mix', 'mod', 'normalize', 'pi', 'pow', 'radians', 'reflect',
+    'refract', 'rot2', 'rot3', 'rotate2d', 'rotate3d', 'round', 'sign', 'sin',
+    'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 'uvec2', 'uvec3', 'uvec4',
+    'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [

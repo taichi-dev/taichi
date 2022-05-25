@@ -66,7 +66,7 @@ def test_sqrt():
 def test_atan2():
     N = 1
     x = ti.field(ti.i32, shape=(N, ))
-    y = ti.field(ti.i16, shape=(N, ))
+    y = ti.field(ti.i32, shape=(N, ))
 
     @ti.kernel
     def test_case_0() -> ti.f64:
@@ -81,7 +81,7 @@ def test_atan2():
     @ti.kernel
     def test_case_2() -> ti.f64:
         x[0] = ti.i32(3)
-        y[0] = ti.i16(1)
+        y[0] = ti.i32(1)
         return ti.atan2(x[0], y[0])
 
     ti_res0 = test_case_0()

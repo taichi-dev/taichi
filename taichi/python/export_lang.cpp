@@ -540,11 +540,12 @@ void export_lang(py::module &m) {
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
-      .def(py::init<aot::ArgKind, std::string, std::string, std::vector<int>>(),
-           py::arg("tag"), py::arg("name"), py::arg("dtype_name"),
-           py::arg("element_shape"))
+      .def(py::init<aot::ArgKind, std::string, DataType &, std::vector<int>>(),
+           py::arg("tag"), py::arg("name"), py::arg("dtype"),
+           py::arg("element_shape") = py::tuple())
       .def_readonly("name", &aot::Arg::name)
-      .def_readonly("element_shape", &aot::Arg::element_shape);
+      .def_readonly("element_shape", &aot::Arg::element_shape)
+      .def("dtype", &aot::Arg::dtype);
 
   py::class_<Node>(m, "Node");
 

@@ -714,27 +714,27 @@ def test_mpm88_ndarray_graph_aot():
 
     sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'x',
-                         'f32',
+                         ti.f32,
                          element_shape=(2, ))
     sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'v',
-                         'f32',
+                         ti.f32,
                          element_shape=(2, ))
     sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'C',
-                         'f32',
+                         ti.f32,
                          element_shape=(2, 2))
     sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'J',
-                         'f32',
+                         ti.f32,
                          element_shape=())
     sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_v',
-                              'f32',
+                              ti.f32,
                               element_shape=(2, ))
     sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_m',
-                              'f32',
+                              ti.f32,
                               element_shape=())
     g_init = ti.graph.Graph()
     g_init.dispatch(init_particles, sym_x, sym_v, sym_J)

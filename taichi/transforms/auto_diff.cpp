@@ -1296,12 +1296,11 @@ class MakeDual : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt, sub(constant(1), sqr(stmt)));
     } else if (stmt->op_type == UnaryOpType::asin) {
-      accumulate(
-          stmt, div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand)))));
+      accumulate(stmt,
+                 div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand)))));
     } else if (stmt->op_type == UnaryOpType::acos) {
       accumulate(stmt, negate(div(constant(1),
-                                sqrt(sub(constant(1),
-                                sqr(stmt->operand))))));
+                                  sqrt(sub(constant(1), sqr(stmt->operand))))));
     } else if (stmt->op_type == UnaryOpType::exp) {
       accumulate(stmt, exp(stmt->operand));
     } else if (stmt->op_type == UnaryOpType::log) {
@@ -1332,8 +1331,8 @@ class MakeDual : public IRVisitor {
       accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
       accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
     } else if (bin->op_type == BinaryOpType::mod) {
-       //  Do nothing
-    } 
+      //  Do nothing
+    }
     // TODO:
     else if (bin->op_type == BinaryOpType::div) {
       accumulate(bin->lhs, div(dual(bin), bin->rhs));
@@ -1342,22 +1341,18 @@ class MakeDual : public IRVisitor {
     } else if (bin->op_type == BinaryOpType::atan2) {
       auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
       accumulate(bin->lhs, div(mul(dual(bin), bin->rhs), numerator));
-      accumulate(bin->rhs, negate(div(mul(dual(bin), bin->lhs),
-      numerator)));
+      accumulate(bin->rhs, negate(div(mul(dual(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::pow) {
       // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
       auto common_coeff =
           pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
       accumulate(bin->lhs, mul(dual(bin), mul(bin->rhs, common_coeff)));
       accumulate(bin->rhs, mul(dual(bin), mul(log(bin->lhs),
-                                                mul(bin->lhs,
-                                                common_coeff))));
+                                              mul(bin->lhs, common_coeff))));
     } else if (bin->op_type == BinaryOpType::min ||
-              bin->op_type == BinaryOpType::max) {
-      auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs,
-      bin->rhs)
-                                                  : cmp_lt(bin->rhs,
-                                                  bin->lhs);
+               bin->op_type == BinaryOpType::max) {
+      auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
+                                                   : cmp_lt(bin->rhs, bin->lhs);
       auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
       accumulate(bin->lhs, sel(cmp, dual(bin), zero));
       accumulate(bin->rhs, sel(cmp, zero, dual(bin)));

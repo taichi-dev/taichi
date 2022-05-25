@@ -33,7 +33,7 @@ TI_DLL_EXPORT void taichi_set_runtime_context_arg_float(
 
 typedef TI_DLL_EXPORT struct {
   int32_t length;
-  int32_t data[1];
+  int32_t data[16]; // TODO: (penguinliong) give this constant a name?
 } Taichi_NdShape;
 
 TI_DLL_EXPORT void taichi_set_runtime_context_arg_ndarray(

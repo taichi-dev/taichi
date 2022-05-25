@@ -1,7 +1,7 @@
 #include "c_api/include/taichi/aot/vulkan_module.h"
 
 #include "taichi/backends/vulkan/aot_module_loader_impl.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 
 namespace {
 

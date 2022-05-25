@@ -49,17 +49,12 @@ void taichi_set_runtime_context_arg_ndarray(Taichi_RuntimeContext *ctx,
                                             const Taichi_NdShape *shape,
                                             const Taichi_NdShape *elem_shape) {
   tl::RuntimeContext *rctx = cppcast(ctx);
-  rctx->set_arg(param_i, cppcast(arr));
-  rctx->set_device_allocation(param_i, /*is_device_allocation=*/true);
-  int extra_arg_i = 0;
-  for (int i = 0; i < shape->length; ++i) {
-    rctx->extra_args[param_i][extra_arg_i++] = shape->data[i];
-  }
-  if (elem_shape) {
-    for (int i = 0; i < elem_shape->length; ++i) {
-      rctx->extra_args[param_i][extra_arg_i++] = elem_shape->data[i];
-    }
-  }
+  std::vector<int> shape2(
+    shape->data, shape->data + shape->length);
+  std::vector<int> elem_shape2(
+    elem_shape->data, elem_shape->data + elem_shape->length);
+  rctx->set_arg_devalloc(
+    param_i, *(tl::DeviceAllocation*)(arr), shape2, elem_shape2);
 }
 
 void taichi_set_runtime_context_arg_scalar_ndarray(

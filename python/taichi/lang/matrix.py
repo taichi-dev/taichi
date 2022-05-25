@@ -1788,6 +1788,10 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        if isinstance(shape, list):
+            shape= tuple(shape)
         self.shape = shape
         self.n = n
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )

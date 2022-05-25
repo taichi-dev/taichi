@@ -17,37 +17,37 @@ _get_uint_ip = lambda: ti.u32 if impl.get_runtime(
 def vec2(*args):
     """2D floating vector type.
     """
-    return ti.types.vector(2, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return ti.types.vector(2, float)(*args)  # pylint: disable=E1101
 
 
 def vec3(*args):
     """3D floating vector type.
     """
-    return ti.types.vector(3, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return ti.types.vector(3, float)(*args)  # pylint: disable=E1101
 
 
 def vec4(*args):
     """4D floating vector type.
     """
-    return ti.types.vector(4, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return ti.types.vector(4, float)(*args)  # pylint: disable=E1101
 
 
 def ivec2(*args):
     """2D signed int vector type.
     """
-    return ti.types.vector(2, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
+    return ti.types.vector(2, int)(*args)  # pylint: disable=E1101
 
 
 def ivec3(*args):
     """3D signed int vector type.
     """
-    return ti.types.vector(3, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
+    return ti.types.vector(3, int)(*args)  # pylint: disable=E1101
 
 
 def ivec4(*args):
     """4D signed int vector type.
     """
-    return ti.types.vector(4, impl.get_runtime().default_ip)(*args)  # pylint: disable=E1101
+    return ti.types.vector(4, int)(*args)  # pylint: disable=E1101
 
 
 def uvec2(*args):
@@ -71,19 +71,19 @@ def uvec4(*args):
 def mat2(*args):
     """2x2 floating matrix type.
     """
-    return ti.types.matrix(2, 2, impl.get_runtime().default_fp)(*args)  # pylint: disable=E1101
+    return ti.types.matrix(2, 2, float)(*args)  # pylint: disable=E1101
 
 
 def mat3(*args):
     """3x3 floating matrix type.
     """
-    return ti.types.matrix(3, 3, impl.get_runtime().default_fp)  # pylint: disable=E1101
+    return ti.types.matrix(3, 3, float)(*args)  # pylint: disable=E1101
 
 
 def mat4(*args):
     """4x4 floating matrix type.
     """
-    return ti.types.matrix(4, 4, impl.get_runtime().default_fp)  # pylint: disable=E1101
+    return ti.types.matrix(4, 4, float)(*args)  # pylint: disable=E1101
 
 
 @ti.func

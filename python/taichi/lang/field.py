@@ -100,7 +100,7 @@ class Field:
             grad (Field): Corresponding gradient field.
         """
         self.grad = grad
-    
+
     def _set_dual(self, dual):
         """Sets corresponding gradient field.
 

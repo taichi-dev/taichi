@@ -568,7 +568,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             is not None), 'The shape cannot be None when offset is being set'
 
     x, x_grad, x_dual = create_field_member(dtype, name)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(x_dual)
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
     x._set_grad(x_grad)
     x._set_dual(x_dual)
 

@@ -1124,429 +1124,439 @@ class BackupSSA : public BasicStmtVisitor {
 };
 
 // Forward mode autodiff
-class MakeDual : public IRVisitor{
-  private:
-    Stmt *constant(float32 x) {
-      return insert<ConstStmt>(TypedConstant(x));
+class MakeDual : public IRVisitor {
+ private:
+  Stmt *constant(float32 x) {
+    return insert<ConstStmt>(TypedConstant(x));
+  }
+
+  // utils
+  Stmt *sgn(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sgn, load(inp));
+  }
+
+  // utils
+  Stmt *negate(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
+  }
+
+  Stmt *sqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
+  }
+
+  Stmt *mul(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
+  }
+
+  Stmt *sqr(Stmt *op1) {
+    return mul(op1, op1);
+  }
+
+  Stmt *add(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
+  }
+
+  Stmt *cmp_lt(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::cmp_lt, load(op1), load(op2));
+  }
+
+  Stmt *sub(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
+  }
+
+  Stmt *div(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
+  }
+
+  Stmt *sel(Stmt *op1, Stmt *op2, Stmt *op3) {
+    return insert<TernaryOpStmt>(TernaryOpType::select, load(op1), load(op2),
+                                 load(op3));
+  }
+
+  Stmt *cos(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::cos, load(op1));
+  }
+
+  Stmt *sin(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
+  }
+
+  Stmt *log(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
+  }
+
+  Stmt *pow(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
+  }
+
+ public:
+  Stmt *current_stmt;
+  Block *current_block;
+  // Block *alloca_block;
+  std::map<Stmt *, Stmt *> dual_stmt;
+
+  MakeDual(Block *block) {
+    current_stmt = nullptr;
+    // alloca_block = block;
+    current_block = block;
+  }
+
+  static void run(Block *block) {
+    auto p = MakeDual(block);
+    block->accept(&p);
+  }
+
+  void visit(Block *block) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : block->statements) {
+      statements.push_back(stmt.get());
     }
-
-    // utils
-    Stmt *sgn(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::sgn, load(inp));
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
     }
+  }
 
-    // utils
-    Stmt *negate(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
+  Stmt *insert_after(std::unique_ptr<Stmt> &&stmt) {
+    auto ptr = stmt.get();
+    current_stmt = current_stmt->insert_after_me(std::move(stmt));
+    return ptr;
+  }
+
+  template <typename T, typename... Args>
+  Stmt *insert(Args &&...args) {
+    return insert_after(Stmt::make<T>(args...));
+  }
+
+  // Accumulate [value] to the dual of [primal]
+  void accumulate(Stmt *primal, Stmt *value) {
+    auto alloca_ = dual(primal);
+    if (!alloca_ || alloca_->is<ConstStmt>())
+      return;  // primal may be int variable
+
+    TI_ASSERT(alloca_->is<AllocaStmt>());
+    auto alloca = alloca_->as<AllocaStmt>();
+    TI_ASSERT(alloca->width() == 1);
+    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+    insert<LocalStoreStmt>(alloca, add(local_load, value));
+  }
+
+  Stmt *dual(Stmt *stmt) {
+    if (!needs_grad(stmt->ret_type)) {
+      std::cout << "do we hit here  " << stmt->type() << std::endl;
+      return constant(0);
     }
+    if (dual_stmt.find(stmt) == dual_stmt.end()) {
+      // normal SSA cases
 
-    Stmt *sqrt(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
+      // create the alloca
+      // auto alloca =
+      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      // maybe it's better to use the statement data type than the default type
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      dual_stmt[stmt] = alloca.get();
+
+      // TODO: check whether this is correct when in for-loop
+      // check whether each stmt has a parent...
+      current_stmt->parent->insert(std::move(alloca), 0);
     }
+    return dual_stmt[stmt];
+  }
 
-    Stmt *mul(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
-    }
+  void visit(AllocaStmt *alloca) override {
+    // do nothing.
+  }
 
-    Stmt *sqr(Stmt *op1) {
-      return mul(op1, op1);
-    }
+  void visit(ArgLoadStmt *stmt) override {
+    // do nothing.
+  }
 
-    Stmt *add(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
-    }
+  void visit(LoopIndexStmt *stmt) override {
+    // do nothing.
+  }
 
-    Stmt *cmp_lt(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::cmp_lt, load(op1), load(op2));
-    }
+  // void visit(UnaryOpStmt *stmt) override {
+  //   if (stmt->op_type == UnaryOpType::floor ||
+  //       stmt->op_type == UnaryOpType::ceil) {
+  //     // do nothing
+  //   } else if (stmt->op_type == UnaryOpType::neg) {
+  //     accumulate(stmt->operand, negate(adjoint(stmt)));
+  //   } else if (stmt->op_type == UnaryOpType::abs) {
+  //     accumulate(stmt->operand, mul(adjoint(stmt), sgn(stmt->operand)));
+  //   } else if (stmt->op_type == UnaryOpType::sin) {
+  //     accumulate(stmt->operand, mul(adjoint(stmt), cos(stmt->operand)));
+  //   } else if (stmt->op_type == UnaryOpType::cos) {
+  //     accumulate(stmt->operand, negate(mul(adjoint(stmt),
+  //     sin(stmt->operand))));
+  //   } else if (stmt->op_type == UnaryOpType::tan) {
+  //     TI_NOT_IMPLEMENTED
+  //   } else if (stmt->op_type == UnaryOpType::tanh) {
+  //     accumulate(stmt->operand,
+  //               mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
+  //   } else if (stmt->op_type == UnaryOpType::asin) {
+  //     accumulate(
+  //         stmt->operand,
+  //         mul(adjoint(stmt),
+  //             div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand))))));
+  //   } else if (stmt->op_type == UnaryOpType::acos) {
+  //     accumulate(stmt->operand,
+  //               mul(adjoint(stmt),
+  //                   negate(div(constant(1),
+  //                               sqrt(sub(constant(1),
+  //                               sqr(stmt->operand)))))));
+  //   } else if (stmt->op_type == UnaryOpType::exp) {
+  //     accumulate(stmt->operand, mul(adjoint(stmt), stmt));
+  //   } else if (stmt->op_type == UnaryOpType::log) {
+  //     accumulate(stmt->operand, div(adjoint(stmt), stmt->operand));
+  //   } else if (stmt->op_type == UnaryOpType::sqrt) {
+  //     accumulate(stmt->operand,
+  //               mul(adjoint(stmt), div(constant(0.5f),
+  //               sqrt(stmt->operand))));
+  //   } else if (stmt->op_type == UnaryOpType::cast_value) {
+  //     if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+  //       accumulate(stmt->operand, adjoint(stmt));
+  //     }
+  //   } else if (stmt->op_type == UnaryOpType::logic_not) {
+  //     // do nothing
+  //   } else {
+  //     TI_P(unary_op_type_name(stmt->op_type));
+  //     TI_NOT_IMPLEMENTED
+  //   }
+  // }
 
-    Stmt *sub(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
-    }
-
-    Stmt *div(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
-    }
-
-    Stmt *sel(Stmt *op1, Stmt *op2, Stmt *op3) {
-      return insert<TernaryOpStmt>(TernaryOpType::select, load(op1), load(op2),
-                                  load(op3));
-    }
-
-    Stmt *cos(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::cos, load(op1));
-    }
-
-    Stmt *sin(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
-    }
-
-    Stmt *log(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
-    }
-
-    Stmt *pow(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
-    }
-  
-  public:
-    Stmt *current_stmt;
-    Block *current_block;
-    // Block *alloca_block;
-    std::map<Stmt *, Stmt *> dual_stmt;
-
-    MakeDual(Block *block) {
-      current_stmt = nullptr;
-      // alloca_block = block;
-      current_block = block;
-    }
-
-    static void run(Block *block) {
-      auto p = MakeDual(block);
-      block->accept(&p);
-    }
-
-    void visit(Block *block) override {
-      std::vector<Stmt *> statements;
-      // always make a copy since the list can be modified.
-      for (auto &stmt : block->statements) {
-        statements.push_back(stmt.get());
-      }
-      for (auto stmt : statements) {
-        current_stmt = stmt;
-        stmt->accept(this);
-      }
-    }
-
-    Stmt *insert_after(std::unique_ptr<Stmt> &&stmt) {
-      auto ptr = stmt.get();
-      current_stmt = current_stmt->insert_after_me(std::move(stmt));
-      return ptr;
-    }
-
-    template <typename T, typename... Args>
-    Stmt *insert(Args &&...args) {
-      return insert_after(Stmt::make<T>(args...));
-    }
-
-    // Accumulate [value] to the dual of [primal]
-    void accumulate(Stmt *primal, Stmt *value) {
-      auto alloca_ = dual(primal);
-      if (!alloca_ || alloca_->is<ConstStmt>())
-        return;  // primal may be int variable
-
-      TI_ASSERT(alloca_->is<AllocaStmt>());
-      auto alloca = alloca_->as<AllocaStmt>();
-      TI_ASSERT(alloca->width() == 1);
-      auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
-      insert<LocalStoreStmt>(alloca, add(local_load, value));
-    }
-
-    Stmt *dual(Stmt *stmt) {
-      if (!needs_grad(stmt->ret_type)) {
-        std::cout << "do we hit here  " <<  stmt->type() << std::endl;
-        return constant(0);
-      }
-      if (dual_stmt.find(stmt) == dual_stmt.end()) {
-        // normal SSA cases
-
-        // create the alloca
-        // auto alloca =
-        //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
-        // maybe it's better to use the statement data type than the default type
-        auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
-        dual_stmt[stmt] = alloca.get();
-
-        // TODO: check whether this is correct when in for-loop
-        // check whether each stmt has a parent...
-        current_stmt->parent->insert(std::move(alloca), 0);
-      }
-      return dual_stmt[stmt];
-    }
-
-    void visit(AllocaStmt *alloca) override {
-      // do nothing.
-    }
-
-    void visit(ArgLoadStmt *stmt) override {
-      // do nothing.
-    }
-
-    void visit(LoopIndexStmt *stmt) override {
-      // do nothing.
-    }
-
-    // void visit(UnaryOpStmt *stmt) override {
-    //   if (stmt->op_type == UnaryOpType::floor ||
-    //       stmt->op_type == UnaryOpType::ceil) {
-    //     // do nothing
-    //   } else if (stmt->op_type == UnaryOpType::neg) {
-    //     accumulate(stmt->operand, negate(adjoint(stmt)));
-    //   } else if (stmt->op_type == UnaryOpType::abs) {
-    //     accumulate(stmt->operand, mul(adjoint(stmt), sgn(stmt->operand)));
-    //   } else if (stmt->op_type == UnaryOpType::sin) {
-    //     accumulate(stmt->operand, mul(adjoint(stmt), cos(stmt->operand)));
-    //   } else if (stmt->op_type == UnaryOpType::cos) {
-    //     accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
-    //   } else if (stmt->op_type == UnaryOpType::tan) {
-    //     TI_NOT_IMPLEMENTED
-    //   } else if (stmt->op_type == UnaryOpType::tanh) {
-    //     accumulate(stmt->operand,
-    //               mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
-    //   } else if (stmt->op_type == UnaryOpType::asin) {
-    //     accumulate(
-    //         stmt->operand,
-    //         mul(adjoint(stmt),
-    //             div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand))))));
-    //   } else if (stmt->op_type == UnaryOpType::acos) {
-    //     accumulate(stmt->operand,
-    //               mul(adjoint(stmt),
-    //                   negate(div(constant(1),
-    //                               sqrt(sub(constant(1), sqr(stmt->operand)))))));
-    //   } else if (stmt->op_type == UnaryOpType::exp) {
-    //     accumulate(stmt->operand, mul(adjoint(stmt), stmt));
-    //   } else if (stmt->op_type == UnaryOpType::log) {
-    //     accumulate(stmt->operand, div(adjoint(stmt), stmt->operand));
-    //   } else if (stmt->op_type == UnaryOpType::sqrt) {
-    //     accumulate(stmt->operand,
-    //               mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
-    //   } else if (stmt->op_type == UnaryOpType::cast_value) {
-    //     if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
-    //       accumulate(stmt->operand, adjoint(stmt));
-    //     }
-    //   } else if (stmt->op_type == UnaryOpType::logic_not) {
-    //     // do nothing
-    //   } else {
-    //     TI_P(unary_op_type_name(stmt->op_type));
-    //     TI_NOT_IMPLEMENTED
-    //   }
-    // }
-
-    void visit(BinaryOpStmt *bin) override {
-      if (bin->op_type == BinaryOpType::add) {
-        accumulate(bin, dual(bin->lhs));
-        accumulate(bin, dual(bin->rhs));
-      } else if (bin->op_type == BinaryOpType::sub) {
-        accumulate(bin, dual(bin->lhs));
-        accumulate(bin, negate(dual(bin->rhs)));
-      } else if (bin->op_type == BinaryOpType::mul) {
-        // d (x * y) = y * dx + x * dy
-        accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
-        accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
-      } //else if (bin->op_type == BinaryOpType::mod) {
-        // Do nothing
-      // } else if (bin->op_type == BinaryOpType::div) {
-      //   accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
-      //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
-      //                                   mul(bin->rhs, bin->rhs))));
-      // } else if (bin->op_type == BinaryOpType::atan2) {
-      //   auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
-      //   accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
-      //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
-      // } else if (bin->op_type == BinaryOpType::pow) {
-      //   // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-      //   auto common_coeff =
-      //       pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
-      //   accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
-      //   accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
-      //                                             mul(bin->lhs, common_coeff))));
-      // } else if (bin->op_type == BinaryOpType::min ||
-      //           bin->op_type == BinaryOpType::max) {
-      //   auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
-      //                                               : cmp_lt(bin->rhs, bin->lhs);
-      //   auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
-      //   accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
-      //   accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
-      // } else if (bin->op_type == BinaryOpType::floordiv) {
-      //   // do nothing
-      // } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
-      //   // do nothing
-      // } else {
-      else{
-        TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-        TI_NOT_IMPLEMENTED
-      }
-    }
-
-    // void visit(TernaryOpStmt *stmt) override {
-    //   TI_ASSERT(stmt->op_type == TernaryOpType::select);
-    //   auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
-    //   accumulate(stmt->op2,
-    //             insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
-    //                                   load(adjoint(stmt)), zero));
-    //   accumulate(stmt->op3,
-    //             insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1, zero,
-    //                                   load(adjoint(stmt))));
-    // }
-
-    void visit(IfStmt *if_stmt) override {
-      // TODO: complete if stmt
-    }
-
-    void visit(PrintStmt *print_stmt) override {
-      // do nothing
-    }
-
-    void visit(ConstStmt *const_stmt) override {
-      // do nothing
-    }
-
-    void visit(WhileControlStmt *stmt) override {
+  void visit(BinaryOpStmt *bin) override {
+    if (bin->op_type == BinaryOpType::add) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, dual(bin->rhs));
+    } else if (bin->op_type == BinaryOpType::sub) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, negate(dual(bin->rhs)));
+    } else if (bin->op_type == BinaryOpType::mul) {
+      // d (x * y) = y * dx + x * dy
+      accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
+      accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    }  // else if (bin->op_type == BinaryOpType::mod) {
+       //  Do nothing
+    // } else if (bin->op_type == BinaryOpType::div) {
+    //   accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
+    //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
+    //                                   mul(bin->rhs, bin->rhs))));
+    // } else if (bin->op_type == BinaryOpType::atan2) {
+    //   auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
+    //   accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
+    //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
+    //   numerator)));
+    // } else if (bin->op_type == BinaryOpType::pow) {
+    //   // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
+    //   auto common_coeff =
+    //       pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
+    //   accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
+    //   accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
+    //                                             mul(bin->lhs,
+    //                                             common_coeff))));
+    // } else if (bin->op_type == BinaryOpType::min ||
+    //           bin->op_type == BinaryOpType::max) {
+    //   auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs,
+    //   bin->rhs)
+    //                                               : cmp_lt(bin->rhs,
+    //                                               bin->lhs);
+    //   auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+    //   accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
+    //   accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
+    // } else if (bin->op_type == BinaryOpType::floordiv) {
+    //   // do nothing
+    // } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+    //   // do nothing
+    // } else {
+    else {
+      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
       TI_NOT_IMPLEMENTED
     }
+  }
 
-    void visit(ContinueStmt *stmt) override {
-      TI_NOT_IMPLEMENTED;
+  // void visit(TernaryOpStmt *stmt) override {
+  //   TI_ASSERT(stmt->op_type == TernaryOpType::select);
+  //   auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
+  //   accumulate(stmt->op2,
+  //             insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+  //                                   load(adjoint(stmt)), zero));
+  //   accumulate(stmt->op3,
+  //             insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1, zero,
+  //                                   load(adjoint(stmt))));
+  // }
+
+  void visit(IfStmt *if_stmt) override {
+    // TODO: complete if stmt
+  }
+
+  void visit(PrintStmt *print_stmt) override {
+    // do nothing
+  }
+
+  void visit(ConstStmt *const_stmt) override {
+    // do nothing
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void visit(WhileStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    // TODO: complete range for
+  }
+
+  void visit(StructForStmt *for_stmt) override {
+    // TODO: complete struct for
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    // do nothing
+  }
+
+  // TODO: check this when in for-loop
+  void visit(LocalLoadStmt *stmt) override {
+    // TI_ASSERT(!needs_grad(stmt->ret_type));
+    if (needs_grad(stmt->ret_type))
+      accumulate(stmt, stmt->src.data[0].var);
+  }
+
+  // TODO: check this when in for-loop
+  void visit(LocalStoreStmt *stmt) override {
+    accumulate(stmt->dest, stmt->val);
+
+    // // Clear the adjoint of the dest after local store,
+    // // Because LocalStoreStmt overwrites the dest,
+    // // 1. If the alloca is inside a loop, the adjoint of this alloca of this
+    // // iteration should be cleared after this iteration has been done
+    // // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only
+    // the
+    // // last LocalStoreStmt should be taken account of
+    // if (needs_grad(stmt->dest->ret_type)) {
+    //   auto dtype = stmt->dest->ret_type;
+    //   auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+    //   insert<LocalStoreStmt>(dual(stmt->dest), zero);
+    // }
+  }
+
+  Stmt *load(Stmt *alloc) {
+    TI_ASSERT(alloc != nullptr);
+    if (alloc->is<AllocaStmt>()) {
+      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+    } else {
+      // non alloca
+      return alloc;
     }
+  }
 
-    void visit(WhileStmt *stmt) override {
-      TI_NOT_IMPLEMENTED
-    }
-
-    void visit(RangeForStmt *for_stmt) override {
-      // TODO: complete range for
-    }
-
-    void visit(StructForStmt *for_stmt) override {
-      // TODO: complete struct for
-
-    }
-
-    void visit(GlobalPtrStmt *stmt) override {
-      // do nothing
-    }
-    
-    // TODO: check this when in for-loop
-    void visit(LocalLoadStmt *stmt) override {
-      // TI_ASSERT(!needs_grad(stmt->ret_type));
-      if (needs_grad(stmt->ret_type))
-        accumulate(stmt, stmt->src.data[0].var);
-    }
-
-    // TODO: check this when in for-loop
-    void visit(LocalStoreStmt *stmt) override {
-      accumulate(stmt->dest, stmt->val);
-
-      // // Clear the adjoint of the dest after local store,
-      // // Because LocalStoreStmt overwrites the dest,
-      // // 1. If the alloca is inside a loop, the adjoint of this alloca of this
-      // // iteration should be cleared after this iteration has been done
-      // // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
-      // // last LocalStoreStmt should be taken account of
-      // if (needs_grad(stmt->dest->ret_type)) {
-      //   auto dtype = stmt->dest->ret_type;
-      //   auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
-      //   insert<LocalStoreStmt>(dual(stmt->dest), zero);
-      // }
-    }
-
-    Stmt *load(Stmt *alloc) {
-      TI_ASSERT(alloc != nullptr);
-      if (alloc->is<AllocaStmt>()) {
-        return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
-      } else {
-        // non alloca
-        return alloc;
-      }
-    }
-
-    bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
-      for (auto block = stmt->parent; block; block = block->parent_block()) {
-        for (auto s : block->stop_gradients) {
-          if (s == snode) {
-            return true;
-          }
+  bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
+    for (auto block = stmt->parent; block; block = block->parent_block()) {
+      for (auto s : block->stop_gradients) {
+        if (s == snode) {
+          return true;
         }
       }
-      return false;
     }
+    return false;
+  }
 
-    void visit(GlobalLoadStmt *stmt) override {
-      // issue global store to dual
-      GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
-      TI_ASSERT(src->width() == 1);
-      auto snodes = src->snodes;
-      if (!snodes[0]->has_dual()) {
-        // No dual SNode. Do nothing
-        return;
-      }
-      if (gradients_stopped(stmt, snodes[0])) {
-        // gradients stopped, do nothing.
-        return;
-      }
+  void visit(GlobalLoadStmt *stmt) override {
+    // issue global store to dual
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (!snodes[0]->has_dual()) {
+      // No dual SNode. Do nothing
+      return;
+    }
+    if (gradients_stopped(stmt, snodes[0])) {
+      // gradients stopped, do nothing.
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    // erase and replace with global load dual
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_dual()) {
+      // no gradient (likely integer types)
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
+    stmt->parent->erase(stmt);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    // erase and replace with global load dual
+    GlobalPtrStmt *src = stmt->val->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (snodes[0]->has_dual()) {
       TI_ASSERT(snodes[0]->get_dual() != nullptr);
       snodes[0] = snodes[0]->get_dual();
       auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
-      accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
+      accumulate(stmt->dest, insert<GlobalLoadStmt>(dual_ptr));
+    } else {
+      // no gradient (likely integer types)
     }
+    stmt->parent->erase(stmt);
+  }
 
-    void visit(GlobalStoreStmt *stmt) override {
-      // erase and replace with global load dual
-      GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
-      TI_ASSERT(dest->width() == 1);
-      auto snodes = dest->snodes;
-      if (!snodes[0]->has_dual()) {
-        // no gradient (likely integer types)
-        return;
-      }
-      TI_ASSERT(snodes[0]->get_dual() != nullptr);
-      snodes[0] = snodes[0]->get_dual();
-      auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-      insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
-      stmt->parent->erase(stmt);
-    }
+  void visit(ElementShuffleStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
 
-    void visit(AtomicOpStmt *stmt) override {
-      // erase and replace with global load dual
-      GlobalPtrStmt *src = stmt->val->as<GlobalPtrStmt>();
-      TI_ASSERT(src->width() == 1);
-      auto snodes = src->snodes;
-      if (snodes[0]->has_dual()) {
-        TI_ASSERT(snodes[0]->get_dual() != nullptr);
-        snodes[0] = snodes[0]->get_dual();
-        auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
-        accumulate(stmt->dest, insert<GlobalLoadStmt>(dual_ptr));
-      } else {
-        // no gradient (likely integer types)
-      }
-      stmt->parent->erase(stmt);
-    }
+  void visit(AssertStmt *stmt) override {
+    // do nothing
+  }
 
-    void visit(ElementShuffleStmt *stmt) override {
-      TI_NOT_IMPLEMENTED
-    }
+  void visit(RangeAssumptionStmt *stmt) override {
+    // do nothing
+  }
 
-    void visit(AssertStmt *stmt) override {
-      // do nothing
-    }
+  void visit(LinearizeStmt *stmt) override {
+    // do nothing
+  }
 
-    void visit(RangeAssumptionStmt *stmt) override {
-      // do nothing
-    }
+  void visit(BitExtractStmt *stmt) override {
+    // do nothing
+  }
 
-    void visit(LinearizeStmt *stmt) override {
-      // do nothing
-    }
+  void visit(IntegerOffsetStmt *stmt) override {
+    // do nothing
+  }
 
-    void visit(BitExtractStmt *stmt) override {
-      // do nothing
-    }
-
-    void visit(IntegerOffsetStmt *stmt) override {
-      // do nothing
-    }
-
-    void visit(RandStmt *stmt) override {
-      TI_ERROR("RandStmt not supported in AutoDiff for now.");
-    }
+  void visit(RandStmt *stmt) override {
+    TI_ERROR("RandStmt not supported in AutoDiff for now.");
+  }
 };
 
 namespace irpass {
 
-void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack, bool reverse_mode) {
+void auto_diff(IRNode *root,
+               const CompileConfig &config,
+               bool use_stack,
+               bool reverse_mode) {
   TI_AUTO_PROF;
   reverse_mode = false;
-  if (reverse_mode){
+  if (reverse_mode) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
@@ -1571,7 +1581,7 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack, bool r
     }
     type_check(root, config);
     irpass::analysis::verify(root);
-  }else{
+  } else {
     Block *block = root->as<Block>();
     PromoteSSA2LocalVar::run(block);
     MakeDual::run(block);

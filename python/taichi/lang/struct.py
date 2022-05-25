@@ -666,7 +666,7 @@ class StructType(CompoundType):
 
 
 def struct_class(cls):
-    ''' Turns a Class with field annotations into a struct type for use as a data field
+    ''' Converts a class with field annotations into a struct type for use as a taichi field
         ex:
 
         @ti.stuct_class
@@ -678,15 +678,23 @@ def struct_class(cls):
             def area(self):
                 return 4 * 3.14 * self.radius * self.radius
 
-        Classes with this decorator can be treated as a normal taichi struct, and fields generated
-        from them.  Functions in the class can be run on the struct instance.
+        This will return a normal custom struct type, with the functions added to it.
+        Struct fields can be generated in the normal way from the struct type.
+        Functions in the class can be run on the struct instance.
 
         my_spheres = Sphere.field(shape=(n,))
         my_sphere[2].area()
 
         This class decorator inspects the class for annotations and methods and
             1.  Sets the annotations as fields for the struct
-            2.  Attaches the methods to __struct_methods
+            2.  Attaches the methods to the struct type
+
+        Args:
+            cls (Class): the class with annotations and methods to convert
+
+        Returns:
+            A custom taichi struct with the annotations as fields
+            and methods from the class attached.
      '''
     # save the annotaion fields for the struct
     fields = cls.__annotations__

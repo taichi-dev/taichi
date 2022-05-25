@@ -1689,6 +1689,10 @@ class MatrixNdarray(Ndarray):
     """
     def __init__(self, n, m, dtype, shape, layout):
         self.layout = layout
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        if isinstance(shape, list):
+            shape= tuple(shape)
         self.shape = shape
         self.n = n
         self.m = m

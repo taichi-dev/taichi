@@ -68,10 +68,8 @@ def test_custom_int_atomics_b64():
 
 @test_utils.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_float_atomics():
-    ci13 = ti.types.quant.int(13, True)
-    ci19 = ti.types.quant.int(19, False)
-    cft13 = ti.types.quant._custom_float(significand_type=ci13, scale=0.1)
-    cft19 = ti.types.quant._custom_float(significand_type=ci19, scale=0.1)
+    cft13 = ti.types.quant.fixed(frac=13, signed=True, scale=0.1)
+    cft19 = ti.types.quant.fixed(frac=19, signed=False, scale=0.1)
 
     x = ti.field(dtype=cft13)
     y = ti.field(dtype=cft19)

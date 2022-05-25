@@ -71,9 +71,9 @@ def test_matrix():
 @test_utils.test(require=ti.extension.quant_basic)
 def test_custom_type():
     cit1 = ti.types.quant.int(bits=10, signed=True)
-    cft1 = ti.types.quant._custom_float(cit1, scale=0.1)
+    cft1 = ti.types.quant.fixed(frac=10, signed=True, scale=0.1)
     cit2 = ti.types.quant.int(bits=22, signed=False)
-    cft2 = ti.types.quant._custom_float(cit2, scale=0.1)
+    cft2 = ti.types.quant.fixed(frac=22, signed=False, scale=0.1)
     type_list = [[cit1, cft2], [cft1, cit2]]
     a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)

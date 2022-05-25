@@ -290,7 +290,9 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   DeviceAllocation allocate_memory(const AllocParams &params) override {
     DeviceAllocation res;
     res.device = this;
-    res.alloc_id = allocations_.size();
+    // Do not use `allocations_.size()` as `alloc_id`, as items could be erased
+    // from `allocations_`.
+    res.alloc_id = next_alloc_id_++;
 
     AllocationInternal &ialloc =
         allocations_[res.alloc_id];  // "i" for internal
@@ -394,6 +396,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   std::unique_ptr<StreamImpl> stream_{nullptr};
   std::unordered_map<DeviceAllocationId, AllocationInternal> allocations_;
+  DeviceAllocationId next_alloc_id_{0};
 };
 
 }  // namespace

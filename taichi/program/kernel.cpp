@@ -242,9 +242,6 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  // FIXME(https://github.com/taichi-dev/taichi/issues/4949): Make the Metal
-  // backend support Ndarray, then remove this line below.
-  kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_runtime_size(arg_id, size);
   ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);

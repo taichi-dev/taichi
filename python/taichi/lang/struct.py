@@ -1,5 +1,4 @@
 import numbers
-from functools import partial
 from types import MethodType
 
 from taichi.lang import expr, impl, ops
@@ -57,12 +56,7 @@ class Struct(TaichiOperations):
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
         self.methods = self.entries.pop("__struct_methods", {})
-        for name, method in self.methods.items():
-            # use MethodType to pass self (this object) to the method
-            setattr(self, name, MethodType(method, self))
-            if getattr(method, '_is_taichi_function', False) is True:
-                # mark as a taichi function
-                func(getattr(self, name))
+        self._register_methods()
 
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
@@ -109,6 +103,14 @@ class Struct(TaichiOperations):
                         Struct._make_getter(k),
                         Struct._make_setter(k),
                     ))
+
+    def _register_methods(self):
+        for name, method in self.methods.items():
+            # use MethodType to pass self (this object) to the method
+            setattr(self, name, MethodType(method, self))
+            if getattr(method, '_is_taichi_function', False) is True:
+                # mark as a taichi function
+                func(getattr(self, name))
 
     def __getitem__(self, key):
         ret = self.entries[key]
@@ -256,14 +258,14 @@ class Struct(TaichiOperations):
         Returns:
             Dict: The result dictionary.
         """
-        dict = {
+        res_dict = {
             k: v.to_dict() if isinstance(v, Struct) else
             v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
         if include_methods:
-            dict['__struct_methods'] = self.methods
-        return dict
+            res_dict['__struct_methods'] = self.methods
+        return res_dict
 
     @classmethod
     @python_scope
@@ -367,12 +369,7 @@ class _IntermediateStruct(Struct):
     def __init__(self, entries):
         assert isinstance(entries, dict)
         self.methods = entries.pop('__struct_methods', {})
-        for name, method in self.methods.items():
-            # use MethodType to pass self (this object) to the method
-            setattr(self, name, MethodType(method, self))
-            if getattr(method, '_is_taichi_function', False) is True:
-                # mark as a taichi function
-                func(getattr(self, name))
+        self._register_methods()
         self.entries = entries
         self._register_members()
 
@@ -387,10 +384,10 @@ class StructField(Field):
         field_dict (Dict[str, Field]): Struct field members.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, methods, name=None):
+    def __init__(self, field_dict, struct_methods, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self.struct_methods = methods
+        self.struct_methods = struct_methods
         self.name = name
         self._register_fields()
 
@@ -661,6 +658,7 @@ class StructType(CompoundType):
                 entries[k] = dtype.filled_with_scalar(value)
             else:
                 entries[k] = value
+        entries['__struct_methods'] = self.methods
         return Struct(entries)
 
     def field(self, **kwargs):

@@ -59,5 +59,6 @@ python setup.py develop
 WriteInfo("Build finished")
 
 WriteInfo("Testing Taichi")
+python tests/run_tests.py --cpp
 python tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a cpu
 WriteInfo("Test finished")

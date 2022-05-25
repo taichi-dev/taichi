@@ -25,13 +25,13 @@ class SparseSolver:
             self.solver = _ti_core.make_sparse_solver(dtype, solver_type,
                                                       ordering)
         else:
-            TaichiRuntimeError(
+            raise TaichiRuntimeError(
                 f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
             )
 
     @staticmethod
     def _type_assert(sparse_matrix):
-        TaichiRuntimeError(
+        raise TaichiRuntimeError(
             f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
         )
 
@@ -80,7 +80,7 @@ class SparseSolver:
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)
-        TaichiRuntimeError(
+        raise TaichiRuntimeError(
             f"The parameter type: {type(b)} is not supported in linear solvers for now."
         )
 

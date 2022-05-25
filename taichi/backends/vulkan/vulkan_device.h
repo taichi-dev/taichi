@@ -177,8 +177,8 @@ class VulkanResourceBinder : public ResourceBinder {
         size_t binding_hash = 0;
         uint32_t *u32_ptr = (uint32_t *)&pair.second;
         static_assert(
-          sizeof(VulkanResourceBinder::Binding) % sizeof(uint32_t) == 0,
-          "sizeof(VulkanResourceBinder::Binding) is not a multiple of 4");
+            sizeof(VulkanResourceBinder::Binding) % sizeof(uint32_t) == 0,
+            "sizeof(VulkanResourceBinder::Binding) is not a multiple of 4");
         size_t n = sizeof(VulkanResourceBinder::Binding) / sizeof(uint32_t);
         for (int i = 0; i < n; i++) {
           binding_hash = binding_hash ^ u32_ptr[i];

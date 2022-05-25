@@ -202,13 +202,13 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     return;
   }
 
-  // Consistent with type promotion for std::atan2
-  // https://en.cppreference.com/w/cpp/numeric/math/atan2
+  // Some backends such as vulkan doesn't support fp64
+  // Try not promoting to fp64 unless neccessary
   if (type == BinaryOpType::atan2) {
-    if (lhs_type == PrimitiveType::f32 && rhs_type == PrimitiveType::f32) {
-      ret_type = PrimitiveType::f32;
-    } else {
+    if (lhs_type == PrimitiveType::f64 || rhs_type == PrimitiveType::f64) {
       ret_type = PrimitiveType::f64;
+    } else {
+      ret_type = PrimitiveType::f32;
     }
     return;
   }

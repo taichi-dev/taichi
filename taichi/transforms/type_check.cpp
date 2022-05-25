@@ -268,6 +268,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void cast(Stmt *&val, DataType dt) {
+    if (val->ret_type == dt)
+      return;
+
     auto cast_stmt = insert_type_cast_after(val, val, dt);
     val = cast_stmt;
   }
@@ -301,19 +304,18 @@ class TypeCheck : public IRVisitor {
       stmt->op_type = BinaryOpType::div;
     }
 
-    // Consistent with type promotion for std::atan2
-    // https://en.cppreference.com/w/cpp/numeric/math/atan2
+    // Some backends such as vulkan doesn't support fp64
+    // Always promote to fp32 unless neccessary
     if (stmt->op_type == BinaryOpType::atan2) {
-      if (stmt->rhs->ret_type != PrimitiveType::f32 ||
-          stmt->lhs->ret_type != PrimitiveType::f32) {
+      if (stmt->rhs->ret_type == PrimitiveType::f64 ||
+          stmt->lhs->ret_type == PrimitiveType::f64) {
         stmt->ret_type = PrimitiveType::f64;
-        if (stmt->rhs->ret_type != PrimitiveType::f64) {
-          cast(stmt->rhs, PrimitiveType::f64);
-        }
-
-        if (stmt->lhs->ret_type != PrimitiveType::f64) {
-          cast(stmt->lhs, PrimitiveType::f64);
-        }
+        cast(stmt->rhs, PrimitiveType::f64);
+        cast(stmt->lhs, PrimitiveType::f64);
+      } else {
+        stmt->ret_type = PrimitiveType::f32;
+        cast(stmt->rhs, PrimitiveType::f32);
+        cast(stmt->lhs, PrimitiveType::f32);
       }
     }
 

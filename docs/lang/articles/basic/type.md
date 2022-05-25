@@ -125,9 +125,12 @@ A few exceptions:
 - `u8 << i32 -> u8`
 - `i16 << i8 -> i16`
 
-2. logical operations: always return i32
-3. comparison operations: always return i32
-4. atan2 operation: follows the same type promotion rule as [std::atan2](https://en.cppreference.com/w/cpp/numeric/math/atan2).
+2. atan2 operation: return fp64 if either lhs or rhs is fp64, otherwise return fp32.
+- `i32 atan f32 -> f32`
+- `i32 atan f64 -> f64`
+
+3. logical operations: always return i32
+4. comparison operations: always return i32
 
 #### Implicit type casting in assignments
 

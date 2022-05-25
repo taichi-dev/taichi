@@ -69,17 +69,17 @@ def test_atan2():
     y = ti.field(ti.i32, shape=(N, ))
 
     @ti.kernel
-    def test_case_0() -> ti.f64:
+    def test_case_0() -> ti.f32:
         i = ti.i32(2)
         return ti.atan2(i, 1)
 
     @ti.kernel
-    def test_case_1() -> ti.f64:
+    def test_case_1() -> ti.f32:
         x[0] = ti.i32(2)
         return ti.atan2(x[0], 1)
 
     @ti.kernel
-    def test_case_2() -> ti.f64:
+    def test_case_2() -> ti.f32:
         x[0] = ti.i32(3)
         y[0] = ti.i32(1)
         return ti.atan2(x[0], y[0])

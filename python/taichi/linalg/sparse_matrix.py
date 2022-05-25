@@ -2,7 +2,7 @@ import numpy as np
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.matrix import VectorNdarray
+from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
 from taichi.types import annotations, f32
 
@@ -157,12 +157,17 @@ class SparseMatrix:
         return (self.n, self.m)
 
     def build_from_ndarray(self, ndarray):
-        """Build the sparse matrix from a ti.Vector.ndarray.
+        """Build the sparse matrix from a ndarray.
 
         Args:
-            ndarray (~taichi.lang.matrix.VectorNdarray): the ndarray to build the sparse matrix from.
+            ndarray (Union[ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]): the ndarray to build the sparse matrix from.
+
+        Raises:
+            TaichiRuntimeError: If the input is not a ndarray or the length is not divisible by 3.
         """
-        if isinstance(ndarray, VectorNdarray):
+        if isinstance(ndarray, Ndarray):
+            if ndarray.arr.nelement() % 3 != 0:
+                raise TaichiRuntimeError("The number of ndarray elements must have a length that is divisible by 3.")
             get_runtime().prog.make_sparse_matrix_from_ndarray(
                 self.matrix, ndarray.arr)
         else:

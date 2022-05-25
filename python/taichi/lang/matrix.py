@@ -1692,7 +1692,7 @@ class MatrixNdarray(Ndarray):
         if isinstance(shape, numbers.Number):
             shape = (shape, )
         if isinstance(shape, list):
-            shape= tuple(shape)
+            shape = tuple(shape)
         self.shape = shape
         self.n = n
         self.m = m
@@ -1791,7 +1791,7 @@ class VectorNdarray(Ndarray):
         if isinstance(shape, numbers.Number):
             shape = (shape, )
         if isinstance(shape, list):
-            shape= tuple(shape)
+            shape = tuple(shape)
         self.shape = shape
         self.n = n
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )

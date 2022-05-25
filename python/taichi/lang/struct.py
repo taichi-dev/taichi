@@ -6,7 +6,6 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
@@ -108,9 +107,6 @@ class Struct(TaichiOperations):
         for name, method in self.methods.items():
             # use MethodType to pass self (this object) to the method
             setattr(self, name, MethodType(method, self))
-            if getattr(method, '_is_taichi_function', False) is True:
-                # mark as a taichi function
-                func(getattr(self, name))
 
     def __getitem__(self, key):
         ret = self.entries[key]
@@ -700,7 +696,7 @@ def struct_class(cls):
     fields = cls.__annotations__
     # get the class methods to be attached to the struct types
     fields['__struct_methods'] = {
-        attribute: ti.func(getattr(cls, attribute))
+        attribute: getattr(cls, attribute)
         for attribute in dir(cls)
         if callable(getattr(cls, attribute)) and not attribute.startswith('__')
     }

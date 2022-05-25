@@ -208,6 +208,7 @@ def test_struct_type():
 def test_struct_class():
     # example struct class type
     vec3f = ti.types.vector(3, float)
+
     @ti.struct_class
     class Sphere:
         center: vec3f
@@ -221,7 +222,9 @@ def test_struct_class():
             return 4 * 3.14 * self.radius * self.radius
 
     # test function usage from python scope
-    assert np.isclose(Sphere(center=vec3f(0.0), radius=2.0).py_scope_area(), 4.0 * 3.14 * 4.0)
+    assert np.isclose(
+        Sphere(center=vec3f(0.0), radius=2.0).py_scope_area(),
+        4.0 * 3.14 * 4.0)
 
     # test function usage from taichi scope
     @ti.kernel
@@ -232,7 +235,7 @@ def test_struct_class():
     assert np.isclose(get_area(), 4.0 * 3.14 * 4.0)
 
     # test function usage from taichi scope with field
-    struct_field = Sphere.field(shape=(4,))
+    struct_field = Sphere.field(shape=(4, ))
     struct_field[3] = Sphere(center=vec3f(0.0), radius=2.0)
 
     @ti.kernel
@@ -240,6 +243,7 @@ def test_struct_class():
         return struct_field[3].area()
 
     assert np.isclose(get_area_field(), 4.0 * 3.14 * 4.0)
+
 
 @test_utils.test()
 def test_struct_assign():

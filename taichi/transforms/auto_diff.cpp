@@ -1192,12 +1192,12 @@ class MakeDual : public IRVisitor{
   public:
     Stmt *current_stmt;
     Block *current_block;
-    Block *alloca_block;
+    // Block *alloca_block;
     std::map<Stmt *, Stmt *> dual_stmt;
 
     MakeDual(Block *block) {
       current_stmt = nullptr;
-      alloca_block = block;
+      // alloca_block = block;
       current_block = block;
     }
 
@@ -1218,7 +1218,6 @@ class MakeDual : public IRVisitor{
       }
     }
 
-    // TODO: recover this after debugging
     Stmt *insert_after(std::unique_ptr<Stmt> &&stmt) {
       auto ptr = stmt.get();
       current_stmt = current_stmt->insert_after_me(std::move(stmt));
@@ -1229,17 +1228,6 @@ class MakeDual : public IRVisitor{
     Stmt *insert(Args &&...args) {
       return insert_after(Stmt::make<T>(args...));
     }
-
-    // Stmt *insert_back(std::unique_ptr<Stmt> &&stmt) {
-    //   auto ptr = stmt.get();
-    //   current_block->insert(std::move(stmt), -1);
-    //   return ptr;
-    // }
-
-    // template <typename T, typename... Args>
-    // Stmt *insert(Args &&...args) {
-    //   return insert_back(Stmt::make<T>(args...));
-    // }
 
     // Accumulate [value] to the dual of [primal]
     void accumulate(Stmt *primal, Stmt *value) {
@@ -1269,21 +1257,16 @@ class MakeDual : public IRVisitor{
         auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
         dual_stmt[stmt] = alloca.get();
 
-        // TODO: alloca block
-        alloca_block->insert(std::move(alloca), 0);
-        // std::cout << "create dual" << std::endl;
+        // TODO: check whether this is correct when in for-loop
+        // check whether each stmt has a parent...
+        current_stmt->parent->insert(std::move(alloca), 0);
       }
-      // std::cout << "finalize dual" << std::endl;
       return dual_stmt[stmt];
     }
 
     void visit(AllocaStmt *alloca) override {
       // do nothing.
     }
-
-    // void visit(AdStackAllocaStmt *alloca) override {
-    //   // do nothing.
-    // }
 
     void visit(ArgLoadStmt *stmt) override {
       // do nothing.
@@ -1395,6 +1378,7 @@ class MakeDual : public IRVisitor{
     //             insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1, zero,
     //                                   load(adjoint(stmt))));
     // }
+
     void visit(IfStmt *if_stmt) override {
       // TODO: complete if stmt
     }
@@ -1431,15 +1415,17 @@ class MakeDual : public IRVisitor{
     void visit(GlobalPtrStmt *stmt) override {
       // do nothing
     }
-
+    
+    // TODO: check this when in for-loop
     void visit(LocalLoadStmt *stmt) override {
       // TI_ASSERT(!needs_grad(stmt->ret_type));
       if (needs_grad(stmt->ret_type))
-        accumulate(load(dual(stmt)), stmt->src.data[0].var);
+        accumulate(stmt, stmt->src.data[0].var);
     }
 
+    // TODO: check this when in for-loop
     void visit(LocalStoreStmt *stmt) override {
-      accumulate(load(dual(stmt->dest)), stmt->val);
+      accumulate(stmt->dest, stmt->val);
 
       // // Clear the adjoint of the dest after local store,
       // // Because LocalStoreStmt overwrites the dest,
@@ -1476,7 +1462,6 @@ class MakeDual : public IRVisitor{
     }
 
     void visit(GlobalLoadStmt *stmt) override {
-      // std::cout << "Entering global load stmt. "<< std::endl;
       // issue global store to dual
       GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
       TI_ASSERT(src->width() == 1);
@@ -1493,12 +1478,10 @@ class MakeDual : public IRVisitor{
       snodes[0] = snodes[0]->get_dual();
       auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
       accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
-      // std::cout << "finalize global load stmt. "<< std::endl;
     }
 
     void visit(GlobalStoreStmt *stmt) override {
-      // std::cout << " entering global store stmt. "<< std::endl;
-      // erase and replace with global load adjoint
+      // erase and replace with global load dual
       GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
       TI_ASSERT(dest->width() == 1);
       auto snodes = dest->snodes;
@@ -1509,21 +1492,20 @@ class MakeDual : public IRVisitor{
       TI_ASSERT(snodes[0]->get_dual() != nullptr);
       snodes[0] = snodes[0]->get_dual();
       auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-      // insert<AtomicOpStmt>(AtomicOpType::add, insert<GlobalLoadStmt>(dual_ptr), load(dual(stmt->val)));
       insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
       stmt->parent->erase(stmt);
     }
 
     void visit(AtomicOpStmt *stmt) override {
-      // erase and replace with global load adjoint
-      GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
-      TI_ASSERT(dest->width() == 1);
-      auto snodes = dest->snodes;
-      if (snodes[0]->has_grad()) {
-        TI_ASSERT(snodes[0]->get_grad() != nullptr);
-        snodes[0] = snodes[0]->get_grad();
-        auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-        accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+      // erase and replace with global load dual
+      GlobalPtrStmt *src = stmt->val->as<GlobalPtrStmt>();
+      TI_ASSERT(src->width() == 1);
+      auto snodes = src->snodes;
+      if (snodes[0]->has_dual()) {
+        TI_ASSERT(snodes[0]->get_dual() != nullptr);
+        snodes[0] = snodes[0]->get_dual();
+        auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+        accumulate(stmt->dest, insert<GlobalLoadStmt>(dual_ptr));
       } else {
         // no gradient (likely integer types)
       }

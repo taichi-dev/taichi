@@ -1185,6 +1185,10 @@ class MakeDual : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
   }
 
+  Stmt *exp(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::exp, load(op1));
+  }
+
   Stmt *pow(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
   }
@@ -1244,7 +1248,6 @@ class MakeDual : public IRVisitor {
 
   Stmt *dual(Stmt *stmt) {
     if (!needs_grad(stmt->ret_type)) {
-      std::cout << "do we hit here  " << stmt->type() << std::endl;
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1276,54 +1279,46 @@ class MakeDual : public IRVisitor {
     // do nothing.
   }
 
-  // void visit(UnaryOpStmt *stmt) override {
-  //   if (stmt->op_type == UnaryOpType::floor ||
-  //       stmt->op_type == UnaryOpType::ceil) {
-  //     // do nothing
-  //   } else if (stmt->op_type == UnaryOpType::neg) {
-  //     accumulate(stmt->operand, negate(adjoint(stmt)));
-  //   } else if (stmt->op_type == UnaryOpType::abs) {
-  //     accumulate(stmt->operand, mul(adjoint(stmt), sgn(stmt->operand)));
-  //   } else if (stmt->op_type == UnaryOpType::sin) {
-  //     accumulate(stmt->operand, mul(adjoint(stmt), cos(stmt->operand)));
-  //   } else if (stmt->op_type == UnaryOpType::cos) {
-  //     accumulate(stmt->operand, negate(mul(adjoint(stmt),
-  //     sin(stmt->operand))));
-  //   } else if (stmt->op_type == UnaryOpType::tan) {
-  //     TI_NOT_IMPLEMENTED
-  //   } else if (stmt->op_type == UnaryOpType::tanh) {
-  //     accumulate(stmt->operand,
-  //               mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
-  //   } else if (stmt->op_type == UnaryOpType::asin) {
-  //     accumulate(
-  //         stmt->operand,
-  //         mul(adjoint(stmt),
-  //             div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand))))));
-  //   } else if (stmt->op_type == UnaryOpType::acos) {
-  //     accumulate(stmt->operand,
-  //               mul(adjoint(stmt),
-  //                   negate(div(constant(1),
-  //                               sqrt(sub(constant(1),
-  //                               sqr(stmt->operand)))))));
-  //   } else if (stmt->op_type == UnaryOpType::exp) {
-  //     accumulate(stmt->operand, mul(adjoint(stmt), stmt));
-  //   } else if (stmt->op_type == UnaryOpType::log) {
-  //     accumulate(stmt->operand, div(adjoint(stmt), stmt->operand));
-  //   } else if (stmt->op_type == UnaryOpType::sqrt) {
-  //     accumulate(stmt->operand,
-  //               mul(adjoint(stmt), div(constant(0.5f),
-  //               sqrt(stmt->operand))));
-  //   } else if (stmt->op_type == UnaryOpType::cast_value) {
-  //     if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
-  //       accumulate(stmt->operand, adjoint(stmt));
-  //     }
-  //   } else if (stmt->op_type == UnaryOpType::logic_not) {
-  //     // do nothing
-  //   } else {
-  //     TI_P(unary_op_type_name(stmt->op_type));
-  //     TI_NOT_IMPLEMENTED
-  //   }
-  // }
+  void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::floor ||
+        stmt->op_type == UnaryOpType::ceil) {
+      // do nothing
+    } else if (stmt->op_type == UnaryOpType::neg) {
+      accumulate(stmt, negate(dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::abs) {
+      accumulate(stmt, sgn(stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sin) {
+      accumulate(stmt, cos(stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::cos) {
+      accumulate(stmt, negate(sin(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      TI_NOT_IMPLEMENTED
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt, sub(constant(1), sqr(stmt)));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(
+          stmt, div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand)))));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt, negate(div(constant(1),
+                                sqrt(sub(constant(1),
+                                sqr(stmt->operand))))));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt, exp(stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt, div(constant(1.0f), stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt, div(constant(0.5f), sqrt(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
+      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+        accumulate(stmt, dual(stmt->operand));
+      }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
+    } else {
+      TI_P(unary_op_type_name(stmt->op_type));
+      TI_NOT_IMPLEMENTED
+    }
+  }
 
   void visit(BinaryOpStmt *bin) override {
     if (bin->op_type == BinaryOpType::add) {
@@ -1336,40 +1331,41 @@ class MakeDual : public IRVisitor {
       // d (x * y) = y * dx + x * dy
       accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
       accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
-    }  // else if (bin->op_type == BinaryOpType::mod) {
+    } else if (bin->op_type == BinaryOpType::mod) {
        //  Do nothing
-    // } else if (bin->op_type == BinaryOpType::div) {
-    //   accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
-    //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
-    //                                   mul(bin->rhs, bin->rhs))));
-    // } else if (bin->op_type == BinaryOpType::atan2) {
-    //   auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
-    //   accumulate(bin->lhs, div(mul(adjoint(bin), bin->rhs), numerator));
-    //   accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
-    //   numerator)));
-    // } else if (bin->op_type == BinaryOpType::pow) {
-    //   // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-    //   auto common_coeff =
-    //       pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
-    //   accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
-    //   accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
-    //                                             mul(bin->lhs,
-    //                                             common_coeff))));
-    // } else if (bin->op_type == BinaryOpType::min ||
-    //           bin->op_type == BinaryOpType::max) {
-    //   auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs,
-    //   bin->rhs)
-    //                                               : cmp_lt(bin->rhs,
-    //                                               bin->lhs);
-    //   auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
-    //   accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
-    //   accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
-    // } else if (bin->op_type == BinaryOpType::floordiv) {
-    //   // do nothing
-    // } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
-    //   // do nothing
-    // } else {
-    else {
+    } 
+    // TODO:
+    else if (bin->op_type == BinaryOpType::div) {
+      accumulate(bin->lhs, div(dual(bin), bin->rhs));
+      accumulate(bin->rhs, negate(div(mul(dual(bin), bin->lhs),
+                                      mul(bin->rhs, bin->rhs))));
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
+      accumulate(bin->lhs, div(mul(dual(bin), bin->rhs), numerator));
+      accumulate(bin->rhs, negate(div(mul(dual(bin), bin->lhs),
+      numerator)));
+    } else if (bin->op_type == BinaryOpType::pow) {
+      // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
+      auto common_coeff =
+          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
+      accumulate(bin->lhs, mul(dual(bin), mul(bin->rhs, common_coeff)));
+      accumulate(bin->rhs, mul(dual(bin), mul(log(bin->lhs),
+                                                mul(bin->lhs,
+                                                common_coeff))));
+    } else if (bin->op_type == BinaryOpType::min ||
+              bin->op_type == BinaryOpType::max) {
+      auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs,
+      bin->rhs)
+                                                  : cmp_lt(bin->rhs,
+                                                  bin->lhs);
+      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+      accumulate(bin->lhs, sel(cmp, dual(bin), zero));
+      accumulate(bin->rhs, sel(cmp, zero, dual(bin)));
+    } else if (bin->op_type == BinaryOpType::floordiv) {
+      // do nothing
+    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+      // do nothing
+    } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
       TI_NOT_IMPLEMENTED
     }

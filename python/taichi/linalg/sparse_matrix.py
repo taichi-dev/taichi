@@ -184,12 +184,15 @@ class SparseMatrix:
         """
         if isinstance(ndarray, Ndarray):
             if ndarray.arr.nelement() % 3 != 0:
-                raise TaichiRuntimeError("The number of ndarray elements must have a length that is divisible by 3.")
+                raise TaichiRuntimeError(
+                    "The number of ndarray elements must have a length that is divisible by 3."
+                )
             get_runtime().prog.make_sparse_matrix_from_ndarray(
                 self.matrix, ndarray.arr)
         else:
             raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]')
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
+            )
 
 
 class SparseMatrixBuilder:

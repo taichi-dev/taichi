@@ -25,11 +25,13 @@ Push-Location $libsDir
 if (-not (Test-Path "taichi_llvm")) {
     WriteInfo("Download and extract LLVM")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
 }
 if (-not (Test-Path "taichi_clang")) {
     WriteInfo("Download and extract Clang")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
 

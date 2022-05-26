@@ -48,8 +48,7 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-TI_PATH=$(python3 -c "import taichi;print(taichi.__path__[0])" | tail -1)
-TI_LIB_DIR="$TI_PATH/_lib/runtime" ./build/taichi_cpp_tests
+python3 tests/run_tests.py --cpp
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then

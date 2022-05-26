@@ -37,7 +37,7 @@ DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
     uint64 *result_buffer) {
   // FIXME: Why is host R/W set to true?
   return opengl_runtime_->device->allocate_memory(
-      {alloc_size, /*host_write=*/true, /*host_read=*/true,
+      {alloc_size, /*host_write=*/false, /*host_read=*/true,
        /*export_sharing=*/false});
 }
 

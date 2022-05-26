@@ -381,6 +381,12 @@ void export_lang(py::module &m) {
                          "SparseMatrix only supports CPU for now.");
              return make_sparse_matrix(n, m, dtype, storage_format);
            })
+      .def("make_sparse_matrix_from_ndarray",
+           [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+                         "SparseMatrix only supports CPU for now.");
+             return make_sparse_matrix_from_ndarray(program, sm, ndarray);
+           })
       .def(
           "dump_dot",
           [](Program *program, std::optional<std::string> rankdir,

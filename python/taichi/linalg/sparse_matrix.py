@@ -1,6 +1,8 @@
 import numpy as np
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
+from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
 from taichi.types import annotations, f32
 
@@ -132,7 +134,9 @@ class SparseMatrix:
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
-        assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
+        raise TaichiRuntimeError(
+            f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy ndarray."
+        )
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
@@ -147,9 +151,48 @@ class SparseMatrix:
     def __repr__(self):
         return self.matrix.to_string()
 
+    @property
     def shape(self):
         """The shape of the sparse matrix."""
         return (self.n, self.m)
+
+    def build_from_ndarray(self, ndarray):
+        """Build the sparse matrix from a ndarray.
+
+        Args:
+            ndarray (Union[ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]): the ndarray to build the sparse matrix from.
+
+        Raises:
+            TaichiRuntimeError: If the input is not a ndarray or the length is not divisible by 3.
+
+        Example::
+            >>> N = 5
+            >>> triplets = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=10, layout=ti.Layout.AOS)
+            >>> @ti.kernel
+            >>> def fill(triplets: ti.types.ndarray()):
+            >>>     for i in range(N):
+            >>>        triplets[i] = ti.Vector([i, (i + 1) % N, i+1], dt=ti.f32)
+            >>> fill(triplets)
+            >>> A = ti.linalg.SparseMatrix(n=N, m=N, dtype=ti.f32)
+            >>> A.build_from_ndarray(triplets)
+            >>> print(A)
+            [0, 1, 0, 0, 0]
+            [0, 0, 2, 0, 0]
+            [0, 0, 0, 3, 0]
+            [0, 0, 0, 0, 4]
+            [5, 0, 0, 0, 0]
+        """
+        if isinstance(ndarray, Ndarray):
+            if ndarray.arr.nelement() % 3 != 0:
+                raise TaichiRuntimeError(
+                    "The number of ndarray elements must have a length that is divisible by 3."
+                )
+            get_runtime().prog.make_sparse_matrix_from_ndarray(
+                self.matrix, ndarray.arr)
+        else:
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
+            )
 
 
 class SparseMatrixBuilder:

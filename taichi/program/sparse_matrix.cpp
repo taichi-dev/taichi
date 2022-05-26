@@ -162,5 +162,34 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
              storage_format);
 }
 
+template <typename T>
+void build_ndarray_template(SparseMatrix &sm,
+                            intptr_t data_ptr,
+                            size_t num_triplets) {
+  using V = Eigen::Triplet<T>;
+  std::vector<V> triplets;
+  T *data = reinterpret_cast<T *>(data_ptr);
+  for (int i = 0; i < num_triplets; i++) {
+    triplets.push_back(
+        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
+  }
+  sm.build_triplets(static_cast<void *>(&triplets));
+}
+
+void make_sparse_matrix_from_ndarray(Program *prog,
+                                     SparseMatrix &sm,
+                                     const Ndarray &ndarray) {
+  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
+  auto data_ptr = prog->get_ndarray_data_ptr_as_int(&ndarray);
+  auto num_triplets = ndarray.get_nelement() / 3;
+  if (sdtype == "f32") {
+    build_ndarray_template<float32>(sm, data_ptr, num_triplets);
+  } else if (sdtype == "f64") {
+    build_ndarray_template<float64>(sm, data_ptr, num_triplets);
+  } else {
+    TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
+  }
+}
+
 }  // namespace lang
 }  // namespace taichi

@@ -115,7 +115,7 @@ Taichi implements its own implicit type casting rules for binary operations, whi
    - `u32 + i32 -> u32`
    - `u8 + i8 -> u8`
 
-When it comes to rule conflicts, the rule of the highest priority applies: 
+When it comes to rule conflicts, the rule of the highest priority applies:
   - `u8 + i16 -> i16` (when rule #2 conflicts with rule #3, rule #2 applies.)
   - `f16 + i32 -> f16` (when rule #1 conflicts with rule #2, rule #1 applies.)
 

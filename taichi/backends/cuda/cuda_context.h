@@ -30,6 +30,7 @@ class CUDAContext {
   CUDADriver &driver_;
   CUSPARSEDriver &cusparse_driver_;
   CUSOLVERDriver &cusolver_driver_;
+  cusparseHandle_t cusparse_handle_;
   bool debug_;
 
  public:

@@ -89,6 +89,19 @@ void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
 
 CUSPARSEDriver::CUSPARSEDriver() {
   load_lib("libcusparse.so", "cusparse.dll");
+
+  #define PER_CUSPARSE_FUNCTION(name, symbol_name, ...)  \
+          name.set(loader_->load_function(#symbol_name)); \
+          name.set_lock(&lock_);                          \
+          name.set_names(#name, #symbol_name);
+    PER_CUSPARSE_FUNCTION(cpCreate, cusparseCreate, cusparseHandle_t *);
+    PER_CUSPARSE_FUNCTION(cpDestroy, cusparseDestroy, cusparseHandle_t);
+    PER_CUSPARSE_FUNCTION(cpCreateCoo, cusparseCreateCoo, cusparseSpMatDescr_t*, int, int, int,void*, void*, void*,cusparseIndexType_t, cusparseIndexBase_t,cudaDataType );
+    PER_CUSPARSE_FUNCTION(cpCreateCsr, cusparseCreateCsr, cusparseSpMatDescr_t*, int, int, int,void*, void*, void*,cusparseIndexType_t, cusparseIndexType_t, cusparseIndexBase_t,cudaDataType );
+    PER_CUSPARSE_FUNCTION(cpDestroySpMat, cusparseDestroySpMat, cusparseSpMatDescr_t);
+    PER_CUSPARSE_FUNCTION(cpCreateDnVec, cusparseCreateDnVec, cusparseDnVecDescr_t*, int, void*, cudaDataType);
+    PER_CUSPARSE_FUNCTION(cpDestroyDnVec, cusparseDestroyDnVec, cusparseDnVecDescr_t);
+  #undef PER_CUSPARSE_FUNCTION
 }
 
 CUSPARSEDriver &CUSPARSEDriver::get_instance() {

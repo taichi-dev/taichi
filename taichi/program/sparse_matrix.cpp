@@ -1,4 +1,5 @@
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 #include <sstream>
 #include <string>
@@ -189,6 +190,23 @@ void make_sparse_matrix_from_ndarray(Program *prog,
   } else {
     TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
   }
+}
+
+void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
+                                     SparseMatrix &sm,
+                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values) {
+  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
+  int row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
+  int col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
+  int values_csr = prog->get_ndarray_data_ptr_as_int(&values);
+  int nnz = values.get_nelement() / 3;
+  int A_num_rows = sm.num_rows();
+  int A_num_cols = sm.num_cols();
+  cusparseSpMatDescr_t matA;
+  CUSPARSEDriver::get_instance().cpCreateCsr(&matA,     A_num_rows,     A_num_cols, nnz,
+                                      (void*)(size_t)row_csr, (void*)(size_t)col_csr, (void*)(size_t)values_csr,
+                                      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
 }
 
 }  // namespace lang

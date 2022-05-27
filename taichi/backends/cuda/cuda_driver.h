@@ -140,8 +140,21 @@ class CUSPARSEDriver : protected CUDADriverBase {
   // TODO: Add cusparse function APIs
   static CUSPARSEDriver &get_instance();
 
+  #define PER_CUSPARSE_FUNCTION(name, symbol_name, ...) \
+    CUDADriverFunction<__VA_ARGS__> name;
+    PER_CUSPARSE_FUNCTION(cpCreate, cusparseCreate, cusparseHandle_t *);
+    PER_CUSPARSE_FUNCTION(cpDestroy, cusparseDestroy, cusparseHandle_t);
+    PER_CUSPARSE_FUNCTION(cpCreateCoo, cusparseCreateCoo, cusparseSpMatDescr_t*, int, int, int,void*, void*, void*,cusparseIndexType_t, cusparseIndexBase_t,cudaDataType );
+    PER_CUSPARSE_FUNCTION(cpCreateCsr, cusparseCreateCsr, cusparseSpMatDescr_t*, int, int, int,void*, void*, void*,cusparseIndexType_t, cusparseIndexType_t, cusparseIndexBase_t,cudaDataType );
+    PER_CUSPARSE_FUNCTION(cpDestroySpMat, cusparseDestroySpMat, cusparseSpMatDescr_t);
+    PER_CUSPARSE_FUNCTION(cpCreateDnVec, cusparseCreateDnVec, cusparseDnVecDescr_t*, int, void*, cudaDataType);
+    PER_CUSPARSE_FUNCTION(cpDestroyDnVec, cusparseDestroyDnVec, cusparseDnVecDescr_t);
+  #undef PER_CUSPARSE_FUNCTION
+
+
  private:
   CUSPARSEDriver();
+  std::mutex lock_;
 };
 
 class CUSOLVERDriver : protected CUDADriverBase {

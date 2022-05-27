@@ -5,6 +5,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
+#include "taichi/backends/cuda/cuda_context.h"
 
 #include "Eigen/Sparse"
 
@@ -198,5 +199,8 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &ndarray);
+void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
+                                     SparseMatrix &sm,
+                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values);                        
 }  // namespace lang
 }  // namespace taichi

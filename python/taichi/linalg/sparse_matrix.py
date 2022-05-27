@@ -194,6 +194,14 @@ class SparseMatrix:
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
 
+    def build_from_ndarray_cusparse(self, row_csr, col_csr, value_csr):
+        if isinstance(row_csr, Ndarray) and isinstance(col_csr, Ndarray) and isinstance(value_csr, Ndarray):
+            get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
+                self.matrix, row_csr.arr, col_csr.arr, value_csr.arr)
+        else:
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vectorndarray, ti.Matrix.ndarray]'
+            )
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.

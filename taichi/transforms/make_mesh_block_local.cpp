@@ -441,7 +441,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
     TI_TRACE("available cache attributes bytes = {}", available_bytes);
     TI_TRACE("caches size = {}", caches->caches.size());
     std::vector<MeshBLSCache> priority_caches;
-    for (const auto [snode, cache] : caches->caches) {
+    for (const auto &[snode, cache] : caches->caches) {
       priority_caches.push_back(cache);
     }
     std::sort(priority_caches.begin(), priority_caches.end(),

@@ -170,9 +170,6 @@ When this is used, Taichi automatically picks the matching CPU backend.
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
-# Legacy API
-type_factory_ = _ti_core.get_type_factory_instance()
-
 extension = _ti_core.Extension
 """An instance of Taichi extension.
 
@@ -341,7 +338,7 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/lang/articles/layout.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()
@@ -476,7 +473,7 @@ def no_activate(*args):
 def block_local(*args):
     """Hints Taichi to cache the fields and to enable the BLS optimization.
 
-    Please visit https://docs.taichi-lang.org/lang/articles/performance
+    Please visit https://docs.taichi-lang.org/docs/performance
     for how BLS is used.
 
     Args:

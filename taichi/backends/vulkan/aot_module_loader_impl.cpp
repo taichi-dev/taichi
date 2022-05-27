@@ -4,14 +4,12 @@
 #include <type_traits>
 
 #include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
 namespace vulkan {
 namespace {
-
-using KernelHandle = VkRuntime::KernelHandle;
-
 class FieldImpl : public aot::Field {
  public:
   explicit FieldImpl(VkRuntime *runtime, const aot::CompiledFieldData &field)
@@ -21,21 +19,6 @@ class FieldImpl : public aot::Field {
  private:
   VkRuntime *const runtime_;
   aot::CompiledFieldData field_;
-};
-
-class KernelImpl : public aot::Kernel {
- public:
-  explicit KernelImpl(VkRuntime *runtime, KernelHandle handle)
-      : runtime_(runtime), handle_(handle) {
-  }
-
-  void launch(RuntimeContext *ctx) override {
-    runtime_->launch_kernel(handle_, ctx);
-  }
-
- private:
-  VkRuntime *const runtime_;
-  const KernelHandle handle_;
 };
 
 class AotModuleImpl : public aot::Module {
@@ -57,6 +40,21 @@ class AotModuleImpl : public aot::Module {
       }
       ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
     }
+
+    const std::string graph_path =
+        fmt::format("{}/graphs.tcb", params.module_path);
+    read_from_binary_file(graphs_, graph_path);
+  }
+
+  std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) override {
+    TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
+    std::vector<aot::CompiledDispatch> dispatches;
+    for (auto &dispatch : graphs_[name].dispatches) {
+      dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
+                            get_kernel(dispatch.kernel_name)});
+    }
+    aot::CompiledGraph graph{dispatches};
+    return std::make_unique<aot::CompiledGraph>(std::move(graph));
   }
 
   size_t get_root_size() const override {
@@ -109,8 +107,7 @@ class AotModuleImpl : public aot::Module {
       TI_DEBUG("Failed to load kernel {}", name);
       return nullptr;
     }
-    auto handle = runtime_->register_taichi_kernel(kparams);
-    return std::make_unique<KernelImpl>(runtime_, handle);
+    return std::make_unique<KernelImpl>(runtime_, std::move(kparams));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

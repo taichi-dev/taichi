@@ -551,6 +551,8 @@ class IRPrinter : public IRVisitor {
       }
       s += ")";
     }
+    s += fmt::format(" element_dim={} layout={}", stmt->element_dim,
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA");
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));
@@ -772,6 +774,10 @@ class IRPrinter : public IRVisitor {
       print(expr_to_string(s));
     }
     print(")");
+  }
+
+  void visit(ReferenceStmt *stmt) override {
+    print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
   }
 
  private:

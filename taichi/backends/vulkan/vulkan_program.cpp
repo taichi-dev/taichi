@@ -2,6 +2,7 @@
 
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 #include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/backends/vulkan/aot_module_loader_impl.h"
 
 #if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
 #include "GLFW/glfw3.h"
@@ -71,8 +72,8 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    VkRuntime *runtime,
                                    SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
-      std::move(run_codegen(kernel, runtime->get_ti_device(),
-                            snode_tree_mgr->get_compiled_structs())));
+      run_codegen(kernel, runtime->get_ti_device(),
+                  snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -151,9 +152,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       std::make_unique<vulkan::SNodeTreeManager>(vulkan_runtime_.get());
 }
 
-void VulkanProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void VulkanProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   if (vulkan_runtime_) {
     snode_tree_mgr_->materialize_snode_tree(tree);
   } else {
@@ -163,10 +162,8 @@ void VulkanProgramImpl::compile_snode_tree_types(
   }
 }
 
-void VulkanProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
+void VulkanProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                               uint64 *result_buffer) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
@@ -182,15 +179,22 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
 DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  auto &ndarray =
-      ref_ndarry_.emplace_back(get_compute_device()->allocate_memory_unique(
-          {alloc_size, /*host_write=*/false, /*host_read=*/false,
-           /*export_sharing=*/false}));
-  return *ndarray;
+  return get_compute_device()->allocate_memory(
+      {alloc_size, /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false});
+}
+
+std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
+    Kernel &kernel) {
+  spirv::lower(&kernel);
+  std::vector<CompiledSNodeStructs> compiled_structs;
+  VkRuntime::RegisterParams kparams =
+      run_codegen(&kernel, get_compute_device(), compiled_structs);
+  return std::make_unique<KernelImpl>(vulkan_runtime_.get(),
+                                      std::move(kparams));
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {
-  ref_ndarry_.clear();
   vulkan_runtime_.reset();
   embedded_device_.reset();
 }

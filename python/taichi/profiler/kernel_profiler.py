@@ -46,7 +46,7 @@ class KernelProfiler:
     This mode is only available for the CUDA backend with CUPTI toolkit, i.e. you need ``ti.init(kernel_profiler=True, arch=ti.cuda)``.
 
     Note:
-        For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/lang/articles/profiler#advanced-mode.
+        For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/docs/profiler#advanced-mode.
     """
     def __init__(self):
         self._profiling_mode = False
@@ -388,7 +388,7 @@ def print_kernel_profiler_info(mode='count'):
         Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
 
-        For advanced mode of `KernelProfiler`, please visit https://docs.taichi-lang.org/lang/articles/profiler#advanced-mode.
+        For advanced mode of `KernelProfiler`, please visit https://docs.taichi-lang.org/docs/profiler#advanced-mode.
     """
     get_default_kernel_profiler().print_info(mode)
 

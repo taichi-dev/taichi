@@ -472,7 +472,7 @@ class StructField(Field):
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
-        """Creates a ScalarField using a specific field member. Only used for quant.
+        """Creates a ScalarField using a specific field member.
 
         Args:
             key (str): Specified key of the field member.
@@ -505,6 +505,17 @@ class StructField(Field):
             v.from_torch(array_dict[k])
 
     @python_scope
+    def from_paddle(self, array_dict):
+        """Copies the data from a set of `paddle.Tensor` into this field.
+
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
+        for k, v in self._items:
+            v.from_paddle(array_dict[k])
+
+    @python_scope
     def to_numpy(self):
         """Converts the Struct field instance to a dictionary of NumPy arrays.
 
@@ -530,6 +541,22 @@ class StructField(Field):
                 PyTorch tensor.
         """
         return {k: v.to_torch(device=device) for k, v in self._items}
+
+    @python_scope
+    def to_paddle(self, place=None):
+        """Converts the Struct field instance to a dictionary of Paddle tensors.
+
+        The dictionary may be nested when converting nested structs.
+
+        Args:
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The
+                desired place of returned tensor.
+
+        Returns:
+            Dict[str, Union[paddle.Tensor, Dict]]: The result
+                Paddle tensor.
+        """
+        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __setitem__(self, indices, element):

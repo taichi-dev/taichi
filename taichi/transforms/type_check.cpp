@@ -268,6 +268,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void cast(Stmt *&val, DataType dt) {
+    if (val->ret_type == dt)
+      return;
+
     auto cast_stmt = insert_type_cast_after(val, val, dt);
     val = cast_stmt;
   }
@@ -299,6 +302,21 @@ class TypeCheck : public IRVisitor {
         cast(stmt->rhs, default_fp);
       }
       stmt->op_type = BinaryOpType::div;
+    }
+
+    // Some backends such as vulkan doesn't support fp64
+    // Always promote to fp32 unless neccessary
+    if (stmt->op_type == BinaryOpType::atan2) {
+      if (stmt->rhs->ret_type == PrimitiveType::f64 ||
+          stmt->lhs->ret_type == PrimitiveType::f64) {
+        stmt->ret_type = PrimitiveType::f64;
+        cast(stmt->rhs, PrimitiveType::f64);
+        cast(stmt->lhs, PrimitiveType::f64);
+      } else {
+        stmt->ret_type = PrimitiveType::f32;
+        cast(stmt->rhs, PrimitiveType::f32);
+        cast(stmt->lhs, PrimitiveType::f32);
+      }
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
@@ -533,6 +551,11 @@ class TypeCheck : public IRVisitor {
 
   void visit(BitStructStoreStmt *stmt) override {
     // do nothing
+  }
+
+  void visit(ReferenceStmt *stmt) override {
+    stmt->ret_type = stmt->var->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 };
 

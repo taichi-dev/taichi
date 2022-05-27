@@ -70,7 +70,7 @@ void reverse_segments(IRNode *root) {
         "Mixed usage of for-loops and statements without looping. \n"
         "Please split them into two kernels "
         "and check the documentation for more details:\n"
-        "https://docs.taichi-lang.org/lang/articles/"
+        "https://docs.taichi-lang.org/docs/"
         "differentiable_programming");
   }
   for (auto &sblock : statement_blocks) {

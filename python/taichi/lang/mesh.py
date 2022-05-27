@@ -7,11 +7,10 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
-                                _MatrixFieldElement)
+from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import i32, u16, u32
+from taichi.types import u16, u32
 from taichi.types.compound_types import CompoundType
 
 from taichi import lang
@@ -84,7 +83,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self._initialize_host_accessors()
         key = self.g2r_field[key]
         key = self._pad_key(key)
-        return _IntermediateMatrix(self.n, self.m, self._host_access(key))
+        return Matrix(self._host_access(key), is_ref=True)
 
 
 class MeshElementField:
@@ -172,12 +171,21 @@ class MeshElementField:
             v.from_torch(array_dict[k])
 
     @python_scope
+    def from_paddle(self, array_dict):
+        for k, v in self._items:
+            v.from_paddle(array_dict[k])
+
+    @python_scope
     def to_numpy(self):
         return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
         return {k: v.to_torch(device=device) for k, v in self._items}
+
+    @python_scope
+    def to_paddle(self, place=None):
+        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __len__(self):
@@ -342,7 +350,6 @@ class MeshInstance:
         rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
         if rel_type not in self.relation_set:
             meta = self.patcher.get_relation_meta(from_order, to_order)
-            print('new relation')
 
             def fun(arr, dtype):
                 field = impl.field(dtype=dtype, shape=arr.shape)
@@ -376,15 +383,15 @@ class MeshMetadata:
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
             self.element_fields[element_type]["owned"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["total"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=i32, shape=element["l2g_mapping"].shape[0])
+                dtype=u32, shape=element["l2g_mapping"].shape[0])
             self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=i32, shape=element["l2r_mapping"].shape[0])
+                dtype=u32, shape=element["l2r_mapping"].shape[0])
             self.element_fields[element_type]["g2r"] = impl.field(
-                dtype=i32, shape=element["g2r_mapping"].shape[0])
+                dtype=u32, shape=element["g2r_mapping"].shape[0])
 
         for relation in data["relations"]:
             from_order = relation["from_order"]

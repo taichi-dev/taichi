@@ -37,7 +37,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 <Tabs
   defaultValue="unix"
   values={[
-    {label: 'Linux/Unix/Mac', value: 'unix'},
+    {label: 'Linux/Mac', value: 'unix'},
     {label: 'Windows', value: 'windows'}
   ]}>
 
@@ -168,7 +168,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     {label: 'LLVM 10.0.0 for Linux', value: 'llvm_linux'},
     {label: 'LLVM 10.0.0 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
     {label: 'LLVM 10.0.0 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
-    {label: 'LLVM 10.0.0 for Windows MSVC 2019', value: 'llvm_windows'},
+    {label: 'LLVM 10.0.0 for Windows', value: 'llvm_windows'},
   ]}>
 
 <TabItem value="llvm_linux">
@@ -182,6 +182,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 </TabItem>
 <TabItem value="llvm_windows">
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip">LLVM 10.0.0 for Windows MSVC 2019</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
 
@@ -269,12 +270,13 @@ llvm-config --version  # You should get 10.0.0
 
 # LLVM 10.0.0 + MSVC 2019
 
-cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_CXX_STANDARD=17
+cmake --build . --target=INSTALL --config=Release
 ```
 
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
 2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
-3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
+3. If you use MSVC 2019+, ensure that you use **C++17** for the `INSTALL` project.
 4. When the build completes, add an environment variable `LLVM_DIR` with value `<PATH_TO_BUILD>/build/installed/lib/cmake/llvm`.
 
 </TabItem>

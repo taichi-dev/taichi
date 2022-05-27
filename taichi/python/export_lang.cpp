@@ -16,6 +16,7 @@
 #include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/graph_builder.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/program/ndarray.h"
@@ -27,6 +28,7 @@
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
+#include "taichi/aot/graph_data.h"
 #include "taichi/ir/mesh.h"
 
 #include "taichi/program/kernel_profiler.h"
@@ -366,16 +368,24 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype) {
+              DataType dtype, const std::string &storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype);
+             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
+                                        storage_format);
            })
       .def("create_sparse_matrix",
-           [](Program *program, int n, int m) {
+           [](Program *program, int n, int m, DataType dtype,
+              std::string storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
                          "SparseMatrix only supports CPU for now.");
-             return SparseMatrix(n, m);
+             return make_sparse_matrix(n, m, dtype, storage_format);
+           })
+      .def("make_sparse_matrix_from_ndarray",
+           [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+                         "SparseMatrix only supports CPU for now.");
+             return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
       .def(
           "dump_dot",
@@ -414,6 +424,31 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
            })
+      .def(
+          "create_ndarray",
+          [&](Program *program, const DataType &dt,
+              const std::vector<int> &shape) -> Ndarray * {
+            return program->create_ndarray(dt, shape);
+          },
+          py::return_value_policy::reference)
+      .def("get_ndarray_data_ptr_as_int",
+           [](Program *program, Ndarray *ndarray) {
+             return program->get_ndarray_data_ptr_as_int(ndarray);
+           })
+      .def("fill_float",
+           [](Program *program, Ndarray *ndarray, float val) {
+             program->fill_ndarray_fast(ndarray,
+                                        reinterpret_cast<uint32_t &>(val));
+           })
+      .def("fill_int",
+           [](Program *program, Ndarray *ndarray, int32_t val) {
+             program->fill_ndarray_fast(ndarray,
+                                        reinterpret_cast<int32_t &>(val));
+           })
+      .def("fill_uint",
+           [](Program *program, Ndarray *ndarray, uint32_t val) {
+             program->fill_ndarray_fast(ndarray, val);
+           })
       .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
         return Expr::make<GlobalVariableExpression>(
             snode, program->get_next_global_id());
@@ -423,6 +458,7 @@ void export_lang(py::module &m) {
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
+      .def("add_graph", &AotModuleBuilder::add_graph)
       .def("dump", &AotModuleBuilder::dump);
 
   py::class_<Axis>(m, "Axis").def(py::init<int>());
@@ -493,14 +529,9 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Ndarray>(m, "Ndarray")
-      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
-      .def("data_ptr", &Ndarray::get_data_ptr_as_int)
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
-      .def("fill_float", &Ndarray::fill_float)
-      .def("fill_int", &Ndarray::fill_int)
-      .def("fill_uint", &Ndarray::fill_uint)
       .def("read_int", &Ndarray::read_int)
       .def("read_uint", &Ndarray::read_uint)
       .def("read_float", &Ndarray::read_float)
@@ -508,6 +539,53 @@ void export_lang(py::module &m) {
       .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
+
+  py::enum_<aot::ArgKind>(m, "ArgKind")
+      .value("SCALAR", aot::ArgKind::kScalar)
+      .value("NDARRAY", aot::ArgKind::kNdarray)
+      .export_values();
+
+  py::class_<aot::Arg>(m, "Arg")
+      .def(py::init<aot::ArgKind, std::string, std::string, std::vector<int>>(),
+           py::arg("tag"), py::arg("name"), py::arg("dtype_name"),
+           py::arg("element_shape"))
+      .def_readonly("name", &aot::Arg::name)
+      .def_readonly("element_shape", &aot::Arg::element_shape);
+
+  py::class_<Node>(m, "Node");
+
+  py::class_<Sequential, Node>(m, "Sequential")
+      .def(py::init<GraphBuilder *>())
+      .def("append", &Sequential::append)
+      .def("dispatch", &Sequential::dispatch);
+
+  py::class_<GraphBuilder>(m, "GraphBuilder")
+      .def(py::init<>())
+      .def("dispatch", &GraphBuilder::dispatch)
+      .def("compile", &GraphBuilder::compile)
+      .def("create_sequential", &GraphBuilder::new_sequential_node,
+           py::return_value_policy::reference)
+      .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
+
+  py::class_<aot::CompiledGraph>(m, "CompiledGraph")
+      .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
+                     const py::dict &arg_ints, const py::dict &arg_floats) {
+        std::unordered_map<std::string, aot::IValue> args;
+        for (auto it : arg_ptrs) {
+          auto &val = it.second.cast<Ndarray &>();
+          args.insert(
+              {py::cast<std::string>(it.first), aot::IValue::create(val)});
+        }
+        for (auto it : arg_ints) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<int>(it.second))});
+        }
+        for (auto it : arg_floats) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<double>(it.second))});
+        }
+        self->run(args);
+      });
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
@@ -724,7 +802,9 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &>);
+        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+
+  m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
@@ -936,27 +1016,56 @@ void export_lang(py::module &m) {
       },
       py::return_value_policy::reference);
 
+  // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def(py::init<>())
+      .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
+           py::arg("dt") = PrimitiveType::f32)
+      .def(py::init<SparseMatrix &>())
       .def("to_string", &SparseMatrix::to_string)
-      .def(py::self + py::self, py::return_value_policy::reference_internal)
-      .def(py::self - py::self, py::return_value_policy::reference_internal)
-      .def(float() * py::self, py::return_value_policy::reference_internal)
-      .def(py::self * float(), py::return_value_policy::reference_internal)
-      .def(py::self * py::self, py::return_value_policy::reference_internal)
-      .def("matmul", &SparseMatrix::matmul,
-           py::return_value_policy::reference_internal)
-      .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
-      .def("transpose", &SparseMatrix::transpose,
-           py::return_value_policy::reference_internal)
-      .def("get_element", &SparseMatrix::get_element)
-      .def("set_element", &SparseMatrix::set_element)
+      .def("get_element", &SparseMatrix::get_element<float32>)
+      .def("set_element", &SparseMatrix::set_element<float32>)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
+
+#define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
+  using STORAGE##TYPE##EigenMatrix =                                         \
+      Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;                      \
+  py::class_<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>, SparseMatrix>(   \
+      m, #VTYPE #STORAGE "_EigenSparseMatrix")                               \
+      .def(py::init<int, int, DataType>())                                   \
+      .def(py::init<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> &>())      \
+      .def(py::init<const STORAGE##TYPE##EigenMatrix &>())                   \
+      .def(py::self += py::self)                                             \
+      .def(py::self + py::self)                                              \
+      .def(py::self -= py::self)                                             \
+      .def(py::self - py::self)                                              \
+      .def(py::self *= float##TYPE())                                        \
+      .def(py::self *float##TYPE())                                          \
+      .def(float##TYPE() * py::self)                                         \
+      .def(py::self *py::self)                                               \
+      .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
+      .def("transpose",                                                      \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
+      .def("get_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element<      \
+               float##TYPE>)                                                 \
+      .def("set_element",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element<      \
+               float##TYPE>)                                                 \
+      .def("mat_vec_mul",                                                    \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
+               Eigen::VectorX##VTYPE>);
+
+  MAKE_SPARSE_MATRIX(32, ColMajor, f);
+  MAKE_SPARSE_MATRIX(32, RowMajor, f);
+  MAKE_SPARSE_MATRIX(64, ColMajor, d);
+  MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

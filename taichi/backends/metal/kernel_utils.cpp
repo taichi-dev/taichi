@@ -31,11 +31,8 @@ bool BufferDescriptor::operator==(const BufferDescriptor &other) const {
   if (type_ != other.type_) {
     return false;
   }
-  if (type_ == Type::Root) {
-    return root_id_ == other.root_id_;
-  }
-  TI_ASSERT(root_id_ == -1);
-  return true;
+
+  return id_ == other.id_;
 }
 
 std::string BufferDescriptor::debug_string() const {
@@ -50,6 +47,9 @@ std::string BufferDescriptor::debug_string() const {
 #undef REGISTER_NAME
   if (type_ == Type::Root) {
     return fmt::format("Root_{}", root_id());
+  }
+  if (type_ == Type::Ndarray) {
+    return fmt::format("Ndarray_{}", ndarray_arg_id());
   }
   return m.find(type_)->second;
 }
@@ -88,7 +88,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
                metal_data_type_name(ma.dt));
     }
     ma.is_array = ka.is_array;
-    ma.stride = ma.is_array ? ka.size : dt_bytes;
+    ma.stride = ma.is_array ? 0 : dt_bytes;
     ma.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(ma);
   }
@@ -122,7 +122,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ret_attribs_vec_.push_back(mr);
   }
 
-  auto arrange_scalar_before_array = [&bytes = this->ctx_bytes_](auto *vec) {
+  auto arrange_scalar_before_array = [&bytes = this->ctx_bytes_](
+                                         auto *vec, bool allow_arr_mem_offset) {
     std::vector<int> scalar_indices;
     std::vector<int> array_indices;
     for (int i = 0; i < vec->size(); ++i) {
@@ -144,15 +145,21 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
-      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
-      attribs.offset_in_mem = bytes;
-      bytes += attribs.stride;
+      if (allow_arr_mem_offset) {
+        const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+        bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+        attribs.offset_in_mem = bytes;
+        bytes += attribs.stride;
+      } else {
+        // Array args are no longer embedded, they have dedicated MTLBuffers.
+        attribs.offset_in_mem = -1;
+      }
     }
   };
 
-  arrange_scalar_before_array(&arg_attribs_vec_);
-  arrange_scalar_before_array(&ret_attribs_vec_);
+  arrange_scalar_before_array(&arg_attribs_vec_,
+                              /*allow_arr_mem_offset=*/false);
+  arrange_scalar_before_array(&ret_attribs_vec_, /*allow_arr_mem_offset=*/true);
 }
 
 }  // namespace metal

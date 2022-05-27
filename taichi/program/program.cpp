@@ -204,10 +204,9 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
-    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_);
+    program_impl_->compile_snode_tree_types(tree.get());
   } else {
-    program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
-                                          result_buffer);
+    program_impl_->materialize_snode_tree(tree.get(), result_buffer);
   }
   if (id < snode_trees_.size()) {
     snode_trees_[id] = std::move(tree);
@@ -416,16 +415,17 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
         ExprGroup(Expr(Expr::make<ExternalTensorExpression>(
-            keys.dtype, keys.num_active_indices, keys.num_active_indices,
-            0))[indices]));
+            keys.dtype, keys.num_active_indices,
+            /*arg_id=*/keys.num_active_indices, 0))[indices]));
     this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(keys.dtype, true);
+  for (int i = 0; i < keys.num_active_indices; i++) {
+    ker.insert_arg(PrimitiveType::i32, /*is_array=*/false);
+  }
+  ker.insert_arg(keys.dtype, /*is_array=*/true);
   ker.insert_ret(keys.dtype);
   return ker;
 }
@@ -440,8 +440,8 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto expr = Expr(Expr::make<ExternalTensorExpression>(
-        keys.dtype, keys.num_active_indices, keys.num_active_indices + 1,
-        0))[indices];
+        keys.dtype, keys.num_active_indices,
+        /*arg_id=*/keys.num_active_indices + 1, 0))[indices];
     this->current_ast_builder()->insert_assignment(
         expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
                                             keys.dtype->get_compute_type()));
@@ -552,6 +552,38 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
             config.arch == Arch::vulkan || config.arch == Arch::opengl);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
+}
+
+Ndarray *Program::create_ndarray(const DataType type,
+                                 const std::vector<int> &shape) {
+  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape));
+  return ndarrays_.back().get();
+}
+
+intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
+  uint64_t *data_ptr{nullptr};
+#ifdef TI_WITH_LLVM
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+    // For the LLVM backends, device allocation is a physical pointer.
+    data_ptr = get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
+        ndarray->ndarray_alloc_);
+  }
+#else
+  TI_ERROR("Llvm disabled");
+#endif
+
+  return reinterpret_cast<intptr_t>(data_ptr);
+}
+
+void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
+// This is a temporary solution to bypass device api.
+// Should be moved to CommandList once available in CUDA.
+#ifdef TI_WITH_LLVM
+  get_llvm_program_impl()->fill_ndarray(ndarray->ndarray_alloc_,
+                                        ndarray->get_nelement(), val);
+#else
+  TI_ERROR("Not supported");
+#endif
 }
 
 Program::~Program() {

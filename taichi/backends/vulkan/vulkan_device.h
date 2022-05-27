@@ -176,7 +176,11 @@ class VulkanResourceBinder : public ResourceBinder {
       for (const auto &pair : set.bindings) {
         size_t binding_hash = 0;
         uint32_t *u32_ptr = (uint32_t *)&pair.second;
-        for (int i = 0; i < sizeof(Set) / sizeof(uint32_t); i++) {
+        static_assert(
+            sizeof(VulkanResourceBinder::Binding) % sizeof(uint32_t) == 0,
+            "sizeof(VulkanResourceBinder::Binding) is not a multiple of 4");
+        size_t n = sizeof(VulkanResourceBinder::Binding) / sizeof(uint32_t);
+        for (int i = 0; i < n; i++) {
           binding_hash = binding_hash ^ u32_ptr[i];
           binding_hash = (binding_hash << 7) | (binding_hash >> (64 - 7));
         }
@@ -604,6 +608,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
+
+  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer);
+
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
                                    VkFormat format);
@@ -642,6 +649,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   // Memory allocation
   struct AllocationInternal {
+    bool external{false};
     VmaAllocationInfo alloc_info;
     vkapi::IVkBuffer buffer;
     void *mapped{nullptr};

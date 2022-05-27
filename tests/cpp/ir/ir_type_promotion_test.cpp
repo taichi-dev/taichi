@@ -13,7 +13,7 @@ TEST(IRTypePromotionTest, ShiftOp) {
 
   // (u8)x << (i32)1 -> (u8)res
   auto *lhs = builder.create_arg_load(0, get_data_type<uint8>(), false);
-  auto *res = builder.create_shl(lhs, builder.get_int32(1));
+  builder.create_shl(lhs, builder.get_int32(1));
   auto ir = builder.extract_ir();
 
   ASSERT_TRUE(ir->is<Block>());

@@ -455,7 +455,7 @@ void VulkanDeviceCreator::create_logical_device() {
 
   bool has_swapchain = false;
 
-  bool portability_subset_enabled = false;
+  [[maybe_unused]] bool portability_subset_enabled = false;
 
   for (auto &ext : extension_properties) {
     TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,

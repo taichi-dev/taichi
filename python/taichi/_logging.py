@@ -36,7 +36,7 @@ def set_logging_level(level):
     also be effective. For example if `level` is set to 'warn', then the levels below
     it, which are 'error' and 'critical' in this case, will also be effective.
 
-    See also https://docs.taichi-lang.org/lang/articles/utilities#logging.
+    See also https://docs.taichi-lang.org/docs/utilities#logging.
 
     Args:
         level (str): Logging level.
@@ -53,7 +53,7 @@ def is_logging_effective(level):
     All levels below current level will be effective.
     The default level is 'info'.
 
-    See also https://docs.taichi-lang.org/lang/articles/utilities#logging.
+    See also https://docs.taichi-lang.org/docs/utilities#logging.
 
     Args:
         level (str): The string represents logging level. \

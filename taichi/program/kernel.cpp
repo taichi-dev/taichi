@@ -64,6 +64,10 @@ void Kernel::compile() {
   compiled_ = program->compile(*this);
 }
 
+std::unique_ptr<aot::Kernel> Kernel::compile_to_aot_kernel() {
+  return program->make_aot_kernel(*this);
+}
+
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
   TI_ASSERT(supports_lowering(arch));
@@ -238,9 +242,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
-  ctx_->set_device_allocation(arg_id, is_device_allocation);
+  ctx_->set_array_runtime_size(arg_id, size);
+  ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
@@ -248,7 +252,8 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     uintptr_t ptr,
     uint64 size,
     const std::vector<int64> &shape) {
-  this->set_arg_external_array(arg_id, ptr, size, false);
+  this->set_arg_external_array(arg_id, ptr, size,
+                               /*is_device_allocation=*/false);
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   for (uint64 i = 0; i < shape.size(); ++i) {
@@ -260,7 +265,8 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                                    const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
   uint64 arr_size = arr.get_element_size() * arr.get_nelement();
-  this->set_arg_external_array(arg_id, ptr, arr_size, true);
+  this->set_arg_external_array(arg_id, ptr, arr_size,
+                               /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   for (uint64 i = 0; i < arr.shape.size(); ++i) {

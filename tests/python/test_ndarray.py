@@ -18,7 +18,9 @@ data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 ndarray_shapes = [(), 8, (6, 12)]
 vector_dims = [3]
 matrix_dims = [(1, 2), (2, 3)]
-supported_archs_taichi_ndarray = [ti.cpu, ti.cuda, ti.opengl, ti.vulkan]
+supported_archs_taichi_ndarray = [
+    ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal
+]
 
 
 def _test_scalar_ndarray(dtype, shape):
@@ -84,8 +86,11 @@ def test_matrix_ndarray(n, m, dtype, shape):
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_fp_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray, default_fp=dtype)
+    arch = ti.lang.impl.current_cfg().arch
+    ti.reset()
+    ti.init(arch=arch, default_fp=dtype)
 
     x = ti.Vector.ndarray(2, float, ())
 
@@ -93,8 +98,11 @@ def test_default_fp_ndarray(dtype):
 
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_ip_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray, default_ip=dtype)
+    arch = ti.lang.impl.current_cfg().arch
+    ti.reset()
+    ti.init(arch=arch, default_ip=dtype)
 
     x = ti.Vector.ndarray(2, int, ())
 
@@ -254,8 +262,8 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
+@test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
 def test_ndarray_cuda_caching_allocator():
-    ti.init(arch=ti.cuda, ndarray_use_cached_allocator=True)
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)

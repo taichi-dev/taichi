@@ -8,7 +8,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype
-from taichi.types.primitive_types import u64
+from taichi.types.primitive_types import RefType, u64
 
 
 class KernelArgument:
@@ -47,9 +47,13 @@ class SparseMatrixProxy:
 
 
 def decl_scalar_arg(dtype):
+    is_ref = False
+    if isinstance(dtype, RefType):
+        is_ref = True
+        dtype = dtype.tp
     dtype = cook_dtype(dtype)
     arg_id = impl.get_runtime().prog.decl_arg(dtype, False)
-    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype))
+    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
 def decl_matrix_arg(matrixtype):
@@ -63,8 +67,8 @@ def decl_sparse_matrix(dtype):
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
     arg_id = impl.get_runtime().prog.decl_arg(ptr_type, False)
-    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type),
-                             value_type)
+    return SparseMatrixProxy(
+        _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
 def decl_ndarray_arg(dtype, dim, element_shape, layout):

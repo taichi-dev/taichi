@@ -1064,6 +1064,14 @@ int32 cuda_any_sync_i32(u32 mask, int32 predicate) {
   return (int32)cuda_any_sync(mask, (bool)predicate);
 }
 
+bool cuda_uni_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_uni_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_uni_sync(mask, (bool)predicate);
+}
+
 int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
@@ -1076,11 +1084,23 @@ int32 cuda_ballot_sync_i32(u32 mask, int32 predicate) {
   return cuda_ballot_sync(mask, (bool)predicate);
 }
 
-i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+uint32 cuda_match_any_sync_i32(u32 mask, i32 value) {
   return 0;
 }
 
-i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+u32 cuda_match_all_sync_i32(u32 mask, i32 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.all.sync.b32  %0, %1, %2;"
+               : "=r"(ret)
+               : "r"(value), "r"(mask));
+  return ret;
+#else
+  return 0;
+#endif
+}
+
+uint32 cuda_match_any_sync_i64(u32 mask, i64 value) {
 #if ARCH_cuda
   u32 ret;
   asm volatile("match.any.sync.b64  %0, %1, %2;"

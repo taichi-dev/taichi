@@ -2,7 +2,7 @@ class Template:
     """Type annotation for template kernel parameter.
     Useful for passing parameters to kernels by reference.
 
-    See also https://docs.taichi-lang.org/lang/articles/meta.
+    See also https://docs.taichi-lang.org/docs/meta.
 
     Args:
         tensor (Any): unused

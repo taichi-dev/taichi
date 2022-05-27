@@ -74,7 +74,7 @@ while gui.running:
 ```
 
 :::tip
-With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](/lang/articles/advanced/layout.md) for more information.
+With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](../advanced/layout.md) for more information.
 :::
 
 :::caution WARNING

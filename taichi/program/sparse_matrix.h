@@ -201,6 +201,10 @@ void make_sparse_matrix_from_ndarray(Program *prog,
                                      const Ndarray &ndarray);
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                      SparseMatrix &sm,
-                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values);                        
+                                     const Ndarray &row_offsets,
+                                     const Ndarray &col_indices,
+                                     const Ndarray &values,
+                                     const Ndarray &x,
+                                     Ndarray &y);                      
 }  // namespace lang
 }  // namespace taichi

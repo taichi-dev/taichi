@@ -388,8 +388,8 @@ void export_lang(py::module &m) {
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
       .def("make_sparse_matrix_from_ndarray_cusparse",
-          [](Program *program, SparseMatrix &sm, const Ndarray &row_csr, const Ndarray &col_csr, const Ndarray &val_csr) {
-             return make_sparse_matrix_from_ndarray_cusparse(program, sm, row_csr, col_csr, val_csr);
+          [](Program *program, SparseMatrix &sm, const Ndarray &row_csr, const Ndarray &col_csr, const Ndarray &val_csr, const Ndarray &x, Ndarray &y) {
+             return make_sparse_matrix_from_ndarray_cusparse(program, sm, row_csr, col_csr, val_csr, x, y);
            }
       )
       .def(

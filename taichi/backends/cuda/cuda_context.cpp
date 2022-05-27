@@ -53,9 +53,6 @@ CUDAContext::CUDAContext()
   mcpu_ = fmt::format("sm_{}", compute_capability_);
 
   TI_TRACE("Emitting CUDA code for {}", mcpu_);
-
-  // Initialize the CUSPARSE library
-  cusparse_driver_.cpCreate(&cusparse_handle_);
 }
 
 std::size_t CUDAContext::get_total_memory() {
@@ -133,7 +130,7 @@ CUDAContext::~CUDAContext() {
       CUDADriver::get_instance().cuModuleUnload(cudaModule);
   CUDADriver::get_instance().cuCtxDestroy(context);
   */
- cusparse_driver_.cpDestroy(cusparse_handle_);
+//  cusparse_driver_.cpDestroy(cusparse_handle_);
 }
 
 CUDAContext &CUDAContext::get_instance() {

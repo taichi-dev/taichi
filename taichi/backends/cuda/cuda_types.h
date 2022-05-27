@@ -488,3 +488,17 @@ typedef enum cudaDataType_t
         CUDA_R_64U  = 26, /* real as a unsigned 64-bit int */
         CUDA_C_64U  = 27  /* complex as a pair of unsigned 64-bit int numbers */
 } cudaDataType;
+
+typedef enum {
+    CUSPARSE_OPERATION_NON_TRANSPOSE       = 0,
+    CUSPARSE_OPERATION_TRANSPOSE           = 1,
+    CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE = 2
+} cusparseOperation_t;
+
+typedef enum {
+    CUSPARSE_SPMV_ALG_DEFAULT = 0,
+    CUSPARSE_SPMV_COO_ALG1    = 1,
+    CUSPARSE_SPMV_CSR_ALG1    = 2,
+    CUSPARSE_SPMV_CSR_ALG2    = 3,
+    CUSPARSE_SPMV_COO_ALG2    = 4
+} cusparseSpMVAlg_t;

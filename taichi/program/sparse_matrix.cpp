@@ -194,12 +194,18 @@ void make_sparse_matrix_from_ndarray(Program *prog,
 
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                      SparseMatrix &sm,
-                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values) {
-  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
-  int row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
+                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values, const Ndarray &x, Ndarray &y) {
+  size_t row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
+  int* h_row_csr = (int*)malloc(sizeof(int) * 5);
+  CUDADriver::get_instance().memcpy_device_to_host((void*)h_row_csr, (void*)row_csr, sizeof(int) * 5);  
+  for(auto i =0; i<5; i++)
+      printf("row_csr[%d] = %d \t",i, h_row_csr[i]);
+  printf("\n");
+  free(h_row_csr);
+
   int col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
   int values_csr = prog->get_ndarray_data_ptr_as_int(&values);
-  int nnz = values.get_nelement() / 3;
+  int nnz = values.get_nelement();
   int A_num_rows = sm.num_rows();
   int A_num_cols = sm.num_cols();
   cusparseSpMatDescr_t matA;
@@ -207,6 +213,42 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                       (void*)(size_t)row_csr, (void*)(size_t)col_csr, (void*)(size_t)values_csr,
                                       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                                       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+ 
+  cusparseDnVecDescr_t vecX, vecY;
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, A_num_cols,(void*) dX, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, A_num_cols,(void*) dY, CUDA_R_32F);
+
+  // auto handle = CUDAContext::get_instance().get_cusparse_handle();
+  cusparseHandle_t cusparse_handle;
+  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
+  float alpha = 1.0f, beta = 0.0f;
+  size_t bufferSize = 0;
+  CUSPARSEDriver::get_instance().cpSpMV_bufferSize(cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+                                 CUSPARSE_SPMV_CSR_ALG1, &bufferSize);
+  printf("bufferSize: %lu\n", bufferSize);   
+
+  void* dBuffer = NULL;
+  // CUDADriver::get_instance().stream_synchronize(nullptr);
+  CUDADriver::get_instance().malloc(&dBuffer, bufferSize);
+  CUSPARSEDriver::get_instance().cpSpMV( cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+                                 CUSPARSE_SPMV_CSR_ALG1, dBuffer);
+
+  // float32* h_y = (float32*)malloc(sizeof(float32) * A_num_rows);
+  // CUDADriver::get_instance().memcpy_device_to_host((void*)h_y, (void*)dY, sizeof(float32) * A_num_rows);  
+  // for(auto i =0; i<A_num_rows; i++)
+  //     printf("y[%d] = %f",i, h_y[i]);
+  // printf("\nhello world\n"); 
+  // free(h_y);
+                          
+  // CUSPARSEDriver::get_instance().cpDestroySpMat(matA);
+  // CUSPARSEDriver::get_instance().cpDestroyDnVec(vecX);
+  // CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);      
+  // CUSPARSEDriver::get_instance().cpDestroy(handle);                      
+  // CUDADriver::get_instance().mem_free(dBuffer);
 }
 
 }  // namespace lang

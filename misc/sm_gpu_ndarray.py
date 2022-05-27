@@ -1,26 +1,33 @@
 import taichi as ti
 import numpy as np
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cuda, gdb_trigger=True)
+
+idx_dt = ti.int32
+val_dt = ti.f32
+row_csr = ti.ndarray(shape=5, dtype=idx_dt)  
+col_csr = ti.ndarray(shape=9, dtype=idx_dt)  
+value_csr = ti.ndarray(shape=9, dtype=val_dt)
+X = ti.ndarray(shape=4, dtype=val_dt)  
+Y = ti.ndarray(shape=4, dtype=val_dt)  
+Y_result = ti.ndarray(shape=4, dtype=val_dt)
 
 
-row_csr = ti.ndarray(shape=5, dtype=ti.f32)  
-col_csr = ti.ndarray(shape=9, dtype=ti.f32)  
-value_csr = ti.ndarray(shape=9, dtype=ti.f32)
-
-h_row_csr = np.asarray([ 0, 3, 4, 7, 9])
-h_col_csr = np.asarray([0, 2, 3, 1, 0, 2, 3, 1, 3 ])
-h_value_csr = np.asarray([1.0, 2.0, 3.0, 4.0, 5.0,6.0, 7.0, 8.0, 9.0])
+h_row_csr = np.asarray([ 0, 3, 4, 7, 9], dtype=np.int32)
+h_col_csr = np.asarray([0, 2, 3, 1, 0, 2, 3, 1, 3 ], dtype=np.int32)
+h_value_csr = np.asarray([1.0, 2.0, 3.0, 4.0, 5.0,6.0, 7.0, 8.0, 9.0], dtype=np.float32)
+h_X = np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np.float32) 
+h_Y_result = np.asarray([19.0, 8.0, 51.0, 52.0], dtype=np.float32)
 
 
-for i in range(5):
-    row_csr[i] = h_row_csr[i]
-for i in range(9):
-    col_csr[i] = h_col_csr[i]
-for i in range(9):
-    value_csr[i] = h_value_csr[i]
-
-
+row_csr.from_numpy(h_row_csr)
+col_csr.from_numpy(h_col_csr)
+value_csr.from_numpy(h_value_csr)
+X.from_numpy(h_X)
+Y.fill(0.0)
 
 A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
 
-A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
+A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr, X, Y)
+
+for i in range(4):
+    print(f"{Y[i]} == {h_Y_result[i]} :  {Y[i] == h_Y_result[i]}")

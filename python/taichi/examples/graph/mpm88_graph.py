@@ -113,12 +113,12 @@ if __name__ == "__main__":
     if not args.baseline:
         print('running in graph mode')
         # Build graph
-        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'x', 'f32', element_shape=(2, ))
-        sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'v', 'f32', element_shape=(2, ))
-        sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'C', 'f32', element_shape=(2, 2))
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', 'f32', element_shape=())
-        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_v', 'f32', element_shape=(2, ))
-        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_m', 'f32', element_shape=())
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'x', ti.f32, element_shape=(2, ))
+        sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'v', ti.f32, element_shape=(2, ))
+        sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'C', ti.f32, element_shape=(2, 2))
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32)
+        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_v', ti.f32, element_shape=(2, ))
+        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_m', ti.f32)
         g_init = ti.graph.Graph()
         g_init.dispatch(init_particles, sym_x, sym_v, sym_J)
 

@@ -1,3 +1,6 @@
+from taichi.types.primitive_types import f32
+
+
 class NdarrayType:
     """Type annotation for arbitrary arrays, including external arrays (numpy ndarrays and torch tensors) and Taichi ndarrays.
 
@@ -11,6 +14,7 @@ class NdarrayType:
         layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
     def __init__(self,
+                 dtype=f32,
                  element_dim=None,
                  element_shape=None,
                  field_dim=None,
@@ -24,6 +28,7 @@ class NdarrayType:
             raise ValueError(
                 f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
+        self.dtype = dtype
         self.element_shape = element_shape
         self.element_dim = len(
             element_shape) if element_shape is not None else element_dim

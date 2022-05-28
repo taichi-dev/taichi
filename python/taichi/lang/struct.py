@@ -669,7 +669,7 @@ class StructType(CompoundType):
 
 
 def struct_class(cls):
-    """ Converts a class with field annotations into a struct type for use as a taichi field
+    """Converts a class with field annotations and methods into a taichi struct type.
 
     This will return a normal custom struct type, with the functions added to it.
     Struct fields can be generated in the normal way from the struct type.

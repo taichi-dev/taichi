@@ -204,7 +204,7 @@ def test_struct_type():
         assert x[i].line.length == 5.0
 
 
-@test_utils.test()
+@test_utils.test(exclude=ti.cc)
 def test_struct_class():
     # example struct class type
     vec3f = ti.types.vector(3, float)

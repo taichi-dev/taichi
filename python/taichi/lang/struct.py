@@ -22,11 +22,9 @@ class Struct(TaichiOperations):
 
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
-            keys and values for struct members.
-
-        entries can optionally include a dictionary of functions with the key
-        "__struct_methods" which will be attached to the struct
-        for executing on the struct data.
+            keys and values for struct members. Entries can optionally
+            include a dictionary of functions with the key '__struct_methods' 
+            which will be attached to the struct for executing on the struct data.
 
     Returns:
         An instance of this struct.
@@ -250,7 +248,8 @@ class Struct(TaichiOperations):
         """Converts the Struct to a dictionary.
 
         Args:
-
+            include_methods (bool): Whether any struct methods should be included
+                in the result dictionary under the key '__struct_methods'.
         Returns:
             Dict: The result dictionary.
         """
@@ -278,6 +277,9 @@ class Struct(TaichiOperations):
 
         Args:
             members (dict): a dict, each item is like `name: type`.
+            methods (dict): a dict of methods that should be included with
+                the field.  Each struct item of the field will have the
+                methods as instance functions.
             shape (Tuple[int]): width and height of the field.
             offset (Tuple[int]): offset of the indices of the created field.
                 For example if `offset=(-10, -10)` the indices of the field
@@ -361,6 +363,8 @@ class _IntermediateStruct(Struct):
 
     Args:
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
+            Any methods included under the key '__struct_methods' will be applied to each
+            struct instance.
     """
     def __init__(self, entries):
         assert isinstance(entries, dict)
@@ -378,6 +382,8 @@ class StructField(Field):
 
     Args:
         field_dict (Dict[str, Field]): Struct field members.
+        struct_methods (Dict[str, callable]): Dictionary of functions to apply
+            to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
     def __init__(self, field_dict, struct_methods, name=None):
@@ -662,36 +668,36 @@ class StructType(CompoundType):
 
 
 def struct_class(cls):
-    ''' Converts a class with field annotations into a struct type for use as a taichi field
-        ex:
+    """ Converts a class with field annotations into a struct type for use as a taichi field
 
-        @ti.stuct_class
-        class Sphere:
-            center: vec3
-            radius: ti.f32
+    This will return a normal custom struct type, with the functions added to it.
+    Struct fields can be generated in the normal way from the struct type.
+    Functions in the class can be run on the struct instance.
 
-            @ti.func
-            def area(self):
-                return 4 * 3.14 * self.radius * self.radius
+    This class decorator inspects the class for annotations and methods and
+        1.  Sets the annotations as fields for the struct
+        2.  Attaches the methods to the struct type
 
-        This will return a normal custom struct type, with the functions added to it.
-        Struct fields can be generated in the normal way from the struct type.
-        Functions in the class can be run on the struct instance.
+    Example::
 
-        my_spheres = Sphere.field(shape=(n,))
-        my_sphere[2].area()
+        >>> @ti.stuct_class
+        >>> class Sphere:
+        >>>     center: vec3
+        >>>     radius: ti.f32
+        >>>
+        >>>     @ti.func
+        >>>     def area(self):
+        >>>         return 4 * 3.14 * self.radius * self.radius
+        >>> my_spheres = Sphere.field(shape=(n,))
+        >>> my_sphere[2].area()
 
-        This class decorator inspects the class for annotations and methods and
-            1.  Sets the annotations as fields for the struct
-            2.  Attaches the methods to the struct type
+    Args:
+        cls (Class): the class with annotations and methods to convert to a struct
 
-        Args:
-            cls (Class): the class with annotations and methods to convert
-
-        Returns:
-            A custom taichi struct with the annotations as fields
+    Returns:
+        A taichi struct with the annotations as fields
             and methods from the class attached.
-     '''
+    """
     # save the annotaion fields for the struct
     fields = cls.__annotations__
     # get the class methods to be attached to the struct types

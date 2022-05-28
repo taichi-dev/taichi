@@ -495,7 +495,7 @@ void export_lang(py::module &m) {
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
-      .def("has_grad", &SNode::has_grad)
+      .def("has_adjoint", &SNode::has_adjoint)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
@@ -642,7 +642,7 @@ void export_lang(py::module &m) {
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
-      .def("set_grad", &Expr::set_grad)
+      .def("set_adjoint", &Expr::set_adjoint)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)

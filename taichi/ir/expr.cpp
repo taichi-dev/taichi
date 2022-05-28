@@ -54,7 +54,7 @@ Expr Expr::operator!() {
   return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
 }
 
-void Expr::set_grad(const Expr &o) {
+void Expr::set_adjoint(const Expr &o) {
   this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
 

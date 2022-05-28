@@ -304,13 +304,13 @@ bool SNode::is_primal() const {
   return grad_info->is_primal();
 }
 
-bool SNode::has_grad() const {
-  return is_primal() && (grad_info->grad_snode() != nullptr);
+bool SNode::has_adjoint() const {
+  return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }
 
-SNode *SNode::get_grad() const {
-  TI_ASSERT(has_grad());
-  return grad_info->grad_snode();
+SNode *SNode::get_adjoint() const {
+  TI_ASSERT(has_adjoint());
+  return grad_info->adjoint_snode();
 }
 
 bool SNode::has_dual() const {
@@ -318,7 +318,7 @@ bool SNode::has_dual() const {
 }
 
 SNode *SNode::get_dual() const {
-  TI_ASSERT(has_grad());
+  TI_ASSERT(has_dual());
   return grad_info->dual_snode();
 }
 

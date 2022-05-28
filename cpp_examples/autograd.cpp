@@ -55,7 +55,7 @@ void autograd() {
       bool is_primal() const override {
         return true;
       }
-      SNode *grad_snode() const override {
+      SNode *adjoint_snode() const override {
         return snode;
       }
       SNode *dual_snode() const override {
@@ -69,7 +69,7 @@ void autograd() {
       bool is_primal() const override {
         return false;
       }
-      SNode *grad_snode() const override {
+      SNode *adjoint_snode() const override {
         return nullptr;
       }
       SNode *dual_snode() const override {
@@ -82,8 +82,8 @@ void autograd() {
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
         &root->dense(Axis(0), n, false).insert_children(SNodeType::place));
-    snode->get_grad()->dt = PrimitiveType::f32;
-    snode->get_grad()->grad_info = std::make_unique<GradInfoAdjoint>();
+    snode->get_adjoint()->dt = PrimitiveType::f32;
+    snode->get_adjoint()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
@@ -106,11 +106,11 @@ void autograd() {
                                   builder.create_add(i, one));
       builder.create_global_store(builder.create_global_ptr(c, {i}), zero);
 
-      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}),
+      builder.create_global_store(builder.create_global_ptr(a->get_adjoint(), {i}),
                                   zero);
-      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}),
+      builder.create_global_store(builder.create_global_ptr(b->get_adjoint(), {i}),
                                   zero);
-      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}),
+      builder.create_global_store(builder.create_global_ptr(c->get_adjoint(), {i}),
                                   one);
     }
 
@@ -147,13 +147,13 @@ void autograd() {
       auto *ext_a = builder.create_external_ptr(
           builder.create_arg_load(0, PrimitiveType::f32, true), {i});
       auto *a_grad_i = builder.create_global_load(
-          builder.create_global_ptr(a->get_grad(), {i}));
+          builder.create_global_ptr(a->get_adjoint(), {i}));
       builder.create_global_store(ext_a, a_grad_i);
 
       auto *ext_b = builder.create_external_ptr(
           builder.create_arg_load(1, PrimitiveType::f32, true), {i});
       auto *b_grad_i = builder.create_global_load(
-          builder.create_global_ptr(b->get_grad(), {i}));
+          builder.create_global_ptr(b->get_adjoint(), {i}));
       builder.create_global_store(ext_b, b_grad_i);
 
       auto *ext_c = builder.create_external_ptr(

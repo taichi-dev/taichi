@@ -93,7 +93,7 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
-    virtual SNode *grad_snode() const = 0;
+    virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
 
     template <typename T>
@@ -287,9 +287,9 @@ class SNode {
 
   bool is_scalar() const;
 
-  bool has_grad() const;
+  bool has_adjoint() const;
 
-  SNode *get_grad() const;
+  SNode *get_adjoint() const;
 
   bool has_dual() const;
 

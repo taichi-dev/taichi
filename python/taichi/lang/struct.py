@@ -689,7 +689,8 @@ def struct_class(cls):
         >>>     @ti.func
         >>>     def area(self):
         >>>         return 4 * 3.14 * self.radius * self.radius
-        >>> my_spheres = Sphere.field(shape=(n,))
+        >>>
+        >>> my_spheres = Sphere.field(shape=(n, ))
         >>> my_sphere[2].area()
 
     Args:

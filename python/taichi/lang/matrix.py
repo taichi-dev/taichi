@@ -1118,8 +1118,9 @@ class Matrix(TaichiOperations):
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
         entries, entries_adjoint, entries_dual = zip(*entries)
-        entries, entries_adjoint, entries_dual = MatrixField(entries, n, m), MatrixField(
-            entries_adjoint, n, m), MatrixField(entries_dual, n, m)
+        entries, entries_adjoint, entries_dual = MatrixField(
+            entries, n, m), MatrixField(entries_adjoint, n,
+                                        m), MatrixField(entries_dual, n, m)
         entries._set_adjoint(entries_adjoint)
         entries._set_dual(entries_dual)
         impl.get_runtime().matrix_fields.append(entries)
@@ -1155,7 +1156,8 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     # TODO: place the dual for the forward mode when needed
                     impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_adjoint, offset=offset)
+                                    shape).place(entries_adjoint,
+                                                 offset=offset)
         return entries
 
     @classmethod

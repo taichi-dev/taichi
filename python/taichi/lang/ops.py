@@ -344,7 +344,6 @@ def rsqrt(x):
     Returns:
         The reciprocal of `sqrt(x)`.
     """
-
     def _rsqrt(x):
         return 1 / math.sqrt(x)
 
@@ -692,7 +691,6 @@ def mod(x1, x2):
         >>> test()
         [1.0, 0.0, 4.0]
     """
-
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
         quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
@@ -842,7 +840,6 @@ def raw_div(x1, x2):
         >>>     z = 4.0
         >>>     print(raw_div(x, z))  # 1.25
     """
-
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -872,7 +869,6 @@ def raw_mod(x1, x2):
         >>>     print(ti.mod(-4, 3))  # 2
         >>>     print(ti.raw_mod(-4, 3))  # -1
     """
-
     def c_mod(x, y):
         return x - y * int(float(x) / y)
 

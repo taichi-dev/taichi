@@ -250,6 +250,7 @@ class Struct(TaichiOperations):
         Args:
             include_methods (bool): Whether any struct methods should be included
                 in the result dictionary under the key '__struct_methods'.
+
         Returns:
             Dict: The result dictionary.
         """

@@ -23,7 +23,7 @@ class Struct(TaichiOperations):
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
             keys and values for struct members. Entries can optionally
-            include a dictionary of functions with the key '__struct_methods' 
+            include a dictionary of functions with the key '__struct_methods'
             which will be attached to the struct for executing on the struct data.
 
     Returns:

@@ -263,6 +263,37 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void make_ifte(Expression::FlattenContext *ctx,
+               DataType ret_type,
+               Expr cond,
+               Expr true_val,
+               Expr false_val) {
+  auto result = ctx->push_back<AllocaStmt>(ret_type);
+  flatten_rvalue(cond, ctx);
+  auto if_stmt = ctx->push_back<IfStmt>(cond->stmt);
+
+  Expression::FlattenContext lctx;
+  lctx.current_block = ctx->current_block;
+  flatten_rvalue(true_val, &lctx);
+  lctx.push_back<LocalStoreStmt>(result, true_val->stmt);
+
+  Expression::FlattenContext rctx;
+  rctx.current_block = ctx->current_block;
+  flatten_rvalue(false_val, &rctx);
+  rctx.push_back<LocalStoreStmt>(result, false_val->stmt);
+
+  auto true_block = std::make_unique<Block>();
+  true_block->set_statements(std::move(lctx.stmts));
+  if_stmt->set_true_statements(std::move(true_block));
+
+  auto false_block = std::make_unique<Block>();
+  false_block->set_statements(std::move(rctx.stmts));
+  if_stmt->set_false_statements(std::move(false_block));
+
+  ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+  return;
+}
+
 void TernaryOpExpression::type_check(CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
@@ -276,8 +307,9 @@ void TernaryOpExpression::type_check(CompileConfig *) {
                     ternary_type_name(type), op1->ret_type->to_string(),
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
-  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
-      !op3_type->is<PrimitiveType>())
+  if (op1_type != PrimitiveType::i32)
+    error();
+  if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>())
     error();
   ret_type = promoted_type(op2_type, op3_type);
 }
@@ -285,12 +317,17 @@ void TernaryOpExpression::type_check(CompileConfig *) {
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
-  flatten_rvalue(op1, ctx);
-  flatten_rvalue(op2, ctx);
-  flatten_rvalue(op3, ctx);
-  ctx->push_back(
-      std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
+  if (type == TernaryOpType::select) {
+    flatten_rvalue(op1, ctx);
+    flatten_rvalue(op2, ctx);
+    flatten_rvalue(op3, ctx);
+    ctx->push_back(
+        std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
+  } else if (type == TernaryOpType::ifte) {
+    make_ifte(ctx, ret_type, op1, op2, op3);
+  }
   stmt = ctx->back_stmt();
+  stmt->tb = tb;
 }
 
 void InternalFuncCallExpression::type_check(CompileConfig *) {

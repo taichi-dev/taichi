@@ -1143,6 +1143,29 @@ def select(cond, x1, x2):
     return _ternary_operation(_ti_core.expr_select, py_select, cond, x1, x2)
 
 
+@ternary
+def ifte(cond, x1, x2):
+    """Evaluate and return `x1` if `cond` is true; otherwise evaluate and return `x2`. This operator guarantees
+    short-circuit semantics: exactly one of `x1` or `x2` will be evaluated.
+
+    Args:
+        cond (:mod:`~taichi.types.primitive_types`): \
+            The condition.
+        x1, x2 (:mod:`~taichi.types.primitive_types`): \
+            The outputs.
+
+    Returns:
+        `x1` if `cond` is true and `x2` otherwise.
+    """
+    # TODO: systematically resolve `-1 = True` problem by introducing u1:
+    cond = logical_not(logical_not(cond))
+
+    def py_ifte(cond, x1, x2):
+        return x1 if cond else x2
+
+    return _ternary_operation(_ti_core.expr_ifte, py_ifte, cond, x1, x2)
+
+
 @writeback_binary
 def atomic_add(x, y):
     """Atomically compute `x + y`, store the result in `x`,

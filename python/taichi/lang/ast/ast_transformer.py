@@ -1108,17 +1108,7 @@ class ASTTransformer(Builder):
                 node.ptr = build_stmt(ctx, node.orelse)
             return node.ptr
 
-        val = impl.expr_init(None)
-
-        impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
-        ctx.ast_builder.begin_frontend_if_true()
-        val._assign(node.body.ptr)
-        ctx.ast_builder.pop_scope()
-        ctx.ast_builder.begin_frontend_if_false()
-        val._assign(node.orelse.ptr)
-        ctx.ast_builder.pop_scope()
-
-        node.ptr = val
+        node.ptr = ti_ops.ifte(node.test.ptr, node.body.ptr, node.orelse.ptr)
         return node.ptr
 
     @staticmethod

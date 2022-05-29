@@ -41,7 +41,7 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict())
+        return Struct(rhs.to_dict(include_methods=True))
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -168,9 +168,9 @@ def subscript(value, *_indices, skip_reordered=False):
         if isinstance(value, MatrixField):
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
-            return _IntermediateStruct(
-                {k: subscript(v, *_indices)
-                 for k, v in value._items})
+            entries = {k: subscript(v, *_indices) for k, v in value._items}
+            entries['__struct_methods'] = value.struct_methods
+            return _IntermediateStruct(entries)
         return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim

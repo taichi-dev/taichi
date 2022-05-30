@@ -22,6 +22,7 @@ num_triangles = (n - 1) * (n - 1) * 2
 indices = ti.field(int, shape=num_triangles * 3)
 vertices = ti.Vector.field(3, dtype=float, shape=n * n)
 
+allow_bending = False
 
 @ti.kernel
 def initialize_mass_points():
@@ -52,11 +53,17 @@ def initialize_mesh_indices():
 initialize_mesh_indices()
 
 spring_offsets = []
-for i in range(-2, 3):
-    for j in range(-2, 3):
-        if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
-            spring_offsets.append(ti.Vector([i, j]))
+if allow_bending:
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if (i, j) != (0, 0):
+                spring_offsets.append(ti.Vector([i, j]))
 
+else:
+    for i in range(-2, 3):
+        for j in range(-2, 3):
+            if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
+                spring_offsets.append(ti.Vector([i, j]))
 
 @ti.kernel
 def substep():
@@ -90,6 +97,7 @@ def substep():
         x[i] += dt * v[i]
 
 
+
 @ti.kernel
 def update_vertices():
     for i, j in ti.ndrange(n, n):
@@ -99,6 +107,7 @@ def update_vertices():
 window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
                       vsync=True)
 canvas = window.get_canvas()
+canvas.set_background_color((1, 1, 1))
 scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
 
@@ -120,14 +129,14 @@ while window.running:
     camera.lookat(0.0, 0.0, 0)
     scene.set_camera(camera)
 
-    scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
+    scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
     scene.mesh(vertices,
                indices=indices,
-               color=(0.5, 0.5, 0.5),
+               color=(0.8, 0, 0),
                two_sided=True)
 
     # Draw a smaller ball to avoid visual penetration
-    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0, 0))
+    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.2, 0.6, 1))
     canvas.scene(scene)
     window.show()
 

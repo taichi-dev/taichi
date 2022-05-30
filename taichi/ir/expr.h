@@ -83,8 +83,6 @@ class Expr {
 
   Expr operator[](const ExprGroup &indices) const;
 
-  Expr operator!();
-
   template <typename T, typename... Args>
   static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));

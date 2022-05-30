@@ -25,10 +25,9 @@ class Sequential:
         self.seq_.dispatch(kernel_cpp, args)
 
 
-class Graph:
+class GraphBuilder:
     def __init__(self):
         self._graph_builder = _ti_core.GraphBuilder()
-        self._compiled_graph = None
 
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
@@ -43,7 +42,12 @@ class Graph:
         self._graph_builder.seq().append(node.seq_)
 
     def compile(self):
-        self._compiled_graph = self._graph_builder.compile()
+        return Graph(self._graph_builder.compile())
+
+
+class Graph:
+    def __init__(self, compiled_graph) -> None:
+        self._compiled_graph = compiled_graph
 
     def run(self, args):
         arg_ptrs = {}
@@ -65,4 +69,4 @@ class Graph:
         self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
 
 
-__all__ = ['Graph', 'Arg', 'ArgKind']
+__all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

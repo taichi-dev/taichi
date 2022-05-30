@@ -14,10 +14,10 @@ def test_ndarray_int():
             pos[i] = 1
 
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.i32)
-    g_init = ti.graph.Graph()
+    g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
-    g_init.compile()
+    g = g_init.compile()
 
     a = ti.ndarray(ti.i32, shape=(n, ))
-    g_init.run({'pos': a})
+    g.run({'pos': a})
     assert (a.to_numpy() == np.ones(4)).all()

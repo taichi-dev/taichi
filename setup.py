@@ -15,8 +15,8 @@ from distutils.dir_util import remove_tree
 
 from setuptools import find_packages
 from skbuild import setup
-from skbuild.command.egg_info import egg_info
 from skbuild.command.build_py import build_py
+from skbuild.command.egg_info import egg_info
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -72,7 +72,6 @@ class EggInfo(egg_info):
 
 
 class BuildPy(build_py):
-
     def finalize_options(self):
         super().finalize_options()
         taichi_dir = os.path.join(package_dir, 'taichi')

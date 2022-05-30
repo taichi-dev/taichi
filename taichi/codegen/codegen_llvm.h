@@ -1,15 +1,18 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
-#ifdef TI_WITH_LLVM
 
 #include <set>
 #include <unordered_map>
 
-#include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#ifdef TI_WITH_LLVM
 
-TLANG_NAMESPACE_BEGIN
+#include "taichi/ir/ir.h"
+#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/program/program.h"
+
+namespace taichi {
+namespace lang {
 
 class CodeGenLLVM;
 
@@ -17,21 +20,15 @@ class OffloadedTask {
  public:
   std::string name;
   CodeGenLLVM *codegen;
-  using task_fp_type = int32 (*)(void *);
-  task_fp_type func;
 
-  int block_dim;
-  int grid_dim;
+  int block_dim{0};
+  int grid_dim{0};
 
   OffloadedTask(CodeGenLLVM *codegen);
 
   void begin(const std::string &name);
 
   void end();
-
-  void compile();
-
-  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {
@@ -39,7 +36,7 @@ class FunctionCreationGuard {
   CodeGenLLVM *mb;
   llvm::Function *old_func;
   llvm::Function *body;
-  llvm::BasicBlock *old_entry, *allocas, *entry;
+  llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
   FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
@@ -49,8 +46,6 @@ class FunctionCreationGuard {
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
-  static uint64 task_counter;
-
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -73,9 +68,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   llvm::BasicBlock *func_body_bb;
+  llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
+  bool returned{false};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
+
+  std::unordered_map<Function *, llvm::Function *> func_map;
 
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
@@ -122,9 +121,25 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  virtual FunctionType compile_module_to_executable();
+  struct CompiledData {
+    std::vector<OffloadedTask> offloaded_tasks;
+    std::unique_ptr<llvm::Module> llvm_module{nullptr};
+  };
+  /**
+   * @brief Runs the codegen and produces the compiled result.
+   *
+   * After this call, `module` and `offloaded_tasks` will be moved.
+   *
+   * @return CompiledData
+   */
+  CompiledData run_compilation();
 
+  // TODO: This function relies largely on `run_compilation()`. Name it better.
   virtual FunctionType gen();
+
+  virtual bool supports_offline_cache() const {
+    return false;
+  }
 
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
@@ -171,6 +186,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
 
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
+
+  void visit(DecorationStmt *stmt) override;
 
   void visit(UnaryOpStmt *stmt) override;
 
@@ -322,11 +339,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopLinearIndexStmt *stmt) override;
 
-  void visit(GlobalThreadIndexStmt *stmt) override;
-
   void visit(BlockCornerIndexStmt *stmt) override;
-
-  void visit(BlockDimStmt *stmt) override;
 
   void visit(GlobalTemporaryStmt *stmt) override;
 
@@ -364,6 +377,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(MeshPatchIndexStmt *stmt) override;
 
+  void visit(ReferenceStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);
@@ -382,9 +397,45 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
 
+  void visit(FuncCallStmt *stmt) override;
+
+  llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
+  llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
+
   ~CodeGenLLVM() override = default;
+
+ private:
+  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
+                                         CompiledData *data);
+
+  void cache_module(const std::string &kernel_key);
 };
 
-TLANG_NAMESPACE_END
+class LlvmProgramImpl;
+
+// This is for CPU, we need one for CUDA (AMDGPU) as well.
+class ModuleToFunctionConverter {
+ public:
+  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                     LlvmProgramImpl *program);
+
+  virtual ~ModuleToFunctionConverter() = default;
+
+  virtual FunctionType convert(const std::string &kernel_name,
+                               const std::vector<LlvmLaunchArgInfo> &args,
+                               std::unique_ptr<llvm::Module> mod,
+                               std::vector<OffloadedTask> &&tasks) const;
+
+  FunctionType convert(const Kernel *kernel,
+                       std::unique_ptr<llvm::Module> mod,
+                       std::vector<OffloadedTask> &&tasks) const;
+
+ protected:
+  TaichiLLVMContext *tlctx_{nullptr};
+  LlvmProgramImpl *program_{nullptr};
+};
+
+}  // namespace lang
+}  // namespace taichi
 
 #endif  // #ifdef TI_WITH_LLVM

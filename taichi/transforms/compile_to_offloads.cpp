@@ -33,7 +33,6 @@ void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,
                          bool verbose,
-                         bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool start_from_ast) {
@@ -48,6 +47,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (start_from_ast) {
+    irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
   }
@@ -68,16 +68,6 @@ void compile_to_offloads(IRNode *ir,
     return;
   }
 
-  if (vectorize) {
-    irpass::loop_vectorize(ir, config);
-    print("Loop Vectorized");
-    irpass::analysis::verify(ir);
-
-    irpass::vector_split(ir, config.max_vector_width, config.serial_schedule);
-    print("Loop Split");
-    irpass::analysis::verify(ir);
-  }
-
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
@@ -90,11 +80,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir, config, {false, kernel->program});
   print("Simplified I");
   irpass::analysis::verify(ir);
-
-  if (irpass::inlining(ir, config, {})) {
-    print("Functions inlined");
-    irpass::analysis::verify(ir);
-  }
 
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
@@ -199,7 +184,7 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
     print("Make mesh thread local");
-    if (config.make_mesh_block_local) {
+    if (config.make_mesh_block_local && config.arch == Arch::cuda) {
       irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
       print("Make mesh block local");
       irpass::full_simplify(ir, config, {false, kernel->program});
@@ -271,7 +256,6 @@ void offload_to_executable(IRNode *ir,
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
-                           bool vectorize,
                            bool grad,
                            bool ad_use_stack,
                            bool verbose,
@@ -281,8 +265,8 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, vectorize, grad,
-                      ad_use_stack, start_from_ast);
+  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack,
+                      start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,
                         /*determine_ad_stack_size=*/grad && ad_use_stack,
@@ -290,12 +274,12 @@ void compile_to_executable(IRNode *ir,
                         make_block_local);
 }
 
-void compile_inline_function(IRNode *ir,
-                             const CompileConfig &config,
-                             Function *func,
-                             bool grad,
-                             bool verbose,
-                             bool start_from_ast) {
+void compile_function(IRNode *ir,
+                      const CompileConfig &config,
+                      Function *func,
+                      bool grad,
+                      bool verbose,
+                      bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, func->get_name(), ir);
@@ -307,9 +291,21 @@ void compile_inline_function(IRNode *ir,
   }
 
   if (start_from_ast) {
+    irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
   }
+  irpass::lower_access(ir, config, {{}, true});
+  print("Access lowered");
+  irpass::analysis::verify(ir);
+
+  irpass::die(ir);
+  print("DIE");
+  irpass::analysis::verify(ir);
+
+  irpass::flag_access(ir);
+  print("Access flagged III");
+  irpass::analysis::verify(ir);
 
   irpass::type_check(ir, config);
   print("Typechecked");

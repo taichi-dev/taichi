@@ -2,6 +2,7 @@
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -22,40 +23,15 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               bool grad)
-    : grad(grad), lowered_(false) {
-  this->program = &program;
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-#endif
-  is_accessor = false;
-  is_evaluator = false;
-  compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>();
-  ir = context->get_root();
-  ir_is_ast_ = true;
+               bool grad) {
+  this->init(program, func, primal_name, grad);
+}
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-    ir->as<Block>()->kernel = this;
-  }
-
-  arch = program.config.arch;
-
-  if (!grad) {
-    name = primal_name;
-  } else {
-    name = primal_name + "_grad";
-  }
-
-  if (!program.config.lazy_compilation)
-    compile();
+Kernel::Kernel(Program &program,
+               const std::function<void(Kernel *)> &func,
+               const std::string &primal_name,
+               bool grad) {
+  this->init(program, std::bind(func, this), primal_name, grad);
 }
 
 Kernel::Kernel(Program &program,
@@ -88,6 +64,10 @@ void Kernel::compile() {
   compiled_ = program->compile(*this);
 }
 
+std::unique_ptr<aot::Kernel> Kernel::compile_to_aot_kernel() {
+  return program->make_aot_kernel(*this);
+}
+
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
   TI_ASSERT(supports_lowering(arch));
@@ -109,7 +89,7 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        ir.get(), config, this, grad,
         /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -117,8 +97,7 @@ void Kernel::lower(bool to_executable) {
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*vectorize=*/arch_is_cpu(arch), grad,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
                                 /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
@@ -132,8 +111,10 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       compile();
     }
 
-    for (auto &offloaded : ir->as<Block>()->statements) {
-      account_for_offloaded(offloaded->as<OffloadedStmt>());
+    if (!this->from_offline_cache_) {
+      for (auto &offloaded : ir->as<Block>()->statements) {
+        account_for_offloaded(offloaded->as<OffloadedStmt>());
+      }
     }
 
     compiled_(ctx_builder.get_context());
@@ -248,7 +229,7 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 void Kernel::LaunchContextBuilder::set_arg_external_array(
     int arg_id,
-    uint64 ptr,
+    uintptr_t ptr,
     uint64 size,
     bool is_device_allocation) {
   TI_ASSERT_INFO(
@@ -261,9 +242,36 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
-  ctx_->set_device_allocation(arg_id, is_device_allocation);
+  ctx_->set_array_runtime_size(arg_id, size);
+  ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
+    int arg_id,
+    uintptr_t ptr,
+    uint64 size,
+    const std::vector<int64> &shape) {
+  this->set_arg_external_array(arg_id, ptr, size,
+                               /*is_device_allocation=*/false);
+  TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, shape[i]);
+  }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
+                                                   const Ndarray &arr) {
+  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
+  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
+  this->set_arg_external_array(arg_id, ptr, arr_size,
+                               /*is_device_allocation=*/true);
+  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  for (uint64 i = 0; i < arr.shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
+  }
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
@@ -286,64 +294,68 @@ RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
 #endif
+  ctx_->result_buffer = kernel_->program->result_buffer;
   return *ctx_;
+}
+
+template <typename T>
+T Kernel::fetch_ret(DataType dt, int i) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return (T)program->fetch_result<float32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return (T)program->fetch_result<float64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return (T)program->fetch_result<int32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return (T)program->fetch_result<int64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return (T)program->fetch_result<int8>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return (T)program->fetch_result<int16>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return (T)program->fetch_result<uint8>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return (T)program->fetch_result<uint16>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return (T)program->fetch_result<uint32>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return (T)program->fetch_result<uint64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    return (T)program->fetch_result<float32>(i);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt->get_compute_type();
-  if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (float64)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (float64)program->fetch_result<float64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (float64)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (float64)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (float64)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (float64)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (float64)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (float64)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (float64)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (float64)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // use f32 to interact with python
-    return (float64)program->fetch_result<float32>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  return fetch_ret<float64>(dt, i);
 }
 
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt->get_compute_type();
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (int64)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (int64)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (int64)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (int64)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (int64)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (int64)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (int64)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (int64)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (int64)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (int64)program->fetch_result<float64>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
+  return fetch_ret<int64>(dt, i);
+}
+
+std::vector<int64> Kernel::get_ret_int_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<int64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<int64>(dt, j));
   }
+  return res;
+}
+
+std::vector<float64> Kernel::get_ret_float_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<float64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<float64>(dt, j));
+  }
+  return res;
 }
 
 void Kernel::set_arch(Arch arch) {
@@ -380,6 +392,46 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
 
 std::string Kernel::get_name() const {
   return name;
+}
+
+void Kernel::init(Program &program,
+                  const std::function<void()> &func,
+                  const std::string &primal_name,
+                  bool grad) {
+  this->grad = grad;
+  this->lowered_ = false;
+  this->program = &program;
+#ifdef TI_WITH_LLVM
+  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
+    llvm_program_impl->maybe_initialize_cuda_llvm_context();
+  }
+#endif
+  is_accessor = false;
+  is_evaluator = false;
+  compiled_ = nullptr;
+  context = std::make_unique<FrontendContext>(program.config.arch);
+  ir = context->get_root();
+  ir_is_ast_ = true;
+
+  this->arch = program.config.arch;
+
+  if (!grad) {
+    this->name = primal_name;
+  } else {
+    this->name = primal_name + "_grad";
+  }
+
+  {
+    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
+    // concurrently, we need to lock this block of code together with
+    // taichi::lang::context with a mutex.
+    CurrentCallableGuard _(this->program, this);
+    func();
+    ir->as<Block>()->kernel = this;
+  }
+
+  if (!program.config.lazy_compilation)
+    compile();
 }
 
 // static

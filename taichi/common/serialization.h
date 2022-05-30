@@ -24,14 +24,13 @@ TI_NAMESPACE_BEGIN
 #else
 #define TI_NAMESPACE_BEGIN
 #define TI_NAMESPACE_END
-#define TI_EXPORT
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
 #endif
 
 template <typename T>
-TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
@@ -113,7 +112,7 @@ typename std::enable_if<!std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&... rest) {
+                  Args &&...rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head);
@@ -127,7 +126,7 @@ typename std::enable_if<std::is_same<SER, TextSerializer>::value, void>::type
 serialize_kv_impl(SER &ser,
                   const std::array<std::string_view, N> &keys,
                   T &&head,
-                  Args &&... rest) {
+                  Args &&...rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head, true);
@@ -163,10 +162,11 @@ serialize_kv_impl(SER &ser,
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
                 T>())
 
+#if !defined(TI_ARCH_x86)
 static_assert(
     sizeof(std::size_t) == sizeof(uint64_t),
     "sizeof(std::size_t) should be 8. Try compiling with 64bit mode.");
-
+#endif
 template <typename T, typename S>
 struct IO {
   using implemented = std::false_type;
@@ -588,7 +588,7 @@ class BinarySerializer : public Serializer {
   void handle_associative_container(const M &val) {
     if constexpr (writing) {
       this->process(val.size());
-      for (auto iter : val) {
+      for (auto &iter : val) {
         auto first = iter.first;
         this->process(first);
         this->process(iter.second);
@@ -601,7 +601,7 @@ class BinarySerializer : public Serializer {
       for (std::size_t i = 0; i < n; i++) {
         typename M::value_type record;
         this->process(record);
-        wval.insert(record);
+        wval.insert(std::move(record));
       }
     }
   }
@@ -818,6 +818,7 @@ class TextSerializer : public Serializer {
     add_key("has_value");
     process(val.has_value());
     if (val.has_value()) {
+      add_raw(",");
       add_key("value");
       process(val.value());
     }

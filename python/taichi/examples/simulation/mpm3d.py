@@ -57,8 +57,8 @@ def substep():
         if grid_m[I] > 0:
             grid_v[I] /= grid_m[I]
         grid_v[I][1] -= dt * gravity
-        cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[
-            I] > 0
+        cond = (I < bound) & (grid_v[I] < 0) | \
+               (I > n_grid - bound) & (grid_v[I] > 0)
         grid_v[I] = 0 if cond else grid_v[I]
     ti.block_dim(n_grid)
     for p in x:
@@ -111,7 +111,7 @@ while gui.running and not gui.get_event(gui.ESCAPE):
         substep()
     pos = x.to_numpy()
     if export_file:
-        writer = ti.PLYWriter(num_vertices=n_particles)
+        writer = ti.tools.PLYWriter(num_vertices=n_particles)
         writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
         writer.export_frame(gui.frame, export_file)
     gui.circles(T(pos), radius=1.5, color=0x66ccff)

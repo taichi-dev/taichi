@@ -22,14 +22,6 @@ Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   return primitive_types_[id].get();
 }
 
-Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
-  auto key = std::make_pair(num_elements, element);
-  if (vector_types_.find(key) == vector_types_.end()) {
-    vector_types_[key] = std::make_unique<VectorType>(num_elements, element);
-  }
-  return vector_types_[key].get();
-}
-
 Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   auto encode = [](const std::vector<int> &shape) -> std::string {
     std::string s;
@@ -111,6 +103,20 @@ PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
   return int_type->cast<PrimitiveType>();
 }
 
+PrimitiveType *TypeFactory::get_primitive_real_type(int bits) {
+  Type *real_type;
+  if (bits == 16) {
+    real_type = get_primitive_type(PrimitiveTypeID::f16);
+  } else if (bits == 32) {
+    real_type = get_primitive_type(PrimitiveTypeID::f32);
+  } else if (bits == 64) {
+    real_type = get_primitive_type(PrimitiveTypeID::f64);
+  } else {
+    TI_ERROR("No primitive real type has {} bits", bits);
+  }
+  return real_type->cast<PrimitiveType>();
+}
+
 DataType TypeFactory::create_vector_or_scalar_type(int width,
                                                    DataType element,
                                                    bool element_is_pointer) {
@@ -128,74 +134,55 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
 }
 
 namespace {
-class TypePromotionMapping {
- public:
-  TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                   \
-  mapping[std::make_pair(get_primitive_data_type<x>(),     \
-                         get_primitive_data_type<y>())] =  \
-      get_primitive_data_type<decltype(std::declval<x>() + \
-                                       std::declval<y>())>();
-#define TRY_FIRST(x)      \
-  TRY_SECOND(x, float32); \
-  TRY_SECOND(x, float64); \
-  TRY_SECOND(x, int8);    \
-  TRY_SECOND(x, int16);   \
-  TRY_SECOND(x, int32);   \
-  TRY_SECOND(x, int64);   \
-  TRY_SECOND(x, uint8);   \
-  TRY_SECOND(x, uint16);  \
-  TRY_SECOND(x, uint32);  \
-  TRY_SECOND(x, uint64);
-
-    TRY_FIRST(float32);
-    TRY_FIRST(float64);
-    TRY_FIRST(int8);
-    TRY_FIRST(int16);
-    TRY_FIRST(int32);
-    TRY_FIRST(int64);
-    TRY_FIRST(uint8);
-    TRY_FIRST(uint16);
-    TRY_FIRST(uint32);
-    TRY_FIRST(uint64);
+static bool compare_types(DataType x, DataType y) {
+  // Is the first type "bigger" than the second type?
+  if (is_real(x) != is_real(y)) {
+    // One is real, the other is integral.
+    // real > integral
+    return is_real(x);
+  } else {
+    if (is_real(x) && is_real(y)) {
+      // Both are real
+      return data_type_bits(x) > data_type_bits(y);
+    } else {
+      // Both are integral
+      auto x_bits = data_type_bits(x);
+      auto y_bits = data_type_bits(y);
+      if (x_bits != y_bits) {
+        return x_bits > y_bits;
+      } else {
+        // Same number of bits. Unsigned > signed
+        auto x_unsigned = !is_signed(x);
+        auto y_unsigned = !is_signed(y);
+        return x_unsigned > y_unsigned;
+      }
+    }
   }
-  DataType query(DataType x, DataType y) {
-    auto primitive =
-        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
-    return TypeFactory::get_instance().get_primitive_type(primitive);
+}
+
+static DataType to_primitive_type(DataType d) {
+  if (d->is<PointerType>()) {
+    d = d->as<PointerType>()->get_pointee_type();
+    TI_WARN("promoted_type got a pointer input.");
   }
 
- private:
-  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
-      mapping;
-  static PrimitiveTypeID to_primitive_type(DataType d) {
-    if (d->is<PointerType>()) {
-      d = d->as<PointerType>()->get_pointee_type();
-      TI_WARN("promoted_type got a pointer input.");
-    }
+  if (d->is<TensorType>()) {
+    d = d->as<TensorType>()->get_element_type();
+    TI_WARN("promoted_type got a tensor input.");
+  }
 
-    if (d->is<VectorType>()) {
-      d = d->as<VectorType>()->get_element_type();
-      TI_WARN("promoted_type got a vector input.");
-    }
-
-    if (d->is<TensorType>()) {
-      d = d->as<TensorType>()->get_element_type();
-      TI_WARN("promoted_type got a tensor input.");
-    }
-
-    auto primitive = d->cast<PrimitiveType>();
-    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
-                   d->to_string());
-    return primitive->type;
-  };
+  auto primitive = d->cast<PrimitiveType>();
+  TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                 d->to_string());
+  return primitive;
 };
-// TODO(#2196): Stop using global variables.
-TypePromotionMapping type_promotion_mapping;
 }  // namespace
 
-DataType promoted_type(DataType a, DataType b) {
-  return type_promotion_mapping.query(a, b);
+DataType promoted_type(DataType x, DataType y) {
+  if (compare_types(to_primitive_type(x), to_primitive_type(y)))
+    return x;
+  else
+    return y;
 }
 
 TLANG_NAMESPACE_END

@@ -10,9 +10,9 @@ Developers who are interested in the compiler, computer graphics, or high-perfor
 
 :::danger IMPORTANT
 
-This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts.
+This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source.
 
-See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users.
+See the [Get Started](https://docs.taichi-lang.org/) for more information on quickly setting up Taichi for end users.
 
 :::
 
@@ -37,7 +37,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 <Tabs
   defaultValue="unix"
   values={[
-    {label: 'Linux/Unix/Mac', value: 'unix'},
+    {label: 'Linux/Mac', value: 'unix'},
     {label: 'Windows', value: 'windows'}
   ]}>
 
@@ -46,7 +46,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category                     | Prerequisites                                                                                                                                                                            |
 |:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
-| Python                       | 3.6/3.7/3.8/3.9 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
+| Python                       | 3.6/3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
 | Clang++                      | 8&leq; Clang++ <12                                                                                                                                                                       |
 | LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
@@ -58,7 +58,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category      | Prerequisites                                                                                                                                                                            |
 |:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS            | Windows 7/8/10/11                                                                                                       |
-| Python        | 3.6/3.7/3.8/3.9  |
+| Python        | 3.6/3.7/3.8/3.9/3.10  |
 | Clang++       | 8&leq; Clang++ <12 (We provide pre-built versions in the clang section)                                            |
 | LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
@@ -168,7 +168,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     {label: 'LLVM 10.0.0 for Linux', value: 'llvm_linux'},
     {label: 'LLVM 10.0.0 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
     {label: 'LLVM 10.0.0 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
-    {label: 'LLVM 10.0.0 for Windows MSVC 2019', value: 'llvm_windows'},
+    {label: 'LLVM 10.0.0 for Windows', value: 'llvm_windows'},
   ]}>
 
 <TabItem value="llvm_linux">
@@ -182,6 +182,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 </TabItem>
 <TabItem value="llvm_windows">
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip">LLVM 10.0.0 for Windows MSVC 2019</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
 
@@ -269,12 +270,13 @@ llvm-config --version  # You should get 10.0.0
 
 # LLVM 10.0.0 + MSVC 2019
 
-cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_CXX_STANDARD=17
+cmake --build . --target=INSTALL --config=Release
 ```
 
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
 2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
-3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
+3. If you use MSVC 2019+, ensure that you use **C++17** for the `INSTALL` project.
 4. When the build completes, add an environment variable `LLVM_DIR` with value `<PATH_TO_BUILD>/build/installed/lib/cmake/llvm`.
 
 </TabItem>
@@ -370,6 +372,12 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
 4. Check if the SDK is properly installed: `vulkaninfo`.
 
+5. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disabled by default when compiling from source.)
+
+  ```shell
+  export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_WITH_VULKAN:BOOL=ON"
+  ```
+
 </TabItem>
 
 <TabItem value="windows">
@@ -407,7 +415,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
   python3 -m pip install --user -r requirements_dev.txt
 
-  # Exports CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
+  # export CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
 
   # export DEBUG=1 #Uncomment it if you wish to keep debug information.
 
@@ -417,7 +425,7 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
 
   ```shell
-  python3 examples/simulation/mpm128.py
+  python3 python/taichi/examples/simulation/mpm128.py
   ```
 
 :::note
@@ -435,7 +443,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>;/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 

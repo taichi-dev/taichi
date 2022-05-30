@@ -9,8 +9,8 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-Particles::Particles(AppContext *app_context) {
-  init_particles(app_context, 1);
+Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
+  init_particles(app_context, /*vertices_count=*/1, vbo_attrs);
 }
 
 void Particles::update_ubo(glm::vec3 color,
@@ -48,7 +48,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
              scene);
 }
 
-void Particles::init_particles(AppContext *app_context, int vertices_count) {
+void Particles::init_particles(AppContext *app_context,
+                               int vertices_count,
+                               VertexAttributes vbo_attrs) {
   RenderableConfig config = {
       vertices_count,
       1,
@@ -56,9 +58,11 @@ void Particles::init_particles(AppContext *app_context, int vertices_count) {
       1,
       sizeof(UniformBufferObject),
       1,
+      true,
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
       TopologyType::Points,
+      vbo_attrs,
   };
 
   Renderable::init(config, app_context);

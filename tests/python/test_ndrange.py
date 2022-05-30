@@ -1,9 +1,11 @@
 import numpy as np
+import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_1d():
     x = ti.field(ti.f32, shape=(16))
 
@@ -21,7 +23,7 @@ def test_1d():
             assert x[i] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_2d():
     x = ti.field(ti.f32, shape=(16, 32))
 
@@ -42,7 +44,7 @@ def test_2d():
                 assert x[i, j] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_3d():
     x = ti.field(ti.f32, shape=(16, 32, 64))
 
@@ -61,7 +63,7 @@ def test_3d():
                     assert x[i, j, k] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_tensor_based_3d():
     x = ti.field(ti.i32, shape=(6, 6, 6))
     y = ti.field(ti.i32, shape=(6, 6, 6))
@@ -87,7 +89,7 @@ def test_tensor_based_3d():
                 assert x[i, j, k] == y[i, j, k]
 
 
-@ti.test()
+@test_utils.test()
 def test_static_grouped():
     x = ti.field(ti.f32, shape=(16, 32, 64))
 
@@ -106,7 +108,7 @@ def test_static_grouped():
                     assert x[i, j, k] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_static_grouped_static():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(16, 4))
 
@@ -124,7 +126,7 @@ def test_static_grouped_static():
                     assert x[i, j][k, l] == k + l * 10 + i + j * 4
 
 
-@ti.test()
+@test_utils.test()
 def test_field_init_eye():
     # https://github.com/taichi-dev/taichi/issues/1824
 
@@ -142,7 +144,7 @@ def test_field_init_eye():
     assert np.allclose(A.to_numpy(), np.eye(n, dtype=np.float32))
 
 
-@ti.test()
+@test_utils.test()
 def test_ndrange_index_floordiv():
     # https://github.com/taichi-dev/taichi/issues/1829
 
@@ -165,7 +167,7 @@ def test_ndrange_index_floordiv():
                 assert A[i, j] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_nested_ndrange():
     # https://github.com/taichi-dev/taichi/issues/1829
 
@@ -189,7 +191,7 @@ def test_nested_ndrange():
                     assert A[i, j, k, l] == r
 
 
-@ti.test(ti.cpu)
+@test_utils.test(ti.cpu)
 def test_ndrange_ast_transform():
     n, u, v = 4, 3, 2
 
@@ -217,3 +219,45 @@ def test_ndrange_ast_transform():
             else:
                 r = 0
             assert A[i, j] == r
+
+
+@test_utils.test()
+def test_grouped_ndrange_star():
+    @ti.kernel
+    def foo() -> ti.i32:
+        ret = 0
+        for I in ti.grouped(ti.ndrange(*[[1, 3]] * 3)):
+            ret += I[0] + I[1] + I[2]
+        return ret
+
+    assert foo() == 36
+
+
+@test_utils.test()
+def test_ndrange_three_arguments():
+    @ti.kernel
+    def foo():
+        for i in ti.ndrange((1, 2, 3)):
+            pass
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Every argument of ndrange should be a scalar or a tuple/list like \(begin, end\)"
+    ):
+        foo()
+
+
+@test_utils.test()
+def test_ndrange_start_greater_than_end():
+    @ti.kernel
+    def ndrange_test(i1: ti.i32, i2: ti.i32, j1: ti.i32, j2: ti.i32) -> ti.i32:
+        n: ti.i32 = 0
+        for i, j in ti.ndrange((i1, i2), (j1, j2)):
+            n += 1
+        return n
+
+    assert ndrange_test(0, 10, 0, 20) == 200
+    assert ndrange_test(0, 10, 20, 0) == 0
+    assert ndrange_test(10, 0, 0, 20) == 0
+    assert ndrange_test(10, 0, 20, 0) == 0

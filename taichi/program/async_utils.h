@@ -76,6 +76,10 @@ class TaskLaunchRecord {
 
   bool empty() const;
 
+  static void reset_counter() {
+    task_counter = 0;
+  }
+
  private:
   static std::atomic<int> task_counter;
 };

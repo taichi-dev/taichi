@@ -124,21 +124,20 @@ void Device::print_all_cap() const {
       {DeviceCapability::spirv_has_atomic_float64_minmax,
        "spirv_has_atomic_float64_minmax"},
       {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::spirv_has_physical_storage_buffer,
+       "spirv_has_physical_storage_buffer"},
+      {DeviceCapability::spirv_has_subgroup_basic, "spirv_has_subgroup_basic"},
+      {DeviceCapability::spirv_has_subgroup_vote, "spirv_has_subgroup_vote"},
+      {DeviceCapability::spirv_has_subgroup_arithmetic,
+       "spirv_has_subgroup_arithmetic"},
+      {DeviceCapability::spirv_has_subgroup_ballot,
+       "spirv_has_subgroup_ballot"},
       {DeviceCapability::wide_lines, "wide_lines"},
   };
   for (auto &pair : caps_) {
     TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),
              int(pair.first), pair.second);
   }
-}
-
-uint64_t *Device::allocate_llvm_runtime_memory_jit(
-    const LlvmRuntimeAllocParams &params) {
-  params.runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned", params.runtime, params.size,
-      taichi_page_size);
-  return taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
-      taichi_result_buffer_runtime_query_id, params.result_buffer));
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,

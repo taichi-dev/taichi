@@ -1,20 +1,10 @@
 // Frontend statements
-PER_STATEMENT(FrontendExprStmt)
-PER_STATEMENT(FrontendIfStmt)
-PER_STATEMENT(FrontendForStmt)
-PER_STATEMENT(FrontendPrintStmt)
-PER_STATEMENT(FrontendWhileStmt)
-PER_STATEMENT(FrontendBreakStmt)
-PER_STATEMENT(FrontendContinueStmt)
-PER_STATEMENT(FrontendAllocaStmt)
-PER_STATEMENT(FrontendAssignStmt)
-PER_STATEMENT(FrontendEvalStmt)
-PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
-PER_STATEMENT(FrontendAssertStmt)
-PER_STATEMENT(FrontendFuncDefStmt)
-PER_STATEMENT(FrontendReturnStmt)
+#include "frontend_statements.inc.h"
 
 // Middle-end statement
+
+// Decoration / debug statement
+PER_STATEMENT(DecorationStmt)
 
 // Without per-lane attributes
 PER_STATEMENT(RangeForStmt)
@@ -24,11 +14,11 @@ PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)
 PER_STATEMENT(ContinueStmt)
-PER_STATEMENT(FuncBodyStmt)
 PER_STATEMENT(FuncCallStmt)
 PER_STATEMENT(ReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
+PER_STATEMENT(ReferenceStmt)
 PER_STATEMENT(ExternalPtrStmt)
 PER_STATEMENT(PtrOffsetStmt)
 PER_STATEMENT(ConstStmt)
@@ -79,7 +69,6 @@ PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(LoopLinearIndexStmt)
 PER_STATEMENT(GlobalThreadIndexStmt)
 PER_STATEMENT(BlockCornerIndexStmt)
-PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 PER_STATEMENT(ClearListStmt)
 

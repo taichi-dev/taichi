@@ -1,5 +1,6 @@
 // The IRPrinter prints the IR in a human-readable format
 
+#include "taichi/ir/expression_printer.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -45,18 +46,22 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
 }
 
 class IRPrinter : public IRVisitor {
- public:
-  int current_indent;
+ private:
+  ExpressionPrinter *expr_printer_{nullptr};
 
-  std::string *output;
+ public:
+  int current_indent{0};
+
+  std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(std::string *output = nullptr) : output(output) {
-    current_indent = 0;
+  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+            std::string *output = nullptr)
+      : expr_printer_(expr_printer), output(output) {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 
@@ -71,7 +76,9 @@ class IRPrinter : public IRVisitor {
     }
   }
 
-  static void run(IRNode *node, std::string *output) {
+  static void run(ExpressionPrinter *expr_printer,
+                  IRNode *node,
+                  std::string *output) {
     if (node == nullptr) {
       TI_WARN("IRPrinter: Printing nullptr.");
       if (output) {
@@ -79,7 +86,7 @@ class IRPrinter : public IRVisitor {
       }
       return;
     }
-    auto p = IRPrinter(output);
+    auto p = IRPrinter(expr_printer, output);
     p.print("kernel {{");
     node->accept(&p);
     p.print("}}");
@@ -96,7 +103,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendExprStmt *stmt) override {
-    print("{}", stmt->val.serialize());
+    print("{}", (stmt->val));
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -108,7 +115,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
-    print("{} = {}", assign->lhs.serialize(), assign->rhs.serialize());
+    print("{} = {}", expr_to_string(assign->lhs), expr_to_string(assign->rhs));
   }
 
   void visit(FrontendAllocaStmt *alloca) override {
@@ -117,7 +124,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *assert) override {
-    print("{} : assert {}", assert->id, assert->cond.serialize());
+    print("{} : assert {}", assert->name(), expr_to_string(assert->cond));
   }
 
   void visit(AssertStmt *assert) override {
@@ -155,13 +162,13 @@ class IRPrinter : public IRVisitor {
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      extras += stmt->indices[i].serialize();
+      extras += expr_to_string(stmt->indices[i]);
       if (i + 1 < (int)stmt->indices.size())
         extras += ", ";
     }
     extras += "]";
     if (stmt->val.expr) {
-      extras += ", " + stmt->val.serialize();
+      extras += ", " + expr_to_string(stmt->val);
     }
     print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
           stmt->snode->get_node_type_name_hinted(), extras);
@@ -185,6 +192,18 @@ class IRPrinter : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     print("{}{} = rand()", stmt->type_hint(), stmt->name());
+  }
+
+  void visit(DecorationStmt *stmt) override {
+    if (stmt->decoration.size() == 2 &&
+        stmt->decoration[0] ==
+            uint32_t(DecorationStmt::Decoration::kLoopUnique)) {
+      print("decorate {} : Loop-unique {}", stmt->operand->name(),
+            stmt->decoration[0], stmt->decoration[1]);
+    } else {
+      print("decorate {} : ... size = {}", stmt->operand->name(),
+            stmt->decoration.size());
+    }
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -230,7 +249,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendIfStmt *if_stmt) override {
-    print("{} : if {} {{", if_stmt->name(), if_stmt->condition.serialize());
+    print("{} : if {} {{", if_stmt->name(), expr_to_string(if_stmt->condition));
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -240,16 +259,12 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendEvalStmt *stmt) override {
-    print("{} = eval {}", stmt->name(), stmt->expr.serialize());
-  }
-
   void visit(FrontendPrintStmt *print_stmt) override {
     std::vector<std::string> contents;
     for (auto const &c : print_stmt->contents) {
       std::string name;
       if (std::holds_alternative<Expr>(c))
-        name = std::get<Expr>(c).serialize();
+        name = expr_to_string(std::get<Expr>(c).expr.get());
       else
         name = c_quoted(std::get<std::string>(c));
       contents.push_back(name);
@@ -304,12 +319,6 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FuncBodyStmt *stmt) override {
-    print("func \"{}\" {{");
-    stmt->body->accept(this);
-    print("}}");
-  }
-
   void visit(WhileStmt *stmt) override {
     print("{} : while true {{", stmt->name());
     stmt->body->accept(this);
@@ -317,7 +326,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    print("{} : while {} {{", stmt->name(), stmt->cond.serialize());
+    print("{} : while {} {{", stmt->name(), expr_to_string(stmt->cond));
     stmt->body->accept(this);
     print("}}");
   }
@@ -328,7 +337,7 @@ class IRPrinter : public IRVisitor {
         [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
       print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
-            for_stmt->begin.serialize(), for_stmt->end.serialize(),
+            expr_to_string(for_stmt->begin), expr_to_string(for_stmt->end),
             block_dim_info(for_stmt->block_dim));
     } else if (for_stmt->mesh_for) {
       print("{} : for {} in mesh {{", for_stmt->name(), vars);
@@ -337,7 +346,7 @@ class IRPrinter : public IRVisitor {
             for_stmt->global_var.is<GlobalVariableExpression>()
                 ? for_stmt->global_var.cast<GlobalVariableExpression>()
                       ->snode->get_node_type_name_hinted()
-                : for_stmt->global_var.serialize(),
+                : expr_to_string(for_stmt->global_var),
             scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
     }
@@ -346,18 +355,17 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) (vectorize {}) (bit_vectorize {}) {}{{",
+    print("{} : {}for in range({}, {}) (bit_vectorize {}) {}{{",
           for_stmt->name(), for_stmt->reversed ? "reversed " : "",
-          for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize,
+          for_stmt->begin->name(), for_stmt->end->name(),
           for_stmt->bit_vectorize, block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : struct for in {} (vectorize {}) (bit_vectorize {}) {}{}{{",
-          for_stmt->name(), for_stmt->snode->get_node_type_name_hinted(),
-          for_stmt->vectorize, for_stmt->bit_vectorize,
+    print("{} : struct for in {} (bit_vectorize {}) {}{}{{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->bit_vectorize,
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
@@ -417,13 +425,13 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
-          stmt->value.serialize());
+    print("{}{} : return [{}]", stmt->type_hint(), stmt->name(),
+          expr_group_to_string(stmt->values));
   }
 
   void visit(ReturnStmt *stmt) override {
     print("{}{} : return {}", stmt->type_hint(), stmt->name(),
-          stmt->value->name());
+          stmt->values_raw_names());
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -533,6 +541,18 @@ class IRPrinter : public IRVisitor {
       }
     }
     s += "]";
+    if (stmt->element_shape.size()) {
+      s += ", (";
+      for (int i = 0; i < (int)stmt->element_shape.size(); i++) {
+        s += fmt::format("{}", stmt->element_shape[i]);
+        if (i + 1 < (int)stmt->element_shape.size()) {
+          s += ", ";
+        }
+      }
+      s += ")";
+    }
+    s += fmt::format(" element_dim={} layout={}", stmt->element_dim,
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA");
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));
@@ -549,6 +569,9 @@ class IRPrinter : public IRVisitor {
       }
       if (stmt->const_end) {
         end_str = std::to_string(stmt->end_value);
+      } else if (stmt->end_stmt && !stmt->end_stmt->is<ConstStmt>()) {
+        // range_for end is a non-const stmt (e.g. ndarray axis)
+        end_str = stmt->end_stmt->name();
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
@@ -627,17 +650,9 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name());
   }
 
-  void visit(GlobalThreadIndexStmt *stmt) override {
-    print("{}{} = global thread index", stmt->type_hint(), stmt->name());
-  }
-
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);
-  }
-
-  void visit(BlockDimStmt *stmt) override {
-    print("{}{} = block dim", stmt->type_hint(), stmt->name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -741,6 +756,50 @@ class IRPrinter : public IRVisitor {
   void visit(MeshPatchIndexStmt *stmt) override {
     print("{}{} = mesh patch idx", stmt->type_hint(), stmt->name());
   }
+
+  void visit(FrontendExternalFuncStmt *stmt) override {
+    if (stmt->so_func != nullptr) {
+      print("so {:x}", (uint64)stmt->so_func);
+    } else if (!stmt->asm_source.empty()) {
+      print("asm \"{}\"", stmt->asm_source);
+    } else {
+      print("bc {}:{}", stmt->bc_filename, stmt->bc_funcname);
+    }
+    print(" (inputs=");
+    for (auto &s : stmt->args) {
+      print(expr_to_string(s));
+    }
+    print(", outputs=");
+    for (auto &s : stmt->outputs) {
+      print(expr_to_string(s));
+    }
+    print(")");
+  }
+
+  void visit(ReferenceStmt *stmt) override {
+    print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
+  }
+
+ private:
+  std::string expr_to_string(Expr &expr) {
+    return expr_to_string(expr.expr.get());
+  }
+
+  std::string expr_to_string(Expression *expr) {
+    TI_ASSERT(expr_printer_);
+    std::ostringstream oss;
+    expr_printer_->set_ostream(&oss);
+    expr->accept(expr_printer_);
+    return oss.str();
+  }
+
+  std::string expr_group_to_string(ExprGroup &expr_group) {
+    TI_ASSERT(expr_printer_);
+    std::ostringstream oss;
+    expr_printer_->set_ostream(&oss);
+    expr_printer_->visit(expr_group);
+    return oss.str();
+  }
 };
 
 }  // namespace
@@ -748,7 +807,8 @@ class IRPrinter : public IRVisitor {
 namespace irpass {
 
 void print(IRNode *root, std::string *output) {
-  return IRPrinter::run(root, output);
+  ExpressionHumanFriendlyPrinter expr_printer;
+  return IRPrinter::run(&expr_printer, root, output);
 }
 
 }  // namespace irpass

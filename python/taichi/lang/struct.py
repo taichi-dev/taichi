@@ -1,4 +1,5 @@
 import numbers
+from types import MethodType
 
 from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
@@ -8,15 +9,38 @@ from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
-from taichi.types import CompoundType, integer_types
+from taichi.types import primitive_types
+from taichi.types.compound_types import CompoundType
 
 
 class Struct(TaichiOperations):
     """The Struct type class.
+
+    A struct is a dictionary-like data structure that stores members as
+    (key, value) pairs. Valid data members of a struct can be scalars,
+    matrices or other dictionary-like stuctures.
+
     Args:
-        entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): keys and values for struct members.
+        entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
+            keys and values for struct members. Entries can optionally
+            include a dictionary of functions with the key '__struct_methods'
+            which will be attached to the struct for executing on the struct data.
+
+    Returns:
+        An instance of this struct.
+
+    Example::
+
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
+        >>> print(a.items)
+        dict_items([('v', [0. 0. 0.]), ('t', 1.0)])
+        >>>
+        >>> B = ti.Struct(v=vec3([0., 0., 0.]), t=1.0, A=a)
+        >>> print(B.items)
+        dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
     """
-    is_taichi_class = True
+    _is_taichi_class = True
 
     def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
@@ -28,50 +52,74 @@ class Struct(TaichiOperations):
             raise TaichiSyntaxError(
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
+        self.methods = self.entries.pop("__struct_methods", {})
+        self._register_methods()
+
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
                 v = Matrix(v)
             if isinstance(v, dict):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)
-        self.register_members()
+        self._register_members()
 
     @property
     def keys(self):
+        """Returns the list of member names in string format.
+
+        Example::
+
+           >>> vec3 = ti.types.vector(3, ti.f32)
+           >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+           >>> a.keys
+           ['center', 'radius']
+        """
         return list(self.entries.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.entries.values())
 
     @property
     def items(self):
+        """Returns the items in this struct.
+
+        Example::
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = ti.Struct(center=vec3([0, 0, 0]), radius=1.0)
+            >>> sphere.items
+            dict_items([('center', 2), ('radius', 1.0)])
+        """
         return self.entries.items()
 
-    def register_members(self):
+    def _register_members(self):
         for k in self.keys:
             setattr(Struct, k,
                     property(
-                        Struct.make_getter(k),
-                        Struct.make_setter(k),
+                        Struct._make_getter(k),
+                        Struct._make_setter(k),
                     ))
 
+    def _register_methods(self):
+        for name, method in self.methods.items():
+            # use MethodType to pass self (this object) to the method
+            setattr(self, name, MethodType(method, self))
+
     def __getitem__(self, key):
-        _taichi_skip_traceback = 1
         ret = self.entries[key]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         return ret
 
     def __setitem__(self, key, value):
-        _taichi_skip_traceback = 1
         if isinstance(self.entries[key], SNodeHostAccess):
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
             if in_python_scope():
                 if isinstance(self.entries[key], Struct) or isinstance(
                         self.entries[key], Matrix):
-                    self.entries[key].set_entries(value)
+                    self.entries[key]._set_entries(value)
                 else:
                     if isinstance(value, numbers.Number):
                         self.entries[key] = value
@@ -82,59 +130,55 @@ class Struct(TaichiOperations):
             else:
                 self.entries[key] = value
 
-    def set_entries(self, value):
+    def _set_entries(self, value):
         if isinstance(value, dict):
             value = Struct(value)
         for k in self.keys:
             self[k] = value[k]
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self[key]
 
         return getter
 
     @staticmethod
-    def make_setter(key):
+    def _make_setter(key):
         @python_scope
         def setter(self, value):
-            _taichi_skip_traceback = 1
             self[key] = value
 
         return setter
 
-    def element_wise_unary(self, foo):
-        _taichi_skip_traceback = 1
+    def _element_wise_unary(self, foo):
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_unary(foo)
+                entries[k] = v._element_wise_unary(foo)
             else:
                 entries[k] = foo(v)
         return Struct(entries)
 
-    def element_wise_binary(self, foo, other):
-        _taichi_skip_traceback = 1
-        other = self.broadcast_copy(other)
+    def _element_wise_binary(self, foo, other):
+        other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_binary(foo, other.entries[k])
+                entries[k] = v._element_wise_binary(foo, other.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k])
         return Struct(entries)
 
-    def broadcast_copy(self, other):
+    def _broadcast_copy(self, other):
         if isinstance(other, dict):
             other = Struct(other)
         if not isinstance(other, Struct):
             entries = {}
             for k, v in self.items:
                 if is_taichi_class(v):
-                    entries[k] = v.broadcast_copy(other)
+                    entries[k] = v._broadcast_copy(other)
                 else:
                     entries[k] = other
             other = Struct(entries)
@@ -143,29 +187,29 @@ class Struct(TaichiOperations):
                 f"Member mismatch between structs {self.keys}, {other.keys}")
         return other
 
-    def element_wise_writeback_binary(self, foo, other):
+    def _element_wise_writeback_binary(self, foo, other):
         if foo.__name__ == 'assign' and not isinstance(other, (dict, Struct)):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
-        other = self.broadcast_copy(other)
+        other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_binary(foo, other.entries[k])
+                entries[k] = v._element_wise_binary(foo, other.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k])
         return self if foo.__name__ == 'assign' else Struct(entries)
 
-    def element_wise_ternary(self, foo, other, extra):
-        other = self.broadcast_copy(other)
-        extra = self.broadcast_copy(extra)
+    def _element_wise_ternary(self, foo, other, extra):
+        other = self._broadcast_copy(other)
+        extra = self._broadcast_copy(extra)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_ternary(foo, other.entries[k],
-                                                    extra.entries[k])
+                entries[k] = v._element_wise_ternary(foo, other.entries[k],
+                                                     extra.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k], extra.entries[k])
         return Struct(entries)
@@ -180,7 +224,7 @@ class Struct(TaichiOperations):
         def assign_renamed(x, y):
             return ops.assign(x, y)
 
-        return self.element_wise_writeback_binary(assign_renamed, val)
+        return self._element_wise_writeback_binary(assign_renamed, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -200,29 +244,70 @@ class Struct(TaichiOperations):
     def __repr__(self):
         return str(self.to_dict())
 
-    def to_dict(self):
+    def to_dict(self, include_methods=False):
         """Converts the Struct to a dictionary.
 
         Args:
+            include_methods (bool): Whether any struct methods should be included
+                in the result dictionary under the key '__struct_methods'.
 
         Returns:
             Dict: The result dictionary.
         """
-        return {
+        res_dict = {
             k: v.to_dict() if isinstance(v, Struct) else
             v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
+        if include_methods:
+            res_dict['__struct_methods'] = self.methods
+        return res_dict
 
     @classmethod
     @python_scope
     def field(cls,
               members,
+              methods={},
               shape=None,
               name="<Struct>",
               offset=None,
               needs_grad=False,
               layout=Layout.AOS):
+        """Creates a :class:`~taichi.StructField` with each element
+        has this struct as its type.
+
+        Args:
+            members (dict): a dict, each item is like `name: type`.
+            methods (dict): a dict of methods that should be included with
+                the field.  Each struct item of the field will have the
+                methods as instance functions.
+            shape (Tuple[int]): width and height of the field.
+            offset (Tuple[int]): offset of the indices of the created field.
+                For example if `offset=(-10, -10)` the indices of the field
+                will start at `(-10, -10)`, not `(0, 0)`.
+            needs_grad (bool): enabling gradient field or not.
+            layout: AOS or SOA.
+
+        Example:
+
+            >>> vec3 = ti.types.vector(3, ti.f32)
+            >>> sphere = {"center": vec3, "radius": float}
+            >>> F = ti.Struct.field(sphere, shape=(3, 3))
+            >>> F
+            {'center': array([[[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]],
+
+               [[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]]], dtype=float32), 'radius': array([[0., 0., 0.],
+               [0., 0., 0.],
+               [0., 0., 0.]], dtype=float32)}
+        """
 
         if shape is None and offset is not None:
             raise TaichiSyntaxError(
@@ -271,7 +356,7 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
-        return StructField(field_dict, name=name)
+        return StructField(field_dict, methods, name=name)
 
 
 class _IntermediateStruct(Struct):
@@ -279,99 +364,111 @@ class _IntermediateStruct(Struct):
 
     Args:
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
+            Any methods included under the key '__struct_methods' will be applied to each
+            struct instance.
     """
     def __init__(self, entries):
         assert isinstance(entries, dict)
+        self.methods = entries.pop('__struct_methods', {})
+        self._register_methods()
         self.entries = entries
-        self.register_members()
+        self._register_members()
 
 
 class StructField(Field):
     """Taichi struct field with SNode implementation.
+
        Instead of directly contraining Expr entries, the StructField object
        directly hosts members as `Field` instances to support nested structs.
 
     Args:
         field_dict (Dict[str, Field]): Struct field members.
+        struct_methods (Dict[str, callable]): Dictionary of functions to apply
+            to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, name=None):
+    def __init__(self, field_dict, struct_methods, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self._name = name
-        self.register_fields()
-
-    @property
-    def name(self):
-        return self._name
+        self.struct_methods = struct_methods
+        self.name = name
+        self._register_fields()
 
     @property
     def keys(self):
+        """Returns the list of names of the field members.
+
+        Example::
+
+            >>> f1 = ti.Vector.field(3, ti.f32, shape=(3, 3))
+            >>> f2 = ti.field(ti.f32, shape=(3, 3))
+            >>> F = ti.StructField({"center": f1, "radius": f2})
+            >>> F.keys
+            ['center', 'radius']
+        """
         return list(self.field_dict.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.field_dict.values())
 
     @property
-    def items(self):
+    def _items(self):
         return self.field_dict.items()
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self.field_dict[key]
 
         return getter
 
     @staticmethod
-    def make_setter(key):
+    def _make_setter(key):
         @python_scope
         def setter(self, value):
-            _taichi_skip_traceback = 1
             self.field_dict[key] = value
 
         return setter
 
-    def register_fields(self):
+    def _register_fields(self):
         for k in self.keys:
             setattr(
                 StructField, k,
                 property(
-                    StructField.make_getter(k),
-                    StructField.make_setter(k),
+                    StructField._make_getter(k),
+                    StructField._make_setter(k),
                 ))
 
-    def get_field_members(self):
-        """Get A flattened list of all struct elements.
+    def _get_field_members(self):
+        """Gets A flattened list of all struct elements.
 
         Returns:
             A list of struct elements.
         """
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
-            field_members += m.get_field_members()
+            field_members += m._get_field_members()
         return field_members
 
     @property
-    def snode(self):
+    def _snode(self):
         """Gets representative SNode for info purposes.
 
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
-        return self.members[0].snode
+        return self._members[0]._snode
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
             taichi_core.Expr: Representative (first) field member.
         """
-        return self.members[0].loop_range()
+        return self._members[0]._loop_range()
 
     @python_scope
     def copy_from(self, other):
@@ -389,20 +486,20 @@ class StructField(Field):
 
     @python_scope
     def fill(self, val):
-        """Fills `self` with a specific value.
+        """Fills this struct field with a specified value.
 
         Args:
             val (Union[int, float]): Value to fill.
         """
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
-    def initialize_host_accessors(self):
-        for v in self.members:
-            v.initialize_host_accessors()
+    def _initialize_host_accessors(self):
+        for v in self._members:
+            v._initialize_host_accessors()
 
     def get_member_field(self, key):
-        """Creates a ScalarField using a specific field member. Only used for quant.
+        """Creates a ScalarField using a specific field member.
 
         Args:
             key (str): Specified key of the field member.
@@ -414,59 +511,106 @@ class StructField(Field):
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        """Copies the data from a set of `numpy.array` into this field.
+
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        """Copies the data from a set of `torch.tensor` into this field.
+
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
-    def to_numpy(self):
-        """Converts the Struct field instance to a dictionary of NumPy arrays. The dictionary may be nested when converting
-           nested structs.
+    def from_paddle(self, array_dict):
+        """Copies the data from a set of `paddle.Tensor` into this field.
 
-        Args:
+        The argument `array_dict` must be a dictionay-like object, it
+        contains all the keys in this field and the copying process
+        between corresponding items can be performed.
+        """
+        for k, v in self._items:
+            v.from_paddle(array_dict[k])
+
+    @python_scope
+    def to_numpy(self):
+        """Converts the Struct field instance to a dictionary of NumPy arrays.
+
+        The dictionary may be nested when converting nested structs.
+
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
-        """Converts the Struct field instance to a dictionary of PyTorch tensors. The dictionary may be nested when converting
-           nested structs.
+        """Converts the Struct field instance to a dictionary of PyTorch tensors.
+
+        The dictionary may be nested when converting nested structs.
 
         Args:
-            device (torch.device, optional): The desired device of returned tensor.
+            device (torch.device, optional): The
+                desired device of returned tensor.
+
         Returns:
-            Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
+            Dict[str, Union[torch.Tensor, Dict]]: The result
+                PyTorch tensor.
         """
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
+
+    @python_scope
+    def to_paddle(self, place=None):
+        """Converts the Struct field instance to a dictionary of Paddle tensors.
+
+        The dictionary may be nested when converting nested structs.
+
+        Args:
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The
+                desired place of returned tensor.
+
+        Returns:
+            Dict[str, Union[paddle.Tensor, Dict]]: The result
+                Paddle tensor.
+        """
+        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __setitem__(self, indices, element):
-        self.initialize_host_accessors()
-        self[indices].set_entries(element)
+        self._initialize_host_accessors()
+        self[indices]._set_entries(element)
 
     @python_scope
     def __getitem__(self, indices):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         # scalar fields does not instantiate SNodeHostAccess by default
         entries = {
-            k: v.host_access(self.pad_key(indices))[0] if isinstance(
+            k: v._host_access(self._pad_key(indices))[0] if isinstance(
                 v, ScalarField) else v[indices]
-            for k, v in self.items
+            for k, v in self._items
         }
+        entries['__struct_methods'] = self.struct_methods
         return Struct(entries)
 
 
 class StructType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
+        self.methods = {}
         for k, dtype in kwargs.items():
-            if isinstance(dtype, CompoundType):
+            if k == '__struct_methods':
+                self.methods = dtype
+            elif isinstance(dtype, CompoundType):
                 self.members[k] = dtype
             else:
                 self.members[k] = cook_dtype(dtype)
@@ -502,9 +646,12 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(v) if dtype in integer_types else float(v)
+                    entries[k] = int(
+                        v
+                    ) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
+        entries['__struct_methods'] = self.methods
         return Struct(entries)
 
     def filled_with_scalar(self, value):
@@ -514,7 +661,54 @@ class StructType(CompoundType):
                 entries[k] = dtype.filled_with_scalar(value)
             else:
                 entries[k] = value
+        entries['__struct_methods'] = self.methods
         return Struct(entries)
 
     def field(self, **kwargs):
-        return Struct.field(self.members, **kwargs)
+        return Struct.field(self.members, self.methods, **kwargs)
+
+
+def struct_class(cls):
+    """Converts a class with field annotations and methods into a taichi struct type.
+
+    This will return a normal custom struct type, with the functions added to it.
+    Struct fields can be generated in the normal way from the struct type.
+    Functions in the class can be run on the struct instance.
+
+    This class decorator inspects the class for annotations and methods and
+        1.  Sets the annotations as fields for the struct
+        2.  Attaches the methods to the struct type
+
+    Example::
+
+        >>> @ti.stuct_class
+        >>> class Sphere:
+        >>>     center: vec3
+        >>>     radius: ti.f32
+        >>>
+        >>>     @ti.func
+        >>>     def area(self):
+        >>>         return 4 * 3.14 * self.radius * self.radius
+        >>>
+        >>> my_spheres = Sphere.field(shape=(n, ))
+        >>> my_sphere[2].area()
+
+    Args:
+        cls (Class): the class with annotations and methods to convert to a struct
+
+    Returns:
+        A taichi struct with the annotations as fields
+            and methods from the class attached.
+    """
+    # save the annotaion fields for the struct
+    fields = cls.__annotations__
+    # get the class methods to be attached to the struct types
+    fields['__struct_methods'] = {
+        attribute: getattr(cls, attribute)
+        for attribute in dir(cls)
+        if callable(getattr(cls, attribute)) and not attribute.startswith('__')
+    }
+    return StructType(**fields)
+
+
+__all__ = ["Struct", "StructField", "struct_class"]

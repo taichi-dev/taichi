@@ -7,9 +7,9 @@ import taichi as ti
 
 ti.init()
 
-f19 = ti.quant.float(exp=6, frac=13, signed=True)
-f16 = ti.quant.float(exp=5, frac=11, signed=True)
-fixed16 = ti.quant.fixed(frac=16, range=2)
+f19 = ti.types.quant.float(exp=6, frac=13, signed=True)
+f16 = ti.types.quant.float(exp=5, frac=11, signed=True)
+fixed16 = ti.types.quant.fixed(frac=16, range=2)
 
 vf19 = ti.Vector.field(2, dtype=f19)
 bs_vf19 = ti.root.bit_struct(num_bits=32)

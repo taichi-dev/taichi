@@ -46,12 +46,10 @@ setup_python() {
         conda activate "$PY"
     fi
     python3 -m pip uninstall taichi taichi-nightly -y
-    if [ -z "$GPU_BUILD" ]; then
-        python3 -m pip install -r requirements_dev.txt
-    fi
+    python3 -m pip install -r requirements_dev.txt
 }
 
-build() {
+build_taichi_wheel() {
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""
@@ -60,19 +58,32 @@ build() {
     fi
 
     if [[ $OSTYPE == "linux-"* ]]; then
-        EXTRA_ARGS="-p manylinux1_x86_64"
+        if [ -f /etc/centos-release ] ; then
+            EXTRA_ARGS="-p manylinux2014_x86_64"
+        else
+            EXTRA_ARGS="-p manylinux_2_27_x86_64"
+        fi
     fi
     python3 misc/make_changelog.py origin/master ./ True
     python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
     sccache -s
 }
 
+build_libtaichi_export() {
+    git fetch origin master
+    python3 setup.py build_ext
+}
+
 setup_sccache
 setup_python
-build
-cat "$SCCACHE_ERROR_LOG"
-NUM_WHL=$(ls dist/*.whl | wc -l)
-if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi
+
+if [ "$EXPORT_CORE" == "1" ]; then
+    build_libtaichi_export
+else
+    build_taichi_wheel
+    NUM_WHL=$(ls dist/*.whl | wc -l)
+    if [ $NUM_WHL -ne 1 ]; then echo "ERROR: created more than 1 whl." && exit 1; fi
+fi
 
 chmod -R 777 "$SCCACHE_DIR"
 rm -f python/CHANGELOG.md

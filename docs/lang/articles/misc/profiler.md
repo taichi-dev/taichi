@@ -20,7 +20,7 @@ Currently, Taichi provides the following profiling tools:
 `ScopedProfiler` tracks the time spent on **host tasks** such as JIT compilation.
 
 1. This profiler is automatically on.
-2. Call `ti.print_profile_info()` to display results in a hierarchical format.
+2. Call `ti.profiler.print_scoped_profiler_info()` to display results in a hierarchical format.
 
 For example:
 
@@ -36,7 +36,7 @@ def compute():
     print("Setting var[0] =", var[0])
 
 compute()
-ti.print_profile_info()
+ti.profiler.print_scoped_profiler_info()
 ```
 
 :::note
@@ -49,12 +49,12 @@ ti.print_profile_info()
 `KernelProfiler` acquires the kernel profiling records from the backend, counts them in Python-scope, and prints the results to the console.
 
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-2. To display the profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
+2. To display the profiling results, call `ti.profiler.print_kernel_profiler_info()`. There are two modes of printing:
     - In `'count'` mode (default), the profiling records with the same kernel name are counted as a profiling result,
     and then the statistics are presented.
     - In `'trace'` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period.
     This mode provides more detailed performance information and runtime hardware metrics for each kernel.
-3. To clear records in this profiler, call `ti.clear_kernel_profile_info()`.
+3. To clear records in this profiler, call `ti.profiler.clear_kernel_profiler_info()`.
 
 For example:
 
@@ -71,12 +71,12 @@ def fill():
 
 for i in range(8):
     fill()
-ti.print_kernel_profile_info('trace')
-ti.clear_kernel_profile_info() # clear all records
+ti.profiler.print_kernel_profiler_info('trace')
+ti.profiler.clear_kernel_profiler_info()  # clear all records
 
 for i in range(100):
     fill()
-ti.print_kernel_profile_info() # default mode: 'count'
+ti.profiler.print_kernel_profiler_info()  # default mode: 'count'
 ```
 
 The outputs would be:

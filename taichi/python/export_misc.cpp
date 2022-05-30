@@ -4,8 +4,9 @@
 *******************************************************************************/
 
 #include "taichi/backends/metal/api.h"
-#include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/opengl/opengl_api.h"
+#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/backends/dx/dx_api.h"
 #include "taichi/common/core.h"
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
@@ -141,8 +142,15 @@ void export_misc(py::module &m) {
         py::arg("use_gles") = false);
 #ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
+  m.def("set_vulkan_visible_device",
+        taichi::lang::vulkan::set_vulkan_visible_device);
 #else
   m.def("with_vulkan", []() { return false; });
+#endif
+#ifdef TI_WITH_DX11
+  m.def("with_dx11", taichi::lang::directx11::is_dx_api_available);
+#else
+  m.def("with_dx11", []() { return false; });
 #endif
 
 #ifdef TI_WITH_CC

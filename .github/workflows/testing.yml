@@ -5,9 +5,15 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: ${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   check_files:
     name: Check files
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     outputs:
       run_job: ${{ steps.check_files.outputs.run_job }}
     runs-on: ubuntu-latest
@@ -20,6 +26,7 @@ jobs:
       - name: check modified files
         id: check_files
         run: |
+          echo "Concurrency group: ${{ github.event.number || github.run_id }}"
           echo "=============== list modified files ==============="
           git diff --name-only @^
 
@@ -50,45 +57,6 @@ jobs:
             echo "::set-output name=run_job::false"
           fi
 
-  check_code_format:
-    name: Check Code Format
-    runs-on: ubuntu-latest
-    needs: check_files
-    # This job will be required to pass before merging to master branch.
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Setup git & clang-format
-        run: |
-          git config user.email "taichigardener@gmail.com"
-          git config user.name "Taichi Gardener"
-          git checkout -b _fake_squash
-          git remote add upstream https://github.com/taichi-dev/taichi.git
-          git fetch upstream master
-          sudo apt install clang-format-10
-
-      - name: Cache PIP
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('requirements_dev.txt') }}
-
-      - name: Install requirements
-        run: |
-          python3 -m pip install --user -r requirements_dev.txt
-
-      - name: Check code format
-        run: |
-          python3 misc/code_format.py
-          git checkout -b _enforced_format
-          git commit -am "enforce code format" || true
-          # exit with 1 if there were differences:
-          git diff _fake_squash _enforced_format --exit-code
-
   check_static_analyzer:
     name: Check Static Analyzer
     runs-on: ubuntu-latest
@@ -96,29 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Pylint
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          python3 -m pip install --user pylint
-          # Make sure pylint doesn't regress
-          pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
-          if [ $? -eq 0 ]
-          then
-            echo "PASSED: pylint is happy"
-            exit 0
-          else
-            echo "FAILED: please run the pylint command above and make sure it passes"
-            exit 1
-          fi
+          submodules: 'recursive'
 
       - name: clang-tidy
         run: |
@@ -127,8 +73,8 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
-          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /bin/bash
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /bin/bash
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
           docker exec --user root check_clang_tidy apt install -y clang-tidy-10
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
@@ -138,19 +84,19 @@ jobs:
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
-            python: py36
-            with_cc: OFF
-            wanted_archs: "cpu"
-          - os: ubuntu-latest
             python: py39
             with_cc: ON
-            wanted_archs: "cpu,cc"
+            wanted_archs: 'cpu,cc'
+          - os: ubuntu-latest
+            python: py310
+            with_cc: ON
+            wanted_archs: 'cpu,cc'
     runs-on: ${{ matrix.os }}
     permissions:
       packages: read
@@ -158,7 +104,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -175,7 +121,7 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -187,7 +133,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -208,12 +154,13 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_test.sh
+          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp tests/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
@@ -226,21 +173,21 @@ jobs:
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-10.15
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            wanted_archs: "cpu"
+            wanted_archs: 'cpu'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
@@ -265,14 +212,16 @@ jobs:
 
       - name: Build & Install
         run: |
+          brew install molten-vk
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
+          brew uninstall molten-vk
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -288,16 +237,74 @@ jobs:
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+          TI_CI: 1
 
-  build_and_test_gpu_linux:
-    name: Build and Test (GPU)
-    needs: [check_code_format, check_files]
-    runs-on: [self-hosted, cuda, vulkan, cn]
-    timeout-minutes: 60
+  build_and_test_cpu_windows:
+    name: Build and Test Windows (CPU)
+    needs: check_files
+    timeout-minutes: 90
+    runs-on: windows-2019
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        if: needs.check_files.outputs.run_job == 'true'
+        with:
+          path: ccache_cache
+          key: ccache-win64-cpu-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-cpu-
+
+      - name: Get docker images
+        shell: bash
+        if: needs.check_files.outputs.run_job == 'true'
+        run: |
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Test
+        shell: bash
+        run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          docker create --name taichi_build_test \
+            ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
+          docker start -a taichi_build_test
+          rm -rf ccache_cache
+          docker cp taichi_build_test:C:/taichi/ccache_cache ccache_cache
+
+      - name: clean docker container
+        shell: bash
+        if: always()
+        run: |
+          docker rm taichi_build_test -f
+
+  build_and_test_gpu_linux:
+    name: Build and Test (GPU)
+    needs: check_files
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        tags:
+          - [self-hosted, cuda, vulkan, cn, driver470]
+          - [self-hosted, cuda, vulkan, cn, driver510]
+
+    runs-on: ${{ matrix.tags }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -315,7 +322,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -340,18 +347,21 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
+          docker cp pyproject.toml taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
+          docker cp requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
         env:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
+          TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
+          TI_DEVICE_MEMORY_GB: '0.7'
 
       - name: clean docker container
         if: always()
@@ -359,61 +369,60 @@ jobs:
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
-    name: Build and Test (Windows)
-    needs: [check_code_format, check_files]
-    runs-on: windows-latest
+    name: Build and Test Windows
+    needs: check_files
+    runs-on: [self-hosted, windows, gpu]
     timeout-minutes: 90
     steps:
+      # See also https://github.com/taichi-dev/taichi/issues/4161
+      - name: Cleanup
+        shell: powershell
+        run: |
+          remove-item '${{ github.workspace }}\*' -recurse -force
+
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
-        
+
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
         with:
           arch: x64
-          
+
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
           path: ccache_cache
-          key: ccache-win64-clang-${{ github.sha }}
+          key: ccache-win64-${{ github.sha }}
           restore-keys: |
-            ccache-win64-clang-
+            ccache-win64-
 
       - name: Build
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          . venv\Scripts\activate.ps1
-          python -c "import taichi"
-          ti diagnose
-          ti changelog
-          echo wanted arch: $env:TI_WANTED_ARCHS
-          python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
+          .\.github\workflows\scripts\win_test.ps1
         env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: cpu,cuda,opengl
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
+          TI_CI: 1
+          PYTHON: '3.7'
+          TI_DEVICE_MEMORY_GB: '0.7'
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
-    needs: [check_code_format, check_files]
+    needs: check_files
     timeout-minutes: 60
     strategy:
       matrix:
@@ -423,12 +432,12 @@ jobs:
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
-        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     runs-on: [self-hosted, m1]
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -443,11 +452,12 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          PY: ${{ matrix.python }}
           CXX: clang++
 
       - name: Test
@@ -455,7 +465,64 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          export PATH=$PATH:$HOME/Library/Python/3.8/bin
+          export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: "metal,cpu"
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
+          PY: ${{ matrix.python }}
+          PLATFORM: 'm1'
+          TI_CI: 1
+
+  build_libtaichi_export:
+    name: Build libtaichi_export.so(GPU)
+    needs: check_files
+    runs-on: [self-hosted, cuda, vulkan, cn]
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: py39
+            with_cc: ON
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-${{matrix.with_cc}}-
+
+      - name: Build For Desktop
+        run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          docker create --user dev --name taichi_build_desktop --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY -e EXPORT_CORE\
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          # A tarball is needed because sccache needs some permissions that only the file owner has.
+          # 1000 is the uid and gid of user "dev" in the container.
+          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build_desktop:/home/dev/
+          docker start -a taichi_build_desktop
+        env:
+          PY: ${{ matrix.python }}
+          GPU_BUILD: ON
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_LLVM:BOOL=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DTI_EXPORT_CORE:BOOL=ON
+          EXPORT_CORE: 1
+          DISPLAY: :1
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build_desktop -f

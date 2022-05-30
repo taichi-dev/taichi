@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 #include "taichi/common/core.h"
@@ -79,6 +81,11 @@ nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
 // is an ObjC file and is not happy formatting it.
 struct TI_NSString;
 struct TI_NSArray;
+
+struct TI_NSRange {
+  size_t location{0};
+  size_t length{0};
+};
 
 // |str| must exist during the entire lifetime of the returned object, as it
 // does not own the underlying memory. Think of it as std::string_view.

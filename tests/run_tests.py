@@ -17,13 +17,15 @@ def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+        env_copy = os.environ.copy()
+        env_copy['TI_LIB_DIR'] = ti_lib_dir
         subprocess.check_call(f'./{cpp_test_filename}',
-                              env={'TI_LIB_DIR': ti_lib_dir},
+                              env=env_copy,
                               cwd=build_dir)
     else:
-        ti.warn(
-            f"C++ tests are skipped due to missing {cpp_test_filename} in {build_dir}",
-            "Try building taichi with `TAICHI_CMAKE_ARGS=\'-DTI_BUILD_TESTS:BOOL=ON\' python setup.py develop`",
+        warnings.warn(
+            f"C++ tests are skipped due to missing {cpp_test_filename} in {build_dir}."
+            "Try building taichi with `TAICHI_CMAKE_ARGS=\'-DTI_BUILD_TESTS:BOOL=ON\' python setup.py develop`"
             "if you want to enable it.")
 
 
@@ -34,7 +36,6 @@ def _test_python(args):
 
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_dir = os.path.join(curr_dir, 'python')
-    test_dir_38 = os.path.join(curr_dir, 'python38')
     pytest_args = []
 
     # TODO: use pathlib to deal with suffix and stem name manipulation
@@ -47,20 +48,14 @@ def _test_python(args):
             if not f.endswith('.py'):
                 f = f + '.py'
             file = os.path.join(test_dir, f)
-            file_38 = os.path.join(test_dir_38, f)
             has_tests = False
             if os.path.exists(file):
                 pytest_args.append(file)
-                has_tests = True
-            if os.path.exists(file_38) and test_38:
-                pytest_args.append(file_38)
                 has_tests = True
             assert has_tests, f"Test {f} does not exist."
     else:
         # run all the tests
         pytest_args = [test_dir]
-        if test_38:
-            pytest_args += [test_dir_38]
     if args.verbose:
         pytest_args += ['-v']
     if args.rerun:
@@ -115,9 +110,9 @@ def test():
     parser.add_argument('-c',
                         '--cpp',
                         dest='cpp',
-                        default=True,
+                        default=False,
                         action='store_true',
-                        help='Run the C++ tests')
+                        help='Only run the C++ tests')
     parser.add_argument('-s',
                         '--show',
                         dest='show_output',
@@ -214,6 +209,7 @@ def test():
 
     if args.cpp:
         _test_cpp()
+        return
 
     if _test_python(args) != 0:
         exit(1)

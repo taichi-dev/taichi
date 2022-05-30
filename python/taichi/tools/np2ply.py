@@ -5,6 +5,14 @@ import numpy as np
 
 
 class PLYWriter:
+    """Writes `numpy.array` data to `ply` files.
+
+    Args:
+        num_vertices (int): number of vertices.
+        num_faces (int, optional): number of faces.
+        face_type (str): `tri` or `quad`.
+        comment (str): comment message.
+    """
     def __init__(self,
                  num_vertices: int,
                  num_faces=0,
@@ -71,6 +79,13 @@ class PLYWriter:
                 self.vertex_data.append(self.type_map[data_type](data[:, i]))
 
     def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
+        """Set the (x, y, z) coordinates of the vertices.
+
+         Args:
+             x (`numpy.array(float)`): x-coordinates of the vertices.
+             y (`numpy.array(float)`): y-coordinates of the vertices.
+             z (`numpy.array(float)`): z-coordinates of the vertices.
+        """
         self.add_vertex_channel("x", "float", x)
         self.add_vertex_channel("y", "float", y)
         self.add_vertex_channel("z", "float", z)
@@ -94,6 +109,16 @@ class PLYWriter:
     #         self.add_vertex_channel("z", "float", np.zeros(n))
 
     def add_vertex_normal(self, nx: np.array, ny: np.array, nz: np.array):
+        """Add normal vectors at the vertices.
+
+        The three arguments are all numpy arrays of float type and have
+        the same length.
+
+        Args:
+            nx (`numpy.array(float)`): x-coordinates of the normal vectors.
+            ny (`numpy.array(float)`): y-coordinates of the normal vectors.
+            nz (`numpy.array(float)`): z-coordinates of the normal vectors.
+        """
         self.add_vertex_channel("nx", "float", nx)
         self.add_vertex_channel("ny", "float", ny)
         self.add_vertex_channel("nz", "float", nz)
@@ -114,15 +139,38 @@ class PLYWriter:
     #     self.add_vertex_channel("nz", "float", normal[:, 2])
 
     def add_vertex_color(self, r: np.array, g: np.array, b: np.array):
+        """Sets the (r, g, b) channels of the colors at the vertices.
+
+        The three arguments are all numpy arrays of float type and have
+        the same length.
+
+        Args:
+            r (`numpy.array(float)`): the r-channel (red) of the colors.
+            g (`numpy.array(float)`): the g-channel (green) of the color.
+            b (`numpy.array(float)`): the b-channel (blue) of the colors.
+        """
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
 
     def add_vertex_alpha(self, alpha: np.array):
+        """Sets the alpha-channel (transparent) of the vertex colors.
+
+        Args:
+            alpha (`numpy.array(float)`): the alpha-channel (transparent) of the colors.
+        """
         self.add_vertex_channel("Alpha", "float", alpha)
 
     def add_vertex_rgba(self, r: np.array, g: np.array, b: np.array,
                         a: np.array):
+        """Sets the (r, g, b, a) channels of the colors at the vertices.
+
+        Args:
+            r (`numpy.array(float)`): the r-channel (red) of the colors.
+            g (`numpy.array(float)`): the g-channel (green) of the color.
+            b (`numpy.array(float)`): the b-channel (blue) of the colors.
+            a (`numpy.array(float)`): the a-channel (alpha) of the colors.
+        """
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
@@ -146,6 +194,10 @@ class PLYWriter:
     #         self.add_vertex_channel("Alpha", "float", color[:, 3])
 
     def add_vertex_id(self):
+        """Sets the ids of the vertices.
+
+        The id of a vertex is equal to its index in the vertex array.
+        """
         self.add_vertex_channel("id", "int", np.arange(self.num_vertices))
 
     def add_vertex_piece(self, piece: np.array):
@@ -277,3 +329,6 @@ class PLYWriter:
 
         real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export(real_path)
+
+
+__all__ = ['PLYWriter']

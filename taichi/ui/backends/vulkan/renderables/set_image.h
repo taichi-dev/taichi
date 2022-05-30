@@ -37,7 +37,7 @@ class SetImage final : public Renderable {
     float y_factor{1.0};
   };
 
-  SetImage(AppContext *app_context);
+  SetImage(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const SetImageInfo &info);
 
@@ -47,6 +47,7 @@ class SetImage final : public Renderable {
   taichi::lang::DeviceAllocation cpu_staging_buffer_;
   taichi::lang::DeviceAllocation gpu_staging_buffer_;
 
+  taichi::lang::DataType texture_dtype_{taichi::lang::PrimitiveType::u8};
   taichi::lang::DeviceAllocation texture_;
 
  private:

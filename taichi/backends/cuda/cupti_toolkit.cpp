@@ -22,7 +22,7 @@ enum class CuptiMetricsDefault : uint {
   CUPTI_METRIC_DEFAULT_TOTAL = 2
 };
 
-constexpr const char *MetricListDefault[] = {
+[[maybe_unused]] constexpr const char *MetricListDefault[] = {
     "smsp__cycles_elapsed.avg",  // CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
     "smsp__cycles_elapsed.avg.per_second",  // CUPTI_METRIC_CORE_FREQUENCY_HZS
 };
@@ -39,7 +39,7 @@ bool check_cupti_availability() {
         "7.0 , fallback to default kernel profiler");
     TI_WARN(
         "See also: "
-        "https://docs.taichi.graphics/lang/articles/misc/profiler");
+        "https://docs.taichi-lang.org/docs/profiler");
     return false;
   }
   return true;
@@ -106,7 +106,7 @@ bool check_cupti_privileges() {
         "=================================================================");
     TI_WARN(
         "See also: "
-        "https://docs.taichi.graphics/lang/articles/misc/profiler");
+        "https://docs.taichi-lang.org/docs/profiler");
     return false;
   }
   // For other errors , CuptiToolkit::init_cupti() will send error message.
@@ -800,11 +800,18 @@ CuptiToolkit::CuptiToolkit() {
   for (uint idx = 0; idx < metric_list_size; idx++) {
     cupti_config_.metric_list.push_back(MetricListDefault[idx]);
   }
+  set_status(true);
 }
 
 CuptiToolkit::~CuptiToolkit() {
-  end_profiling();
-  deinit_cupti();
+  if (enabled_) {
+    end_profiling();
+    deinit_cupti();
+  }
+}
+
+void CuptiToolkit::set_status(bool enable) {
+  enabled_ = enable;
 }
 
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
@@ -1097,6 +1104,9 @@ CuptiToolkit::CuptiToolkit() {
   TI_NOT_IMPLEMENTED;
 }
 CuptiToolkit::~CuptiToolkit() {
+  TI_NOT_IMPLEMENTED;
+}
+void CuptiToolkit::set_status(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
 void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {

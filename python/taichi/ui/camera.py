@@ -6,6 +6,30 @@ from .utils import euler_to_vec, vec_to_euler
 
 
 class Camera:
+    """The Camera class.
+
+    You should not instantiate this class by calling the `__init__` method
+    directly, please use the helper function :func:`~taichi.ui.make_camera()`
+    instead.
+
+    Args:
+        ptr (:class:`~taichi._ti_core.PyCamera`): An instance of the `PyCamera` \
+            class from the C++ level.
+
+    Example::
+
+        >>> scene = ti.ui.Scene()  # assume you have a scene
+        >>>
+        >>> camera = ti.ui.make_camera()
+        >>> camera.position(1, 1, 1)  # set camera position
+        >>> camera.lookat(0, 0, 0)  # set camera lookat
+        >>> camera.up(0, 1, 0)  # set camera up vector
+        >>> scene.set_camera(camera)
+        >>>
+        >>> # you can also control camera movement in a window
+        >>> window = ti.ui.Window("GGUI Camera", res=(640, 480), vsync=True)
+        >>> camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+    """
     def __init__(self, ptr):
         self.ptr = ptr
 
@@ -18,51 +42,161 @@ class Camera:
         self.last_mouse_y = None
 
     def position(self, x, y, z):
+        """Set the camera position.
+
+        Args:
+            args (:mod:`taichi.types.primitive_types`): 3D coordinates.
+
+        Example::
+
+            >>> camera.position(1, 1, 1)
+        """
         self.curr_position = Vector([x, y, z])
         self.ptr.position(x, y, z)
 
     def lookat(self, x, y, z):
+        """Set the camera lookat.
+
+        Args:
+            args (:mod:`taichi.types.primitive_types`): 3D coordinates.
+
+        Example::
+
+            >>> camera.lookat(0, 0, 0)
+        """
         self.curr_lookat = Vector([x, y, z])
         self.ptr.lookat(x, y, z)
 
     def up(self, x, y, z):
+        """Set the camera up vector.
+
+        Args:
+            args (:mod:`taichi.types.primitive_types`): 3D coordinates.
+
+        Example::
+
+            >>> camera.up(0, 1, 0)
+        """
         self.curr_up = Vector([x, y, z])
         self.ptr.up(x, y, z)
 
     def projection_mode(self, mode):
+        """Camera projection mode, 0 for perspective and 1 for orthogonal.
+        """
         self.ptr.projection_mode(mode)
 
     def fov(self, fov):
+        """Set the camera fov angle (field of view) in degrees.
+
+        Args:
+            fov (:mod:`taichi.types.primitive_types`): Angle in range (0, 180).
+
+        Example::
+
+            >>> camera.fov(45)
+        """
         self.ptr.fov(fov)
 
     def left(self, left):
+        """Set the offset of the left clipping plane in camera frustum.
+
+        Args:
+            left (:mod:`taichi.types.primitive_types`): \
+                offset of the left clipping plane.
+
+        Example::
+
+            >>> camera.left(-1.0)
+        """
         self.ptr.left(left)
 
     def right(self, right):
+        """Set the offset of the right clipping plane in camera frustum.
+
+        Args:
+            right (:mod:`taichi.types.primitive_types`): \
+                offset of the right clipping plane.
+
+        Example::
+
+            >>> camera.right(1.0)
+        """
         self.ptr.right(right)
 
     def top(self, top):
+        """Set the offset of the top clipping plane in camera frustum.
+
+        Args:
+            top (:mod:`taichi.types.primitive_types`): \
+                offset of the top clipping plane.
+
+        Example::
+
+            >>> camera.top(-1.0)
+        """
         self.ptr.top(top)
 
     def bottom(self, bottom):
+        """Set the offset of the bottom clipping plane in camera frustum.
+
+        Args:
+            bottom (:mod:`taichi.types.primitive_types`): \
+                offset of the bottom clipping plane.
+
+        Example::
+
+            >>> camera.bottom(1.0)
+        """
         self.ptr.bottom(bottom)
 
     def z_near(self, z_near):
+        """Set the offset of the near clipping plane in camera frustum.
+
+        Args:
+            near (:mod:`taichi.types.primitive_types`): \
+                offset of the near clipping plane.
+
+        Example::
+
+            >>> camera.near(0.1)
+        """
         self.ptr.z_near(z_near)
 
-    def z_near(self, z_far):
+    def z_far(self, z_far):
+        """Set the offset of the far clipping plane in camera frustum.
+
+        Args:
+            far (:mod:`taichi.types.primitive_types`): \
+                offset of the far clipping plane.
+
+        Example::
+
+            >>> camera.left(1000.0)
+        """
         self.ptr.z_far(z_far)
 
-    # move the camera according to user inputs, FPS game style.
     def track_user_inputs(self,
                           window,
                           movement_speed=1.0,
                           yaw_speed=2,
                           pitch_speed=2,
                           hold_key=None):
+        """Move the camera according to user inputs.
+        Press `w`, `s`, `a`, `d`, `e`, `q` to move the camera
+        `formard`, `back`, `left`, `right`, `head up`, `head down`, accordingly.
+
+        Args:
+
+            window (:class:`~taichi.ui.Window`): a windown instance.
+            movement_speed (:mod:`~taichi.types.primitive_types`): camera movement speed.
+            yaw_speed (:mod:`~taichi.types.primitive_types`): speed of changes in yaw angle.
+            pitch_speed (:mod:`~taichi.types.primitive_types`): speed of changes in pitch angle.
+            hold_key (:mod:`~taichi.ui`): User defined key for holding the camera movement.
+        """
         front = (self.curr_lookat - self.curr_position).normalized()
         position_change = Vector([0.0, 0.0, 0.0])
         left = self.curr_up.cross(front)
+        up = self.curr_up
         if window.is_pressed('w'):
             position_change = front * movement_speed
         if window.is_pressed('s'):
@@ -71,6 +205,10 @@ class Camera:
             position_change = left * movement_speed
         if window.is_pressed('d'):
             position_change = -left * movement_speed
+        if window.is_pressed('e'):
+            position_change = up * movement_speed
+        if window.is_pressed('q'):
+            position_change = -up * movement_speed
         self.position(*(self.curr_position + position_change))
         self.lookat(*(self.curr_lookat + position_change))
 

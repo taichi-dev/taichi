@@ -2,7 +2,8 @@ import numpy as np
 
 import taichi as ti
 
-ti.init(ti.cuda)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch)
 
 #dim, n_grid, steps, dt = 2, 128, 20, 2e-4
 #dim, n_grid, steps, dt = 2, 256, 32, 1e-4
@@ -110,8 +111,8 @@ def substep(g_x: float, g_y: float, g_z: float):
         if grid_m[I] > 0:
             grid_v[I] /= grid_m[I]
         grid_v[I] += dt * ti.Vector([g_x, g_y, g_z])
-        cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[
-            I] > 0
+        cond = (I < bound) & (grid_v[I] < 0) | \
+               (I > n_grid - bound) & (grid_v[I] > 0)
         grid_v[I] = 0 if cond else grid_v[I]
     ti.block_dim(n_grid)
     for p in x:
@@ -196,7 +197,7 @@ def init_vols(vols):
 
 
 @ti.kernel
-def set_color_by_material(material_colors: ti.ext_arr()):
+def set_color_by_material(material_colors: ti.types.ndarray()):
     for i in range(n_particles):
         mat = materials[i]
         colors[i] = ti.Vector([

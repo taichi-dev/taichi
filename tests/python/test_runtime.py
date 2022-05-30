@@ -1,11 +1,14 @@
 import copy
 import os
+import pathlib
+import platform
 import sys
 from contextlib import contextmanager
 
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 @contextmanager
@@ -47,10 +50,8 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
 TF = [True, False]
 init_args = {
     # 'key': [default, choices],
-    'print_preprocessed': [False, TF],
     'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
     'gdb_trigger': [False, TF],
-    'excepthook': [False, TF],
     'advanced_optimization': [True, TF],
     'debug': [False, TF],
     'print_ir': [False, TF],
@@ -60,7 +61,6 @@ init_args = {
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],
-    'print_benchmark_stat': [False, TF],
     'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],
     'print_accessor_ir': [False, TF],
@@ -76,11 +76,36 @@ init_args = {
 env_configs = ['TI_' + key.upper() for key in init_args.keys()]
 
 special_init_cfgs = [
-    'print_preprocessed',
     'log_level',
     'gdb_trigger',
-    'excepthook',
 ]
+
+
+@pytest.mark.skipif(
+    platform.system() == 'Windows',
+    reason="XDG Base Directory Specification is only supported on *nix.",
+)
+def test_xdg_basedir(tmpdir):
+    orig_cache = os.environ.get("XDG_CACHE_HOME", None)
+    try:
+        # Note: This test intentionally calls os.putenv instead of using the
+        # patch_os_environ_helper because we need to propagate the change in
+        # environment to the native C++ code.
+        os.putenv("XDG_CACHE_HOME", str(tmpdir))
+
+        ti_core = ti._lib.utils.import_ti_core()
+        repo_dir = ti_core.get_repo_dir()
+
+        repo_path = pathlib.Path(repo_dir).resolve()
+        expected_path = pathlib.Path(tmpdir / "taichi").resolve()
+
+        assert repo_path == expected_path
+
+    finally:
+        if orig_cache is None:
+            os.unsetenv("XDG_CACHE_HOME")
+        else:
+            os.environ["XDG_CACHE_HOME"] = orig_cache
 
 
 @pytest.mark.parametrize('key,values', init_args.items())
@@ -89,11 +114,12 @@ def test_init_arg(key, values):
 
     # helper function:
     def test_arg(key, value, kwargs={}):
-        spec_cfg = ti.init(_test_mode=True, **kwargs)
         if key in special_init_cfgs:
+            spec_cfg = ti.init(_test_mode=True, **kwargs)
             cfg = spec_cfg
         else:
-            cfg = ti.cfg
+            ti.init(**kwargs)
+            cfg = ti.lang.impl.current_cfg()
         assert getattr(cfg, key) == value
 
     with patch_os_environ_helper({}, excludes=env_configs):
@@ -114,15 +140,15 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
-@pytest.mark.parametrize('arch', ti._testing.expected_archs())
+@pytest.mark.parametrize('arch', test_utils.expected_archs())
 def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)
-        assert ti.cfg.arch == arch
+        assert ti.lang.impl.current_cfg().arch == arch
     with patch_os_environ_helper({'TI_ARCH': ti._lib.core.arch_name(arch)},
                                  excludes=['TI_ARCH']):
         ti.init(arch=ti.cc)
-        assert ti.cfg.arch == arch
+        assert ti.lang.impl.current_cfg().arch == arch
 
 
 def test_init_bad_arg():
@@ -130,33 +156,37 @@ def test_init_bad_arg():
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
-@ti.test(arch=ti.cpu)
-def test_materialize_callback():
-    x = ti.field(ti.f32, (3, 4))
-
-    @ti.materialize_callback
-    @ti.kernel
-    def init_x():
-        for i in range(3):
-            for j in range(4):
-                x[i, j] = i + j + 1
-
-    # x will be initialized on first invocation
-    for i in range(3):
-        for j in range(4):
-            assert x[i, j] == i + j + 1
+def test_init_require_version():
+    ti_core = ti._lib.utils.import_ti_core()
+    require_version = '{}.{}.{}'.format(ti_core.get_version_major(),
+                                        ti_core.get_version_minor(),
+                                        ti_core.get_version_patch())
+    ti.init(_test_mode=True, debug=True, require_version=require_version)
 
 
-@pytest.mark.parametrize('level', ti.supported_log_levels)
-@ti.test()
+def test_init_bad_require_version():
+    with pytest.raises(Exception):
+        ti_core = ti._lib.utils.import_ti_core()
+        bad_require_version = '{}.{}.{}'.format(
+            ti_core.get_version_major(), ti_core.get_version_minor(),
+            ti_core.get_version_patch() + 1)
+        ti.init(_test_mode=True,
+                debug=True,
+                require_version=bad_require_version)
+
+
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
 
 
-@pytest.mark.parametrize('level', ti.supported_log_levels)
-@ti.test()
+@pytest.mark.parametrize(
+    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@test_utils.test()
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)
     ti.set_logging_level(level)
-    assert ti.is_logging_effective(level)
+    assert ti._logging.is_logging_effective(level)

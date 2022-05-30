@@ -1,7 +1,7 @@
 // Codegen for the hierarchical data structure
 #pragma once
 
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/runtime/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/ir/snode.h"
 
@@ -21,11 +21,12 @@ class OpenglStructCompiler {
   CompiledResult run(SNode &node);
 
  private:
-  void collect_snodes(SNode &snode);
+  void collect_snodes(const SNode &snode);
   void generate_types(const SNode &snode);
-  size_t compute_snode_size(const SNode &sn);
+  void generate_snode_tree(const SNode &root);
+  void align_as_elem_stride(const SNode &sn);
 
-  std::vector<SNode *> snodes_;
+  std::vector<const SNode *> snodes_;
   std::unordered_map<SNodeId, SNodeInfo> snode_map_;
 };
 

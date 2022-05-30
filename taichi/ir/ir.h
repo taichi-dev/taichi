@@ -15,6 +15,11 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
+#ifdef TI_WITH_LLVM
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/MapVector.h"
+#endif
+
 namespace taichi {
 namespace lang {
 
@@ -71,33 +76,15 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-class DecoratorRecorder {
- public:
-  int vectorize;
-  int bit_vectorize;
-  int num_cpu_threads;
-  bool strictly_serialized;
-  MemoryAccessOptions mem_access_opt;
-  int block_dim;
-  bool uniform;
-
-  DecoratorRecorder() {
-    reset();
-  }
-
-  void reset();
-};
-
 class Identifier {
  public:
-  static int id_counter;
   std::string name_;
+  int id{0};
 
-  int id;
+  // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(const std::string &name_ = "") : name_(name_) {
-    id = id_counter++;
+  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -115,9 +102,15 @@ class Identifier {
   }
 };
 
+#ifdef TI_WITH_LLVM
+using stmt_vector = llvm::SmallVector<pStmt, 8>;
+#else
+using stmt_vector = std::vector<pStmt>;
+#endif
+
 class VecStatement {
  public:
-  std::vector<pStmt> stmts;
+  stmt_vector stmts;
 
   VecStatement() {
   }
@@ -130,14 +123,14 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
-  VecStatement(std::vector<pStmt> &&other_stmts) {
+  VecStatement(stmt_vector &&other_stmts) {
     stmts = std::move(other_stmts);
   }
 
   Stmt *push_back(pStmt &&stmt);
 
   template <typename T, typename... Args>
-  T *push_back(Args &&... args) {
+  T *push_back(Args &&...args) {
     auto up = std::make_unique<T>(std::forward<Args>(args)...);
     auto ptr = up.get();
     stmts.push_back(std::move(up));
@@ -192,6 +185,7 @@ class IRVisitor {
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
+#undef DEFINE_VISIT
 };
 
 struct CompileConfig;
@@ -464,7 +458,7 @@ class StmtFieldManager {
   void operator()(const char *key, T &&value);
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &&t, Args &&... rest) {
+  void operator()(const char *key_, T &&t, Args &&...rest) {
     std::string key(key_);
     size_t pos = key.find(',');
     std::string first_name = key.substr(0, pos);
@@ -578,12 +572,12 @@ class Stmt : public IRNode {
   }
 
   template <typename T, typename... Args>
-  static std::unique_ptr<T> make_typed(Args &&... args) {
+  static std::unique_ptr<T> make_typed(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  static pStmt make(Args &&... args) {
+  static pStmt make(Args &&...args) {
     return make_typed<T>(std::forward<Args>(args)...);
   }
 
@@ -598,13 +592,17 @@ class Stmt : public IRNode {
   }
 
   ~Stmt() override = default;
+
+  static void reset_counter() {
+    instance_id_counter = 0;
+  }
 };
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt;
-  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
-  Stmt *mask_var;
+  Stmt *parent_stmt{nullptr};
+  stmt_vector statements;
+  stmt_vector trash_bin;
   std::vector<SNode *> stop_gradients;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
@@ -612,7 +610,6 @@ class Block : public IRNode {
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
   Block() {
-    mask_var = nullptr;
     parent_stmt = nullptr;
     kernel = nullptr;
   }
@@ -621,16 +618,22 @@ class Block : public IRNode {
 
   bool has_container_statements();
   int locate(Stmt *stmt);
+  stmt_vector::iterator locate(int location);
+  stmt_vector::iterator find(Stmt *stmt);
   void erase(int location);
   void erase(Stmt *stmt);
+  void erase_range(stmt_vector::iterator begin, stmt_vector::iterator end);
+  void erase(std::unordered_set<Stmt *> stmts);
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   // Returns stmt.get()
   Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+  Stmt *insert_at(std::unique_ptr<Stmt> &&stmt, stmt_vector::iterator location);
 
   // Returns stmt.back().get() or nullptr if stmt is empty
   Stmt *insert(VecStatement &&stmt, int location = -1);
+  Stmt *insert_at(VecStatement &&stmt, stmt_vector::iterator location);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);
@@ -643,7 +646,6 @@ class Block : public IRNode {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
-  Stmt *mask();
   IRNode *get_parent() const override;
 
   Stmt *back() const {
@@ -651,7 +653,7 @@ class Block : public IRNode {
   }
 
   template <typename T, typename... Args>
-  Stmt *push_back(Args &&... args) {
+  Stmt *push_back(Args &&...args) {
     auto stmt = std::make_unique<T>(std::forward<Args>(args)...);
     stmt->parent = this;
     statements.emplace_back(std::move(stmt));
@@ -705,29 +707,6 @@ struct LocalAddress {
 
   LocalAddress(Stmt *var, int offset);
 };
-
-extern DecoratorRecorder dec;
-
-inline void Vectorize(int v) {
-  dec.vectorize = v;
-}
-
-inline void BitVectorize(int v) {
-  dec.bit_vectorize = v;
-}
-
-inline void Parallelize(int v) {
-  dec.num_cpu_threads = v;
-}
-
-inline void StrictlySerialize() {
-  dec.strictly_serialized = true;
-}
-
-inline void BlockDim(int v) {
-  TI_ASSERT(bit::is_power_of_two(v));
-  dec.block_dim = v;
-}
 
 class VectorElement {
  public:

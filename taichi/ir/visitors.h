@@ -25,8 +25,6 @@ class BasicStmtVisitor : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override;
 
-  void visit(FuncBodyStmt *stmt) override;
-
   void visit(FrontendWhileStmt *stmt) override;
 
   void visit(FrontendForStmt *stmt) override;

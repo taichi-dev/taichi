@@ -1,6 +1,5 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 
-#include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
@@ -12,12 +11,19 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
+      : CodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
+  }
+
+  bool supports_offline_cache() const override {
+    return true;
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
@@ -133,7 +139,10 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     bls_buffer = new llvm::GlobalVariable(
         *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::LocalExecTLSModel, 0);
-    bls_buffer->setAlignment(llvm::MaybeAlign(8));
+    /* module->getOrInsertGlobal("bls_buffer", type);
+    bls_buffer = module->getNamedGlobal("bls_buffer");
+    bls_buffer->setAlignment(llvm::MaybeAlign(8));*/ // TODO(changyu): Fix JIT session error: Symbols not found: [ __emutls_get_address ] in python 3.10
+
     // initialize the variable with an undef value to ensure it is added to the
     // symbol table
     bls_buffer->setInitializer(llvm::UndefValue::get(type));
@@ -170,6 +179,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
     if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+      llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+      builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
@@ -189,8 +200,18 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 };
 
+}  // namespace
+
+#ifdef TI_WITH_LLVM
+// static
+std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
+                                                           IRNode *ir) {
+  return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
+}
+#endif  // TI_WITH_LLVM
+
 FunctionType CodeGenCPU::codegen() {
-  TI_AUTO_PROF
+  TI_AUTO_PROF;
   return CodeGenLLVMCPU(kernel, ir).gen();
 }
 

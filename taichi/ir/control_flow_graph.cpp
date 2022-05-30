@@ -121,6 +121,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // this position store the same data.
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
+    if (block->statements[i]->is<FuncCallStmt>()) {
+      return nullptr;
+    }
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
@@ -417,6 +420,10 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
+    if (stmt->is<FuncCallStmt>()) {
+      killed_in_this_node.clear();
+      live_load_in_this_node.clear();
+    }
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
@@ -621,21 +628,18 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   TI_ASSERT(nodes[start_node]->empty());
   nodes[start_node]->reach_gen.clear();
   nodes[start_node]->reach_kill.clear();
-  if (!after_lower_access) {
-    for (int i = 0; i < num_nodes; i++) {
-      for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-        auto stmt = nodes[i]->block->statements[j].get();
-        if (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
+  for (int i = 0; i < num_nodes; i++) {
+    for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
+      auto stmt = nodes[i]->block->statements[j].get();
+      if ((stmt->is<PtrOffsetStmt>() &&
+           stmt->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) ||
+          (!after_lower_access &&
+           (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
-            stmt->is<GlobalTemporaryStmt>() ||
-            (stmt->is<PtrOffsetStmt>() &&
-             stmt->cast<PtrOffsetStmt>()->origin->is<GlobalTemporaryStmt>()) ||
-            (stmt->is<PtrOffsetStmt>() &&
-             stmt->cast<PtrOffsetStmt>()->is_unlowered_global_ptr())) {
-          // TODO: unify them
-          // A global pointer that may contain some data before this kernel.
-          nodes[start_node]->reach_gen.insert(stmt);
-        }
+            stmt->is<GlobalTemporaryStmt>() || stmt->is<PtrOffsetStmt>()))) {
+        // TODO: unify them
+        // A global pointer that may contain some data before this kernel.
+        nodes[start_node]->reach_gen.insert(stmt);
       }
     }
   }

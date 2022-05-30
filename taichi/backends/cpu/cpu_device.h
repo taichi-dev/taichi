@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "taichi/common/core.h"
-#include "taichi/backends/device.h"
+#include "taichi/llvm/llvm_device.h"
 #include "taichi/system/virtual_memory.h"
 
 namespace taichi {
@@ -69,13 +69,18 @@ class CpuStream : public Stream {
   ~CpuStream() override{};
 
   std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
-  void submit(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
-  void submit_synced(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit(CommandList *cmdlist,
+                         const std::vector<StreamSemaphore> &wait_semaphores =
+                             {}) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override{
+      TI_NOT_IMPLEMENTED};
 
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
 
-class CpuDevice : public Device {
+class CpuDevice : public LlvmDevice {
  public:
   struct AllocInfo {
     void *ptr{nullptr};
@@ -83,7 +88,7 @@ class CpuDevice : public Device {
     bool use_cached{false};
   };
 
-  AllocInfo get_alloc_info(DeviceAllocation handle);
+  AllocInfo get_alloc_info(const DeviceAllocation handle);
 
   ~CpuDevice() override{};
 
@@ -111,12 +116,14 @@ class CpuDevice : public Device {
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
+  void wait_idle() override{TI_NOT_IMPLEMENTED};
+
  private:
   std::vector<AllocInfo> allocations_;
   std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
       virtual_memories_;
 
-  void validate_device_alloc(DeviceAllocation alloc) {
+  void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");
     }

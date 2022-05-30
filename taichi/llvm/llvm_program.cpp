@@ -1,17 +1,19 @@
-#include "llvm_program.h"
+#include "taichi/llvm/llvm_program.h"
+
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
+#include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/runtime/llvm/mem_request.h"
 #include "taichi/util/str.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
-#include "taichi/backends/cuda/cuda_device.h"
-
 #include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
@@ -62,27 +64,34 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
-  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
+  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(this, host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    int num_SMs;
+    int num_SMs{1};
     CUDADriver::get_instance().device_get_attribute(
         &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
-    int query_max_block_dim;
+    int query_max_block_dim{1024};
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
-    int query_max_block_per_sm;
-    CUDADriver::get_instance().device_get_attribute(
-        &query_max_block_per_sm,
-        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    int version{0};
+    CUDADriver::get_instance().driver_get_version(&version);
+    int query_max_block_per_sm{16};
+    if (version >= 11000) {
+      // query this attribute only when CUDA version is above 11.0
+      CUDADriver::get_instance().device_get_attribute(
+          &query_max_block_per_sm,
+          CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
+    }
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;
     }
 
     if (config_.saturating_grid_dim == 0) {
-      TI_INFO("CUDA max blocks per SM = {}", query_max_block_per_sm);
-      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm;
+      if (version >= 11000) {
+        TI_TRACE("CUDA max blocks per SM = {}", query_max_block_per_sm);
+      }
+      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm * 2;
     }
 #endif
   }
@@ -116,16 +125,14 @@ void LlvmProgramImpl::initialize_host() {
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   if (config->arch == Arch::cuda && llvm_context_device_ == nullptr) {
-    llvm_context_device_ = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(this, Arch::cuda);
     llvm_context_device_->init_runtime_jit_module();
   }
 }
 
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
                                       OffloadedStmt *offloaded) {
-  if (!kernel->lowered()) {
-    kernel->lower();
-  }
   auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
   return codegen->codegen();
 }
@@ -142,10 +149,11 @@ void LlvmProgramImpl::synchronize() {
 
 std::unique_ptr<llvm::Module>
 LlvmProgramImpl::clone_struct_compiler_initial_context(
-    const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    bool has_multiple_snode_trees,
     TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
+  if (has_multiple_snode_trees) {
     return tlctx->clone_struct_module();
+  }
   return tlctx->clone_runtime_module();
 }
 
@@ -176,6 +184,15 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   Ptr root_buffer = snode_tree_buffer_manager_->allocate(
       runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
       result_buffer);
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    std::memset(root_buffer, 0, rounded_size);
+  }
 
   DeviceAllocation alloc{kDeviceNullAllocation};
 
@@ -230,32 +247,37 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
+    SNodeTree *tree) {
   auto *const root = tree->root();
+  const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
+  std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_host_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
-        host_arch(), this, std::move(host_module));
+        has_multiple_snode_trees, llvm_context_host_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
+        host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_device_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
-        Arch::cuda, this, std::move(device_module));
+        has_multiple_snode_trees, llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
+        Arch::cuda, this, std::move(device_module), tree->id());
   }
-  struct_compiler_->run(*root);
+  struct_compiler->run(*root);
+  ++num_snode_trees_processed_;
+  return struct_compiler;
 }
 
-void LlvmProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
-  compile_snode_tree_types(tree, snode_trees_);
-  initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
+void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
+  compile_snode_tree_types_impl(tree);
+}
+
+void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                             uint64 *result_buffer) {
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  initialize_llvm_runtime_snodes(tree, struct_compiler.get(), result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -313,6 +335,14 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
       list_manager_len, num_active_chunks, elements_per_chunk, element_size,
       size_MB);
+}
+
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
+  if (config->arch == Arch::x64) {
+    return std::make_unique<cpu::AotModuleBuilderImpl>();
+  }
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -410,7 +440,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       llvm_runtime_,
                                       (void *)assert_failed_host);
   }
-  if (arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
     // Profiler functions can only be called on CPU kernels
     runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);
@@ -464,7 +494,7 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
             return fetch_result<uint64>(taichi_result_buffer_error_id,
                                         result_buffer);
           });
-      TI_ERROR("Assertion failure: {}", error_message_formatted);
+      throw TaichiAssertionError(error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -565,6 +595,11 @@ cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
   return static_cast<cpu::CpuDevice *>(device_.get());
 }
 
+LlvmDevice *LlvmProgramImpl::llvm_device() {
+  TI_ASSERT(dynamic_cast<LlvmDevice *>(device_.get()));
+  return static_cast<LlvmDevice *>(device_.get());
+}
+
 DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
   return tree_alloc.get_ptr();
@@ -580,7 +615,7 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     tlctx = llvm_context_host_.get();
   }
 
-  return get_compute_device()->allocate_memory_runtime(
+  return llvm_device()->allocate_memory_runtime(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
        config->ndarray_use_cached_allocator,
@@ -589,11 +624,8 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
        result_buffer});
 }
 
-std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
-  return device_;
-}
-
-uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
+uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
+    const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
@@ -604,5 +636,45 @@ uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
     return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
   }
 }
+
+void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
+                                   std::size_t size,
+                                   uint32_t data) {
+  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
+  }
+}
+
+void LlvmProgramImpl::cache_kernel(
+    const std::string &kernel_key,
+    llvm::Module *module,
+    std::vector<LlvmLaunchArgInfo> &&args,
+    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+        &&offloaded_task_list) {
+  if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
+    return;
+  }
+  auto &kernel_cache = cache_data_.kernels[kernel_key];
+  kernel_cache.kernel_key = kernel_key;
+  kernel_cache.owned_module = llvm::CloneModule(*module);
+  kernel_cache.args = std::move(args);
+  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
+}
+
+void LlvmProgramImpl::dump_cache_data_to_disk() {
+  if (config->offline_cache && !cache_data_.kernels.empty()) {
+    LlvmOfflineCacheFileWriter writer{};
+    writer.set_data(std::move(cache_data_));
+    writer.dump(config->offline_cache_file_path);
+  }
+}
+
 }  // namespace lang
 }  // namespace taichi

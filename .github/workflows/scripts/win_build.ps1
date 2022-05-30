@@ -8,6 +8,8 @@ param (
     [string]$libsDir = "."
 )
 
+$ErrorActionPreference = "Stop"
+
 $RepoURL = 'https://github.com/taichi-dev/taichi'
 
 function WriteInfo($text) {
@@ -42,25 +44,28 @@ if (-not (Test-Path $libsDir)) {
     New-Item -ItemType Directory -Path $libsDir
 }
 Push-Location $libsDir
-WriteInfo("Download and extract LLVM")
 if (-not (Test-Path "taichi_llvm")) {
+    WriteInfo("Download and extract LLVM")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
 }
-WriteInfo("Download and extract Clang")
 if (-not (Test-Path "taichi_clang")) {
+    WriteInfo("Download and extract Clang")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
 $env:LLVM_DIR = "$libsDir\taichi_llvm"
-$env:TAICHI_CMAKE_ARGS = "-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+$env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
-    if (-not (Test-Path "VulkanSDK.exe")) {
+    if (-not (Test-Path "VulkanSDK")) {
         curl.exe --retry 10 --retry-delay 5 https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe -Lo VulkanSDK.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
+        $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+        $installer.WaitForExit();
     }
-    $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-    $installer.WaitForExit();
     $env:VULKAN_SDK = "$libsDir\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
@@ -74,7 +79,7 @@ python -m venv venv
 . venv\Scripts\activate.ps1
 python -m pip install wheel
 python -m pip install -r requirements_dev.txt
-python -m pip install -r requirements_test.txt
+if (-not $?) { exit 1 }
 WriteInfo("Building Taichi")
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$libsDir\\taichi_clang\\bin\\clang++.exe"
 $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$libsDir\\taichi_llvm\\bin\\llvm-as.exe"
@@ -84,6 +89,7 @@ if ($install) {
     } else {
         python setup.py install
     }
+    if (-not $?) { exit 1 }
     WriteInfo("Build and install finished")
 } else {
     if ($env:PROJECT_NAME -eq "taichi-nightly") {
@@ -91,6 +97,7 @@ if ($install) {
     } else {
         python setup.py bdist_wheel
     }
+    if (-not $?) { exit 1 }
     WriteInfo("Build finished")
 }
 ccache -s -v

@@ -26,7 +26,7 @@ TEST_F(ExtractConstantTest, ExtractConstant) {
   builder.set_insertion_point_to_loop_begin(for_stmt);
   auto *x = builder.create_local_var(get_data_type<int>());
   auto *x_v = builder.create_local_load(x);
-  auto *sum = builder.create_add(x_v, builder.get_int32(1));
+  builder.create_add(x_v, builder.get_int32(1));
 
   auto ir = builder.extract_ir();
   ASSERT_TRUE(ir->is<Block>());

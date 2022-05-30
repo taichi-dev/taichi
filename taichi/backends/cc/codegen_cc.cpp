@@ -7,9 +7,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
-#ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
-#endif
 #include "cc_utils.h"
 
 #define C90_COMPAT 0
@@ -51,8 +48,7 @@ class CCTransformer : public IRVisitor {
     auto ir = kernel_->ir.get();
     auto config = kernel_->program->config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config, kernel_,
-                                  /*vectorize=*/false, kernel_->grad,
+    irpass::compile_to_executable(ir, config, kernel_, kernel_->grad,
                                   /*ad_use_stack=*/true, config.print_ir,
                                   /*lower_global_access*/ true);
   }
@@ -188,8 +184,11 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
-         stmt->value->raw_name());
+    int idx{0};
+    for (auto &value : stmt->values) {
+      emit("ti_ctx->args[{}].val_{} = {};", idx++,
+           data_type_name(value->element_type()), value->raw_name());
+    }
   }
 
   void visit(ConstStmt *stmt) override {
@@ -306,7 +305,7 @@ class CCTransformer : public IRVisitor {
   static inline std::string invoke_libc(std::string name,
                                         DataType dt,
                                         std::string const &fmt,
-                                        Args &&... args) {
+                                        Args &&...args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -350,6 +349,9 @@ class CCTransformer : public IRVisitor {
       emit("{} = {};", var,
            invoke_libc(binop, type, "{}, {}", lhs_name, rhs_name));
     }
+  }
+
+  void visit(DecorationStmt *stmt) override {
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -592,12 +594,12 @@ class CCTransformer : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
-  void emit_header(std::string f, Args &&... args) {
+  void emit_header(std::string f, Args &&...args) {
     line_appender_header_.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp

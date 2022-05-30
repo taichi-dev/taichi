@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/program/aot_module.h"
+#include "taichi/aot/module_builder.h"
 #include "taichi/backends/opengl/aot_data.h"
 
 namespace taichi {
@@ -33,8 +33,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
-  size_t get_snode_base_address(const SNode *snode);
-
   StructCompiledResult &compiled_structs_;
   AotData aot_data_;
   bool allow_nv_shader_extension_ = false;

@@ -1,4 +1,5 @@
 import taichi as ti
+from tests import test_utils
 
 
 def _test_1d():
@@ -21,12 +22,12 @@ def _test_1d():
         assert sum[None] == 4950
 
 
-@ti.test()
+@test_utils.test()
 def test_1d():
     _test_1d()
 
 
-@ti.test(require=ti.extension.packed, packed=True)
+@test_utils.test(require=ti.extension.packed, packed=True)
 def test_1d_packed():
     _test_1d()
 
@@ -57,11 +58,11 @@ def _test_2d():
         assert sum[None] == gt
 
 
-@ti.test()
+@test_utils.test()
 def test_2d():
     _test_2d()
 
 
-@ti.test(require=ti.extension.packed, packed=True)
+@test_utils.test(require=ti.extension.packed, packed=True)
 def test_2d_packed():
     _test_2d()

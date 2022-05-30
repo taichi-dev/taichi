@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "gtest/gtest.h"
 
 #include <memory>
@@ -6,12 +7,12 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/BasicBlock.h"
 
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
+#include "taichi/ir/snode.h"
+#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
 #include "taichi/struct/struct_llvm.h"
-#include "taichi/ir/snode.h"
-#include "taichi/program/compile_config.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
 
 namespace taichi {
 
@@ -117,7 +118,8 @@ class RefineCoordinatesTest : public ::testing::Test {
     leaf_snode.dt = PrimitiveType::f32;
 
     auto sc = std::make_unique<StructCompilerLLVM>(
-        arch_, &config_, tlctx_, tlctx_->clone_runtime_module());
+        arch_, &config_, tlctx_, tlctx_->clone_runtime_module(),
+        /*snode_tree_id=*/0);
     sc->run(*root_snode_);
   }
 
@@ -164,3 +166,4 @@ TEST_F(RefineCoordinatesTest, Basic) {
 }  // namespace
 }  // namespace lang
 }  // namespace taichi
+#endif  // #ifdef TI_WITH_LLVM

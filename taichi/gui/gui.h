@@ -13,7 +13,7 @@
     (defined(TI_PLATFORM_UNIX) && !defined(TI_PLATFORM_OSX))
 #if defined(TI_PLATFORM_ANDROID)
 #define TI_GUI_ANDROID
-#else
+#elif !defined(TI_EMSCRIPTENED)
 #define TI_GUI_X11
 #endif
 #endif
@@ -47,7 +47,7 @@ constexpr uint32 slider_bar_color = 0x333333;
 constexpr uint32 slider_circle_color = 0x555555;
 #endif
 
-class Canvas {
+class TI_DLL_EXPORT Canvas {
   struct Context {
     Vector4 _color;
     real _radius;
@@ -414,7 +414,7 @@ class Canvas {
             Vector4 color) {
     position = transform(position);
     std::string folder;
-    folder = fmt::format("{}/../assets", lang::runtime_lib_dir());
+    folder = fmt::format("{}/../../assets", lang::runtime_lib_dir());
     auto ttf_path = fmt::format("{}/Go-Regular.ttf", folder);
     img.write_text(ttf_path, str, size, position.x, position.y, color);
   }
@@ -445,6 +445,17 @@ class GUIBaseAndroid {
 };
 
 using GUIBase = GUIBaseAndroid;
+
+#endif
+
+#if defined(TI_EMSCRIPTENED)
+
+class GUIBaseJavascript {
+ public:
+  // @TODO
+};
+
+using GUIBase = GUIBaseJavascript;
 
 #endif
 
@@ -498,7 +509,7 @@ class GUIBaseCocoa {
 using GUIBase = GUIBaseCocoa;
 #endif
 
-class GUI : public GUIBase {
+class TI_DLL_EXPORT GUI : public GUIBase {
  public:
   std::string window_name;
   int width, height;

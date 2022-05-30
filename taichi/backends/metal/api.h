@@ -9,8 +9,8 @@
 #include "taichi/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
 
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace metal {
 
 // Expose these incomplete structs so that other modules (e.g. MetalRuntime)
@@ -123,6 +123,7 @@ void set_label(T *mtl_obj, const std::string &label) {
   // Set labels on Metal command buffer and encoders, so that they can be
   // tracked in Instrument - Metal System Trace
   if constexpr (std::is_same_v<T, MTLComputeCommandEncoder> ||
+                std::is_same_v<T, MTLBlitCommandEncoder> ||
                 std::is_same_v<T, MTLCommandBuffer>) {
     auto label_str = mac::wrap_string_as_ns_string(label);
     mac::call(mtl_obj, "setLabel:", label_str.get());
@@ -149,6 +150,18 @@ inline void *mtl_buffer_contents(MTLBuffer *buffer) {
 
 void did_modify_range(MTLBuffer *buffer, size_t location, size_t length);
 
+void fill_buffer(MTLBlitCommandEncoder *encoder,
+                 MTLBuffer *buffer,
+                 mac::TI_NSRange range,
+                 uint8_t value);
+
+void copy_from_buffer_to_buffer(MTLBlitCommandEncoder *encoder,
+                                MTLBuffer *source_buffer,
+                                size_t source_offset,
+                                MTLBuffer *destination_buffer,
+                                size_t destination_offset,
+                                size_t size);
+
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state);
 #endif  // TI_PLATFORM_OSX
@@ -156,5 +169,5 @@ size_t get_max_total_threads_per_threadgroup(
 bool is_metal_api_available();
 
 }  // namespace metal
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

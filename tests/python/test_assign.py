@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_basic():
     @ti.kernel
     def func_basic():
@@ -13,7 +14,7 @@ def test_assign_basic():
     func_basic()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_unpack():
     @ti.kernel
     def func_unpack():
@@ -24,7 +25,7 @@ def test_assign_unpack():
     func_unpack()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_chained():
     @ti.kernel
     def func_chained():
@@ -35,7 +36,7 @@ def test_assign_chained():
     func_chained()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_chained_unpack():
     @ti.kernel
     def func_chained_unpack():
@@ -48,7 +49,7 @@ def test_assign_chained_unpack():
     func_chained_unpack()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_assign():
     @ti.kernel
     def func_assign():
@@ -59,23 +60,19 @@ def test_assign_assign():
     func_assign()
 
 
-@ti.test(debug=True)
+@test_utils.test(debug=True)
 def test_assign_ann():
     @ti.kernel
     def func_ann():
-        # need to introduce ti as a global var
-        my_float = ti.f32
         a: ti.i32 = 1
         b: ti.f32 = a
-        d: my_float = 1
         assert a == 1
         assert b == 1.0
-        assert d == 1.0
 
     func_ann()
 
 
-@ti.test()
+@test_utils.test()
 def test_assign_ann_over():
     @ti.kernel
     def func_ann_over():
@@ -85,3 +82,16 @@ def test_assign_ann_over():
 
     with pytest.raises(ti.TaichiCompilationError):
         func_ann_over()
+
+
+@test_utils.test(debug=True)
+def test_assign_chained_involve_self():
+    @ti.kernel
+    def foo():
+        a = 1
+        b = 1
+        a = b = a + b
+        assert a == 2
+        assert b == 2
+
+    foo()

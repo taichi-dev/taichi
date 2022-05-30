@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
 def with_data_type(dt):
@@ -12,7 +13,7 @@ def with_data_type(dt):
     ti.root.dense(ti.i, n).place(val)
 
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         for i in range(n):
             arr[i] = arr[i]**2
 
@@ -27,27 +28,27 @@ def with_data_type(dt):
         assert a[i] == i * i * 4
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_f32():
     with_data_type(np.float32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_numpy_f64():
     with_data_type(np.float64)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_i32():
     with_data_type(np.int32)
 
 
-@ti.test(require=ti.extension.data64)
+@test_utils.test(require=ti.extension.data64)
 def test_numpy_i64():
     with_data_type(np.int64)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_2d():
     val = ti.field(ti.i32)
 
@@ -57,7 +58,7 @@ def test_numpy_2d():
     ti.root.dense(ti.i, n).dense(ti.j, m).place(val)
 
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         for i in range(n):
             for j in range(m):
                 arr[i, j] += i + j
@@ -75,7 +76,7 @@ def test_numpy_2d():
             assert a[i, j] == i * j + i + j
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_2d_transpose():
     val = ti.field(ti.i32)
 
@@ -85,7 +86,7 @@ def test_numpy_2d_transpose():
     ti.root.dense(ti.ij, (n, m)).place(val)
 
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         for i in ti.grouped(val):
             val[i] = arr[i]
 
@@ -102,7 +103,7 @@ def test_numpy_2d_transpose():
             assert val[i, j] == i * j + j * 4
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_3d():
     val = ti.field(ti.i32)
 
@@ -113,7 +114,7 @@ def test_numpy_3d():
     ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         for i in range(n):
             for j in range(m):
                 for k in range(p):
@@ -134,7 +135,7 @@ def test_numpy_3d():
                 assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_3d_error():
     val = ti.field(ti.i32)
 
@@ -145,7 +146,7 @@ def test_numpy_3d_error():
     ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         for i in range(n):
             for j in range(m):
                 for k in range(p):
@@ -157,13 +158,13 @@ def test_numpy_3d_error():
         test_numpy(a)
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_multiple_external_arrays():
 
     n = 4
 
     @ti.kernel
-    def test_numpy(a: ti.ext_arr(), b: ti.ext_arr()):
+    def test_numpy(a: ti.types.ndarray(), b: ti.types.ndarray()):
         for i in range(n):
             a[i] = a[i] * b[i]
             b[i] = a[i] + b[i]
@@ -179,17 +180,10 @@ def test_numpy_multiple_external_arrays():
         assert b[i] == d[i]
 
 
-@ti.test()
-def test_index_mismatch():
-    with pytest.raises(AssertionError):
-        val = ti.field(ti.i32, shape=(1, 2, 3))
-        val[0, 0] = 1
-
-
-@ti.test()
+@test_utils.test()
 def test_numpy_zero():
     @ti.kernel
-    def test_numpy(arr: ti.ext_arr()):
+    def test_numpy(arr: ti.types.ndarray()):
         pass
 
     test_numpy(np.empty(shape=(0), dtype=np.int32))
@@ -197,10 +191,10 @@ def test_numpy_zero():
     test_numpy(np.empty(shape=(5, 0), dtype=np.int32))
 
 
-@ti.test()
+@test_utils.test()
 def test_numpy_struct_for():
     @ti.kernel
-    def func1(a: ti.any_arr()):
+    def func1(a: ti.types.ndarray()):
         for i, j in a:
             a[i, j] = i + j
 
@@ -211,7 +205,7 @@ def test_numpy_struct_for():
             assert m[i, j] == i + j
 
     @ti.kernel
-    def func2(a: ti.any_arr()):
+    def func2(a: ti.types.ndarray()):
         for I in ti.grouped(a):
             a[I] = I.sum()
 

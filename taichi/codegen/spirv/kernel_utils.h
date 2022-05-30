@@ -20,16 +20,11 @@ namespace spirv {
  * Per offloaded task attributes.
  */
 struct TaskAttributes {
-  enum class BufferType {
-    Root,
-    GlobalTmps,
-    Context,
-    ListGen,
-  };
+  enum class BufferType { Root, GlobalTmps, Args, Rets, ListGen, ExtArr };
 
   struct BufferInfo {
     BufferType type;
-    int root_id{-1};  // only used if type==Root
+    int root_id{-1};  // only used if type==Root or type==ExtArr
 
     BufferInfo() = default;
 
@@ -44,7 +39,7 @@ struct TaskAttributes {
       if (type != other.type) {
         return false;
       }
-      if (type == BufferType::Root) {
+      if (type == BufferType::Root || type == BufferType::ExtArr) {
         return root_id == other.root_id;
       }
       return true;
@@ -73,6 +68,7 @@ struct TaskAttributes {
   };
 
   std::string name;
+  std::string source_path;
   // Total number of threads to launch (i.e. threads per grid). Note that this
   // is only advisory, because eventually this number is also determined by the
   // runtime config. This works because grid strided loop is supported.
@@ -144,10 +140,18 @@ class KernelContextAttributes {
     size_t offset_in_mem{0};
     // Index of the input arg or the return value in the host `Context`
     int index{-1};
-    DataType dt;
+    PrimitiveTypeID dtype{PrimitiveTypeID::unknown};
     bool is_array{false};
+    std::vector<int> element_shape;
+    std::size_t field_dim{0};
 
-    TI_IO_DEF(stride, offset_in_mem, index, is_array);
+    TI_IO_DEF(stride,
+              offset_in_mem,
+              index,
+              dtype,
+              is_array,
+              element_shape,
+              field_dim);
   };
 
  public:
@@ -208,21 +212,6 @@ class KernelContextAttributes {
   }
 
   /**
-   * Offset (in bytes) of the return values in the memory.
-   */
-  inline size_t rets_mem_offset() const {
-    return args_bytes();
-  }
-
-  /**
-   * Total size in bytes of the input args and return values.
-   *
-   * This *excludes* the extra args bytes.
-   */
-  inline size_t ctx_bytes() const {
-    return args_bytes() + rets_bytes();
-  }
-  /**
    * Number of bytes needed by the extra arguments.
    *
    * Extra argument region is used to store some metadata, like the shape of the
@@ -236,14 +225,7 @@ class KernelContextAttributes {
    * Offset (in bytes) of the extra arguments in the memory.
    */
   inline size_t extra_args_mem_offset() const {
-    return ctx_bytes();
-  }
-
-  /**
-   * Total bytes needed for allocating the device buffer.
-   */
-  inline size_t total_bytes() const {
-    return ctx_bytes() + extra_args_bytes();
+    return args_bytes();
   }
 
   TI_IO_DEF(arg_attribs_vec_,

@@ -4,7 +4,6 @@
 #include <functional>
 
 #include "taichi/inc/constants.h"
-#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
 
@@ -39,7 +38,7 @@ class JITModule {
   }
 
   template <typename... Args, typename T>
-  static std::vector<void *> get_arg_pointers(T &t, Args &... args) {
+  static std::vector<void *> get_arg_pointers(T &t, Args &...args) {
     auto ret = get_arg_pointers(args...);
     ret.insert(ret.begin(), &t);
     return ret;

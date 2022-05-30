@@ -1,35 +1,26 @@
 #pragma once
 
+#include <any>
 #include <string>
 #include <vector>
 
 #include "taichi/backends/vulkan/aot_utils.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/runtime/vulkan/runtime.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-
-#include "taichi/program/aot_module.h"
+#include "taichi/aot/module_builder.h"
+#include "taichi/aot/module_loader.h"
+#include "taichi/backends/vulkan/aot_module_builder_impl.h"
+#include "taichi/backends/vulkan/vulkan_graph_data.h"
 
 namespace taichi {
 namespace lang {
 namespace vulkan {
-
-class AotModuleLoaderImpl : public AotModuleLoader {
- public:
-  explicit AotModuleLoaderImpl(const std::string &output_dir);
-
-  bool get_kernel(const std::string &name, VkRuntime::RegisterParams &kernel);
-
-  bool get_field(const std::string &name,
-                 aot::CompiledFieldData &field) override;
-
-  size_t get_root_size() const override;
-
- private:
-  std::vector<uint32_t> read_spv_file(const std::string &output_dir,
-                                      const TaskAttributes &k);
-
-  TaichiAotData ti_aot_data_;
+struct TI_DLL_EXPORT AotModuleParams {
+  std::string module_path;
+  VkRuntime *runtime{nullptr};
 };
+
+TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
 
 }  // namespace vulkan
 }  // namespace lang

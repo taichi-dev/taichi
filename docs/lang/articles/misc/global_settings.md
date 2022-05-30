@@ -20,10 +20,6 @@ sidebar_position: 7
   errors: `ti.init(advanced_optimization=False)`.
 - Disable fast math to prevent possible undefined math behavior:
   `ti.init(fast_math=False)`.
-- To print preprocessed Python code:
-  `ti.init(print_preprocessed=True)`.
-- To show pretty Taichi-scope stack traceback:
-  `ti.init(excepthook=True)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`.
 
 ## Runtime
@@ -33,6 +29,7 @@ sidebar_position: 7
 - To start program in debug mode: `ti.init(debug=True)` or
   `ti debug your_script.py`.
 - To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
+- To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.
 
 ## Logging
 

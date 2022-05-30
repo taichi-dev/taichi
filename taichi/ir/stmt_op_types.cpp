@@ -56,6 +56,8 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(cmp_eq, ==);
     REGISTER_TYPE(bit_and, &);
     REGISTER_TYPE(bit_or, |);
+    REGISTER_TYPE(logical_and, &&);
+    REGISTER_TYPE(logical_or, ||);
     REGISTER_TYPE(bit_xor, ^);
     REGISTER_TYPE(pow, pow);
     REGISTER_TYPE(bit_shl, <<);
@@ -75,6 +77,7 @@ std::string ternary_type_name(TernaryOpType type) {
     return #i;
 
     REGISTER_TYPE(select);
+    REGISTER_TYPE(ifte);
 
 #undef REGISTER_TYPE
     default:

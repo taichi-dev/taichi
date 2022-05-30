@@ -35,30 +35,23 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
+  // FIXME: Why is host R/W set to true?
   return opengl_runtime_->device->allocate_memory(
-      {alloc_size, /*host_write=*/true, /*host_read=*/true,
+      {alloc_size, /*host_write=*/false, /*host_read=*/true,
        /*export_sharing=*/false});
 }
 
-std::shared_ptr<Device> OpenglProgramImpl::get_device_shared() {
-  return opengl_runtime_->device;
-}
-
-void OpenglProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void OpenglProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   // TODO: support materializing multiple snode trees
   opengl::OpenglStructCompiler scomp;
   opengl_struct_compiled_ = scomp.run(*(tree->root()));
   TI_TRACE("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
 }
 
-void OpenglProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
+void OpenglProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                               uint64 *result_buffer) {
 #ifdef TI_WITH_OPENGL
-  compile_snode_tree_types(tree, snode_trees_);
+  compile_snode_tree_types(tree);
   opengl_runtime_->add_snode_tree(opengl_struct_compiled_->root_size);
 #else
   TI_NOT_IMPLEMENTED;

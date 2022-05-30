@@ -10,9 +10,42 @@ In Taichi kernels, for-loop in the outermost scope is automatically
 parallelized. Our compiler automatically tunes the parameters to best explore
 the target architecture. Nevertheless, for Ninjas who strive for the last few %
 of performance, we also provide some APIs to allow developers fine-tune their
-applications. For example, specifying a suitable `ti.block_dim` could yield an almost
+applications. For example, specifying a suitable `block_dim` could yield an almost
 3x performance boost in
 [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
+
+You can use `ti.loop_config` to set the loop directives for the next for loop. Available directives are:
+
+- **parallelize**: Sets the number of threads to use on CPU
+- **block_dim**: Sets the number of threads in a block on GPU
+- **serialize**: If you set **serialize** to `True`, the for loop will run serially, and you can write break statements inside it
+(Only applies on range/ndrange fors). Equals to setting **parallelize** to 1.
+
+```python {4}
+@ti.kernel
+def break_in_serial_for() -> ti.i32:
+    a = 0
+    ti.loop_config(serialize=True)
+    for i in range(100):  # This loop runs serially
+        a += i
+        if i == 10:
+            break
+    return a
+
+break_in_serial_for()  # returns 55
+```
+
+```python {5}
+n = 128
+val = ti.field(ti.i32, shape=n)
+@ti.kernel
+def fill():
+    ti.loop_config(parallelize=8, block_dim=16)
+    # If the kernel is run on the CPU backend, 8 threads will be used to run it
+    # If the kernel is run on the CUDA backend, each block will have 16 threads.
+    for i in range(n):
+        val[i] = i
+```
 
 :::note
 For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../misc/profiler.md).
@@ -120,14 +153,18 @@ Additionally, the last atomic add to the global memory `s[None]` is optimized us
 CUDA's warp-level intrinsics, further reducing the number of required atomic adds.
 
 Currently, Taichi supports TLS optimization for these reduction operators: `add`,
-`sub`, `min` and `max`. [Here](https://github.com/taichi-dev/taichi/pull/2956) is
-a benchmark comparison when running a global max reduction on a 1-D Taichi field
+`sub`, `min` and `max` on **0D** scalar/vector/matrix `ti.field`s. It is not yet
+supported on `ti.ndarray`s. [Here](https://github.com/taichi-dev/taichi/pull/2956)
+is a benchmark comparison when running a global max reduction on a 1-D Taichi field
 of 8M floats on an Nvidia GeForce RTX 3090 card:
 
 * TLS disabled: 5.2 x 1e3 us
 * TLS enabled: 5.7 x 1e1 us
 
-TLS has led to an approximately 100x speedup.
+TLS has led to an approximately 100x speedup. We also show that TLS reduction sum
+achieves comparable performance with CUDA implementations, see
+[benchmark](https://github.com/taichi-dev/taichi_benchmark/tree/main/reduce_sum) for
+details.
 
 ### Block Local Storage (BLS)
 

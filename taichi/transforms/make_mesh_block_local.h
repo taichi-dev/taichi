@@ -52,22 +52,22 @@ class MakeMeshBlockLocal : public Pass {
                          Stmt * /*idx_val*/,
                          Stmt * /*mapping_val*/)> attr_callback_handler);
 
-  const CompileConfig &config;
-  OffloadedStmt *offload{nullptr};
-  std::set<std::pair<mesh::MeshElementType, mesh::ConvType>> mappings{};
-  MeshBLSCaches::Rec rec;
+  const CompileConfig &config_;
+  OffloadedStmt *offload_{nullptr};
+  std::set<std::pair<mesh::MeshElementType, mesh::ConvType>> mappings_{};
+  MeshBLSCaches::Rec rec_;
 
-  Block *block;
+  Block *block_;
 
-  std::size_t bls_offset_in_bytes{0};
-  std::size_t mapping_bls_offset_in_bytes{0};
-  std::unordered_map<SNode *, std::size_t> attr_bls_offset_in_bytes{};
+  std::size_t bls_offset_in_bytes_{0};
+  std::size_t mapping_bls_offset_in_bytes_{0};
+  std::unordered_map<SNode *, std::size_t> attr_bls_offset_in_bytes_{};
 
-  mesh::MeshElementType element_type;
-  mesh::ConvType conv_type;
-  SNode *mapping_snode{nullptr};
-  DataType mapping_data_type;
-  int mapping_dtype_size{0};
+  mesh::MeshElementType element_type_;
+  mesh::ConvType conv_type_;
+  SNode *mapping_snode_{nullptr};
+  DataType mapping_data_type_;
+  int mapping_dtype_size_{0};
 };
 
 }  // namespace lang

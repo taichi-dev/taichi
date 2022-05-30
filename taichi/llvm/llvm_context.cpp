@@ -58,7 +58,8 @@ namespace lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch_(arch) {
+TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
+    : arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
   main_thread_data_ = get_this_thread_data();
@@ -92,7 +93,7 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch_(arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(arch);
+  jit = JITSession::create(llvm_prog, arch);
   TI_TRACE("Taichi llvm context created.");
 }
 
@@ -184,28 +185,45 @@ TaichiLLVMContext::clone_module_to_this_thread_context(llvm::Module *module) {
   return clone_module_to_context(module, this_context);
 }
 
-std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
-                                                       llvm::LLVMContext *ctx) {
-  TI_AUTO_PROF
-  std::ifstream ifs(bitcode_path, std::ios::binary);
-  TI_ERROR_IF(!ifs, "Bitcode file ({}) not found.", bitcode_path);
+std::unique_ptr<llvm::Module> LlvmModuleBitcodeLoader::load(
+    llvm::LLVMContext *ctx) const {
+  TI_AUTO_PROF;
+  std::ifstream ifs(bitcode_path_, std::ios::binary);
+  TI_ERROR_IF(!ifs, "Bitcode file ({}) not found.", bitcode_path_);
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));
   auto runtime =
-      parseBitcodeFile(llvm::MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
+      parseBitcodeFile(llvm::MemoryBufferRef(bitcode, buffer_id_), *ctx);
   if (!runtime) {
     auto error = runtime.takeError();
     TI_WARN("Bitcode loading error message:");
     llvm::errs() << error << "\n";
-    TI_ERROR("Bitcode {} load failure.", bitcode_path);
+    TI_ERROR("Failed to load bitcode={}", bitcode_path_);
+    return nullptr;
   }
 
-  for (auto &f : *(runtime.get()))
-    TaichiLLVMContext::mark_inline(&f);
+  if (inline_funcs_) {
+    for (auto &f : *(runtime.get())) {
+      TaichiLLVMContext::mark_inline(&f);
+    }
+  }
 
-  bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
-  TI_ERROR_IF(module_broken, "Module broken");
+  const bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
+  if (module_broken) {
+    TI_ERROR("Broken bitcode={}", bitcode_path_);
+    return nullptr;
+  }
   return std::move(runtime.get());
+}
+
+std::unique_ptr<llvm::Module> module_from_bitcode_file(
+    const std::string &bitcode_path,
+    llvm::LLVMContext *ctx) {
+  LlvmModuleBitcodeLoader loader;
+  return loader.set_bitcode_path(bitcode_path)
+      .set_buffer_id("runtime_bitcode")
+      .set_inline_funcs(true)
+      .load(ctx);
 }
 
 // The goal of this function is to rip off huge libdevice functions that are not
@@ -356,6 +374,15 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
     patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
     patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
 
+    patch_intrinsic("cuda_all", Intrinsic::nvvm_vote_all);
+    patch_intrinsic("cuda_all_sync", Intrinsic::nvvm_vote_all_sync);
+
+    patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
+    patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
+
+    patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
+    patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
+
     patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
     patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
 
@@ -364,8 +391,31 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
     patch_intrinsic("cuda_shfl_down_sync_f32",
                     Intrinsic::nvvm_shfl_sync_down_f32);
 
+    patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
+    patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
+
+    patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
+
+    patch_intrinsic("cuda_shfl_sync_f32", Intrinsic::nvvm_shfl_sync_idx_f32);
+
+    patch_intrinsic("cuda_shfl_xor_sync_i32",
+                    Intrinsic::nvvm_shfl_sync_bfly_i32);
+
     patch_intrinsic("cuda_match_any_sync_i32",
                     Intrinsic::nvvm_match_any_sync_i32);
+
+    // LLVM 10.0.0 seems to have a bug on this intrinsic function
+    /*
+    nvvm_match_all_sync_i32
+    Args:
+        1. u32 mask
+        2. i32 value
+        3. i32 *pred
+    */
+    /*
+    patch_intrinsic("cuda_match_all_sync_i32p",
+                    Intrinsic::nvvm_math_all_sync_i32);
+    */
 
     // LLVM 10.0.0 seems to have a bug on this intrinsic function
     /*
@@ -435,7 +485,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
     if (!func) {
       TI_INFO("Function {} not found", func_name);
     } else
-      func->setLinkage(Function::InternalLinkage);
+      func->setLinkage(llvm::Function::InternalLinkage);
   }
 }
 
@@ -734,6 +784,22 @@ void TaichiLLVMContext::update_runtime_jit_module(
            starts_with(func_name, "LLVMRuntime_");
   });
   runtime_jit_module = add_module(std::move(module));
+}
+
+void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
+  if (!snode_tree_funcs_.count(id)) {
+    return;
+  }
+  llvm::Module *module = get_this_thread_struct_module();
+  for (auto str : snode_tree_funcs_[id]) {
+    auto *func = module->getFunction(str);
+    func->eraseFromParent();
+  }
+  snode_tree_funcs_.erase(id);
+}
+
+void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
+  snode_tree_funcs_[id].push_back(func);
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

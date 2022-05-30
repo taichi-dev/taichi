@@ -41,6 +41,7 @@ struct BufferDescriptor {
     Context,
     Runtime,
     Print,
+    Ndarray,
   };
 
   BufferDescriptor() = default;
@@ -65,13 +66,22 @@ struct BufferDescriptor {
     return BufferDescriptor{Type::Print};
   }
 
+  static BufferDescriptor ndarray(int arr_arg_id) {
+    return BufferDescriptor{Type::Ndarray, arr_arg_id};
+  }
+
   Type type() const {
     return type_;
   }
 
   int root_id() const {
     TI_ASSERT(type_ == Type::Root);
-    return root_id_;
+    return id_;
+  }
+
+  int ndarray_arg_id() const {
+    TI_ASSERT(type_ == Type::Ndarray);
+    return id_;
   }
 
   std::string debug_string() const;
@@ -84,7 +94,7 @@ struct BufferDescriptor {
 
   struct Hasher {
     std::size_t operator()(const BufferDescriptor &desc) const {
-      return std::hash<BufferDescriptor::Type>{}(desc.type()) ^ desc.root_id_;
+      return std::hash<BufferDescriptor::Type>{}(desc.type()) ^ desc.id_;
     }
   };
 
@@ -92,20 +102,20 @@ struct BufferDescriptor {
   explicit BufferDescriptor(Type t) : type_(t) {
   }
 
-  explicit BufferDescriptor(Type t, int root_id) : type_(t), root_id_(root_id) {
+  explicit BufferDescriptor(Type t, int root_id) : type_(t), id_(root_id) {
   }
   Type type_{Type::Root};
-  int root_id_{-1};  // only used if type==Root
+  int id_{-1};  // only used if type in {Root, Ndarray}
 
  public:
-  TI_IO_DEF(type_, root_id_);
+  TI_IO_DEF(type_, id_);
 };
 
 // This struct holds the necessary information to launch a Metal kernel.
 struct KernelAttributes {
   std::string name;
   // Total number of threads to launch (i.e. threads per grid). Note that this
-  // is only advisory, because eventually this numb er is also determined by the
+  // is only advisory, because eventually this number is also determined by the
   // runtime config. This works because grid strided loop is supported.
   int advisory_total_num_threads;
   // Block size in CUDA's terminology. On Metal, it is called a threadgroup.
@@ -138,6 +148,7 @@ struct KernelAttributes {
     const SNode *snode = nullptr;
   };
   std::vector<BufferDescriptor> buffers;
+  std::unordered_map<int, int> arr_args_to_binding_indices;
   // Only valid when |task_type| is `range_for`.
   std::optional<RangeForAttributes> range_for_attribs;
   // Only valid when |task_type| is `listgen`.
@@ -187,7 +198,12 @@ class KernelContextAttributes {
  private:
   // Attributes that are shared by the input arg and the return value.
   struct AttribsBase {
-    // For array arg, this is #elements * stride(dt). Unit: byte
+    // This is tricky:
+    // * For Args
+    //    * scalar: stride(dt)
+    //    * array: 0
+    // * For Return, this can actually be a matrix, where `is_array` is true...
+    // Unit: byte.
     size_t stride = 0;
     // Offset in the argument buffer
     size_t offset_in_mem = 0;

@@ -31,7 +31,7 @@ TI_NAMESPACE_BEGIN
 
 #include <stdint.h>
 
-class Time {
+class TI_DLL_EXPORT Time {
  public:
   static double get_time();
   static uint64 get_cycles();

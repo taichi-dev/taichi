@@ -5,15 +5,31 @@ namespace lang {
 
 class IRModified {};
 
-class TaichiTypeError : public std::exception {
+class TaichiExceptionImpl : public std::exception {
   std::string msg_;
 
  public:
-  TaichiTypeError(const std::string msg) : msg_(msg) {
+  TaichiExceptionImpl(const std::string msg) : msg_(msg) {
   }
   const char *what() const throw() override {
     return msg_.c_str();
   }
+};
+
+class TaichiTypeError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
+class TaichiSyntaxError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
+class TaichiRuntimeError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
+class TaichiAssertionError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
 };
 
 }  // namespace lang

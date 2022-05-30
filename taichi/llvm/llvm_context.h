@@ -37,7 +37,7 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
 
-  TaichiLLVMContext(Arch arch);
+  TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch);
 
   virtual ~TaichiLLVMContext();
 
@@ -128,6 +128,10 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+  void add_function_to_snode_tree(int id, std::string func);
+
+  void delete_functions_of_snode_tree(int id);
+
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
@@ -155,10 +159,38 @@ class TaichiLLVMContext {
   ThreadLocalData *main_thread_data_{nullptr};
   std::mutex mut_;
   std::mutex thread_map_mut_;
+
+  std::unordered_map<int, std::vector<std::string>> snode_tree_funcs_;
 };
 
-std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
-                                                       llvm::LLVMContext *ctx);
+class LlvmModuleBitcodeLoader {
+ public:
+  LlvmModuleBitcodeLoader &set_bitcode_path(const std::string &bitcode_path) {
+    bitcode_path_ = bitcode_path;
+    return *this;
+  }
+
+  LlvmModuleBitcodeLoader &set_buffer_id(const std::string &buffer_id) {
+    buffer_id_ = buffer_id;
+    return *this;
+  }
+
+  LlvmModuleBitcodeLoader &set_inline_funcs(bool inline_funcs) {
+    inline_funcs_ = inline_funcs;
+    return *this;
+  }
+
+  std::unique_ptr<llvm::Module> load(llvm::LLVMContext *ctx) const;
+
+ private:
+  std::string bitcode_path_;
+  std::string buffer_id_;
+  bool inline_funcs_{false};
+};
+
+std::unique_ptr<llvm::Module> module_from_bitcode_file(
+    const std::string &bitcode_path,
+    llvm::LLVMContext *ctx);
 
 }  // namespace lang
 }  // namespace taichi

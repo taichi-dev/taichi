@@ -17,6 +17,7 @@ namespace py = pybind11;
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include <memory>
@@ -232,7 +233,8 @@ struct PyCanvas {
 struct PyWindow {
   std::unique_ptr<WindowBase> window{nullptr};
 
-  PyWindow(std::string name,
+  PyWindow(Program *prog,
+           std::string name,
            py::tuple res,
            bool vsync,
            bool show_window,
@@ -243,7 +245,10 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
-    window = std::make_unique<vulkan::Window>(config);
+    if (!lang::vulkan::is_vulkan_api_available()) {
+      throw std::runtime_error("Vulkan must be available for GGUI");
+    }
+    window = std::make_unique<vulkan::Window>(prog, config);
   }
 
   void write_image(const std::string &filename) {
@@ -310,8 +315,8 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, bool, std::string, Arch,
-                    bool>())
+      .def(py::init<Program *, std::string, py::tuple, bool, bool, std::string,
+                    Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("write_image", &PyWindow::write_image)
@@ -321,8 +326,8 @@ void export_ggui(py::module &m) {
       .def("set_is_running", &PyWindow::set_is_running)
       .def("get_event", &PyWindow::get_event)
       .def("get_events", &PyWindow::get_events)
-      .def_property("event", &PyWindow::get_current_event,
-                    &PyWindow::set_current_event)
+      .def("get_current_event", &PyWindow::get_current_event)
+      .def("set_current_event", &PyWindow::set_current_event)
       .def("destroy", &PyWindow::destroy)
       .def("GUI", &PyWindow::GUI);
 

@@ -1,11 +1,14 @@
-import numpy as np
+from taichi.lang.impl import get_runtime
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@test_utils.test(require=ti.extension.quant,
+                 debug=True,
+                 cfg_optimization=False)
 def test_vectorized_struct_for():
-    cu1 = ti.quant.int(1, False)
+    cu1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=cu1)
     y = ti.field(dtype=cu1)
@@ -29,7 +32,7 @@ def test_vectorized_struct_for():
 
     @ti.kernel
     def assign_vectorized():
-        ti.bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize(32)
         for i, j in x:
             y[i, j] = x[i, j]
 
@@ -44,9 +47,9 @@ def test_vectorized_struct_for():
     verify()
 
 
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_offset_load():
-    ci1 = ti.quant.int(1, False)
+    ci1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -74,7 +77,7 @@ def test_offset_load():
 
     @ti.kernel
     def assign_vectorized(dx: ti.template(), dy: ti.template()):
-        ti.bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize(32)
         for i, j in x:
             y[i, j] = x[i + dx, j + dy]
             z[i, j] = x[i + dx, j + dy]
@@ -104,9 +107,9 @@ def test_offset_load():
     verify(-1, 1)
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    ci1 = ti.quant.int(1, False)
+    ci1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -134,7 +137,7 @@ def test_evolve():
 
     @ti.kernel
     def evolve_vectorized(x: ti.template(), y: ti.template()):
-        ti.bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize(32)
         for i, j in x:
             num_active_neighbors = 0
             num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)
@@ -145,8 +148,8 @@ def test_evolve():
             num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
             num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
-            y[i, j] = (num_active_neighbors == 3) or (num_active_neighbors == 2
-                                                      and x[i, j] == 1)
+            y[i, j] = (num_active_neighbors == 3) | \
+                      ((num_active_neighbors == 2) & (x[i, j] == 1))
 
     @ti.kernel
     def evolve_naive(x: ti.template(), y: ti.template()):

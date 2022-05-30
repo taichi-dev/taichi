@@ -1,3 +1,4 @@
+import ast
 import json
 
 import numpy as np
@@ -6,11 +7,11 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
-                                _MatrixFieldElement)
+from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import CompoundType, i32
+from taichi.types import u16, u32
+from taichi.types.compound_types import CompoundType
 
 from taichi import lang
 
@@ -47,15 +48,15 @@ class MeshReorderedScalarFieldProxy(ScalarField):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        self.host_accessors[0].setter(value, *self.pad_key(key))
+        self.host_accessors[0].setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        return self.host_accessors[0].getter(*self.pad_key(key))
+        return self.host_accessors[0].getter(*self._pad_key(key))
 
 
 class MeshReorderedMatrixFieldProxy(MatrixField):
@@ -74,15 +75,15 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
-        self[key].set_entries(value)
+        self._initialize_host_accessors()
+        self[key]._set_entries(value)
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
+        self._initialize_host_accessors()
         key = self.g2r_field[key]
-        key = self.pad_key(key)
-        return _IntermediateMatrix(self.n, self.m, self.host_access(key))
+        key = self._pad_key(key)
+        return Matrix(self._host_access(key), is_ref=True)
 
 
 class MeshElementField:
@@ -93,22 +94,22 @@ class MeshElementField:
         self.field_dict = field_dict
         self.g2r_field = g2r_field
 
-        self.register_fields()
+        self._register_fields()
 
     @property
     def keys(self):
         return list(self.field_dict.keys())
 
     @property
-    def members(self):
+    def _members(self):
         return list(self.field_dict.values())
 
     @property
-    def items(self):
+    def _items(self):
         return self.field_dict.items()
 
     @staticmethod
-    def make_getter(key):
+    def _make_getter(key):
         def getter(self):
             if key not in self.getter_dict:
                 if self.attr_dict[key].reorder:
@@ -123,22 +124,21 @@ class MeshElementField:
                 else:
                     self.getter_dict[key] = self.field_dict[key]
             """Get an entry from custom struct by name."""
-            _taichi_skip_traceback = 1
             return self.getter_dict[key]
 
         return getter
 
-    def register_fields(self):
+    def _register_fields(self):
         self.getter_dict = {}
         for k in self.keys:
             setattr(MeshElementField, k,
-                    property(fget=MeshElementField.make_getter(k)))
+                    property(fget=MeshElementField._make_getter(k)))
 
-    def get_field_members(self):
+    def _get_field_members(self):
         field_members = []
-        for m in self.members:
+        for m in self._members:
             assert isinstance(m, Field)
-            field_members += m.get_field_members()
+            field_members += m._get_field_members()
         return field_members
 
     @python_scope
@@ -150,33 +150,42 @@ class MeshElementField:
 
     @python_scope
     def fill(self, val):
-        for v in self.members:
+        for v in self._members:
             v.fill(val)
 
-    def initialize_host_accessors(self):
-        for v in self.members:
-            v.initialize_host_accessors()
+    def _initialize_host_accessors(self):
+        for v in self._members:
+            v._initialize_host_accessors()
 
     def get_member_field(self, key):
         return self.field_dict[key]
 
     @python_scope
     def from_numpy(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_numpy(array_dict[k])
 
     @python_scope
     def from_torch(self, array_dict):
-        for k, v in self.items:
+        for k, v in self._items:
             v.from_torch(array_dict[k])
 
     @python_scope
+    def from_paddle(self, array_dict):
+        for k, v in self._items:
+            v.from_paddle(array_dict[k])
+
+    @python_scope
     def to_numpy(self):
-        return {k: v.to_numpy() for k, v in self.items}
+        return {k: v.to_numpy() for k, v in self._items}
 
     @python_scope
     def to_torch(self, device=None):
-        return {k: v.to_torch(device=device) for k, v in self.items}
+        return {k: v.to_torch(device=device) for k, v in self._items}
+
+    @python_scope
+    def to_paddle(self, place=None):
+        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __len__(self):
@@ -196,8 +205,12 @@ class MeshElement:
     def _AOS(self, aos=True):
         self.layout = Layout.AOS if aos else Layout.SOA
 
-    SOA = property(fget=_SOA)
-    AOS = property(fget=_AOS)
+    SOA = property(fset=_SOA)
+    """ Set `True` for SOA (structure of arrays) layout.
+    """
+    AOS = property(fset=_AOS)
+    """ Set `True` for AOS (array of structures) layout.
+    """
 
     def place(
         self,
@@ -205,6 +218,20 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
+        """Declares mesh attributes for the mesh element in current mesh builder.
+
+        Args:
+        members (Dict[str, Union[PrimitiveType, VectorType, MatrixType]]): \
+            names and types for element attributes.
+        reorder: True if reorders the internal memory for coalesced data access within mesh-for loop.
+        needs_grad: True if needs to record grad.
+
+        Example::
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> mesh = ti.TriMesh()
+        >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
+        >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
+        """
         self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
@@ -244,6 +271,16 @@ class MeshElement:
                                 field_dict, g2r_field)
 
     def link(self, element):
+        """Explicitly declares the element-element connectivity for compiler to pre-generate relation data.
+
+        Args:
+            element (MeshElement): mesh element in the same builder to represent the to-end of connectivity.
+
+        Example::
+            >>> mesh = ti.TriMesh()
+            >>> mesh.faces.link(mesh.verts) # declares F-V connectivity
+            >>> mesh.verts.link(mesh.verts) # declares V-V connectivity
+        """
         assert isinstance(element, MeshElement)
         assert element.builder == self.builder
         self.builder.relations.add(tuple([self._type, element._type]))
@@ -256,6 +293,7 @@ class MeshInstance:
     def __init__(self, _type):
         self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
+        self.relation_set = set()
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):
@@ -282,25 +320,52 @@ class MeshInstance:
 
     def set_relation_fixed(self, rel_type: MeshRelationType,
                            value: ScalarField):
+        self.relation_set.add(rel_type)
         _ti_core.set_relation_fixed(self.mesh_ptr, rel_type,
                                     value.vars[0].ptr.snode())
 
     def set_relation_dynamic(self, rel_type: MeshRelationType,
-                             value: ScalarField, offset: ScalarField):
+                             value: ScalarField, patch_offset: ScalarField,
+                             offset: ScalarField):
+        self.relation_set.add(rel_type)
         _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
                                       value.vars[0].ptr.snode(),
+                                      patch_offset.vars[0].ptr.snode(),
                                       offset.vars[0].ptr.snode())
 
     def add_mesh_attribute(self, element_type, snode, reorder_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,
                                     reorder_type)
 
+    def get_relation_size(self, from_index, to_element_type):
+        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr,
+                                          to_element_type)
+
+    def get_relation_access(self, from_index, to_element_type,
+                            neighbor_idx_ptr):
+        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr,
+                                            to_element_type, neighbor_idx_ptr)
+
+    def update_relation(self, from_order, to_order):
+        rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
+        if rel_type not in self.relation_set:
+            meta = self.patcher.get_relation_meta(from_order, to_order)
+
+            def fun(arr, dtype):
+                field = impl.field(dtype=dtype, shape=arr.shape)
+                field.from_numpy(arr)
+                return field
+
+            if from_order <= to_order:
+                self.set_relation_dynamic(rel_type, fun(meta["value"], u16),
+                                          fun(meta["patch_offset"], u32),
+                                          fun(meta["offset"], u16))
+            else:
+                self.set_relation_fixed(rel_type, fun(meta["value"], u16))
+
 
 class MeshMetadata:
-    def __init__(self, filename):
-        with open(filename, "r") as fi:
-            data = json.loads(fi.read())
-
+    def __init__(self, data):
         self.num_patches = data["num_patches"]
 
         self.element_fields = {}
@@ -318,15 +383,15 @@ class MeshMetadata:
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
             self.element_fields[element_type]["owned"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["total"] = impl.field(
-                dtype=i32, shape=self.num_patches + 1)
+                dtype=u32, shape=self.num_patches + 1)
             self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=i32, shape=element["l2g_mapping"].shape[0])
+                dtype=u32, shape=element["l2g_mapping"].shape[0])
             self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=i32, shape=element["l2r_mapping"].shape[0])
+                dtype=u32, shape=element["l2r_mapping"].shape[0])
             self.element_fields[element_type]["g2r"] = impl.field(
-                dtype=i32, shape=element["g2r_mapping"].shape[0])
+                dtype=u32, shape=element["g2r_mapping"].shape[0])
 
         for relation in data["relations"]:
             from_order = relation["from_order"]
@@ -335,10 +400,14 @@ class MeshMetadata:
                 relation_by_orders(from_order, to_order))
             self.relation_fields[rel_type] = {}
             self.relation_fields[rel_type]["value"] = impl.field(
-                dtype=i32, shape=len(relation["value"]))
+                dtype=u16, shape=len(relation["value"]))
             if from_order <= to_order:
                 self.relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=i32, shape=len(relation["offset"]))
+                    dtype=u16, shape=len(relation["offset"]))
+                self.relation_fields[rel_type]["patch_offset"] = impl.field(
+                    dtype=u32, shape=len(relation["patch_offset"]))
+            self.relation_fields[rel_type]["from_order"] = from_order
+            self.relation_fields[rel_type]["to_order"] = to_order
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])
@@ -361,18 +430,24 @@ class MeshMetadata:
             self.relation_fields[rel_type]["value"].from_numpy(
                 np.array(relation["value"]))
             if from_order <= to_order:
+                self.relation_fields[rel_type]["patch_offset"].from_numpy(
+                    np.array(relation["patch_offset"]))
                 self.relation_fields[rel_type]["offset"].from_numpy(
                     np.array(relation["offset"]))
 
         self.attrs = {}
         self.attrs["x"] = np.array(data["attrs"]["x"]).reshape(-1, 3)
+        if "patcher" in data:
+            self.patcher = data["patcher"]
+        else:
+            self.patcher = None
 
 
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
-        if not lang.is_extension_supported(impl.current_cfg().arch,
-                                           lang.extension.mesh):
+        if not lang.misc.is_extension_supported(impl.current_cfg().arch,
+                                                lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 
@@ -386,13 +461,27 @@ class MeshBuilder:
         self.elements = set()
         self.relations = set()
 
+        impl.current_cfg().use_mesh = True
+
     def build(self, metadata: MeshMetadata):
+        """Build and instantiate mesh from model meta data
+
+        Use the following external lib to generate meta data:
+        https://github.com/BillXu2000/meshtaichi_patcher
+
+        Args:
+            metadata : model meta data.
+
+        Returns:
+            The mesh instance class.
+        """
         instance = MeshInstance(self)
         instance.fields = {}
 
         instance.set_num_patches(metadata.num_patches)
 
-        for element in self.elements:
+        for element in metadata.element_fields:
+            self.elements.add(element)
             _ti_core.set_num_elements(instance.mesh_ptr, element,
                                       metadata.num_elements[element])
             instance.set_patch_max_element_num(
@@ -417,14 +506,13 @@ class MeshBuilder:
             instance.set_index_mapping(element, ConvType.g2r,
                                        metadata.element_fields[element]["g2r"])
 
-        for relation in self.relations:
-            from_order = element_order(relation[0])
-            to_order = element_order(relation[1])
-            rel_type = MeshRelationType(
-                relation_by_orders(from_order, to_order))
+        for rel_type in metadata.relation_fields:
+            from_order = metadata.relation_fields[rel_type]["from_order"]
+            to_order = metadata.relation_fields[rel_type]["to_order"]
             if from_order <= to_order:
                 instance.set_relation_dynamic(
                     rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["patch_offset"],
                     metadata.relation_fields[rel_type]["offset"])
             else:
                 instance.set_relation_fixed(
@@ -433,32 +521,117 @@ class MeshBuilder:
         if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
             instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101
 
+        instance.patcher = metadata.patcher
+
         return instance
 
 
 # Mesh First Class
 class Mesh:
+    """The Mesh type class.
+
+    ti.Mesh offers first-class support for triangular/tetrahedral meshes
+    and allows efficient computation on these irregular data structures,
+    only available for backends supporting `ti.extension.mesh`.
+
+    Related to https://github.com/taichi-dev/taichi/issues/3608
+    """
     def __init__(self):
         pass
 
     @staticmethod
     def Tet():
+        """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Tetrahedron)
 
     @staticmethod
     def Tri():
+        """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+        Returns:
+            An instance of mesh builder.
+        """
         return MeshBuilder(MeshTopology.Triangle)
 
     @staticmethod
     def load_meta(filename):
-        return MeshMetadata(filename)
+        with open(filename, "r") as fi:
+            data = json.loads(fi.read())
+        return MeshMetadata(data)
+
+    @staticmethod
+    def generate_meta(data):
+        return MeshMetadata(data)
+
+    class RelationVisitor(ast.NodeVisitor):
+        # TODO: only works for simple cases
+
+        def __init__(self, ctx):
+            self.vars = {}
+            self.visits = []
+            self.ctx = ctx
+
+        def visit_For(self, node):
+            if isinstance(node.iter, ast.Attribute):
+                value = node.iter.value
+                if isinstance(value, ast.Name):
+                    if value.id in self.ctx.global_vars:
+                        var = self.ctx.global_vars[value.id]
+                        if isinstance(var, MeshInstance):
+                            self.vars[node.target.id] = [var, node.iter.attr]
+            if isinstance(node.iter, ast.Name):
+                if node.iter.id in self.ctx.global_vars:
+                    var = self.ctx.global_vars[node.iter.id]
+                    if isinstance(var, MeshElementField):
+                        self.vars[node.target.id] = [
+                            var.mesh, element_type_name(var._type)
+                        ]
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Assign(self, node):
+            if isinstance(node.targets[0], ast.Name):
+                if isinstance(node.value, ast.Name):
+                    if node.value.id in self.vars:
+                        self.vars[node.targets[0].id] = self.vars[
+                            node.value.id]
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Attribute(self, node):
+            if isinstance(node.value, ast.Name):
+                if node.value.id in self.vars:
+                    self.visits.append(self.vars[node.value.id] + [node.attr])
+            ast.NodeVisitor.generic_visit(self, node)
+
+    @staticmethod
+    def update_relation(tree, ctx):
+        x = Mesh.RelationVisitor(ctx)
+        x.visit(tree)
+        name_to_order = {"verts": 0, "edges": 1, "faces": 2, "cells": 3}
+        for visit in x.visits:
+            if visit[1] in name_to_order and visit[2] in name_to_order:
+                visit[0].update_relation(name_to_order[visit[1]],
+                                         name_to_order[visit[2]])
 
 
 def TriMesh():
+    """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
+    """
     return Mesh.Tri()
 
 
 def TetMesh():
+    """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+
+    Returns:
+        An instance of mesh builder.
+    """
     return Mesh.Tet()
 
 
@@ -484,7 +657,7 @@ class MeshElementFieldProxy:
             elif isinstance(attr, StructField):
                 raise RuntimeError('ti.Mesh has not support StructField yet')
             else:  # isinstance(attr, Field)
-                var = attr.get_field_members()[0].ptr
+                var = attr._get_field_members()[0].ptr
                 setattr(
                     self, key,
                     impl.Expr(_ti_core.subscript(var,
@@ -517,15 +690,16 @@ class MeshRelationAccessProxy:
     @property
     def size(self):
         return impl.Expr(
-            _ti_core.get_relation_size(self.mesh.mesh_ptr, self.from_index.ptr,
-                                       self.to_element_type))
+            self.mesh.get_relation_size(self.from_index, self.to_element_type))
 
     def subscript(self, *indices):
         assert len(indices) == 1
-        entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
-                                                  self.from_index.ptr,
-                                                  self.to_element_type,
-                                                  impl.Expr(indices[0]).ptr)
-        entry_expr.type_check()
+        entry_expr = self.mesh.get_relation_access(self.from_index,
+                                                   self.to_element_type,
+                                                   impl.Expr(indices[0]).ptr)
+        entry_expr.type_check(impl.get_runtime().prog.config)
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)
+
+
+__all__ = ["Mesh", "TetMesh", "TriMesh"]

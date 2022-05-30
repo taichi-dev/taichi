@@ -17,7 +17,7 @@ namespace spirv {
 template <bool stop, std::size_t I, typename F>
 struct for_each_dispatcher {
   template <typename T, typename... Args>
-  static void run(const F &f, T &&value, Args &&... args) {  // NOLINT(*)
+  static void run(const F &f, T &&value, Args &&...args) {  // NOLINT(*)
     f(I, std::forward<T>(value));
     for_each_dispatcher<sizeof...(Args) == 0, (I + 1), F>::run(
         f, std::forward<Args>(args)...);
@@ -31,7 +31,7 @@ struct for_each_dispatcher<true, I, F> {
 };
 
 template <typename F, typename... Args>
-inline void for_each(const F &f, Args &&... args) {  // NOLINT(*)
+inline void for_each(const F &f, Args &&...args) {  // NOLINT(*)
   for_each_dispatcher<sizeof...(Args) == 0, 0, F>::run(
       f, std::forward<Args>(args)...);
 }
@@ -72,6 +72,7 @@ enum class ValueKind {
   kVectorPtr,
   kStructArrayPtr,
   kVariablePtr,
+  kPhysicalPtr,
   kFunction,
   kExtInst
 };
@@ -164,7 +165,7 @@ class InstrBuilder {
   }
 
   template <typename... Args>
-  InstrBuilder &add_seq(Args &&... args) {
+  InstrBuilder &add_seq(Args &&...args) {
     AddSeqHelper helper;
     helper.builder = this;
     for_each(helper, std::forward<Args>(args)...);
@@ -206,29 +207,29 @@ class IRBuilder {
   }
 
   template <typename... Args>
-  void debug(spv::Op op, Args &&... args) {
+  void debug(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
   }
 
   template <typename... Args>
-  void execution_mode(Value func, Args &&... args) {
+  void execution_mode(Value func, Args &&...args) {
     ib_.begin(spv::OpExecutionMode)
         .add_seq(func, std::forward<Args>(args)...)
         .commit(&exec_mode_);
   }
 
   template <typename... Args>
-  void decorate(spv::Op op, Args &&... args) {
+  void decorate(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&decorate_);
   }
 
   template <typename... Args>
-  void declare_global(spv::Op op, Args &&... args) {
+  void declare_global(spv::Op op, Args &&...args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&global_);
   }
 
   template <typename... Args>
-  Instr make_inst(spv::Op op, Args &&... args) {
+  Instr make_inst(spv::Op op, Args &&...args) {
     return ib_.begin(op)
         .add_seq(std::forward<Args>(args)...)
         .commit(&function_);
@@ -266,9 +267,12 @@ class IRBuilder {
 
   // Make a new SSA value
   template <typename... Args>
-  Value make_value(spv::Op op, const SType &out_type, Args &&... args) {
+  Value make_value(spv::Op op, const SType &out_type, Args &&...args) {
     Value val = new_value(out_type, ValueKind::kNormal);
     make_inst(op, out_type, val, std::forward<Args>(args)...);
+    if (out_type.flag == TypeKind::kPtr) {
+      val.flag = ValueKind::kVariablePtr;
+    }
     return val;
   }
 
@@ -311,16 +315,36 @@ class IRBuilder {
   SType get_primitive_type(const DataType &dt) const;
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
+  // Get the spirv uint type with the same size of a given Taichi data type
+  SType get_primitive_uint_type(const DataType &dt) const;
+  // Get the Taichi uint type with the same size of a given Taichi data type
+  DataType get_taichi_uint_type(const DataType &dt) const;
+  // Get the pointer type that points to value_type
+  SType get_storage_pointer_type(const SType &value_type);
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
+  // Get a value_type[num_elems] type
+  SType get_array_type(const SType &value_type, uint32_t num_elems);
   // Get a struct{ value_type[num_elems] } type
   SType get_struct_array_type(const SType &value_type, uint32_t num_elems);
+  // Construct a struct type
+  SType create_struct_type(
+      std::vector<std::tuple<SType, std::string, size_t>> &components);
 
   // Declare buffer argument of function
+  Value buffer_struct_argument(const SType &struct_type,
+                               uint32_t descriptor_set,
+                               uint32_t binding,
+                               const std::string &name);
+  Value uniform_struct_argument(const SType &struct_type,
+                                uint32_t descriptor_set,
+                                uint32_t binding,
+                                const std::string &name);
   Value buffer_argument(const SType &value_type,
                         uint32_t descriptor_set,
-                        uint32_t binding);
+                        uint32_t binding,
+                        const std::string &name);
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
 
   // Declare a new function
@@ -346,11 +370,11 @@ class IRBuilder {
         ib_.add(v);
       }
     }
-    if (gl_global_invocation_id.id != 0) {
-      ib_.add(gl_global_invocation_id);
+    if (gl_global_invocation_id_.id != 0) {
+      ib_.add(gl_global_invocation_id_);
     }
-    if (gl_num_work_groups.id != 0) {
-      ib_.add(gl_num_work_groups);
+    if (gl_num_work_groups_.id != 0) {
+      ib_.add(gl_num_work_groups_);
     }
     ib_.commit(&entry_);
     ib_.begin(spv::OpExecutionMode)
@@ -376,6 +400,8 @@ class IRBuilder {
   Value get_work_group_size(uint32_t dim_index);
   Value get_num_work_groups(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
+  Value get_subgroup_invocation_id();
+  Value get_subgroup_size();
 
   // Expressions
   Value add(Value a, Value b);
@@ -396,7 +422,7 @@ class IRBuilder {
 
   // Create a GLSL450 call
   template <typename... Args>
-  Value call_glsl450(const SType &ret_type, uint32_t inst_id, Args &&... args) {
+  Value call_glsl450(const SType &ret_type, uint32_t inst_id, Args &&...args) {
     Value val = new_value(ret_type, ValueKind::kNormal);
     ib_.begin(spv::OpExtInst)
         .add_seq(ret_type, val, ext_glsl450_, inst_id)
@@ -414,6 +440,8 @@ class IRBuilder {
   void register_value(std::string name, Value value);
   // Query Value/VariablePointer by name
   Value query_value(std::string name) const;
+  // Check whether a value has been evaluated
+  bool check_value_existence(const std::string &name) const;
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -476,7 +504,7 @@ class IRBuilder {
     return val;
   }
 
-  Value get_const_(const SType &dtype, const uint64_t *pvalue, bool cache);
+  Value get_const(const SType &dtype, const uint64_t *pvalue, bool cache);
   SType declare_primitive_type(DataType dt);
 
   void init_random_function(Value global_tmp_);
@@ -509,16 +537,18 @@ class IRBuilder {
   SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v3_uint_;
-  Value gl_global_invocation_id;
-  Value gl_num_work_groups;
-  Value gl_work_group_size;
+  Value gl_global_invocation_id_;
+  Value gl_num_work_groups_;
+  Value gl_work_group_size_;
+  Value subgroup_local_invocation_id_;
+  Value subgroup_size_;
 
   // Random function and variables
   bool init_rand_{false};
-  Value _rand_x_;
-  Value _rand_y_;
-  Value _rand_z_;
-  Value _rand_w_;  // per-thread local variable
+  Value rand_x_;
+  Value rand_y_;
+  Value rand_z_;
+  Value rand_w_;  // per-thread local variable
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;

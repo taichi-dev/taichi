@@ -1,11 +1,12 @@
 import numpy as np
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    cu1 = ti.quant.int(1, False)
+    cu1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=cu1)
 
@@ -27,9 +28,9 @@ def test_1D_bit_array():
     verify_val()
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_2D_bit_array():
-    ci1 = ti.quant.int(1, False)
+    ci1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
 

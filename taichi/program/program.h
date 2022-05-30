@@ -5,15 +5,17 @@
 #include <functional>
 #include <optional>
 #include <atomic>
+#include <stack>
 
 #define TI_RUNTIME_HOST
+#include "taichi/aot/module_builder.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
-#include "taichi/program/aot_module.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
@@ -74,12 +76,6 @@ struct hash<taichi::lang::JITEvaluatorId> {
 namespace taichi {
 namespace lang {
 
-extern Program *current_program;
-
-TI_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
-
 class StructCompiler;
 class LlvmProgramImpl;
 class AsyncEngine;
@@ -97,7 +93,7 @@ class AsyncEngine;
  * LlvmProgramImpl, MetalProgramImpl..
  */
 
-class Program {
+class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
@@ -160,6 +156,8 @@ class Program {
 
   void synchronize();
 
+  StreamSemaphore flush();
+
   // See AsyncEngine::flush().
   // Only useful when async mode is enabled.
   void async_flush();
@@ -183,6 +181,16 @@ class Program {
     return *kernels.back();
   }
 
+  Kernel &kernel(const std::function<void(Kernel *)> &body,
+                 const std::string &name = "",
+                 bool grad = false) {
+    // Expr::set_allow_store(true);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    // Expr::set_allow_store(false);
+    kernels.emplace_back(std::move(func));
+    return *kernels.back();
+  }
+
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
@@ -190,6 +198,10 @@ class Program {
   // TODO: Optional offloaded is used by async mode, we might refactor it in the
   // future.
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
+
+  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
+    return program_impl_->make_aot_kernel(kernel);
+  }
 
   void check_runtime_error();
 
@@ -270,6 +282,16 @@ class Program {
   SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
+   * Allocates a SNode tree id for a new SNode tree
+   *
+   * @return The SNode tree id allocated
+   *
+   * Returns and consumes a free SNode tree id if there is any,
+   * Otherwise returns the size of `snode_trees_`
+   */
+  int allocate_snode_tree_id();
+
+  /**
    * Gets the root of a SNode tree.
    *
    * @param tree_id Index of the SNode tree
@@ -293,23 +315,38 @@ class Program {
     return program_impl_->get_graphics_device();
   }
 
-  std::shared_ptr<Device> get_device_shared() {
-    return program_impl_->get_device_shared();
-  }
-
   // TODO: do we still need result_buffer?
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
 
+  Ndarray *create_ndarray(const DataType type, const std::vector<int> &shape);
+
+  intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
+
+  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
+
+  ASTBuilder *current_ast_builder() {
+    return current_callable ? &current_callable->context->builder() : nullptr;
+  }
+
+  Identifier get_next_global_id(const std::string &name = "") {
+    return Identifier(global_id_counter_++, name);
+  }
+
  private:
+  uint64 ndarray_writer_counter_{0};
+  uint64 ndarray_reader_counter_{0};
+  int global_id_counter_{0};
+
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
   NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+  std::stack<int> free_snode_tree_ids_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
@@ -320,6 +357,7 @@ class Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
+  std::vector<std::unique_ptr<Ndarray>> ndarrays_;
 };
 
 }  // namespace lang

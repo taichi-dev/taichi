@@ -37,6 +37,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   void clear() override;
   void stop(KernelProfilerBase::TaskHandle handle) override;
 
+  bool set_profiler_toolkit(std::string toolkit_name) override;
+
   bool statistics_on_traced_records();
 
   KernelProfilerBase::TaskHandle start_with_handle(
@@ -49,11 +51,11 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::undef;
+
+  // Instances of these toolkits may exist at the same time,
+  // but only one will be enabled.
   std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
-  // if(tool_ == ProfilingToolkit::cupti) event_toolkit_ = nullptr
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
-  // if(tool_ == ProfilingToolkit::event) cupti_toolkit_ = nullptr
-  // TODO : switch profiling toolkit at runtime
   std::vector<std::string> metric_list_;
   uint32_t records_size_after_sync_{0};
 };

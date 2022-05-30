@@ -1,6 +1,7 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
+from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
+                              to_pytorch_type)
 
 
 class Field:
@@ -26,6 +27,15 @@ class Field:
         Returns:
             SNode: Representative SNode (SNode of first field member).
         """
+        return self._snode
+
+    @property
+    def _snode(self):
+        """Gets representative SNode for info purposes.
+
+        Returns:
+            SNode: Representative SNode (SNode of first field member).
+        """
         return taichi.lang.snode.SNode(self.vars[0].ptr.snode())
 
     @property
@@ -35,7 +45,7 @@ class Field:
         Returns:
             Tuple[Int]: Field shape.
         """
-        return self.snode.shape
+        return self._snode.shape
 
     @property
     def dtype(self):
@@ -44,16 +54,16 @@ class Field:
         Returns:
             DataType: Data type of each individual value.
         """
-        return self.snode.dtype
+        return self._snode._dtype
 
     @property
-    def name(self):
+    def _name(self):
         """Gets field name.
 
         Returns:
             str: Field name.
         """
-        return self.snode.name
+        return self._snode._name
 
     def parent(self, n=1):
         """Gets an ancestor of the representative SNode in the SNode tree.
@@ -66,7 +76,7 @@ class Field:
         """
         return self.snode.parent(n)
 
-    def get_field_members(self):
+    def _get_field_members(self):
         """Gets field members.
 
         Returns:
@@ -74,7 +84,7 @@ class Field:
         """
         return self.vars
 
-    def loop_range(self):
+    def _loop_range(self):
         """Gets representative field member for loop range info.
 
         Returns:
@@ -82,7 +92,7 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def set_grad(self, grad):
+    def _set_grad(self, grad):
         """Sets corresponding gradient field.
 
         Args:
@@ -124,6 +134,18 @@ class Field:
         raise NotImplementedError()
 
     @python_scope
+    def to_paddle(self, place=None):
+        """Converts `self` to a paddle tensor.
+
+        Args:
+            place (paddle.CPUPlace()/CUDAPlace(n), optional): The desired place of returned tensor.
+
+        Returns:
+            paddle.Tensor: The result paddle tensor.
+        """
+        raise NotImplementedError()
+
+    @python_scope
     def from_numpy(self, arr):
         """Loads all elements from a numpy array.
 
@@ -146,6 +168,17 @@ class Field:
         self.from_numpy(arr.contiguous())
 
     @python_scope
+    def from_paddle(self, arr):
+        """Loads all elements from a paddle tensor.
+
+        The shape of the paddle tensor needs to be the same as `self`.
+
+        Args:
+            arr (paddle.Tensor): The source paddle tensor.
+        """
+        self.from_numpy(arr)
+
+    @python_scope
     def copy_from(self, other):
         """Copies all elements from another field.
 
@@ -159,7 +192,8 @@ class Field:
         if self.shape != other.shape:
             raise ValueError(f"ti.field shape {self.shape} does not match"
                              f" the source field shape {other.shape}")
-        taichi.lang.meta.tensor_to_tensor(self, other)
+        from taichi._kernels import tensor_to_tensor  # pylint: disable=C0415
+        tensor_to_tensor(self, other)
 
     @python_scope
     def __setitem__(self, key, value):
@@ -186,19 +220,22 @@ class Field:
     def __str__(self):
         if taichi.lang.impl.inside_kernel():
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
-        if self.snode.ptr is None:
+        if self._snode.ptr is None:
             return '<Field: Definition of this field is incomplete>'
         return str(self.to_numpy())
 
-    def pad_key(self, key):
+    def _pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape)
+
+        if len(key) != len(self.shape):
+            raise AssertionError("Slicing is not supported on ti.field")
+
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
-    def initialize_host_accessors(self):
+    def _initialize_host_accessors(self):
         if self.host_accessors:
             return
         taichi.lang.impl.get_runtime().materialize()
@@ -206,7 +243,7 @@ class Field:
             SNodeHostAccessor(e.ptr.snode()) for e in self.vars
         ]
 
-    def host_access(self, key):
+    def _host_access(self, key):
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
 
@@ -221,32 +258,59 @@ class ScalarField(Field):
 
     @python_scope
     def fill(self, val):
-        taichi.lang.meta.fill_tensor(self, val)
+        """Fills this scalar field with a specified value.
+        """
+        from taichi._kernels import fill_tensor  # pylint: disable=C0415
+        fill_tensor(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
+        """Converts this field to a `numpy.ndarray`.
+        """
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415
         arr = np.zeros(shape=self.shape, dtype=dtype)
-        taichi.lang.meta.tensor_to_ext_arr(self, arr)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
     def to_torch(self, device=None):
+        """Converts this field to a `torch.tensor`.
+        """
         import torch  # pylint: disable=C0415
 
         # pylint: disable=E1101
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
-        taichi.lang.meta.tensor_to_ext_arr(self, arr)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
+        taichi.lang.runtime_ops.sync()
+        return arr
+
+    @python_scope
+    def to_paddle(self, place=None):
+        """Converts this field to a `paddle.Tensor`.
+        """
+        import paddle  # pylint: disable=C0415
+
+        # pylint: disable=E1101
+        # paddle.empty() doesn't support argument `place``
+        arr = paddle.to_tensor(paddle.zeros(self.shape,
+                                            to_paddle_type(self.dtype)),
+                               place=place)
+        from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+        tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
     def from_numpy(self, arr):
+        """Copies the data from a `numpy.ndarray` into this field.
+        """
         if len(self.shape) != len(arr.shape):
             raise ValueError(f"ti.field shape {self.shape} does not match"
                              f" the numpy array shape {arr.shape}")
@@ -256,18 +320,28 @@ class ScalarField(Field):
                                  f" the numpy array shape {arr.shape}")
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
-        taichi.lang.meta.ext_arr_to_tensor(arr, self)
+        from taichi._kernels import ext_arr_to_tensor  # pylint: disable=C0415
+        ext_arr_to_tensor(arr, self)
         taichi.lang.runtime_ops.sync()
 
     @python_scope
     def __setitem__(self, key, value):
-        self.initialize_host_accessors()
-        self.host_accessors[0].setter(value, *self.pad_key(key))
+        self._initialize_host_accessors()
+        self.host_accessors[0].setter(value, *self._pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
-        return self.host_accessors[0].getter(*self.pad_key(key))
+        self._initialize_host_accessors()
+        # Check for potential slicing behaviour
+        # for instance: x[0, :]
+        padded_key = self._pad_key(key)
+        for key in padded_key:
+            if not isinstance(key, int):
+                raise TypeError(
+                    f"Detected illegal element of type: {type(key)}. "
+                    f"Please be aware that slicing a ti.field is not supported so far."
+                )
+        return self.host_accessors[0].getter(*padded_key)
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
@@ -309,3 +383,6 @@ class SNodeHostAccess:
     def __init__(self, accessor, key):
         self.accessor = accessor
         self.key = key
+
+
+__all__ = ["Field", "ScalarField"]

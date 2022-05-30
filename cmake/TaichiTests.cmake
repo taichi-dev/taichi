@@ -12,9 +12,12 @@ endif()
 # 2. Re-implement the legacy CPP tests using googletest
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
+        "tests/cpp/aot/*.cpp"
+        "tests/cpp/backends/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"
+        "tests/cpp/llvm/*.cpp",
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
         "tests/cpp/transforms/*.cpp")
@@ -33,7 +36,7 @@ if (WIN32)
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${TESTS_OUTPUT_DIR})
 endif()
-target_link_libraries(${TESTS_NAME} taichi_isolated_core)
-target_link_libraries(${TESTS_NAME} gtest_main)
+target_link_libraries(${TESTS_NAME} PRIVATE taichi_isolated_core)
+target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
 
 add_test(NAME ${TESTS_NAME} COMMAND ${TESTS_NAME})

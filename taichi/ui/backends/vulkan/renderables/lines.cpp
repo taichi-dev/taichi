@@ -29,6 +29,7 @@ void Lines::init_lines(AppContext *app_context,
       indices_count,
       sizeof(UniformBufferObject),
       0,
+      true,
       app_context->config.package_path + "/shaders/Lines_vk_vert.spv",
       app_context->config.package_path + "/shaders/Lines_vk_frag.spv",
       TopologyType::Lines,
@@ -38,7 +39,7 @@ void Lines::init_lines(AppContext *app_context,
   Renderable::init_render_resources();
 }
 
-Lines::Lines(AppContext *app_context) {
+Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_lines(app_context, 4, 6);
 }
 

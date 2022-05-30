@@ -1,12 +1,14 @@
 import ast
+import builtins
+import traceback
 from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
 
-import astor
-from taichi._logging import info
 from taichi.lang import impl
-from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
+from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
+                                   TaichiSyntaxError,
+                                   handle_exception_from_cpp)
 
 
 class Builder:
@@ -14,22 +16,22 @@ class Builder:
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         try:
             if method is None:
-                try:
-                    import astpretty  # pylint: disable=C0415
-                    error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
-                except:
-                    error_msg = f'Unsupported node {node}'
+                error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            return method(ctx, node)
+            info = ctx.get_pos_info(node) if isinstance(
+                node, (ast.stmt, ast.expr)) else ""
+            with impl.get_runtime().src_info_guard(info):
+                return method(ctx, node)
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
-                raise e
-            msg = str(e)
-            if not isinstance(e, TaichiCompilationError):
-                msg = f"{e.__class__.__name__}: " + msg
-            msg = ctx.get_pos_info(node) + msg
+                raise e.with_traceback(None)
             ctx.raised = True
-            raise TaichiCompilationError(msg)
+            e = handle_exception_from_cpp(e)
+            if not isinstance(e, TaichiCompilationError):
+                msg = ctx.get_pos_info(node) + traceback.format_exc()
+                raise TaichiCompilationError(msg) from None
+            msg = ctx.get_pos_info(node) + str(e)
+            raise type(e)(msg) from None
 
 
 class VariableScopeGuard:
@@ -43,21 +45,38 @@ class VariableScopeGuard:
         self.scopes.pop()
 
 
-class NonStaticStatus:
+class StaticScopeStatus:
     def __init__(self):
-        self.is_in_non_static_scope = False
+        self.is_in_static_scope = False
 
 
-class NonStaticScopeGuard:
+class StaticScopeGuard:
     def __init__(self, status):
         self.status = status
 
     def __enter__(self):
-        self.prev = self.status.is_in_non_static_scope
-        self.status.is_in_non_static_scope = True
+        self.prev = self.status.is_in_static_scope
+        self.status.is_in_static_scope = True
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.status.is_in_non_static_scope = self.prev
+        self.status.is_in_static_scope = self.prev
+
+
+class NonStaticControlFlowStatus:
+    def __init__(self):
+        self.is_in_non_static_control_flow = False
+
+
+class NonStaticControlFlowGuard:
+    def __init__(self, status):
+        self.status = status
+
+    def __enter__(self):
+        self.prev = self.status.is_in_non_static_control_flow
+        self.status.is_in_non_static_control_flow = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.status.is_in_non_static_control_flow = self.prev
 
 
 class LoopStatus(Enum):
@@ -88,6 +107,12 @@ class LoopScopeGuard:
             self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
 
 
+class ReturnStatus(Enum):
+    NoReturn = 0
+    ReturnedVoid = 1
+    ReturnedValue = 2
+
+
 class ASTTransformerContext:
     def __init__(self,
                  excluded_parameters=(),
@@ -98,13 +123,14 @@ class ASTTransformerContext:
                  argument_data=None,
                  file=None,
                  src=None,
-                 start_lineno=None):
+                 start_lineno=None,
+                 ast_builder=None,
+                 is_real_function=False):
         self.func = func
         self.local_scopes = []
         self.loop_scopes = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
-        self.is_in_static_scope = False
         self.arg_features = arg_features
         self.returns = None
         self.global_vars = global_vars
@@ -120,8 +146,12 @@ class ASTTransformerContext:
                 break
         self.lineno_offset = start_lineno - 1
         self.raised = False
-        self.non_static_status = NonStaticStatus()
-        self.returned = False
+        self.non_static_control_flow_status = NonStaticControlFlowStatus()
+        self.static_scope_status = StaticScopeStatus()
+        self.returned = ReturnStatus.NoReturn
+        self.ast_builder = ast_builder
+        self.visited_funcdef = False
+        self.is_real_function = is_real_function
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):
@@ -131,10 +161,14 @@ class ASTTransformerContext:
     def loop_scope_guard(self, is_static=False):
         if is_static:
             return LoopScopeGuard(self.loop_scopes)
-        return LoopScopeGuard(self.loop_scopes, self.non_static_scope_guard())
+        return LoopScopeGuard(self.loop_scopes,
+                              self.non_static_control_flow_guard())
 
-    def non_static_scope_guard(self):
-        return NonStaticScopeGuard(self.non_static_status)
+    def non_static_control_flow_guard(self):
+        return NonStaticControlFlowGuard(self.non_static_control_flow_status)
+
+    def static_scope_guard(self):
+        return StaticScopeGuard(self.static_scope_status)
 
     def current_scope(self):
         return self.local_scopes[-1]
@@ -155,8 +189,11 @@ class ASTTransformerContext:
             return self.loop_scopes[-1].is_static
         return False
 
-    def is_in_non_static(self):
-        return self.non_static_status.is_in_non_static_scope
+    def is_in_non_static_control_flow(self):
+        return self.non_static_control_flow_status.is_in_non_static_control_flow
+
+    def is_in_static_scope(self):
+        return self.static_scope_status.is_in_static_scope
 
     def is_var_declared(self, name):
         for s in self.local_scopes:
@@ -179,10 +216,15 @@ class ASTTransformerContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.global_vars.get(name)
+        if name in self.global_vars:
+            return self.global_vars[name]
+        try:
+            return getattr(builtins, name)
+        except AttributeError:
+            raise TaichiNameError(f'Name "{name}" is not defined')
 
     def get_pos_info(self, node):
-        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
+        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}", in {self.func.func.__name__}:\n'
         if version_info < (3, 8):
             msg += self.src[node.lineno - 1] + "\n"
             return msg
@@ -203,7 +245,14 @@ class ASTTransformerContext:
             hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
             msg += gen_line(self.src[node.lineno - 1], hint)
         else:
-            for i in range(node.lineno - 1, node.end_lineno):
+            node_type = node.__class__.__name__
+
+            if node_type in ["For", "While", "FunctionDef", "If"]:
+                end_lineno = max(node.body[0].lineno - 1, node.lineno)
+            else:
+                end_lineno = node.end_lineno
+
+            for i in range(node.lineno - 1, end_lineno):
                 last = len(self.src[i])
                 while last > 0 and (self.src[i][last - 1].isspace() or
                                     not self.src[i][last - 1].isprintable()):
@@ -223,11 +272,3 @@ class ASTTransformerContext:
                     hint = ''
                 msg += gen_line(self.src[i], hint)
         return msg
-
-
-def print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

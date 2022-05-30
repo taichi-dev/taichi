@@ -46,8 +46,7 @@ def import_ti_core():
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
                   "check this page for possible solutions:\n"
-                  "https://docs.taichi.graphics/lang/articles/misc/install" +
-                  Fore.RESET)
+                  "https://docs.taichi-lang.org/docs/install" + Fore.RESET)
             if get_os_name() == 'win':
                 # pylint: disable=E1101
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
@@ -55,7 +54,7 @@ def import_ti_core():
 
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)  # pylint: disable=E1101
-    lib_dir = os.path.join(package_root(), '_lib', 'runtime')
+    lib_dir = os.path.join(package_root, '_lib', 'runtime')
     core.set_lib_dir(locale_encode(lib_dir))
     return core
 
@@ -78,13 +77,12 @@ def is_ci():
     return os.environ.get('TI_CI', '') == '1'
 
 
-def package_root():
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+package_root = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 def get_core_shared_object():
-    directory = os.path.join(package_root(), '_lib')
+    directory = os.path.join(package_root, '_lib')
     return os.path.join(directory, 'libtaichi_core.so')
 
 
@@ -103,7 +101,7 @@ def check_exists(src):
 
 ti_core = import_ti_core()
 
-ti_core.set_python_package_dir(package_root())
+ti_core.set_python_package_dir(package_root)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:
@@ -122,21 +120,6 @@ def get_dll_name(name):
 
 def at_startup():
     ti_core.set_core_state_python_imported(True)
-
-
-def require_version(major, minor=None, patch=None):
-    versions = [
-        int(ti_core.get_version_major()),
-        int(ti_core.get_version_minor()),
-        int(ti_core.get_version_patch()),
-    ]
-    match = major == versions[0] and (
-        minor < versions[1] or minor == versions[1] and patch <= versions[2])
-    if match:
-        return
-    print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
-    print("Installed =", ti_core.get_version_string())
-    raise Exception("Taichi version mismatch")
 
 
 at_startup()

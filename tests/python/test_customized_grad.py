@@ -1,9 +1,10 @@
 import pytest
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_tape():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -33,7 +34,7 @@ def test_customized_kernels_tape():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_grad():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -64,7 +65,7 @@ def test_customized_kernels_grad():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_indirect():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -97,7 +98,7 @@ def test_customized_kernels_indirect():
     assert x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_oop():
     @ti.data_oriented
     class A:
@@ -132,7 +133,7 @@ def test_customized_kernels_oop():
     assert a.x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_customized_kernels_oop2():
     @ti.data_oriented
     class A:
@@ -170,7 +171,7 @@ def test_customized_kernels_oop2():
     assert a.x.grad[0] == 4
 
 
-@ti.test()
+@test_utils.test()
 def test_decorated_primal_is_taichi_kernel():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -196,7 +197,7 @@ def test_decorated_primal_is_taichi_kernel():
         func(4)
 
 
-@ti.test()
+@test_utils.test()
 def test_decorated_primal_missing_decorator():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -224,3 +225,57 @@ def test_decorated_primal_missing_decorator():
 
     with ti.Tape(loss=total):
         func(4)
+
+
+@test_utils.test()
+def test_customized_kernels_tape_no_grad():
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
+
+    n = 128
+
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func(mul: ti.f32):
+        for i in range(n):
+            ti.atomic_add(total[None], x[i] * mul)
+
+    @ti.ad.no_grad
+    def forward(mul):
+        func(mul)
+        func(mul)
+
+    with ti.Tape(loss=total):
+        forward(4)
+        func(5)
+    assert x.grad[0] == 5
+
+
+@test_utils.test()
+def test_customized_kernels_grad_no_grad():
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
+
+    n = 128
+
+    ti.root.dense(ti.i, n).place(x)
+    ti.root.place(total)
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def func(mul: ti.f32):
+        for i in range(n):
+            ti.atomic_add(total[None], x[i] * mul)
+
+    @ti.ad.no_grad
+    def forward(mul):
+        func(mul)
+        func(mul)
+
+    total.grad[None] = 1
+    forward(4)
+    forward.grad(4)
+    assert x.grad[0] == 0

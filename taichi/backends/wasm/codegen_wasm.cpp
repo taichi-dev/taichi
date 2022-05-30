@@ -31,7 +31,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
-    int step = 1;
+    [[maybe_unused]] int step = 1;
 
     // In parallel for-loops reversing the order doesn't make sense.
     // However, we may need to support serial offloaded range for's in the
@@ -212,13 +212,15 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 
   FunctionType gen() override {
     TI_AUTO_PROF
+    // lower kernel
+    if (!kernel->lowered()) {
+      kernel->lower();
+    }
     // emit_to_module
     stat.add("codegen_taichi_kernel_function");
     auto offloaded_task_name = init_taichi_kernel_function();
     ir->accept(this);
     finalize_taichi_kernel_function();
-
-    // compile_module_to_executable
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [offloaded_task_name](const std::string &func_name) {

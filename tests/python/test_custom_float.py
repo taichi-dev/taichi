@@ -1,14 +1,14 @@
 import math
 
 from pytest import approx
-from taichi.lang import expr, impl
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float():
-    cft = ti.quant.fixed(frac=32, num_range=2)
+    cft = ti.types.quant.fixed(frac=32, range=2)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -27,9 +27,9 @@ def test_custom_float():
     assert x[None] == approx(0.66)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
-    cft = ti.quant.fixed(frac=16, num_range=1.2)
+    cft = ti.types.quant.fixed(frac=16, range=1.2)
 
     x = ti.Matrix.field(2, 2, dtype=cft)
 
@@ -55,10 +55,9 @@ def test_custom_matrix_rotation():
     assert x[None][1, 1] == approx(0, abs=1e-4)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float_implicit_cast():
-    ci13 = ti.quant.int(bits=13)
-    cft = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
+    cft = ti.types.quant.fixed(frac=13, scale=0.1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -71,10 +70,9 @@ def test_custom_float_implicit_cast():
     assert x[None] == approx(10.0)
 
 
-@ti.test(require=ti.extension.quant_basic)
+@test_utils.test(require=ti.extension.quant_basic)
 def test_cache_read_only():
-    ci15 = ti.quant.int(bits=15)
-    cft = ti.type_factory.custom_float(significand_type=ci15, scale=0.1)
+    cft = ti.types.quant.fixed(frac=15, scale=0.1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)

@@ -25,6 +25,7 @@ void Triangles::init_triangles(AppContext *app_context,
       indices_count,
       sizeof(UniformBufferObject),
       0,
+      true,
       app_context->config.package_path + "/shaders/Triangles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Triangles_vk_frag.spv",
       TopologyType::Triangles,
@@ -34,7 +35,7 @@ void Triangles::init_triangles(AppContext *app_context,
   Renderable::init_render_resources();
 }
 
-Triangles::Triangles(AppContext *app_context) {
+Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_triangles(app_context, 3, 3);
 }
 

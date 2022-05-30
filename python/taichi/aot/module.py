@@ -1,13 +1,12 @@
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
+from taichi.aot.utils import (produce_injected_args,
+                              produce_injected_args_from_template)
 from taichi.lang import impl, kernel_impl
-from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
-from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
-from taichi.types.annotations import ArgAnyArray, template
-from taichi.types.primitive_types import f32
+from taichi.lang.matrix import MatrixField
+from taichi.types.annotations import template
 
 
 class KernelTemplate:
@@ -24,8 +23,8 @@ class KernelTemplate:
             if val is v:
                 key_p += '=' + ky + ','
                 return key_p
-        raise RuntimeError('Arg type must be of type int/float/boolean' +
-                           'or taichi field. Type ' + str(type(v)) +
+        raise RuntimeError('Arg type must be of type int/float/boolean'
+                           f' or taichi field. Type {str(type(v))}'
                            ' is not supported')
 
     def instantiate(self, **kwargs):
@@ -40,8 +39,8 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for anno in kernel.argument_annotations:
-            if isinstance(anno, template):
+        for arg in kernel.arguments:
+            if isinstance(arg.annotation, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
@@ -121,62 +120,35 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, example_any_arrays=None, name=None):
+    def add_kernel(self, kernel_fn, template_args=None, name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example any_arr input.
+          template_args (Dict[str, Any]): a dict where key is the template
+            parameter name, and value is the instantiating arg. Note that this
+            works for both :class:`~taichi.types.template` and for
+            `:class:`~taichi.types.ndarray`.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
         """
-        name = name or kernel_fn.__name__
+        kernel_name = name or kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
-        injected_args = []
-        num_arr = len([
-            anno for anno in kernel.argument_annotations
-            if isinstance(anno, ArgAnyArray)
-        ])
-        assert example_any_arrays is None or num_arr == len(
-            example_any_arrays
-        ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
-        i = 0
-        for anno in kernel.argument_annotations:
-            if isinstance(anno, ArgAnyArray):
-                if example_any_arrays:
-                    injected_args.append(example_any_arrays[i])
-                else:
-                    assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
-                    if anno.element_dim == 0:
-                        injected_args.append(
-                            ScalarNdarray(dtype=f32,
-                                          shape=(2, ) * anno.field_dim))
-                    elif anno.element_dim == 1:
-                        injected_args.append(
-                            VectorNdarray(anno.element_shape[0],
-                                          dtype=f32,
-                                          shape=(2, ) * anno.field_dim,
-                                          layout=Layout.AOS))
-                    elif anno.element_dim == 2:
-                        injected_args.append(
-                            MatrixNdarray(anno.element_shape[0],
-                                          anno.element_shape[1],
-                                          dtype=f32,
-                                          shape=(2, ) * anno.field_dim,
-                                          layout=Layout.AOS))
-                    else:
-                        raise RuntimeError('')
-            else:
-                # For primitive types, we can just inject a dummy value.
-                injected_args.append(0)
-            i = i + 1
+        if template_args is not None:
+            injected_args = produce_injected_args_from_template(
+                kernel, template_args)
+        else:
+            injected_args = produce_injected_args(kernel)
         kernel.ensure_compiled(*injected_args)
-        self._aot_builder.add(name, kernel.kernel_cpp)
+        self._aot_builder.add(kernel_name, kernel.kernel_cpp)
 
         # kernel AOT
         self._kernels.append(kernel)
+
+    def add_graph(self, name, graph):
+        self._aot_builder.add_graph(name, graph._compiled_graph)
 
     @contextmanager
     def add_kernel_template(self, kernel_fn):

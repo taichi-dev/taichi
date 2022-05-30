@@ -99,8 +99,13 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       return AliasResult::different;
     auto ptr1 = var1->as<ExternalPtrStmt>();
     auto ptr2 = var2->as<ExternalPtrStmt>();
-    if (ptr1->base_ptrs[0] != ptr2->base_ptrs[0])
-      return AliasResult::uncertain;
+    if (ptr1->base_ptrs[0] != ptr2->base_ptrs[0]) {
+      auto base1 = ptr1->base_ptrs[0]->as<ArgLoadStmt>();
+      auto base2 = ptr2->base_ptrs[0]->as<ArgLoadStmt>();
+      if (base1->arg_id != base2->arg_id) {
+        return AliasResult::different;
+      }
+    }
     TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {

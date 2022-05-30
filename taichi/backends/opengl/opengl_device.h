@@ -9,6 +9,8 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
+class GLDevice;
+
 void check_opengl_error(const std::string &msg = "OpenGL");
 
 class GLResourceBinder : public ResourceBinder {
@@ -166,6 +168,28 @@ class GLCommandList : public CommandList {
     void execute() override;
   };
 
+  struct CmdImageTransition : public Cmd {
+    void execute() override;
+  };
+
+  struct CmdBufferToImage : public Cmd {
+    BufferImageCopyParams params;
+    GLuint image{0};
+    GLuint buffer{0};
+    size_t offset{0};
+    GLDevice *device{nullptr};
+    void execute() override;
+  };
+
+  struct CmdImageToBuffer : public Cmd {
+    BufferImageCopyParams params;
+    GLuint image{0};
+    GLuint buffer{0};
+    size_t offset{0};
+    GLDevice *device{nullptr};
+    void execute() override;
+  };
+
   std::vector<std::unique_ptr<Cmd>> recorded_commands_;
 };
 
@@ -174,8 +198,12 @@ class GLStream : public Stream {
   ~GLStream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
 
   void command_sync() override;
 };
@@ -213,6 +241,8 @@ class GLDevice : public GraphicsDevice {
 
   Stream *get_graphics_stream() override;
 
+  void wait_idle() override;
+
   std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
@@ -229,17 +259,29 @@ class GLDevice : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
+  GLuint get_image_gl_dims(GLuint image) const {
+    return image_to_dims_.at(image);
+  }
+
+  GLuint get_image_gl_int_dims(GLuint image) const {
+    return image_to_int_format_.at(image);
+  }
+
  private:
   GLStream stream_;
   std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
+  std::unordered_map<GLuint, GLuint> image_to_dims_;
+  std::unordered_map<GLuint, GLuint> image_to_int_format_;
 };
 
 class GLSurface : public Surface {
  public:
   ~GLSurface() override;
 
+  StreamSemaphore acquire_next_image() override;
   DeviceAllocation get_target_image() override;
-  void present_image() override;
+  void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;

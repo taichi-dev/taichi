@@ -13,7 +13,7 @@ videos**. This tutorial demonstrates how to use them step by step.
   images.
 - The first and easier way is to make use of `ti.GUI`.
 - The second way is to call some Taichi functions such as
-  `ti.imwrite`.
+  `ti.tools.imwrite`.
 
 ### Export images using `ti.GUI.show`
 
@@ -55,10 +55,10 @@ for i in range(iterations):
 - To compose these images into a single `mp4` or `gif` file, see
   [Converting PNGs to video](./cli_utilities.md#converting-pngs-to-video).
 
-### Export images using `ti.imwrite`
+### Export images using `ti.tools.imwrite`
 
 To save images without invoking `ti.GUI.show(filename)`, use
-`ti.imwrite(filename)`. For example:
+`ti.tools.imwrite(filename)`. For example:
 
 ```python {14}
 import taichi as ti
@@ -74,15 +74,15 @@ def set_pixels():
 
 set_pixels()
 filename = f'imwrite_export.png'
-ti.imwrite(pixels.to_numpy(), filename)
+ti.tools.imwrite(pixels.to_numpy(), filename)
 print(f'The image has been saved to {filename}')
 ```
 
-- `ti.imwrite` can export Taichi fields (`ti.Matrix.field`,
+- `ti.tools.imwrite` can export Taichi fields (`ti.Matrix.field`,
   `ti.Vector.field`, `ti.field`) and numpy arrays `np.ndarray`.
 - Same as above `ti.GUI.show(filename)`, the image format (`png`,
   `jpg` and `bmp`) is also controlled by the suffix of `filename` in
-  `ti.imwrite(filename)`.
+  `ti.tools.imwrite(filename)`.
 - Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is
   determined by **the number of channels in the input field**, i.e.,
   the length of the third dimension (`field.shape[2]`).
@@ -94,13 +94,13 @@ print(f'The image has been saved to {filename}')
 :::note
 All Taichi fields have their own data types, such as `ti.u8` and
 `ti.f32`. Different data types can lead to different behaviors of
-`ti.imwrite`. Please check out [GUI system](./gui.md) for
+`ti.tools.imwrite`. Please check out [GUI system](../gui/gui_system.md) for
 more details.
 :::
 
 - Taichi offers other helper functions that read and show images in
-  addition to `ti.imwrite`. They are also demonstrated in
-  [GUI system./gui.md).
+  addition to `ti.tools.imwrite`. They are also demonstrated in
+  [GUI system](../gui/gui_system.md).
 
 ## Export videos
 
@@ -110,7 +110,7 @@ not installed on your machine, please follow the installation
 instructions of `ffmpeg` at the end of this page.
 :::
 
-- `ti.VideoManager` can help you export results in `mp4` or `gif`
+- `ti.tools.VideoManager` can help you export results in `mp4` or `gif`
   format. For example,
 
 ```python {13,24}
@@ -126,7 +126,7 @@ def paint():
         pixels[i, j, k] = ti.random() * 255
 
 result_dir = "./results"
-video_manager = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
+video_manager = ti.tools.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
 
 for i in range(50):
     paint()
@@ -202,7 +202,7 @@ brew install ffmpeg
 
 ## Export PLY files
 
-- `ti.PLYwriter` can help you export results in the `ply` format.
+- `ti.tools.PLYWriter` can help you export results in the `ply` format.
   Below is a short example of exporting 10 frames of a moving cube
   with vertices randomly colored,
 
@@ -247,7 +247,7 @@ for frame in range(10):
     np_pos = np.reshape(pos.to_numpy(), (num_vertices, 3))
     np_rgba = np.reshape(rgba.to_numpy(), (num_vertices, 4))
     # create a PLYWriter
-    writer = ti.PLYWriter(num_vertices=num_vertices)
+    writer = ti.tools.PLYWriter(num_vertices=num_vertices)
     writer.add_vertex_pos(np_pos[:, 0], np_pos[:, 1], np_pos[:, 2])
     writer.add_vertex_rgba(
         np_rgba[:, 0], np_rgba[:, 1], np_rgba[:, 2], np_rgba[:, 3])
@@ -256,9 +256,9 @@ for frame in range(10):
 
 After running the code above, you will find the output sequence of `ply`
 files in the current working directory. Next, we will break down the
-usage of `ti.PLYWriter` into 4 steps and show some examples.
+usage of `ti.tools.PLYWriter` into 4 steps and show some examples.
 
-- Setup `ti.PLYWriter`
+- Setup `ti.tools.PLYWriter`
 
 ```python
 # num_vertices must be a positive int
@@ -267,10 +267,10 @@ usage of `ti.PLYWriter` into 4 steps and show some examples.
 
 # in our previous example, a writer with 1000 vertices and 0 triangle faces is created
 num_vertices = 1000
-writer = ti.PLYWriter(num_vertices=num_vertices)
+writer = ti.tools.PLYWriter(num_vertices=num_vertices)
 
 # in the below example, a writer with 20 vertices and 5 quadrangle faces is created
-writer2 = ti.PLYWriter(num_vertices=20, num_faces=5, face_type="quad")
+writer2 = ti.tools.PLYWriter(num_vertices=20, num_faces=5, face_type="quad")
 ```
 
 - Add required channels
@@ -289,7 +289,7 @@ writer2 = ti.PLYWriter(num_vertices=20, num_faces=5, face_type="quad")
 #         |    |    |    |    |
 #         16---12---08---04---00
 
-writer = ti.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
+writer = ti.tools.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
 
 # For the vertices, the only required channel is the position,
 # which can be added by passing 3 np.array x, y, z into the following function.
@@ -372,7 +372,7 @@ for frame in range(10):
     b = np.random.rand(20)
     alpha = np.random.rand(20)
     # re-fill
-    writer = ti.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
+    writer = ti.tools.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
     writer.add_vertex_pos(x, y, z)
     writer.add_faces(indices)
     writer.add_vertex_channel("vdata1", "double", vdata)

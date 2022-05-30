@@ -54,6 +54,31 @@ def mp4_to_gif(input_fn, output_fn, framerate):
 
 
 class VideoManager:
+    """Utility class for exporting results to `mp4` and `gif` formats.
+    This class relies on `ffmpeg`.
+
+    Args:
+        output_dir (str): directory to save the frames.
+        width, height (int): resolution of the video.
+        post_processor (object): any object that implements the `process(img)`
+            method, which accepts an image as a `numpy.ndarray` and returns
+            the process image.
+        framerate (int): frame rate of the video.
+        automatic_build (bool): automatically generate the resulting video or not.
+
+    Example::
+
+        >>> video_manager = ti.tools.VideoManager(output_dir="./output", framerate=24, automatic_build=False)
+        >>> for i in range(50):
+        >>>     render()
+        >>>     img = pixels.to_numpy()
+        >>>     video_manager.write_frame(img)
+        >>>
+        >>> video_manager.make_video(gif=True, mp4=True)
+
+    Returns:
+        An instance of :class:`taichi.tools.VideoManager` class.
+    """
     def __init__(self,
                  output_dir,
                  width=None,
@@ -81,6 +106,11 @@ class VideoManager:
         return os.path.join(self.directory, 'video' + suffix)
 
     def write_frame(self, img):
+        """Write an `numpy.ndarray` `img` to an image file.
+
+        The filename will be automatically determined by this manager
+        and the frame counter.
+        """
         if img.shape[0] % 2 != 0:
             print('Warning: height is not divisible by 2! Dropping last row')
             img = img[:-1]
@@ -103,18 +133,26 @@ class VideoManager:
                 self.next_video_checkpoint *= 2
 
     def get_frame_directory(self):
+        """Returns path to the directory where the image files are located in.
+        """
         return self.frame_directory
 
     def write_frames(self, images):
+        """Write a list of `numpy.ndarray` `images` to image files.
+        """
         for img in images:
             self.write_frame(img)
 
     def clean_frames(self):
+        """Delete all previous image files in the saved directory.
+        """
         for fn in os.listdir(self.frame_directory):
             if fn.endswith('.png') and fn in self.frame_fns:
                 os.remove(fn)
 
     def make_video(self, mp4=True, gif=True):
+        """Convert the image files to a `mp4` or `gif` animation.
+        """
         fn = self.get_output_filename('.mp4')
         command = (get_ffmpeg_path() + f" -loglevel panic -framerate {self.framerate} -i ") + os.path.join(
             self.frame_directory, FRAME_FN_TEMPLATE) + \
@@ -166,6 +204,17 @@ def make_video(input_files,
                frame_rate=24,
                crf=20,
                output_path='video.mp4'):
+    """Convert a list of image files to a `gif` or `mp4` animation.
+
+    Args:
+        input_files (list[str]): the list of image file names.
+        width (int): output video width.
+        height (int): output video height.
+        frame_rate (int): framerate of the output video.
+        crf (int): quality of the output video, the lower the better quality,
+            but also larger file size.
+        output_path (str): path to the output video.
+    """
     if isinstance(input_files, list):
         from PIL import Image  # pylint: disable=C0415
         with Image.open(input_files[0]) as img:
@@ -196,3 +245,6 @@ def make_video(input_files,
         assert ret == 0, "ffmpeg failed to generate video file."
     else:
         assert False, f'input_files should be list (of files) or str (of file template, e.g., "%04d.png") instead of {type(input_files)}'
+
+
+__all__ = ['VideoManager']

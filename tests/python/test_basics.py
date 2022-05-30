@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test()
+@test_utils.test()
 def test_simple():
     n = 128
     x = ti.field(ti.i32, shape=n)
@@ -19,7 +20,7 @@ def test_simple():
             assert x[i] == 0
 
 
-@ti.test()
+@test_utils.test()
 def test_range_loops():
     n = 128
     x = ti.field(ti.i32, shape=n)
@@ -35,7 +36,7 @@ def test_range_loops():
         assert x[i] == i + 123
 
 
-@ti.test()
+@test_utils.test()
 def test_python_access():
     n = 128
     x = ti.field(ti.i32, shape=n)
@@ -46,7 +47,7 @@ def test_python_access():
     assert x[4] == 456
 
 
-@ti.test()
+@test_utils.test()
 def test_if():
     x = ti.field(ti.f32, shape=16)
 
@@ -77,7 +78,7 @@ def test_if():
         assert x[i] == i
 
 
-@ti.test()
+@test_utils.test()
 def test_if_global_load():
     x = ti.field(ti.i32, shape=16)
 
@@ -99,7 +100,7 @@ def test_if_global_load():
             assert x[i] == i
 
 
-@ti.test()
+@test_utils.test()
 def test_while_global_load():
     x = ti.field(ti.i32, shape=16)
     y = ti.field(ti.i32, shape=())
@@ -118,7 +119,7 @@ def test_while_global_load():
     assert y[None] == 3
 
 
-@ti.test()
+@test_utils.test()
 def test_datatype_string():
     for ty in [
             ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.f32,

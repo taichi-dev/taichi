@@ -33,7 +33,9 @@
 #endif
 
 #include "taichi/backends/vulkan/vulkan_common.h"
+#if !defined(ANDROID)
 #include <GLFW/glfw3.h>
+#endif
 
 #include <stdarg.h>
 
@@ -52,11 +54,16 @@
 
 TI_UI_NAMESPACE_BEGIN
 
+#if !defined(ANDROID)
 inline void initGLFW() {
   if (!glfwInit()) {
     printf("cannot initialize GLFW\n");
     exit(EXIT_FAILURE);
   }
+}
+
+static void glfw_error_callback(int code, const char *description) {
+  printf("GLFW Error %d: %s\n", code, description);
 }
 
 inline GLFWwindow *create_glfw_window_(const std::string &name,
@@ -66,8 +73,10 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
   initGLFW();
   GLFWwindow *window;
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwSetErrorCallback(glfw_error_callback);
+
   glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
   window = glfwCreateWindow(screenWidth, screenHeight, name.c_str(), nullptr,
                             nullptr);
@@ -77,11 +86,18 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
     exit(EXIT_FAILURE);
   }
 
+  if (glfwVulkanSupported() != GLFW_TRUE) {
+    printf("GLFW reports no Vulkan support\n");
+  }
+
+  // Invalid for Vulkan
+  /*
   if (vsync) {
     glfwSwapInterval(1);
   } else {
     glfwSwapInterval(0);
   }
+  */
   return window;
 }
 
@@ -175,6 +191,7 @@ inline std::string button_id_to_name(int id) {
                              std::to_string(id));
   }
 }
+#endif
 
 inline int next_power_of_2(int n) {
   int count = 0;

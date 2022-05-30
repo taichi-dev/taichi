@@ -13,8 +13,11 @@ namespace spirv {
 
 // static
 std::string TaskAttributes::buffers_name(BufferInfo b) {
-  if (b.type == BufferType::Context) {
-    return "Context";
+  if (b.type == BufferType::Args) {
+    return "Args";
+  }
+  if (b.type == BufferType::Rets) {
+    return "Rets";
   }
   if (b.type == BufferType::GlobalTmps) {
     return "GlobalTmps";
@@ -50,77 +53,72 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
+  // TODO: We should be able to limit Kernel args and rets to be primitive types
+  // as well but let's leave that as a followup up PR.
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;
-    aa.dt = ka.dt;
-    const size_t dt_bytes = data_type_size(aa.dt);
-    if (dt_bytes > 4) {
-      TI_ERROR("SPIRV kernel only supports less than 32-bit arguments, got {}",
-               data_type_name(aa.dt));
-    }
+    TI_ASSERT(ka.dt->is<PrimitiveType>());
+    aa.dtype = ka.dt->cast<PrimitiveType>()->type;
+    const size_t dt_bytes = data_type_size(ka.dt);
     aa.is_array = ka.is_array;
-    // For array, |ka.size| is #elements * elements_size
-    aa.stride = aa.is_array ? ka.size : dt_bytes;
+    if (aa.is_array) {
+      aa.field_dim = ka.total_dim - ka.element_shape.size();
+      aa.element_shape = ka.element_shape;
+    }
+    aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(aa);
   }
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;
-    ra.dt = kr.dt;
-    const size_t dt_bytes = data_type_size(ra.dt);
-    if (dt_bytes > 4) {
-      // Metal doesn't support 64bit data buffers.
-      TI_ERROR(
-          "SPIRV kernel only supports less than 32-bit return value, got {}",
-          data_type_name(ra.dt));
+    size_t dt_bytes{0};
+    if (auto tensor_type = kr.dt->cast<TensorType>()) {
+      auto tensor_dtype = tensor_type->get_element_type();
+      TI_ASSERT(tensor_dtype->is<PrimitiveType>());
+      ra.dtype = tensor_dtype->cast<PrimitiveType>()->type;
+      dt_bytes = data_type_size(tensor_dtype);
+      ra.is_array = true;
+      ra.stride = tensor_type->get_num_elements() * dt_bytes;
+    } else {
+      TI_ASSERT(kr.dt->is<PrimitiveType>());
+      ra.dtype = kr.dt->cast<PrimitiveType>()->type;
+      dt_bytes = data_type_size(kr.dt);
+      ra.is_array = false;
+      ra.stride = dt_bytes;
     }
-    ra.is_array = false;  // TODO(#909): this is a temporary limitation
-    ra.stride = dt_bytes;
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);
   }
 
-  auto arrange_scalar_before_array = [](auto *vec, size_t offset) -> size_t {
-    std::vector<int> scalar_indices;
-    std::vector<int> array_indices;
-    for (int i = 0; i < vec->size(); ++i) {
-      if ((*vec)[i].is_array) {
-        array_indices.push_back(i);
-      } else {
-        scalar_indices.push_back(i);
-      }
-    }
+  auto arange_args = [](auto *vec, size_t offset, bool is_ret) -> size_t {
     size_t bytes = offset;
-    // Put scalar args in the memory first
-    for (int i : scalar_indices) {
+    for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = data_type_size(attribs.dt);
+      const size_t dt_bytes =
+          (attribs.is_array && !is_ret)
+              ? sizeof(uint64_t)
+              : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
-      bytes += attribs.stride;
-      TI_TRACE("  at={} scalar offset_in_mem={} stride={}", i,
-               attribs.offset_in_mem, attribs.stride);
-    }
-    // Then the array args
-    for (int i : array_indices) {
-      auto &attribs = (*vec)[i];
-      const size_t dt_bytes = data_type_size(attribs.dt);
-      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
-      attribs.offset_in_mem = bytes;
-      bytes += attribs.stride;
-      TI_TRACE("  at={} array offset_in_mem={} stride={}", i,
-               attribs.offset_in_mem, attribs.stride);
+      bytes += is_ret ? attribs.stride : dt_bytes;
+      TI_TRACE(
+          "  at={} {} offset_in_mem={} stride={}",
+          (*vec)[i].is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
+          attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };
 
   TI_TRACE("args:");
-  args_bytes_ = arrange_scalar_before_array(&arg_attribs_vec_, 0);
+  args_bytes_ = arange_args(&arg_attribs_vec_, 0, false);
+  // Align to extra args
+  args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
+
   TI_TRACE("rets:");
-  rets_bytes_ = arrange_scalar_before_array(&ret_attribs_vec_, args_bytes_);
-  TI_TRACE("sizes: args={} rets={} ctx={} total={}", args_bytes(), rets_bytes(),
-           ctx_bytes(), total_bytes());
+  rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true);
+
+  TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));
 }
 

@@ -67,14 +67,6 @@ class IRCloner : public IRVisitor {
     }
   }
 
-  void visit(FuncBodyStmt *stmt) override {
-    generic_visit(stmt);
-    auto other = other_node->as<FuncBodyStmt>();
-    other_node = other->body.get();
-    stmt->body->accept(this);
-    other_node = other;
-  }
-
   void visit(WhileStmt *stmt) override {
     generic_visit(stmt);
     auto other = other_node->as<WhileStmt>();

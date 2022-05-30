@@ -13,7 +13,22 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 namespace {
-
+bool demotable_axis_load(Stmt *stmt) {
+  // Stmt involving simple arithmetic of ExternalTensorShapeAlongAxisStmt
+  // shouldn't be saved in global tmp, just clone them to each shader
+  // separately.
+  int n_op = stmt->num_operands();
+  if (n_op == 0) {
+    return stmt->is<ExternalTensorShapeAlongAxisStmt>() ||
+           stmt->is<ConstStmt>();
+  }
+  for (int i = 0; i < n_op; i++) {
+    auto op = stmt->operand(i);
+    if (!demotable_axis_load(op))
+      return false;
+  }
+  return true;
+}
 class SquashPtrOffset : public IRVisitor {
  public:
   SquashPtrOffset() {
@@ -92,19 +107,30 @@ class Offloader {
           offloaded_ranges.begin_stmts.insert(
               std::make_pair(offloaded.get(), s->begin));
         }
+
         if (auto val = s->end->cast<ConstStmt>()) {
           offloaded->const_end = true;
           offloaded->end_value = val->val[0].val_int32();
         } else {
+          if ((arch == Arch::opengl || arch == Arch::vulkan) &&
+              demotable_axis_load(s->end)) {
+            // TODO: We need to update codegen for each backend gradually so
+            // let's limit it to opengl backend for now.
+            auto end_copy = s->end->clone();
+            offloaded->end_stmt = end_copy.get();
+            offloaded->body->insert(std::move(end_copy));
+          }
           offloaded_ranges.end_stmts.insert(
               std::make_pair(offloaded.get(), s->end));
         }
+
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
+        offloaded->range_hint = s->range_hint;
         root_block->insert(std::move(offloaded));
       } else if (auto st = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
@@ -359,6 +385,9 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
         (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
+    if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan) &&
+        demotable_axis_load(stmt))
+      return;
     // Not yet allocated
     if (local_to_global_.find(top_level_ptr) == local_to_global_.end()) {
       local_to_global_[top_level_ptr] =
@@ -426,20 +455,12 @@ class PromoteIntermediateToGlobalTmp : public BasicStmtVisitor {
       auto ptr = stmt->insert_after_me(
           Stmt::make<GlobalTemporaryStmt>(offset, stmt->ret_type));
       ptr->insert_after_me(Stmt::make<GlobalStoreStmt>(ptr, stmt));
-      throw IRModified();
     }
   }
 
   static void run(IRNode *root, const StmtToOffsetMap &local_to_global_offset) {
     PromoteIntermediateToGlobalTmp pass(local_to_global_offset);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:
@@ -480,15 +501,20 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                                         ->second];
       }
       if (!stmt->const_end) {
-        TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
-                  offloaded_ranges_->end_stmts.end())
-        TI_ASSERT_INFO(local_to_global_offset_.find(
-                           offloaded_ranges_->end_stmts.find(stmt)->second) !=
-                           local_to_global_offset_.end(),
-                       "End fails.")
-        stmt->end_offset =
-            local_to_global_offset_[offloaded_ranges_->end_stmts.find(stmt)
-                                        ->second];
+        if (stmt->end_stmt) {
+          stmt->end_stmt->accept(this);
+          stmt->end_offset = 0;
+        } else {
+          TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
+                    offloaded_ranges_->end_stmts.end())
+          TI_ASSERT_INFO(local_to_global_offset_.find(
+                             offloaded_ranges_->end_stmts.find(stmt)->second) !=
+                             local_to_global_offset_.end(),
+                         "End fails.")
+          stmt->end_offset =
+              local_to_global_offset_[offloaded_ranges_->end_stmts.find(stmt)
+                                          ->second];
+        }
       }
     }
   }
@@ -534,7 +560,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     stmt->parent->replace_with(stmt, std::move(replacement), false);
     // To deal with the same offloaded visit_operand()
     stmt_to_offloaded_[stmt] = nullptr;
-    throw IRModified();
   }
 
   // Replace local LD/ST with global LD/ST
@@ -548,7 +573,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       auto global_load = replacement.push_back<GlobalLoadStmt>(ptr);
       stmt_to_offloaded_[global_load] = stmt_to_offloaded_[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
     }
   }
 
@@ -562,7 +586,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
           replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
       stmt_to_offloaded_[global_store] = stmt_to_offloaded_[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
     }
   }
 
@@ -580,24 +603,26 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
     if (op->is<GlobalPtrStmt>()) {
       auto copy = op->clone();
+      auto pcopy = copy.get();
       copy->as<GlobalPtrStmt>()->activate = false;
       stmt_to_offloaded_[copy.get()] = offloaded;
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
+      generic_visit(pcopy);
       return true;
     }
 
     if (local_to_global_offset_.find(op) == local_to_global_offset_.end()) {
-      TI_ASSERT_INFO(
-          op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
-              op->is<GlobalTemporaryStmt>() || op->is<ExternalPtrStmt>() ||
-              (op->is<ArgLoadStmt>() && op->as<ArgLoadStmt>()->is_ptr),
-          "{} is not allowed here.", op->type());
-      // For cases like ConstStmt
+      // For stmts that are not promoted to global tmp, clone them into current
+      // offloaded task. E.g.
+      // ConstStmt/PtrOffsetStmt/GlobalTemporaryStmt/ExternalTensorShapeAlongAxisStmt
+      // etc.
       auto copy = op->clone();
+      auto pcopy = copy.get();
       stmt_to_offloaded_[copy.get()] = offloaded;
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
+      generic_visit(pcopy);
     } else {
       auto global_temporary = Stmt::make<GlobalTemporaryStmt>(
           local_to_global_offset_[op], op->ret_type);
@@ -621,13 +646,9 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
   void generic_visit(Stmt *stmt) {
     int n_op = stmt->num_operands();
-    bool modified = false;
     for (int i = 0; i < n_op; i++) {
-      if (visit_operand(stmt, i))
-        modified = true;
+      visit_operand(stmt, i);
     }
-    if (modified)
-      throw IRModified();
   }
 
   void visit(Stmt *stmt) override {
@@ -647,18 +668,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                   OffloadedRanges *offloaded_ranges) {
     FixCrossOffloadReferences pass(config, local_to_global_offset,
                                    stmt_to_offloaded, offloaded_ranges);
-    while (true) {
-      try {
-        root->accept(&pass);
-      } catch (IRModified) {
-        continue;
-      }
-      break;
-    }
+    root->accept(&pass);
   }
 
  private:
-  const CompileConfig &config_;
+  [[maybe_unused]] const CompileConfig &config_;
   StmtToOffsetMap local_to_global_offset_;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded_;
   OffloadedRanges *const offloaded_ranges_;

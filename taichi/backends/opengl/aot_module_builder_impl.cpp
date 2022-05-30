@@ -1,4 +1,6 @@
 #include "taichi/backends/opengl/aot_module_builder_impl.h"
+
+#include "taichi/aot/module_data.h"
 #include "taichi/backends/opengl/opengl_utils.h"
 
 #if !defined(TI_PLATFORM_WINDOWS)
@@ -8,16 +10,96 @@
 namespace taichi {
 namespace lang {
 namespace opengl {
-
-AotModuleBuilderImpl::AotModuleBuilderImpl(
-    StructCompiledResult &compiled_structs,
-    bool allow_nv_shader_extension)
-    : compiled_structs_(compiled_structs),
-      allow_nv_shader_extension_(allow_nv_shader_extension) {
-  aot_data_.root_buffer_size = compiled_structs_.root_size;
-}
-
 namespace {
+
+class AotDataConverter {
+ public:
+  static aot::ModuleData convert(const opengl::AotData &in) {
+    AotDataConverter c{};
+    return c.visit(in);
+  }
+
+ private:
+  explicit AotDataConverter() = default;
+
+  aot::ModuleData visit(const opengl::AotData &in) const {
+    aot::ModuleData res{};
+    for (const auto &[key, val] : in.kernels) {
+      res.kernels[key] = visit(val);
+    }
+    for (const auto &[key, val] : in.kernel_tmpls) {
+      res.kernel_tmpls[key] = visit(val);
+    }
+    res.fields = in.fields;
+    res.root_buffer_size = in.root_buffer_size;
+    return res;
+  }
+
+  aot::CompiledTaichiKernel visit(
+      const opengl::CompiledTaichiKernel &in) const {
+    aot::CompiledTaichiKernel res{};
+    res.tasks.reserve(in.tasks.size());
+    for (const auto &t : in.tasks) {
+      res.tasks.push_back(
+          visit(t, in.used.buf_data, in.used.buf_args, in.used.buf_gtmp));
+    }
+    res.args_count = in.arg_count;
+    res.rets_count = in.ret_count;
+    res.args_buffer_size = in.args_buf_size;
+    res.rets_buffer_size = in.ret_buf_size;
+    res.scalar_args.reserve(res.args_count);
+    res.arr_args.reserve(res.args_count);
+    for (const auto &[arg_id, val] : in.scalar_args) {
+      res.scalar_args[arg_id] = visit(val);
+    }
+    for (const auto &[arg_id, val] : in.arr_args) {
+      aot::ArrayArg out_arr = visit(val);
+      out_arr.bind_index = in.used.arr_arg_to_bind_idx.at(arg_id);
+      res.arr_args[arg_id] = out_arr;
+    }
+    return res;
+  }
+
+  aot::CompiledOffloadedTask visit(const opengl::CompiledOffloadedTask &in,
+                                   bool used_root_buf,
+                                   bool used_args_buf,
+                                   bool used_gtmp_buf) const {
+    aot::CompiledOffloadedTask res{};
+    res.type = offloaded_task_type_name(in.type);
+    res.name = in.name;
+    res.source_path = in.src;
+    res.range_hint = in.range_hint;
+    res.gpu_block_size = in.workgroup_size;
+    // TODO: update ret_buffer_bind_id after Rets is split out of Args.
+    if (used_root_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::Root, 0}, static_cast<int>(GLBufId::Root)});
+    if (used_args_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::Args, -1}, static_cast<int>(GLBufId::Args)});
+    if (used_gtmp_buf)
+      res.buffer_binds.push_back(
+          {{aot::BufferType::GlobalTmps, -1}, static_cast<int>(GLBufId::Gtmp)});
+    return res;
+  }
+
+  aot::ScalarArg visit(const opengl::ScalarArg &in) const {
+    aot::ScalarArg res{};
+    res.dtype_name = in.dtype_name;
+    res.offset_in_args_buf = in.offset_in_bytes_in_args_buf;
+    return res;
+  }
+
+  aot::ArrayArg visit(const opengl::CompiledArrayArg &in) const {
+    aot::ArrayArg res{};
+    res.dtype_name = in.dtype_name;
+    res.field_dim = in.field_dim;
+    res.element_shape = in.element_shape;
+    res.shape_offset_in_args_buf = in.shape_offset_in_bytes_in_args_buf;
+    return res;
+  }
+};
+
 void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
   const std::string glsl_path = fmt::format("{}/{}.glsl", output_dir, t.name);
   std::ofstream fs{glsl_path};
@@ -28,6 +110,14 @@ void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
 
 }  // namespace
 
+AotModuleBuilderImpl::AotModuleBuilderImpl(
+    StructCompiledResult &compiled_structs,
+    bool allow_nv_shader_extension)
+    : compiled_structs_(compiled_structs),
+      allow_nv_shader_extension_(allow_nv_shader_extension) {
+  aot_data_.root_buffer_size = compiled_structs_.root_size;
+}
+
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
@@ -35,22 +125,20 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(aot_data_, bin_path);
   // Json format doesn't support multiple line strings.
-  AotData new_aot_data = aot_data_;
-  for (auto &k : new_aot_data.kernels) {
+  AotData aot_data_copy = aot_data_;
+  for (auto &k : aot_data_copy.kernels) {
     for (auto &t : k.second.tasks) {
       write_glsl_file(output_dir, t);
     }
   }
-  for (auto &k : new_aot_data.kernel_tmpls) {
+  for (auto &k : aot_data_copy.kernel_tmpls) {
     for (auto &t : k.second.tasks) {
       write_glsl_file(output_dir, t);
     }
   }
-
-  const std::string txt_path = fmt::format("{}/metadata.json", output_dir);
-  TextSerializer ts;
-  ts.serialize_to_json("aot_data", new_aot_data);
-  ts.write_to_file(txt_path);
+  auto aot_module_data = AotDataConverter::convert(aot_data_copy);
+  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
+  aot_module_data.dump_json(json_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -59,16 +147,6 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                 allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
   aot_data_.kernels.insert(std::make_pair(identifier, std::move(compiled)));
-}
-
-size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
-  if (snode->type == SNodeType::root)
-    return 0;
-  int chid = find_children_id(snode);
-  const auto &parent_meta =
-      compiled_structs_.snode_map.at(snode->parent->node_type_name);
-  auto choff = parent_meta.children_offsets[chid];
-  return choff + get_snode_base_address(snode->parent);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
@@ -87,9 +165,15 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   // matter too much for now.
   TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
               "AOT: only supports dense field");
-  aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
-                              get_snode_base_address(rep_snode), shape,
-                              is_scalar, row_num, column_num});
+  std::vector<int> element_shape;
+  if (!is_scalar) {
+    element_shape = {row_num, column_num};
+  }
+  aot_data_.fields.push_back(
+      {identifier, gl_dtype_enum, dt.to_string(),
+       compiled_structs_.snode_map.at(rep_snode->node_type_name)
+           .mem_offset_in_root,
+       shape, is_scalar, element_shape});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

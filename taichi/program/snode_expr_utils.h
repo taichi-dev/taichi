@@ -2,9 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
-
-#include "taichi/ir/snode.h"
-#include "taichi/ir/frontend_ir.h"
+#include <vector>
 
 // This file groups the set of helpers that need the Expr associated with a
 // given SNode. Expr is part of the frontend, which somehow depends on the
@@ -12,6 +10,9 @@
 // on less, we thus move SNode-Expr related utils away from SNode itself.
 namespace taichi {
 namespace lang {
+class Expr;
+class SNode;
+class GlobalVariableExpression;
 
 using SNodeGlobalVarExprMap =
     std::unordered_map<const SNode *,

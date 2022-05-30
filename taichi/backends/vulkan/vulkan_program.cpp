@@ -1,8 +1,10 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
-#ifdef ANDROID
-#else
+#include "taichi/backends/vulkan/aot_module_builder_impl.h"
+#include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/backends/vulkan/aot_module_loader_impl.h"
+
+#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
 #include "GLFW/glfw3.h"
 #endif
 
@@ -22,16 +24,17 @@ std::vector<std::string> get_required_instance_extensions() {
 
   return extensions;
 #else
+  std::vector<std::string> extensions;
+
+#ifndef TI_EMSCRIPTENED
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
 
-  std::vector<std::string> extensions;
-
   for (int i = 0; i < glfw_ext_count; ++i) {
     extensions.push_back(glfw_extensions[i]);
   }
-
+#endif
   // VulkanDeviceCreator will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #if TI_WITH_CUDA
@@ -65,9 +68,12 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(run_codegen(
-      kernel, runtime->get_ti_device(), runtime->get_compiled_structs())));
+FunctionType compile_to_executable(Kernel *kernel,
+                                   VkRuntime *runtime,
+                                   SNodeTreeManager *snode_tree_mgr) {
+  auto handle = runtime->register_taichi_kernel(
+      run_codegen(kernel, runtime->get_ti_device(),
+                  snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -76,7 +82,12 @@ FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   spirv::lower(kernel);
-  return compile_to_executable(kernel, vulkan_runtime_.get());
+  return compile_to_executable(kernel, vulkan_runtime_.get(),
+                               snode_tree_mgr_.get());
+}
+
+static void glfw_error_callback(int code, const char *description) {
+  TI_WARN("GLFW Error {}: {}", code, description);
 }
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -85,20 +96,19 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
+#ifndef TI_EMSCRIPTENED
 // Android is meant to be embedded in other application only so the creation of
 // the device and other states is left to the caller/host.
 // The following code is only used when Taichi is running on its own.
 #ifndef ANDROID
   GLFWwindow *glfw_window = nullptr;
-#ifdef __APPLE__
-  glfwInitVulkanLoader(vkGetInstanceProcAddr);
-#endif
 
   if (glfwInit()) {
+    glfwSetErrorCallback(glfw_error_callback);
+
     // glfw init success
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     glfw_window = glfwCreateWindow(1, 1, "Dummy Window", nullptr, nullptr);
 
     if (glfwVulkanSupported() != GLFW_TRUE) {
@@ -106,10 +116,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     }
   }
 #endif
+#endif
 
   VulkanDeviceCreator::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
     evd_params.additional_instance_extensions =
@@ -137,13 +148,13 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   params.host_result_buffer = *result_buffer_ptr;
   params.device = embedded_device_->device();
   vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
+  snode_tree_mgr_ =
+      std::make_unique<vulkan::SNodeTreeManager>(vulkan_runtime_.get());
 }
 
-void VulkanProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void VulkanProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   if (vulkan_runtime_) {
-    vulkan_runtime_->materialize_snode_tree(tree);
+    snode_tree_mgr_->materialize_snode_tree(tree);
   } else {
     CompiledSNodeStructs compiled_structs =
         vulkan::compile_snode_structs(*tree->root());
@@ -151,20 +162,36 @@ void VulkanProgramImpl::compile_snode_tree_types(
   }
 }
 
-void VulkanProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
-  vulkan_runtime_->materialize_snode_tree(tree);
+void VulkanProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                               uint64 *result_buffer) {
+  snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
 std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
   if (vulkan_runtime_) {
     return std::make_unique<AotModuleBuilderImpl>(
-        vulkan_runtime_->get_compiled_structs());
+        snode_tree_mgr_->get_compiled_structs());
   } else {
     return std::make_unique<AotModuleBuilderImpl>(aot_compiled_snode_structs_);
   }
+}
+
+DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  return get_compute_device()->allocate_memory(
+      {alloc_size, /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false});
+}
+
+std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
+    Kernel &kernel) {
+  spirv::lower(&kernel);
+  std::vector<CompiledSNodeStructs> compiled_structs;
+  VkRuntime::RegisterParams kparams =
+      run_codegen(&kernel, get_compute_device(), compiled_structs);
+  return std::make_unique<KernelImpl>(vulkan_runtime_.get(),
+                                      std::move(kparams));
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

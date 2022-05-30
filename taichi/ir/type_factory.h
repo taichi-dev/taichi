@@ -17,7 +17,7 @@ class TypeFactory {
 
   PrimitiveType *get_primitive_int_type(int bits, bool is_signed = true);
 
-  Type *get_vector_type(int num_elements, Type *element);
+  PrimitiveType *get_primitive_real_type(int bits);
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 

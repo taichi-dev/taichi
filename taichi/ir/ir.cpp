@@ -23,17 +23,6 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
   }
 }
 
-void DecoratorRecorder::reset() {
-  vectorize = -1;
-  bit_vectorize = -1;
-  num_cpu_threads = 0;
-  uniform = false;
-  mem_access_opt.clear();
-  block_dim = 0;
-  strictly_serialized = false;
-}
-
-int Identifier::id_counter = 0;
 std::string Identifier::raw_name() const {
   if (name_.empty())
     return fmt::format("tmp{}", id);
@@ -142,34 +131,18 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc, std::move(new_stmt));
+  auto iter = parent->find(this);
+  TI_ASSERT(iter != parent->statements.end());
+  parent->insert_at(std::move(new_stmt), iter);
   return ret;
 }
 
 Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
-  auto &stmts = parent->statements;
-  int loc = -1;
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    if (stmts[i].get() == this) {
-      loc = i;
-      break;
-    }
-  }
-  TI_ASSERT(loc != -1);
-  new_stmt->parent = parent;
-  stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+  auto iter = parent->find(this);
+  TI_ASSERT(iter != parent->statements.end());
+  parent->insert_at(std::move(new_stmt), std::next(iter));
   return ret;
 }
 
@@ -247,19 +220,37 @@ int Stmt::locate_operand(Stmt **stmt) {
 }
 
 void Block::erase(int location) {
-  statements[location]->erased = true;
-  trash_bin.push_back(std::move(statements[location]));  // do not delete the
-  // stmt, otherwise print_ir will not function properly
-  statements.erase(statements.begin() + location);
+  auto iter = locate(location);
+  erase_range(iter, std::next(iter));
 }
 
 void Block::erase(Stmt *stmt) {
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (statements[i].get() == stmt) {
-      erase(i);
-      break;
+  auto iter = find(stmt);
+  erase_range(iter, std::next(iter));
+}
+
+void Block::erase_range(stmt_vector::iterator begin,
+                        stmt_vector::iterator end) {
+  for (auto iter = begin; iter != end; iter++) {
+    (*iter)->erased = true;
+    trash_bin.push_back(std::move(*iter));
+  }
+  statements.erase(begin, end);
+}
+
+void Block::erase(std::unordered_set<Stmt *> stmts) {
+  stmt_vector clean_stmts;
+  clean_stmts.reserve(statements.size());
+  // We dont have access to erase_if in C++17
+  for (pStmt &stmt : statements) {
+    if (stmts.find(stmt.get()) != stmts.end()) {
+      stmt->erased = true;
+      trash_bin.push_back(std::move(stmt));
+    } else {
+      clean_stmts.push_back(std::move(stmt));
     }
   }
+  statements = std::move(clean_stmts);
 }
 
 std::unique_ptr<Stmt> Block::extract(int location) {
@@ -278,27 +269,31 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
 }
 
 Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  return insert_at(std::move(stmt), locate(location));
+}
+
+Stmt *Block::insert_at(std::unique_ptr<Stmt> &&stmt,
+                       stmt_vector::iterator location) {
   auto stmt_ptr = stmt.get();
   stmt->parent = this;
-  if (location == -1) {
-    statements.push_back(std::move(stmt));
-  } else {
-    statements.insert(statements.begin() + location, std::move(stmt));
-  }
+  statements.insert(location, std::move(stmt));
   return stmt_ptr;
 }
 
 Stmt *Block::insert(VecStatement &&stmt, int location) {
+  return insert_at(std::move(stmt), locate(location));
+}
+
+Stmt *Block::insert_at(VecStatement &&stmt, stmt_vector::iterator location) {
   Stmt *stmt_ptr = nullptr;
   if (stmt.size()) {
     stmt_ptr = stmt.back().get();
   }
-  if (location == -1) {
-    location = (int)statements.size();
+  for (auto &s : stmt.stmts) {
+    s->parent = this;
   }
-  for (int i = 0; i < stmt.size(); i++) {
-    insert(std::move(stmt[i]), location + i);
-  }
+  statements.insert(location, std::make_move_iterator(stmt.stmts.begin()),
+                    std::make_move_iterator(stmt.stmts.end()));
   return stmt_ptr;
 }
 
@@ -306,13 +301,8 @@ void Block::replace_statements_in_range(int start,
                                         int end,
                                         VecStatement &&stmts) {
   TI_ASSERT(start <= end);
-  for (int i = 0; i < end - start; i++) {
-    erase(start);
-  }
-
-  for (int i = 0; i < (int)stmts.size(); i++) {
-    insert(std::move(stmts[i]), start + i);
-  }
+  erase_range(locate(start), locate(end));
+  insert(std::move(stmts), start);
 }
 
 void Block::replace_with(Stmt *old_statement,
@@ -336,16 +326,6 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
   }
 }
 
-Stmt *Block::mask() {
-  if (mask_var)
-    return mask_var;
-  else if (parent_block() == nullptr) {
-    return nullptr;
-  } else {
-    return parent_block()->mask();
-  }
-}
-
 void Block::set_statements(VecStatement &&stmts) {
   statements.clear();
   for (int i = 0; i < (int)stmts.size(); i++) {
@@ -354,56 +334,28 @@ void Block::set_statements(VecStatement &&stmts) {
 }
 
 void Block::insert_before(Stmt *old_statement, VecStatement &&new_statements) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
-  }
+  insert_at(std::move(new_statements), find(old_statement));
 }
 
 void Block::insert_after(Stmt *old_statement, VecStatement &&new_statements) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i + 1;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
-  }
+  insert_at(std::move(new_statements), std::next(find(old_statement)));
 }
 
 void Block::replace_with(Stmt *old_statement,
                          VecStatement &&new_statements,
                          bool replace_usages) {
-  int location = -1;
-  for (int i = 0; i < (int)statements.size(); i++) {
-    if (old_statement == statements[i].get()) {
-      location = i;
-      break;
-    }
-  }
-  TI_ASSERT(location != -1);
+  auto iter = find(old_statement);
+  TI_ASSERT(iter != statements.end());
   if (replace_usages && !new_statements.stmts.empty())
     old_statement->replace_usages_with(new_statements.back().get());
-  trash_bin.push_back(std::move(statements[location]));
+  trash_bin.push_back(std::move(*iter));
   if (new_statements.size() == 1) {
     // Keep all std::vector::iterator valid in this case.
-    statements[location] = std::move(new_statements[0]);
-    statements[location]->parent = this;
-    return;
-  }
-  statements.erase(statements.begin() + location);
-  for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
-    insert(std::move(new_statements[i]), location);
+    *iter = std::move(new_statements[0]);
+    (*iter)->parent = this;
+  } else {
+    statements.erase(iter);
+    insert_at(std::move(new_statements), iter);
   }
 }
 
@@ -434,10 +386,20 @@ int Block::locate(Stmt *stmt) {
   return -1;
 }
 
+stmt_vector::iterator Block::locate(int location) {
+  if (location == -1)
+    return statements.end();
+  return statements.begin() + location;
+}
+
+stmt_vector::iterator Block::find(Stmt *stmt) {
+  return std::find_if(statements.begin(), statements.end(),
+                      [stmt](const pStmt &x) { return x.get() == stmt; });
+}
+
 std::unique_ptr<Block> Block::clone() const {
   auto new_block = std::make_unique<Block>();
   new_block->parent_stmt = parent_stmt;
-  new_block->mask_var = mask_var;
   new_block->stop_gradients = stop_gradients;
   new_block->statements.reserve(size());
   for (auto &stmt : statements)

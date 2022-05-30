@@ -151,7 +151,7 @@ T ifloordiv(T a, T b) {
 
 struct LLVMRuntime;
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
 
 extern "C" {
 
@@ -348,6 +348,7 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 STRUCT_FIELD_ARRAY(RuntimeContext, args);
 STRUCT_FIELD(RuntimeContext, runtime);
+STRUCT_FIELD(RuntimeContext, result_buffer)
 
 int32 RuntimeContext_get_extra_args(RuntimeContext *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];
@@ -593,7 +594,7 @@ struct LLVMRuntime {
   }
 
   template <typename T, typename... Args>
-  T *create(Args &&... args) {
+  T *create(Args &&...args) {
     auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
@@ -696,8 +697,8 @@ struct NodeManager {
 
 extern "C" {
 
-void LLVMRuntime_store_result(LLVMRuntime *runtime, u64 ret) {
-  runtime->set_result(taichi_result_buffer_ret_value_id, ret);
+void RuntimeContext_store_result(RuntimeContext *ctx, u64 ret, u32 idx) {
+  ctx->result_buffer[taichi_result_buffer_ret_value_id + idx] = ret;
 }
 
 void LLVMRuntime_profiler_start(LLVMRuntime *runtime, Ptr kernel_name) {
@@ -1027,15 +1028,79 @@ f32 cuda_shfl_down_f32(i32 delta, f32 val, int width) {
   return 0;
 }
 
+i32 cuda_shfl_xor_sync_i32(u32 mask, i32 val, i32 delta, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_up_sync_i32(u32 mask, i32 val, i32 delta, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_up_sync_f32(u32 mask, f32 val, i32 delta, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_sync_i32(u32 mask, i32 val, i32 delta, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_sync_f32(u32 mask, f32 val, i32 delta, int width) {
+  return 0;
+}
+
+bool cuda_all_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_all_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_all_sync(mask, (bool)predicate);
+}
+
+bool cuda_any_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_any_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_any_sync(mask, (bool)predicate);
+}
+
+bool cuda_uni_sync(u32 mask, bool bit) {
+  return false;
+}
+
+int32 cuda_uni_sync_i32(u32 mask, int32 predicate) {
+  return (int32)cuda_uni_sync(mask, (bool)predicate);
+}
+
 int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
 
-i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+int32 cuda_ballot_i32(int32 predicate) {
+  return cuda_ballot_sync(UINT32_MAX, (bool)predicate);
+}
+
+int32 cuda_ballot_sync_i32(u32 mask, int32 predicate) {
+  return cuda_ballot_sync(mask, (bool)predicate);
+}
+
+uint32 cuda_match_any_sync_i32(u32 mask, i32 value) {
   return 0;
 }
 
-i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+u32 cuda_match_all_sync_i32(u32 mask, i32 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.all.sync.b32  %0, %1, %2;"
+               : "=r"(ret)
+               : "r"(value), "r"(mask));
+  return ret;
+#else
+  return 0;
+#endif
+}
+
+uint32 cuda_match_any_sync_i64(u32 mask, i64 value) {
 #if ARCH_cuda
   u32 ret;
   asm volatile("match.any.sync.b64  %0, %1, %2;"
@@ -1080,17 +1145,17 @@ f32 op_add_f32(f32 a, f32 b) {
 }
 
 i32 op_min_i32(i32 a, i32 b) {
-  return fmin(a, b);
+  return std::min(a, b);
 }
 f32 op_min_f32(f32 a, f32 b) {
-  return fmin(a, b);
+  return std::min(a, b);
 }
 
 i32 op_max_i32(i32 a, i32 b) {
-  return fmax(a, b);
+  return std::max(a, b);
 }
 f32 op_max_f32(f32 a, f32 b) {
-  return fmax(a, b);
+  return std::max(a, b);
 }
 
 i32 op_and_i32(i32 a, i32 b) {
@@ -1662,11 +1727,11 @@ uint64 rand_u64(RuntimeContext *context) {
 }
 
 f32 rand_f32(RuntimeContext *context) {
-  return rand_u32(context) * (1.0f / 4294967296.0f);
+  return (rand_u32(context) >> 8) * (1.0f / 16777216.0f);
 }
 
 f64 rand_f64(RuntimeContext *context) {
-  return rand_u64(context) * (1.0 / 18446744073709551616.0);
+  return (rand_u64(context) >> 11) * (1.0 / 9007199254740992.0);
 }
 
 i32 rand_i32(RuntimeContext *context) {
@@ -1691,7 +1756,7 @@ struct printf_helper {
   }
 
   template <typename... Args, typename T>
-  void push_back(T t, Args &&... args) {
+  void push_back(T t, Args &&...args) {
     *(T *)&buffer[tail] = t;
     if (tail % sizeof(T) != 0)
       tail += sizeof(T) - tail % sizeof(T);
@@ -1708,7 +1773,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

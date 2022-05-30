@@ -40,7 +40,7 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
     VecStatement block;
     if (stmt->conv_type == mesh::ConvType::g2r) {
       // E.g, v_reordered = v_g2r[v_global]
-      Stmt *val = get_load(mapping, stmt->idx, block);
+      [[maybe_unused]] Stmt *val = get_load(mapping, stmt->idx, block);
     } else {
       // E.g, v_global = v_l2g[v_local + total_vertices_offset]
       Stmt *offset = offload->total_offset_local.find(stmt->idx_type)->second;
@@ -103,10 +103,13 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
         stmt->replace_with(std::move(block));
       }
     } else {  // low-to-high or same-order
-      SNode *rel_offset = stmt->mesh->relations.find(rel_type)->second.offset;
+      const auto &rel = stmt->mesh->relations.find(rel_type)->second;
+      SNode *rel_offset = rel.offset;
+      SNode *rel_patch_offset = rel.patch_offset;
       VecStatement block;
       Stmt *patch_idx = block.push_back<MeshPatchIndexStmt>();
       Stmt *owned_offset = offload->owned_offset_local.find(from_type)->second;
+      Stmt *patch_offset = get_load(rel_patch_offset, patch_idx, block);
       Stmt *index_offset = block.push_back<BinaryOpStmt>(
           BinaryOpType::add, patch_idx, owned_offset);
       Stmt *index = block.push_back<BinaryOpStmt>(BinaryOpType::add,
@@ -121,8 +124,10 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
             block.push_back<BinaryOpStmt>(BinaryOpType::sub, offset_1, offset);
       } else {
         SNode *rel_value = stmt->mesh->relations.find(rel_type)->second.value;
-        Stmt *val_index = block.push_back<BinaryOpStmt>(
+        Stmt *val_local_index = block.push_back<BinaryOpStmt>(
             BinaryOpType::add, offset, stmt->neighbor_idx);
+        Stmt *val_index = block.push_back<BinaryOpStmt>(
+            BinaryOpType::add, val_local_index, patch_offset);
         [[maybe_unused]] Stmt *val = get_load(rel_value, val_index, block);
       }
       stmt->replace_with(std::move(block));

@@ -6,7 +6,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_caching_allocator.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/backends/device.h"
+#include "taichi/llvm/llvm_device.h"
 
 namespace taichi {
 namespace lang {
@@ -69,13 +69,18 @@ class CudaStream : public Stream {
   ~CudaStream() override{};
 
   std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
-  void submit(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
-  void submit_synced(CommandList *cmdlist) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit(CommandList *cmdlist,
+                         const std::vector<StreamSemaphore> &wait_semaphores =
+                             {}) override{TI_NOT_IMPLEMENTED};
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override{
+      TI_NOT_IMPLEMENTED};
 
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
 
-class CudaDevice : public Device {
+class CudaDevice : public LlvmDevice {
  public:
   struct AllocInfo {
     void *ptr{nullptr};
@@ -95,7 +100,7 @@ class CudaDevice : public Device {
     bool use_cached{false};
   };
 
-  AllocInfo get_alloc_info(DeviceAllocation handle);
+  AllocInfo get_alloc_info(const DeviceAllocation handle);
 
   ~CudaDevice() override{};
 
@@ -123,9 +128,11 @@ class CudaDevice : public Device {
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
+  void wait_idle() override{TI_NOT_IMPLEMENTED};
+
  private:
   std::vector<AllocInfo> allocations_;
-  void validate_device_alloc(DeviceAllocation alloc) {
+  void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");
     }

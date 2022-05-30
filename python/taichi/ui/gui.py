@@ -4,9 +4,10 @@ import os
 
 import numpy as np
 import taichi.lang
+from taichi._kernels import (tensor_to_image, vector_to_fast_image,
+                             vector_to_image)
 from taichi._lib import core as _ti_core
 from taichi.lang.field import Field, ScalarField
-from taichi.tools.util import core_vec, core_veci
 
 import taichi as ti
 
@@ -33,6 +34,16 @@ class GUI:
 
     """
     class Event:
+        """Class for holding a gui event.
+
+        An event is represented by:
+
+        + type (PRESS, MOTION, RELEASE)
+        + modifier (modifier keys like ctrl, shift, etc)
+        + pos (mouse position)
+        + key (event key)
+        + delta (for holding mouse wheel)
+        """
         def __init__(self):
             self.type = None
             self.modifier = None
@@ -110,11 +121,22 @@ class GUI:
         self.close()
 
     def close(self):
+        """Close this GUI.
+
+        Example::
+
+            >>> while gui.running:
+            >>>     if gui.get_event(gui.PRESS, ti.GUI.ESCAPE):
+            >>>         gui.close()
+            >>>     gui.show()
+        """
         self.core = None  # dereference to call GUI::~GUI()
 
     # Widget system
 
     class WidgetValue:
+        """Class for maintaining id of gui widgets.
+        """
         def __init__(self, gui, wid):
             self.gui = gui
             self.wid = wid
@@ -129,35 +151,36 @@ class GUI:
 
     @staticmethod
     def get_bool_environ(key, default):
-        """Get an environment variable and cast to bool.
+        """Get an environment variable and cast it to `bool`.
+
         Args:
             key (str): The environment variable key.
             default (bool): The default value.
         Return:
-            The environment variable value cast to bool. If the value is not found, directly return argument 'default'.
+            The environment variable value cast to bool. \
+            If the value is not found, directly return argument 'default'.
         """
         if key not in os.environ:
             return default
         return bool(int(os.environ[key]))
 
     def slider(self, text, minimum, maximum, step=1):
-        """Create a slider object on canvas to be manipulated with.
+        """Creates a slider object on canvas to be manipulated with.
 
         Args:
             text (str): The title of slider.
-            minimum (Number): The minimum value of slider.
-            maximum (Number): The maximum value of slider.
-            step (Number, optional): The changing step of slider. Default is 1.
+            minimum (int, float): The minimum value of slider.
+            maximum (int, float): The maximum value of slider.
+            step (int, float): The changing step of slider. Optional and default to 1.
 
         Return:
             :class:`~taichi.misc.gui.GUI.WidgetValue` :The created slider object.
-
         """
         wid = self.core.make_slider(text, minimum, minimum, maximum, step)
         return GUI.WidgetValue(self, wid)
 
     def label(self, text):
-        """Create a label object on canvas.
+        """Creates a label object on canvas.
 
         Args:
             text (str): The title of label.
@@ -188,7 +211,7 @@ class GUI:
     # Drawing system
 
     def clear(self, color=None):
-        """Clear the canvas with the color provided.
+        """Clears the canvas with the color provided.
 
         Args:
             color (int, optional): Specify the color to clear the canvas. Default
@@ -200,6 +223,12 @@ class GUI:
         self.canvas.clear(color)
 
     def cook_image(self, img):
+        """Converts an img to range [0, 1] for display.
+
+        The input image is stored in a `numpy.ndarray`, if it's dtype
+        is `int` it will be rescaled and mapped into range [0, 1]. If
+        the dtype is `float` it will be directly casted to 32-bit float type.
+        """
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
         elif img.dtype in [np.float16, np.float32, np.float64]:
@@ -227,24 +256,43 @@ class GUI:
         return np.ascontiguousarray(img)
 
     def get_image(self):
-        """Get the image data.
+        """Return the window content as an `numpy.ndarray`.
 
         Returns:
             :class:`numpy.array` :The image data in numpy contiguous array type.
-
         """
         self.img = np.ascontiguousarray(self.img)
         self.core.get_img(self.img.ctypes.data)
         return self.img
 
     def set_image(self, img):
-        """Draw an image on canvas.
+        """Sets an image to display on the window.
+
+        The image pixels are set from the values of `img[i, j]`, where `i` indicates
+        the horizontal coordinates (from left to right) and `j` the vertical coordinates
+        (from bottom to top).
+
+        If the window size is `(x, y)`, then `img` must be one of:
+            - `ti.field(shape=(x, y))`, a gray-scale image
+            - `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
+            - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
+            - `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each component
+            - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
+            - `np.ndarray(shape=(x, y))`
+            - `np.ndarray(shape=(x, y, 3))`
+            - `np.ndarray(shape=(x, y, 2))`
+
+        The data type of `img` must be one of:
+            - `uint8`, range `[0, 255]`
+            - `uint16`, range `[0, 65535]`
+            - `uint32`, range `[0, 4294967295]`
+            - `float32`, range `[0, 1]`
+            - `float64`, range `[0, 1]`
 
         Args:
-            img (Union[ti.field, numpy.array]): The color array representing the
-                image to be drawn. Support greyscale, RG, RGB, and RGBA color
-                representations. Its shape must match GUI resolution.
-
+            img (Union[:class:`taichi.field`, `numpy.array`]): The color array \
+                representing the image to be drawn. Support greyscale, RG, RGB, \
+                and RGBA color representations. Its shape must match GUI resolution.
         """
 
         if self.fast_gui:
@@ -257,7 +305,7 @@ class GUI:
             assert img.dtype in [ti.f32, ti.f64, ti.u8], \
                 "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
-            taichi.lang.meta.vector_to_fast_image(img, self.img)
+            vector_to_fast_image(img, self.img)
             return
 
         if isinstance(img, ScalarField):
@@ -268,7 +316,7 @@ class GUI:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape \
                     == self.res, "Image resolution does not match GUI resolution"
-                taichi.lang.meta.tensor_to_image(img, self.img)
+                tensor_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, taichi.lang.matrix.MatrixField):
@@ -281,7 +329,7 @@ class GUI:
                 assert img.n in [2, 3, 4] and img.m == 1, \
                     "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
 
-                taichi.lang.meta.vector_to_image(img, self.img)
+                vector_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, np.ndarray):
@@ -295,13 +343,12 @@ class GUI:
         self.core.set_img(self.img.ctypes.data)
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
-        """Draw a single circle on canvas.
+        """Draws a circle on canvas.
 
         Args:
             pos (Union[List[int], numpy.array]): The position of the circle.
             color (int, Optional): The color of the circle. Default is 0xFFFFFF.
-            radius (Number, Optional): The radius of the circle. Default is 1.
-
+            radius (Number, Optional): The radius of the circle in pixel. Default is 1.
         """
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
@@ -311,11 +358,11 @@ class GUI:
                 color=0xFFFFFF,
                 palette=None,
                 palette_indices=None):
-        """Draw a list of circles on canvas.
+        """Draws a list of circles on canvas.
 
         Args:
             pos (numpy.array): The positions of the circles.
-            radius (Number, optional): The radius of the circles. Default is 1.
+            radius (Number, optional): The radius of the circles in pixel. Default is 1.
             color (int, optional): The color of the circles. Default is 0xFFFFFF.
             palette (list[int], optional): The List of colors from which to
                 choose to draw. Default is None.
@@ -395,7 +442,7 @@ class GUI:
                                     radius_single, radius_array)
 
     def triangles(self, a, b, c, color=0xFFFFFF):
-        """Draw a list of triangles on canvas.
+        """Draws a list of triangles on canvas.
 
         Args:
             a (numpy.array): The positions of the first points of triangles.
@@ -442,14 +489,13 @@ class GUI:
                                       color_array)
 
     def triangle(self, a, b, c, color=0xFFFFFF):
-        """Draw a single triangle on canvas.
+        """Draws a single triangle on canvas.
 
         Args:
             a (List[Number]): The position of the first point of triangle. Shape must be 2.
             b (List[Number]): The position of the second point of triangle. Shape must be 2.
             c (List[Number]): The position of the third point of triangle. Shape must be 2.
             color (int, optional): The color of the triangle. Default is 0xFFFFFF.
-
         """
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
@@ -510,7 +556,7 @@ class GUI:
                                   color_array, radius_single, radius_array)
 
     def line(self, begin, end, radius=1, color=0xFFFFFF):
-        """Draw a single line on canvas.
+        """Draws a single line on canvas.
 
         Args:
             begin (List[Number]): The position of one end of line. Shape must be 2.
@@ -552,7 +598,7 @@ class GUI:
             self.lines(begin, end, radius, color)
 
     def arrow(self, orig, direction, radius=1, color=0xffffff, **kwargs):
-        """Draw a single arrow on canvas.
+        """Draws a single arrow on canvas.
 
         Args:
             orig (List[Number]): The position where arrow starts. Shape must be 2.
@@ -567,7 +613,7 @@ class GUI:
             self.line(begin[0], end[0], radius, color)
 
     def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
-        """Draw a single rectangle on canvas.
+        """Draws a single rectangle on canvas.
 
         Args:
             topleft (List[Number]): The position of the topleft corner of rectangle.
@@ -588,7 +634,7 @@ class GUI:
         self.line(d, a, radius, color)
 
     def text(self, content, pos, font_size=15, color=0xFFFFFF):
-        """Draw texts on canvas.
+        """Draws texts on canvas.
 
         Args:
             content (str): The text to be drawn on canvas.
@@ -614,7 +660,7 @@ class GUI:
         return base.reshape(w * h, 2)
 
     def point_field(self, radius, color=0xffffff, bound=0.5):
-        """Draw a field of points on canvas.
+        """Draws a field of points on canvas.
 
         Args:
             radius (np.array): The pattern and radius of the field of points.
@@ -652,12 +698,13 @@ class GUI:
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        """Show the frame or save current frame as a picture.
+        """Shows the frame content in the gui window, or save the content to an
+        image file.
 
         Args:
-            file (str, optional): The path & name of the picture to be saved.
-                Default is None.
-
+            file (str, optional): output filename. The default is `None`, and
+                the frame content is displayed in the gui window. If it's a valid
+                image filename the frame will be saved as the specified image.
         """
         self.core.update()
         if file:
@@ -668,6 +715,8 @@ class GUI:
     # Event system
 
     class EventFilter:
+        """A set to store detected user events.
+        """
         def __init__(self, *e_filter):
             self.filter = set()
             for ent in e_filter:
@@ -677,6 +726,8 @@ class GUI:
                 self.filter.add(ent)
 
         def match(self, e):
+            """Check if a specified event `e` is among the detected events.
+            """
             if (e.type, e.key) in self.filter:
                 return True
             if e.type in self.filter:
@@ -686,23 +737,21 @@ class GUI:
             return False
 
     def has_key_event(self):
-        """Check if there are any key event registered.
+        """Check if there is any key event registered.
 
         Returns:
-            Bool to indicate whether there is any key event registered.
-
+            bool: whether or not there is any key event registered.
         """
         return self.core.has_key_event()
 
     def get_event(self, *e_filter):
-        """Check if the specific event is triggered.
+        """Checks if the specified event is triggered.
 
         Args:
             *e_filter (ti.GUI.EVENT): The specific event to be checked.
 
         Returns:
-            Bool to indicate whether the specific event is triggered.
-
+            bool: whether or not the specified event is triggered.
         """
         for e in self.get_events(*e_filter):
             self.event = e
@@ -711,14 +760,13 @@ class GUI:
             return False
 
     def get_events(self, *e_filter):
-        """Get a list of events that are triggered.
+        """Gets a list of events that are triggered.
 
         Args:
             *e_filter (List[ti.GUI.EVENT]): The type of events to be filtered.
 
         Returns:
-            :class:`~taichi.misc.gui.GUI.EVENT` :A list of events that are triggered.
-
+            :class:`~taichi.misc.gui.GUI.EVENT`: A list of events that are triggered.
         """
         e_filter = e_filter and GUI.EventFilter(*e_filter) or None
 
@@ -730,11 +778,10 @@ class GUI:
                 yield e
 
     def get_key_event(self):
-        """Get keyboard triggered event.
+        """Gets keyboard triggered event.
 
         Returns:
-            :class:`~taichi.misc.gui.GUI.EVENT` :The keyboard triggered event.
-
+            :class:`~taichi.misc.gui.GUI.EVENT`: The keyboard triggered event.
         """
         self.core.wait_key_event()
 
@@ -765,14 +812,13 @@ class GUI:
         return e
 
     def is_pressed(self, *keys):
-        """Check if the specific key or keys are pressed.
+        """Checks if any key among a set of specified keys is pressed.
 
         Args:
-            *keys (Union[str, List[str]]): The string that stands for keys in keyboard.
+            *keys (Union[str, List[str]]): The keys to be listened to.
 
         Returns:
-            Bool to indicate whether the key or keys are pressed.
-
+            bool: whether or not any key among the specified keys is pressed.
         """
         for key in keys:
             if key in ['Shift', 'Alt', 'Control']:
@@ -784,27 +830,36 @@ class GUI:
             return False
 
     def get_cursor_pos(self):
-        """Get the current position of mouse.
+        """Returns the current position of mouse as a pair of floats
+        in the range `[0, 1] x [0, 1]`.
+
+        The origin of the coordinates system is located at the lower left
+        corner, with `+x` direction points to the right, and `+y` direcntion
+        points upward.
 
         Returns:
             The current position of mouse.
-
         """
         pos = self.core.get_cursor_pos()
         return pos[0], pos[1]
 
     @property
     def running(self):
-        """Get the property of whether the gui is running.
+        """Returns whether this gui is running or not.
 
         Returns:
-            The running property of gui(bool).
-
+            bool: whether this gui is running or not.
         """
         return not self.core.should_close
 
     @running.setter
     def running(self, value):
+        """Sets the running status of this gui. `True` for running
+        and `False` for stop.
+
+        Args:
+            value (bool): `True/False` for running/stop.
+        """
         if value:
             self.core.should_close = 0
         elif not self.core.should_close:
@@ -812,11 +867,10 @@ class GUI:
 
     @property
     def fps_limit(self):
-        """Get the property of fps limit.
+        """Gets the maximum fps of this gui.
 
         Returns:
-            The property of fps limit of gui.
-
+            int: the maximum fps.
         """
         if self.core.frame_delta_limit == 0:
             return None
@@ -824,6 +878,12 @@ class GUI:
 
     @fps_limit.setter
     def fps_limit(self, value):
+        """Set the maximum fps for the gui. This is the maximum number of
+        frames that the gui can show in one second.
+
+        Args:
+            value (int): maximum fps.
+        """
         if value is None:
             self.core.frame_delta_limit = 0
         else:
@@ -831,14 +891,13 @@ class GUI:
 
 
 def rgb_to_hex(c):
-    """Convert rgb color format to hex color format.
+    """Converts rgb color format to hex color format.
 
     Args:
         c (List[int]): The rgb representation of color.
 
     Returns:
         The hex representation of color.
-
     """
     def to255(x):
         return np.clip(np.int32(x * 255), 0, 255)
@@ -847,17 +906,70 @@ def rgb_to_hex(c):
 
 
 def hex_to_rgb(color):
-    """Convert hex color format to rgb color format.
+    """Converts hex color format to rgb color format.
 
     Args:
         color (int): The hex representation of color.
 
     Returns:
         The rgb representation of color.
-
     """
     r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
     return r / 255, g / 255, b / 255
+
+
+def core_veci(*args):
+    if isinstance(args[0], _ti_core.Vector2i):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3i):
+        return args[0]
+    if isinstance(args[0], tuple):
+        args = tuple(*args)
+    if len(args) == 2:
+        return _ti_core.Vector2i(int(args[0]), int(args[1]))
+    if len(args) == 3:
+        return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
+    if len(args) == 4:
+        return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
+                                 int(args[3]))
+    assert False, type(args[0])
+
+
+def core_vec(*args):
+    if isinstance(args[0], _ti_core.Vector2f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector4f):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector2d):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector3d):
+        return args[0]
+    if isinstance(args[0], _ti_core.Vector4d):
+        return args[0]
+    if isinstance(args[0], tuple):
+        args = tuple(*args)
+    if _ti_core.get_default_float_size() == 4:
+        if len(args) == 2:
+            return _ti_core.Vector2f(float(args[0]), float(args[1]))
+        if len(args) == 3:
+            return _ti_core.Vector3f(float(args[0]), float(args[1]),
+                                     float(args[2]))
+        if len(args) == 4:
+            return _ti_core.Vector4f(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
+        assert False, type(args[0])
+    else:
+        if len(args) == 2:
+            return _ti_core.Vector2d(float(args[0]), float(args[1]))
+        if len(args) == 3:
+            return _ti_core.Vector3d(float(args[0]), float(args[1]),
+                                     float(args[2]))
+        if len(args) == 4:
+            return _ti_core.Vector4d(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
+        assert False, type(args[0])
 
 
 __all__ = [

@@ -11,7 +11,7 @@ namespace {
 std::unordered_set<const SNode *> find_all_dense_snodes(
     const metal::SNodeDescriptorsMap &snodes_map) {
   std::unordered_set<const SNode *> res;
-  for (const auto [_, desc] : snodes_map) {
+  for (const auto &[_, desc] : snodes_map) {
     const auto *sn = desc.snode;
     if (sn->type == SNodeType::dense) {
       res.insert(sn);
@@ -80,16 +80,12 @@ void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   metal_kernel_mgr_ = std::make_unique<metal::KernelManager>(std::move(params));
 }
 
-void MetalProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void MetalProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   (void)compile_snode_tree_types_impl(tree);
 }
 
-void MetalProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
+void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                              uint64 *result_buffer) {
   const auto &csnode_tree = compile_snode_tree_types_impl(tree);
   metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
 }
@@ -113,6 +109,18 @@ const metal::CompiledStructs &MetalProgramImpl::compile_snode_tree_types_impl(
   auto csnode_tree = metal::compile_structs(*root);
   compiled_snode_trees_.push_back(std::move(csnode_tree));
   return compiled_snode_trees_.back();
+}
+
+DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  Device::AllocParams params;
+  params.size = alloc_size;
+  params.host_read = false;
+  params.host_write = false;
+  params.usage = AllocUsage::Storage;
+  params.export_sharing = false;
+  return metal_kernel_mgr_->allocate_memory(params);
 }
 
 }  // namespace lang

@@ -35,6 +35,8 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return std::vector<Stmt *>(1, stack_pop->stack);
   } else if (auto external_func = load_stmt->cast<ExternalFuncCallStmt>()) {
     return external_func->arg_stmts;
+  } else if (auto ref = load_stmt->cast<ReferenceStmt>()) {
+    return {ref->var};
   } else {
     return std::vector<Stmt *>();
   }
@@ -57,7 +59,7 @@ Stmt *get_store_data(Stmt *store_stmt) {
 
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   // If store_stmt provides some data sources, return the pointers of the data.
-  if (store_stmt->is<AllocaStmt>()) {
+  if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // The statement itself provides a data source (const [0]).
     return std::vector<Stmt *>(1, store_stmt);
   } else if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {

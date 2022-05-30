@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
-#include "taichi/program/arch.h"
+#include "taichi/backends/arch.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -97,6 +97,38 @@ class ContinueStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(scope);
   TI_DEFINE_ACCEPT_AND_CLONE;
+};
+
+/**
+ * A decoration statement. The decorated "operands" will keep this decoration.
+ */
+class DecorationStmt : public Stmt {
+ public:
+  enum class Decoration : uint32_t { kUnknown, kLoopUnique };
+
+  Stmt *operand;
+  std::vector<uint32_t> decoration;
+
+  DecorationStmt(Stmt *operand, const std::vector<uint32_t> &decoration);
+
+  bool same_operation(DecorationStmt *o) const {
+    return false;
+  }
+
+  bool is_cast() const {
+    return false;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(operand, decoration);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 /**
@@ -263,9 +295,18 @@ class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
   std::vector<Stmt *> indices;
+  std::vector<int> element_shape;
+  // AOS: element_dim < 0
+  // SOA: element_dim > 0
+  int element_dim;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices);
+
+  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+                  const std::vector<Stmt *> &indices,
+                  const std::vector<int> &element_shape,
+                  int element_dim);
 
   bool has_global_side_effect() const override {
     return false;
@@ -377,6 +418,10 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   int arg_id;
 
   ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
 
   TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -612,7 +657,6 @@ class LocalStoreStmt : public Stmt {
 class IfStmt : public Stmt {
  public:
   Stmt *cond;
-  Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
   explicit IfStmt(Stmt *cond);
@@ -627,7 +671,7 @@ class IfStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(cond, true_mask, false_mask);
+  TI_STMT_DEF_FIELDS(cond);
   TI_DEFINE_ACCEPT
 };
 
@@ -646,13 +690,13 @@ class PrintStmt : public Stmt {
   }
 
   template <typename... Args>
-  PrintStmt(Stmt *t, Args &&... args)
+  PrintStmt(Stmt *t, Args &&...args)
       : contents(make_entries(t, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(const std::string &str, Args &&... args)
+  PrintStmt(const std::string &str, Args &&...args)
       : contents(make_entries(str, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
@@ -667,13 +711,13 @@ class PrintStmt : public Stmt {
   template <typename T, typename... Args>
   static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
                                   T &&t,
-                                  Args &&... values) {
+                                  Args &&...values) {
     entries.push_back(EntryType{t});
     make_entries_helper(entries, std::forward<Args>(values)...);
   }
 
   template <typename... Args>
-  static std::vector<EntryType> make_entries(Args &&... values) {
+  static std::vector<EntryType> make_entries(Args &&...values) {
     std::vector<EntryType> ret;
     make_entries_helper(ret, std::forward<Args>(values)...);
     return ret;
@@ -724,20 +768,20 @@ class RangeForStmt : public Stmt {
   Stmt *begin, *end;
   std::unique_ptr<Block> body;
   bool reversed;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  std::string range_hint;
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
                std::unique_ptr<Block> &&body,
-               int vectorize,
                int bit_vectorize,
                int num_cpu_threads,
                int block_dim,
-               bool strictly_serialized);
+               bool strictly_serialized,
+               std::string range_hint = "");
 
   bool is_container_statement() const override {
     return true;
@@ -752,7 +796,6 @@ class RangeForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(begin,
                      end,
                      reversed,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -771,7 +814,6 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_initialization;
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
@@ -779,7 +821,6 @@ class StructForStmt : public Stmt {
 
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
-                int vectorize,
                 int bit_vectorize,
                 int num_cpu_threads,
                 int block_dim);
@@ -792,7 +833,6 @@ class StructForStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -807,7 +847,6 @@ class MeshForStmt : public Stmt {
  public:
   mesh::Mesh *mesh;
   std::unique_ptr<Block> body;
-  int vectorize;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
@@ -819,7 +858,6 @@ class MeshForStmt : public Stmt {
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
               std::unique_ptr<Block> &&body,
-              int vectorize,
               int bit_vectorize,
               int num_cpu_threads,
               int block_dim);
@@ -831,7 +869,6 @@ class MeshForStmt : public Stmt {
   std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(mesh,
-                     vectorize,
                      bit_vectorize,
                      num_cpu_threads,
                      block_dim,
@@ -843,37 +880,41 @@ class MeshForStmt : public Stmt {
 };
 
 /**
- * An inline Taichi function.
- * TODO: This statement seems unused.
- */
-class FuncBodyStmt : public Stmt {
- public:
-  std::string funcid;
-  std::unique_ptr<Block> body;
-
-  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body);
-
-  bool is_container_statement() const override {
-    return true;
-  }
-
-  std::unique_ptr<Stmt> clone() const override;
-
-  TI_STMT_DEF_FIELDS(funcid);
-  TI_DEFINE_ACCEPT
-};
-
-/**
  * Call an inline Taichi function.
  */
 class FuncCallStmt : public Stmt {
  public:
   Function *func;
   std::vector<Stmt *> args;
+  bool global_side_effect{true};
 
   FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
 
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, func, args);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * A reference to a variable.
+ */
+class ReferenceStmt : public Stmt {
+ public:
+  Stmt *var;
+  bool global_side_effect{false};
+
+  ReferenceStmt(Stmt *var) : var(var) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, var);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -882,13 +923,35 @@ class FuncCallStmt : public Stmt {
  */
 class ReturnStmt : public Stmt {
  public:
-  Stmt *value;
+  std::vector<Stmt *> values;
 
-  explicit ReturnStmt(Stmt *value) : value(value) {
+  explicit ReturnStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(value);
+  explicit ReturnStmt(Stmt *value) : values({value}) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  std::vector<DataType> element_types() {
+    std::vector<DataType> ele_types;
+    for (auto &x : values) {
+      ele_types.push_back(x->element_type());
+    }
+    return ele_types;
+  }
+
+  std::string values_raw_names() {
+    std::string names;
+    for (auto &x : values) {
+      names += x->raw_name() + ", ";
+    }
+    names.pop_back();
+    names.pop_back();
+    return names;
+  }
+
+  TI_STMT_DEF_FIELDS(values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -910,19 +973,6 @@ class WhileStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(mask);
   TI_DEFINE_ACCEPT
-};
-
-// TODO: remove this
-class PragmaSLPStmt : public Stmt {
- public:
-  int slp_width;
-
-  PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  TI_STMT_DEF_FIELDS(slp_width);
-  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // TODO: document for this
@@ -1123,6 +1173,8 @@ class OffloadedStmt : public Stmt {
   int block_dim{1};
   bool reversed{false};
   int num_cpu_threads{1};
+  Stmt *end_stmt{nullptr};
+  std::string range_hint = "";
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;
@@ -1289,21 +1341,6 @@ class BlockCornerIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// TODO: remove this
-class BlockDimStmt : public Stmt {
- public:
-  BlockDimStmt() {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
 /**
  * A global temporary variable, located at |offset| in the global temporary
  * buffer.
@@ -1387,11 +1424,15 @@ class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
   std::vector<Stmt *> args;
+  bool with_runtime_context;
 
   explicit InternalFuncStmt(const std::string &func_name,
                             const std::vector<Stmt *> &args,
-                            Type *ret_type = nullptr)
-      : func_name(func_name), args(args) {
+                            Type *ret_type = nullptr,
+                            bool with_runtime_context = true)
+      : func_name(func_name),
+        args(args),
+        with_runtime_context(with_runtime_context) {
     if (ret_type == nullptr) {
       this->ret_type =
           TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
@@ -1401,7 +1442,7 @@ class InternalFuncStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, func_name, args);
+  TI_STMT_DEF_FIELDS(ret_type, func_name, args, with_runtime_context);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1607,7 +1648,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1618,7 +1659,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u16;
     TI_STMT_REG_FIELDS;
   }
 

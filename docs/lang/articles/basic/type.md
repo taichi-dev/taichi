@@ -1,469 +1,217 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
+
 ---
 
 # Type system
 
-Data types in Taichi consist of Primitive Types and Compound Types. Primitive Types are the numerical data types used by backends, while Compound Types are user-defined types of data records composed of multiple members.
+Taichi supports two data types in the [Taichi scope](./syntax.md#taichi-scope): primitive type and compound type.
+
+- Primitive types: Various commonly-used numerical data types, such as `int32`, `uint8`, and `float64`
+- Compound types: User-defined data types, which comprise multiple members.
 
 ## Primitive types
 
-Taichi supports common numerical data types. Each type is denoted as a
-character indicating its _category_ and a number of _precision bits_,
-e.g., `i32` and `f64`.
+Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
 
-The _category_ can be one of:
-
-- `i` for signed integers, e.g. 24, -32
-- `u` for unsigned integers, e.g. 128, 256
-- `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
-
-The _digital number_ can be one of:
-
-- `8`
-- `16`
-- `32`
-- `64`
-
-It represents how many **bits** are used in storing the data. The larger
-the bit number, the higher the precision is.
-
-For example, the two most commonly used types:
-
-- `i32` represents a 32-bit signed integer.
-- `f32` represents a 32-bit floating point number.
+- `i32`: 32-bit signed integer
+- `f32` : 32-bit floating-point number.
 
 ### Supported primitive types
 
-Currently, supported primitive types in Taichi are
+Not all primitive types are supported by your backend. Check out the following table for the supported types. Note that some backends may require extensions to support a specific primitive type.
 
-- int8 `ti.i8`
-- int16 `ti.i16`
-- int32 `ti.i32`
-- int64 `ti.i64`
-- uint8 `ti.u8`
-- uint16 `ti.u16`
-- uint32 `ti.u32`
-- uint64 `ti.u64`
-- float32 `ti.f32`
-- float64 `ti.f64`
+| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`                 | `u16`                | `u32`                | `u64`                | `f16`                | `f32`                | `f64`                |
+| ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| OpenGL  | :x:                | :x:                | :heavy_check_mark: | :o:                | :x:                | :x:                | :x:                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: |
+| Metal   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | :heavy_check_mark: | :x:                |
+| Vulkan  | :o:                | :o:                | :heavy_check_mark: | :o:                | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :heavy_check_mark: | :o:                |
 
-:::note
+> :o:: Requiring extensions for the backend.
 
-Supported types on each backend:
+### Default primitive types for integers and floating-point numbers
 
-| type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
-| ---- | -------- | ------- | ----- | -------- |
-| i8   | > OK     | > N/A   | > OK  | > EXT    |
-| i16  | > OK     | > N/A   | > OK  | > EXT    |
-| i32  | > OK     | > OK    | > OK  | > OK     |
-| i64  | > OK     | > EXT   | > N/A | > EXT    |
-| u8   | > OK     | > N/A   | > OK  | > EXT    |
-| u16  | > OK     | > N/A   | > OK  | > EXT    |
-| u32  | > OK     | > N/A   | > OK  | > OK     |
-| u64  | > OK     | > N/A   | > N/A | > EXT    |
-| f32  | > OK     | > OK    | > OK  | > OK     |
-| f64  | > OK     | > OK    | > N/A | > EXT    |
+- The default integer type in Taichi is `ti.i32`.
+- The default floating-point type in Taichi is `ti.f32`.
 
-(OK: supported, EXT: require extension, N/A: not available)
-:::
+#### Customize the default type
 
-:::note
-Boolean types are represented using `ti.i32`.
-:::
-
-### Supported operations
-
-#### Arithmetic operators
-
-| Operation | Result                          |
-| --------- | ------------------------------- |
-| `-a`      | `a` negated                     |
-| `+a`      | `a` unchanged                   |
-| `a + b`   | sum of `a` and `b`              |
-| `a - b`   | difference of `a` and `b`       |
-| `a * b`   | product of `a` and `b`          |
-| `a / b`   | quotient of `a` and `b`         |
-| `a // b`  | floored quotient of `a` and `b` |
-| `a % b`   | remainder of `a / b`          |
-| `a ** b`  | `a` to the power of `b`         |
-
-:::note
-
-The `%` operator in Taichi follows the Python style instead of C style,
-e.g.,
+You can change the default primitive types by explicitly specifying the default types when initializing Taichi:
 
 ```python
-# In Taichi-scope or Python-scope:
-print(2 % 3)   # 2
-print(-2 % 3)  # 1
+ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64
+ti.init(default_fp=ti.f64)  # Set the default floating-point type to ti.f64
 ```
 
-For C-style mod (`%`), please use `ti.raw_mod`:
+#### Set alias
+
+Taichi supports using `int` as an alias for the default integer type and `float` as an alias for the default floating-point type. In the following example, you change the default primitive types to `i64` and `f64` when initializing Taichi, then you can use `int` to represent `i64` and `float` to represent `f64`.
 
 ```python
-print(ti.raw_mod(2, 3))   # 2
-print(ti.raw_mod(-2, 3))  # -2
-```
-:::
-
-:::note
-
-Python 3 distinguishes `/` (true division) and `//` (floor division), e.g., `1.0 / 2.0 = 0.5`, `1 / 2 = 0.5`, `1 // 2 = 0`,
-`4.2 // 2 = 2`. Taichi follows the same design:
-
-- **True divisions** on integral types will first cast their
-  operands to the default floating point type.
-- **Floor divisions** on floating point types will first cast their
-  operands to the default integral type.
-
-To avoid such implicit casting, you can manually cast your operands to
-desired types, using `ti.cast`. Please see
-[Default precisions](#default-precisions) for more details on
-default numerical types.
-:::
-
-#### Logic operators
-
-| Operation          | Result                                                        |
-| ------------------ | ------------------------------------------------------------- |
-| `a == b`           | if `a` is equal to `b`, then True, else False                 |
-| `a != b`           | if `a` is not equal to `b`, then True, else False             |
-| `a > b`            | if `a` is strictly greater than `b`, then True, else False    |
-| `a < b`            | if `a` is strictly less than `b`, then True, else False       |
-| `a >= b`           | if `a` is greater than or equal to `b`, then True, else False |
-| `a <= b`           | if `a` is less than or equal to `b`, then True, else False    |
-| `not a`            | if `a` is False, then True, else False                        |
-| `a or b`           | if `a` is False, then `b`, else `a`                           |
-| `a and b`          | if `a` is False, then `a`, else `b`                           |
-| `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
-
-#### Bitwise operators
-
-| Operation               | Result                              |
-| ----------------------- | ----------------------------------- |
-| `~a`                    | the bits of `a` inverted            |
-| `a & b`                 | bitwise and of `a` and `b`          |
-| `a ^ b`                 | bitwise exclusive or of `a` and `b` |
-| <code>a &#124; b</code> | bitwise or of `a` and `b`           |
-
-#### Trigonometric functions
-
-```python
-ti.sin(x)
-ti.cos(x)
-ti.tan(x)
-ti.asin(x)
-ti.acos(x)
-ti.atan2(x, y)
-ti.tanh(x)
-```
-
-#### Other arithmetic functions
-
-```python
-ti.sqrt(x)
-ti.rsqrt(x)  # A fast version for `1 / ti.sqrt(x)`.
-ti.exp(x)
-ti.log(x)
-ti.round(x)
-ti.floor(x)
-ti.ceil(x)
-```
-
-#### Builtin-alike functions
-
-```python
-abs(x)
-max(x, y, ...)
-min(x, y, ...)
-pow(x, y)  # Same as `x ** y`.
-```
-
-#### Random number generator
-
-```python
-ti.random(dtype=float)
-```
-
-### Supported atomic operations
-
-In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically
-[atomic](https://en.wikipedia.org/wiki/Fetch-and-add).
-
-:::caution
-
-When modifying global variables in parallel, make sure you use atomic
-operations. For example, to sum up all the elements in `x`,
-
-```python
-@ti.kernel
-def sum():
-    for i in x:
-        # Approach 1: OK
-        total[None] += x[i]
-
-        # Approach 2: OK
-        ti.atomic_add(total[None], x[i])
-
-        # Approach 3: Wrong result since the operation is not atomic.
-        total[None] = total[None] + x[i]
-```
-:::
-
-:::note
-
-When atomic operations are applied to local values, the Taichi compiler
-will try to demote these operations into their non-atomic counterparts.
-:::
-
-Apart from the augmented assignments, explicit atomic operations, such
-as `ti.atomic_add`, also do read-modify-write atomically. These
-operations additionally return the **old value** of the first argument.
-For example,
-
-```python
-x[i] = 3
-y[i] = 4
-z[i] = ti.atomic_add(x[i], y[i])
-# now x[i] = 7, y[i] = 4, z[i] = 3
-```
-
-Below is a list of all explicit atomic operations:
-
-| Operation             | Behavior                                                                                             |
-| --------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ti.atomic_add(x, y)` | atomically compute `x + y`, store the result in `x`, and return the old value of `x`                 |
-| `ti.atomic_sub(x, y)` | atomically compute `x - y`, store the result in `x`, and return the old value of `x`                 |
-| `ti.atomic_and(x, y)` | atomically compute `x & y`, store the result in `x`, and return the old value of `x`                 |
-| `ti.atomic_or(x, y)`  | atomically compute <code>x &#124; y</code>, store the result in `x`, and return the old value of `x` |
-| `ti.atomic_xor(x, y)` | atomically compute `x ^ y`, store the result in `x`, and return the old value of `x`                 |
-| `ti.atomic_max(x, y)` | atomically compute `max(x, y)`, store the result in `x`, and return the old value of `x`             |
-| `ti.atomic_min(x, y)` | atomically compute `min(x, y)`, store the result in `x`, and return the old value of `x`             |
-
-:::note
-
-Supported atomic operations on each backend:
-
-| type | CPU/CUDA | OpenGL | Metal | C source |
-| ---- | -------- | ------ | ----- | -------- |
-| i32  | > OK     | > OK   | > OK  | > OK     |
-| f32  | > OK     | > OK   | > OK  | > OK     |
-| i64  | > OK     | > EXT  | > N/A | > OK     |
-| f64  | > OK     | > EXT  | > N/A | > OK     |
-
-(OK: supported; EXT: require extension; N/A: not available)
-:::
-
-### Type promotion
-
-Binary operations on different types will give you a promoted type,
-following the C programming language convention, e.g.:
-
-- `i32 + f32 = f32` (integer + float = float)
-- `i32 + i64 = i64` (less-bits + more-bits = more-bits)
-
-Basically it will try to choose the more precise type to contain the
-result value.
-
-### Default precisions
-
-By default, all numerical literals have 32-bit precisions. For example,
-`42` has type `ti.i32` and `3.14` has type `ti.f32`.
-
-Default integer and float-point precisions (`default_ip` and
-`default_fp`) can be specified when initializing Taichi:
-
-```python
-ti.init(default_fp=ti.f32)
-ti.init(default_fp=ti.f64)
-
-ti.init(default_ip=ti.i32)
-ti.init(default_ip=ti.i64)
-```
-
-Also note that you may use `float` or `int` in type definitions as
-aliases for default precisions, e.g.:
-
-```python
-ti.init(default_ip=ti.i64, default_fp=ti.f32)
+ti.init(default_ip=ti.i64, default_fp=ti.f64)
 
 x = ti.field(float, 5)
 y = ti.field(int, 5)
 # is equivalent to:
-x = ti.field(ti.f32, 5)
+x = ti.field(ti.f64, 5)
 y = ti.field(ti.i64, 5)
 
 def func(a: float) -> int:
     ...
-
 # is equivalent to:
-def func(a: ti.f32) -> ti.i64:
+def func(a: ti.f64) -> ti.i64:
     ...
 ```
 
-### Type casts
+### Explicit type casting
 
-All data types are static in the **Taichi scope**. Therefore, casts are needed when you want to assign a certain type of data to another one.
+In the Taichi scope, the type of a variable is *statically typed* upon initialization. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit type casting:
 
-#### Implicit casts
+- You can use `ti.cast()` to convert a value to the target type:
 
-:::caution
-The type of a variable is **determined on its initialization**.
+  ```python
+  @ti.kernel
+  def foo():
+      a = 3.14
+      b = ti.cast(a, ti.i32)  # 3
+      c = ti.cast(b, ti.f32)  # 3.0
+  ```
+
+- You can also use Python's builtin `int()` or `float()` to convert a value to the default integer type or to the default floating-point type:
+
+  ```python
+  @ti.kernel
+  def foo():
+      a = 3.14
+      b = int(a)    # 3
+      c = float(b)  # 3.0
+  ```
+
+### Implicit type casting
+
+Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
+
+:::caution WARNING
+As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
+
 :::
 
-When a _low-precision_ variable is assigned to a _high-precision_
-variable, it will be implicitly promoted to the _high-precision_ type
-and no warning will be raised:
+#### Implicit type casting in binary operations
 
-```python {4}
-@ti.kernel
-def foo():
-    a = 3.14
-    a = 1
-    print(a)  # 1.0
+Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
+
+1. Integer + floating point -> floating point
+   - `i32 + f32 -> f32`
+   - `i16 + f16 -> f16`
+
+2. Low-precision bits + high-precision bits -> high-precision bits
+   - `i16 + i32 -> i32`
+   - `f16 + f32 -> f32`
+   - `u8 + u16 -> u16`
+
+3. Signed integer + unsigned integer -> unsigned integer
+   - `u32 + i32 -> u32`
+   - `u8 + i8 -> u8`
+
+When it comes to rule conflicts, the rule of the highest priority applies:
+  - `u8 + i16 -> i16` (when rule #2 conflicts with rule #3, rule #2 applies.)
+  - `f16 + i32 -> f16` (when rule #1 conflicts with rule #2, rule #1 applies.)
+
+A few exceptions:
+
+- bit-shift operations return lhs' (left hand side's) data type:
+  - `u8 << i32 -> u8`
+  - `i16 << i8 -> i16`
+- atan2 operations return `f64` if either side is `f64`, or `f32` otherwise.
+  - `i32 atan f32 -> f32`
+  - `i32 atan f64 -> f64`
+- Logical operations return `i32`.
+- Comparison operations return `i32`.
+
+#### Implicit type casting in assignments
+
+When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the type of the variable is *not* the common type, a warning of precision loss occurs.
+
+- Example 1: Variable `a` is initialized with type `float` and immediately reassigned `1`. The reassignment implicitly casts `1` from `int` to `float` without warning because the data type of `a` is the common type `float`:
+
+  ```python
+  @ti.kernel
+  def foo():
+      a = 3.14
+      a = 1
+      print(a)  # 1.0
+  ```
+
+- Example 2: Variable `a` is initialized with type `int` and immediately reassigned `3.14`. The reassignment implicitly casts `3.14` from `float` to `int` with a warning because the type of `a` is *not* the common type `float`:
+
+  ```python
+  @ti.kernel
+  def foo():
+      a = 1
+      a = 3.14
+      print(a)  # 3
+  ```
+
+## Compound types
+
+Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, metrics, and structs.
+
+Taichi allows you to use all types supplied in the `ti.type` module as scaffolds to customize *higher-level* compound types.
+
+Suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
+
+```python
+# Define a compound type vec3 to represent a sphere's center
+vec3 = ti.types.vector(3, float)
+# Define a compound type sphere_type to represent a sphere
+sphere_type = ti.types.struct(center=vec3, radius=float)
+# Initialize sphere1, whose center is at [0,0,0] and whose radius is 1.0
+sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
+# Initialize sphere2, whose center is at [1,1,1] and whose radius is 1.0
+sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When a _high-precision_ variable is assigned to a _low-precision_ type,
-it will be implicitly down-cast into the _low-precision_ type and Taichi
-will raise a warning:
+### Initialization
 
-```python {4}
-@ti.kernel
-def foo():
-    a = 1
-    a = 3.14
-    print(a)  # 3
-```
+Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
 
-#### Explicit casts
+- In the following code snippet, four compound types `my_vec2i`, `my_vec3f`, `my_mat2f`, and `my_ray3f` are defined:
 
-You may use `ti.cast` to explicitly cast scalar values between different
-types:
+  ```python
+  my_vec2i = ti.types.vector(2, ti.i32)
+  my_vec3f = ti.types.vector(3, float)
+  my_mat2f = ti.types.matrix(2, 2, float)
+  my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
+  ```
 
-```python {4-5}
-@ti.kernel
-def foo():
-    a = 3.14
-    b = ti.cast(a, ti.i32)  # 3
-    c = ti.cast(b, ti.f32)  # 3.0
-```
+- In the following code snippet, you initialize five local variables using the created four compound types.
 
-Equivalently, use `int()` and `float()` to convert values to float-point
-or integer types of default precisions:
+  ```python
+  ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+  vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
+  mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
+  vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]) performs implicit cast
+  ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
+  ```
 
-```python {4-5}
-@ti.kernel
-def foo():
-    a = 3.14
-    b = int(a)    # 3
-    c = float(b)  # 3.0
-```
+  :::note
 
-#### Casting vectors and matrices
+  - In the definition of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.
+  - You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
 
-Type casts applied to vectors/matrices are element-wise:
+  :::
 
-```python {4,6}
+### Type casting
+
+Type casting on vectors and matrices in Taichi is element-wise; type casting on structs is *not*.
+
+```python
 @ti.kernel
 def foo():
     u = ti.Vector([2.3, 4.7])
     v = int(u)              # ti.Vector([2, 4])
     # If you are using ti.i32 as default_ip, this is equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
-```
-
-#### Bit-casts
-
-Use `ti.bit_cast` to bit-cast a value into another data type. The
-underlying bits will be preserved in this cast. The new type must have
-the same width as the the old type. For example, bit-casting `i32` to
-`f64` is not allowed. Use this operation with caution.
-
-```python {4-5}
-@ti.kernel
-def foo():
-    a = 3.14
-    b = ti.bit_cast(a, ti.i32) # 1078523331
-    c = ti.bit_cast(b, ti.f32) # 3.14
-```
-
-:::note
-For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
-:::
-
-## Compound types
-
-User-defined compound types can be created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
-
-```python
-my_vec2i = ti.types.vector(2, ti.i32)
-my_vec3f = ti.types.vector(3, float)
-my_mat2f = ti.types.matrix(2, 2, float)
-my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
-```
-
-### Creating fields
-
-Fields of a user-defined compound type can be created with the `.field()` method of a Compound Type:
-
-```python
-vec1 = my_vec2i.field(shape=(128, 128, 128))
-mat2 = my_mat2f.field(shape=(24, 32))
-ray3 = my_ray3f.field(shape=(1024, 768))
-
-# is equivalent to:
-vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(128, 128, 128))
-mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
-ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(1024, 768))
-```
-
-### Creating local variables
-
-Compound types can be directly called to create vector, matrix or struct instances. Vectors, matrices and structs can be created using GLSL-like broadcast syntax since their shapes are already known:
-```python
-ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
-mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
-vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
-ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
-```
-
-### Supported operations
-
-[Supported operations on primitive types](#supported-operations) can also be applied on compound types. In these cases, they are applied in an element-wise manner. For example:
-
-```python
-B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-C = ti.Matrix([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]])
-
-A = ti.sin(B)
-# is equivalent to
-for i in ti.static(range(2)):
-    for j in ti.static(range(3)):
-        A[i, j] = ti.sin(B[i, j])
-
-A = B ** 2
-# is equivalent to
-for i in ti.static(range(2)):
-    for j in ti.static(range(3)):
-        A[i, j] = B[i, j] ** 2
-
-A = B ** C
-# is equivalent to
-for i in ti.static(range(2)):
-    for j in ti.static(range(3)):
-        A[i, j] = B[i, j] ** C[i, j]
-
-A += 2
-# is equivalent to
-for i in ti.static(range(2)):
-    for j in ti.static(range(3)):
-        A[i, j] += 2
-
-A += B
-# is equivalent to
-for i in ti.static(range(2)):
-    for j in ti.static(range(3)):
-        A[i, j] += B[i, j]
 ```

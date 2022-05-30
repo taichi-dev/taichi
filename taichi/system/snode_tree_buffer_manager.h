@@ -1,5 +1,4 @@
 #pragma once
-#include "taichi/llvm/llvm_context.h"
 #include "taichi/inc/constants.h"
 #include "taichi/struct/snode_tree.h"
 #define TI_RUNTIME_HOST
@@ -10,6 +9,7 @@ using Ptr = uint8_t *;
 
 TLANG_NAMESPACE_BEGIN
 
+class JITModule;
 class ProgramImpl;
 
 class SNodeTreeBufferManager {

@@ -9,11 +9,12 @@
 #include <memory>
 #include <thread>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 // A memory pool that runs on the host
 
-class MemoryPool {
+class TI_DLL_EXPORT MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
   static constexpr std::size_t default_allocator_size =
@@ -53,4 +54,5 @@ class MemoryPool {
   Device *device_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

@@ -102,8 +102,11 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
-  JITSessionCPU(JITTargetMachineBuilder JTMB, DataLayout DL)
-      : object_layer_(es_,
+  JITSessionCPU(LlvmProgramImpl *llvm_prog,
+                JITTargetMachineBuilder JTMB,
+                DataLayout DL)
+      : JITSession(llvm_prog),
+        object_layer_(es_,
                       [&]() {
                         auto smgr = std::make_unique<SectionMemoryManager>();
                         memory_manager_ = smgr.get();
@@ -145,8 +148,7 @@ class JITSessionCPU : public JITSession {
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
-    auto *thread_safe_context = get_current_program()
-                                    .get_llvm_program_impl()
+    auto *thread_safe_context = this->llvm_prog()
                                     ->get_llvm_context(host_arch())
                                     ->get_this_thread_thread_safe_context();
     cantFail(compile_layer_.add(
@@ -185,7 +187,7 @@ class JITSessionCPU : public JITSession {
   }
 
  private:
-  static void global_optimize_module_cpu(llvm::Module *module);
+  void global_optimize_module_cpu(llvm::Module *module);
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
@@ -208,8 +210,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
 
   TargetOptions options;
   options.PrintMachineCode = false;
-  bool fast_math = get_current_program().config.fast_math;
-  if (fast_math) {
+  if (this->llvm_prog()->config->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
@@ -267,7 +268,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     module_pass_manager.run(*module);
   }
 
-  if (get_current_program().config.print_kernel_llvm_ir_optimized) {
+  if (this->llvm_prog()->config->print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module);
@@ -279,10 +280,13 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   }
 }
 
-std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
+std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
+    LlvmProgramImpl *llvm_prog,
+    Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
-  return std::make_unique<JITSessionCPU>(target_info.first, target_info.second);
+  return std::make_unique<JITSessionCPU>(llvm_prog, target_info.first,
+                                         target_info.second);
 }
 
 TLANG_NAMESPACE_END

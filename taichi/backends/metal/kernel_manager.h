@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "taichi/backends/device.h"
 #include "taichi/backends/metal/kernel_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/lang_util.h"
@@ -15,6 +16,7 @@
 namespace taichi {
 namespace lang {
 
+class Kernel;
 struct RuntimeContext;
 
 namespace metal {
@@ -38,6 +40,7 @@ class KernelManager {
   ~KernelManager();
 
   void add_compiled_snode_tree(const CompiledStructs &snode_tree);
+
   // Register a Taichi kernel to the Metal runtime.
   // * |mtl_kernel_source_code| is the complete source code compiled from a
   // Taichi kernel. It may include one or more Metal compute kernels. Each
@@ -49,7 +52,8 @@ class KernelManager {
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs);
+                              const KernelContextAttributes &ctx_attribs,
+                              const Kernel *kernel);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid
@@ -66,6 +70,10 @@ class KernelManager {
 
   // For debugging purpose
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
+
+  // FIXME(k-ye): This is a temporary workaround since Metal has not switched to
+  // Unified Device API yet.
+  DeviceAllocation allocate_memory(const Device::AllocParams &params);
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally

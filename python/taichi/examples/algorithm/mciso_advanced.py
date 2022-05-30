@@ -294,13 +294,6 @@ class MCISO:
         self.use_sparse = blk_size is not None
         self.blk_size = blk_size
 
-        et = [self.et2, self.et3][dim - 2]
-        self.et = ti.Vector.field(dim, int, et.shape[:2])
-
-        @ti.materialize_callback
-        def init_et():
-            self.et.from_numpy(et)
-
         self.m = ti.field(float)  # field to sample
         self.g = ti.Vector.field(self.dim, float)  # normalized gradient
         indices = [ti.ij, ti.ijk][dim - 2]
@@ -315,6 +308,10 @@ class MCISO:
         self.r = ti.Vector.field(
             dim, float,
             (self.N**self.dim, self.dim))  # result buffer, TODO: optimize this
+
+        et = [self.et2, self.et3][dim - 2]
+        self.et = ti.Vector.field(dim, int, et.shape[:2])
+        self.et.from_numpy(et)
 
     @ti.kernel
     def compute_grad(self):
@@ -468,9 +465,8 @@ class MCISO_Example(MCISO):
             ret_len = self.march()
             ret = self.r.to_numpy()[:ret_len] / self.N
             if self.dim == 2:
-                #gui.set_image(ti.imresize(self.m, *gui.res))
                 self.compute_grad()
-                gui.set_image(ti.imresize(self.g, *gui.res) * 0.5 + 0.5)
+                gui.set_image(ti.tools.imresize(self.g, *gui.res) * 0.5 + 0.5)
                 gui.lines(ret[:, 0], ret[:, 1], color=0xff66cc, radius=1.5)
             else:
                 gui.triangles(ret[:, 0, 0:2],
@@ -493,7 +489,7 @@ class MCISO_Example(MCISO):
                          (0, 1))
                 if gui.is_pressed(gui.SPACE):
                     num = ret.shape[0]
-                    writer = ti.PLYWriter(num_vertices=num * 3, num_faces=num)
+                    writer = ti.tools.PLYWriter(num_vertices=num * 3, num_faces=num)
                     vertices = ret.reshape(num * 3, 3) * 2 - 1
                     writer.add_vertex_pos(vertices[:, 0], vertices[:, 1],
                                           vertices[:, 2])

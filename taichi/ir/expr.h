@@ -5,6 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct CompileConfig;
 class Expression;
 class Identifier;
 class ExprGroup;
@@ -21,13 +22,15 @@ class Expr {
     atomic = false;
   }
 
-  Expr(int32 x);
+  explicit Expr(int16 x);
 
-  Expr(int64 x);
+  explicit Expr(int32 x);
 
-  Expr(float32 x);
+  explicit Expr(int64 x);
 
-  Expr(float64 x);
+  explicit Expr(float32 x);
+
+  explicit Expr(float64 x);
 
   Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;
@@ -44,7 +47,7 @@ class Expr {
     atomic = o.atomic;
   }
 
-  Expr(const Identifier &id);
+  explicit Expr(const Identifier &id);
 
   void set(const Expr &o) {
     expr = o.expr;
@@ -73,39 +76,21 @@ class Expr {
     return cast<T>() != nullptr;
   }
 
-  void set_or_insert_assignment(const Expr &o);
-
   // FIXME: We really should disable it completely,
-  // but we can't. This is because there are too much
-  // unintentional calls. Please mark it as `=delete`
-  // when problems pointed out in #3596 are solved.
-  // For now, please use `set_or_insert_assignment` to
-  // replace it's functionality.
+  // but we can't. This is because the usage of
+  // std::variant<Expr, std::string> in FrontendPrintStmt.
   Expr &operator=(const Expr &o);
 
   Expr operator[](const ExprGroup &indices) const;
 
-  std::string serialize() const;
-  void serialize(std::ostream &ss) const;
-
-  void operator+=(const Expr &o);
-  void operator-=(const Expr &o);
-  void operator*=(const Expr &o);
-  void operator/=(const Expr &o);
   Expr operator!();
 
-  Expr eval() const;
-
   template <typename T, typename... Args>
-  static Expr make(Args &&... args) {
+  static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
   }
 
-  Expr parent() const;
-
   SNode *snode() const;
-
-  void declare(DataType dt);
 
   // traceback for type checking error message
   void set_tb(const std::string &tb);
@@ -118,14 +103,8 @@ class Expr {
 
   DataType get_ret_type() const;
 
-  void type_check();
+  void type_check(CompileConfig *config);
 };
-
-Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
-
-Expr operator-(const Expr &expr);
-
-Expr operator~(const Expr &expr);
 
 // Value cast
 Expr cast(const Expr &input, DataType dt);
@@ -142,10 +121,34 @@ Expr bit_cast(const Expr &input) {
   return taichi::lang::bit_cast(input, get_data_type<T>());
 }
 
-Expr load_if_ptr(const Expr &ptr);
+// like Expr::Expr, but allows to explicitly specify the type
+template <typename T>
+Expr value(const T &val) {
+  return Expr(val);
+}
 
-// Begin: legacy frontend functions
-Expr Var(const Expr &x);
-// End: legacy frontend functions
+Expr expr_rand(DataType dt);
 
+template <typename T>
+Expr expr_rand() {
+  return taichi::lang::expr_rand(get_data_type<T>());
+}
+
+Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val);
+
+Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val);
+
+Expr snode_is_active(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(SNode *snode, const ExprGroup &indices);
+
+Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
+
+Expr snode_length(const Expr &expr, const ExprGroup &indices);
+
+Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
+
+Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
+
+Expr global_new(Expr id_expr, DataType dt);
 TLANG_NAMESPACE_END

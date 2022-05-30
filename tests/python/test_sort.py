@@ -1,7 +1,8 @@
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc])
 def test_sort():
     def test_sort_for_dtype(dtype, N):
         keys = ti.field(dtype, N)
@@ -14,7 +15,7 @@ def test_sort():
                 values[i] = keys[i]
 
         fill()
-        ti.parallel_sort(keys, values)
+        ti._kernels.parallel_sort(keys, values)
 
         keys_host = keys.to_numpy()
         values_host = values.to_numpy()

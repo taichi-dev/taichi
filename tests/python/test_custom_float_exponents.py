@@ -3,15 +3,12 @@ import pytest
 from pytest import approx
 
 import taichi as ti
+from tests import test_utils
 
 
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_unsigned():
-    cu13 = ti.quant.int(13, False)
-    exp = ti.quant.int(6, False)
-    cft = ti.type_factory.custom_float(significand_type=cu13,
-                                       exponent_type=exp,
-                                       scale=1)
+    cft = ti.types.quant.float(exp=6, frac=13, signed=False)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -28,13 +25,9 @@ def test_custom_float_unsigned():
         assert x[None] == v
 
 
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_signed():
-    cu13 = ti.quant.int(13, True)
-    exp = ti.quant.int(6, False)
-    cft = ti.type_factory.custom_float(significand_type=cu13,
-                                       exponent_type=exp,
-                                       scale=1)
+    cft = ti.types.quant.float(exp=6, frac=13, signed=True)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -60,13 +53,9 @@ def test_custom_float_signed():
 
 
 @pytest.mark.parametrize('digits_bits', [23, 24])
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_precision(digits_bits):
-    cu24 = ti.quant.int(digits_bits, True)
-    exp = ti.quant.int(8, False)
-    cft = ti.type_factory.custom_float(significand_type=cu24,
-                                       exponent_type=exp,
-                                       scale=1)
+    cft = ti.types.quant.float(exp=8, frac=digits_bits)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -85,13 +74,9 @@ def test_custom_float_precision(digits_bits):
 
 
 @pytest.mark.parametrize('signed', [True, False])
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_truncation(signed):
-    cit = ti.quant.int(2, signed)
-    exp = ti.quant.int(5, False)
-    cft = ti.type_factory.custom_float(significand_type=cit,
-                                       exponent_type=exp,
-                                       scale=1)
+    cft = ti.types.quant.float(exp=5, frac=2, signed=signed)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -117,13 +102,9 @@ def test_custom_float_truncation(signed):
         assert x[None] == 1.75
 
 
-@ti.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant)
 def test_custom_float_atomic_demotion():
-    cit = ti.quant.int(2, True)
-    exp = ti.quant.int(5, False)
-    cft = ti.type_factory.custom_float(significand_type=cit,
-                                       exponent_type=exp,
-                                       scale=1)
+    cft = ti.types.quant.float(exp=5, frac=2)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)

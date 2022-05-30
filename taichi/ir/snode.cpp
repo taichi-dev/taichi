@@ -5,6 +5,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
+#include "taichi/program/snode_rw_accessors_bank.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -13,7 +14,8 @@ std::atomic<int> SNode::counter{0};
 SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
 
-  auto new_ch = std::make_unique<SNode>(depth + 1, t);
+  auto new_ch = std::make_unique<SNode>(depth + 1, t, snode_to_glb_var_exprs_,
+                                        snode_rw_accessors_bank_);
   new_ch->parent = this;
   new_ch->is_path_all_dense = (is_path_all_dense && !new_ch->need_activation());
   for (int i = 0; i < taichi_max_num_indices; i++) {
@@ -48,7 +50,10 @@ SNode &SNode::create_node(std::vector<Axis> axes,
 
   auto &new_node = insert_children(type);
   for (int i = 0; i < (int)axes.size(); i++) {
-    TI_ASSERT(sizes[i] > 0);
+    if (sizes[i] <= 0) {
+      throw TaichiRuntimeError(
+          "Every dimension of a Taichi field should be positive");
+    }
     auto &ind = axes[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
@@ -173,10 +178,46 @@ int SNode::shape_along_axis(int i) const {
   return extractor.num_elements_from_root;
 }
 
-SNode::SNode() : SNode(0, SNodeType::undefined) {
+int64 SNode::read_int(const std::vector<int> &i) {
+  return snode_rw_accessors_bank_->get(this).read_int(i);
 }
 
-SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
+uint64 SNode::read_uint(const std::vector<int> &i) {
+  return snode_rw_accessors_bank_->get(this).read_uint(i);
+}
+
+float64 SNode::read_float(const std::vector<int> &i) {
+  return snode_rw_accessors_bank_->get(this).read_float(i);
+}
+
+void SNode::write_int(const std::vector<int> &i, int64 val) {
+  snode_rw_accessors_bank_->get(this).write_int(i, val);
+}
+
+void SNode::write_float(const std::vector<int> &i, float64 val) {
+  snode_rw_accessors_bank_->get(this).write_float(i, val);
+}
+
+Expr SNode::get_expr() const {
+  return Expr(snode_to_glb_var_exprs_->at(this));
+}
+
+SNode::SNode(SNodeGlobalVarExprMap *snode_to_glb_var_exprs,
+             SNodeRwAccessorsBank *snode_rw_accessors_bank)
+    : SNode(0,
+            SNodeType::undefined,
+            snode_to_glb_var_exprs,
+            snode_rw_accessors_bank) {
+}
+
+SNode::SNode(int depth,
+             SNodeType t,
+             SNodeGlobalVarExprMap *snode_to_glb_var_exprs,
+             SNodeRwAccessorsBank *snode_rw_accessors_bank)
+    : depth(depth),
+      type(t),
+      snode_to_glb_var_exprs_(snode_to_glb_var_exprs),
+      snode_rw_accessors_bank_(snode_rw_accessors_bank) {
   id = counter++;
   node_type_name = get_node_type_name();
   total_num_bits = 0;

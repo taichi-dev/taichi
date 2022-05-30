@@ -40,7 +40,6 @@ bool alg_simp(IRNode *root, const CompileConfig &config);
 bool demote_operations(IRNode *root, const CompileConfig &config);
 bool binary_op_simplify(IRNode *root, const CompileConfig &config);
 bool whole_kernel_cse(IRNode *root);
-void variable_optimization(IRNode *root, bool after_lower_access);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config);
@@ -48,15 +47,14 @@ void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
+void frontend_type_check(IRNode *root);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
 bool inlining(IRNode *root,
               const CompileConfig &config,
               const InliningPass::Args &args);
-void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
-void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root,
                         const CompileConfig &config,
@@ -149,7 +147,6 @@ void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,
                          bool verbose,
-                         bool vectorize,
                          bool grad,
                          bool ad_use_stack,
                          bool start_from_ast);
@@ -167,7 +164,6 @@ void offload_to_executable(IRNode *ir,
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
-                           bool vectorize,
                            bool grad,
                            bool ad_use_stack,
                            bool verbose,
@@ -177,12 +173,12 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast = true);
 // Compile a function with some basic optimizations, so that the number of
 // statements is reduced before inlining.
-void compile_inline_function(IRNode *ir,
-                             const CompileConfig &config,
-                             Function *func,
-                             bool grad,
-                             bool verbose,
-                             bool start_from_ast);
+void compile_function(IRNode *ir,
+                      const CompileConfig &config,
+                      Function *func,
+                      bool grad,
+                      bool verbose,
+                      bool start_from_ast);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

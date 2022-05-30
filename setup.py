@@ -15,7 +15,6 @@ from distutils.dir_util import remove_tree
 
 from setuptools import find_packages
 from skbuild import setup
-from skbuild.command.build_py import build_py
 from skbuild.command.egg_info import egg_info
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,13 +70,11 @@ class EggInfo(egg_info):
         return super().finalize_options(*args, **kwargs)
 
 
-class BuildPy(build_py):
-    def finalize_options(self):
-        super().finalize_options()
-        taichi_dir = os.path.join(package_dir, 'taichi')
-        remove_tmp(taichi_dir)
+def copy_assets():
+    taichi_dir = os.path.join(package_dir, 'taichi')
+    remove_tmp(taichi_dir)
 
-        shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
+    shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
 
 class Clean(clean):
@@ -148,6 +145,7 @@ def exclude_paths(manifest_files):
     ]
 
 
+copy_assets()
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
@@ -175,7 +173,6 @@ setup(name=project_name,
       cmake_args=get_cmake_args(),
       cmake_process_manifest_hook=exclude_paths,
       cmdclass={
-          'build_py': BuildPy,
           'egg_info': EggInfo,
           'clean': Clean
       },

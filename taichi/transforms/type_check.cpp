@@ -123,11 +123,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     auto pointee_type = stmt->src->ret_type.ptr_removed();
-    if (auto bit_struct = pointee_type->cast<BitStructType>()) {
-      stmt->ret_type = bit_struct->get_physical_type();
-    } else {
-      stmt->ret_type = pointee_type->get_compute_type();
-    }
+    stmt->ret_type = pointee_type->get_compute_type();
   }
 
   void visit(SNodeOpStmt *stmt) override {

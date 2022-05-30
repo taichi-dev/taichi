@@ -191,14 +191,6 @@ def subscript(value, *_indices, skip_reordered=False):
         ])
         ret.any_array_access = any_array_access
         return ret
-    if isinstance(value, SNode):
-        # When reading bit structure we only support the 0-D case for now.
-        field_dim = 0
-        if field_dim != index_dim:
-            raise IndexError(
-                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
-            )
-        return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 

@@ -865,10 +865,6 @@ void export_lang(py::module &m) {
         Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
 
-  m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices);
-  });
-
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->dim;

@@ -365,10 +365,7 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
 
 void GlobalPtrExpression::type_check(CompileConfig *) {
   // Currently, dimension compatibility check happens in Python
-  if (snode != nullptr) {
-    TI_ASSERT(snode->dt->is<BitStructType>());
-    ret_type = snode->dt->cast<BitStructType>()->get_physical_type();
-  } else if (var.is<GlobalVariableExpression>()) {
+  if (var.is<GlobalVariableExpression>()) {
     ret_type =
         var.cast<GlobalVariableExpression>()->snode->dt->get_compute_type();
   } else if (var.is<ExternalTensorExpression>()) {
@@ -391,10 +388,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
   std::vector<int> offsets;
   SNode *snode = nullptr;
-  if (this->snode != nullptr) {
-    snode = this->snode;
-  }
-  if (bool(var) && var.is<GlobalVariableExpression>()) {
+  if (var.is<GlobalVariableExpression>()) {
     snode = var.cast<GlobalVariableExpression>()->snode;
     offsets = snode->index_offsets;
   }

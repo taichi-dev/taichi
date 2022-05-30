@@ -9,7 +9,6 @@ import glob
 import multiprocessing
 import os
 import shutil
-import subprocess
 import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
@@ -17,6 +16,7 @@ from distutils.dir_util import remove_tree
 from setuptools import find_packages
 from skbuild import setup
 from skbuild.command.egg_info import egg_info
+from skbuild.command.build_py import build_py
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -66,17 +66,19 @@ def remove_tmp(taichi_dir):
 class EggInfo(egg_info):
     def finalize_options(self, *args, **kwargs):
         if '' not in self.distribution.package_dir:
-            #4975: skbuild loses the root package dir
+            # Issue#4975: skbuild loses the root package dir
             self.distribution.package_dir[''] = package_dir
         return super().finalize_options(*args, **kwargs)
 
-    def run(self):
+
+class BuildPy(build_py):
+
+    def finalize_options(self):
+        super().finalize_options()
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
 
         shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
-
-        egg_info.run(self)
 
 
 class Clean(clean):
@@ -174,6 +176,7 @@ setup(name=project_name,
       cmake_args=get_cmake_args(),
       cmake_process_manifest_hook=exclude_paths,
       cmdclass={
+          'build_py': BuildPy,
           'egg_info': EggInfo,
           'clean': Clean
       },

@@ -888,7 +888,7 @@ class TI_DLL_EXPORT GUI : public GUIBase {
       redraw();
       process_event();
       if (frame_id % 10 == 0)
-        set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
+        set_title(fmt::format("{} ({:.2f} FPS)", "", real_fps));
     }
   }
 

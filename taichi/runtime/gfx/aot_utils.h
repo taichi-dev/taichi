@@ -7,10 +7,10 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
 /**
- * AOT module data for the vulkan backend.
+ * AOT module data for the Unified Device API backend.
  */
 struct TaichiAotData {
   //   BufferMetaData metadata;
@@ -22,6 +22,6 @@ struct TaichiAotData {
   TI_IO_DEF(kernels, fields, root_buffer_size);
 };
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

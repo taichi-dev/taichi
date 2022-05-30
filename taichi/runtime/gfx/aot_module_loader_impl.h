@@ -4,23 +4,24 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/vulkan/aot_utils.h"
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/aot_utils.h"
+#include "taichi/runtime/gfx/runtime.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/aot_graph_data.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/aot/module_builder.h"
 #include "taichi/aot/module_loader.h"
-#include "taichi/backends/vulkan/aot_module_builder_impl.h"
-#include "taichi/backends/vulkan/vulkan_graph_data.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
+
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
-  VkRuntime *runtime{nullptr};
+  GfxRuntime *runtime{nullptr};
 };
 
-TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
+TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params, Arch device_api_backend);
 
 }  // namespace vulkan
 }  // namespace lang

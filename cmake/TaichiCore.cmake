@@ -372,23 +372,20 @@ add_subdirectory(external/SPIRV-Tools)
 # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
 
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
+
+add_subdirectory(taichi/runtime/gfx)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+
+# Vulkan Device API
 if (TI_WITH_VULKAN)
     include_directories(SYSTEM external/Vulkan-Headers/include)
 
     include_directories(SYSTEM external/volk)
 
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
-
     # By specifying SYSTEM, we suppressed the warnings from third-party headers.
     target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
-
-    if (LINUX)
-        # shaderc requires pthread
-        set(THREADS_PREFER_PTHREAD_FLAG ON)
-        find_package(Threads REQUIRED)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE Threads::Threads)
-    endif()
 
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
@@ -398,9 +395,6 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
-
-    add_subdirectory(taichi/runtime/vulkan)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_runtime)
 endif ()
 
 

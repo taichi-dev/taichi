@@ -38,6 +38,6 @@ class SNodeTreeManager {
   std::vector<CompiledSNodeStructs> compiled_snode_structs_;
 };
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

@@ -50,6 +50,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   Arch device_api_backend_;
 };
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

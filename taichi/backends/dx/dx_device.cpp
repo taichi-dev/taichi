@@ -600,8 +600,7 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   alloc_id_to_buffer_.erase(alloc_id);
   ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
   uav->Release();
-  if (alloc_id_to_cpucopy_.find(alloc_id) !=
-      alloc_id_to_cpucopy_.end()) {
+  if (alloc_id_to_cpucopy_.find(alloc_id) != alloc_id_to_cpucopy_.end()) {
     alloc_id_to_cpucopy_[alloc_id]->Release();
     alloc_id_to_cpucopy_.erase(alloc_id);
   }

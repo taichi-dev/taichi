@@ -140,6 +140,6 @@ GfxRuntime::RegisterParams run_codegen(
     Device *device,
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

@@ -73,7 +73,7 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
       gfx::run_codegen(kernel, runtime->get_ti_device(),
-                  snode_tree_mgr->get_compiled_structs()));
+                       snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -192,7 +192,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
   gfx::GfxRuntime::RegisterParams kparams =
       gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
   return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
-                                      std::move(kparams));
+                                           std::move(kparams));
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

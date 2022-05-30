@@ -21,8 +21,10 @@ struct TI_DLL_EXPORT AotModuleParams {
   GfxRuntime *runtime{nullptr};
 };
 
-TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params, Arch device_api_backend);
+TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(
+    std::any mod_params,
+    Arch device_api_backend);
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

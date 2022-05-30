@@ -16,7 +16,7 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
       std::move(gfx::run_codegen(kernel, runtime->get_ti_device(),
-                                    snode_tree_mgr->get_compiled_structs())));
+                                 snode_tree_mgr->get_compiled_structs())));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -60,7 +60,7 @@ void Dx11ProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
 }
 
 void Dx11ProgramImpl::materialize_snode_tree(SNodeTree *tree,
-                                               uint64 *result_buffer) {
+                                             uint64 *result_buffer) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
@@ -82,14 +82,12 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
        /*export_sharing=*/false});
 }
 
-std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
+std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
   spirv::lower(&kernel);
   std::vector<gfx::CompiledSNodeStructs> compiled_structs;
   gfx::GfxRuntime::RegisterParams kparams =
       gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(),
-                                           std::move(kparams));
+  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 
 }  // namespace lang

@@ -33,6 +33,6 @@ DevicePtr SNodeTreeManager::get_snode_tree_device_ptr(int tree_id) {
   return runtime_->root_buffers_[tree_id]->get_ptr();
 }
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

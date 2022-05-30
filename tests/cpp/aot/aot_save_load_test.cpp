@@ -7,8 +7,8 @@
 #include "tests/cpp/program/test_program.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/program/graph_builder.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #include "taichi/backends/device.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/backends/vulkan/vulkan_device_creator.h"

@@ -90,7 +90,7 @@ def test_poly(tifunc):
     (lambda x: ti.asin(x), lambda x: np.arcsin(x)),
 ])
 @if_has_autograd
-@test_utils.test(exclude=[ti.vulkan])
+@test_utils.test(exclude=[ti.vulkan, ti.dx11])
 def test_trigonometric(tifunc, npfunc):
     grad_test(tifunc, npfunc)
 
@@ -319,7 +319,7 @@ def test_ad_rand():
     assert 'RandStmt not supported' in e.value.args[0]
 
 
-@test_utils.test(exclude=[ti.cc, ti.vulkan, ti.opengl])
+@test_utils.test(exclude=[ti.cc, ti.vulkan, ti.opengl, ti.dx11])
 def test_ad_frac():
     @ti.func
     def frac(x):

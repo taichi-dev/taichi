@@ -12,4 +12,5 @@ file(GLOB_RECURSE C_API_SOURCE
 )
 add_library(${TAICHI_C_API_LIB_NAME} SHARED ${C_API_SOURCE})
 
+target_include_directories(${TAICHI_C_API_LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/c_api/include)
 target_link_libraries(${TAICHI_C_API_LIB_NAME} taichi_isolated_core)

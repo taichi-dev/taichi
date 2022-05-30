@@ -101,11 +101,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(GlobalPtrExpression *expr) override {
-    if (expr->snode) {
-      emit(expr->snode->get_node_type_name_hinted());
-    } else {
-      expr->var->accept(this);
-    }
+    expr->var->accept(this);
     emit('[');
     emit_vector(expr->indices.exprs);
     emit(']');

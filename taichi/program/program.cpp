@@ -193,7 +193,8 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan || config.arch == Arch::dx11);
+  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan ||
+            config.arch == Arch::dx11);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }

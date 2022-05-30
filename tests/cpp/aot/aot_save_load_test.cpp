@@ -176,7 +176,7 @@ TEST(AotSaveLoad, Vulkan) {
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 
@@ -249,7 +249,7 @@ TEST(AotSaveLoad, VulkanNdarray) {
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 
@@ -359,7 +359,7 @@ TEST(AotLoadGraph, Vulkan) {
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 

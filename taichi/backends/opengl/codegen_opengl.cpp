@@ -486,13 +486,14 @@ class KernelGen : public IRVisitor {
     const auto &element_shape = stmt->element_shape;
     std::vector<std::string> size_var_names;
     std::vector<std::string> element_shape_size_var_names;
-    enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
-    const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
+
+    const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                               : ExternalArrayLayout::kSOA;
 
     if (element_shape.size() > 0) {
       int elem_beg = 0;
       int elem_end = 0;
-      if (layout == layout_SOA) {
+      if (layout == ExternalArrayLayout::kSOA) {
         elem_beg = 0;
         elem_end = element_shape.size();
       } else {
@@ -519,7 +520,7 @@ class KernelGen : public IRVisitor {
     // args buffer: 3, 2, 5, 4
     int ind_beg = 0;
     int ind_end = 0;
-    if (layout == layout_SOA) {
+    if (layout == ExternalArrayLayout::kSOA) {
       ind_beg = element_shape.size();
       ind_end = num_indices;
     } else {
@@ -540,7 +541,7 @@ class KernelGen : public IRVisitor {
       size_var_names.push_back(std::move(var_name));
     }
     // Arrange index stride and offsets in correct order
-    if (layout == layout_SOA) {
+    if (layout == ExternalArrayLayout::kSOA) {
       size_var_names.insert(size_var_names.begin(),
                             element_shape_size_var_names.begin(),
                             element_shape_size_var_names.end());

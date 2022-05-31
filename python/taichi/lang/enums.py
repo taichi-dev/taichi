@@ -1,14 +1,5 @@
-from enum import Enum, unique
+from taichi._lib import core as _ti_core
 
-
-@unique
-class Layout(Enum):
-    """Layout of a Taichi field or ndarray.
-
-    Currently, AOS (array of structures) and SOA (structure of arrays) are supported.
-    """
-    AOS = 1
-    SOA = 2
-
+Layout = _ti_core.Layout
 
 __all__ = ['Layout']

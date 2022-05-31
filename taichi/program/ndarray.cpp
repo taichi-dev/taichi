@@ -13,17 +13,31 @@ namespace lang {
 
 Ndarray::Ndarray(Program *prog,
                  const DataType type,
-                 const std::vector<int> &shape)
+                 const std::vector<int> &shape_,
+                 const std::vector<int> &element_shape_,
+                 ExternalArrayLayout layout_)
     : dtype(type),
-      shape(shape),
-      num_active_indices(shape.size()),
-      nelement_(std::accumulate(std::begin(shape),
-                                std::end(shape),
-                                1,
-                                std::multiplies<>())),
+      element_shape(element_shape_),
+      shape(shape_),
+      layout(layout_),
       element_size_(data_type_size(dtype)),
       prog_(prog),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
+  // TODO: Instead of flattening the element, shape/nelement_/num_active_indices
+  // should refer to field shape only.
+  // The only blocker left is the accessors should handle vector/matrix as well
+  // instead of scalar only.
+  if (layout == ExternalArrayLayout::kAOS) {
+    shape.insert(shape.end(), element_shape.begin(), element_shape.end());
+  } else if (layout == ExternalArrayLayout::kSOA) {
+    shape.insert(shape.begin(), element_shape.begin(), element_shape.end());
+  }
+  nelement_ = std::accumulate(std::begin(shape_), std::end(shape_), 1,
+                              std::multiplies<>()) *
+              std::accumulate(std::begin(element_shape),
+                              std::end(element_shape), 1, std::multiplies<>());
+  num_active_indices = shape.size();
+
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
 }

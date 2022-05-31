@@ -22,7 +22,9 @@ class TI_DLL_EXPORT Ndarray {
    */
   explicit Ndarray(Program *prog,
                    const DataType type,
-                   const std::vector<int> &shape);
+                   const std::vector<int> &shape,
+                   const std::vector<int> &element_shape = {},
+                   ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   /* Constructs a Ndarray from an existing DeviceAllocation
    * It doesn't handle the allocation and deallocation.
@@ -32,10 +34,12 @@ class TI_DLL_EXPORT Ndarray {
                    const std::vector<int> &shape);
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;
+  std::vector<int> element_shape;
   // Invariant: Since ndarray indices are flattened for vector/matrix, this is
   // always true:
   //   num_active_indices = shape.size()
   std::vector<int> shape;
+  ExternalArrayLayout layout{ExternalArrayLayout::kNull};
   int num_active_indices{0};
 
   intptr_t get_data_ptr_as_int() const;

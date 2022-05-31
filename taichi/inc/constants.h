@@ -46,3 +46,5 @@ T taichi_union_cast(G g) {
   static_assert(sizeof(T) == sizeof(G));
   return taichi_union_cast_with_different_sizes<T>(g);
 }
+
+enum class ExternalArrayLayout { kAOS, kSOA, kNull };

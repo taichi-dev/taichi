@@ -1690,9 +1690,11 @@ class MatrixNdarray(Ndarray):
     def __init__(self, n, m, dtype, shape, layout):
         self.n = n
         self.m = m
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
         # TODO: we should pass in element_type, shape, layout instead.
-        arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
-        super().__init__(dtype, arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.dtype, shape, (n, m), layout)
         self.layout = layout
         self.shape = shape
         self.element_type = MatrixType(self.n, self.m, dtype)
@@ -1786,9 +1788,11 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.n = n
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
         # TODO: pass in element_type, shape, layout directly
-        arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
-        super().__init__(dtype, arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.dtype, shape, (n, ), layout)
         self.layout = layout
         self.shape = shape
         self.element_type = MatrixType(n, 1, dtype)

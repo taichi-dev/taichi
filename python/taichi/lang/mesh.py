@@ -221,7 +221,7 @@ class MeshElement:
         """Declares mesh attributes for the mesh element in current mesh builder.
 
         Args:
-        members (Dict[str, Union[PrimitiveType, VectorType, MatrixType]]): \
+        members (Dict[str, Union[PrimitiveType, MatrixType]]): \
             names and types for element attributes.
         reorder: True if reorders the internal memory for coalesced data access within mesh-for loop.
         needs_grad: True if needs to record grad.

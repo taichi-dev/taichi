@@ -92,6 +92,7 @@ void export_lang(py::module &m) {
   py::enum_<ExternalArrayLayout>(m, "Layout", py::arithmetic())
       .value("AOS", ExternalArrayLayout::kAOS)
       .value("SOA", ExternalArrayLayout::kSOA)
+      .value("NULL", ExternalArrayLayout::kNull)
       .export_values();
 
   // TODO(type): This should be removed

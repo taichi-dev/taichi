@@ -533,7 +533,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   };
 
   VulkanDevice();
-  void init_vulkan_structs(Params &params);
+  void init_vulkan_structs(const Params &params);
   ~VulkanDevice() override;
 
   std::unique_ptr<Pipeline> create_pipeline(

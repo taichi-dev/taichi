@@ -7,76 +7,75 @@ extern "C" {
 #endif
 
 typedef uint32_t TiBool;
+#define TI_TRUE 1u
+#define TI_FALSE 0u
 
-typedef void* TiOpaqueHandle;
+typedef uint32_t TiFlags;
 
+typedef void *TiDispatchableHandle;
+typedef size_t TiNonDispatchableHandle;
+#define TI_NULL_HANDLE 0
 
-typedef TiOpaqueHandle TiContext;
-typedef TiOpaqueHandle TiKernel;
-typedef TiOpaqueHandle TiAotModule;
-typedef TiOpaqueHandle TiDeviceAllocation;
+typedef TiDispatchableHandle TiDevice;
+typedef TiDispatchableHandle TiContext;
+typedef TiDispatchableHandle TiAotModule;
 
-TI_DLL_EXPORT TiContext tiCreateContext();
-TI_DLL_EXPORT void tiDestroyContext(TiContext ctx);
+typedef TiNonDispatchableHandle TiDeviceMemory;
+typedef TiNonDispatchableHandle TiKernel;
 
-
-
-TI_DLL_EXPORT void tiSetContextArgumentI32(TiContext context,
-                                           uint32_t argumentIndex,
-                                           int32_t value);
-TI_DLL_EXPORT void tiSetContextArgumentF32(TiContext context,
-                                           uint32_t argumentIndex,
-                                           float value);
-typedef struct TiNdShape {
-  uint32_t data[16];  // TODO: (penguinliong) give this constant a name?
-  uint32_t length;
-} TiNdShape;
-typedef struct TiNdArray {
-  TiDeviceAllocation devalloc;
-  const TiNdShape *shape;
-  const TiNdShape *elem_shape;
-} TiNdArray;
-TI_DLL_EXPORT void tiSetContextArgumentNdArray(TiContext context,
-                                               uint32_t paramIndex,
-                                               const TiNdArray* arr);
-TI_DLL_EXPORT void tiLaunchKernel(TiContext ctx, TiKernel k);
-
-
-
-TI_DLL_EXPORT TiKernel tiGetAotModuleKernel(
-    TiAotModule *m,
-    const char *name);
-TI_DLL_EXPORT size_t tiGetAotModuleRootBufferSize(TiAotModule *m);
-
-
-
-typedef TiOpaqueHandle TiDevice;
-TI_DLL_EXPORT void tiDeviceWaitIdle(TiDevice device);
+typedef enum TiArch {
+  //TI_ARCH_ANY = 0,  // TODO: (penguinliong) Do we need this?
+  TI_ARCH_VULKAN = 1,
+} TiArch;
+TI_DLL_EXPORT TiDevice tiCreateDevice(TiArch arch);
 TI_DLL_EXPORT void tiDestroyDevice(TiDevice device);
+TI_DLL_EXPORT void tiDeviceWaitIdle(TiDevice device);
 
-
-
+typedef enum TiAllocationUsageFlagBits {
+  TI_MEMORY_USAGE_STORAGE_BIT = 1,
+  TI_MEMORY_USAGE_UNIFORM_BIT = 2,
+  TI_MEMORY_USAGE_VERTEX_BIT = 4,
+  TI_MEMORY_USAGE_INDEX_BIT = 8,
+} TiMemoryUsageFlagBits;
+typedef TiFlags TiMemoryUsageFlags;
 typedef struct {
   uint64_t size;
-  TiBool hostWritable;
-  TiBool hostReadable;
+  TiBool hostWrite;
+  TiBool hostRead;
   TiBool exportSharing;
-  // AllocUsage is an enum class, so not exported to C yet
-} TiDeviceAllocationInfo;
-TI_DLL_EXPORT TiDeviceAllocation *tiCreateDeviceAllocation(
-  TiDevice dev,
-  const TiDeviceAllocationInfo *params);
-TI_DLL_EXPORT void tiDestroyDeviceAllocation(
-  TiDevice dev,
-  TiDeviceAllocation da);
-TI_DLL_EXPORT void *tiMapDeviceAllocation(
-  TiDevice dev,
-  TiDeviceAllocation da);
-TI_DLL_EXPORT void tiUnmapDeviceAllocation(
-  TiDevice dev,
-  TiDeviceAllocation da);
+  TiMemoryUsageFlags usage;
+} TiMemoryAllocateInfo;
+TI_DLL_EXPORT TiDeviceMemory
+tiAllocateMemory(TiDevice device, const TiMemoryAllocateInfo *allocateInfo);
+TI_DLL_EXPORT void tiFreeMemory(TiDevice device, TiDeviceMemory deviceMemory);
+TI_DLL_EXPORT void *tiMapMemory(TiDevice device, TiDeviceMemory deviceMemory);
+TI_DLL_EXPORT void tiUnmapMemory(TiDevice device, TiDeviceMemory deviceMemory);
 
+TI_DLL_EXPORT TiContext tiCreateContext(TiDevice device);
+TI_DLL_EXPORT void tiDestroyContext(TiContext context);
 
+typedef struct TiNdShape {
+  uint32_t dimCount;
+  uint32_t dims[16];  // TODO: (penguinliong) give this constant a name?
+} TiNdShape;
+typedef struct TiNdArray {
+  TiDeviceMemory devmem;
+  TiNdShape shape;
+  TiNdShape elem_shape;
+} TiNdArray;
+TI_DLL_EXPORT void tiSetContextArgNdArray(TiContext context,
+                                          uint32_t argIndex,
+                                          const TiNdArray *ndarray);
+TI_DLL_EXPORT void tiSetContextArgI32(TiContext context,
+                                      uint32_t argIndex,
+                                      int32_t value);
+TI_DLL_EXPORT void tiSetContextArgF32(TiContext context,
+                                      uint32_t argIndex,
+                                      float value);
+TI_DLL_EXPORT void tiLaunchKernel(TiContext context, TiKernel kernel);
+
+TI_DLL_EXPORT void tiDestroyAotModule(TiAotModule mod);
+TI_DLL_EXPORT TiKernel tiGetAotModuleKernel(TiAotModule mod, const char *name);
 
 #ifdef __cplusplus
 }  // extern "C"

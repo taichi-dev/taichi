@@ -48,6 +48,5 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TI_PLATFORM_UNIX
 #endif
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

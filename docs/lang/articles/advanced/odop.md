@@ -282,12 +282,12 @@ print(b.num())  # 7
 ```
 
 ## Python classes as Taichi compound struct types
-When defining a custom struct type, developers are associating pieces of data together into a [compound type](../basic/type.md#compound-types), aka a struct.  However, it is often convenient to have:
+When defining a custom struct type, developers are associating pieces of data together into a [compound type](../basic/type.md#compound-types), commonly called a struct.  However, it is often convenient to have:
   1. A Python representation of the struct type which is more object oriented.
   2. Functions associated with a struct type. (C++ style structs)
 
 
-To achieve this, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.  
+To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.  
 
 ### Creating a struct from a python class
 Here is an example of how we could create a Taichi `ti.struct_class`. 
@@ -344,8 +344,8 @@ get_area() # 201.062...
 ```
 
 ### Notes on struct classes
-1.  Inheritance of struct classes is not implemented.
-2.  While functions attached to a struct with the `@ti.struct_class` decorator is convenient and encouraged, it is actually possible to associated a function to structs with the older method of defining structs.  As mentioned above, the two methods for defining a struct type are identical in their output.  An example would be to use the `__struct_method` argument to the `ti.types.struct` call:
+- Inheritance of struct classes is not implemented.
+- While functions attached to a struct with the `@ti.struct_class` decorator is convenient and encouraged, it is actually possible to associated a function to structs with the older method of defining structs.  As mentioned above, the two methods for defining a struct type are identical in their output.  To do this, use the `__struct_method` argument with the `ti.types.struct` call:
 
 ```python
 @ti.func
@@ -353,4 +353,6 @@ def area(self):
     # a function to run in taichi scope
     return 4 * math.pi * self.radius * self.radius
 
-Sphere = ti.types.struct(center=vec3, radius=ti.f32)
+Sphere = ti.types.struct(center=vec3, radius=ti.f32,
+                         __struct_methods={'area': area})
+```

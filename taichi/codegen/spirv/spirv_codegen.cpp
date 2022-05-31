@@ -564,10 +564,32 @@ class TaskCodegen : public IRVisitor {
     {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
+      const auto &element_shape = stmt->element_shape;
+      std::vector<std::string> element_shape_size_var_names;
+      enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
+      const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
       const auto extra_args_member_index = ctx_attribs_->args().size();
+
+      // Determine the element shape position inside the indices vector
+      // TODO: change the submodule
+      int element_shape_begin = 0;
+      int element_shape_end = 0;
+      if (element_shape.size() > 0) {
+        if (layout == layout_SOA) {
+          element_shape_begin = 0;
+          element_shape_end = element_shape.size();
+        } else {
+          element_shape_begin = num_indices - element_shape.size();
+          element_shape_end = num_indices;
+        }
+      }
       for (int i = 0; i < num_indices; i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
         const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
+        // Skip element shapes
+        if (i >= element_shape_begin && i < element_shape_end) {
+          continue;
+        }
         spirv::Value var_ptr = ir_->make_value(
             spv::OpAccessChain,
             ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
@@ -579,8 +601,16 @@ class TaskCodegen : public IRVisitor {
         size_var_names.push_back(std::move(var_name));
       }
       for (int i = 0; i < num_indices; i++) {
-        spirv::Value size_var = ir_->query_value(size_var_names[i]);
-        spirv::Value indices = ir_->query_value(stmt->indices[i]->raw_name());
+        spirv::Value size_var;
+        spirv::Value indices;
+        // Use immediate numbers to flatten index for element shapes.
+        if (i >= element_shape_begin && i < element_shape_end) {
+          size_var = ir_->uint_immediate_number(
+              ir_->i32_type(), element_shape[i - element_shape_begin]);
+        } else {
+          size_var = ir_->query_value(size_var_names[i]);
+        }
+        indices = ir_->query_value(stmt->indices[i]->raw_name());
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }
@@ -592,7 +622,6 @@ class TaskCodegen : public IRVisitor {
       ir_->decorate(spv::OpDecorate, linear_offset,
                     spv::DecorationNoSignedWrap);
     }
-
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,

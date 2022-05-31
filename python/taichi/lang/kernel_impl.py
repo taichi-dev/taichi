@@ -337,21 +337,13 @@ class TaichiCallableTemplateMapper:
             return arg
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
-                anno._check_element_dim(arg, 0)
-                anno._check_element_shape(())
-                anno._check_field_dim(len(arg.shape))
+                anno.match(arg.get_type())
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno._check_element_dim(arg, 1)
-                anno._check_element_shape((arg.n, ))
-                anno._check_field_dim(len(arg.shape))
-                anno._check_layout(arg)
+                anno.match(arg.get_type())
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno._check_element_dim(arg, 2)
-                anno._check_element_shape((arg.n, arg.m))
-                anno._check_field_dim(len(arg.shape))
-                anno._check_layout(arg)
+                anno.match(arg.get_type())
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), arg.layout
             # external arrays

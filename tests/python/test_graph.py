@@ -9,7 +9,7 @@ def test_ndarray_int():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1, element_shape=())):
+    def test(pos: ti.types.ndarray(field_dim=1)):
         for i in range(n):
             pos[i] = 1
 

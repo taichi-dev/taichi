@@ -22,7 +22,7 @@ num_triangles = (n - 1) * (n - 1) * 2
 indices = ti.field(int, shape=num_triangles * 3)
 vertices = ti.Vector.field(3, dtype=float, shape=n * n)
 
-allow_bending = False
+bending_springs = False
 
 @ti.kernel
 def initialize_mass_points():
@@ -53,7 +53,7 @@ def initialize_mesh_indices():
 initialize_mesh_indices()
 
 spring_offsets = []
-if allow_bending:
+if bending_springs:
     for i in range(-1, 2):
         for j in range(-1, 2):
             if (i, j) != (0, 0):

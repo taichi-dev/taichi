@@ -571,7 +571,8 @@ class TaskCodegen : public IRVisitor {
       const auto extra_args_member_index = ctx_attribs_->args().size();
 
       // Determine the element shape position inside the indices vector
-      // TODO: change the outer layout in order to remove the element layout guess work
+      // TODO: change the outer layout in order to remove the element layout
+      // guess work
       int element_shape_begin = -1;
       int element_shape_end = -1;
       if (element_shape.size() > 0) {

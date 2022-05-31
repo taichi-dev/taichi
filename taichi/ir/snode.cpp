@@ -304,8 +304,8 @@ bool SNode::is_primal() const {
   return grad_info->is_primal();
 }
 
-bool SNode::has_adjoint() const {
-  return is_primal() && (grad_info->adjoint_snode() != nullptr);
+bool SNode::has_grad() const {
+  return is_primal() && (grad_info->grad_snode() != nullptr);
 }
 
 SNode *SNode::get_adjoint() const {

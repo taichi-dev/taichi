@@ -91,12 +91,40 @@ class Field:
             taichi_core.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
+<<<<<<< HEAD
+=======
+
+    def _set_grad(self, grad, mode="reverse"):
+        """Sets corresponding gradient field.
+
+        Args:
+            grad (Field): Corresponding gradient field.
+        """
+        if mode == "reverse":
+            self.adjoint = grad
+        elif mode == "forward":
+            self.dual = grad
+        else:
+            raise NotImplementedError()
+>>>>>>> be59d297ca999c3e908ad5e52afbd025bc11a7f0
 
     def _set_grad(self, grad):
         """Sets corresponding gradient field.
 
         Args:
+<<<<<<< HEAD
             grad (Field): Corresponding gradient field.
+=======
+            adjoint (Field): Corresponding gradient field.
+        """
+        self.adjoint = adjoint
+
+    def _set_dual(self, dual):
+        """Sets corresponding gradient field.
+
+        Args:
+            dual (Field): Corresponding gradient field.
+>>>>>>> be59d297ca999c3e908ad5e52afbd025bc11a7f0
         """
         self.grad = grad
 

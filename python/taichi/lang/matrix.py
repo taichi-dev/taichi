@@ -1117,10 +1117,19 @@ class Matrix(TaichiOperations):
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
+<<<<<<< HEAD
         entries, entries_grad = zip(*entries)
         entries, entries_grad = MatrixField(entries, n, m), MatrixField(
             entries_grad, n, m)
         entries._set_grad(entries_grad)
+=======
+        entries, entries_adjoint, entries_dual = zip(*entries)
+        entries, entries_adjoint, entries_dual = MatrixField(
+            entries, n, m), MatrixField(entries_adjoint, n,
+                                        m), MatrixField(entries_dual, n, m)
+        entries._set_adjoint(entries_adjoint)
+        entries._set_dual(entries_dual)
+>>>>>>> be59d297ca999c3e908ad5e52afbd025bc11a7f0
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
@@ -1152,7 +1161,12 @@ class Matrix(TaichiOperations):
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
+<<<<<<< HEAD
                                     shape).place(entries_grad, offset=offset)
+=======
+                                    shape).place(entries_adjoint,
+                                                 offset=offset)
+>>>>>>> be59d297ca999c3e908ad5e52afbd025bc11a7f0
         return entries
 
     @classmethod

@@ -565,7 +565,6 @@ class TaskCodegen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       const auto &element_shape = stmt->element_shape;
-      std::vector<std::string> element_shape_size_var_names;
       enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
       const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
       const auto extra_args_member_index = ctx_attribs_->args().size();
@@ -603,7 +602,6 @@ class TaskCodegen : public IRVisitor {
       int size_var_names_idx = 0;
       for (int i = 0; i < num_indices; i++) {
         spirv::Value size_var;
-        spirv::Value indices;
         // Use immediate numbers to flatten index for element shapes.
         if (i >= element_shape_begin && i < element_shape_end) {
           size_var = ir_->uint_immediate_number(
@@ -611,7 +609,7 @@ class TaskCodegen : public IRVisitor {
         } else {
           size_var = ir_->query_value(size_var_names[size_var_names_idx++]);
         }
-        indices = ir_->query_value(stmt->indices[i]->raw_name());
+        spirv::Value indices = ir_->query_value(stmt->indices[i]->raw_name());
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }

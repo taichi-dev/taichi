@@ -642,8 +642,7 @@ void export_lang(py::module &m) {
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
-      .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_dual", &Expr::set_dual)
+      .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)

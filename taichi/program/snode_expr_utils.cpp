@@ -104,8 +104,8 @@ void make_lazy_grad(SNode *snode, SNodeGlobalVarExprMap *snode_to_exprs) {
   for (auto &c : snode->ch) {
     // TODO: make dual for forward mode when needed
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_adjoint()) {
-      new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+        !c->has_grad()) {
+      new_grads.push_back(snode_to_exprs->at(c.get())->grad);
     }
   }
   for (auto p : new_grads) {

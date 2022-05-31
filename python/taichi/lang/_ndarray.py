@@ -14,14 +14,13 @@ class Ndarray:
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the Ndarray.
     """
-    def __init__(self, dtype, arr_shape):
+    def __init__(self):
         self.host_accessor = None
         self.layout = None
         self.shape = None
         self.element_type = None
-        self.dtype = cook_dtype(dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(dtype), arr_shape)
+        self.dtype = None
+        self.arr = None
 
     def get_type(self):
         return SpecializeNdarrayType(self.element_type, self.shape,
@@ -215,7 +214,10 @@ class ScalarNdarray(Ndarray):
         shape (Tuple[int]): Shape of the ndarray.
     """
     def __init__(self, dtype, arr_shape):
-        super().__init__(dtype, arr_shape)
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.dtype, arr_shape)
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
 

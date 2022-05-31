@@ -7,7 +7,7 @@ class CompoundType:
 
 class TensorType(CompoundType):
     def __init__(self, shape, dtype):
-        self.dtype = taichi.lang.util.cook_dtype(dtype)
+        self.dtype = dtype
         self.shape = shape
 
 

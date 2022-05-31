@@ -1690,12 +1690,14 @@ class MatrixNdarray(Ndarray):
     def __init__(self, n, m, dtype, shape, layout):
         self.n = n
         self.m = m
-        # TODO: we should pass in element_type, shape, layout instead.
-        arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
-        super().__init__(dtype, arr_shape)
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
         self.layout = layout
         self.shape = shape
-        self.element_type = TensorType((self.n, self.m), dtype)
+        self.element_type = TensorType((self.n, self.m), self.dtype)
+        # TODO: we should pass in element_type, shape, layout instead.
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.element_type.dtype, shape, self.element_type.shape, layout)
 
     @property
     def element_shape(self):
@@ -1786,12 +1788,14 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.n = n
-        # TODO: pass in element_type, shape, layout directly
-        arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
-        super().__init__(dtype, arr_shape)
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
         self.layout = layout
         self.shape = shape
-        self.element_type = TensorType((n, ), dtype)
+        self.element_type = TensorType((n, ), self.dtype)
+        # TODO: pass in element_type, shape, layout directly
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.element_type.dtype, shape, self.element_type.shape, layout)
 
     @property
     def element_shape(self):

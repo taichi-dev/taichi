@@ -89,6 +89,11 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  py::enum_<ExternalArrayLayout>(m, "Layout", py::arithmetic())
+      .value("AOS", ExternalArrayLayout::kAOS)
+      .value("SOA", ExternalArrayLayout::kSOA)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -427,9 +432,14 @@ void export_lang(py::module &m) {
       .def(
           "create_ndarray",
           [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape) -> Ndarray * {
-            return program->create_ndarray(dt, shape);
+              const std::vector<int> &shape,
+              const std::vector<int> &element_shape,
+              ExternalArrayLayout layout) -> Ndarray * {
+            return program->create_ndarray(dt, shape, element_shape, layout);
           },
+          py::arg("dt"), py::arg("shape"),
+          py::arg("element_shape") = py::tuple(),
+          py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {

@@ -321,7 +321,11 @@ class TI_DLL_EXPORT Program {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
 
-  Ndarray *create_ndarray(const DataType type, const std::vector<int> &shape);
+  Ndarray *create_ndarray(
+      const DataType type,
+      const std::vector<int> &shape,
+      const std::vector<int> &element_shape = {},
+      ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 

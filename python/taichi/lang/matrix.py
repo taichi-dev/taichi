@@ -17,7 +17,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
-from taichi.types.compound_types import CompoundType
+from taichi.types.compound_types import CompoundType, TensorType
 
 
 def _gen_swizzles(cls):
@@ -1695,7 +1695,7 @@ class MatrixNdarray(Ndarray):
         super().__init__(dtype, arr_shape)
         self.layout = layout
         self.shape = shape
-        self.element_type = MatrixType(self.n, self.m, dtype)
+        self.element_type = TensorType((self.n, self.m), dtype)
 
     @property
     def element_shape(self):
@@ -1791,7 +1791,7 @@ class VectorNdarray(Ndarray):
         super().__init__(dtype, arr_shape)
         self.layout = layout
         self.shape = shape
-        self.element_type = MatrixType(n, 1, dtype)
+        self.element_type = TensorType((n, ), dtype)
 
     @property
     def element_shape(self):

@@ -287,7 +287,7 @@ When defining a custom struct type, developers are associating pieces of data to
   2. Functions associated with a struct type. (C++ style structs)
 
 
-To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.  
+To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
 
 ### Creating a struct from a python class
 Here is an example of how we could create a Taichi `ti.struct_class`.

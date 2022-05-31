@@ -572,8 +572,8 @@ class TaskCodegen : public IRVisitor {
 
       // Determine the element shape position inside the indices vector
       // TODO: change the submodule
-      int element_shape_begin = 0;
-      int element_shape_end = 0;
+      int element_shape_begin = -1;
+      int element_shape_end = -1;
       if (element_shape.size() > 0) {
         if (layout == layout_SOA) {
           element_shape_begin = 0;
@@ -584,12 +584,12 @@ class TaskCodegen : public IRVisitor {
         }
       }
       for (int i = 0; i < num_indices; i++) {
-        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
-        // Skip element shapes
+        // Skip expressions for element shapes.
         if (i >= element_shape_begin && i < element_shape_end) {
           continue;
         }
+        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+        const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
         spirv::Value var_ptr = ir_->make_value(
             spv::OpAccessChain,
             ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
@@ -600,6 +600,7 @@ class TaskCodegen : public IRVisitor {
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
       }
+      int size_var_names_idx = 0;
       for (int i = 0; i < num_indices; i++) {
         spirv::Value size_var;
         spirv::Value indices;
@@ -608,7 +609,7 @@ class TaskCodegen : public IRVisitor {
           size_var = ir_->uint_immediate_number(
               ir_->i32_type(), element_shape[i - element_shape_begin]);
         } else {
-          size_var = ir_->query_value(size_var_names[i]);
+          size_var = ir_->query_value(size_var_names[size_var_names_idx++]);
         }
         indices = ir_->query_value(stmt->indices[i]->raw_name());
         linear_offset = ir_->mul(linear_offset, size_var);

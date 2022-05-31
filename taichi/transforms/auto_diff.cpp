@@ -33,7 +33,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
     for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      if (node->has_adjoint()) {
+      if (node->has_grad()) {
         qualified_atomics_ = false;
         break;
       }
@@ -953,7 +953,7 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    if (!snodes[0]->has_grad()) {
       // No adjoint SNode. Do nothing
       return;
     }
@@ -961,8 +961,8 @@ class MakeAdjoint : public IRVisitor {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
@@ -972,12 +972,12 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    if (!snodes[0]->has_grad()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     auto load = insert<GlobalLoadStmt>(adjoint_ptr);
     accumulate(stmt->val, load);
@@ -989,9 +989,9 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (snodes[0]->has_adjoint()) {
-      TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-      snodes[0] = snodes[0]->get_adjoint();
+    if (snodes[0]->has_grad()) {
+      TI_ASSERT(snodes[0]->get_grad() != nullptr);
+      snodes[0] = snodes[0]->get_grad();
       auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     } else {
@@ -1470,7 +1470,7 @@ class MakeDual : public IRVisitor {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_dual()) {
+    if (!snodes[0]->has_grad()) {
       // No dual SNode. Do nothing
       return;
     }
@@ -1478,8 +1478,8 @@ class MakeDual : public IRVisitor {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
   }
@@ -1489,12 +1489,12 @@ class MakeDual : public IRVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    if (!snodes[0]->has_grad()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
+    TI_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
     stmt->parent->erase(stmt);
@@ -1505,9 +1505,9 @@ class MakeDual : public IRVisitor {
     GlobalPtrStmt *src = stmt->val->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (snodes[0]->has_dual()) {
-      TI_ASSERT(snodes[0]->get_dual() != nullptr);
-      snodes[0] = snodes[0]->get_dual();
+    if (snodes[0]->has_grad()) {
+      TI_ASSERT(snodes[0]->get_grad() != nullptr);
+      snodes[0] = snodes[0]->get_grad();
       auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
       accumulate(stmt->dest, insert<GlobalLoadStmt>(dual_ptr));
     } else {

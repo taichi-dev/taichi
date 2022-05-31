@@ -1,4 +1,12 @@
-from taichi.types.primitive_types import f32
+from taichi.types.compound_types import CompoundType
+from taichi.types.primitive_types import f32, types
+
+
+class SpecializeNdarrayType:
+    def __init__(self, element_type, shape=None, layout=None):
+        self.element_type = element_type
+        self.shape = shape
+        self.layout = layout
 
 
 class NdarrayType:
@@ -32,31 +40,44 @@ class NdarrayType:
         self.element_shape = element_shape
         self.element_dim = len(
             element_shape) if element_shape is not None else element_dim
+
         self.field_dim = field_dim
         self.layout = layout
 
-    def _check_element_dim(self, arg, arg_dim):
-        if self.element_dim is not None and self.element_dim != arg_dim:
+    def match(self, ndarray_type: SpecializeNdarrayType):
+        if ndarray_type.element_type in types:
+            if self.element_dim is not None or self.element_shape is not None:
+                raise ValueError(
+                    "Invalid argument into ti.types.ndarray() - required element to be compound type but got {ndarray_type.element_type}"
+                )
+        else:
+            assert isinstance(ndarray_type.element_type, CompoundType)
+            element_shape = (ndarray_type.element_type.n,
+                             ndarray_type.element_type.m)
+            if self.element_dim is not None:
+                if not (self.element_dim == 1 and ndarray_type.element_type.m
+                        == 1) and not self.element_dim == 2:
+                    raise ValueError(
+                        "Invalid argument into ti.types.ndarray() - required element to be vector type but got matrix type"
+                    )
+            if self.element_shape is not None:
+                element_shape = (ndarray_type.element_type.n,
+                                 ndarray_type.element_type.m)
+                if not (self.element_shape + (1, ) == element_shape
+                        ) or not self.element_shape == element_shape:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element to be compound type {self.element_shape} but got {element_shape}"
+                    )
+
+        if self.layout is not None and self.layout != ndarray_type.layout:
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {arg} is provided"
+                f"Invalid argument into ti.types.ndarray() - required layout={self.layout}, but {ndarray_type.layout} is provided"
             )
 
-    def _check_layout(self, arg):
-        if self.layout is not None and self.layout != arg.layout:
+        if self.field_dim is not None and self.field_dim != len(
+                ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required layout={self.layout}, but {arg} is provided"
-            )
-
-    def _check_element_shape(self, shapes):
-        if self.element_shape is not None and shapes != self.element_shape:
-            raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {shapes} is provided"
-            )
-
-    def _check_field_dim(self, field_dim):
-        if self.field_dim is not None and field_dim != self.field_dim:
-            raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {field_dim} is provided"
+                f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {ndarray_type.element_type} is provided"
             )
 
 

@@ -84,15 +84,14 @@ def test_aot_bind_id():
     density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2,
-                                                   element_shape=())):
+    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2)):
         for i, j in density1:
             density[i, j] = x
             density1[i, j] = x + 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
-        m.add_kernel(init)
+        m.add_kernel(init, {'density1': density1})
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)

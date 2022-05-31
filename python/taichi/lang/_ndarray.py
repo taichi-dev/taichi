@@ -4,6 +4,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
+from taichi.types.ndarray_type import SpecializeNdarrayType
 
 
 class Ndarray:
@@ -15,9 +16,16 @@ class Ndarray:
     """
     def __init__(self, dtype, arr_shape):
         self.host_accessor = None
+        self.layout = None
+        self.shape = None
+        self.element_type = None
         self.dtype = cook_dtype(dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
             cook_dtype(dtype), arr_shape)
+
+    def get_type(self):
+        return SpecializeNdarrayType(self.element_type, self.shape,
+                                     self.layout)
 
     @property
     def element_shape(self):
@@ -209,6 +217,7 @@ class ScalarNdarray(Ndarray):
     def __init__(self, dtype, arr_shape):
         super().__init__(dtype, arr_shape)
         self.shape = tuple(self.arr.shape)
+        self.element_type = dtype
 
     @property
     def element_shape(self):

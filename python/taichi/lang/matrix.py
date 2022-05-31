@@ -1688,12 +1688,14 @@ class MatrixNdarray(Ndarray):
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, m, dtype, shape, layout):
-        self.layout = layout
-        self.shape = shape
         self.n = n
         self.m = m
+        # TODO: we should pass in element_type, shape, layout instead.
         arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
         super().__init__(dtype, arr_shape)
+        self.layout = layout
+        self.shape = shape
+        self.element_type = MatrixType(self.n, self.m, dtype)
 
     @property
     def element_shape(self):
@@ -1783,11 +1785,13 @@ class VectorNdarray(Ndarray):
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, dtype, shape, layout):
-        self.layout = layout
-        self.shape = shape
         self.n = n
+        # TODO: pass in element_type, shape, layout directly
         arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
         super().__init__(dtype, arr_shape)
+        self.layout = layout
+        self.shape = shape
+        self.element_type = MatrixType(n, 1, dtype)
 
     @property
     def element_shape(self):

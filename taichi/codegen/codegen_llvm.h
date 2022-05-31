@@ -413,7 +413,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
 class LlvmProgramImpl;
 
-// This is for CPU, we need one for CUDA (AMDGPU) as well.
+// TODO: Make ModuleToFunctionConverter abstract,
+//       Move CPU implementation to "taichi/backend/cpu/"
 class ModuleToFunctionConverter {
  public:
   explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
@@ -426,9 +427,9 @@ class ModuleToFunctionConverter {
                                std::unique_ptr<llvm::Module> mod,
                                std::vector<OffloadedTask> &&tasks) const;
 
-  FunctionType convert(const Kernel *kernel,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const;
+  virtual FunctionType convert(const Kernel *kernel,
+                               std::unique_ptr<llvm::Module> mod,
+                               std::vector<OffloadedTask> &&tasks) const;
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};

@@ -15,6 +15,7 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
+#include "taichi/util/action_recorder.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -37,123 +38,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   FunctionType gen() override {
     auto compiled_res = run_compilation();
-    return compile_module_to_executable(this->kernel, std::move(compiled_res));
-  }
 
-  static FunctionType compile_module_to_executable(
-      Kernel *kernel,
-      CompiledData &&compiled_data) {
-#ifdef TI_WITH_CUDA
-    auto *tlctx =
-        kernel->program->get_llvm_program_impl()->get_llvm_context(Arch::cuda);
-    for (auto &task : compiled_data.offloaded_tasks) {
-      llvm::Function *func = compiled_data.llvm_module->getFunction(task.name);
-      TI_ASSERT(func);
-      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
-    }
+    CUDAModuleToFunctionConverter converter{
+        tlctx, this->kernel->program->get_llvm_program_impl()};
 
-    auto jit = tlctx->jit.get();
-    auto cuda_module = jit->add_module(std::move(compiled_data.llvm_module),
-                                       kernel->program->config.gpu_max_reg);
-
-    return [cuda_module, kernel,
-            offloaded_tasks =
-                compiled_data.offloaded_tasks](RuntimeContext &context) {
-      CUDAContext::get_instance().make_current();
-      auto args = kernel->args;
-      std::vector<void *> arg_buffers(args.size(), nullptr);
-      std::vector<void *> device_buffers(args.size(), nullptr);
-
-      // We could also use kernel->make_launch_context() to create
-      // |ctx_builder|, but that implies the usage of Program's context. For the
-      // sake of decoupling, let's not do that and explicitly set the context we
-      // want to modify.
-      Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
-      bool transferred = false;
-      for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_array) {
-          const auto arr_sz = context.array_runtime_sizes[i];
-          if (arr_sz == 0) {
-            continue;
-          }
-          arg_buffers[i] = context.get_arg<void *>(i);
-          if (!context.is_device_allocations[i]) {
-            // Note: both numpy and PyTorch support arrays/tensors with zeros
-            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // `arr_sz` zero.
-            unsigned int attr_val = 0;
-            uint32_t ret_code =
-                CUDADriver::get_instance().mem_get_attribute.call(
-                    &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-                    (void *)arg_buffers[i]);
-            if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-              // Copy to device buffer if arg is on host
-              // - ret_code != CUDA_SUCCESS:
-              //   arg_buffers[i] is not on device
-              // - attr_val != CU_MEMORYTYPE_DEVICE:
-              //   Cuda driver is aware of arg_buffers[i] but it might be on
-              //   host.
-              // See CUDA driver API `cuPointerGetAttribute` for more details.
-              transferred = true;
-              CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
-              CUDADriver::get_instance().memcpy_host_to_device(
-                  (void *)device_buffers[i], arg_buffers[i], arr_sz);
-            } else {
-              device_buffers[i] = arg_buffers[i];
-            }
-            // device_buffers[i] saves a raw ptr on CUDA device.
-            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               arr_sz,
-                                               /*is_device_allocation=*/false);
-
-          } else if (arr_sz > 0) {
-            // arg_buffers[i] is a DeviceAllocation*
-            // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
-            // it's shared by cpu and cuda.
-            DeviceAllocation *ptr =
-                static_cast<DeviceAllocation *>(arg_buffers[i]);
-            device_buffers[i] = kernel->program->get_llvm_program_impl()
-                                    ->get_ndarray_alloc_info_ptr(*ptr);
-            // We compare arg_buffers[i] and device_buffers[i] later to check
-            // if transfer happened.
-            // TODO: this logic can be improved but I'll leave it to a followup
-            // PR.
-            arg_buffers[i] = device_buffers[i];
-
-            // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               arr_sz,
-                                               /*is_device_allocation=*/false);
-          }
-        }
-      }
-      if (transferred) {
-        CUDADriver::get_instance().stream_synchronize(nullptr);
-      }
-
-      for (auto task : offloaded_tasks) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                 task.block_dim);
-        cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            {&context});
-      }
-      // copy data back to host
-      if (transferred) {
-        CUDADriver::get_instance().stream_synchronize(nullptr);
-        for (int i = 0; i < (int)args.size(); i++) {
-          if (device_buffers[i] != arg_buffers[i]) {
-            CUDADriver::get_instance().memcpy_device_to_host(
-                arg_buffers[i], (void *)device_buffers[i],
-                context.array_runtime_sizes[i]);
-            CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
-          }
-        }
-      }
-    };
-#else
-    TI_ERROR("No CUDA");
-    return nullptr;
-#endif  // TI_WITH_CUDA
+    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
+                             std::move(compiled_res.offloaded_tasks));
   }
 
   llvm::Value *create_print(std::string tag,
@@ -934,9 +824,142 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 };
 
+static void set_arg_external_array(RuntimeContext *ctx,
+                                   const std::string &kernel_name,
+                                   int arg_id,
+                                   uintptr_t ptr,
+                                   uint64 size,
+                                   bool is_device_allocation) {
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_ext_ptr",
+      {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", arg_id),
+       ActionArg("address", fmt::format("0x{:x}", ptr)),
+       ActionArg("array_size_in_bytes", (int64)size)});
+
+  ctx->set_arg(arg_id, ptr);
+  ctx->set_array_runtime_size(arg_id, size);
+  ctx->set_array_is_device_allocation(arg_id, is_device_allocation);
+}
+
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
   return CodeGenLLVMCUDA(kernel, ir).gen();
+}
+
+FunctionType CUDAModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<LlvmLaunchArgInfo> &args,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+#ifdef TI_WITH_CUDA
+  for (const auto &task : tasks) {
+    llvm::Function *func = mod->getFunction(task.name);
+    TI_ASSERT(func);
+    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+  }
+
+  auto jit = tlctx_->jit.get();
+  auto cuda_module =
+      jit->add_module(std::move(mod), program_->config->gpu_max_reg);
+
+  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
+          program = this->program_](RuntimeContext &context) {
+    CUDAContext::get_instance().make_current();
+    std::vector<void *> arg_buffers(args.size(), nullptr);
+    std::vector<void *> device_buffers(args.size(), nullptr);
+
+    bool transferred = false;
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array) {
+        const auto arr_sz = context.array_runtime_sizes[i];
+        if (arr_sz == 0) {
+          continue;
+        }
+        arg_buffers[i] = context.get_arg<void *>(i);
+        if (!context.is_device_allocations[i]) {
+          // Note: both numpy and PyTorch support arrays/tensors with zeros
+          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+          // `arr_sz` zero.
+          unsigned int attr_val = 0;
+          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
+              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+              (void *)arg_buffers[i]);
+
+          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+            // Copy to device buffer if arg is on host
+            // - ret_code != CUDA_SUCCESS:
+            //   arg_buffers[i] is not on device
+            // - attr_val != CU_MEMORYTYPE_DEVICE:
+            //   Cuda driver is aware of arg_buffers[i] but it might be on
+            //   host.
+            // See CUDA driver API `cuPointerGetAttribute` for more details.
+            transferred = true;
+            CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
+            CUDADriver::get_instance().memcpy_host_to_device(
+                (void *)device_buffers[i], arg_buffers[i], arr_sz);
+          } else {
+            device_buffers[i] = arg_buffers[i];
+          }
+          // device_buffers[i] saves a raw ptr on CUDA device.
+          set_arg_external_array(&context, kernel_name, i,
+                                 (uint64)device_buffers[i], arr_sz,
+                                 /*is_device_allocation=*/false);
+
+        } else if (arr_sz > 0) {
+          // arg_buffers[i] is a DeviceAllocation*
+          // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
+          // it's shared by cpu and cuda.
+          DeviceAllocation *ptr =
+              static_cast<DeviceAllocation *>(arg_buffers[i]);
+          device_buffers[i] = program->get_ndarray_alloc_info_ptr(*ptr);
+          // We compare arg_buffers[i] and device_buffers[i] later to check
+          // if transfer happened.
+          // TODO: this logic can be improved but I'll leave it to a followup
+          // PR.
+          arg_buffers[i] = device_buffers[i];
+
+          // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
+          set_arg_external_array(&context, kernel_name, i,
+                                 (uint64)device_buffers[i], arr_sz,
+                                 /*is_device_allocation=*/false);
+        }
+      }
+    }
+    if (transferred) {
+      CUDADriver::get_instance().stream_synchronize(nullptr);
+    }
+
+    for (auto task : offloaded_tasks) {
+      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+               task.block_dim);
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                          {&context});
+    }
+    // copy data back to host
+    if (transferred) {
+      CUDADriver::get_instance().stream_synchronize(nullptr);
+      for (int i = 0; i < (int)args.size(); i++) {
+        if (device_buffers[i] != arg_buffers[i]) {
+          CUDADriver::get_instance().memcpy_device_to_host(
+              arg_buffers[i], (void *)device_buffers[i],
+              context.array_runtime_sizes[i]);
+          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+        }
+      }
+    }
+  };
+#else
+  TI_ERROR("No CUDA");
+  return nullptr;
+#endif  // TI_WITH_CUDA
+}
+
+FunctionType CUDAModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
+                 std::move(tasks));
 }
 
 TLANG_NAMESPACE_END

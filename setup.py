@@ -9,7 +9,6 @@ import glob
 import multiprocessing
 import os
 import shutil
-import subprocess
 import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
@@ -66,17 +65,16 @@ def remove_tmp(taichi_dir):
 class EggInfo(egg_info):
     def finalize_options(self, *args, **kwargs):
         if '' not in self.distribution.package_dir:
-            #4975: skbuild loses the root package dir
+            # Issue#4975: skbuild loses the root package dir
             self.distribution.package_dir[''] = package_dir
         return super().finalize_options(*args, **kwargs)
 
-    def run(self):
-        taichi_dir = os.path.join(package_dir, 'taichi')
-        remove_tmp(taichi_dir)
 
-        shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
+def copy_assets():
+    taichi_dir = os.path.join(package_dir, 'taichi')
+    remove_tmp(taichi_dir)
 
-        egg_info.run(self)
+    shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
 
 class Clean(clean):
@@ -147,6 +145,7 @@ def exclude_paths(manifest_files):
     ]
 
 
+copy_assets()
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},

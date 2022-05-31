@@ -1643,7 +1643,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   int element_shape_idx = 0;
   for (int i = 0; i < num_indices; i++) {
     if (i >= element_shape_begin && i < element_shape_end) {
-      llvm::Value* size_var = tlctx->get_constant(element_shape[element_shape_idx++]);
+      llvm::Value *size_var =
+          tlctx->get_constant(element_shape[element_shape_idx++]);
       linear_index = builder->CreateMul(linear_index, size_var);
     } else {
       linear_index = builder->CreateMul(linear_index, sizes[i]);

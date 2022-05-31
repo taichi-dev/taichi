@@ -165,6 +165,27 @@ def test_ndarray_2d():
     _test_ndarray_2d()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_compound_element():
+    n = 10
+    a = ti.ndarray(ti.i32, shape=(n, ))
+
+    vec3 = ti.types.vector(3, ti.i32)
+    b = ti.ndarray(vec3, shape=(n, n))
+    assert isinstance(b, ti.MatrixNdarray)
+    assert b.shape == (n, n)
+    assert b.element_type.dtype == ti.i32
+    assert b.element_type.shape == (3, 1)
+
+    matrix34 = ti.types.matrix(3, 4, float)
+    c = ti.ndarray(matrix34, shape=(n, n + 1), layout=ti.Layout.SOA)
+    assert isinstance(c, ti.MatrixNdarray)
+    assert c.shape == (n, n + 1)
+    assert c.element_type.dtype == ti.f32
+    assert c.element_type.shape == (3, 4)
+    assert c.layout == ti.Layout.SOA
+
+
 def _test_ndarray_copy_from_ndarray():
     n = 16
     a = ti.ndarray(ti.i32, shape=n)

@@ -16,20 +16,12 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return glb_var_->is_primal;
   }
 
-  SNode *adjoint_snode() const override {
-    auto &adj = glb_var_->adjoint;
+  SNode *grad_snode() const override {
+    auto &adj = glb_var_->grad;
     if (adj.expr == nullptr) {
       return nullptr;
     }
     return adj.snode();
-  }
-
-  SNode *dual_snode() const override {
-    auto &dual = glb_var_->dual;
-    if (dual.expr == nullptr) {
-      return nullptr;
-    }
-    return dual.snode();
   }
 
  private:

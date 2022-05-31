@@ -503,24 +503,16 @@ def create_field_member(dtype, name):
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    x_adjoint = None
-    x_dual = None
+    x_grad = None
     if _ti_core.needs_grad(dtype):
         # adjoint
-        x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
-        x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
-        x_adjoint.ptr.set_name(name + ".grad")
-        x_adjoint.ptr.set_is_primal(False)
-        x.ptr.set_adjoint(x_adjoint.ptr)
+        x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_grad(x_grad.ptr)
 
-        # dual
-        x_dual = Expr(get_runtime().prog.make_id_expr(""))
-        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
-        x_dual.ptr.set_name(name + ".dual")
-        x_dual.ptr.set_is_primal(False)
-        x.ptr.set_dual(x_dual.ptr)
-
-    return x, x_adjoint, x_dual
+    return x, x_grad
 
 
 @python_scope
@@ -567,19 +559,15 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_adjoint, x_dual = create_field_member(dtype, name)
-    x, x_adjoint, x_dual = ScalarField(x), ScalarField(x_adjoint), ScalarField(
-        x_dual)
-    x._set_adjoint(x_adjoint)
-    x._set_dual(x_dual)
+    x, x_grad = create_field_member(dtype, name)
+    x, x_grad = ScalarField(x), ScalarField(x_grad)
+    x._set_grad(x_grad)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
-        # TODO: avoid place both adjoint and dual when unnessary
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_adjoint)
-            root.dense(index_nd(dim), shape).place(x_dual)
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 

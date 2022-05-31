@@ -19,8 +19,6 @@ class Field:
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
-        self.adjoint = None
-        self.dual = None
 
     @property
     def snode(self):
@@ -94,21 +92,13 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def _set_adjoint(self, adjoint):
+    def _set_grad(self, grad):
         """Sets corresponding gradient field.
 
         Args:
-            adjoint (Field): Corresponding gradient field.
+            grad (Field): Corresponding gradient field.
         """
-        self.adjoint = adjoint
-    
-    def _set_dual(self, dual):
-        """Sets corresponding gradient field.
-
-        Args:
-            dual (Field): Corresponding gradient field.
-        """
-        self.dual = dual
+        self.grad = grad
 
     @python_scope
     def fill(self, val):

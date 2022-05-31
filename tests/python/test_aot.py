@@ -736,11 +736,11 @@ def test_mpm88_ndarray_graph_aot():
                               'grid_m',
                               ti.f32,
                               element_shape=())
-    g_init = ti.graph.Graph()
-    g_init.dispatch(init_particles, sym_x, sym_v, sym_J)
+    g_init_builder = ti.graph.GraphBuilder()
+    g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
 
-    g_update = ti.graph.Graph()
-    substep = g_update.create_sequential()
+    g_update_builder = ti.graph.GraphBuilder()
+    substep = g_update_builder.create_sequential()
 
     substep.dispatch(substep_reset_grid, sym_grid_v, sym_grid_m)
     substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
@@ -749,10 +749,10 @@ def test_mpm88_ndarray_graph_aot():
     substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v)
 
     for i in range(N_ITER):
-        g_update.append(substep)
+        g_update_builder.append(substep)
 
-    g_init.compile()
-    g_update.compile()
+    g_init = g_init_builder.compile()
+    g_update = g_update_builder.compile()
 
     x = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
     v = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))

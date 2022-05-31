@@ -290,7 +290,7 @@ When defining a custom struct type, developers are associating pieces of data to
 To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.  
 
 ### Creating a struct from a python class
-Here is an example of how we could create a Taichi `ti.struct_class`. 
+Here is an example of how we could create a Taichi `ti.struct_class`.
 
 ```python
 @ti.struct_class
@@ -300,7 +300,7 @@ class Sphere:
 ```
 This will create the *exact* same type as doing:
 
-```python 
+```python
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)
 ```
 Using the `@ti.struct_class` decorator will convert the annotated fields in the python class to members in the resulting struct types.  In both of the above examples you would create a field of the struct the same way.

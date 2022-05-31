@@ -100,9 +100,12 @@ void autograd() {
                                   builder.create_add(i, one));
       builder.create_global_store(builder.create_global_ptr(c, {i}), zero);
 
-      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}), zero);
-      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}), zero);
-      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}), one);
+      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}),
+                                  zero);
+      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}),
+                                  zero);
+      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}),
+                                  one);
     }
 
     kernel_init =

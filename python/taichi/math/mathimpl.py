@@ -75,12 +75,16 @@ def _gen_matrix(n, *args):
     2. From a 1-D array of n*n elements (glsl style).
     3. From a list of n-D vectors (glsl style).
     """
+    if len(args) == n * n:  # initialize with n*n scalars
+        data = [[args[k * n + i] for i in range(n)] for k in range(n)]
+        return ti.Matrix(data, float)
+
     if len(args) == n:  # initialize with n vectors
         # Matrix.rows() will do implict type inference
         data = [list(x) for x in args]
         return ti.Matrix(data, float)
 
-    if len(args) == 1:  # initialize with a scalar, a matrix of a 1d list
+    if len(args) == 1:  # initialize with a scalar, a matrix or a 1d list
         x = args[0]
         if isinstance(x, ti.Matrix):
             return x

@@ -495,7 +495,7 @@ void export_lang(py::module &m) {
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
-      .def("has_adjoint", &SNode::has_adjoint)
+      .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)

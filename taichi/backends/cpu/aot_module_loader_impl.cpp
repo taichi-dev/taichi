@@ -20,7 +20,7 @@ class AotModuleImpl : public LlvmAotModule {
   }
 
  private:
-  virtual FunctionType convert_module_to_function(
+  FunctionType convert_module_to_function(
       const std::string &name,
       LlvmOfflineCache::KernelCacheData &&loaded) override {
     auto *tlctx = program_->get_llvm_context(program_->config->arch);

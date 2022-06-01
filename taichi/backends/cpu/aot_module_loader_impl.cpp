@@ -9,10 +9,10 @@ namespace taichi {
 namespace lang {
 namespace {
 
-class AotModuleImpl : public LLVMAotModule {
+class AotModuleImpl : public LlvmAotModule {
  public:
   explicit AotModuleImpl(const cpu::AotModuleParams &params)
-      : LLVMAotModule(params.module_path, params.program) {
+      : LlvmAotModule(params.module_path, params.program) {
   }
 
   Arch arch() const override {

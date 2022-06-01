@@ -6,9 +6,9 @@
 namespace taichi {
 namespace lang {
 
-class LLVMAotModule : public aot::Module {
+class LlvmAotModule : public aot::Module {
  public:
-  explicit LLVMAotModule(const std::string &module_path,
+  explicit LlvmAotModule(const std::string &module_path,
                          LlvmProgramImpl *program)
       : program_(program),
         cache_reader_(LlvmOfflineCacheFileReader::make(module_path)) {

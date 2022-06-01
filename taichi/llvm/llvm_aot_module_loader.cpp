@@ -19,7 +19,7 @@ class KernelImpl : public aot::Kernel {
 
 }  // namespace
 
-LlvmOfflineCache::KernelCacheData LLVMAotModule::load_kernel_from_cache(
+LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
   TI_ASSERT(cache_reader_ != nullptr);
   auto *tlctx = program_->get_llvm_context(program_->config->arch);
@@ -30,7 +30,7 @@ LlvmOfflineCache::KernelCacheData LLVMAotModule::load_kernel_from_cache(
   return loaded;
 }
 
-std::unique_ptr<aot::Kernel> LLVMAotModule::make_new_kernel(
+std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
   auto loaded = load_kernel_from_cache(name);
   auto fn = convert_module_to_function(name, std::move(loaded));

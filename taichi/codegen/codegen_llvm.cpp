@@ -1240,9 +1240,9 @@ llvm::Value *CodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
   bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
   bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
   TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
-  return builder->CreateAtomicRMW(
-      bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
-      llvm::AtomicOrdering::SequentiallyConsistent);
+  return builder->CreateAtomicRMW(bin_op.at(stmt->op_type),
+                                  llvm_val[stmt->dest], llvm_val[stmt->val],
+                                  llvm::AtomicOrdering::SequentiallyConsistent);
 }
 
 llvm::Value *CodeGenLLVM::atomic_op_using_cas(
@@ -1304,8 +1304,7 @@ llvm::Value *CodeGenLLVM::real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
     }
   }
 
-  PrimitiveTypeID prim_type =
-      stmt->val->ret_type->cast<PrimitiveType>()->type;
+  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
 
   std::unordered_map<PrimitiveTypeID,
                      std::unordered_map<AtomicOpType, std::string>>

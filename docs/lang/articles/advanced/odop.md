@@ -310,7 +310,7 @@ sphere_field = Sphere.field(shape=(n,))
 ```
 
 ### Associating functions with the struct type
-Python classes can have functions attached to them, as can Taichi Structs.  Building from the above example, here is how one would add functions to the stuct.
+Python classes can have functions attached to them, as can Taichi struct types.  Building from the above example, here is how one would add functions to the struct.
 
 ```python
 @ti.struct_class

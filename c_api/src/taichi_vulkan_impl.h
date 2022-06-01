@@ -27,6 +27,7 @@ class VulkanDeviceImported : public VulkanDevice {
 
  public:
   VulkanDeviceImported(
+      uint32_t api_version,
       const taichi::lang::vulkan::VulkanDevice::Params &params);
 
   virtual taichi::lang::Device &get() override final;

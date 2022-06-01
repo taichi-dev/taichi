@@ -10,7 +10,6 @@ taichi::lang::DeviceAllocation devmem2devalloc(Device &device,
 Device::Device(taichi::Arch arch) : arch(arch) {
 }
 Device::~Device() {
-  TI_NOT_IMPLEMENTED;
 }
 
 VulkanDevice *Device::as_vk() {
@@ -21,7 +20,6 @@ VulkanDevice *Device::as_vk() {
 Context::Context(Device &device) : device_(&device), runtime_context_{} {
 }
 Context::~Context() {
-  TI_NOT_IMPLEMENTED;
 }
 taichi::lang::RuntimeContext &Context::get() {
   return runtime_context_;

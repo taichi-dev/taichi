@@ -13,11 +13,14 @@
 #if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
 #ifdef __GNUC__
 #define TI_DLL_EXPORT __attribute__((dllexport))
+#define TI_API_CALL
 #else
 #define TI_DLL_EXPORT __declspec(dllexport)
+#define TI_API_CALL __stdcall
 #endif  //  __GNUC__
 #else
 #define TI_DLL_EXPORT __attribute__((visibility("default")))
+#define TI_API_CALL
 #endif  // defined _WIN32 || defined _WIN64 || defined __CYGWIN__
 
 // Windows

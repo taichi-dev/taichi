@@ -1,4 +1,6 @@
 #include "taichi_vulkan_impl.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "vulkan/vulkan.h"
 
 #ifdef TI_WITH_VULKAN
 
@@ -13,9 +15,19 @@ Context *VulkanDevice::create_context() {
 }
 
 VulkanDeviceImported::VulkanDeviceImported(
+    uint32_t api_version,
     const taichi::lang::vulkan::VulkanDevice::Params &params)
     : vk_device_{} {
+  // FIXME: This part is copied from `vulkan_device_creator.cpp` which should
+  // be refactorized I guess.
+  if (!taichi::lang::vulkan::VulkanLoader::instance().init()) {
+    throw std::runtime_error("Error loading vulkan");
+  }
+  taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
+  taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
   vk_device_.init_vulkan_structs(params);
+  vk_device_.set_cap(taichi::lang::DeviceCapability::vk_api_version,
+                     api_version);
 }
 taichi::lang::Device &VulkanDeviceImported::get() {
   return static_cast<taichi::lang::Device &>(vk_device_);
@@ -46,7 +58,7 @@ make_vulkan_device_creator_params() {
 
   // FIXME: (penguinliong) Vulkan device should be created outside.
   taichi::lang::vulkan::VulkanDeviceCreator::Params params{};
-  params.api_version = VK_API_VERSION_1_2;
+  params.api_version = VK_API_VERSION_1_3;
   params.additional_instance_extensions = extensions;
   params.additional_device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
   return params;
@@ -100,14 +112,16 @@ TiDevice ti_create_vulkan_device_ext(uint32_t api_version,
 TiDevice ti_import_vulkan_device(
     const TiVulkanDeviceInteropInfo *interop_info) {
   taichi::lang::vulkan::VulkanDevice::Params params{};
-  params.instance = interopInfo->instance;
-  params.physical_device = interopInfo->physicalDevice;
-  params.device = interopInfo->device;
-  params.compute_queue = interopInfo->computeQueue;
-  params.compute_queue_family_index = interopInfo->computeQueueFamilyIndex;
-  params.graphics_queue = interopInfo->graphicsQueue;
-  params.graphics_queue_family_index = interopInfo->graphicsQueueFamilyIndex;
-  return static_cast<Device *>(new VulkanDeviceImported(params));
+  params.instance = interop_info->instance;
+  params.physical_device = interop_info->physical_device;
+  params.device = interop_info->device;
+  params.compute_queue = interop_info->compute_queue;
+  params.compute_queue_family_index = interop_info->compute_queue_family_index;
+  params.graphics_queue = interop_info->graphics_queue;
+  params.graphics_queue_family_index =
+      interop_info->graphics_queue_family_index;
+  return static_cast<Device *>(
+      new VulkanDeviceImported(interop_info->api_version, params));
 }
 void ti_export_vulkan_device(TiDevice device,
                              TiVulkanDeviceInteropInfo *interop_info) {
@@ -115,13 +129,16 @@ void ti_export_vulkan_device(TiDevice device,
   TI_ASSERT(device2->arch == taichi::Arch::vulkan);
   taichi::lang::vulkan::VulkanDevice &vk_device =
       static_cast<VulkanDevice *>(device2)->get_vk();
-  interopInfo->instance = vk_device.vk_instance();
-  interopInfo->physicalDevice = vk_device.vk_physical_device();
-  interopInfo->device = vk_device.vk_device();
-  interopInfo->computeQueue = vk_device.compute_queue();
-  interopInfo->computeQueueFamilyIndex = vk_device.compute_queue_family_index();
-  interopInfo->graphicsQueue = vk_device.graphics_queue();
-  interopInfo->graphicsQueueFamilyIndex =
+  interop_info->api_version =
+      vk_device.get_cap(taichi::lang::DeviceCapability::vk_api_version);
+  interop_info->instance = vk_device.vk_instance();
+  interop_info->physical_device = vk_device.vk_physical_device();
+  interop_info->device = vk_device.vk_device();
+  interop_info->compute_queue = vk_device.compute_queue();
+  interop_info->compute_queue_family_index =
+      vk_device.compute_queue_family_index();
+  interop_info->graphics_queue = vk_device.graphics_queue();
+  interop_info->graphics_queue_family_index =
       vk_device.graphics_queue_family_index();
 }
 

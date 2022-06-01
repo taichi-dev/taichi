@@ -13,7 +13,7 @@ namespace gfx {
 class GfxRuntime;
 
 /**
- * @brief Manages the SNodeTrees for the Vulkan backend.
+ * @brief Manages the SNodeTrees for the underlying backend.
  *
  */
 class SNodeTreeManager {

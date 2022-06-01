@@ -8,7 +8,6 @@
 [![downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 [![CI](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml)
 [![Nightly Release](https://github.com/taichi-dev/taichi/actions/workflows/release.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/release.yml)
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/taichidev/taichi?label=Docker%20Image&logo=docker)](https://hub.docker.com/r/taichidev/taichi)
 [![Python Codecov Status](https://img.shields.io/codecov/c/github/taichi-dev/taichi?label=Python%20Coverage&logo=codecov)](https://codecov.io/gh/taichi-dev/taichi/src/master)
 
 ```py

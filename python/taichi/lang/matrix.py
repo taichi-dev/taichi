@@ -17,7 +17,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
-from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types.compound_types import CompoundType
 
 
 def _gen_swizzles(cls):
@@ -1117,10 +1117,10 @@ class Matrix(TaichiOperations):
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
-        entries, entries_grad = zip(*entries)
-        entries, entries_grad = MatrixField(entries, n, m), MatrixField(
-            entries_grad, n, m)
-        entries._set_grad(entries_grad)
+        entries, entries_adjoint = zip(*entries)
+        entries, entries_adjoint = MatrixField(entries, n, m), MatrixField(
+            entries_adjoint, n, m)
+        entries._set_grad(entries_adjoint, reverse_mode=True)
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
@@ -1688,16 +1688,12 @@ class MatrixNdarray(Ndarray):
         >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, m, dtype, shape, layout):
-        self.n = n
-        self.m = m
-        super().__init__()
-        self.dtype = cook_dtype(dtype)
         self.layout = layout
         self.shape = shape
-        self.element_type = TensorType((self.n, self.m), self.dtype)
-        # TODO: we should pass in element_type, shape, layout instead.
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+        self.n = n
+        self.m = m
+        arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
+        super().__init__(dtype, arr_shape)
 
     @property
     def element_shape(self):
@@ -1709,7 +1705,8 @@ class MatrixNdarray(Ndarray):
             >>> arr.element_shape
             (2, 2)
         """
-        return tuple(self.arr.element_shape)
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1786,15 +1783,11 @@ class VectorNdarray(Ndarray):
         >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
     """
     def __init__(self, n, dtype, shape, layout):
-        self.n = n
-        super().__init__()
-        self.dtype = cook_dtype(dtype)
         self.layout = layout
         self.shape = shape
-        self.element_type = TensorType((n, ), self.dtype)
-        # TODO: pass in element_type, shape, layout directly
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+        self.n = n
+        arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
+        super().__init__(dtype, arr_shape)
 
     @property
     def element_shape(self):
@@ -1806,7 +1799,8 @@ class VectorNdarray(Ndarray):
             >>> a.element_shape
             (3,)
         """
-        return tuple(self.arr.element_shape)
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[:1] if self.layout == Layout.SOA else arr_shape[-1:]
 
     @python_scope
     def __setitem__(self, key, value):

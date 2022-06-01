@@ -16,12 +16,20 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return glb_var_->is_primal;
   }
 
-  SNode *grad_snode() const override {
+  SNode *adjoint_snode() const override {
     auto &adj = glb_var_->adjoint;
     if (adj.expr == nullptr) {
       return nullptr;
     }
     return adj.snode();
+  }
+
+  SNode *dual_snode() const override {
+    auto &dual = glb_var_->dual;
+    if (dual.expr == nullptr) {
+      return nullptr;
+    }
+    return dual.snode();
   }
 
  private:
@@ -102,8 +110,9 @@ void make_lazy_grad(SNode *snode, SNodeGlobalVarExprMap *snode_to_exprs) {
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
+    // TODO: handle the dual SNode
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_grad()) {
+        !c->has_adjoint()) {
       new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
     }
   }

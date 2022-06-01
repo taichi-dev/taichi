@@ -439,6 +439,7 @@ class GlobalVariableExpression : public Expression {
   TypedConstant ambient_value;
   bool is_primal{true};
   Expr adjoint;
+  Expr dual;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
@@ -463,11 +464,16 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
+  SNode *snode{nullptr};
   Expr var;
   ExprGroup indices;
 
   GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
+  }
+
+  GlobalPtrExpression(SNode *snode, const ExprGroup &indices)
+      : snode(snode), indices(indices) {
   }
 
   void type_check(CompileConfig *config) override;

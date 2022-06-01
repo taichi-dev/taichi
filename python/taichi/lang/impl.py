@@ -8,13 +8,12 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement)
+from taichi.lang.matrix import (Matrix, MatrixField, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -24,7 +23,7 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
+from taichi.types.primitive_types import f16, f32, f64, i32, i64
 
 
 @taichi_scope
@@ -42,7 +41,7 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict(include_methods=True))
+        return Struct(rhs.to_dict())
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -169,9 +168,9 @@ def subscript(value, *_indices, skip_reordered=False):
         if isinstance(value, MatrixField):
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
-            entries = {k: subscript(v, *_indices) for k, v in value._items}
-            entries['__struct_methods'] = value.struct_methods
-            return _IntermediateStruct(entries)
+            return _IntermediateStruct(
+                {k: subscript(v, *_indices)
+                 for k, v in value._items})
         return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
@@ -192,6 +191,14 @@ def subscript(value, *_indices, skip_reordered=False):
         ])
         ret.any_array_access = any_array_access
         return ret
+    if isinstance(value, SNode):
+        # When reading bit structure we only support the 0-D case for now.
+        field_dim = 0
+        if field_dim != index_dim:
+            raise IndexError(
+                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
+            )
+        return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 
@@ -496,16 +503,16 @@ def create_field_member(dtype, name):
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    x_grad = None
+    x_adjoint = None
     if _ti_core.needs_grad(dtype):
         # adjoint
-        x_grad = Expr(get_runtime().prog.make_id_expr(""))
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
-        x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
-        x.ptr.set_grad(x_grad.ptr)
+        x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
+        x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
+        x_adjoint.ptr.set_name(name + ".grad")
+        x_adjoint.ptr.set_is_primal(False)
+        x.ptr.set_adjoint(x_adjoint.ptr)
 
-    return x, x_grad
+    return x, x_adjoint
 
 
 @python_scope
@@ -552,47 +559,35 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_grad = create_field_member(dtype, name)
-    x, x_grad = ScalarField(x), ScalarField(x_grad)
-    x._set_grad(x_grad)
+    x, x_adjoint = create_field_member(dtype, name)
+    x, x_adjoint = ScalarField(x), ScalarField(x_adjoint)
+    x._set_grad(x_adjoint, reverse_mode=True)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_grad)
+            # Place gradient field for reverse mode only by default
+            root.dense(index_nd(dim), shape).place(x_adjoint)
     return x
 
 
 @python_scope
-def ndarray(dtype, shape, layout=Layout.NULL):
+def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
-        dtype (Union[DataType, MatrixType]): Data type of each element. This can be either a scalar type like ti.f32 or a compound type like ti.types.vector(3, ti.i32).
+        dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        layout (Layout, optional): Layout of ndarray, only applicable when element is non-scalar type. Default is Layout.AOS.
 
     Example:
         The code below shows how a Taichi ndarray with scalar elements can be declared and defined::
 
-            >>> x = ti.ndarray(ti.f32, shape=(16, 8))  # ndarray of shape (16, 8), each element is ti.f32 scalar.
-            >>> vec3 = ti.types.vector(3, ti.i32)
-            >>> y = ti.ndarray(vec3, shape=(10, 2))  # ndarray of shape (10, 2), each element is a vector of 3 ti.i32 scalars.
-            >>> matrix_ty = ti.types.matrix(3, 4, float)
-            >>> z = ti.ndarray(matrix_ty, shape=(4, 5), layout=ti.Layout.SOA)  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
+            >>> x = ti.ndarray(ti.f32, shape=(16, 8))
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
-    if dtype in types:
-        assert layout == Layout.NULL
-        return ScalarNdarray(dtype, shape)
-    if isinstance(dtype, MatrixType):
-        layout = Layout.AOS if layout == Layout.NULL else layout
-        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape, layout)
-
-    raise TaichiRuntimeError(
-        f'{dtype} is not supported as ndarray element type')
+    return ScalarNdarray(dtype, shape)
 
 
 @taichi_scope
@@ -886,10 +881,6 @@ def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
         _ti_core.insert_internal_func_call(name, make_expr_group(args),
                                            with_runtime_context))
-
-
-def get_cuda_compute_capability():
-    return _ti_core.query_int64("cuda_compute_capability")
 
 
 @taichi_scope

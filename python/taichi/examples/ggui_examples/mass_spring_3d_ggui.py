@@ -113,7 +113,7 @@ def update_vertices():
 window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
                       vsync=True)
 canvas = window.get_canvas()
-canvas.set_background_color((0, 0, 0))
+canvas.set_background_color((1, 1, 1))
 scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
 
@@ -136,6 +136,7 @@ while window.running:
     scene.set_camera(camera)
 
     scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
+    scene.ambient_light((0.5, 0.5, 0.5))
     scene.mesh(vertices,
                indices=indices,
                per_vertex_color=colors,

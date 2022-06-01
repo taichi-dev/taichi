@@ -14,7 +14,7 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
 using namespace taichi::lang::spirv;
 
@@ -73,20 +73,20 @@ class CompiledTaichiKernel {
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
 };
 
-class TI_DLL_EXPORT VkRuntime {
+class TI_DLL_EXPORT GfxRuntime {
  public:
   struct Params {
     uint64_t *host_result_buffer{nullptr};
     Device *device{nullptr};
   };
 
-  explicit VkRuntime(const Params &params);
+  explicit GfxRuntime(const Params &params);
   // To make Pimpl + std::unique_ptr work
-  ~VkRuntime();
+  ~GfxRuntime();
 
   class KernelHandle {
    private:
-    friend class VkRuntime;
+    friend class GfxRuntime;
     int id_ = -1;
   };
 
@@ -113,7 +113,7 @@ class TI_DLL_EXPORT VkRuntime {
   size_t get_root_buffer_size(int id) const;
 
  private:
-  friend class taichi::lang::vulkan::SNodeTreeManager;
+  friend class taichi::lang::gfx::SNodeTreeManager;
 
   void init_nonroot_buffers();
 
@@ -135,11 +135,11 @@ class TI_DLL_EXPORT VkRuntime {
   std::unordered_map<DeviceAllocation *, size_t> root_buffers_size_map_;
 };
 
-VkRuntime::RegisterParams run_codegen(
+GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Device *device,
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

@@ -1,15 +1,15 @@
-#include "taichi/backends/vulkan/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
 
 #include <fstream>
 #include <type_traits>
 
 #include "taichi/aot/module_data.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
-#include "taichi/backends/vulkan/vulkan_graph_data.h"
+#include "taichi/runtime/gfx/aot_graph_data.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
 namespace {
 class AotDataConverter {
@@ -66,7 +66,6 @@ class AotDataConverter {
     aot::CompiledOffloadedTask res{};
     res.type = offloaded_task_type_name(in.task_type);
     res.name = in.name;
-    // TODO: update range_hint after ndarray is supported on vulkan.
     if (in.range_for_attribs && in.range_for_attribs->const_begin &&
         in.range_for_attribs->const_end) {
       res.range_hint = std::to_string(in.range_for_attribs->end -
@@ -98,9 +97,11 @@ class AotDataConverter {
 
 }  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    const std::vector<CompiledSNodeStructs> &compiled_structs)
-    : compiled_structs_(compiled_structs) {
-  aot_target_device_ = std::make_unique<aot::TargetDevice>(Arch::vulkan);
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    Arch device_api_backend)
+    : compiled_structs_(compiled_structs),
+      device_api_backend_(device_api_backend) {
+  aot_target_device_ = std::make_unique<aot::TargetDevice>(device_api_backend_);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }
@@ -120,7 +121,7 @@ std::string AotModuleBuilderImpl::write_spv_file(
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
-             "Filename prefix is ignored on vulkan backend.");
+             "Filename prefix is ignored on Unified Device API backends.");
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(ti_aot_data_, bin_path);
 
@@ -199,6 +200,6 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

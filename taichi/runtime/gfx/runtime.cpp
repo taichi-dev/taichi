@@ -1,4 +1,4 @@
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/program/program.h"
 
 #include <chrono>
@@ -18,28 +18,9 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
 namespace {
-class StopWatch {
- public:
-  StopWatch() : begin_(std::chrono::system_clock::now()) {
-  }
-
-  int get_micros() {
-    typedef std::chrono::duration<float> fsec;
-
-    auto now = std::chrono::system_clock::now();
-
-    fsec fs = now - begin_;
-    begin_ = now;
-    auto d = std::chrono::duration_cast<std::chrono::microseconds>(fs);
-    return d.count();
-  }
-
- private:
-  std::chrono::time_point<std::chrono::system_clock> begin_;
-};
 
 class HostDeviceContextBlitter {
  public:
@@ -123,7 +104,7 @@ class HostDeviceContextBlitter {
             break;
           }
         }
-        TI_ERROR("Vulkan does not support arg type={}",
+        TI_ERROR("Device does not support arg type={}",
                  PrimitiveType::get(arg.dtype).to_string());
       } while (0);
     }
@@ -227,7 +208,7 @@ class HostDeviceContextBlitter {
             continue;
           }
         }
-        TI_ERROR("Vulkan does not support return value type={}",
+        TI_ERROR("Device does not support return value type={}",
                  data_type_name(PrimitiveType::get(ret.dtype)));
       }
     }
@@ -268,7 +249,7 @@ constexpr size_t kGtmpBufferSize = 1024 * 1024;
 constexpr size_t kListGenBufferSize = 32 << 20;
 
 // Info for launching a compiled Taichi kernel, which consists of a series of
-// Vulkan pipelines.
+// Unified Device API pipelines.
 
 CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
@@ -372,14 +353,14 @@ void CompiledTaichiKernel::generate_command_list(
   }
 }
 
-VkRuntime::VkRuntime(const Params &params)
+GfxRuntime::GfxRuntime(const Params &params)
     : device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
 }
 
-VkRuntime::~VkRuntime() {
+GfxRuntime::~GfxRuntime() {
   synchronize();
   {
     decltype(ti_kernels_) tmp;
@@ -388,8 +369,8 @@ VkRuntime::~VkRuntime() {
   global_tmps_buffer_.reset();
 }
 
-VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
-    VkRuntime::RegisterParams reg_params) {
+GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
+    GfxRuntime::RegisterParams reg_params) {
   CompiledTaichiKernel::Params params;
   params.ti_kernel_attribs = &(reg_params.kernel_attribs);
   params.num_snode_trees = reg_params.num_snode_trees;
@@ -414,7 +395,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   return res;
 }
 
-void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
+void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
 
   std::unique_ptr<DeviceAllocationGuard> args_buffer{nullptr},
@@ -553,13 +534,13 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 }
 
-void VkRuntime::synchronize() {
+void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
 }
 
-StreamSemaphore VkRuntime::flush() {
+StreamSemaphore GfxRuntime::flush() {
   StreamSemaphore sema;
   if (current_cmdlist_) {
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
@@ -572,11 +553,11 @@ StreamSemaphore VkRuntime::flush() {
   return sema;
 }
 
-Device *VkRuntime::get_ti_device() const {
+Device *GfxRuntime::get_ti_device() const {
   return device_;
 }
 
-void VkRuntime::init_nonroot_buffers() {
+void GfxRuntime::init_nonroot_buffers() {
   global_tmps_buffer_ = device_->allocate_memory_unique(
       {kGtmpBufferSize,
        /*host_write=*/false, /*host_read=*/false,
@@ -598,7 +579,7 @@ void VkRuntime::init_nonroot_buffers() {
   stream->submit_synced(cmdlist.get());
 }
 
-void VkRuntime::add_root_buffer(size_t root_buffer_size) {
+void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   if (root_buffer_size == 0) {
     root_buffer_size = 4;  // there might be empty roots
   }
@@ -617,14 +598,14 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
   root_buffers_size_map_[root_buffers_.back().get()] = root_buffer_size;
 }
 
-DeviceAllocation *VkRuntime::get_root_buffer(int id) const {
+DeviceAllocation *GfxRuntime::get_root_buffer(int id) const {
   if (id >= root_buffers_.size()) {
     TI_ERROR("root buffer id {} not found", id);
   }
   return root_buffers_[id].get();
 }
 
-size_t VkRuntime::get_root_buffer_size(int id) const {
+size_t GfxRuntime::get_root_buffer_size(int id) const {
   auto it = root_buffers_size_map_.find(root_buffers_[id].get());
   if (id >= root_buffers_.size() || it == root_buffers_size_map_.end()) {
     TI_ERROR("root buffer id {} not found", id);
@@ -632,7 +613,7 @@ size_t VkRuntime::get_root_buffer_size(int id) const {
   return it->second;
 }
 
-VkRuntime::RegisterParams run_codegen(
+GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Device *device,
     const std::vector<CompiledSNodeStructs> &compiled_structs) {
@@ -647,12 +628,12 @@ VkRuntime::RegisterParams run_codegen(
   params.enable_spv_opt =
       kernel->program->config.external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
-  VkRuntime::RegisterParams res;
+  GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
   res.num_snode_trees = compiled_structs.size();
   return res;
 }
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

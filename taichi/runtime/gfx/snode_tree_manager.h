@@ -8,12 +8,12 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
-class VkRuntime;
+class GfxRuntime;
 
 /**
- * @brief Manages the SNodeTrees for the Vulkan backend.
+ * @brief Manages the SNodeTrees for the underlying backend.
  *
  */
 class SNodeTreeManager {
@@ -21,7 +21,7 @@ class SNodeTreeManager {
   using CompiledSNodeStructs = taichi::lang::spirv::CompiledSNodeStructs;
 
  public:
-  explicit SNodeTreeManager(VkRuntime *rtm);
+  explicit SNodeTreeManager(GfxRuntime *rtm);
 
   const std::vector<CompiledSNodeStructs> &get_compiled_structs() const {
     return compiled_snode_structs_;
@@ -34,10 +34,10 @@ class SNodeTreeManager {
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
  private:
-  VkRuntime *const runtime_;
+  GfxRuntime *const runtime_;
   std::vector<CompiledSNodeStructs> compiled_snode_structs_;
 };
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

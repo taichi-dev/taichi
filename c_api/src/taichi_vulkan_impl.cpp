@@ -78,7 +78,7 @@ taichi::lang::vulkan::VkRuntime &VulkanContext::get_vk() {
 
 // -----------------------------------------------------------------------------
 
-TiDevice tiCreateVulkanDeviceEXT(uint32_t api_version,
+TiDevice ti_create_vulkan_device_ext(uint32_t api_version,
                                  const char **instance_extensions,
                                  uint32_t instance_extensions_count,
                                  const char **device_extensions,
@@ -97,7 +97,7 @@ TiDevice tiCreateVulkanDeviceEXT(uint32_t api_version,
   params.surface_creator = nullptr;
   return static_cast<Device *>(new VulkanDeviceOwned(params));
 }
-TiDevice tiImportVulkanDevice(const TiVulkanDeviceInteropInfo *interopInfo) {
+TiDevice ti_import_vulkan_device(const TiVulkanDeviceInteropInfo *interopInfo) {
   taichi::lang::vulkan::VulkanDevice::Params params{};
   params.instance = interopInfo->instance;
   params.physical_device = interopInfo->physicalDevice;
@@ -108,7 +108,7 @@ TiDevice tiImportVulkanDevice(const TiVulkanDeviceInteropInfo *interopInfo) {
   params.graphics_queue_family_index = interopInfo->graphicsQueueFamilyIndex;
   return static_cast<Device *>(new VulkanDeviceImported(params));
 }
-void tiExportVulkanDevice(TiDevice device,
+void ti_export_vulkan_device(TiDevice device,
                           TiVulkanDeviceInteropInfo *interopInfo) {
   Device *device2 = (Device *)device;
   TI_ASSERT(device2->arch == taichi::Arch::vulkan);
@@ -124,7 +124,7 @@ void tiExportVulkanDevice(TiDevice device,
       vk_device.graphics_queue_family_index();
 }
 
-TiAotModule tiLoadVulkanAotModule(TiContext context, const char *module_path) {
+TiAotModule ti_load_vulkan_aot_module(TiContext context, const char *module_path) {
   VulkanContext *context2 = ((Context *)context)->as_vk();
   taichi::lang::vulkan::VkRuntime &vk_runtime = context2->get_vk();
   taichi::lang::vulkan::AotModuleParams params{};
@@ -136,7 +136,7 @@ TiAotModule tiLoadVulkanAotModule(TiContext context, const char *module_path) {
   vk_runtime.add_root_buffer(root_size);
   return new AotModule(*context2, std::move(aot_module));
 }
-TiDeviceMemory tiImportVulkanDeviceAllocation(
+TiDeviceMemory ti_import_vulkan_deviceAllocation(
     TiDevice device,
     const TiVulkanDeviceAllocationInteropInfo *interopInfo) {
   Device *device2 = (Device *)device;
@@ -149,7 +149,7 @@ TiDeviceMemory tiImportVulkanDeviceAllocation(
       vkapi::create_buffer(vk_device.vk_device(), interopInfo->buffer);
   return (TiDeviceMemory)vk_device.import_vkbuffer(buffer).alloc_id;
 }
-void tiExportVulkanDeviceMemory(
+void ti_export_vulkan_device_memory(
     TiDevice device,
     TiDeviceMemory deviceMemory,
     TiVulkanDeviceAllocationInteropInfo *interopInfo) {

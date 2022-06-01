@@ -41,7 +41,7 @@ AotModule::AotModule(Context &context,
       aot_module_(std::forward<std::unique_ptr<taichi::lang::aot::Module>>(
           aot_module)) {
 }
-taichi::lang::aot::Module& AotModule::get() {
+taichi::lang::aot::Module &AotModule::get() {
   return *aot_module_;
 }
 Context &AotModule::context() {
@@ -50,7 +50,7 @@ Context &AotModule::context() {
 
 // -----------------------------------------------------------------------------
 
-TiDevice tiCreateDevice(TiArch arch) {
+TiDevice ti_create_device(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN:
@@ -61,22 +61,22 @@ TiDevice tiCreateDevice(TiArch arch) {
   }
   return nullptr;
 }
-void tiDestroyDevice(TiDevice device) {
+void ti_destroy_device(TiDevice device) {
   delete (Device *)device;
 }
-void tiDeviceWaitIdle(TiDevice device) {
-  ((Device*)device)->get().wait_idle();
+void ti_device_wait_idle(TiDevice device) {
+  ((Device *)device)->get().wait_idle();
 }
 
-TiContext tiCreateContext(TiDevice device) {
+TiContext ti_create_context(TiDevice device) {
   return ((Device *)device)->create_context();
 }
-void tiDestroyContext(TiContext context) {
+void ti_destroy_context(TiContext context) {
   delete (Context *)context;
 }
 
-TiDeviceMemory tiAllocateMemory(TiDevice device,
-                                const TiMemoryAllocateInfo *createInfo) {
+TiDeviceMemory ti_allocate_memory(TiDevice device,
+                                  const TiMemoryAllocateInfo *createInfo) {
   taichi::lang::AllocUsage usage{};
   if (createInfo->usage & TI_MEMORY_USAGE_STORAGE_BIT) {
     usage = usage | taichi::lang::AllocUsage::Storage;
@@ -102,30 +102,30 @@ TiDeviceMemory tiAllocateMemory(TiDevice device,
       .allocate_memory(params)
       .alloc_id;
 }
-void tiFreeMemory(TiDevice device, TiDeviceMemory devmem) {
+void ti_free_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   device2->get().dealloc_memory(devmem2devalloc(*device2, devmem));
 }
 
-void *tiMapMemory(TiDevice device, TiDeviceMemory devmem) {
+void *ti_map_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   return device2->get().map(devmem2devalloc(*device2, devmem));
 }
-void tiUnmapMemory(TiDevice device, TiDeviceMemory devmem) {
+void ti_unmap_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   device2->get().unmap(devmem2devalloc(*device2, devmem));
 }
 
-void tiDestroyAotModule(TiAotModule mod) {
+void ti_destroy_aot_module(TiAotModule mod) {
   delete (AotModule *)mod;
 }
-TiKernel tiGetAotModuleKernel(TiAotModule mod, const char *name) {
+TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
 }
 
-void tiSetContextArgNdArray(TiContext context,
-                            uint32_t argIndex,
-                            const TiNdArray *ndarray) {
+void ti_set_context_arg_ndarray(TiContext context,
+                                uint32_t argIndex,
+                                const TiNdArray *ndarray) {
   Context *context2 = (Context *)context;
   Device &device = context2->device();
 
@@ -145,12 +145,14 @@ void tiSetContextArgNdArray(TiContext context,
     context2->get().set_arg_devalloc(argIndex, devalloc, shape);
   }
 }
-void tiSetContextArgI32(TiContext context, uint32_t argIndex, int32_t value) {
+void ti_set_context_arg_i32(TiContext context,
+                            uint32_t argIndex,
+                            int32_t value) {
   ((Context *)context)->get().set_arg(argIndex, value);
 }
-void tiSetContextArgF32(TiContext context, uint32_t argIndex, float value) {
+void ti_set_context_arg_f32(TiContext context, uint32_t argIndex, float value) {
   ((Context *)context)->get().set_arg(argIndex, value);
 }
-void tiLaunchKernel(TiContext context, TiKernel kernel) {
+void ti_launch_kernel(TiContext context, TiKernel kernel) {
   ((taichi::lang::aot::Kernel *)kernel)->launch(&((Context *)context)->get());
 }

@@ -79,10 +79,10 @@ taichi::lang::vulkan::VkRuntime &VulkanContext::get_vk() {
 // -----------------------------------------------------------------------------
 
 TiDevice ti_create_vulkan_device_ext(uint32_t api_version,
-                                 const char **instance_extensions,
-                                 uint32_t instance_extensions_count,
-                                 const char **device_extensions,
-                                 uint32_t device_extensions_count) {
+                                     const char **instance_extensions,
+                                     uint32_t instance_extensions_count,
+                                     const char **device_extensions,
+                                     uint32_t device_extensions_count) {
   taichi::lang::vulkan::VulkanDeviceCreator::Params params;
   params.api_version = api_version;
   params.is_for_ui = false;
@@ -97,7 +97,8 @@ TiDevice ti_create_vulkan_device_ext(uint32_t api_version,
   params.surface_creator = nullptr;
   return static_cast<Device *>(new VulkanDeviceOwned(params));
 }
-TiDevice ti_import_vulkan_device(const TiVulkanDeviceInteropInfo *interopInfo) {
+TiDevice ti_import_vulkan_device(
+    const TiVulkanDeviceInteropInfo *interop_info) {
   taichi::lang::vulkan::VulkanDevice::Params params{};
   params.instance = interopInfo->instance;
   params.physical_device = interopInfo->physicalDevice;
@@ -109,7 +110,7 @@ TiDevice ti_import_vulkan_device(const TiVulkanDeviceInteropInfo *interopInfo) {
   return static_cast<Device *>(new VulkanDeviceImported(params));
 }
 void ti_export_vulkan_device(TiDevice device,
-                          TiVulkanDeviceInteropInfo *interopInfo) {
+                             TiVulkanDeviceInteropInfo *interop_info) {
   Device *device2 = (Device *)device;
   TI_ASSERT(device2->arch == taichi::Arch::vulkan);
   taichi::lang::vulkan::VulkanDevice &vk_device =
@@ -124,7 +125,8 @@ void ti_export_vulkan_device(TiDevice device,
       vk_device.graphics_queue_family_index();
 }
 
-TiAotModule ti_load_vulkan_aot_module(TiContext context, const char *module_path) {
+TiAotModule ti_load_vulkan_aot_module(TiContext context,
+                                      const char *module_path) {
   VulkanContext *context2 = ((Context *)context)->as_vk();
   taichi::lang::vulkan::VkRuntime &vk_runtime = context2->get_vk();
   taichi::lang::vulkan::AotModuleParams params{};
@@ -136,9 +138,9 @@ TiAotModule ti_load_vulkan_aot_module(TiContext context, const char *module_path
   vk_runtime.add_root_buffer(root_size);
   return new AotModule(*context2, std::move(aot_module));
 }
-TiDeviceMemory ti_import_vulkan_deviceAllocation(
+TiDeviceMemory ti_import_vulkan_device_allocation(
     TiDevice device,
-    const TiVulkanDeviceAllocationInteropInfo *interopInfo) {
+    const TiVulkanDeviceMemoryInteropInfo *interop_info) {
   Device *device2 = (Device *)device;
   TI_ASSERT(device2->arch == taichi::Arch::vulkan);
 
@@ -146,18 +148,18 @@ TiDeviceMemory ti_import_vulkan_deviceAllocation(
       static_cast<VulkanDevice *>(device2)->get_vk();
 
   vkapi::IVkBuffer buffer =
-      vkapi::create_buffer(vk_device.vk_device(), interopInfo->buffer);
+      vkapi::create_buffer(vk_device.vk_device(), interop_info->buffer);
   return (TiDeviceMemory)vk_device.import_vkbuffer(buffer).alloc_id;
 }
 void ti_export_vulkan_device_memory(
     TiDevice device,
-    TiDeviceMemory deviceMemory,
-    TiVulkanDeviceAllocationInteropInfo *interopInfo) {
+    TiDeviceMemory devmem,
+    TiVulkanDeviceMemoryInteropInfo *interop_info) {
   VulkanDevice *device2 = ((Device *)device)->as_vk();
-  taichi::lang::DeviceAllocationId devalloc_id = deviceMemory;
+  taichi::lang::DeviceAllocationId devalloc_id = devmem;
   taichi::lang::DeviceAllocation devalloc{&device2->get(), devalloc_id};
   vkapi::IVkBuffer buffer = device2->get_vk().get_vkbuffer(devalloc);
-  interopInfo->buffer = buffer.get()->buffer;
+  interop_info->buffer = buffer.get()->buffer;
 }
 
 #endif  // TI_WITH_VULKAN

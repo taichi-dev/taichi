@@ -13,8 +13,6 @@ class VulkanDeviceImported;
 class VulkanDeviceOwned;
 class VulkanContext;
 
-
-
 class VulkanDevice : public Device {
  protected:
   VulkanDevice();
@@ -28,7 +26,8 @@ class VulkanDeviceImported : public VulkanDevice {
   taichi::lang::vulkan::VulkanDevice vk_device_;
 
  public:
-  VulkanDeviceImported(const taichi::lang::vulkan::VulkanDevice::Params &params);
+  VulkanDeviceImported(
+      const taichi::lang::vulkan::VulkanDevice::Params &params);
 
   virtual taichi::lang::Device &get() override final;
 };
@@ -37,7 +36,8 @@ class VulkanDeviceOwned : public VulkanDevice {
 
  public:
   VulkanDeviceOwned();
-  VulkanDeviceOwned(const taichi::lang::vulkan::VulkanDeviceCreator::Params &params);
+  VulkanDeviceOwned(
+      const taichi::lang::vulkan::VulkanDeviceCreator::Params &params);
 
   virtual taichi::lang::Device &get() override final;
 };
@@ -54,6 +54,4 @@ class VulkanContext : public Context {
   taichi::lang::vulkan::VkRuntime &get_vk();
 };
 
-
-
-#endif // TI_WITH_VULKAN
+#endif  // TI_WITH_VULKAN

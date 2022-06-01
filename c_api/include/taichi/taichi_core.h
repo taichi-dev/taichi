@@ -40,23 +40,23 @@ typedef enum TiAllocationUsageFlagBits {
 typedef TiFlags TiMemoryUsageFlags;
 typedef struct {
   uint64_t size;
-  TiBool hostWrite;
-  TiBool hostRead;
-  TiBool exportSharing;
+  TiBool host_write;
+  TiBool host_read;
+  TiBool export_sharing;
   TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
 TI_DLL_EXPORT TiDeviceMemory
-ti_allocate_memory(TiDevice device, const TiMemoryAllocateInfo *allocateInfo);
-TI_DLL_EXPORT void ti_free_memory(TiDevice device, TiDeviceMemory deviceMemory);
-TI_DLL_EXPORT void *ti_map_memory(TiDevice device, TiDeviceMemory deviceMemory);
+ti_allocate_memory(TiDevice device, const TiMemoryAllocateInfo *allocate_info);
+TI_DLL_EXPORT void ti_free_memory(TiDevice device, TiDeviceMemory devmem);
+TI_DLL_EXPORT void *ti_map_memory(TiDevice device, TiDeviceMemory devmem);
 TI_DLL_EXPORT void ti_unmap_memory(TiDevice device,
-                                   TiDeviceMemory deviceMemory);
+                                   TiDeviceMemory devmem);
 
 TI_DLL_EXPORT TiContext ti_create_context(TiDevice device);
 TI_DLL_EXPORT void ti_destroy_context(TiContext context);
 
 typedef struct TiNdShape {
-  uint32_t dimCount;
+  uint32_t dim_count;
   uint32_t dims[16];  // TODO: (penguinliong) give this constant a name?
 } TiNdShape;
 typedef struct TiNdArray {
@@ -65,13 +65,13 @@ typedef struct TiNdArray {
   TiNdShape elem_shape;
 } TiNdArray;
 TI_DLL_EXPORT void ti_set_context_arg_ndarray(TiContext context,
-                                              uint32_t argIndex,
+                                              uint32_t arg_index,
                                               const TiNdArray *ndarray);
 TI_DLL_EXPORT void ti_set_context_arg_i32(TiContext context,
-                                          uint32_t argIndex,
+                                          uint32_t arg_index,
                                           int32_t value);
 TI_DLL_EXPORT void ti_set_context_arg_f32(TiContext context,
-                                          uint32_t argIndex,
+                                          uint32_t arg_index,
                                           float value);
 TI_DLL_EXPORT void ti_launch_kernel(TiContext context, TiKernel kernel);
 

@@ -93,9 +93,9 @@ TiDeviceMemory ti_allocate_memory(TiDevice device,
 
   taichi::lang::Device::AllocParams params{};
   params.size = createInfo->size;
-  params.host_write = createInfo->hostWrite;
-  params.host_read = createInfo->hostRead;
-  params.export_sharing = createInfo->exportSharing;
+  params.host_write = createInfo->host_write;
+  params.host_read = createInfo->host_read;
+  params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
   return (TiDeviceMemory)((Device *)device)
       ->get()
@@ -124,7 +124,7 @@ TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
 }
 
 void ti_set_context_arg_ndarray(TiContext context,
-                                uint32_t argIndex,
+                                uint32_t arg_index,
                                 const TiNdArray *ndarray) {
   Context *context2 = (Context *)context;
   Device &device = context2->device();
@@ -133,25 +133,27 @@ void ti_set_context_arg_ndarray(TiContext context,
       devmem2devalloc(device, ndarray->devmem);
 
   std::vector<int> shape(ndarray->shape.dims,
-                         ndarray->shape.dims + ndarray->shape.dimCount);
+                         ndarray->shape.dims + ndarray->shape.dim_count);
 
-  if (ndarray->elem_shape.dimCount != 0) {
+  if (ndarray->elem_shape.dim_count != 0) {
     std::vector<int> elem_shape(
         ndarray->elem_shape.dims,
-        ndarray->elem_shape.dims + ndarray->elem_shape.dimCount);
+        ndarray->elem_shape.dims + ndarray->elem_shape.dim_count);
 
-    context2->get().set_arg_devalloc(argIndex, devalloc, shape, elem_shape);
+    context2->get().set_arg_devalloc(arg_index, devalloc, shape, elem_shape);
   } else {
-    context2->get().set_arg_devalloc(argIndex, devalloc, shape);
+    context2->get().set_arg_devalloc(arg_index, devalloc, shape);
   }
 }
 void ti_set_context_arg_i32(TiContext context,
-                            uint32_t argIndex,
+                            uint32_t arg_index,
                             int32_t value) {
-  ((Context *)context)->get().set_arg(argIndex, value);
+  ((Context *)context)->get().set_arg(arg_index, value);
 }
-void ti_set_context_arg_f32(TiContext context, uint32_t argIndex, float value) {
-  ((Context *)context)->get().set_arg(argIndex, value);
+void ti_set_context_arg_f32(TiContext context,
+                            uint32_t arg_index,
+                            float value) {
+  ((Context *)context)->get().set_arg(arg_index, value);
 }
 void ti_launch_kernel(TiContext context, TiKernel kernel) {
   ((taichi::lang::aot::Kernel *)kernel)->launch(&((Context *)context)->get());

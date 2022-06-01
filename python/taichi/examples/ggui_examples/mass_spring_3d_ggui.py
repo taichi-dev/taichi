@@ -52,9 +52,9 @@ def initialize_mesh_indices():
 
     for i, j in ti.ndrange(n, n):
         if (i // 4 + j // 4) % 2 == 0:
-            colors[i * n + j] = (0., 0.5, 1)
+            colors[i * n + j] = (0.22, 0.72, 0.52)
         else:
-            colors[i * n + j] = (1, 0.5, 0.)
+            colors[i * n + j] = (1, 0.334, 0.52)
 
 initialize_mesh_indices()
 
@@ -142,7 +142,7 @@ while window.running:
                two_sided=True)
 
     # Draw a smaller ball to avoid visual penetration
-    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.7, 0, 0))
+    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0.42, 0.8))
     canvas.scene(scene)
     window.show()
 

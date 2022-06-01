@@ -30,10 +30,10 @@ TEST(LlvmProgramTest, FullPipeline) {
   auto arr_devalloc = prog.allocate_memory_ndarray(kArrBytes, result_buffer);
 
   cpu::AotModuleParams aot_params;
-  const auto libdir = getenv("TI_LIB_DIR");
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
   std::stringstream aot_mod_ss;
-  // So ugly, I know...
-  aot_mod_ss << libdir << "/../../../../build/llvm_aot_test";
+  aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
   aot_params.program = &prog;
   auto mod = cpu::make_aot_module(aot_params);

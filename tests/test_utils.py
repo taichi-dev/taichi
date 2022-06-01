@@ -12,6 +12,14 @@ from taichi.lang.misc import is_arch_supported
 
 import taichi as ti
 
+curr_dir_ = os.path.dirname(os.path.abspath(__file__))
+aot_test_cases_ = {
+    "LlvmProgramTest.FullPipeline": [
+        os.path.join(curr_dir_, 'cpp', 'backends', 'llvm', 'cpu_aot.py'),
+        "aot_compile"
+    ],
+}
+
 
 # Helper functions
 def get_rel_eps():

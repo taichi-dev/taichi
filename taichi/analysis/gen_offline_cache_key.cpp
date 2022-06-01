@@ -135,7 +135,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->has_ambient);
     emit(expr->ambient_value);
     emit(expr->is_primal);
-    emit(expr->grad);
+    emit(expr->adjoint);
+    emit(expr->dual);
   }
 
   void visit(GlobalPtrExpression *expr) override {

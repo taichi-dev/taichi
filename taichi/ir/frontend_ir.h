@@ -438,7 +438,8 @@ class GlobalVariableExpression : public Expression {
   bool has_ambient{false};
   TypedConstant ambient_value;
   bool is_primal{true};
-  Expr grad;
+  Expr adjoint;
+  Expr dual;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {

@@ -1117,10 +1117,10 @@ class Matrix(TaichiOperations):
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
-        entries, entries_grad = zip(*entries)
-        entries, entries_grad = MatrixField(entries, n, m), MatrixField(
-            entries_grad, n, m)
-        entries._set_grad(entries_grad)
+        entries, entries_adjoint = zip(*entries)
+        entries, entries_adjoint = MatrixField(entries, n, m), MatrixField(
+            entries_adjoint, n, m)
+        entries._set_grad(entries_adjoint, reverse_mode=True)
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:

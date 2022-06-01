@@ -4,7 +4,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
-from taichi.types.ndarray_type import SpecializeNdarrayType
+from taichi.types.ndarray_type import NdarrayTypeMetadata
 
 
 class Ndarray:
@@ -23,8 +23,7 @@ class Ndarray:
         self.arr = None
 
     def get_type(self):
-        return SpecializeNdarrayType(self.element_type, self.shape,
-                                     self.layout)
+        return NdarrayTypeMetadata(self.element_type, self.shape, self.layout)
 
     @property
     def element_shape(self):

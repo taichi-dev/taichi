@@ -337,13 +337,13 @@ class TaichiCallableTemplateMapper:
             return arg
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
-                anno.match(arg.get_type())
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno.match(arg.get_type())
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno.match(arg.get_type())
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), arg.layout
             # external arrays

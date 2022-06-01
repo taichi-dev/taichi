@@ -1,7 +1,7 @@
 from taichi.types.primitive_types import f32
 
 
-class SpecializeNdarrayType:
+class NdarrayTypeMetadata:
     def __init__(self, element_type, shape=None, layout=None):
         self.element_type = element_type
         self.shape = shape
@@ -43,7 +43,7 @@ class NdarrayType:
         self.field_dim = field_dim
         self.layout = layout
 
-    def match(self, ndarray_type: SpecializeNdarrayType):
+    def check_matched(self, ndarray_type: NdarrayTypeMetadata):
         if self.element_dim is not None and self.element_dim != len(
                 ndarray_type.element_type.shape):
             raise ValueError(

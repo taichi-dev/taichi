@@ -888,6 +888,10 @@ def call_internal(name, *args, with_runtime_context=True):
                                            with_runtime_context))
 
 
+def get_cuda_compute_capability():
+    return _ti_core.query_int64("cuda_compute_capability")
+
+
 @taichi_scope
 def mesh_relation_access(mesh, from_index, to_element_type):
     # to support ti.mesh_local and access mesh attribute as field

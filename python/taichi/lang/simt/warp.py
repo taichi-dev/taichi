@@ -98,6 +98,11 @@ def shfl_xor_i32(mask, val, offset):
 
 
 def match_any(mask, value):
+    # These intrinsics are only available on compute_70 or higher
+    # https://docs.nvidia.com/cuda/pdf/NVVM_IR_Specification.pdf
+    if impl.get_cuda_compute_capability() < 70:
+        raise AssertionError(
+            "match_any intrinsic only available on compute_70 or higher")
     return impl.call_internal("cuda_match_any_sync_i32",
                               mask,
                               value,
@@ -105,6 +110,11 @@ def match_any(mask, value):
 
 
 def match_all(mask, val):
+    # These intrinsics are only available on compute_70 or higher
+    # https://docs.nvidia.com/cuda/pdf/NVVM_IR_Specification.pdf
+    if impl.get_cuda_compute_capability() < 70:
+        raise AssertionError(
+            "match_all intrinsic only available on compute_70 or higher")
     return impl.call_internal("cuda_match_all_sync_i32",
                               mask,
                               val,

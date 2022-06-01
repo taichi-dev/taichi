@@ -1609,6 +1609,23 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
+  const auto &element_shape = stmt->element_shape;
+  enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
+  const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
+  // Determine the element shape position inside the indices vector
+  // TODO: change the outer layout in order to remove the element layout
+  // guess work
+  int element_shape_begin = -1;
+  int element_shape_end = -1;
+  if (element_shape.size() > 0) {
+    if (layout == layout_SOA) {
+      element_shape_begin = 0;
+      element_shape_end = element_shape.size();
+    } else {
+      element_shape_begin = num_indices - element_shape.size();
+      element_shape_end = num_indices;
+    }
+  }
 
   for (int i = 0; i < num_indices; i++) {
     auto raw_arg = create_call(
@@ -1623,8 +1640,15 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 
   auto linear_index = tlctx->get_constant(0);
+  int element_shape_idx = 0;
   for (int i = 0; i < num_indices; i++) {
-    linear_index = builder->CreateMul(linear_index, sizes[i]);
+    if (i >= element_shape_begin && i < element_shape_end) {
+      llvm::Value *size_var =
+          tlctx->get_constant(element_shape[element_shape_idx++]);
+      linear_index = builder->CreateMul(linear_index, size_var);
+    } else {
+      linear_index = builder->CreateMul(linear_index, sizes[i]);
+    }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
 

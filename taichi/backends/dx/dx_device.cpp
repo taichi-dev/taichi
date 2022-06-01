@@ -22,7 +22,7 @@ void dump_buffer(ID3D11Device *device,
 
 void check_dx_error(HRESULT hr, const char *msg) {
   if (!SUCCEEDED(hr)) {
-    TI_ERROR("Error in {}: {}", msg, hr);
+    TI_ERROR("Error in {}: {:x}", msg, uint32_t(hr));
   }
 }
 
@@ -593,16 +593,21 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   uint32_t alloc_id = handle.alloc_id;
-  if (alloc_id_to_buffer_.count(alloc_id) == 0)
-    return;
+  if (alloc_id_to_buffer_.find(alloc_id) == alloc_id_to_buffer_.end())
+    TI_ERROR("Invalid handle, possible double free?");
   ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   buf->Release();
   alloc_id_to_buffer_.erase(alloc_id);
   ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
   uav->Release();
-  ID3D11Buffer *cpucopy = alloc_id_to_cpucopy_[alloc_id];
-  if (cpucopy)
-    cpucopy->Release();
+  if (alloc_id_to_cpucopy_.find(alloc_id) != alloc_id_to_cpucopy_.end()) {
+    alloc_id_to_cpucopy_[alloc_id]->Release();
+    alloc_id_to_cpucopy_.erase(alloc_id);
+  }
+  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
+    alloc_id_to_cb_copy_[alloc_id]->Release();
+    alloc_id_to_cb_copy_.erase(alloc_id);
+  }
   alloc_id_to_uav_.erase(alloc_id);
 }
 
@@ -724,10 +729,9 @@ ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(uint32_t alloc_id) {
 }
 
 ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
-  if (alloc_id_to_cb_copy_.count(alloc_id) > 0) {
+  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
     return alloc_id_to_cb_copy_[alloc_id];
   }
-  assert(alloc_id_to_buffer_.count(alloc_id) > 0);
   ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   ID3D11Buffer *cb_buf;
   HRESULT hr = create_constant_buffer_copy(device_, buf, &cb_buf);

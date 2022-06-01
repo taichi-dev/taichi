@@ -20,7 +20,15 @@ Ndarray::Ndarray(Program *prog,
       element_shape(element_shape_),
       shape(shape_),
       layout(layout_),
-      element_size_(data_type_size(dtype)),
+      nelement_(std::accumulate(std::begin(shape_),
+                                std::end(shape_),
+                                1,
+                                std::multiplies<>())),
+      element_size_(data_type_size(dtype) *
+                    std::accumulate(std::begin(element_shape),
+                                    std::end(element_shape),
+                                    1,
+                                    std::multiplies<>())),
       prog_(prog),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
   // TODO: Instead of flattening the element, shape/nelement_/num_active_indices
@@ -32,10 +40,7 @@ Ndarray::Ndarray(Program *prog,
   } else if (layout == ExternalArrayLayout::kSOA) {
     shape.insert(shape.begin(), element_shape.begin(), element_shape.end());
   }
-  nelement_ = std::accumulate(std::begin(shape_), std::end(shape_), 1,
-                              std::multiplies<>()) *
-              std::accumulate(std::begin(element_shape),
-                              std::end(element_shape), 1, std::multiplies<>());
+
   num_active_indices = shape.size();
 
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,

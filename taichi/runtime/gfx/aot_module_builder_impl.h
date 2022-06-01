@@ -4,19 +4,20 @@
 #include <vector>
 
 #include "taichi/aot/module_builder.h"
-#include "taichi/backends/vulkan/aot_utils.h"
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/aot_utils.h"
+#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(
-      const std::vector<CompiledSNodeStructs> &compiled_structs);
+      const std::vector<CompiledSNodeStructs> &compiled_structs,
+      Arch device_api_backend);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -45,8 +46,10 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;
   std::unique_ptr<Device> aot_target_device_;
+
+  Arch device_api_backend_;
 };
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

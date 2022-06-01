@@ -1,12 +1,12 @@
 #pragma once
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/runtime.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 class KernelImpl : public aot::Kernel {
  public:
-  explicit KernelImpl(VkRuntime *runtime, VkRuntime::RegisterParams &&params)
+  explicit KernelImpl(GfxRuntime *runtime, GfxRuntime::RegisterParams &&params)
       : runtime_(runtime), params_(std::move(params)) {
     handle_ = runtime_->register_taichi_kernel(params_);
   }
@@ -15,15 +15,15 @@ class KernelImpl : public aot::Kernel {
     runtime_->launch_kernel(handle_, ctx);
   }
 
-  const VkRuntime::RegisterParams &params() {
+  const GfxRuntime::RegisterParams &params() {
     return params_;
   }
 
  private:
-  VkRuntime *const runtime_;
-  VkRuntime::KernelHandle handle_;
-  const VkRuntime::RegisterParams params_;
+  GfxRuntime *const runtime_;
+  GfxRuntime::KernelHandle handle_;
+  const GfxRuntime::RegisterParams params_;
 };
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

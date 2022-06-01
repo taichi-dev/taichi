@@ -7,7 +7,7 @@ from tempfile import mkstemp
 
 import pytest
 from taichi._lib import core as _ti_core
-from taichi.lang import cc, cpu, cuda, gpu, metal, opengl, vulkan
+from taichi.lang import cc, cpu, cuda, dx11, gpu, metal, opengl, vulkan
 from taichi.lang.misc import is_arch_supported
 
 import taichi as ti

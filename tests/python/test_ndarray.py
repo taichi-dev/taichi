@@ -611,8 +611,8 @@ def _test_size_in_bytes():
     assert a._get_nelement() == 8
 
     b = ti.Vector.ndarray(10, ti.f64, 5)
-    assert b._get_element_size() == 8
-    assert b._get_nelement() == 50
+    assert b._get_element_size() == 80
+    assert b._get_nelement() == 5
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

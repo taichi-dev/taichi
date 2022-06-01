@@ -6,8 +6,8 @@
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
-#include "taichi/runtime/vulkan/runtime.h"
-#include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/runtime/gfx/runtime.h"
+#include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
@@ -35,7 +35,7 @@ class VulkanProgramImpl : public ProgramImpl {
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
       uint64 *result_buffer) override {
-    return 0;  // TODO: support sparse in vulkan
+    return 0;  // TODO: support sparse
   }
 
   void compile_snode_tree_types(SNodeTree *tree) override;
@@ -56,7 +56,7 @@ class VulkanProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
-  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_ASSERT(snode_tree_mgr_ != nullptr);
     snode_tree_mgr_->destroy_snode_tree(snode_tree);
   }
@@ -88,8 +88,8 @@ class VulkanProgramImpl : public ProgramImpl {
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
-  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_{nullptr};
-  std::unique_ptr<vulkan::SNodeTreeManager> snode_tree_mgr_{nullptr};
+  std::unique_ptr<gfx::GfxRuntime> vulkan_runtime_{nullptr};
+  std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
 };
 }  // namespace lang

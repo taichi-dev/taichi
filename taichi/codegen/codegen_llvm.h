@@ -230,6 +230,19 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                    CustomIntType *cit,
                                    llvm::Value *real);
 
+  virtual llvm::Value *optimized_reduction(AtomicOpStmt *stmt);
+
+  virtual llvm::Value *custom_type_atomic(AtomicOpStmt *stmt);
+
+  virtual llvm::Value *integral_type_atomic(AtomicOpStmt *stmt);
+
+  virtual llvm::Value *atomic_op_using_cas(
+      llvm::Value *output_address,
+      llvm::Value *val,
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+
+  virtual llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt);
+
   void visit(AtomicOpStmt *stmt) override;
 
   void visit(GlobalPtrStmt *stmt) override;
@@ -391,11 +404,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                                       llvm::Value *shared_exp);
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
-
-  llvm::Value *atomic_op_using_cas(
-      llvm::Value *dest,
-      llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
 
   void visit(FuncCallStmt *stmt) override;
 

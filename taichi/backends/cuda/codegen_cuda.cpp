@@ -191,7 +191,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   // Not all reduction statements can be optimized.
   // If the operation cannot be optimized, this function returns nullptr.
-  llvm::Value *optimized_reduction(AtomicOpStmt *stmt) {
+  llvm::Value *optimized_reduction(AtomicOpStmt *stmt) override {
     if (!stmt->is_reduction) {
       return nullptr;
     }
@@ -225,39 +225,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               fast_reductions.at(prim_type).end());
     return create_call(fast_reductions.at(prim_type).at(op),
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
-  }
-
-  llvm::Value *custom_type_atomic(AtomicOpStmt *stmt) {
-    if (stmt->op_type != AtomicOpType::add) {
-      return nullptr;
-    }
-
-    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-    if (auto cit = dst_type->cast<CustomIntType>()) {
-      return atomic_add_custom_int(stmt, cit);
-    } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      return atomic_add_custom_float(stmt, cft);
-    } else {
-      return nullptr;
-    }
-  }
-
-  llvm::Value *integral_type_atomic(AtomicOpStmt *stmt) {
-    if (!is_integral(stmt->val->ret_type)) {
-      return nullptr;
-    }
-    std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
-    bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
-    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
-    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
-
-    bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
-    bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
-    bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
-    TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
-    return builder->CreateAtomicRMW(
-        bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
-        llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
@@ -311,7 +278,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,
       llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) override {
     llvm::PointerType *output_address_type =
         llvm::dyn_cast<llvm::PointerType>(output_address->getType());
     TI_ASSERT(output_address_type != nullptr);
@@ -404,86 +371,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     builder->SetInsertPoint(loop_exit_bb);
 
     return output_address;
-  }
-
-  llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
-    if (!stmt->val->ret_type->is<PrimitiveType>()) {
-      return nullptr;
-    }
-    AtomicOpType op = stmt->op_type;
-    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-      switch (op) {
-        case AtomicOpType::add:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
-        case AtomicOpType::max:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
-        case AtomicOpType::min:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
-        default:
-          break;
-      }
-    }
-
-    PrimitiveTypeID prim_type =
-        stmt->val->ret_type->cast<PrimitiveType>()->type;
-
-    std::unordered_map<PrimitiveTypeID,
-                       std::unordered_map<AtomicOpType, std::string>>
-        atomics;
-
-    atomics[PrimitiveTypeID::f32][AtomicOpType::add] = "atomic_add_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::add] = "atomic_add_f64";
-    atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
-    atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
-    atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
-    atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
-    atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
-    atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
-
-    if (atomics.find(prim_type) == atomics.end()) {
-      return nullptr;
-    }
-    if (is_integral(stmt->val->ret_type) &&
-        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
-      return nullptr;
-    }
-    TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
-
-    return create_call(atomics.at(prim_type).at(op),
-                       {llvm_val[stmt->dest], llvm_val[stmt->val]});
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    // https://llvm.org/docs/NVPTXUsage.html#address-spaces
-    bool is_local = stmt->dest->is<AllocaStmt>();
-    if (is_local) {
-      TI_ERROR("Local atomics should have been demoted.");
-    }
-    TI_ASSERT(stmt->width() == 1);
-    for (int l = 0; l < stmt->width(); l++) {
-      llvm::Value *old_value;
-
-      if (llvm::Value *result = optimized_reduction(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = custom_type_atomic(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
-        old_value = result;
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-      llvm_val[stmt] = old_value;
-    }
   }
 
   void visit(RangeForStmt *for_stmt) override {

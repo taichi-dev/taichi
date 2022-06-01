@@ -1152,7 +1152,8 @@ class Matrix(TaichiOperations):
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_adjoint, offset=offset)
+                                    shape).place(entries_adjoint,
+                                                 offset=offset)
         return entries
 
     @classmethod

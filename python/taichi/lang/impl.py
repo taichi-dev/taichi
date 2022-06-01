@@ -501,7 +501,7 @@ def create_field_member(dtype, name):
         # adjoint
         x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
         x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
-        x_adjoint.ptr.set_name(name + ".grad")
+        x_adjoint.ptr.set_name(name + ".adjoint")
         x_adjoint.ptr.set_is_primal(False)
         x.ptr.set_adjoint(x_adjoint.ptr)
 

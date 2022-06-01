@@ -38,10 +38,6 @@ std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
 #ifdef TI_WITH_DX11
     return gfx::make_aot_module(mod_params, arch);
 #endif
-  } else if (arch == Arch::opengl) {
-#ifdef TI_WITH_OPENGL
-    return gfx::make_aot_module(mod_params, arch);
-#endif
   } else if (arch == Arch::metal) {
 #ifdef TI_WITH_METAL
     return metal::make_aot_module(mod_params);

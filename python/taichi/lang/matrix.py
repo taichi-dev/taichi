@@ -1143,7 +1143,7 @@ class Matrix(TaichiOperations):
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
-                    for e in entries_grad._get_field_members():
+                    for e in entries_adjoint._get_field_members():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
@@ -1152,7 +1152,7 @@ class Matrix(TaichiOperations):
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_grad, offset=offset)
+                                    shape).place(entries_adjoint, offset=offset)
         return entries
 
     @classmethod

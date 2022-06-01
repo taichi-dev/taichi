@@ -549,6 +549,7 @@ void export_lang(py::module &m) {
       .def("write_int", &Ndarray::write_int)
       .def("write_float", &Ndarray::write_float)
       .def_readonly("dtype", &Ndarray::dtype)
+      .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")

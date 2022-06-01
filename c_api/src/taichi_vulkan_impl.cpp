@@ -25,7 +25,8 @@ VulkanDeviceImported::VulkanDeviceImported(
   }
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
-  vk_device_.init_vulkan_structs(params);
+  vk_device_.init_vulkan_structs(
+      const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
   vk_device_.set_cap(taichi::lang::DeviceCapability::vk_api_version,
                      api_version);
 }

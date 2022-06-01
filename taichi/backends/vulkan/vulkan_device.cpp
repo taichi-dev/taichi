@@ -1233,7 +1233,7 @@ VulkanDevice::VulkanDevice()
       graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
 }
 
-void VulkanDevice::init_vulkan_structs(const Params &params) {
+void VulkanDevice::init_vulkan_structs(Params &params) {
   instance_ = params.instance;
   device_ = params.device;
   physical_device_ = params.physical_device;

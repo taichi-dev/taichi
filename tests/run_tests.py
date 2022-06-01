@@ -26,7 +26,7 @@ def _run_cpp_test(gtest_option="", extra_env=None):
         env_copy['TI_LIB_DIR'] = ti_lib_dir
 
         cmd = [f'./{cpp_test_filename}']
-        if test_option: cmd.append(gtest_option)
+        if gtest_option: cmd.append(gtest_option)
         if extra_env: env_copy.update(extra_env)
 
         subprocess.check_call(cmd, env=env_copy, cwd=build_dir)
@@ -35,11 +35,14 @@ def _run_cpp_test(gtest_option="", extra_env=None):
 def _test_cpp_aot():
     tests_visited = []
     for cpp_test_name, (python_file_path,
-                        function_name) in aot_test_cases.items():
+                        function_name) in aot_test_cases_.items():
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
 
         # Run AOT Python codes
+        python_file_path = python_file_path.replace("/", ".")
+        if python_file_path.endswith(".py"):
+            python_file_path = python_file_path[:-3]
         module = importlib.import_module(python_file_path)
         assert function_name in module.__dict__.keys()
 

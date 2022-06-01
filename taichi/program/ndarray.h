@@ -40,7 +40,6 @@ class TI_DLL_EXPORT Ndarray {
   //   num_active_indices = shape.size()
   std::vector<int> shape;
   ExternalArrayLayout layout{ExternalArrayLayout::kNull};
-  int num_active_indices{0};
 
   intptr_t get_data_ptr_as_int() const;
   intptr_t get_device_allocation_ptr_as_int() const;
@@ -51,11 +50,16 @@ class TI_DLL_EXPORT Ndarray {
   float64 read_float(const std::vector<int> &i);
   void write_int(const std::vector<int> &i, int64 val);
   void write_float(const std::vector<int> &i, float64 val);
+
+  const std::vector<int> &total_shape() const {
+    return total_shape_;
+  }
   ~Ndarray();
 
  private:
   std::size_t nelement_{1};
   std::size_t element_size_{1};
+  std::vector<int> total_shape_;
 
   Program *prog_{nullptr};
   // TODO: maybe remove these?

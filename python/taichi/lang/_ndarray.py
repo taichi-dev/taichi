@@ -81,7 +81,8 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        arr = np.zeros(shape=self.arr.total_shape(),
+                       dtype=to_numpy_type(self.dtype))
         from taichi._kernels import ndarray_to_ext_arr  # pylint: disable=C0415
         ndarray_to_ext_arr(self, arr)
         impl.get_runtime().sync()
@@ -93,7 +94,8 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        arr = np.zeros(shape=self.arr.total_shape(),
+                       dtype=to_numpy_type(self.dtype))
         from taichi._kernels import \
             ndarray_matrix_to_ext_arr  # pylint: disable=C0415
         layout_is_aos = 1 if layout == Layout.AOS else 0
@@ -109,7 +111,7 @@ class Ndarray:
         """
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
-        if tuple(self.arr.shape) != tuple(arr.shape):
+        if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
@@ -128,7 +130,7 @@ class Ndarray:
         """
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
-        if tuple(self.arr.shape) != tuple(arr.shape):
+        if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
@@ -195,7 +197,7 @@ class Ndarray:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.arr.shape)
+        assert len(key) == len(self.arr.total_shape())
         return key
 
     def _initialize_host_accessor(self):

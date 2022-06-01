@@ -290,7 +290,7 @@ Taichi provides custom [struct types](../basic/type.md#compound-types) for devel
 To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
 
 ### Creating a struct from a python class
-Here is an example of how we could create a Taichi `ti.struct_class`.
+Here is an example of how we could create a Taichi struct type from a Python class:
 
 ```python
 @ti.struct_class

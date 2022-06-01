@@ -8,6 +8,13 @@ import warnings
 import taichi as ti
 
 
+def _build_cpp_test_artifacts(script_dir):
+    subprocess.call([
+        'python',
+        os.path.join(script_dir, 'cpp', 'backends', 'llvm', 'cpu_aot.py')
+    ])
+
+
 def _test_cpp():
     ti.reset()
     print("Running C++ tests...")
@@ -17,6 +24,7 @@ def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+        _build_cpp_test_artifacts(curr_dir)
         env_copy = os.environ.copy()
         env_copy['TI_LIB_DIR'] = ti_lib_dir
         subprocess.check_call(f'./{cpp_test_filename}',

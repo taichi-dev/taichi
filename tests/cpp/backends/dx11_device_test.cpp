@@ -127,8 +127,8 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   /*
   This test needs allocate_memory because of the call stack here:
   Dx11ProgramImpl::materialize_runtime
-  - VkRuntime::VkRuntime
-     - VkRuntime::init_buffers
+  - GfxRuntime::GfxRuntime
+     - GfxRuntime::init_buffers
         - Dx11Device::allocate_memory_unique
         - Dx11Device::get_compute_stream
         - Dx11Stream::new_command_list

@@ -7,8 +7,8 @@
 #include "tests/cpp/program/test_program.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/program/graph_builder.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/aot_module_loader_impl.h"
 #include "taichi/backends/device.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
@@ -121,7 +121,7 @@ using namespace lang;
 
 #ifdef TI_WITH_VULKAN
 [[maybe_unused]] static void write_devalloc(
-    taichi::lang::vulkan::VkRuntime *vulkan_runtime,
+    taichi::lang::gfx::GfxRuntime *vulkan_runtime,
     taichi::lang::DeviceAllocation &alloc,
     const void *data,
     size_t size) {
@@ -132,7 +132,7 @@ using namespace lang;
 }
 
 [[maybe_unused]] static void load_devalloc(
-    taichi::lang::vulkan::VkRuntime *vulkan_runtime,
+    taichi::lang::gfx::GfxRuntime *vulkan_runtime,
     taichi::lang::DeviceAllocation &alloc,
     void *data,
     size_t size) {
@@ -169,14 +169,14 @@ TEST(AotSaveLoad, Vulkan) {
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
   // Create Vulkan runtime
-  vulkan::VkRuntime::Params params;
+  gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
   params.device = embedded_device->device();
   auto vulkan_runtime =
-      std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
+      std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 
@@ -242,14 +242,14 @@ TEST(AotSaveLoad, VulkanNdarray) {
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
   // Create Vulkan runtime
-  vulkan::VkRuntime::Params params;
+  gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
   params.device = embedded_device->device();
   auto vulkan_runtime =
-      std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
+      std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 
@@ -350,14 +350,14 @@ TEST(AotLoadGraph, Vulkan) {
       static_cast<taichi::lang::vulkan::VulkanDevice *>(
           embedded_device->device());
   // Create Vulkan runtime
-  vulkan::VkRuntime::Params params;
+  gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
   params.device = device_;
   auto vulkan_runtime =
-      std::make_unique<taichi::lang::vulkan::VkRuntime>(std::move(params));
+      std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
 
   // Run AOT module loader
-  vulkan::AotModuleParams mod_params;
+  gfx::AotModuleParams mod_params;
   mod_params.module_path = ".";
   mod_params.runtime = vulkan_runtime.get();
 

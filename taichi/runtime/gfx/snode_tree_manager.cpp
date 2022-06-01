@@ -1,17 +1,17 @@
-#include "taichi/backends/vulkan/snode_tree_manager.h"
+#include "taichi/runtime/gfx/snode_tree_manager.h"
 
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/runtime.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 
-SNodeTreeManager::SNodeTreeManager(VkRuntime *rtm) : runtime_(rtm) {
+SNodeTreeManager::SNodeTreeManager(GfxRuntime *rtm) : runtime_(rtm) {
 }
 
 void SNodeTreeManager::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
-  CompiledSNodeStructs compiled_structs = vulkan::compile_snode_structs(*root);
+  CompiledSNodeStructs compiled_structs = compile_snode_structs(*root);
   runtime_->add_root_buffer(compiled_structs.root_size);
   compiled_snode_structs_.push_back(compiled_structs);
 }
@@ -33,6 +33,6 @@ DevicePtr SNodeTreeManager::get_snode_tree_device_ptr(int tree_id) {
   return runtime_->root_buffers_[tree_id]->get_ptr();
 }
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

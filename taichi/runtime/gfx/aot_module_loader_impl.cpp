@@ -1,30 +1,30 @@
-#include "taichi/backends/vulkan/aot_module_loader_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
 #include <fstream>
 #include <type_traits>
 
-#include "taichi/runtime/vulkan/runtime.h"
+#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace gfx {
 namespace {
 class FieldImpl : public aot::Field {
  public:
-  explicit FieldImpl(VkRuntime *runtime, const aot::CompiledFieldData &field)
+  explicit FieldImpl(GfxRuntime *runtime, const aot::CompiledFieldData &field)
       : runtime_(runtime), field_(field) {
   }
 
  private:
-  VkRuntime *const runtime_;
+  GfxRuntime *const runtime_;
   aot::CompiledFieldData field_;
 };
 
 class AotModuleImpl : public aot::Module {
  public:
-  explicit AotModuleImpl(const AotModuleParams &params)
-      : runtime_(params.runtime) {
+  explicit AotModuleImpl(const AotModuleParams &params, Arch device_api_backend)
+      : runtime_(params.runtime), device_api_backend_(device_api_backend) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
     read_from_binary_file(ti_aot_data_, bin_path);
@@ -63,7 +63,7 @@ class AotModuleImpl : public aot::Module {
 
   // Module metadata
   Arch arch() const override {
-    return Arch::vulkan;
+    return device_api_backend_;
   }
   uint64_t version() const override {
     TI_NOT_IMPLEMENTED;
@@ -82,7 +82,7 @@ class AotModuleImpl : public aot::Module {
   }
 
   bool get_kernel_params_by_name(const std::string &name,
-                                 VkRuntime::RegisterParams &kernel) {
+                                 GfxRuntime::RegisterParams &kernel) {
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
       // Offloaded task names encode more than the name of the function, but for
       // AOT, only use the name of the function which should be the first part
@@ -102,7 +102,7 @@ class AotModuleImpl : public aot::Module {
 
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override {
-    VkRuntime::RegisterParams kparams;
+    GfxRuntime::RegisterParams kparams;
     if (!get_kernel_params_by_name(name, kparams)) {
       TI_DEBUG("Failed to load kernel {}", name);
       return nullptr;
@@ -139,16 +139,18 @@ class AotModuleImpl : public aot::Module {
   }
 
   TaichiAotData ti_aot_data_;
-  VkRuntime *runtime_{nullptr};
+  GfxRuntime *runtime_{nullptr};
+  Arch device_api_backend_;
 };
 
 }  // namespace
 
-std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
+std::unique_ptr<aot::Module> make_aot_module(std::any mod_params,
+                                             Arch device_api_backend) {
   AotModuleParams params = std::any_cast<AotModuleParams &>(mod_params);
-  return std::make_unique<AotModuleImpl>(params);
+  return std::make_unique<AotModuleImpl>(params, device_api_backend);
 }
 
-}  // namespace vulkan
+}  // namespace gfx
 }  // namespace lang
 }  // namespace taichi

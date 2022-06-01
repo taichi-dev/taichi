@@ -197,7 +197,7 @@ void GLResourceBinder::rw_buffer(uint32_t set,
                                  DeviceAllocation alloc) {
   TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
                  set);
-  binding_map_[binding] = alloc.alloc_id;
+  ssbo_binding_map_[binding] = alloc.alloc_id;
 }
 
 void GLResourceBinder::buffer(uint32_t set,
@@ -211,7 +211,9 @@ void GLResourceBinder::buffer(uint32_t set,
 void GLResourceBinder::buffer(uint32_t set,
                               uint32_t binding,
                               DeviceAllocation alloc) {
-  rw_buffer(set, binding, alloc);
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
+  ubo_binding_map_[binding] = alloc.alloc_id;
 }
 
 void GLResourceBinder::image(uint32_t set,
@@ -295,10 +297,17 @@ void GLCommandList::bind_pipeline(Pipeline *p) {
 
 void GLCommandList::bind_resources(ResourceBinder *_binder) {
   GLResourceBinder *binder = static_cast<GLResourceBinder *>(_binder);
-  for (auto &[binding, buffer] : binder->binding_map()) {
+  for (auto &[binding, buffer] : binder->ssbo_binding_map()) {
     auto cmd = std::make_unique<CmdBindBufferToIndex>();
     cmd->buffer = buffer;
     cmd->index = binding;
+    recorded_commands_.push_back(std::move(cmd));
+  }
+  for (auto &[binding, buffer] : binder->ubo_binding_map()) {
+    auto cmd = std::make_unique<CmdBindBufferToIndex>();
+    cmd->buffer = buffer;
+    cmd->index = binding;
+    cmd->target = GL_UNIFORM_BUFFER;
     recorded_commands_.push_back(std::move(cmd));
   }
 }
@@ -682,7 +691,7 @@ void GLCommandList::CmdBindPipeline::execute() {
 }
 
 void GLCommandList::CmdBindBufferToIndex::execute() {
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer);
+  glBindBufferBase(target, index, buffer);
   check_opengl_error("glBindBufferBase");
 }
 

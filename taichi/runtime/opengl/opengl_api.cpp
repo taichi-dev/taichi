@@ -461,12 +461,12 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   for (const auto &task : program_.tasks) {
     auto binder = compiled_pipeline_[i]->resource_binder();
     auto &core_bufs = runtime->impl->core_bufs;
-    binder->buffer(0, static_cast<int>(GLBufId::Runtime), core_bufs.runtime);
+    binder->rw_buffer(0, static_cast<int>(GLBufId::Runtime), core_bufs.runtime);
     if (program_.used.buf_data)
-      binder->buffer(0, static_cast<int>(GLBufId::Root), core_bufs.root);
-    binder->buffer(0, static_cast<int>(GLBufId::Gtmp), core_bufs.gtmp);
+      binder->rw_buffer(0, static_cast<int>(GLBufId::Root), core_bufs.root);
+    binder->rw_buffer(0, static_cast<int>(GLBufId::Gtmp), core_bufs.gtmp);
     if (program_.args_buf_size || program_.ret_buf_size)
-      binder->buffer(0, static_cast<int>(GLBufId::Args), *args_buf_);
+      binder->rw_buffer(0, static_cast<int>(GLBufId::Args), *args_buf_);
     // TODO: properly assert and throw if we bind more than allowed SSBOs.
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
@@ -475,9 +475,9 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
-        binder->buffer(0, bind_id, *ptr);
+        binder->rw_buffer(0, bind_id, *ptr);
       } else {
-        binder->buffer(0, bind_id, ext_arr_bufs_[arg_id]);
+        binder->rw_buffer(0, bind_id, ext_arr_bufs_[arg_id]);
       }
     }
 

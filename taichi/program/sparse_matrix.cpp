@@ -181,7 +181,7 @@ void make_sparse_matrix_from_ndarray(Program *prog,
                                      const Ndarray &ndarray) {
   std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
   auto data_ptr = prog->get_ndarray_data_ptr_as_int(&ndarray);
-  auto num_triplets = ndarray.get_nelement() / 3;
+  auto num_triplets = ndarray.get_nelement() * ndarray.get_element_size() / 3;
   if (sdtype == "f32") {
     build_ndarray_template<float32>(sm, data_ptr, num_triplets);
   } else if (sdtype == "f64") {

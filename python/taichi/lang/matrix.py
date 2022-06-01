@@ -1709,8 +1709,7 @@ class MatrixNdarray(Ndarray):
             >>> arr.element_shape
             (2, 2)
         """
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
+        return tuple(self.arr.element_shape)
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1807,8 +1806,7 @@ class VectorNdarray(Ndarray):
             >>> a.element_shape
             (3,)
         """
-        arr_shape = tuple(self.arr.shape)
-        return arr_shape[:1] if self.layout == Layout.SOA else arr_shape[-1:]
+        return tuple(self.arr.element_shape)
 
     @python_scope
     def __setitem__(self, key, value):

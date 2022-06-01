@@ -287,9 +287,9 @@ Taichi provides custom [struct types](../basic/type.md#compound-types) for devel
   2. Functions associated with a struct type. (C++ style structs)
 
 
-To achieve these two points, developers can use the `@ti.struct_class` decorator on a python class.  This is heavily inspired by the python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
+To achieve these two points, developers can use the `@ti.struct_class` decorator on a Python class.  This is heavily inspired by the Python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
 
-### Creating a struct from a python class
+### Creating a struct from a Python class
 Here is an example of how we could create a Taichi struct type from a Python class:
 
 ```python
@@ -303,7 +303,7 @@ This will create the *exact* same type as doing:
 ```python
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)
 ```
-Using the `@ti.struct_class` decorator will convert the annotated fields in the python class to members in the resulting struct type.  In both of the above examples you would create a field of the struct the same way.
+Using the `@ti.struct_class` decorator will convert the annotated fields in the Python class to members in the resulting struct type.  In both of the above examples you would create a field of the struct the same way.
 
 ```python
 sphere_field = Sphere.field(shape=(n,))
@@ -328,7 +328,7 @@ class Sphere:
         return self.radius == 0.0
 ```
 
-Functions associated with structs follow the same [scope rules](../basic/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
+Functions associated with structs follow the same [scope rules](../basic/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
 
 ```python
 a_python_struct = Sphere(center=vec3(0.0), radius=1.0)

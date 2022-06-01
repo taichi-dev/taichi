@@ -471,10 +471,6 @@ class GlobalPtrExpression : public Expression {
       : var(var), indices(indices) {
   }
 
-  GlobalPtrExpression(SNode *snode, const ExprGroup &indices)
-      : snode(snode), indices(indices) {
-  }
-
   void type_check(CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;

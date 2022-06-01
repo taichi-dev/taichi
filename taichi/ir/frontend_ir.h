@@ -464,7 +464,6 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
-  SNode *snode{nullptr};
   Expr var;
   ExprGroup indices;
 

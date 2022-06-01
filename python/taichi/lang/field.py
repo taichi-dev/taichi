@@ -93,7 +93,7 @@ class Field:
             taichi_core.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
-    
+
     def _set_grad(self, grad, reverse_mode=True):
         """Binds corresponding gradient field to adjoint or dual.
 
@@ -107,7 +107,7 @@ class Field:
         else:
             self._set_dual(grad)
             self.grad = self.dual
-    
+
     def _set_adjoint(self, adjoint):
         """Sets corresponding adjoint field (reverse mode).
 
@@ -115,7 +115,7 @@ class Field:
             adjoint (Field): Corresponding adjoint field.
         """
         self.adjoint = adjoint
-    
+
     def _set_dual(self, dual):
         """Sets corresponding dual field (forward mode).
 

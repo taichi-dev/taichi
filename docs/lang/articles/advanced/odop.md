@@ -282,7 +282,7 @@ print(b.num())  # 7
 ```
 
 ## Python classes as Taichi struct types
-When defining a custom struct type, developers are associating pieces of data together into a [compound type](../basic/type.md#compound-types), commonly called a struct.  However, it is often convenient to have:
+Taichi provides custom [struct types](../basic/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
   1. A Python representation of the struct type which is more object oriented.
   2. Functions associated with a struct type. (C++ style structs)
 

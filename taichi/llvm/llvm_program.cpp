@@ -14,6 +14,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
+#include "taichi/backends/cuda/aot_module_builder_impl.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
@@ -340,6 +341,10 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
     return std::make_unique<cpu::AotModuleBuilderImpl>();
+  }
+
+  if (config->arch == Arch::cuda) {
+    return std::make_unique<cuda::AotModuleBuilderImpl>();
   }
   TI_NOT_IMPLEMENTED;
   return nullptr;

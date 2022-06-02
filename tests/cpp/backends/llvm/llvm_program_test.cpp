@@ -4,6 +4,8 @@
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/backends/cpu/aot_module_loader_impl.h"
+#include "taichi/backends/cuda/aot_module_loader_impl.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -49,6 +51,50 @@ TEST(LlvmProgramTest, FullPipeline) {
       prog.get_ndarray_alloc_info_ptr(arr_devalloc));
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(data[i], i);
+  }
+}
+
+TEST(LlvmProgramTest, FullPipelineCUDA) {
+  CompileConfig cfg;
+  cfg.arch = Arch::cuda;
+  cfg.kernel_profiler = false;
+  constexpr KernelProfilerBase *kNoProfiler = nullptr;
+  LlvmProgramImpl prog{cfg, kNoProfiler};
+
+  // Must have handled all the arch fallback logic by this point.
+  prog.initialize_host();
+  uint64 *result_buffer{nullptr};
+  prog.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+
+  constexpr int kArrLen = 32;
+  constexpr int kArrBytes = kArrLen * sizeof(int32_t);
+  auto arr_devalloc = prog.allocate_memory_ndarray(kArrBytes, result_buffer);
+
+  cuda::AotModuleParams aot_params;
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+  std::stringstream aot_mod_ss;
+  aot_mod_ss << folder_dir;
+  aot_params.module_path = aot_mod_ss.str();
+  aot_params.program = &prog;
+  auto mod = cuda::make_aot_module(aot_params);
+  auto *k_run = mod->get_kernel("run");
+  RuntimeContext ctx;
+  ctx.runtime = prog.get_llvm_runtime();
+  ctx.set_arg(0, /*v=*/0);
+  ctx.set_arg_devalloc(/*arg_id=*/1, arr_devalloc, /*shape=*/{kArrLen});
+  ctx.set_array_runtime_size(/*arg_id=*/1, kArrBytes);
+  k_run->launch(&ctx);
+
+  auto *data = reinterpret_cast<int32_t *>(
+      prog.get_ndarray_alloc_info_ptr(arr_devalloc));
+
+  std::vector<int32_t> cpu_data(kArrLen);
+  CUDADriver::get_instance().memcpy_device_to_host(
+      (void *)cpu_data.data(), (void *)data, kArrLen * sizeof(int32_t));
+
+  for (int i = 0; i < kArrLen; ++i) {
+    EXPECT_EQ(cpu_data[i], i);
   }
 }
 

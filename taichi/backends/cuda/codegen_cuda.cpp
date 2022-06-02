@@ -711,6 +711,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 };
 
+#ifdef TI_WITH_LLVM
+// static
+std::unique_ptr<CodeGenLLVM> CodeGenCUDA::make_codegen_llvm(Kernel *kernel,
+                                                            IRNode *ir) {
+  return std::make_unique<CodeGenLLVMCUDA>(kernel, ir);
+}
+#endif  // TI_WITH_LLVM
+
 static void set_arg_external_array(RuntimeContext *ctx,
                                    const std::string &kernel_name,
                                    int arg_id,

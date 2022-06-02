@@ -7,7 +7,7 @@ import sys
 import tempfile
 import warnings
 
-from test_utils import aot_test_cases_
+from test_utils import __aot_test_cases, print_aot_test_guide
 
 import taichi as ti
 
@@ -35,7 +35,7 @@ def _run_cpp_test(gtest_option="", extra_env=None):
 def _test_cpp_aot():
     tests_visited = []
     for cpp_test_name, (python_file_path,
-                        function_name) in aot_test_cases_.items():
+                        function_name) in __aot_test_cases.items():
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
 
@@ -233,9 +233,17 @@ def test():
         action='store_true',
         help=
         'Exclude arch(s) from test instead of include them, together with -a')
+    parser.add_argument('--help-aot',
+                        action='store_true',
+                        default=False,
+                        help='Show AOT test programming guide')
 
     args = parser.parse_args()
     print(args)
+
+    if args.help_aot:
+        print_aot_test_guide()
+        exit(1)
 
     if args.arch:
         arch = args.arch

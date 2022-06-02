@@ -489,7 +489,6 @@ class ReverseOuterLoops : public BasicStmtVisitor {
 };
 
 // Base class for both reverse (make adjoint) and forward (make dual) mode
-// autodiff
 class ADTransform : public IRVisitor {
  protected:
   Stmt *constant(float32 x) {

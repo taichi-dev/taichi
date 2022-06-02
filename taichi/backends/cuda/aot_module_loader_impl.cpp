@@ -11,7 +11,7 @@ namespace {
 
 class AotModuleImpl : public LlvmAotModule {
  public:
-  explicit AotModuleImpl(const cpu::AotModuleParams &params)
+  explicit AotModuleImpl(const cuda::AotModuleParams &params)
       : LlvmAotModule(params.module_path, params.program) {
   }
 

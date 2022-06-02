@@ -241,7 +241,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
 
-  virtual llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt);
+  virtual llvm::Value *real_type_atomic(AtomicOpStmt *stmt);
 
   void visit(AtomicOpStmt *stmt) override;
 

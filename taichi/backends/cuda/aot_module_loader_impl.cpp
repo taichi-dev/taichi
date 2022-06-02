@@ -1,9 +1,9 @@
-#include "taichi/backends/cpu/aot_module_loader_impl.h"
+#include "taichi/backends/cuda/aot_module_loader_impl.h"
 #include "taichi/llvm/llvm_aot_module_loader.h"
 
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/codegen/codegen_llvm.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
 
 namespace taichi {
 namespace lang {
@@ -20,7 +20,7 @@ class AotModuleImpl : public LlvmAotModule {
       const std::string &name,
       LlvmOfflineCache::KernelCacheData &&loaded) override {
     Arch arch = program_->config->arch;
-    TI_ASSERT(arch == Arch::x64 || arch == Arch::arm64);
+    TI_ASSERT(arch == Arch::cuda);
     auto *tlctx = program_->get_llvm_context(arch);
 
     const auto &tasks = loaded.offloaded_task_list;
@@ -34,7 +34,7 @@ class AotModuleImpl : public LlvmAotModule {
       offloaded_tasks.push_back(std::move(ot));
     }
 
-    ModuleToFunctionConverter converter{tlctx, program_};
+    CUDAModuleToFunctionConverter converter{tlctx, program_};
     return converter.convert(name, loaded.args, std::move(loaded.owned_module),
                              std::move(offloaded_tasks));
   }
@@ -53,7 +53,7 @@ class AotModuleImpl : public LlvmAotModule {
 
 }  // namespace
 
-namespace cpu {
+namespace cuda {
 
 std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
   auto mod = std::make_unique<AotModuleImpl>(
@@ -61,6 +61,6 @@ std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
   return mod;
 }
 
-}  // namespace cpu
+}  // namespace cuda
 }  // namespace lang
 }  // namespace taichi

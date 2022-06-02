@@ -1693,7 +1693,7 @@ class MatrixNdarray(Ndarray):
         super().__init__()
         self.dtype = cook_dtype(dtype)
         self.layout = layout
-        self.shape = shape
+        self.shape = tuple(shape)
         self.element_type = TensorType((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
@@ -1790,7 +1790,7 @@ class VectorNdarray(Ndarray):
         super().__init__()
         self.dtype = cook_dtype(dtype)
         self.layout = layout
-        self.shape = shape
+        self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
         # TODO: pass in element_type, shape, layout directly
         self.arr = impl.get_runtime().prog.create_ndarray(

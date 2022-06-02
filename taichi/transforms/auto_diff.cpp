@@ -555,11 +555,11 @@ class ADTransform : public IRVisitor {
   }
 
  public:
-  virtual Stmt *insert_ad_transform_stmt(std::unique_ptr<Stmt> &&stmt) = 0;
+  virtual Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) = 0;
 
   template <typename T, typename... Args>
   Stmt *insert(Args &&...args) {
-    return insert_ad_transform_stmt(Stmt::make<T>(args...));
+    return insert_grad_stmt(Stmt::make<T>(args...));
   }
 
   void visit(AllocaStmt *alloca) override {
@@ -693,7 +693,7 @@ class MakeAdjoint : public ADTransform {
     }
   }
 
-  Stmt *insert_ad_transform_stmt(std::unique_ptr<Stmt> &&stmt) override {
+  Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
     auto ptr = stmt.get();
     current_block->insert(std::move(stmt), -1);
     return ptr;
@@ -906,14 +906,14 @@ class MakeAdjoint : public ADTransform {
       }
       current_block = old_current_block;
     }
-    insert_ad_transform_stmt(std::move(new_if));
+    insert_grad_stmt(std::move(new_if));
   }
 
   void visit(RangeForStmt *for_stmt) override {
     auto new_for = for_stmt->clone();
     auto new_for_ptr = new_for->as<RangeForStmt>();
     new_for_ptr->reversed = !new_for_ptr->reversed;
-    insert_ad_transform_stmt(std::move(new_for));
+    insert_grad_stmt(std::move(new_for));
     const int len = new_for_ptr->body->size();
 
     for (int i = 0; i < len; i++) {

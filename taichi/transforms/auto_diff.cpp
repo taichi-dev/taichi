@@ -488,73 +488,74 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   }
 };
 
-// Base class for both reverse (make adjoint) and forward (make dual) mode autodiff
-class ADTransform : public IRVisitor{
-  protected:
-    Stmt *constant(float32 x) {
-      return insert<ConstStmt>(TypedConstant(x));
-    }
+// Base class for both reverse (make adjoint) and forward (make dual) mode
+// autodiff
+class ADTransform : public IRVisitor {
+ protected:
+  Stmt *constant(float32 x) {
+    return insert<ConstStmt>(TypedConstant(x));
+  }
 
-    // utils
-    Stmt *sgn(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::sgn, load(inp));
-    }
+  // utils
+  Stmt *sgn(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sgn, load(inp));
+  }
 
-    // utils
-    Stmt *negate(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
-    }
+  // utils
+  Stmt *negate(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
+  }
 
-    Stmt *sqrt(Stmt *inp) {
-      return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
-    }
+  Stmt *sqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
+  }
 
-    Stmt *mul(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
-    }
+  Stmt *mul(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
+  }
 
-    Stmt *sqr(Stmt *op1) {
-      return mul(op1, op1);
-    }
+  Stmt *sqr(Stmt *op1) {
+    return mul(op1, op1);
+  }
 
-    Stmt *add(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
-    }
+  Stmt *add(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
+  }
 
-    Stmt *cmp_lt(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::cmp_lt, load(op1), load(op2));
-    }
+  Stmt *cmp_lt(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::cmp_lt, load(op1), load(op2));
+  }
 
-    Stmt *sub(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
-    }
+  Stmt *sub(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
+  }
 
-    Stmt *div(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
-    }
+  Stmt *div(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
+  }
 
-    Stmt *sel(Stmt *op1, Stmt *op2, Stmt *op3) {
-      return insert<TernaryOpStmt>(TernaryOpType::select, load(op1), load(op2),
-                                  load(op3));
-    }
+  Stmt *sel(Stmt *op1, Stmt *op2, Stmt *op3) {
+    return insert<TernaryOpStmt>(TernaryOpType::select, load(op1), load(op2),
+                                 load(op3));
+  }
 
-    Stmt *cos(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::cos, load(op1));
-    }
+  Stmt *cos(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::cos, load(op1));
+  }
 
-    Stmt *sin(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
-    }
+  Stmt *sin(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::sin, load(op1));
+  }
 
-    Stmt *log(Stmt *op1) {
-      return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
-    }
+  Stmt *log(Stmt *op1) {
+    return insert<UnaryOpStmt>(UnaryOpType::log, load(op1));
+  }
 
-    Stmt *pow(Stmt *op1, Stmt *op2) {
-      return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
-    }
+  Stmt *pow(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::pow, load(op1), load(op2));
+  }
 
-public:
+ public:
   virtual Stmt *insert_ad_transform_stmt(std::unique_ptr<Stmt> &&stmt) = 0;
 
   template <typename T, typename... Args>
@@ -693,7 +694,7 @@ class MakeAdjoint : public ADTransform {
     }
   }
 
-  Stmt *insert_ad_transform_stmt(std::unique_ptr<Stmt> &&stmt) override{
+  Stmt *insert_ad_transform_stmt(std::unique_ptr<Stmt> &&stmt) override {
     auto ptr = stmt.get();
     current_block->insert(std::move(stmt), -1);
     return ptr;

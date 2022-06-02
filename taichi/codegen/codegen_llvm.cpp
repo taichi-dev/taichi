@@ -1312,13 +1312,14 @@ llvm::Value *CodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
   }
 
   if (op == AtomicOpType::add) {
-    return builder->CreateAtomicRMW(llvm::AtomicRMWInst::FAdd,
-                                    llvm_val[stmt->dest], llvm_val[stmt->val],
-                                    llvm::AtomicOrdering::SequentiallyConsistent);
+    return builder->CreateAtomicRMW(
+        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+        llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
   std::unordered_map<PrimitiveTypeID,
-                     std::unordered_map<AtomicOpType, std::string>> atomics;
+                     std::unordered_map<AtomicOpType, std::string>>
+      atomics;
   atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
   atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
   atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";

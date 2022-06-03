@@ -5,7 +5,10 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/backends/cpu/aot_module_loader_impl.h"
 #include "taichi/backends/cuda/aot_module_loader_impl.h"
+
+#if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
+#endif
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -55,6 +58,7 @@ TEST(LlvmProgramTest, FullPipeline) {
 }
 
 TEST(LlvmProgramTest, FullPipelineCUDA) {
+#if defined(TI_WITH_CUDA)
   CompileConfig cfg;
   cfg.arch = Arch::cuda;
   cfg.kernel_profiler = false;
@@ -96,6 +100,7 @@ TEST(LlvmProgramTest, FullPipelineCUDA) {
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(cpu_data[i], i);
   }
+#endif
 }
 
 }  // namespace lang

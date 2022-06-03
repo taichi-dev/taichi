@@ -303,13 +303,13 @@ def test_ndarray_fill():
     assert (a.to_numpy() == anp).all()
 
     b = ti.Vector.ndarray(4, ti.f32, shape=(n))
-    bnp = np.ones(shape=b.arr.shape, dtype=np.float32)
+    bnp = np.ones(shape=b.arr.total_shape(), dtype=np.float32)
     b.fill(2.5)
     bnp.fill(2.5)
     assert (b.to_numpy() == bnp).all()
 
     c = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
-    cnp = np.ones(shape=c.arr.shape, dtype=np.float32)
+    cnp = np.ones(shape=c.arr.total_shape(), dtype=np.float32)
     c.fill(1.5)
     cnp.fill(1.5)
     assert (c.to_numpy() == cnp).all()

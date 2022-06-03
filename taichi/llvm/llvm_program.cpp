@@ -14,10 +14,10 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
-#include "taichi/backends/cuda/aot_module_builder_impl.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/aot_module_builder_impl.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
 #include "taichi/backends/cuda/cuda_context.h"
@@ -343,9 +343,12 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
     return std::make_unique<cpu::AotModuleBuilderImpl>();
   }
 
+#if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
     return std::make_unique<cuda::AotModuleBuilderImpl>();
   }
+#endif
+
   TI_NOT_IMPLEMENTED;
   return nullptr;
 }

@@ -31,17 +31,16 @@ Ndarray::Ndarray(Program *prog,
                                     std::multiplies<>())),
       prog_(prog),
       rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
-  // TODO: Instead of flattening the element, shape/nelement_/num_active_indices
-  // should refer to field shape only.
-  // The only blocker left is the accessors should handle vector/matrix as well
-  // instead of scalar only.
+  // Now that we have two shapes which may be concatenated differently
+  // depending on layout, total_shape_ comes handy.
+  total_shape_ = shape;
   if (layout == ExternalArrayLayout::kAOS) {
-    shape.insert(shape.end(), element_shape.begin(), element_shape.end());
+    total_shape_.insert(total_shape_.end(), element_shape.begin(),
+                        element_shape.end());
   } else if (layout == ExternalArrayLayout::kSOA) {
-    shape.insert(shape.begin(), element_shape.begin(), element_shape.end());
+    total_shape_.insert(total_shape_.begin(), element_shape.begin(),
+                        element_shape.end());
   }
-
-  num_active_indices = shape.size();
 
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
@@ -53,7 +52,6 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
     : ndarray_alloc_(devalloc),
       dtype(type),
       shape(shape),
-      num_active_indices(shape.size()),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
                                 1,

@@ -692,7 +692,7 @@ def Tape(loss, clear_gradients=True):
     if len(loss.shape) != 0:
         raise RuntimeError(
             'The loss of `Tape` must be a 0-D field, i.e. scalar')
-    if not loss.snode.ptr.has_grad():
+    if not loss.snode.ptr.has_adjoint():
         raise RuntimeError(
             'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
             ' for all fields that are required by autodiff.')

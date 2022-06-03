@@ -1117,10 +1117,10 @@ class Matrix(TaichiOperations):
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
-        entries, entries_grad = zip(*entries)
-        entries, entries_grad = MatrixField(entries, n, m), MatrixField(
-            entries_grad, n, m)
-        entries._set_grad(entries_grad)
+        entries, entries_adjoint = zip(*entries)
+        entries, entries_adjoint = MatrixField(entries, n, m), MatrixField(
+            entries_adjoint, n, m)
+        entries._set_grad(entries_adjoint, reverse_mode=True)
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
@@ -1143,7 +1143,7 @@ class Matrix(TaichiOperations):
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
-                    for e in entries_grad._get_field_members():
+                    for e in entries_adjoint._get_field_members():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
@@ -1152,7 +1152,8 @@ class Matrix(TaichiOperations):
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_grad, offset=offset)
+                                    shape).place(entries_adjoint,
+                                                 offset=offset)
         return entries
 
     @classmethod
@@ -1693,7 +1694,7 @@ class MatrixNdarray(Ndarray):
         super().__init__()
         self.dtype = cook_dtype(dtype)
         self.layout = layout
-        self.shape = shape
+        self.shape = tuple(shape)
         self.element_type = TensorType((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
@@ -1790,7 +1791,7 @@ class VectorNdarray(Ndarray):
         super().__init__()
         self.dtype = cook_dtype(dtype)
         self.layout = layout
-        self.shape = shape
+        self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
         # TODO: pass in element_type, shape, layout directly
         self.arr = impl.get_runtime().prog.create_ndarray(

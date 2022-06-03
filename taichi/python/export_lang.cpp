@@ -512,7 +512,8 @@ void export_lang(py::module &m) {
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
-      .def("has_grad", &SNode::has_grad)
+      .def("has_adjoint", &SNode::has_adjoint)
+      .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
@@ -548,6 +549,7 @@ void export_lang(py::module &m) {
       .def("read_float", &Ndarray::read_float)
       .def("write_int", &Ndarray::write_int)
       .def("write_float", &Ndarray::write_float)
+      .def("total_shape", &Ndarray::total_shape)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
@@ -661,7 +663,8 @@ void export_lang(py::module &m) {
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
-      .def("set_grad", &Expr::set_grad)
+      .def("set_adjoint", &Expr::set_adjoint)
+      .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)

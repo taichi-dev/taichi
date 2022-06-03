@@ -9,7 +9,6 @@ namespace lang {
 namespace cuda {
 
 class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
- public:
  private:
   CodeGenLLVM::CompiledData compile_kernel(Kernel *kernel) override;
 };

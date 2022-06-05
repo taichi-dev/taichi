@@ -951,6 +951,14 @@ class TaskCodegen : public IRVisitor {
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
 
+    if (stmt->func_name == "sample_texture") {
+      spirv::Value tex = ir_->texture_argument(4, 1, 0);
+      auto u = ir_->query_value(stmt->args[0]->raw_name());
+      auto v = ir_->query_value(stmt->args[1]->raw_name());
+      spirv::Value s_vec4 = ir_->sample_texture(tex, u, v, ir_->const_i32_zero_);
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(), 0);
+    }
+
     const std::unordered_set<std::string> reduction_ops{
         "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
         "subgroupAnd", "subgroupOr",  "subgroupXor"};
@@ -2174,7 +2182,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = tp.ti_kernel_name;

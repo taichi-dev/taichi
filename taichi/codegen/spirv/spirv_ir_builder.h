@@ -43,6 +43,7 @@ enum class TypeKind {
   kStruct,
   kPtr,
   kFunc,
+  kSampledImage
 };
 
 // Represent the SPIRV Type
@@ -73,6 +74,7 @@ enum class ValueKind {
   kStructArrayPtr,
   kVariablePtr,
   kPhysicalPtr,
+  kTexture,
   kFunction,
   kExtInst
 };
@@ -324,6 +326,8 @@ class IRBuilder {
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
+  // Get an image type
+  SType get_sampled_image_type(const SType &primitive_type, int num_dimensions);
   // Get a value_type[num_elems] type
   SType get_array_type(const SType &value_type, uint32_t num_elems);
   // Get a struct{ value_type[num_elems] } type
@@ -346,6 +350,12 @@ class IRBuilder {
                         uint32_t binding,
                         const std::string &name);
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
+
+  Value texture_argument(int num_channels,
+                         uint32_t descriptor_set,
+                         uint32_t binding);
+
+  Value sample_texture(Value texture_var, Value u, Value v, Value lod);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
@@ -537,6 +547,8 @@ class IRBuilder {
   SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v3_uint_;
+  SType t_v4_fp32_;
+  SType t_v2_fp32_;
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
@@ -552,6 +564,8 @@ class IRBuilder {
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;
+  std::map<std::pair<uint32_t, int>, SType> sampled_image_ptr_tbl_;
+  
   // map from constant int to its value
   std::map<std::pair<uint32_t, uint64_t>, Value> const_tbl_;
   // map from raw_name(string) to Value

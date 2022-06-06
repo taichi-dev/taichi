@@ -267,8 +267,8 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack, ad_reverse_mode,
-                      start_from_ast);
+  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack,
+                      ad_reverse_mode, start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,
                         /*determine_ad_stack_size=*/grad && ad_use_stack,

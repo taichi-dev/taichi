@@ -1037,41 +1037,41 @@ class MakeAdjoint : public ADTransform {
 
 // Forward mode autodiff
 class MakeDual : public ADTransform {
-  public:
-      using ADTransform::visit;
-      Stmt *current_stmt;
-      Block *current_block;
-      // Block *alloca_block;
-      std::map<Stmt *, Stmt *> dual_stmt;
+ public:
+  using ADTransform::visit;
+  Stmt *current_stmt;
+  Block *current_block;
+  // Block *alloca_block;
+  std::map<Stmt *, Stmt *> dual_stmt;
 
-      MakeDual(Block *block) {
-        current_stmt = nullptr;
-        // alloca_block = block;
-        current_block = block;
-      }
+  MakeDual(Block *block) {
+    current_stmt = nullptr;
+    // alloca_block = block;
+    current_block = block;
+  }
 
-      static void run(Block *block) {
-        auto p = MakeDual(block);
-        block->accept(&p);
-      }
+  static void run(Block *block) {
+    auto p = MakeDual(block);
+    block->accept(&p);
+  }
 
-      Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
-        auto ptr = stmt.get();
-        current_stmt = current_stmt->insert_after_me(std::move(stmt));
-        return ptr;
-      }
+  Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
+    auto ptr = stmt.get();
+    current_stmt = current_stmt->insert_after_me(std::move(stmt));
+    return ptr;
+  }
 
-      void visit(Block *block) override {
-        std::vector<Stmt *> statements;
-        // always make a copy since the list can be modified.
-        for (auto &stmt : block->statements) {
-          statements.push_back(stmt.get());
-        }
-        for (auto stmt : statements) {
-          current_stmt = stmt;
-          stmt->accept(this);
-        }
-      }
+  void visit(Block *block) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : block->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
+    }
+  }
 };
 
 class BackupSSA : public BasicStmtVisitor {
@@ -1170,14 +1170,17 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack, bool reverse_mode) {
+void auto_diff(IRNode *root,
+               const CompileConfig &config,
+               bool use_stack,
+               bool reverse_mode) {
   TI_AUTO_PROF;
   if (reverse_mode) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
 
-      for (auto ib: IB) {
+      for (auto ib : IB) {
         PromoteSSA2LocalVar::run(ib);
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
@@ -1191,11 +1194,11 @@ void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack, bool r
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
       type_check(root, config);
-      for (auto ib: IB) {
+      for (auto ib : IB) {
         MakeAdjoint::run(ib);
       }
     }
-  }else{
+  } else {
     // Forward mode autodiff
     Block *block = root->as<Block>();
     PromoteSSA2LocalVar::run(block);

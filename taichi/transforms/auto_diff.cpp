@@ -982,27 +982,6 @@ class MakeAdjoint : public ADTransform {
     insert<AdStackPopStmt>(stmt->stack);
   }
 
-  Stmt *load(Stmt *alloc) {
-    TI_ASSERT(alloc != nullptr);
-    if (alloc->is<AllocaStmt>()) {
-      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
-    } else {
-      // non alloca
-      return alloc;
-    }
-  }
-
-  bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
-    for (auto block = stmt->parent; block; block = block->parent_block()) {
-      for (auto s : block->stop_gradients) {
-        if (s == snode) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();

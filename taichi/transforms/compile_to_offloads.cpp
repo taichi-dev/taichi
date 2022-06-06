@@ -35,13 +35,14 @@ void compile_to_offloads(IRNode *ir,
                          bool verbose,
                          bool grad,
                          bool ad_use_stack,
+                         bool ad_reverse_mode,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
-
-  if (grad) {
+  ad_reverse_mode = false;
+  if (grad && ad_reverse_mode) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -90,7 +91,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir, config);
 
     irpass::full_simplify(ir, config, {false, kernel->program});
-    irpass::auto_diff(ir, config, ad_use_stack);
+    irpass::auto_diff(ir, config, ad_use_stack, ad_reverse_mode);
     irpass::full_simplify(ir, config, {false, kernel->program});
     print("Gradient");
     irpass::analysis::verify(ir);
@@ -258,6 +259,7 @@ void compile_to_executable(IRNode *ir,
                            Kernel *kernel,
                            bool grad,
                            bool ad_use_stack,
+                           bool ad_reverse_mode,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -265,7 +267,7 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack,
+  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack, ad_reverse_mode,
                       start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,

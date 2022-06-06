@@ -52,6 +52,9 @@ class VulkanContext : public Context {
   VulkanContext(VulkanDevice &device);
   virtual ~VulkanContext() override final;
 
+  virtual void submit() override final;
+  virtual void wait() override final;
+
   taichi::lang::vulkan::VkRuntime &get_vk();
 };
 

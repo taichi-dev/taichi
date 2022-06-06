@@ -85,6 +85,15 @@ VulkanContext::VulkanContext(VulkanDevice &device)
 VulkanContext::~VulkanContext() {
 }
 
+void VulkanContext::submit() {
+  vk_runtime_.flush();
+}
+void VulkanContext::wait() {
+  // (penguinliong) It's currently waiting for the entire device to stop. Should
+  // be simply waiting for its fence to finish.
+  vk_runtime_.synchronize();
+}
+
 taichi::lang::vulkan::VkRuntime &VulkanContext::get_vk() {
   return vk_runtime_;
 }

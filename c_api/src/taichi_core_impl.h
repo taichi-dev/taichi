@@ -39,6 +39,9 @@ class Context {
   taichi::lang::RuntimeContext &get();
   Device &device();
 
+  virtual void submit() = 0;
+  virtual void wait() = 0;
+
   struct VulkanContext *as_vk();
 };
 

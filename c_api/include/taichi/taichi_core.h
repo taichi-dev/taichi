@@ -29,7 +29,7 @@ typedef enum TiArch {
 } TiArch;
 TI_DLL_EXPORT TiDevice TI_API_CALL ti_create_device(TiArch arch);
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_device(TiDevice device);
-TI_DLL_EXPORT void TI_API_CALL ti_device_wait_idle(TiDevice device);
+TI_DLL_EXPORT void TI_API_CALL ti_wait_device_idle(TiDevice device);
 
 typedef enum TiAllocationUsageFlagBits {
   TI_MEMORY_USAGE_STORAGE_BIT = 1,
@@ -46,13 +46,14 @@ typedef struct {
   TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
 TI_DLL_EXPORT TiDeviceMemory TI_API_CALL
-ti_allocate_memory(TiDevice device, const TiMemoryAllocateInfo *allocate_info);
-TI_DLL_EXPORT void TI_API_CALL ti_free_memory(TiDevice device,
-                                              TiDeviceMemory devmem);
-TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiDevice device,
-                                              TiDeviceMemory devmem);
-TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiDevice device,
-                                               TiDeviceMemory devmem);
+ti_allocate_device_memory(TiDevice device,
+                          const TiMemoryAllocateInfo *allocate_info);
+TI_DLL_EXPORT void TI_API_CALL ti_free_device_memory(TiDevice device,
+                                                     TiDeviceMemory devmem);
+TI_DLL_EXPORT void *TI_API_CALL ti_map_device_memory(TiDevice device,
+                                                     TiDeviceMemory devmem);
+TI_DLL_EXPORT void TI_API_CALL ti_unmap_device_memory(TiDevice device,
+                                                      TiDeviceMemory devmem);
 
 TI_DLL_EXPORT TiContext TI_API_CALL ti_create_context(TiDevice device);
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_context(TiContext context);
@@ -78,6 +79,8 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_context_arg_f32(TiContext context,
                                                       float value);
 TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiContext context,
                                                 TiKernel kernel);
+TI_DLL_EXPORT void TI_API_CALL ti_submit(TiContext context);
+TI_DLL_EXPORT void TI_API_CALL ti_wait(TiContext context);
 
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_aot_module(TiAotModule mod);
 TI_DLL_EXPORT TiKernel TI_API_CALL ti_get_aot_module_kernel(TiAotModule mod,

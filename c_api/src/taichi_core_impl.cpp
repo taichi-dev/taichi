@@ -62,7 +62,7 @@ TiDevice ti_create_device(TiArch arch) {
 void ti_destroy_device(TiDevice device) {
   delete (Device *)device;
 }
-void ti_device_wait_idle(TiDevice device) {
+void ti_wait_device_idle(TiDevice device) {
   ((Device *)device)->get().wait_idle();
 }
 
@@ -73,7 +73,7 @@ void ti_destroy_context(TiContext context) {
   delete (Context *)context;
 }
 
-TiDeviceMemory ti_allocate_memory(TiDevice device,
+TiDeviceMemory ti_allocate_device_memory(TiDevice device,
                                   const TiMemoryAllocateInfo *createInfo) {
   taichi::lang::AllocUsage usage{};
   if (createInfo->usage & TI_MEMORY_USAGE_STORAGE_BIT) {
@@ -100,16 +100,16 @@ TiDeviceMemory ti_allocate_memory(TiDevice device,
       .allocate_memory(params)
       .alloc_id;
 }
-void ti_free_memory(TiDevice device, TiDeviceMemory devmem) {
+void ti_free_device_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   device2->get().dealloc_memory(devmem2devalloc(*device2, devmem));
 }
 
-void *ti_map_memory(TiDevice device, TiDeviceMemory devmem) {
+void *ti_map_device_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   return device2->get().map(devmem2devalloc(*device2, devmem));
 }
-void ti_unmap_memory(TiDevice device, TiDeviceMemory devmem) {
+void ti_unmap_device_memory(TiDevice device, TiDeviceMemory devmem) {
   Device *device2 = (Device *)device;
   device2->get().unmap(devmem2devalloc(*device2, devmem));
 }
@@ -155,4 +155,10 @@ void ti_set_context_arg_f32(TiContext context,
 }
 void ti_launch_kernel(TiContext context, TiKernel kernel) {
   ((taichi::lang::aot::Kernel *)kernel)->launch(&((Context *)context)->get());
+}
+void ti_submit(TiContext context) {
+  ((Context *)context)->submit();
+}
+void ti_wait(TiContext context) {
+  ((Context *)context)->wait();
 }

@@ -166,7 +166,8 @@ TiDeviceMemory ti_import_vulkan_device_allocation(
       static_cast<VulkanDevice *>(device2)->get_vk();
 
   vkapi::IVkBuffer buffer =
-      vkapi::create_buffer(vk_device.vk_device(), interop_info->buffer);
+      vkapi::create_buffer(vk_device.vk_device(), interop_info->buffer,
+                           interop_info->size, interop_info->usage);
   return (TiDeviceMemory)vk_device.import_vkbuffer(buffer).alloc_id;
 }
 void ti_export_vulkan_device_memory(
@@ -178,6 +179,8 @@ void ti_export_vulkan_device_memory(
   taichi::lang::DeviceAllocation devalloc{&device2->get(), devalloc_id};
   vkapi::IVkBuffer buffer = device2->get_vk().get_vkbuffer(devalloc);
   interop_info->buffer = buffer.get()->buffer;
+  interop_info->size = buffer.get()->size;
+  interop_info->usage = buffer.get()->usage;
 }
 
 #endif  // TI_WITH_VULKAN

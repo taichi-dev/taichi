@@ -476,12 +476,12 @@ class KernelCodegenImpl : public IRVisitor {
                                                  : ExternalArrayLayout::kSOA;
       const int arr_shape_len = num_indices - element_shape.size();
       const size_t element_shape_index_offset =
-          (layout == ExternalArrayLayout::kAOS) ? array_shape_len : 0;
+          (layout == ExternalArrayLayout::kAOS) ? arr_shape_len : 0;
       for (int i = 0; i < arr_shape_len; i++) {
         std::string var_name =
             fmt::format("{}_arr_dim{}_", stmt->raw_name(), i);
         emit("const int {} = {}.extra_arg({}, {});", var_name, kContextVarName,
-             arg_id, i + arr_shape_offset);
+             arg_id, i);
         size_exprs.push_back(std::move(var_name));
       }
       size_t size_var_index = 0;
@@ -494,7 +494,7 @@ class KernelCodegenImpl : public IRVisitor {
         }
         emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
       }
-      TI_ASSERT(size_var_index == array_shape_len);
+      TI_ASSERT(size_var_index == arr_shape_len);
     }
     emit("}}");
 

@@ -624,6 +624,10 @@ Value IRBuilder::texture_argument(int num_channels,
                  descriptor_set);
   this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
 
+  this->debug(spv::OpName, val, "tex");
+
+  this->global_values.push_back(val);
+
   return val;
 }
 

@@ -67,6 +67,11 @@ struct TaskAttributes {
     TI_IO_DEF(buffer, binding);
   };
 
+  struct TextureBind {
+    DeviceAllocation texture;
+    int binding{0};
+  };
+
   std::string name;
   std::string source_path;
   // Total number of threads to launch (i.e. threads per grid). Note that this
@@ -95,6 +100,7 @@ struct TaskAttributes {
     TI_IO_DEF(begin, end, const_begin, const_end);
   };
   std::vector<BufferBind> buffer_binds;
+  std::vector<TextureBind> texture_binds;
   // Only valid when |task_type| is range_for.
   std::optional<RangeForAttributes> range_for_attribs;
 

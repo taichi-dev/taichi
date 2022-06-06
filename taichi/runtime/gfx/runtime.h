@@ -58,7 +58,8 @@ class CompiledTaichiKernel {
       CommandList *cmdlist,
       DeviceAllocationGuard *args_buffer,
       DeviceAllocationGuard *ret_buffer,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrs) const;
+      const std::unordered_map<int, DeviceAllocation> &ext_arrs,
+      const std::unordered_map<int, DeviceAllocation> &textures) const;
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;
@@ -119,6 +120,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
+
+  DeviceAllocation debug_image_;
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;

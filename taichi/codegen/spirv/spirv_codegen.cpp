@@ -956,7 +956,7 @@ class TaskCodegen : public IRVisitor {
       auto u = ir_->query_value(stmt->args[0]->raw_name());
       auto v = ir_->query_value(stmt->args[1]->raw_name());
       spirv::Value s_vec4 = ir_->sample_texture(tex, u, v, ir_->const_i32_zero_);
-      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(), 0);
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(), s_vec4, 0);
     }
 
     const std::unordered_set<std::string> reduction_ops{

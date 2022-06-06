@@ -15,6 +15,8 @@ import taichi as ti
 __aot_test_cases = {
     "LlvmProgramTest.FullPipeline":
     os.path.join('cpp', 'backends', 'llvm', 'cpu_aot.py'),
+    "LlvmProgramTest.FullPipelineCUDA":
+    os.path.join('cpp', 'backends', 'llvm', 'cuda_aot.py'),
 }
 
 

@@ -26,7 +26,7 @@ class Runtime {
 
   virtual taichi::lang::Device &get() = 0;
 
-  virtual TiAotModule load_aot_module(const char* module_path) = 0;
+  virtual TiAotModule load_aot_module(const char *module_path) = 0;
   virtual void submit() = 0;
   virtual void wait() = 0;
 
@@ -36,11 +36,15 @@ class Runtime {
 class AotModule {
   Runtime *runtime_;
   std::unique_ptr<taichi::lang::aot::Module> aot_module_;
+  std::unordered_map<std::string,
+                     std::unique_ptr<taichi::lang::aot::CompiledGraph>>
+      loaded_cgraphs_;
 
  public:
   AotModule(Runtime &runtime,
             std::unique_ptr<taichi::lang::aot::Module> &&aot_module);
 
+  taichi::lang::aot::CompiledGraph &get_cgraph(const std::string &name);
   taichi::lang::aot::Module &get();
   Runtime &runtime();
 };

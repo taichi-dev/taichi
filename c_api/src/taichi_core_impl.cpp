@@ -1,5 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
+#include "taichi/program/ndarray.h"
 
 taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
                                                TiMemory devmem) {
@@ -22,6 +23,17 @@ AotModule::AotModule(Runtime &runtime,
     : runtime_(&runtime),
       aot_module_(std::forward<std::unique_ptr<taichi::lang::aot::Module>>(
           aot_module)) {
+}
+taichi::lang::aot::CompiledGraph &AotModule::get_cgraph(
+    const std::string &name) {
+  auto it = loaded_cgraphs_.find(name);
+  if (it == loaded_cgraphs_.end()) {
+    return *loaded_cgraphs_
+                .emplace(std::make_pair(name, aot_module_->get_graph(name)))
+                .first->second;
+  } else {
+    return *it->second;
+  }
 }
 taichi::lang::aot::Module &AotModule::get() {
   return *aot_module_;
@@ -88,8 +100,8 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
-TiAotModule ti_load_aot_module(TiRuntime runtime, const char* module_path) {
-  return ((Runtime*)runtime)->load_aot_module(module_path);
+TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
+  return ((Runtime *)runtime)->load_aot_module(module_path);
 }
 void ti_destroy_aot_module(TiAotModule mod) {
   delete (AotModule *)mod;
@@ -97,57 +109,98 @@ void ti_destroy_aot_module(TiAotModule mod) {
 TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
 }
+TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
+                                               const char *name) {
+  AotModule *aot_module = ((AotModule *)mod);
+  return (TiComputeGraph)&aot_module->get_cgraph(name);
+}
 
 void ti_launch_kernel(TiRuntime runtime,
                       TiKernel kernel,
                       uint32_t arg_count,
                       const TiArgument *args) {
   Runtime &runtime2 = *((Runtime *)runtime);
-  taichi::lang::RuntimeContext& runtime_context = runtime2.runtime_context_;
+  taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
 
   for (uint32_t i = 0; i < arg_count; ++i) {
-    const auto& arg = args[i];
+    const auto &arg = args[i];
     switch (arg.type) {
-    case TI_ARGUMENT_TYPE_I32:
-    {
-      runtime_context.set_arg(i, arg.value.i32);
-      break;
-    }
-    case TI_ARGUMENT_TYPE_F32:
-    {
-      runtime_context.set_arg(i, arg.value.f32);
-      break;
-    }
-    case TI_ARGUMENT_TYPE_NDARRAY:
-    {
-      taichi::lang::DeviceAllocation devalloc =
-        devmem2devalloc(*runtime2.as_vk(), arg.value.ndarray.memory);
-      const TiNdArray& ndarray = arg.value.ndarray;
-
-      std::vector<int> shape(ndarray.shape.dims,
-        ndarray.shape.dims + ndarray.shape.dim_count);
-
-      if (ndarray.elem_shape.dim_count != 0) {
-        std::vector<int> elem_shape(
-          ndarray.elem_shape.dims,
-          ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
-
-        runtime_context.set_arg_devalloc(i, devalloc, shape, elem_shape);
-      } else {
-        runtime_context.set_arg_devalloc(i, devalloc, shape);
+      case TI_ARGUMENT_TYPE_I32: {
+        runtime_context.set_arg(i, arg.value.i32);
+        break;
       }
-      break;
-    }
-    default:
-      TI_ASSERT(false, "impossible type");
+      case TI_ARGUMENT_TYPE_F32: {
+        runtime_context.set_arg(i, arg.value.f32);
+        break;
+      }
+      case TI_ARGUMENT_TYPE_NDARRAY: {
+        taichi::lang::DeviceAllocation devalloc =
+            devmem2devalloc(*runtime2.as_vk(), arg.value.ndarray.memory);
+        const TiNdArray &ndarray = arg.value.ndarray;
+
+        std::vector<int> shape(ndarray.shape.dims,
+                               ndarray.shape.dims + ndarray.shape.dim_count);
+
+        if (ndarray.elem_shape.dim_count != 0) {
+          std::vector<int> elem_shape(
+              ndarray.elem_shape.dims,
+              ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
+
+          runtime_context.set_arg_devalloc(i, devalloc, shape, elem_shape);
+        } else {
+          runtime_context.set_arg_devalloc(i, devalloc, shape);
+        }
+        break;
+      }
+      default:
+        TI_ASSERT(false, "impossible type");
     }
   }
-  ((taichi::lang::aot::Kernel*)kernel)->launch(&runtime_context);
+  ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
 }
+#pragma optimize("", off)
 void ti_launch_compute_graph(TiRuntime runtime,
                              TiComputeGraph compute_graph,
                              uint32_t arg_count,
                              const TiNamedArgument *args) {
+  Runtime &runtime2 = *((Runtime *)runtime);
+  std::unordered_map<std::string, taichi::lang::aot::IValue> arg_map{};
+  std::vector<taichi::lang::Ndarray> ndarrays{};
+
+  for (uint32_t i = 0; i < arg_count; ++i) {
+    const auto &arg = args[i];
+    switch (arg.arg.type) {
+      case TI_ARGUMENT_TYPE_I32: {
+        arg_map.emplace(std::make_pair(
+            arg.name,
+            taichi::lang::aot::IValue::create<int32_t>(arg.arg.value.i32)));
+        break;
+      }
+      case TI_ARGUMENT_TYPE_F32: {
+        arg_map.emplace(std::make_pair(
+            arg.name,
+            taichi::lang::aot::IValue::create<float>(arg.arg.value.f32)));
+        break;
+      }
+      case TI_ARGUMENT_TYPE_NDARRAY: {
+        taichi::lang::DeviceAllocation devalloc =
+            devmem2devalloc(*runtime2.as_vk(), arg.arg.value.ndarray.memory);
+        const TiNdArray &ndarray = arg.arg.value.ndarray;
+
+        std::vector<int> shape(ndarray.shape.dims,
+                               ndarray.shape.dims + ndarray.shape.dim_count);
+
+        ndarrays.emplace_back(taichi::lang::Ndarray(
+            devalloc, taichi::lang::PrimitiveType::f32, shape));
+        arg_map.emplace(std::make_pair(
+            arg.name, taichi::lang::aot::IValue::create(ndarrays.back())));
+        break;
+      }
+      default:
+        TI_ASSERT(false, "impossible type");
+    }
+  }
+  ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
 void ti_submit(TiRuntime runtime) {
   ((Runtime *)runtime)->submit();

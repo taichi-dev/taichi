@@ -5,7 +5,7 @@ sidebar_position: 3
 # Development tips
 
 This section gives you some tips on the Taichi compiler development.
-Please make sure you have gone through [developer installation](./dev_install).
+Ensure that you have gone through the [developer installation](./dev_install).
 
 ## Workflow of the Taichi compiler
 

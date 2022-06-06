@@ -1216,7 +1216,7 @@ void OpenglCodeGen::lower() {
   auto &config = kernel_->program->config;
   config.demote_dense_struct_fors = true;
   irpass::compile_to_executable(ir, config, kernel_, kernel_->grad,
-                                /*ad_use_stack=*/false, config.print_ir,
+                                /*ad_use_stack=*/false, /*ad_reverse_mode*/true, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG

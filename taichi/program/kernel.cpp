@@ -90,7 +90,7 @@ void Kernel::lower(bool to_executable) {
   if (to_executable) {
     irpass::compile_to_executable(
         ir.get(), config, this, grad,
-        /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
+        /*ad_use_stack=*/true, /*ad_reverse_mode*/true, verbose, /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
         is_extension_supported(config.arch, Extension::bls) &&
@@ -99,6 +99,7 @@ void Kernel::lower(bool to_executable) {
   } else {
     irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
                                 /*ad_use_stack=*/true,
+                                /*ad_reverse_mode*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
 

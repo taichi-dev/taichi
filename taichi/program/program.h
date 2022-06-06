@@ -327,6 +327,11 @@ class TI_DLL_EXPORT Program {
       const std::vector<int> &element_shape = {},
       ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
+  Texture *create_texture(
+      const DataType type,
+      int num_channels,
+      const std::vector<int> &shape);
+
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
   void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
@@ -362,6 +367,7 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
+  std::vector<Texture> textures_;
 };
 
 }  // namespace lang

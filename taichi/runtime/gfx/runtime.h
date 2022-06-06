@@ -121,8 +121,6 @@ class TI_DLL_EXPORT GfxRuntime {
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
 
-  DeviceAllocation debug_image_;
-
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
   // FIXME: Support proper multiple lists

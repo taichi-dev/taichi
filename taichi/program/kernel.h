@@ -6,6 +6,7 @@
 #include "taichi/backends/arch.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/texture.h"
 #include "taichi/aot/graph_data.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -49,6 +50,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
                                            const std::vector<int64> &shape);
 
     void set_arg_ndarray(int arg_id, const Ndarray &arr);
+
+    void set_arg_texture(int arg_id, const Texture &tex);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.

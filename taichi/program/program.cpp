@@ -564,6 +564,22 @@ Ndarray *Program::create_ndarray(const DataType type,
   return ndarrays_.back().get();
 }
 
+Texture *Program::create_texture(const DataType type,
+                                 int num_channels,
+                                 const std::vector<int> &shape) {
+  if (shape.size() == 1) {
+    textures_.emplace_back(this, type, num_channels, shape[0], 1, 1);
+  } else if (shape.size() == 2) {
+    textures_.emplace_back(this, type, num_channels, shape[0], shape[1], 1);
+  } else if (shape.size() == 3) {
+    textures_.emplace_back(this, type, num_channels, shape[0], shape[1],
+                           shape[2]);
+  } else {
+    TI_ERROR("Texture shape invalid");
+  }
+  return &textures_.back();
+}
+
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
 #ifdef TI_WITH_LLVM

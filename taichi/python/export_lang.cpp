@@ -59,6 +59,7 @@ TLANG_NAMESPACE_END
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
+  using namespace std::placeholders;
 
   py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
                                           PyExc_TypeError);
@@ -442,6 +443,15 @@ void export_lang(py::module &m) {
           py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
+      .def("create_texture",
+          [&](Program *program, const DataType &dt,
+              int num_channels,
+              const std::vector<int> &shape) -> Texture * {
+            return program->create_texture(dt, num_channels, shape);
+          },
+          py::arg("dt"), py::arg("num_channels"),
+          py::arg("shape") = py::tuple(),
+          py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -554,6 +564,10 @@ void export_lang(py::module &m) {
       .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::class_<Texture>(m, "Texture")
+      .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
+      .def("from_ndarray", &Texture::from_ndarray);
+
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
@@ -628,6 +642,7 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -1196,6 +1211,13 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->relations.insert(std::pair(
               type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
+
+  m.def("wait_for_debugger", []() {
+    #ifdef WIN32
+    while (!::IsDebuggerPresent())
+      ::Sleep(100);
+    #endif
+    });
 }
 
 TI_NAMESPACE_END

@@ -36,6 +36,8 @@ using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
+using TextureBind = TaskAttributes::TextureBind;
+
 std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
   switch (b.type) {
@@ -951,12 +953,31 @@ class TaskCodegen : public IRVisitor {
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
 
-    if (stmt->func_name == "sample_texture") {
-      spirv::Value tex = ir_->texture_argument(4, 1, 0);
-      auto u = ir_->query_value(stmt->args[0]->raw_name());
-      auto v = ir_->query_value(stmt->args[1]->raw_name());
-      spirv::Value s_vec4 = ir_->sample_texture(tex, u, v, ir_->const_i32_zero_);
-      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(), s_vec4, 0);
+    if (stmt->func_name == "global_texture_ptr") {
+      int binding = binding_head_++;
+      // FIXME: Remove this temporary hackery crap
+      Texture *texptr = (Texture*) stmt->args[0]->as<ConstStmt>()->val.data[0].value_bits;
+      val = ir_->texture_argument(4, 0, binding);
+      texture_binds_.push_back(
+          TextureBind{texptr->get_device_allocation(), binding});
+    } else if (stmt->func_name == "sample_texture") {
+      auto tex = ir_->query_value(stmt->args[0]->raw_name());
+      auto u = ir_->query_value(stmt->args[1]->raw_name());
+      auto v = ir_->query_value(stmt->args[2]->raw_name());
+      auto lod = ir_->float_immediate_number(ir_->f32_type(), 0.0);
+      val = ir_->sample_texture(tex, u, v, lod);
+    } else if (stmt->func_name == "composite_extract_0") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 0);
+    } else if (stmt->func_name == "composite_extract_1") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 1);
+    } else if (stmt->func_name == "composite_extract_2") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 2);
+    } else if (stmt->func_name == "composite_extract_3") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 3);
     }
 
     const std::unordered_set<std::string> reduction_ops{
@@ -1426,7 +1447,6 @@ class TaskCodegen : public IRVisitor {
   void generate_serial_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::serial;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 1;
 
@@ -1455,6 +1475,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void gen_array_range(Stmt *stmt) {
@@ -1469,7 +1490,6 @@ class TaskCodegen : public IRVisitor {
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::range_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
 
     task_attribs_.range_for_attribs = TaskAttributes::RangeForAttributes();
     auto &range_for_attribs = task_attribs_.range_for_attribs.value();
@@ -1610,12 +1630,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_listgen_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::listgen;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 32;
 
@@ -1762,12 +1782,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::struct_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 65536;
     task_attribs_.advisory_num_threads_per_group = 128;
 
@@ -1829,6 +1849,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
@@ -2004,6 +2025,10 @@ class TaskCodegen : public IRVisitor {
     return result;
   }
 
+  std::vector<TextureBind> get_texture_binds() {
+    return texture_binds_;
+  }
+
   void push_loop_control_labels(spirv::Label continue_label,
                                 spirv::Label merge_label) {
     continue_label_stack_.push_back(continue_label);
@@ -2050,6 +2075,7 @@ class TaskCodegen : public IRVisitor {
                      uint32_t,
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
+  std::vector<TextureBind> texture_binds_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};

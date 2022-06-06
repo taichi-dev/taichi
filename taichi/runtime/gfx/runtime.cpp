@@ -336,7 +336,9 @@ void CompiledTaichiKernel::generate_command_list(
     }
 
     for (auto &bind : attribs.texture_binds) {
-      binder->image(1, bind.binding, textures.at(0), {});
+      cmdlist->image_transition(bind.texture, ImageLayout::undefined,
+                                ImageLayout::shader_read);
+      binder->image(0, bind.binding, bind.texture, {});
     }
 
     if (attribs.task_type == OffloadedTaskType::listgen) {
@@ -496,7 +498,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // Record commands
   std::unordered_map<int, DeviceAllocation> textures;
-  textures[0] = debug_image_;
   ti_kernel->generate_command_list(current_cmdlist_.get(), args_buffer.get(),
                                    ret_buffer.get(), any_arrays, textures);
 
@@ -575,28 +576,6 @@ void GfxRuntime::init_nonroot_buffers() {
        /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false, AllocUsage::Storage});
 
-  ImageParams img_params;
-  img_params.dimension = ImageDimension::d2D;
-  img_params.format = BufferFormat::rgba32f;
-  img_params.x = 16;
-  img_params.y = 16;
-  img_params.initial_layout = ImageLayout::undefined;
-  debug_image_ = static_cast<GraphicsDevice*>(device_)->create_image(img_params);
-
-  DeviceAllocation buf;
-  buf = device_->allocate_memory({16 * 16 * 4 * sizeof(float), true, false});
-  float *d = (float*) device_->map(buf);
-
-  for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
-      for (int k = 0; k < 4; k++) {
-        d[i * 16 * 4 + j * 4 + k] = float(rand()) / float(RAND_MAX);
-      }
-    }
-  }
-
-  device_->unmap(buf);
-
   // Need to zero fill the buffers, otherwise there could be NaN.
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
@@ -606,20 +585,7 @@ void GfxRuntime::init_nonroot_buffers() {
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
 
-  BufferImageCopyParams params;
-  params.buffer_row_length = 16 * 4 * sizeof(float);
-  params.buffer_image_height = 16;
-  params.image_mip_level = 0;
-  params.image_extent.x = 16;
-  params.image_extent.y = 16;
-
-  cmdlist->image_transition(debug_image_, ImageLayout::undefined, ImageLayout::transfer_dst);
-  cmdlist->buffer_to_image(debug_image_, buf.get_ptr(0), ImageLayout::transfer_dst, params);
-  cmdlist->image_transition(debug_image_, ImageLayout::transfer_dst, ImageLayout::shader_read);
-
   stream->submit_synced(cmdlist.get());
-
-  device_->dealloc_memory(buf);
 }
 
 void GfxRuntime::add_root_buffer(size_t root_buffer_size) {

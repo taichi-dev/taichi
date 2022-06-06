@@ -16,20 +16,19 @@ typedef void *TiDispatchableHandle;
 typedef size_t TiNonDispatchableHandle;
 #define TI_NULL_HANDLE 0
 
-typedef TiDispatchableHandle TiDevice;
-typedef TiDispatchableHandle TiContext;
+typedef TiDispatchableHandle TiRuntime;
 typedef TiDispatchableHandle TiAotModule;
 
-typedef TiNonDispatchableHandle TiDeviceMemory;
+typedef TiNonDispatchableHandle TiMemory;
 typedef TiNonDispatchableHandle TiKernel;
+typedef TiNonDispatchableHandle TiComputeGraph;
 
 typedef enum TiArch {
   // TI_ARCH_ANY = 0,  // TODO: (penguinliong) Do we need this?
   TI_ARCH_VULKAN = 1,
 } TiArch;
-TI_DLL_EXPORT TiDevice TI_API_CALL ti_create_device(TiArch arch);
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_device(TiDevice device);
-TI_DLL_EXPORT void TI_API_CALL ti_wait_device_idle(TiDevice device);
+TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(TiRuntime runtime);
 
 typedef enum TiAllocationUsageFlagBits {
   TI_MEMORY_USAGE_STORAGE_BIT = 1,
@@ -45,46 +44,62 @@ typedef struct {
   TiBool export_sharing;
   TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
-TI_DLL_EXPORT TiDeviceMemory TI_API_CALL
-ti_allocate_device_memory(TiDevice device,
-                          const TiMemoryAllocateInfo *allocate_info);
-TI_DLL_EXPORT void TI_API_CALL ti_free_device_memory(TiDevice device,
-                                                     TiDeviceMemory devmem);
-TI_DLL_EXPORT void *TI_API_CALL ti_map_device_memory(TiDevice device,
-                                                     TiDeviceMemory devmem);
-TI_DLL_EXPORT void TI_API_CALL ti_unmap_device_memory(TiDevice device,
-                                                      TiDeviceMemory devmem);
-
-TI_DLL_EXPORT TiContext TI_API_CALL ti_create_context(TiDevice device);
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_context(TiContext context);
+TI_DLL_EXPORT TiMemory TI_API_CALL
+ti_allocate_memory(TiRuntime runtime,
+                   const TiMemoryAllocateInfo *allocate_info);
+TI_DLL_EXPORT void TI_API_CALL ti_free_memory(TiRuntime runtime,
+                                              TiMemory memory);
+TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
+                                              TiMemory memory);
+TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
+                                               TiMemory memory);
 
 typedef struct TiNdShape {
   uint32_t dim_count;
   uint32_t dims[16];  // TODO: (penguinliong) give this constant a name?
 } TiNdShape;
 typedef struct TiNdArray {
-  TiDeviceMemory devmem;
+  TiMemory memory;
   TiNdShape shape;
   TiNdShape elem_shape;
 } TiNdArray;
+enum TiArgumentType {
+  TI_ARGUMENT_TYPE_I32,
+  TI_ARGUMENT_TYPE_F32,
+  TI_ARGUMENT_TYPE_NDARRAY,
+};
+union TiArgumentValue {
+  int32_t i32;
+  float f32;
+  TiNdArray ndarray;
+};
+struct TiArgument {
+  TiArgumentType type;
+  TiArgumentValue value;
+};
+struct TiNamedArgument {
+  const char *name;
+  TiArgument arg;
+};
+TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,
+                                                TiKernel kernel,
+                                                uint32_t arg_count,
+                                                const TiArgument *args);
 TI_DLL_EXPORT void TI_API_CALL
-ti_set_context_arg_ndarray(TiContext context,
-                           uint32_t arg_index,
-                           const TiNdArray *ndarray);
-TI_DLL_EXPORT void TI_API_CALL ti_set_context_arg_i32(TiContext context,
-                                                      uint32_t arg_index,
-                                                      int32_t value);
-TI_DLL_EXPORT void TI_API_CALL ti_set_context_arg_f32(TiContext context,
-                                                      uint32_t arg_index,
-                                                      float value);
-TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiContext context,
-                                                TiKernel kernel);
-TI_DLL_EXPORT void TI_API_CALL ti_submit(TiContext context);
-TI_DLL_EXPORT void TI_API_CALL ti_wait(TiContext context);
+ti_launch_compute_graph(TiRuntime runtime,
+                        TiComputeGraph compute_graph,
+                        uint32_t arg_count,
+                        const TiNamedArgument *named_args);
+TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);
+TI_DLL_EXPORT void TI_API_CALL ti_wait(TiRuntime runtime);
 
+TI_DLL_EXPORT TiAotModule TI_API_CALL
+ti_load_aot_module(TiRuntime runtime, const char *module_path);
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_aot_module(TiAotModule mod);
 TI_DLL_EXPORT TiKernel TI_API_CALL ti_get_aot_module_kernel(TiAotModule mod,
                                                             const char *name);
+TI_DLL_EXPORT TiComputeGraph TI_API_CALL
+ti_get_aot_module_compute_graph(TiAotModule mod, const char *name);
 
 #ifdef __cplusplus
 }  // extern "C"

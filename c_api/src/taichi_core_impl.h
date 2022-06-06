@@ -7,52 +7,40 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-class Device;
+class Runtime;
 class Context;
 class AotModule;
 
-class Device {
+class Runtime {
  protected:
-  Device(taichi::Arch arch);
+  // 32 is a magic number in `taichi/inc/constants.h`.
+  std::array<uint64_t, 32> host_result_buffer_;
+
+  Runtime(taichi::Arch arch);
 
  public:
   const taichi::Arch arch;
-  virtual ~Device();
+  taichi::lang::RuntimeContext runtime_context_;
+
+  virtual ~Runtime();
 
   virtual taichi::lang::Device &get() = 0;
 
-  virtual Context *create_context() = 0;
-
-  struct VulkanDevice *as_vk();
-};
-
-class Context {
-  Device *device_;
-  taichi::lang::RuntimeContext runtime_context_;
-
- protected:
-  Context(Device &device);
-
- public:
-  virtual ~Context();
-
-  taichi::lang::RuntimeContext &get();
-  Device &device();
-
+  virtual TiAotModule load_aot_module(const char* module_path) = 0;
   virtual void submit() = 0;
   virtual void wait() = 0;
 
-  struct VulkanContext *as_vk();
+  struct VulkanRuntime *as_vk();
 };
 
 class AotModule {
-  Context *context_;
+  Runtime *runtime_;
   std::unique_ptr<taichi::lang::aot::Module> aot_module_;
 
  public:
-  AotModule(Context &context,
+  AotModule(Runtime &runtime,
             std::unique_ptr<taichi::lang::aot::Module> &&aot_module);
 
   taichi::lang::aot::Module &get();
-  Context &context();
+  Runtime &runtime();
 };

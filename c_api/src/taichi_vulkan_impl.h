@@ -8,54 +8,51 @@
 
 #include "taichi_core_impl.h"
 
-class VulkanDevice;
-class VulkanDeviceImported;
-class VulkanDeviceOwned;
+class VulkanRuntime;
+class VulkanRuntimeImported;
+class VulkanRuntimeOwned;
 class VulkanContext;
 
-class VulkanDevice : public Device {
- protected:
-  VulkanDevice();
-
+class VulkanRuntime : public Runtime {
  public:
+  VulkanRuntime();
+
   taichi::lang::vulkan::VulkanDevice &get_vk();
+  virtual taichi::lang::vulkan::VkRuntime &get_gfx_runtime() = 0;
 
-  virtual Context *create_context() override final;
+  virtual TiAotModule load_aot_module(const char *module_path) override final;
+  virtual void submit() override final;
+  virtual void wait() override final;
 };
-class VulkanDeviceImported : public VulkanDevice {
-  taichi::lang::vulkan::VulkanDevice vk_device_;
+class VulkanRuntimeImported : public VulkanRuntime {
+  // A dirty workaround to ensure the device is fully initialized before
+  // construction of `gfx_runtime_`.
+  struct Workaround {
+    taichi::lang::vulkan::VulkanDevice vk_device;
+    Workaround(uint32_t api_version,
+               const taichi::lang::vulkan::VulkanDevice::Params &params);
+  } inner_;
+  taichi::lang::vulkan::VkRuntime gfx_runtime_;
 
  public:
-  VulkanDeviceImported(
+  VulkanRuntimeImported(
       uint32_t api_version,
       const taichi::lang::vulkan::VulkanDevice::Params &params);
 
   virtual taichi::lang::Device &get() override final;
+  virtual taichi::lang::vulkan::VkRuntime &get_gfx_runtime() override final;
 };
-class VulkanDeviceOwned : public VulkanDevice {
+class VulkanRuntimeOwned : public VulkanRuntime {
   taichi::lang::vulkan::VulkanDeviceCreator vk_device_creator_;
+  taichi::lang::vulkan::VkRuntime gfx_runtime_;
 
  public:
-  VulkanDeviceOwned();
-  VulkanDeviceOwned(
+  VulkanRuntimeOwned();
+  VulkanRuntimeOwned(
       const taichi::lang::vulkan::VulkanDeviceCreator::Params &params);
 
   virtual taichi::lang::Device &get() override final;
-};
-
-class VulkanContext : public Context {
-  // 32 is a magic number in `taichi/inc/constants.h`.
-  std::array<uint64_t, 32> host_result_buffer_;
-  taichi::lang::vulkan::VkRuntime vk_runtime_;
-
- public:
-  VulkanContext(VulkanDevice &device);
-  virtual ~VulkanContext() override final;
-
-  virtual void submit() override final;
-  virtual void wait() override final;
-
-  taichi::lang::vulkan::VkRuntime &get_vk();
+  virtual taichi::lang::vulkan::VkRuntime &get_gfx_runtime() override final;
 };
 
 #endif  // TI_WITH_VULKAN

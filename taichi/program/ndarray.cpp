@@ -48,15 +48,37 @@ Ndarray::Ndarray(Program *prog,
 
 Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
-                 const std::vector<int> &shape)
+                 const std::vector<int> &shape,
+                 const std::vector<int> &element_shape,
+                 ExternalArrayLayout layout)
     : ndarray_alloc_(devalloc),
       dtype(type),
+      element_shape(element_shape),
       shape(shape),
+      layout(layout),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
                                 1,
                                 std::multiplies<>())),
-      element_size_(data_type_size(dtype)) {
+      element_size_(data_type_size(dtype) *
+                    std::accumulate(std::begin(element_shape),
+                                    std::end(element_shape),
+                                    1,
+                                    std::multiplies<>())) {
+  // When element_shape is specfied but layout is not, default layout is AOS.
+  if (!element_shape.empty() && layout == ExternalArrayLayout::kNull) {
+    layout = ExternalArrayLayout::kAOS;
+  }
+  // Now that we have two shapes which may be concatenated differently
+  // depending on layout, total_shape_ comes handy.
+  total_shape_ = shape;
+  if (layout == ExternalArrayLayout::kAOS) {
+    total_shape_.insert(total_shape_.end(), element_shape.begin(),
+                        element_shape.end());
+  } else if (layout == ExternalArrayLayout::kSOA) {
+    total_shape_.insert(total_shape_.begin(), element_shape.begin(),
+                        element_shape.end());
+  }
 }
 
 Ndarray::~Ndarray() {

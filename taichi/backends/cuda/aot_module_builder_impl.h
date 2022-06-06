@@ -6,13 +6,13 @@
 
 namespace taichi {
 namespace lang {
-namespace cpu {
+namespace cuda {
 
 class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
  private:
   CodeGenLLVM::CompiledData compile_kernel(Kernel *kernel) override;
 };
 
-}  // namespace cpu
+}  // namespace cuda
 }  // namespace lang
 }  // namespace taichi

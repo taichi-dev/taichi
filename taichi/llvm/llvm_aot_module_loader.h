@@ -15,6 +15,10 @@ class LlvmAotModule : public aot::Module {
     TI_ASSERT(program_ != nullptr);
   }
 
+  Arch arch() const override {
+    return program_->config->arch;
+  }
+
   uint64_t version() const override {
     return 0;
   }

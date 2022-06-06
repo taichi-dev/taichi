@@ -18,6 +18,8 @@ programming** (ODOP).
 
 ## Data-oriented classes
 
+### Introduction
+
 If you need to define a **Taichi kernel** as a Python class member function, please decorate the class with a `@ti.data_oriented` decorator. You can then define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
 
 :::note
@@ -110,8 +112,6 @@ print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
-## Integrating features from the Python classes
-
 ### Inheritance of data-oriented classes
 
 The *data-oriented* property will be automatically carried beyond the Python class inheriting. This means the **Taichi Kernel** could be called while any of the ancestor classes are decorated by the `@ti.data_oriented` decorator.
@@ -167,7 +167,7 @@ c = BaseClass()
 # The two lines above will trigger a kernel define error, since class c is not decorated by @ti.data_oriented
 ```
 
-### Python-built-in-decorators
+### Python built-in decorators
 
 Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], could decorate to a **Taichi kernel** in *data-oriented* classes.
 
@@ -345,7 +345,7 @@ get_area() # 201.062...
 
 ### Notes on struct classes
 - Inheritance of struct classes is not implemented.
-- While functions attached to a struct with the `@ti.struct_class` decorator is convenient and encouraged, it is actually possible to associated a function to structs with the older method of defining structs.  As mentioned above, the two methods for defining a struct type are identical in their output.  To do this, use the `__struct_method` argument with the `ti.types.struct` call:
+- While functions attached to a struct with the `@ti.struct_class` decorator is convenient and encouraged, it is actually possible to associate a function to structs with the older method of defining structs.  As mentioned above, the two methods for defining a struct type are identical in their output.  To do this, use the `__struct_methods` argument with the `ti.types.struct` call:
 
 ```python
 @ti.func

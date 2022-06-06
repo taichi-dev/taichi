@@ -1793,7 +1793,6 @@ class VectorNdarray(Ndarray):
         self.layout = layout
         self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
-        # TODO: pass in element_type, shape, layout directly
         self.arr = impl.get_runtime().prog.create_ndarray(
             self.element_type.dtype, shape, self.element_type.shape, layout)
 

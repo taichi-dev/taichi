@@ -656,13 +656,17 @@ class Kernel:
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
+                    is_soa = needed.layout == Layout.SOA
+                    element_dim = needed.element_dim
+                    array_shape = v.shape[
+                        element_dim:] if is_soa else v.shape[:element_dim]
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, v.shape)
+                            tmp.nbytes, array_shape)
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
@@ -670,7 +674,7 @@ class Kernel:
                         callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape)
+                            tmp.element_size() * tmp.nelement(), array_shape)
                     else:
                         # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
                         tmp, paddle_callbacks = self.get_paddle_callbacks(
@@ -678,7 +682,7 @@ class Kernel:
                         callbacks += paddle_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
-                            v.element_size() * v.size, v.shape)
+                            v.element_size() * v.size, array_shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:

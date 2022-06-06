@@ -41,7 +41,7 @@ void compile_to_offloads(IRNode *ir,
 
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
-  ad_reverse_mode = false;
+
   if (grad && ad_reverse_mode) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");

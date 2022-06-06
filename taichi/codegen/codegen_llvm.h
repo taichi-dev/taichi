@@ -317,6 +317,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *offset_bit_ptr(llvm::Value *input_bit_ptr, int bit_offset_delta);
 
+  std::tuple<llvm::Value *, llvm::Value *> load_bit_pointer(llvm::Value *ptr);
+
   void visit(SNodeLookupStmt *stmt) override;
 
   void visit(GetChStmt *stmt) override;

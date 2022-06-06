@@ -444,31 +444,11 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
             any_arrays[i] = kDeviceNullAllocation;
           }
         } else {
-          // Compute ext arr sizes
-          size_t size = arg.stride;
-          bool has_zero_axis = false;
-
-          for (int ax = 0; ax < 8; ax++) {
-            // FIXME: how and when do we determine the size of ext arrs?
-            size_t axis_size = host_ctx->extra_args[i][ax];
-            if (axis_size) {
-              if (has_zero_axis) {
-                // e.g. shape [1, 0, 1]
-                size = 0;
-              } else {
-                size *= host_ctx->extra_args[i][ax];
-              }
-            } else {
-              has_zero_axis = true;
-            }
-          }
-
-          ext_array_size[i] = size;
-
+          ext_array_size[i] = host_ctx->array_runtime_sizes[i];
           // Alloc ext arr
-          if (size) {
+          if (ext_array_size[i]) {
             DeviceAllocation extarr_buf = device_->allocate_memory(
-                {size, /*host_write=*/true, /*host_read=*/true,
+                {ext_array_size[i], /*host_write=*/true, /*host_read=*/true,
                  /*export_sharing=*/false, AllocUsage::Storage});
             any_arrays[i] = extarr_buf;
           } else {

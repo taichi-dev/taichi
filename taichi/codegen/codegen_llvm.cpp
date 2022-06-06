@@ -1231,11 +1231,16 @@ llvm::Value *CodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
   if (!is_integral(stmt->val->ret_type)) {
     return nullptr;
   }
+
   std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
   bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
-  bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
-  bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
-
+  if (is_signed(stmt->val->ret_type)) {
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
+  } else {
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::UMin;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::UMax;
+  }
   bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
   bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
   bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
@@ -1280,12 +1285,14 @@ llvm::Value *CodeGenLLVM::atomic_op_using_cas(
   return old_val;
 }
 
-llvm::Value *CodeGenLLVM::real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
-  if (!stmt->val->ret_type->is<PrimitiveType>()) {
+llvm::Value *CodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
+  if (!is_real(stmt->val->ret_type)) {
     return nullptr;
   }
+
+  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
   AtomicOpType op = stmt->op_type;
-  if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+  if (prim_type == PrimitiveTypeID::f16) {
     switch (op) {
       case AtomicOpType::add:
         return atomic_op_using_cas(
@@ -1304,32 +1311,21 @@ llvm::Value *CodeGenLLVM::real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
     }
   }
 
-  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
+  if (op == AtomicOpType::add) {
+    return builder->CreateAtomicRMW(
+        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+        llvm::AtomicOrdering::SequentiallyConsistent);
+  }
 
   std::unordered_map<PrimitiveTypeID,
                      std::unordered_map<AtomicOpType, std::string>>
       atomics;
-
-  atomics[PrimitiveTypeID::f32][AtomicOpType::add] = "atomic_add_f32";
-  atomics[PrimitiveTypeID::f64][AtomicOpType::add] = "atomic_add_f64";
   atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
   atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
   atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
   atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
-  atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
-  atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
-  atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
-  atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
-
-  if (atomics.find(prim_type) == atomics.end()) {
-    return nullptr;
-  }
-  if (is_integral(stmt->val->ret_type) &&
-      atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
-    return nullptr;
-  }
+  TI_ASSERT(atomics.find(prim_type) != atomics.end());
   TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
-
   return create_call(atomics.at(prim_type).at(op),
                      {llvm_val[stmt->dest], llvm_val[stmt->val]});
 }
@@ -1347,7 +1343,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
       old_value = result;
     } else if (llvm::Value *result = custom_type_atomic(stmt)) {
       old_value = result;
-    } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
+    } else if (llvm::Value *result = real_type_atomic(stmt)) {
       old_value = result;
     } else if (llvm::Value *result = integral_type_atomic(stmt)) {
       old_value = result;

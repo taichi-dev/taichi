@@ -488,7 +488,8 @@ class KernelCodegenImpl : public IRVisitor {
       for (int i = 0; i < num_indices; i++) {
         if (i >= element_shape_index_offset &&
             i < element_shape_index_offset + element_shape.size()) {
-          emit("{} *= {};", linear_index_name, element_shape[i - element_shape_index_offset]);
+          emit("{} *= {};", linear_index_name,
+               element_shape[i - element_shape_index_offset]);
         } else {
           emit("{} *= {};", linear_index_name, size_exprs[size_var_index++]);
         }

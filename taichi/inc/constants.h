@@ -36,7 +36,7 @@ T taichi_union_cast_with_different_sizes(G g) {
   union {
     T t;
     G g;
-  } u {};
+  } u{};
   u.g = g;
   return u.t;
 }

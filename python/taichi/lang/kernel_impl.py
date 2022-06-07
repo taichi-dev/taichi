@@ -661,7 +661,7 @@ class Kernel:
                     element_dim = needed.element_dim
                     if element_dim:
                         array_shape = v.shape[
-                            element_dim : ] if is_soa else v.shape[ : -element_dim]
+                            element_dim:] if is_soa else v.shape[:-element_dim]
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!

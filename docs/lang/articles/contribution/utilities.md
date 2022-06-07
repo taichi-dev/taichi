@@ -22,11 +22,11 @@ system. Logs can have different levels, from low to high, they are:
 
 The higher the level is, the more critical the message is.
 
-The default logging level is `info`. You may override the default
-logging level by:
+The default logging level is `info`. To override the default
+logging level:
 
-1.  Setting the environment variable like `export TI_LOG_LEVEL=warn`.
-2.  Setting the log level from Python side:
+1.  Set the environment variable, for example, `export TI_LOG_LEVEL=warn`.
+2.  Set the log level from Python side:
     `ti.set_logging_level(ti.WARN)`.
 
 In **Python**, you may write logs using the `ti.*` interface:

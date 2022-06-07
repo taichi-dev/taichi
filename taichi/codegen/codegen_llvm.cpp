@@ -1636,7 +1636,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 
   auto linear_index = tlctx->get_constant(0);
-  size_t array_index = 0;
+  size_t size_var_index = 0;
   for (int i = 0; i < num_indices; i++) {
     if (i >= element_shape_index_offset &&
         i < element_shape_index_offset + element_shape.size()) {
@@ -1644,10 +1644,11 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
           tlctx->get_constant(element_shape[i - element_shape_index_offset]);
       linear_index = builder->CreateMul(linear_index, size_var);
     } else {
-      linear_index = builder->CreateMul(linear_index, sizes[array_index++]);
+      linear_index = builder->CreateMul(linear_index, sizes[size_var_index++]);
     }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
+  TI_ASSERT(array_index == num_indices - element_shape.size())
   llvm_val[stmt] = builder->CreateGEP(base, linear_index);
 }
 

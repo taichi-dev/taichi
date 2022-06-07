@@ -657,9 +657,11 @@ class Kernel:
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
                     is_soa = needed.layout == Layout.SOA
+                    array_shape = v.shape
                     element_dim = needed.element_dim
-                    array_shape = v.shape[
-                        element_dim:] if is_soa else v.shape[:element_dim]
+                    if element_dim:
+                        array_shape = v.shape[
+                            element_dim : ] if is_soa else v.shape[ : -element_dim]
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!

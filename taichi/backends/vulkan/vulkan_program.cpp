@@ -189,8 +189,9 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
     Kernel &kernel) {
   spirv::lower(&kernel);
   std::vector<gfx::CompiledSNodeStructs> compiled_structs;
+  auto target_device = std::make_unique<aot::TargetDevice>(Arch::vulkan);
   gfx::GfxRuntime::RegisterParams kparams =
-      gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
+      gfx::run_codegen(&kernel, static_cast<Device*>(&*target_device), compiled_structs);
   return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
                                            std::move(kparams));
 }

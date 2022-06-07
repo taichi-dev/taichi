@@ -656,6 +656,11 @@ class Kernel:
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
+
+                    # Element shapes are already spcialized in Taichi codegen.
+                    # The shape information for element dims are no longer needed.
+                    # Therefore we strip the element shapes from the shape vector,
+                    # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
                     element_dim = needed.element_dim

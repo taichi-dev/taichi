@@ -26,8 +26,8 @@ target_link_libraries(${EXAMPLES_NAME} PRIVATE taichi_isolated_core)
 # TODO 4832: be specific on the header dependencis here, e.g., ir
 target_include_directories(${EXAMPLES_NAME}
   PRIVATE
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include
-    ${PROJECT_SOURCE_DIR}/external/eigen
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen
   )
 endif()

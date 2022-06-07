@@ -30,7 +30,7 @@ VulkanRuntimeImported::VulkanRuntimeImported(
     uint32_t api_version,
     const taichi::lang::vulkan::VulkanDevice::Params &params)
     : inner_(api_version, params),
-      gfx_runtime_(taichi::lang::vulkan::VkRuntime::Params{
+      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params {
           host_result_buffer_.data(), &inner_.vk_device}) {
 }
 taichi::lang::Device &VulkanRuntimeImported::get() {
@@ -67,7 +67,7 @@ make_vulkan_runtime_creator_params() {
   params.additional_device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
   return params;
 }
-taichi::lang::vulkan::VkRuntime &VulkanRuntimeImported::get_gfx_runtime() {
+taichi::lang::gfx::GfxRuntime &VulkanRuntimeImported::get_gfx_runtime() {
   return gfx_runtime_;
 }
 
@@ -77,18 +77,18 @@ VulkanRuntimeOwned::VulkanRuntimeOwned()
 VulkanRuntimeOwned::VulkanRuntimeOwned(
     const taichi::lang::vulkan::VulkanDeviceCreator::Params &params)
     : vk_device_creator_(params),
-      gfx_runtime_(taichi::lang::vulkan::VkRuntime::Params{
+      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
           host_result_buffer_.data(), vk_device_creator_.device()}) {
 }
 taichi::lang::Device &VulkanRuntimeOwned::get() {
   return *static_cast<taichi::lang::Device *>(vk_device_creator_.device());
 }
-taichi::lang::vulkan::VkRuntime &VulkanRuntimeOwned::get_gfx_runtime() {
+taichi::lang::gfx::GfxRuntime&VulkanRuntimeOwned::get_gfx_runtime() {
   return gfx_runtime_;
 }
 
 TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
-  taichi::lang::vulkan::AotModuleParams params{};
+  taichi::lang::gfx::AotModuleParams params{};
   params.module_path = module_path;
   params.runtime = &get_gfx_runtime();
   std::unique_ptr<taichi::lang::aot::Module> aot_module =

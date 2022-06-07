@@ -252,18 +252,18 @@ if (APPLE)
 endif()
 
 # TODO: replace these includes per target basis
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/spdlog/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/PicoSHA2)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen)
 
 
 if (TI_WITH_OPENGL)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include)
 endif()
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
@@ -280,7 +280,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID AND NOT TI_EMSCRIPTENED)
   message("Building with GLFW")
   add_subdirectory(external/glfw)
   target_link_libraries(${LIBRARY_NAME} PRIVATE glfw)
-  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glfw/include)
+  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
 endif()
 
 if(DEFINED ENV{LLVM_DIR})
@@ -354,7 +354,7 @@ endif()
 if (TI_WITH_OPENGL)
     set(SPIRV_CROSS_CLI false)
     add_subdirectory(external/SPIRV-Cross)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
 
     add_subdirectory(taichi/runtime/opengl)
@@ -375,21 +375,21 @@ add_subdirectory(external/SPIRV-Tools)
 # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
 
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Reflect)
 
 add_subdirectory(taichi/runtime/gfx)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 
 # Vulkan Device API
 if (TI_WITH_VULKAN)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/Vulkan-Headers/include)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/Vulkan-Headers/include)
 
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/volk)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/volk)
 
 
     # By specifying SYSTEM, we suppressed the warnings from third-party headers.
-    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
+    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/VulkanMemoryAllocator/include)
 
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
@@ -482,21 +482,21 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     # TODO 4832: move some header dependencis to other targets, e.g., gui
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
       PRIVATE
-        ${PROJECT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/external/spdlog/include
-        ${PROJECT_SOURCE_DIR}/external/glad/include
-        ${PROJECT_SOURCE_DIR}/external/eigen
-        ${PROJECT_SOURCE_DIR}/external/volk
-        ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
-        ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
-        ${PROJECT_SOURCE_DIR}/external/imgui
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/Vulkan-Headers/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
       )
 
     if (NOT ANDROID)
       target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
         PRIVATE
-          external/glfw/include
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
         )
     endif ()
 
@@ -527,7 +527,7 @@ endif()
 
 if(TI_WITH_GGUI)
     # PUBLIC as required by python module
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glm)
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
 
     # Dear ImGui
     add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
@@ -542,15 +542,15 @@ else()
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
 
     target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-    target_include_directories(imgui PRIVATE external/glfw/include)
+    target_include_directories(imgui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
 
 endif()
-    target_include_directories(imgui PRIVATE external/Vulkan-Headers/include)
+    target_include_directories(imgui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/Vulkan-Headers/include)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
 
 endif()
 
 if (NOT APPLE)
-    install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

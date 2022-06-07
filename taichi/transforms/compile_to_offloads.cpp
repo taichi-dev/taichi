@@ -38,7 +38,7 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_reverse_mode,
                          bool start_from_ast) {
   TI_AUTO_PROF;
-
+  ad_reverse_mode = true;
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
@@ -93,7 +93,13 @@ void compile_to_offloads(IRNode *ir,
     irpass::full_simplify(ir, config, {false, kernel->program});
     irpass::auto_diff(ir, config, ad_use_stack, ad_reverse_mode);
     irpass::full_simplify(ir, config, {false, kernel->program});
-    print("Gradient");
+    print("Gradient - after reverse");
+    irpass::analysis::verify(ir);
+
+    // Forward on reverse
+    irpass::auto_diff(ir, config, ad_use_stack, false);
+    irpass::full_simplify(ir, config, {false, kernel->program});
+    print("Gradient - after forward");
     irpass::analysis::verify(ir);
   }
 

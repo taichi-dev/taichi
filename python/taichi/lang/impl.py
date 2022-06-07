@@ -497,6 +497,7 @@ def create_field_member(dtype, name):
     pytaichi.global_vars.append(x)
 
     x_adjoint = None
+    x_dual = None
     if _ti_core.needs_grad(dtype):
         # adjoint
         x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
@@ -505,7 +506,17 @@ def create_field_member(dtype, name):
         x_adjoint.ptr.set_is_primal(False)
         x.ptr.set_adjoint(x_adjoint.ptr)
 
-    return x, x_adjoint
+
+        # dual
+        x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr.set_name(name + ".grad")
+        x_dual.ptr.set_is_primal(False)
+        x.ptr.set_dual(x_dual.ptr)
+
+        x_adjoint.ptr.set_dual(x_dual.ptr)
+
+    return x, x_adjoint, x_dual
 
 
 @python_scope
@@ -552,15 +563,19 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_adjoint = create_field_member(dtype, name)
-    x, x_adjoint = ScalarField(x), ScalarField(x_adjoint)
-    x._set_grad(x_adjoint, reverse_mode=True)
+    x, x_adjoint, x_dual = create_field_member(dtype, name)
+    x, x_adjoint, x_dual = ScalarField(x), ScalarField(x_adjoint), ScalarField(x_dual)
+    # x._set_grad(x_adjoint, reverse_mode=True)
+    x._set_adjoint(x_adjoint)
+    x._set_dual(x_dual)
+    x._set_grad(x_dual, reverse_mode=False)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x_adjoint)
+            root.dense(index_nd(dim), shape).place(x_dual)
     return x
 
 

@@ -30,7 +30,7 @@ VulkanRuntimeImported::VulkanRuntimeImported(
     uint32_t api_version,
     const taichi::lang::vulkan::VulkanDevice::Params &params)
     : inner_(api_version, params),
-      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params {
+      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
           host_result_buffer_.data(), &inner_.vk_device}) {
 }
 taichi::lang::Device &VulkanRuntimeImported::get() {
@@ -83,7 +83,7 @@ VulkanRuntimeOwned::VulkanRuntimeOwned(
 taichi::lang::Device &VulkanRuntimeOwned::get() {
   return *static_cast<taichi::lang::Device *>(vk_device_creator_.device());
 }
-taichi::lang::gfx::GfxRuntime&VulkanRuntimeOwned::get_gfx_runtime() {
+taichi::lang::gfx::GfxRuntime &VulkanRuntimeOwned::get_gfx_runtime() {
   return gfx_runtime_;
 }
 

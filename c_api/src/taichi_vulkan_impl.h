@@ -40,7 +40,7 @@ class VulkanRuntimeImported : public VulkanRuntime {
       const taichi::lang::vulkan::VulkanDevice::Params &params);
 
   virtual taichi::lang::Device &get() override final;
-  virtual taichi::lang::gfx::GfxRuntime&get_gfx_runtime() override final;
+  virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
 class VulkanRuntimeOwned : public VulkanRuntime {
   taichi::lang::vulkan::VulkanDeviceCreator vk_device_creator_;

@@ -158,7 +158,7 @@ void ti_launch_kernel(TiRuntime runtime,
   }
   ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
 }
-#pragma optimize("", off)
+
 void ti_launch_compute_graph(TiRuntime runtime,
                              TiComputeGraph compute_graph,
                              uint32_t arg_count,

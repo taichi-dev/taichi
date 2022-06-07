@@ -1648,7 +1648,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
-  TI_ASSERT(array_index == num_indices - element_shape.size())
+  TI_ASSERT(size_var_index == num_indices - element_shape.size())
   llvm_val[stmt] = builder->CreateGEP(base, linear_index);
 }
 

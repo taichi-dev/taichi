@@ -12,12 +12,12 @@ Texture::Texture(Program *prog,
                  int width,
                  int height,
                  int depth)
-    : prog_(prog),
-      dtype_(type),
+    : dtype_(type),
       num_channels_(num_channels),
       width_(width),
       height_(height),
-      depth_(depth) {
+      depth_(depth),
+      prog_(prog) {
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
 

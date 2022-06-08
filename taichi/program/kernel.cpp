@@ -64,8 +64,8 @@ void Kernel::compile() {
   compiled_ = program->compile(*this);
 }
 
-std::unique_ptr<aot::Kernel> Kernel::compile_to_aot_kernel() {
-  return program->make_aot_kernel(*this);
+void Kernel::compile_to_aot_kernel() {
+  compiled_aot_kernel_ = program->make_aot_kernel(*this);
 }
 
 void Kernel::lower(bool to_executable) {

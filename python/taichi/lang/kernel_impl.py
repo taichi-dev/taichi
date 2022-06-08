@@ -419,6 +419,9 @@ class Kernel:
         impl.get_runtime().kernels.append(self)
         self.reset()
         self.kernel_cpp = None
+        # TODO[#5114]: get rid of compiled_functions and use compiled_kernels instead.
+        # Main motivation is that compiled_kernels can be potentially serialized in the AOT scenario.
+        self.compiled_kernels = {}
 
     def reset(self):
         self.runtime = impl.get_runtime()
@@ -532,6 +535,7 @@ class Kernel:
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+        self.compiled_kernels[key] = taichi_kernel
 
     def get_torch_callbacks(self, v, has_torch, is_ndarray=True):
         callbacks = []

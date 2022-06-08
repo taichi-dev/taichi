@@ -26,7 +26,7 @@
 #endif
 
 #ifdef TI_WITH_VULKAN
-#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 
 #ifdef TI_WITH_CC

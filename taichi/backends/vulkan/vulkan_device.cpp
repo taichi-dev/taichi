@@ -1,4 +1,4 @@
-#include "taichi/runtime/vulkan/vulkan_device_creator.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -8,10 +8,10 @@
 #include <array>
 #include <set>
 
-#include "taichi/runtime/vulkan/vulkan_common.h"
-#include "taichi/runtime/vulkan/vulkan_utils.h"
-#include "taichi/runtime/vulkan/vulkan_loader.h"
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
 #include "spirv_reflect.h"

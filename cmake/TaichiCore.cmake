@@ -232,11 +232,13 @@ endif()
 
 # TODO(#4832), Remove vulkan runtime files from TAICHI_CORE_SOURCE
 # Remove this after all sources are splitted into targets.
-file(GLOB TAICHI_VK_RUNTIME_SOURCE
-  "taichi/runtime/vulkan/*.h"
-  "taichi/runtime/vulkan/*.cpp"
+file(GLOB TAICHI_VULKAN_TEMP_SOURCE
+  "taichi/backends/vulkan/*.h"
+  "taichi/backends/vulkan/*.cpp"
+  "taichi/runtime/program_impls/vulkan/*.h"
+  "taichi/runtime/program_impls/vulkan/*.cpp"
 )
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VK_RUNTIME_SOURCE})
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VULKAN_TEMP_SOURCE})
 
 
 # TODO(#2196): Rename these CMAKE variables:
@@ -390,6 +392,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
 add_subdirectory(taichi/runtime/gfx)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 
+
 # Vulkan Device API
 if (TI_WITH_VULKAN)
     if (APPLE)
@@ -400,8 +403,14 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
-    add_subdirectory(taichi/runtime/vulkan)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_runtime)
+    add_subdirectory(taichi/backends/vulkan)
+
+    # TODO: this dependency is here because program.cpp includes vulkan_program.h
+    # Should be removed
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
+
+    add_subdirectory(taichi/runtime/program_impls)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
 endif ()
 
 

@@ -8,7 +8,7 @@
 #include <VersionHelpers.h>
 #endif
 
-#include "taichi/runtime/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include <functional>
 #include <optional>

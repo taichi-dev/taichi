@@ -17,7 +17,7 @@ namespace py = pybind11;
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
-#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include <memory>

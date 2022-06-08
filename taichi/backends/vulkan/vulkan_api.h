@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/runtime/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include <vk_mem_alloc.h>
 

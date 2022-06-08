@@ -3,12 +3,12 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
-#include "taichi/runtime/vulkan/vulkan_device_creator.h"
-#include "taichi/runtime/vulkan/vulkan_utils.h"
-#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"

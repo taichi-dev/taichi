@@ -1,4 +1,4 @@
-#include "taichi/runtime/vulkan/vulkan_device_creator.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -6,9 +6,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "taichi/runtime/vulkan/vulkan_common.h"
-#include "taichi/runtime/vulkan/vulkan_loader.h"
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
 namespace taichi {

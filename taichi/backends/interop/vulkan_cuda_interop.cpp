@@ -4,7 +4,7 @@
 #include "taichi/backends/cuda/cuda_device.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #endif  // TI_WITH_VULKAN && TI_WITH_CUDA
 
 #include <unordered_map>

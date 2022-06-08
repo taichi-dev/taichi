@@ -5,7 +5,7 @@
 #include "tests/cpp/program/test_program.h"
 #include "tests/cpp/ir/ndarray_kernel.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 
 namespace taichi {

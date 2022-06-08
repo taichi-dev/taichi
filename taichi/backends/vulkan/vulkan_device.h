@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/runtime/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/vulkan_api.h"
 
 #include <vk_mem_alloc.h>
 
@@ -14,7 +14,7 @@
 #include <optional>
 
 #include <taichi/backends/device.h>
-#include <taichi/runtime/vulkan/vulkan_utils.h>
+#include <taichi/backends/vulkan/vulkan_utils.h>
 #include <taichi/common/ref_counted_pool.h>
 
 namespace taichi {

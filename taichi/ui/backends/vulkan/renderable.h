@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/backends/vulkan/vertex.h"

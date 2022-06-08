@@ -32,7 +32,7 @@
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
 
-#include "taichi/runtime/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
 #if !defined(ANDROID)
 #include <GLFW/glfw3.h>
 #endif

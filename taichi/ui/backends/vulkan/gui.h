@@ -15,7 +15,7 @@
 #include <imgui_impl_vulkan.h>
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/common/gui_base.h"
-#include "taichi/runtime/vulkan/vulkan_device.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 

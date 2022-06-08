@@ -1,7 +1,7 @@
-#include "taichi/runtime/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include "taichi/lang_util.h"
-#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 
 #if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)

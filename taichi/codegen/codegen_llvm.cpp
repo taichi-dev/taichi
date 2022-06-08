@@ -1541,6 +1541,22 @@ llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *input_bit_ptr,
   return create_bit_ptr_struct(byte_ptr_base, new_bit_offset);
 }
 
+std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_pointer(
+    llvm::Value *ptr) {
+  // 1. load byte pointer
+  auto byte_ptr_in_bit_struct =
+      builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(0)});
+  auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
+  TI_ASSERT(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
+
+  // 2. load bit offset
+  auto bit_offset_in_bit_struct =
+      builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(1)});
+  auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
+  TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
+  return std::make_tuple(byte_ptr, bit_offset);
+}
+
 void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   llvm::Value *parent = nullptr;
   parent = llvm_val[stmt->input_snode];

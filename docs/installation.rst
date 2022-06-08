@@ -14,7 +14,7 @@ Ubuntu, Arch Linux, and Mac OS X
 
 .. code-block:: bash
 
-   wget https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py
+   wget https://raw.githubusercontent.com/yuanming-hu/taichi/legacy/install.py
    python3 install.py
 
 

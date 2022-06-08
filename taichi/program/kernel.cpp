@@ -51,9 +51,10 @@ Kernel::Kernel(Program &program,
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
-  } else if (autodiff_mode == AutodiffMode::kForward){
+  } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
-  } else if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack){
+  } else if (autodiff_mode == AutodiffMode::kReverseWithStack ||
+             autodiff_mode == AutodiffMode::kReverseWithoutStack) {
     name = primal_name + "_reverse_grad";
   }
 
@@ -428,9 +429,10 @@ void Kernel::init(Program &program,
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
-  } else if (autodiff_mode == AutodiffMode::kForward){
+  } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
-  } else if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack){
+  } else if (autodiff_mode == AutodiffMode::kReverseWithStack ||
+             autodiff_mode == AutodiffMode::kReverseWithoutStack) {
     name = primal_name + "_reverse_grad";
   }
 

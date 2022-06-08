@@ -12,7 +12,7 @@ from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
-from taichi.lang.enums import Layout, AutodiffMode
+from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
                                    handle_exception_from_cpp)
@@ -210,7 +210,8 @@ class Func:
             return self.func(*args)
 
         if self.is_real_function:
-            if impl.get_runtime().current_kernel.autodiff_mode != AutodiffMode.NONE:
+            if impl.get_runtime(
+            ).current_kernel.autodiff_mode != AutodiffMode.NONE:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
             instance_id, _ = self.mapper.lookup(args)
@@ -786,7 +787,8 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         args = _process_args(self, args, kwargs)
-        if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg().opt_level == 0:
+        if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
+        ).opt_level == 0:
             _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
@@ -834,8 +836,12 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(_func, autodiff_mode=AutodiffMode.NONE, _classkernel=is_classkernel)
-    adjoint = Kernel(_func, autodiff_mode=AutodiffMode.REVERSE_WITH_STACK, _classkernel=is_classkernel)
+    primal = Kernel(_func,
+                    autodiff_mode=AutodiffMode.NONE,
+                    _classkernel=is_classkernel)
+    adjoint = Kernel(_func,
+                     autodiff_mode=AutodiffMode.REVERSE_WITH_STACK,
+                     _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 

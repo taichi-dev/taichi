@@ -45,7 +45,7 @@ struct LlvmOfflineCache {
   struct FieldCacheData {
     struct SNodeCacheData {
       int id;
-      int type;
+      SNodeType type;
       size_t cell_size_bytes;
       size_t chunk_size;
 
@@ -53,6 +53,7 @@ struct LlvmOfflineCache {
     };
 
     int tree_id;
+    int root_id;
     size_t root_size;
     std::vector<SNodeCacheData> snode_metas;
 

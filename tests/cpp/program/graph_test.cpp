@@ -8,7 +8,7 @@
 #include "tests/cpp/ir/ndarray_kernel.h"
 #include "taichi/program/graph_builder.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/runtime/vulkan/vulkan_loader.h"
 #endif
 
 using namespace taichi;

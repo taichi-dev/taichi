@@ -1,8 +1,8 @@
 #pragma once
 
-#include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/runtime/vulkan/vulkan_api.h"
 
-#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #ifdef ANDROID
 #include <android/native_window_jni.h>
@@ -14,7 +14,7 @@
 #include <optional>
 
 #include <taichi/backends/device.h>
-#include <taichi/backends/vulkan/vulkan_utils.h>
+#include <taichi/runtime/vulkan/vulkan_utils.h>
 #include <taichi/common/ref_counted_pool.h>
 
 namespace taichi {

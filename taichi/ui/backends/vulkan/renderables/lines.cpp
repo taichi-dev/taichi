@@ -2,7 +2,7 @@
 
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/runtime/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 

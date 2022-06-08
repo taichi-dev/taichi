@@ -3,7 +3,7 @@
 #include <thread>
 #include <mutex>
 
-#include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/runtime/vulkan/vulkan_common.h"
 #include "taichi/system/dynamic_loader.h"
 
 namespace taichi {

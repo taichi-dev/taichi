@@ -1,9 +1,9 @@
 #pragma once
 #include "taichi/ui/common/app_config.h"
 #include <memory>
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/runtime/vulkan/vulkan_device_creator.h"
+#include "taichi/runtime/vulkan/vulkan_loader.h"
+#include "taichi/runtime/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #ifdef ANDROID
 #include <android/native_window.h>

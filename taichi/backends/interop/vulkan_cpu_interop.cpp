@@ -2,7 +2,7 @@
 #include "taichi/backends/cpu/cpu_device.h"
 
 #if TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/runtime/vulkan/vulkan_device.h"
 #endif  // TI_WITH_VULKAN
 
 #include <unordered_map>

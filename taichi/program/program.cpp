@@ -29,8 +29,8 @@
 #include "taichi/backends/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/runtime/vulkan/vulkan_program.h"
+#include "taichi/runtime/vulkan/vulkan_loader.h"
 #endif
 #ifdef TI_WITH_DX11
 #include "taichi/backends/dx/dx_program.h"

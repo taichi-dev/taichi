@@ -59,10 +59,31 @@ struct LlvmOfflineCache {
 
     TI_IO_DEF(tree_id, root_size, snode_metas);
 
-    // TODO(zhanlue)
-    //  Serialize/Deserialize the llvm::Module from StructCompiler
-    //  At runtime, make sure loaded Field-Modules and Kernel-Modules are linked
-    //  altogether.
+    // TODO(zhanlue): refactor llvm::Modules
+    //
+    // struct_module will eventually get cloned into each kernel_module,
+    // so there's no need to serialize it here.
+    //
+    // We have three different types of llvm::Module
+    // 1. runtime_module: contains runtime functions.
+    // 2. struct_module: contains compiled SNodeTree in llvm::Type.
+    // 3. kernel_modules: contains compiled kernel codes.
+    //
+    // The way those modules work rely on a recursive clone mechanism:
+    //   runtime_module = load("runtime.bc")
+    //   struct_module = clone(runtime_module) + compiled-SNodeTree
+    //   kernel_module = clone(struct_module) + compiled-Kernel
+    //
+    // As a result, every kernel_module contains a copy of struct_module +
+    // runtime_module.
+    //
+    // This recursive clone mechanism is super fragile,
+    // which potentially causes inconsistency between modules if not handled
+    // properly.
+    //
+    // Let's turn to use llvm::link to bind the modules,
+    // and make runtime_module, struct_module, kernel_module independent of each
+    // other
   };
 
   // TODO(zhanlue): we need a better identifier for each FieldCacheData
@@ -82,6 +103,9 @@ class LlvmOfflineCacheFileReader {
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
                         const std::string &key,
                         llvm::LLVMContext &llvm_ctx);
+
+  bool get_field_cache(LlvmOfflineCache::FieldCacheData &res,
+                       int snode_tree_id);
 
   static std::unique_ptr<LlvmOfflineCacheFileReader> make(
       const std::string &path,

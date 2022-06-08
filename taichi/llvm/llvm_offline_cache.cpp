@@ -51,6 +51,20 @@ LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
     : path_(path), data_(std::move(data)), format_(format) {
 }
 
+bool LlvmOfflineCacheFileReader::get_field_cache(
+    LlvmOfflineCache::FieldCacheData &res,
+    int snode_tree_id) {
+  auto itr = data_.fields.find(snode_tree_id);
+  if (itr == data_.fields.end()) {
+    TI_DEBUG("Cannot find field with snode_tree_id={}", snode_tree_id);
+    return false;
+  }
+
+  const auto &loaded_field_cache = itr->second;
+  res = loaded_field_cache;  // copy assign
+  return true;
+}
+
 bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
     const std::string &key,

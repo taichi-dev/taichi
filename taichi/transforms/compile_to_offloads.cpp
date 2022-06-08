@@ -40,7 +40,8 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
-  if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  if (autodiff_mode == AutodiffMode::kReverseWithStack ||
+      autodiff_mode == AutodiffMode::kReverseWithoutStack) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -263,10 +264,12 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, autodiff_mode, start_from_ast);
+  compile_to_offloads(ir, config, kernel, verbose, autodiff_mode,
+                      start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,
-                        /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverseWithStack,
+                        /*determine_ad_stack_size=*/autodiff_mode ==
+                            AutodiffMode::kReverseWithStack,
                         lower_global_access, make_thread_local,
                         make_block_local);
 }
@@ -282,7 +285,8 @@ void compile_function(IRNode *ir,
   auto print = make_pass_printer(verbose, func->get_name(), ir);
   print("Initial IR");
 
-  if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  if (autodiff_mode == AutodiffMode::kReverseWithStack ||
+      autodiff_mode == AutodiffMode::kReverseWithoutStack) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }

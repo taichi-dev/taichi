@@ -313,16 +313,9 @@ class LowerAST : public IRVisitor {
     } else {
       auto tensor = stmt->global_var.cast<ExternalTensorExpression>();
       std::vector<Stmt *> shape;
-      if (tensor->element_dim > 0) {  // Layout.SOA
-        for (int i = tensor->element_dim; i < tensor->dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-              i, tensor->arg_id));
-        }
-      } else {  // Layout.AOS
-        for (int i = 0; i < tensor->dim + tensor->element_dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-              i, tensor->arg_id));
-        }
+      for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
+        shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+            i, tensor->arg_id));
       }
       Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
       Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));

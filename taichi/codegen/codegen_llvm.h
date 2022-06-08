@@ -183,8 +183,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(RandStmt *stmt) override;
 
-  llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
-
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
 
   void visit(DecorationStmt *stmt) override;
@@ -316,6 +314,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                      llvm::Value *bit_offset = nullptr);
 
   llvm::Value *offset_bit_ptr(llvm::Value *input_bit_ptr, int bit_offset_delta);
+
+  std::tuple<llvm::Value *, llvm::Value *> load_bit_pointer(llvm::Value *ptr);
 
   void visit(SNodeLookupStmt *stmt) override;
 

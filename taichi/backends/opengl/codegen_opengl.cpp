@@ -485,49 +485,13 @@ class KernelGen : public IRVisitor {
     const int num_indices = stmt->indices.size();
     const auto &element_shape = stmt->element_shape;
     std::vector<std::string> size_var_names;
-    std::vector<std::string> element_shape_size_var_names;
 
     const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
                                                : ExternalArrayLayout::kSOA;
-
-    if (element_shape.size() > 0) {
-      int elem_beg = 0;
-      int elem_end = 0;
-      if (layout == ExternalArrayLayout::kSOA) {
-        elem_beg = 0;
-        elem_end = element_shape.size();
-      } else {
-        elem_beg = num_indices - element_shape.size();
-        elem_end = num_indices;
-      }
-      for (int i = elem_beg; i < elem_end; i++) {
-        used.int32 = true;
-        std::string var_name = fmt::format("_s{}_{}{}", i, "arr", arg_id);
-        if (!loaded_args_.count(var_name)) {
-          emit("int {} = {};", var_name, element_shape[i - elem_beg]);
-          loaded_args_.insert(var_name);
-        }
-        element_shape_size_var_names.push_back(std::move(var_name));
-      }
-    }
-    // Args buffer arrange dimensions from outer to inner
-    // AoS args buffer:   array_shape|element_shape
-    // SoA args buffer: element_shape|array_shape
-    //
-    // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.AOS)
-    // args buffer: 5, 4, 3, 2
-    // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.SOA)
-    // args buffer: 3, 2, 5, 4
-    int ind_beg = 0;
-    int ind_end = 0;
-    if (layout == ExternalArrayLayout::kSOA) {
-      ind_beg = element_shape.size();
-      ind_end = num_indices;
-    } else {
-      ind_beg = 0;
-      ind_end = num_indices - element_shape.size();
-    }
-    for (int i = ind_beg; i < ind_end; i++) {
+    const size_t element_shape_index_offset =
+        layout == ExternalArrayLayout::kAOS ? num_indices - element_shape.size()
+                                            : 0;
+    for (int i = 0; i < num_indices - element_shape.size(); i++) {
       used.buf_args = true;
       used.int32 = true;
       std::string var_name = fmt::format("_s{}_{}{}", i, "arr", arg_id);
@@ -540,22 +504,20 @@ class KernelGen : public IRVisitor {
       }
       size_var_names.push_back(std::move(var_name));
     }
-    // Arrange index stride and offsets in correct order
-    if (layout == ExternalArrayLayout::kSOA) {
-      size_var_names.insert(size_var_names.begin(),
-                            element_shape_size_var_names.begin(),
-                            element_shape_size_var_names.end());
-    } else {
-      size_var_names.insert(size_var_names.end(),
-                            element_shape_size_var_names.begin(),
-                            element_shape_size_var_names.end());
-    }
 
     emit("int {} = {};", linear_index_name,
          num_indices == 0 ? "0" : stmt->indices[0]->short_name());
 
+    size_t size_var_name_index = (layout == ExternalArrayLayout::kAOS) ? 1 : 0;
     for (int i = 1; i < num_indices; i++) {
-      emit("{} *= {};", linear_index_name, size_var_names[i]);
+      if (i >= element_shape_index_offset &&
+          i < element_shape_index_offset + element_shape.size()) {
+        emit("{} *= {};", linear_index_name,
+             std::to_string(element_shape[i - element_shape_index_offset]));
+      } else {
+        emit("{} *= {};", linear_index_name,
+             size_var_names[size_var_name_index++]);
+      }
       emit("{} += {};", linear_index_name, stmt->indices[i]->short_name());
     }
 

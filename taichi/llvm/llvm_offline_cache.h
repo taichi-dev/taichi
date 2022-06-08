@@ -45,19 +45,19 @@ struct LlvmOfflineCache {
   struct FieldCacheData {
     struct SNodeCacheData {
       int id;
-      SNodeType type;
-      size_t cell_size_bytes;
-      size_t chunk_size;
+      SNodeType type = SNodeType::undefined;
+      size_t cell_size_bytes{0};
+      size_t chunk_size{0};
 
       TI_IO_DEF(id, type, cell_size_bytes, chunk_size);
     };
 
-    int tree_id;
-    int root_id;
-    size_t root_size;
+    int tree_id{0};
+    int root_id{0};
+    size_t root_size{0};
     std::vector<SNodeCacheData> snode_metas;
 
-    TI_IO_DEF(tree_id, root_size, snode_metas);
+    TI_IO_DEF(tree_id, root_id, root_size, snode_metas);
 
     // TODO(zhanlue)
     //  Serialize/Deserialize the llvm::Module from StructCompiler

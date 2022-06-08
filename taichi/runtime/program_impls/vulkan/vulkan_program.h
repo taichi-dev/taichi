@@ -9,6 +9,7 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
+#include "vk_mem_alloc.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
@@ -17,7 +18,6 @@
 #include "taichi/program/program_impl.h"
 #include "taichi/program/program.h"
 
-#include <vk_mem_alloc.h>
 #include <optional>
 
 namespace taichi {

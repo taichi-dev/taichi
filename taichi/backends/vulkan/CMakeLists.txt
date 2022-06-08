@@ -22,13 +22,13 @@ target_include_directories(${VULKAN_RHI}
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/FP16/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
   PRIVATE
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
         ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+    ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
 
 # By specifying SYSTEM, we suppressed the warnings from third-party headers.

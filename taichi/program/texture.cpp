@@ -19,12 +19,14 @@ Texture::Texture(Program *prog,
       height_(height),
       depth_(depth) {
   GraphicsDevice *device =
-      static_cast<GraphicsDevice*>(prog_->get_graphics_device());
+      static_cast<GraphicsDevice *>(prog_->get_graphics_device());
 
-  TI_TRACE("Create image, gfx device {}, type={}, channels={}, w={}, h={}, d={}", (void *)device, type.to_string(), num_channels, width, height, depth);
+  TI_TRACE(
+      "Create image, gfx device {}, type={}, channels={}, w={}, h={}, d={}",
+      (void *)device, type.to_string(), num_channels, width, height, depth);
 
   TI_ASSERT(num_channels > 0 && num_channels <= 4);
-  
+
   ImageParams img_params;
   img_params.dimension = depth > 1 ? ImageDimension::d3D : ImageDimension::d2D;
   img_params.format = get_format(type, num_channels);
@@ -110,7 +112,7 @@ intptr_t Texture::get_device_allocation_ptr_as_int() const {
 
 void Texture::from_ndarray(Ndarray *ndarray) {
   auto semaphore = prog_->flush();
-  
+
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
   Stream *stream = device->get_compute_stream();
@@ -140,5 +142,5 @@ Texture::~Texture() {
   }
 }
 
-}
+}  // namespace lang
 }  // namespace taichi

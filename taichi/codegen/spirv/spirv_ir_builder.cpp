@@ -358,7 +358,8 @@ SType IRBuilder::get_pointer_type(const SType &value_type,
   return t;
 }
 
-SType IRBuilder::get_sampled_image_type(const SType &primitive_type, int num_dimensions) {
+SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
+                                        int num_dimensions) {
   auto key = std::make_pair(primitive_type.id, num_dimensions);
   auto it = sampled_image_ptr_tbl_.find(key);
   if (it != sampled_image_ptr_tbl_.end()) {
@@ -367,8 +368,8 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type, int num_dim
   int img_id = id_counter_++;
   ib_.begin(spv::OpTypeImage)
       .add_seq(img_id, primitive_type, spv::Dim2D,
-        /*Depth=*/0, /*Arrayed=*/0, /*MS=*/0, /*Sampled=*/1,
-        spv::ImageFormatUnknown)
+               /*Depth=*/0, /*Arrayed=*/0, /*MS=*/0, /*Sampled=*/1,
+               spv::ImageFormatUnknown)
       .commit(&global_);
   SType sampled_t;
   sampled_t.id = id_counter_++;
@@ -616,11 +617,12 @@ Value IRBuilder::struct_array_access(const SType &res_type,
 }
 
 Value IRBuilder::texture_argument(int num_channels,
-                         uint32_t descriptor_set,
-                         uint32_t binding) {
+                                  uint32_t descriptor_set,
+                                  uint32_t binding) {
   auto texture_type = this->get_sampled_image_type(f32_type(), 2);
-  auto texture_ptr_type = get_pointer_type(texture_type, spv::StorageClassUniformConstant);
-  
+  auto texture_ptr_type =
+      get_pointer_type(texture_type, spv::StorageClassUniformConstant);
+
   Value val = new_value(texture_ptr_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
       .add_seq(texture_ptr_type, val, spv::StorageClassUniformConstant)
@@ -637,18 +639,20 @@ Value IRBuilder::texture_argument(int num_channels,
   return val;
 }
 
-Value IRBuilder::sample_texture(Value texture_var, Value u, Value v, Value lod) {
-  auto image = this->load_variable(texture_var, this->get_sampled_image_type(f32_type(), 2));
+Value IRBuilder::sample_texture(Value texture_var,
+                                Value u,
+                                Value v,
+                                Value lod) {
+  auto image = this->load_variable(texture_var,
+                                   this->get_sampled_image_type(f32_type(), 2));
   auto uv_vec2 = make_value(spv::OpCompositeConstruct, t_v2_fp32_, u, v);
   uint32_t lod_operand = 0x2;
-  auto res_vec4 = make_value(spv::OpImageSampleExplicitLod, t_v4_fp32_, image, uv_vec2, lod_operand, lod);
+  auto res_vec4 = make_value(spv::OpImageSampleExplicitLod, t_v4_fp32_, image,
+                             uv_vec2, lod_operand, lod);
   return res_vec4;
 }
 
-Value IRBuilder::fetch_texel(Value texture_var,
-                             Value x,
-                             Value y,
-                             Value lod) {
+Value IRBuilder::fetch_texel(Value texture_var, Value x, Value y, Value lod) {
   auto image = this->load_variable(texture_var,
                                    this->get_sampled_image_type(f32_type(), 2));
   auto index_ivec2 = make_value(spv::OpCompositeConstruct, t_v2_int_, x, y);

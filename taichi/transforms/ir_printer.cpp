@@ -426,7 +426,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(TexturePtrStmt *stmt) override {
     if (stmt->global_texture) {
-      print("<*Texture> {} = {}", stmt->name(), (void*)stmt->global_texture);
+      print("<*Texture> {} = {}", stmt->name(), (void *)stmt->global_texture);
     } else {
       print("<*Texture> {} = {}", stmt->name(), stmt->arg_load_stmt->name());
     }

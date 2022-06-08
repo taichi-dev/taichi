@@ -300,8 +300,7 @@ class TexturePtrExpression : public Expression {
   Expr arg_load_expr;
   Texture *global_texture{nullptr};
 
-  TexturePtrExpression(Expr arg_load_expr)
-    : arg_load_expr(arg_load_expr) {
+  TexturePtrExpression(Expr arg_load_expr) : arg_load_expr(arg_load_expr) {
   }
 
   TexturePtrExpression(Texture *global_texture)
@@ -643,8 +642,7 @@ class TextureOpExpression : public Expression {
   explicit TextureOpExpression(TextureOpType op,
                                Expr texture_ptr,
                                const ExprGroup &args)
-      : op(op),
-        texture_ptr(texture_ptr), args(args) {
+      : op(op), texture_ptr(texture_ptr), args(args) {
   }
 
   void type_check(CompileConfig *config) override;

@@ -1453,7 +1453,7 @@ class TexturePtrStmt : public Stmt {
   Texture *global_texture{nullptr};
   Stmt *arg_load_stmt{nullptr};
 
-  explicit TexturePtrStmt(Texture *tex) : global_texture(tex) {\
+  explicit TexturePtrStmt(Texture *tex) : global_texture(tex) {
     TI_STMT_REG_FIELDS;
   }
 

@@ -149,7 +149,7 @@ std::string snode_op_type_name(SNodeOpType type) {
 std::string texture_op_type_name(TextureOpType type) {
   switch (type) {
 #define REGISTER_TYPE(i) \
-  case TextureOpType::i:   \
+  case TextureOpType::i: \
     return #i;
 
     REGISTER_TYPE(sample_lod);

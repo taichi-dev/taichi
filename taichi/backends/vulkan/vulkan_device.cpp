@@ -1074,9 +1074,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
   access[VK_IMAGE_LAYOUT_UNDEFINED] = (VkAccessFlagBits)0;
-  access[VK_IMAGE_LAYOUT_GENERAL] =
-      VkAccessFlagBits(VK_ACCESS_MEMORY_READ_BIT |
-      VK_ACCESS_TRANSFER_WRITE_BIT);
+  access[VK_IMAGE_LAYOUT_GENERAL] = VkAccessFlagBits(
+      VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
   access[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_ACCESS_TRANSFER_WRITE_BIT;
   access[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_ACCESS_TRANSFER_READ_BIT;
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_MEMORY_READ_BIT;

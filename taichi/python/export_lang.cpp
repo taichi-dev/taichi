@@ -443,15 +443,14 @@ void export_lang(py::module &m) {
           py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
-      .def("create_texture",
-          [&](Program *program, const DataType &dt,
-              int num_channels,
+      .def(
+          "create_texture",
+          [&](Program *program, const DataType &dt, int num_channels,
               const std::vector<int> &shape) -> Texture * {
             return program->create_texture(dt, num_channels, shape);
           },
           py::arg("dt"), py::arg("num_channels"),
-          py::arg("shape") = py::tuple(),
-          py::return_value_policy::reference)
+          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -853,15 +852,17 @@ void export_lang(py::module &m) {
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
 
-  m.def("make_texture_ptr_expr", 
-    Expr::make<TexturePtrExpression, Texture *>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, Texture *>);
 
-  auto &&texture = py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+  auto &&texture =
+      py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
   for (int t = 0; t <= (int)TextureOpType::undefined; t++)
     texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
                   TextureOpType(t));
   texture.export_values();
-  m.def("make_texture_op_expr", Expr::make<TextureOpExpression, const TextureOpType &, const Expr &, const ExprGroup &>);
+  m.def("make_texture_op_expr",
+        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
+                   const ExprGroup &>);
 
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
@@ -1223,11 +1224,11 @@ void export_lang(py::module &m) {
         });
 
   m.def("wait_for_debugger", []() {
-    #ifdef WIN32
+#ifdef WIN32
     while (!::IsDebuggerPresent())
       ::Sleep(100);
-    #endif
-    });
+#endif
+  });
 }
 
 TI_NAMESPACE_END

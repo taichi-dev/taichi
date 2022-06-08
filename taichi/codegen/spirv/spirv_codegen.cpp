@@ -955,13 +955,13 @@ class TaskCodegen : public IRVisitor {
 
     if (stmt->global_texture) {
       Texture *tex = stmt->global_texture;
-      if (global_tex_to_value_.find(tex) !=
-          global_tex_to_value_.end()) {
+      if (global_tex_to_value_.find(tex) != global_tex_to_value_.end()) {
         val = global_tex_to_value_.at(tex);
       } else {
         int binding = binding_head_++;
         val = ir_->texture_argument(4, 0, binding);
-        texture_binds_.push_back(TextureBind{tex->get_device_allocation(), binding});
+        texture_binds_.push_back(
+            TextureBind{tex->get_device_allocation(), binding});
         global_tex_to_value_[tex] = val;
       }
     } else {

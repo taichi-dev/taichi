@@ -43,7 +43,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
   void visit(TexturePtrExpression *expr) override {
     if (expr->global_texture) {
-      emit(fmt::format("(Texture *)({}", (void*)expr->global_texture));
+      emit(fmt::format("(Texture *)({}", (void *)expr->global_texture));
     } else {
       emit("(Texture *)(");
       expr->arg_load_expr->accept(this);

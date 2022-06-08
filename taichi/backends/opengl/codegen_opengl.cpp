@@ -1177,9 +1177,11 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir.get();
   auto &config = kernel_->program->config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(ir, config, kernel_, kernel_->grad,
-                                /*ad_use_stack=*/false,
-                                /*ad_reverse_mode*/ true, config.print_ir,
+  if (kernel_->autodiff_mode == AutodiffMode::kReverseWithStack){
+    kernel_->autodiff_mode = AutodiffMode::kReverseWithoutStack;
+  }
+  irpass::compile_to_executable(ir, config, kernel_, /*autodiff_mode=*/kernel_->autodiff_mode,
+                                true, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG

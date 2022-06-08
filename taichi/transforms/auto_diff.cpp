@@ -1172,11 +1172,9 @@ namespace irpass {
 
 void auto_diff(IRNode *root,
                const CompileConfig &config,
-               bool use_stack,
-               bool reverse_mode) {
+               AutodiffMode autodiff_mode) {
   TI_AUTO_PROF;
-  if (reverse_mode) {
-    if (use_stack) {
+  if (autodiff_mode == AutodiffMode::kReverseWithStack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
 
@@ -1190,20 +1188,19 @@ void auto_diff(IRNode *root,
         BackupSSA::run(ib);
         irpass::analysis::verify(root);
       }
-    } else {
+    } else if (autodiff_mode == AutodiffMode::kReverseWithoutStack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
       type_check(root, config);
       for (auto ib : IB) {
         MakeAdjoint::run(ib);
       }
+    } else if (autodiff_mode == AutodiffMode::kForward) {
+      // Forward mode autodiff
+      Block *block = root->as<Block>();
+      PromoteSSA2LocalVar::run(block);
+      MakeDual::run(block);
     }
-  } else {
-    // Forward mode autodiff
-    Block *block = root->as<Block>();
-    PromoteSSA2LocalVar::run(block);
-    MakeDual::run(block);
-  }
   type_check(root, config);
   irpass::analysis::verify(root);
 }

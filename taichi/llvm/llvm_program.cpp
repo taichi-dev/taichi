@@ -158,94 +158,104 @@ LlvmProgramImpl::clone_struct_compiler_initial_context(
   return tlctx->clone_runtime_module();
 }
 
-void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                                     StructCompiler *scomp,
-                                                     uint64 *result_buffer) {
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config->arch == Arch::cuda) {
+void LlvmProgramImpl::initialize_llvm_runtime_snodes(
+    const LlvmOfflineCache::FieldCacheData &field_cache_data,
+    uint64 *result_buffer);
+TaichiLLVMContext *tlctx = nullptr;
+if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    tlctx = llvm_context_device_.get();
+  tlctx = llvm_context_device_.get();
 #else
-    TI_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
-  } else {
-    tlctx = llvm_context_host_.get();
-  }
+} else {
+  tlctx = llvm_context_host_.get();
+}
 
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  // By the time this creator is called, "this" is already destroyed.
-  // Therefore it is necessary to capture members by values.
-  const auto snodes = scomp->snodes;
-  const int root_id = tree->root()->id;
+auto *const runtime_jit = tlctx -> runtime_jit_module;
+// By the time this creator is called, "this" is already destroyed.
+// Therefore it is necessary to capture members by values.
+size_t root_size = field_cache_data.root_size;
+const auto snode_metas = field_cache_data.snode_metas;
+const int root_id = field_cache_data.tree_id;
 
-  TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  std::size_t rounded_size =
-      taichi::iroundup(scomp->root_size, taichi_page_size);
+TI_TRACE("Allocating data structure of size {} bytes", root_size);
+std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
 
-  Ptr root_buffer = snode_tree_buffer_manager_->allocate(
-      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
-      result_buffer);
-  if (config->arch == Arch::cuda) {
+Ptr root_buffer = snode_tree_buffer_manager_->allocate(runtime_jit,
+                                                       llvm_runtime_,
+                                                       rounded_size,
+                                                       taichi_page_size,
+                                                       root_id,
+                                                       result_buffer);
+if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
+  CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
-    TI_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
-  } else {
-    std::memset(root_buffer, 0, rounded_size);
-  }
+} else {
+  std::memset(root_buffer, 0, rounded_size);
+}
 
-  DeviceAllocation alloc{kDeviceNullAllocation};
+DeviceAllocation alloc{kDeviceNullAllocation};
 
-  if (config->arch == Arch::cuda) {
+if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
+  alloc = cuda_device()->import_memory(root_buffer, rounded_size);
 #else
-    TI_NOT_IMPLEMENTED
+  TI_NOT_IMPLEMENTED
 #endif
-  } else {
-    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
+} else {
+  alloc = cpu_device()->import_memory(root_buffer, rounded_size);
+}
+
+snode_tree_allocs_[tree->id()] = alloc;
+
+bool all_dense = config->demote_dense_struct_fors;
+for (size_t i = 0; i < snode_metas.size(); i++) {
+  if (snode_metas[i]->type != SNodeType::dense &&
+      snode_metas[i]->type != SNodeType::place &&
+      snode_metas[i]->type != SNodeType::root) {
+    all_dense = false;
+    break;
   }
+}
 
-  snode_tree_allocs_[tree->id()] = alloc;
+runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
+    "runtime_initialize_snodes",
+    llvm_runtime_,
+    root_size,
+    root_id,
+    (int)snode_metas.size(),
+    root_id,
+    rounded_size,
+    root_buffer,
+    all_dense);
 
-  bool all_dense = config->demote_dense_struct_fors;
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (snodes[i]->type != SNodeType::dense &&
-        snodes[i]->type != SNodeType::place &&
-        snodes[i]->type != SNodeType::root) {
-      all_dense = false;
-      break;
+for (size_t i = 0; i < snode_metas.size(); i++) {
+  if (is_gc_able(snode_metas[i]->type)) {
+    const auto snode_id = snode_metas[i].id;
+    std::size_t node_size;
+    auto element_size = snode_metas[i].cell_size_bytes;
+    if (snode_metas[i].type == SNodeType::pointer) {
+      // pointer. Allocators are for single elements
+      node_size = element_size;
+    } else {
+      // dynamic. Allocators are for the chunks
+      node_size = sizeof(void *) + element_size * snode_metas[i].chunk_size;
     }
+    TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
+             node_size);
+    auto rt = llvm_runtime_;
+    runtime_jit->call<void *, int, std::size_t>(
+        "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
+    TI_TRACE("Allocating ambient element for snode {} (node size {})", snode_id,
+             node_size);
+    runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, snode_id,
+                                   node_size);
   }
-
-  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", llvm_runtime_, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size, root_buffer, all_dense);
-
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (is_gc_able(snodes[i]->type)) {
-      const auto snode_id = snodes[i]->id;
-      std::size_t node_size;
-      auto element_size = snodes[i]->cell_size_bytes;
-      if (snodes[i]->type == SNodeType::pointer) {
-        // pointer. Allocators are for single elements
-        node_size = element_size;
-      } else {
-        // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
-      }
-      TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
-               node_size);
-      auto rt = llvm_runtime_;
-      runtime_jit->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
-      TI_TRACE("Allocating ambient element for snode {} (node size {})",
-               snode_id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, snode_id,
-                                     node_size);
-    }
-  }
+}
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
@@ -275,10 +285,35 @@ void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   compile_snode_tree_types_impl(tree);
 }
 
+static LlvmOfflineCache::FieldCacheData construct_filed_cache_data(
+    const SNodeTree &tree,
+    const StructCompiler &struct_compiler) {
+  TI_ASSERT(tree.id == tree.root()->id);
+
+  LlvmOfflineCache::FieldCacheData ret;
+  ret.tree_id = tree.id;
+  ret.root_size = struct_compiler.root_size;
+
+  const auto &snodes = struct_compiler.snodes;
+  for (size_t i = 0; i < snodes.size(); i++) {
+    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
+    snode_cache_data.id = snodes[i]->id;
+    snode_cache_data.type = snodes[i]->type;
+    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
+    snode_cache_data.chunk_size = snodes[i]->chunk_size;
+
+    ret.snode_metas.emplace_back(std::move(snode_cache_data));
+  }
+
+  return ret;
+}
+
 void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                              uint64 *result_buffer) {
   auto struct_compiler = compile_snode_tree_types_impl(tree);
-  initialize_llvm_runtime_snodes(tree, struct_compiler.get(), result_buffer);
+
+  auto field_cache_data = construct_filed_cache_data(*tree, *struct_compiler);
+  initialize_llvm_runtime_snodes(field_cache_data, result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {

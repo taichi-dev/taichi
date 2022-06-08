@@ -132,9 +132,9 @@ class LlvmProgramImpl : public ProgramImpl {
   /**
    * Initializes the SNodes for LLVM based backends.
    */
-  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                      StructCompiler *scomp,
-                                      uint64 *result_buffer);
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer);
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 

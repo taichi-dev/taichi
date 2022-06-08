@@ -25,7 +25,8 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
       {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
        bit_offset, tlctx->get_constant(cit->get_num_bits()),
-       builder->CreateIntCast(llvm_val[stmt->val], llvm_type(physical_type), is_signed(stmt->val->ret_type))});
+       builder->CreateIntCast(llvm_val[stmt->val], llvm_type(physical_type),
+                              is_signed(stmt->val->ret_type))});
 }
 
 llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,

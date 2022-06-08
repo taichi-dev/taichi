@@ -382,7 +382,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         }
       }
     } else if (!is_real(from) && !is_real(to)) {
-      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand], llvm_type(to), is_signed(from));
+      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
+                                              llvm_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==

@@ -9,6 +9,7 @@ target_sources(vulkan_runtime
     vulkan_loader.cpp
     vulkan_memory_allocator.cpp
     vulkan_program.cpp
+    ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect/spirv_reflect.c
   )
 
 #TODO 4832, some dependencies here should not be required as they

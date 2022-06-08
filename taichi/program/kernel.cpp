@@ -23,22 +23,22 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               bool grad) {
-  this->init(program, func, primal_name, grad);
+               AutodiffMode autodiff_mode) {
+  this->init(program, func, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
-               bool grad) {
-  this->init(program, std::bind(func, this), primal_name, grad);
+               AutodiffMode autodiff_mode) {
+  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
-               bool grad)
-    : grad(grad), lowered_(false) {
+               AutodiffMode autodiff_mode)
+    : autodiff_mode(autodiff_mode), lowered_(false) {
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
@@ -49,10 +49,12 @@ Kernel::Kernel(Program &program,
 
   arch = program.config.arch;
 
-  if (!grad) {
+  if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
-  } else {
-    name = primal_name + "_grad";
+  } else if (autodiff_mode == AutodiffMode::kForward){
+    name = primal_name + "_forward_grad";
+  } else if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack){
+    name = primal_name + "_reverse_grad";
   }
 
   if (!program.config.lazy_compilation)
@@ -89,8 +91,7 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, grad,
-        /*ad_use_stack=*/true, /*ad_reverse_mode*/ true, verbose,
+        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode, verbose,
         /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -98,9 +99,8 @@ void Kernel::lower(bool to_executable) {
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
-                                /*ad_use_stack=*/true,
-                                /*ad_reverse_mode*/ true,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose,
+                                /*autodiff_mode=*/autodiff_mode,
                                 /*start_from_ast=*/ir_is_ast_);
   }
 
@@ -408,8 +408,8 @@ std::string Kernel::get_name() const {
 void Kernel::init(Program &program,
                   const std::function<void()> &func,
                   const std::string &primal_name,
-                  bool grad) {
-  this->grad = grad;
+                  AutodiffMode autodiff_mode) {
+  this->autodiff_mode = autodiff_mode;
   this->lowered_ = false;
   this->program = &program;
 #ifdef TI_WITH_LLVM
@@ -426,10 +426,12 @@ void Kernel::init(Program &program,
 
   this->arch = program.config.arch;
 
-  if (!grad) {
-    this->name = primal_name;
-  } else {
-    this->name = primal_name + "_grad";
+  if (autodiff_mode == AutodiffMode::kNone) {
+    name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kForward){
+    name = primal_name + "_forward_grad";
+  } else if (autodiff_mode == AutodiffMode::kReverseWithStack || autodiff_mode == AutodiffMode::kReverseWithoutStack){
+    name = primal_name + "_reverse_grad";
   }
 
   {

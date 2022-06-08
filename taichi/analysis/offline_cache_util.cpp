@@ -181,7 +181,7 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
   hasher.finish();
 
   auto res = picosha2::get_hash_hex_string(hasher);
-  res.insert(res.begin(), kernel->grad ? 'g' : 'n');
+  res.insert(res.begin(), kernel->autodiff_mode != AutodiffMode::kNone ? 'g' : 'n');
   return res;
 }
 

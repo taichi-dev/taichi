@@ -118,7 +118,7 @@ void autograd() {
         std::make_unique<Kernel>(program, builder.extract_ir(), "init");
   }
 
-  auto get_kernel_cal = [&](bool grad) -> Kernel * {
+  auto get_kernel_cal = [&](AutodiffMode autodiff_mode) -> Kernel * {
     IRBuilder builder;
     auto *loop = builder.create_struct_for(a, 0, 4);
     {
@@ -132,10 +132,10 @@ void autograd() {
           std::make_unique<AtomicOpStmt>(AtomicOpType::add, c_i, val));
     }
 
-    return new Kernel(program, builder.extract_ir(), "cal", grad);
+    return new Kernel(program, builder.extract_ir(), "cal", autodiff_mode);
   };
-  kernel_forward = std::unique_ptr<Kernel>(get_kernel_cal(false));
-  kernel_backward = std::unique_ptr<Kernel>(get_kernel_cal(true));
+  kernel_forward = std::unique_ptr<Kernel>(get_kernel_cal(AutodiffMode::kNone));
+  kernel_backward = std::unique_ptr<Kernel>(get_kernel_cal(AutodiffMode::kReverseWithStack));
 
   {
     IRBuilder builder;

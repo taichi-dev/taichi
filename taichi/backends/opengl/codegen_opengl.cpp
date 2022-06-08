@@ -1219,7 +1219,7 @@ void OpenglCodeGen::lower() {
     kernel_->autodiff_mode = AutodiffMode::kReverseWithoutStack;
   }
   irpass::compile_to_executable(ir, config, kernel_, /*autodiff_mode=*/kernel_->autodiff_mode,
-                                true, config.print_ir,
+                                config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG

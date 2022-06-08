@@ -183,8 +183,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(RandStmt *stmt) override;
 
-  llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
-
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
 
   void visit(DecorationStmt *stmt) override;

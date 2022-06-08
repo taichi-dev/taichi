@@ -324,28 +324,6 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
   kernel_name = kernel->name + "_kernel";
 }
 
-llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
-                                   Type *from,
-                                   Type *to) {
-  if (from == to)
-    return input_val;
-  auto from_size = 0;
-  if (from->is<CustomIntType>()) {
-    from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
-  } else {
-    from_size = data_type_size(from);
-  }
-  if (from_size < data_type_size(to)) {
-    if (is_signed(from)) {
-      return builder->CreateSExt(input_val, tlctx->get_data_type(to));
-    } else {
-      return builder->CreateZExt(input_val, tlctx->get_data_type(to));
-    }
-  } else {
-    return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
-  }
-}
-
 void CodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
@@ -404,9 +382,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         }
       }
     } else if (!is_real(from) && !is_real(to)) {
-      // TODO: implement casting into custom integer type
-      TI_ASSERT(!to->is<CustomIntType>());
-      llvm_val[stmt] = cast_int(llvm_val[stmt->operand], from, to);
+      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
+                                              llvm_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==

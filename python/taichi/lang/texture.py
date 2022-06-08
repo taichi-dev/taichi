@@ -1,11 +1,23 @@
 from taichi.lang import impl, expr
+from taichi._lib import core as _ti_core
 import taichi as ti
 
 def sample_texture(tex, uv):
-    t = impl.call_internal("global_texture_ptr", expr.make_constant_expr(tex.device_allocation_ptr(), ti.u64),
-                              with_runtime_context=False)
-    v = impl.call_internal("sample_texture", t, uv.x, uv.y,
-                              with_runtime_context=False)
+    t = _ti_core.make_texture_ptr_expr(tex.tex)
+    v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.sample_lod, t, impl.make_expr_group(uv.x, uv.y, expr.make_constant_expr(0.0, ti.f32)))
+    r = impl.call_internal("composite_extract_0",
+                              v, with_runtime_context=False)
+    g = impl.call_internal("composite_extract_1",
+                              v, with_runtime_context=False)
+    b = impl.call_internal("composite_extract_2",
+                              v, with_runtime_context=False)
+    a = impl.call_internal("composite_extract_3",
+                              v, with_runtime_context=False)
+    return ti.Vector([r, g, b, a])
+
+def fetch_texel(tex, index):
+    t = _ti_core.make_texture_ptr_expr(tex.tex)
+    v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.fetch_texel, t, impl.make_expr_group(index.x, index.y, expr.make_constant_expr(0, ti.i32)))
     r = impl.call_internal("composite_extract_0",
                               v, with_runtime_context=False)
     g = impl.call_internal("composite_extract_1",

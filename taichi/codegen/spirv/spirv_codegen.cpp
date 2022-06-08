@@ -950,23 +950,47 @@ class TaskCodegen : public IRVisitor {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
   }
 
+  void visit(TexturePtrStmt *stmt) override {
+    spirv::Value val;
+
+    if (stmt->global_texture) {
+      Texture *tex = stmt->global_texture;
+      if (global_tex_to_value_.find(tex) !=
+          global_tex_to_value_.end()) {
+        val = global_tex_to_value_.at(tex);
+      } else {
+        int binding = binding_head_++;
+        val = ir_->texture_argument(4, 0, binding);
+        texture_binds_.push_back(TextureBind{tex->get_device_allocation(), binding});
+        global_tex_to_value_[tex] = val;
+      }
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
+  void visit(TextureOpStmt *stmt) override {
+    spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
+    spirv::Value u = ir_->query_value(stmt->args[0]->raw_name());
+    spirv::Value v = ir_->query_value(stmt->args[1]->raw_name());
+    spirv::Value lod = ir_->query_value(stmt->args[2]->raw_name());
+    spirv::Value val;
+    if (stmt->op == TextureOpType::sample_lod) {
+      val = ir_->sample_texture(tex, u, v, lod);
+    } else if (stmt->op == TextureOpType::fetch_texel) {
+      val = ir_->fetch_texel(tex, u, v, lod);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
 
-    if (stmt->func_name == "global_texture_ptr") {
-      int binding = binding_head_++;
-      // FIXME: Remove this temporary hackery crap
-      Texture *texptr = (Texture*) stmt->args[0]->as<ConstStmt>()->val.data[0].value_bits;
-      val = ir_->texture_argument(4, 0, binding);
-      texture_binds_.push_back(
-          TextureBind{texptr->get_device_allocation(), binding});
-    } else if (stmt->func_name == "sample_texture") {
-      auto tex = ir_->query_value(stmt->args[0]->raw_name());
-      auto u = ir_->query_value(stmt->args[1]->raw_name());
-      auto v = ir_->query_value(stmt->args[2]->raw_name());
-      auto lod = ir_->float_immediate_number(ir_->f32_type(), 0.0);
-      val = ir_->sample_texture(tex, u, v, lod);
-    } else if (stmt->func_name == "composite_extract_0") {
+    if (stmt->func_name == "composite_extract_0") {
       val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
                             ir_->query_value(stmt->args[0]->raw_name()), 0);
     } else if (stmt->func_name == "composite_extract_1") {
@@ -2101,6 +2125,7 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<int, GetRootStmt *>
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
+  std::unordered_map<Texture *, Value> global_tex_to_value_;
 };
 }  // namespace
 
@@ -2208,7 +2233,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 1
+#if 0
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = tp.ti_kernel_name;

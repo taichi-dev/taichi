@@ -424,6 +424,20 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
+  void visit(TexturePtrStmt *stmt) override {
+    if (stmt->global_texture) {
+      print("<*Texture> {} = {}", stmt->name(), (void*)stmt->global_texture);
+    } else {
+      print("<*Texture> {} = {}", stmt->name(), stmt->arg_load_stmt->name());
+    }
+  }
+
+  void visit(TextureOpStmt *stmt) override {
+    print("<struct> {} = texture_{}({}, {}, {})", stmt->name(),
+          texture_op_type_name(stmt->op), stmt->args[0]->name(),
+          stmt->args[1]->name(), stmt->args[2]->name());
+  }
+
   void visit(FrontendReturnStmt *stmt) override {
     print("{}{} : return [{}]", stmt->type_hint(), stmt->name(),
           expr_group_to_string(stmt->values));

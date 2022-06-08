@@ -357,6 +357,8 @@ class IRBuilder {
 
   Value sample_texture(Value texture_var, Value u, Value v, Value lod);
 
+  Value fetch_texel(Value texture_var, Value x, Value y, Value lod);
+
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
   Value new_function() {
@@ -546,6 +548,7 @@ class IRBuilder {
   SType t_void_;
   SType t_void_func_;
   // gl compute shader related type(s) and variables
+  SType t_v2_int_;
   SType t_v3_uint_;
   SType t_v4_fp32_;
   SType t_v2_fp32_;

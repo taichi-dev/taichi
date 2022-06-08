@@ -166,6 +166,12 @@ void IRBuilder::init_pre_defs() {
       .commit(&global_);
 
   // compute shader related types
+  t_v2_int_.id = id_counter_++;
+  ib_.begin(spv::OpTypeVector)
+      .add(t_v2_int_)
+      .add_seq(t_int32_, 2)
+      .commit(&global_);
+
   t_v3_uint_.id = id_counter_++;
   ib_.begin(spv::OpTypeVector)
       .add(t_v3_uint_)
@@ -636,6 +642,19 @@ Value IRBuilder::sample_texture(Value texture_var, Value u, Value v, Value lod) 
   auto uv_vec2 = make_value(spv::OpCompositeConstruct, t_v2_fp32_, u, v);
   uint32_t lod_operand = 0x2;
   auto res_vec4 = make_value(spv::OpImageSampleExplicitLod, t_v4_fp32_, image, uv_vec2, lod_operand, lod);
+  return res_vec4;
+}
+
+Value IRBuilder::fetch_texel(Value texture_var,
+                             Value x,
+                             Value y,
+                             Value lod) {
+  auto image = this->load_variable(texture_var,
+                                   this->get_sampled_image_type(f32_type(), 2));
+  auto index_ivec2 = make_value(spv::OpCompositeConstruct, t_v2_int_, x, y);
+  uint32_t lod_operand = 0x2;
+  auto res_vec4 = make_value(spv::OpImageFetch, t_v4_fp32_, image, index_ivec2,
+                             lod_operand, lod);
   return res_vec4;
 }
 

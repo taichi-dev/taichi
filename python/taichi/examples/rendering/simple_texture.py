@@ -28,17 +28,16 @@ tex.from_ndarray(tex_ndarray)
 def paint(t : ti.f32):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
-        uv += ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
-        c = ti.sample_texture(tex, uv)
+        warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
+        c = ti.math.vec4(0.0)
+        if uv.x > 0.5:
+          c = ti.sample_texture(tex, warp_uv)
+        else:
+          c = ti.fetch_texel(tex, ti.cast(warp_uv * 128, ti.i32))
         pixels[i, j] = [c.r, c.g, c.b]
 
 window = ti.ui.Window('UV', res)
 canvas = window.get_canvas()
-
-# what's going on here...
-# FIXME: why do we need to call `paint` once before copying to texture?
-paint(0)
-tex.from_ndarray(tex_ndarray)
 
 t = 0.0
 while window.running:

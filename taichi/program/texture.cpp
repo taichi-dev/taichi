@@ -109,6 +109,8 @@ intptr_t Texture::get_device_allocation_ptr_as_int() const {
 }
 
 void Texture::from_ndarray(Ndarray *ndarray) {
+  auto semaphore = prog_->flush();
+  
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
   Stream *stream = device->get_compute_stream();
@@ -127,7 +129,7 @@ void Texture::from_ndarray(Ndarray *ndarray) {
   cmdlist->buffer_to_image(texture_alloc_, ndarray->ndarray_alloc_.get_ptr(0),
                            ImageLayout::transfer_dst, params);
 
-  stream->submit_synced(cmdlist.get());
+  stream->submit_synced(cmdlist.get(), {semaphore});
 }
 
 Texture::~Texture() {

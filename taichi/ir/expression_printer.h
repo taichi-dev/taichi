@@ -41,6 +41,22 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
         fmt::format("arg[{}] (dt={})", expr->arg_id, data_type_name(expr->dt)));
   }
 
+  void visit(TexturePtrExpression *expr) override {
+    if (expr->global_texture) {
+      emit(fmt::format("(Texture *)({}", (void*)expr->global_texture));
+    } else {
+      emit("(Texture *)(");
+      expr->arg_load_expr->accept(this);
+      emit(")");
+    }
+  }
+
+  void visit(TextureOpExpression *expr) override {
+    emit(fmt::format("texture_{}(", texture_op_type_name(expr->op)));
+    visit(expr->args);
+    emit(")");
+  }
+
   void visit(RandExpression *expr) override {
     emit(fmt::format("rand<{}>()", data_type_name(expr->dt)));
   }

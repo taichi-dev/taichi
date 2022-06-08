@@ -853,6 +853,16 @@ void export_lang(py::module &m) {
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
 
+  m.def("make_texture_ptr_expr", 
+    Expr::make<TexturePtrExpression, Texture *>);
+
+  auto &&texture = py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+  for (int t = 0; t <= (int)TextureOpType::undefined; t++)
+    texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
+                  TextureOpType(t));
+  texture.export_values();
+  m.def("make_texture_op_expr", Expr::make<TextureOpExpression, const TextureOpType &, const Expr &, const ExprGroup &>);
+
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
     bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));

@@ -2184,7 +2184,8 @@ void lower(Kernel *kernel) {
   auto &config = kernel->program->config;
   config.demote_dense_struct_fors = true;
   irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                kernel->autodiff_mode, config.print_ir,
+                                kernel->autodiff_mode,
+                                /*ad_use_stack=*/false, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/false);
 }

@@ -4,6 +4,7 @@ from taichi.lang.util import taichi_scope
 
 import taichi as ti
 
+
 class TextureSampler:
     def __init__(self, ptr_expr) -> None:
         self.ptr_expr = ptr_expr
@@ -11,20 +12,20 @@ class TextureSampler:
     @taichi_scope
     def sample_lod(self, uv, lod):
         v = _ti_core.make_texture_op_expr(
-        _ti_core.TextureOpType.sample_lod, self.ptr_expr,
-        impl.make_expr_group(uv.x, uv.y, lod))
+            _ti_core.TextureOpType.sample_lod, self.ptr_expr,
+            impl.make_expr_group(uv.x, uv.y, lod))
         r = impl.call_internal("composite_extract_0",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         g = impl.call_internal("composite_extract_1",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         b = impl.call_internal("composite_extract_2",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         a = impl.call_internal("composite_extract_3",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         return ti.Vector([r, g, b, a])
 
     @taichi_scope
@@ -33,18 +34,19 @@ class TextureSampler:
             _ti_core.TextureOpType.fetch_texel, self.ptr_expr,
             impl.make_expr_group(index.x, index.y, lod))
         r = impl.call_internal("composite_extract_0",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         g = impl.call_internal("composite_extract_1",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         b = impl.call_internal("composite_extract_2",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         a = impl.call_internal("composite_extract_3",
-                            v,
-                            with_runtime_context=False)
+                               v,
+                               with_runtime_context=False)
         return ti.Vector([r, g, b, a])
+
 
 class Texture:
     """Taichi Texture class.

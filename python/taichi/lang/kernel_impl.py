@@ -1,10 +1,10 @@
 import ast
-from cgitb import text
 import functools
 import inspect
 import re
 import sys
 import textwrap
+from cgitb import text
 
 import numpy as np
 import taichi.lang
@@ -22,8 +22,8 @@ from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
-from taichi.types import (ndarray_type, texture_type, primitive_types, sparse_matrix_builder,
-                          template)
+from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
+                          template, texture_type)
 
 from taichi import _logging
 
@@ -465,8 +465,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation,
-                              (template, ndarray_type.NdarrayType, texture_type.TextureType)):
+                if isinstance(annotation, (template, ndarray_type.NdarrayType,
+                                           texture_type.TextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass

@@ -451,10 +451,12 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           if (host_ctx->args[i]) {
             devalloc = *(DeviceAllocation *)(host_ctx->args[i]);
           }
-          
-          if (host_ctx->device_allocation_type[i] == RuntimeContext::DevAllocType::ndarray) {
+
+          if (host_ctx->device_allocation_type[i] ==
+              RuntimeContext::DevAllocType::ndarray) {
             any_arrays[i] = devalloc;
-          } else if (host_ctx->device_allocation_type[i] == RuntimeContext::DevAllocType::texture) {
+          } else if (host_ctx->device_allocation_type[i] ==
+                     RuntimeContext::DevAllocType::texture) {
             textures[i] = devalloc;
           } else {
             TI_NOT_IMPLEMENTED;

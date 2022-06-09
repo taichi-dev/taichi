@@ -20,14 +20,13 @@ article. You can benchmark a certain behavior against this article and tell whet
 
 ## Introduction
 
-Taichi is a domain-specific language embedded in Python.
+Taichi is a domain-specific language embedded in Python, thus following the latter's syntax.
 [Kernels and functions](basic/syntax.md) clearly draw a boundary between
 the Taichi language and the Python language - code in the Taichi scope is
 treated as the former, while code in the Python scope is treated as the latter.
 It should be emphasized that this article is about *the Taichi language*.
 
-That said, because Taichi is embedded in Python, the syntax of Taichi is a
-subset of that of Python. To make life easier, this article is modeled after
+To make life easier, this article is modeled after
 the [Python language reference](https://docs.python.org/3/reference/). The
 [notation](https://docs.python.org/3/reference/introduction.html#notation) and
 [lexical analysis](https://docs.python.org/3/reference/lexical_analysis.html)

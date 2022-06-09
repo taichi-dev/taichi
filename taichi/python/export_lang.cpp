@@ -98,8 +98,7 @@ void export_lang(py::module &m) {
   py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
       .value("NONE", AutodiffMode::kNone)
       .value("FORWARD", AutodiffMode::kForward)
-      .value("REVERSE_WITH_STACK", AutodiffMode::kReverseWithStack)
-      .value("REVERSE_WITHOUT_STACK", AutodiffMode::kReverseWithoutStack)
+      .value("REVERSE", AutodiffMode::kReverse)
       .export_values();
 
   // TODO(type): This should be removed

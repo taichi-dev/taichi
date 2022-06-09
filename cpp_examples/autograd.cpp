@@ -136,7 +136,7 @@ void autograd() {
   };
   kernel_forward = std::unique_ptr<Kernel>(get_kernel_cal(AutodiffMode::kNone));
   kernel_backward =
-      std::unique_ptr<Kernel>(get_kernel_cal(AutodiffMode::kReverseWithStack));
+      std::unique_ptr<Kernel>(get_kernel_cal(AutodiffMode::kReverse));
 
   {
     IRBuilder builder;

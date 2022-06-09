@@ -51,7 +51,6 @@ enum class ExternalArrayLayout { kAOS, kSOA, kNull };
 
 enum class AutodiffMode {
   kForward,
-  kReverseWithStack,
-  kReverseWithoutStack,
+  kReverse,
   kNone
 };

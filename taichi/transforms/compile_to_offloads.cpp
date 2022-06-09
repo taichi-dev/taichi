@@ -34,14 +34,14 @@ void compile_to_offloads(IRNode *ir,
                          Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
+                         bool ad_use_stack,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
-  if (autodiff_mode == AutodiffMode::kReverseWithStack ||
-      autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -90,7 +90,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir, config);
 
     irpass::full_simplify(ir, config, {false, kernel->program});
-    irpass::auto_diff(ir, config, autodiff_mode);
+    irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
     irpass::full_simplify(ir, config, {false, kernel->program});
     print("Gradient");
     irpass::analysis::verify(ir);
@@ -257,6 +257,7 @@ void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
                            AutodiffMode autodiff_mode,
+                           bool ad_use_stack,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -264,12 +265,12 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, autodiff_mode,
+  compile_to_offloads(ir, config, kernel, verbose, autodiff_mode, ad_use_stack,
                       start_from_ast);
 
   offload_to_executable(ir, config, kernel, verbose,
                         /*determine_ad_stack_size=*/autodiff_mode ==
-                            AutodiffMode::kReverseWithStack,
+                            AutodiffMode::kReverse && ad_use_stack,
                         lower_global_access, make_thread_local,
                         make_block_local);
 }
@@ -285,8 +286,7 @@ void compile_function(IRNode *ir,
   auto print = make_pass_printer(verbose, func->get_name(), ir);
   print("Initial IR");
 
-  if (autodiff_mode == AutodiffMode::kReverseWithStack ||
-      autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }

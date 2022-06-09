@@ -1010,7 +1010,7 @@ class KernelCodegenImpl : public IRVisitor {
       const auto loaded = construct_load_as_custom_int(
           stmt->src, cft->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
-      // See LLVM backend's reconstruct_custom_float()
+      // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
                          cft->get_scale());
     }

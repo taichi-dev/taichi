@@ -306,7 +306,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::store_quant_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
+void CodeGenLLVM::store_quant_floats_with_shared_exponents(
+    BitStructStoreStmt *stmt) {
   // handle each exponent separately
   auto snode = stmt->get_bit_struct_snode();
   auto bit_struct_physical_type =
@@ -459,9 +460,8 @@ llvm::Value *CodeGenLLVM::extract_digits_from_quant_float_with_shared_exponent(
   return builder->CreateLShr(digits, exp_offset);
 }
 
-llvm::Value *CodeGenLLVM::extract_quant_float(
-    llvm::Value *local_bit_struct,
-    SNode *digits_snode) {
+llvm::Value *CodeGenLLVM::extract_quant_float(llvm::Value *local_bit_struct,
+                                              SNode *digits_snode) {
   auto cft = digits_snode->dt->as<CustomFloatType>();
   auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
   auto digits_type = cft->get_digits_type()->as<CustomIntType>();
@@ -475,8 +475,7 @@ llvm::Value *CodeGenLLVM::extract_quant_float(
                                  digits_snode->owns_shared_exponent);
 }
 
-llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr,
-                                         Type *load_type) {
+llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr, Type *load_type) {
   auto *cit = load_type->as<CustomIntType>();
   auto [byte_ptr, bit_offset] = load_bit_pointer(ptr);
 
@@ -530,11 +529,10 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   return builder->CreateFMul(cast, s);
 }
 
-llvm::Value *CodeGenLLVM::load_quant_float(
-    llvm::Value *digits_bit_ptr,
-    llvm::Value *exponent_bit_ptr,
-    CustomFloatType *cft,
-    bool shared_exponent) {
+llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
+                                           llvm::Value *exponent_bit_ptr,
+                                           CustomFloatType *cft,
+                                           bool shared_exponent) {
   // TODO: we ignore "scale" for CustomFloatType with exponent for now. May need
   // to support this in the future.
 

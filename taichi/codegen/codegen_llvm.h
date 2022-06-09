@@ -219,8 +219,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt,
-                                      CustomFloatType *cft);
+  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, CustomFloatType *cft);
 
   llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
@@ -400,7 +399,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *extract_digits_from_f32(llvm::Value *f, bool full);
 
-  llvm::Value *extract_digits_from_quant_float_with_shared_exponent(llvm::Value *f, llvm::Value *shared_exp);
+  llvm::Value *extract_digits_from_quant_float_with_shared_exponent(
+      llvm::Value *f,
+      llvm::Value *shared_exp);
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 

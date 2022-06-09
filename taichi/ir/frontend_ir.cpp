@@ -127,25 +127,11 @@ void ArgLoadExpression::flatten(FlattenContext *ctx) {
 }
 
 void TexturePtrExpression::type_check(CompileConfig *config) {
-  /*
-  if (!global_texture) {
-  }
-  ret_type = TypeFactory::get_instance().get_pointer_type();
-  */
-  ret_type =
-      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f32, false);
 }
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
-  if (global_texture) {
-    ctx->push_back<TexturePtrStmt>(global_texture);
-  } else {
-    TI_ASSERT_INFO(
-        arg_load_expr.is<ArgLoadExpression>(),
-        "Non-global TexturePtrExpression must have an valid arg_load_expr");
-    flatten_lvalue(arg_load_expr, ctx);
-    ctx->push_back<TexturePtrStmt>(arg_load_expr->stmt);
-  }
+  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt());
   stmt = ctx->back_stmt();
 }
 

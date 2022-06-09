@@ -336,9 +336,10 @@ void CompiledTaichiKernel::generate_command_list(
     }
 
     for (auto &bind : attribs.texture_binds) {
-      cmdlist->image_transition(bind.texture, ImageLayout::undefined,
+      DeviceAllocation texture = textures.at(bind.arg_id);
+      cmdlist->image_transition(texture, ImageLayout::undefined,
                                 ImageLayout::shader_read);
-      binder->image(0, bind.binding, bind.texture, {});
+      binder->image(0, bind.binding, texture, {});
     }
 
     if (attribs.task_type == OffloadedTaskType::listgen) {
@@ -433,6 +434,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
   std::unordered_map<int, size_t> ext_array_size;
+  std::unordered_map<int, DeviceAllocation> textures;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
@@ -444,11 +446,18 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     for (auto &arg : args) {
       if (arg.is_array) {
         if (host_ctx->is_device_allocations[i]) {
-          // NDArray
+          // NDArray / Texture
+          DeviceAllocation devalloc = kDeviceNullAllocation;
           if (host_ctx->args[i]) {
-            any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+            devalloc = *(DeviceAllocation *)(host_ctx->args[i]);
+          }
+          
+          if (host_ctx->device_allocation_type[i] == RuntimeContext::DevAllocType::ndarray) {
+            any_arrays[i] = devalloc;
+          } else if (host_ctx->device_allocation_type[i] == RuntimeContext::DevAllocType::texture) {
+            textures[i] = devalloc;
           } else {
-            any_arrays[i] = kDeviceNullAllocation;
+            TI_NOT_IMPLEMENTED;
           }
         } else {
           // Compute ext arr sizes
@@ -497,7 +506,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // Record commands
-  std::unordered_map<int, DeviceAllocation> textures;
   ti_kernel->generate_command_list(current_cmdlist_.get(), args_buffer.get(),
                                    ret_buffer.get(), any_arrays, textures);
 

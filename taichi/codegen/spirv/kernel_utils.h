@@ -68,7 +68,7 @@ struct TaskAttributes {
   };
 
   struct TextureBind {
-    DeviceAllocation texture;
+    int arg_id{0};
     int binding{0};
   };
 

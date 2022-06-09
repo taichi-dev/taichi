@@ -297,14 +297,9 @@ class Texture;
 
 class TexturePtrExpression : public Expression {
  public:
-  Expr arg_load_expr;
-  Texture *global_texture{nullptr};
+  int arg_id;
 
-  TexturePtrExpression(Expr arg_load_expr) : arg_load_expr(arg_load_expr) {
-  }
-
-  TexturePtrExpression(Texture *global_texture)
-      : global_texture(global_texture) {
+  TexturePtrExpression(int arg_id) : arg_id(arg_id) {
   }
 
   void type_check(CompileConfig *config) override;

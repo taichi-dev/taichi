@@ -84,8 +84,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(TexturePtrExpression *expr) override {
     emit(ExprOpCode::TexturePtrExpression);
-    emit(expr->global_texture);
-    emit(expr->arg_load_expr);
+    emit(expr->arg_id);
   }
 
   void visit(TextureOpExpression *expr) override {

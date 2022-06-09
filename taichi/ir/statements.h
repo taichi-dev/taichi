@@ -1450,18 +1450,13 @@ class Texture;
 
 class TexturePtrStmt : public Stmt {
  public:
-  Texture *global_texture{nullptr};
   Stmt *arg_load_stmt{nullptr};
-
-  explicit TexturePtrStmt(Texture *tex) : global_texture(tex) {
-    TI_STMT_REG_FIELDS;
-  }
 
   explicit TexturePtrStmt(Stmt *stmt) : arg_load_stmt(stmt) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(global_texture, arg_load_stmt);
+  TI_STMT_DEF_FIELDS(arg_load_stmt);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

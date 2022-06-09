@@ -953,19 +953,17 @@ class TaskCodegen : public IRVisitor {
   void visit(TexturePtrStmt *stmt) override {
     spirv::Value val;
 
-    if (stmt->global_texture) {
-      Texture *tex = stmt->global_texture;
-      if (global_tex_to_value_.find(tex) != global_tex_to_value_.end()) {
-        val = global_tex_to_value_.at(tex);
-      } else {
-        int binding = binding_head_++;
-        val = ir_->texture_argument(4, 0, binding);
-        texture_binds_.push_back(
-            TextureBind{tex->get_device_allocation(), binding});
-        global_tex_to_value_[tex] = val;
-      }
+    int arg_id = stmt->arg_load_stmt->as<ArgLoadStmt>()->arg_id;
+    if (argid_to_tex_value_.find(arg_id) != argid_to_tex_value_.end()) {
+      val = argid_to_tex_value_.at(arg_id);
     } else {
-      TI_NOT_IMPLEMENTED;
+      int binding = binding_head_++;
+      val = ir_->texture_argument(4, 0, binding);
+      TextureBind bind;
+      bind.arg_id = arg_id;
+      bind.binding = binding;
+      texture_binds_.push_back(bind);
+      argid_to_tex_value_[arg_id] = val;
     }
 
     ir_->register_value(stmt->raw_name(), val);
@@ -2125,7 +2123,7 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<int, GetRootStmt *>
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
-  std::unordered_map<Texture *, Value> global_tex_to_value_;
+  std::unordered_map<int, Value> argid_to_tex_value_;
 };
 }  // namespace
 

@@ -938,9 +938,13 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
-#if TI_WITH_LLVM
-  m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+  m.def("get_llvm_target_support", [] {
+#if defined(TI_WITH_LLVM)
+    return LLVM_VERSION_STRING;
+#else
+    return "targets unsupported";
 #endif
+  });
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

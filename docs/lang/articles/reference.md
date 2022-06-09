@@ -7,12 +7,11 @@ sidebar_position: 9998
 This article describes the syntax and semantics of the Taichi programming
 language.
 
-**To users**: If you have gone through user tutorials and still feel uncertain
+**To users**: If you have gone through the user tutorials and still feel uncertain
 about your program behavior, then you are in the right place. If you find the
-actual behavior different from the one described in this article, feel free to
+actual behavior different from what is described in this article, feel free to
 create an [issue](https://github.com/taichi-dev/taichi/issues/new/choose).
-Anything unspecified in this article is subject to change, so you should not
-rely on it in your programs.
+You should not rely solely on this article since things unspecified are subject to changes.
 
 **To contributors**: This article specifies what the language *should* be. That
 is, you should try to match the implementation of the Taichi compiler with this

@@ -942,7 +942,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_LLVM)
     return LLVM_VERSION_STRING;
 #else
-      return "targets unsupported";
+    return "targets unsupported";
 #endif
   });
   m.def("test_printf", [] { printf("test_printf\n"); });

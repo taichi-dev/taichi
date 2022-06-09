@@ -95,7 +95,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
-  TI_IO_DEF(kernels);
+  TI_IO_DEF(fields, kernels);
 };
 
 class LlvmOfflineCacheFileReader {

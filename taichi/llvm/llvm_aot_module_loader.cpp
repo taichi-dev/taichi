@@ -84,7 +84,12 @@ void finalize_aot_field(aot::Module *aot_module,
 
   auto *llvm_prog = llvm_aot_module->get_program();
   const auto &field_cache = aot_field_impl->get_field();
-  llvm_prog->initialize_llvm_runtime_snodes(field_cache, result_buffer);
+
+  int snode_tree_id = field_cache.tree_id;
+  if (!llvm_aot_module->is_snode_tree_initialized(snode_tree_id)) {
+    llvm_prog->initialize_llvm_runtime_snodes(field_cache, result_buffer);
+    llvm_aot_module->set_initialized_snode_tree(snode_tree_id);
+  }
 }
 
 }  // namespace lang

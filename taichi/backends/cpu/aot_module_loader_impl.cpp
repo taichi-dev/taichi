@@ -44,11 +44,6 @@ class AotModuleImpl : public LlvmAotModule {
     TI_NOT_IMPLEMENTED;
     return nullptr;
   }
-
-  std::unique_ptr<aot::Field> make_new_field(const std::string &name) override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
-  }
 };
 
 }  // namespace

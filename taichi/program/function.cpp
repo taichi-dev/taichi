@@ -19,7 +19,7 @@ void Function::set_function_body(const std::function<void()> &func) {
     func();
   }
   irpass::compile_function(ir.get(), program->config, this,
-                           /*grad=*/false,
+                           /*autodiff_mode=*/AutodiffMode::kNone,
                            /*verbose=*/program->config.print_ir,
                            /*start_from_ast=*/true);
 }
@@ -27,7 +27,7 @@ void Function::set_function_body(const std::function<void()> &func) {
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
   ir = std::move(func_body);
   irpass::compile_function(ir.get(), program->config, this,
-                           /*grad=*/false,
+                           /*autodiff_mode=*/AutodiffMode::kNone,
                            /*verbose=*/program->config.print_ir,
                            /*start_from_ast=*/false);
 }

@@ -95,6 +95,12 @@ void export_lang(py::module &m) {
       .value("NULL", ExternalArrayLayout::kNull)
       .export_values();
 
+  py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
+      .value("NONE", AutodiffMode::kNone)
+      .value("FORWARD", AutodiffMode::kForward)
+      .value("REVERSE", AutodiffMode::kReverse)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -365,9 +371,9 @@ void export_lang(py::module &m) {
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, bool grad) -> Kernel * {
+             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
             py::gil_scoped_release release;
-            return &program->kernel(body, name, grad);
+            return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,

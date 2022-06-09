@@ -44,7 +44,7 @@ struct LlvmOfflineCache {
 
   struct FieldCacheData {
     struct SNodeCacheData {
-      int id;
+      int id{0};
       SNodeType type = SNodeType::undefined;
       size_t cell_size_bytes{0};
       size_t chunk_size{0};

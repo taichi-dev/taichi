@@ -14,9 +14,9 @@ create an [issue](https://github.com/taichi-dev/taichi/issues/new/choose).
 You should not rely solely on this article in your programs since anything unspecified is subject to changes.
 
 **To contributors**: This article specifies what the language *should* be. That
-is, you should try to match the implementation of the Taichi compiler with this
-article. You can clearly determine a certain behavior is *correct*, *buggy*, or
-*undefined* from this article.
+is, you should try to implement the Taichi compiler in accordance with this
+article. You can benchmark a certain behavior against this article and tell whether it is *correct*, *buggy*, or
+*undefined*.
 
 ## Introduction
 

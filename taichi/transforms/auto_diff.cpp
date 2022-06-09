@@ -1176,7 +1176,7 @@ void auto_diff(IRNode *root,
                bool use_stack) {
   TI_AUTO_PROF;
   if (autodiff_mode == AutodiffMode::kReverse) {
-    if(use_stack){
+    if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
 
@@ -1190,7 +1190,7 @@ void auto_diff(IRNode *root,
         BackupSSA::run(ib);
         irpass::analysis::verify(root);
       }
-    } else{
+    } else {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
       type_check(root, config);

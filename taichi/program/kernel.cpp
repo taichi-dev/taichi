@@ -92,8 +92,7 @@ void Kernel::lower(bool to_executable) {
   if (to_executable) {
     irpass::compile_to_executable(
         ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
-        /*ad_use_stack=*/true,
-        verbose,
+        /*ad_use_stack=*/true, verbose,
         /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/

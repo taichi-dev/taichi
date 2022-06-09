@@ -268,11 +268,11 @@ void compile_to_executable(IRNode *ir,
   compile_to_offloads(ir, config, kernel, verbose, autodiff_mode, ad_use_stack,
                       start_from_ast);
 
-  offload_to_executable(ir, config, kernel, verbose,
-                        /*determine_ad_stack_size=*/autodiff_mode ==
-                            AutodiffMode::kReverse && ad_use_stack,
-                        lower_global_access, make_thread_local,
-                        make_block_local);
+  offload_to_executable(
+      ir, config, kernel, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse &&
+          ad_use_stack,
+      lower_global_access, make_thread_local, make_block_local);
 }
 
 void compile_function(IRNode *ir,

@@ -53,8 +53,7 @@ Kernel::Kernel(Program &program,
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
-  } else if (autodiff_mode == AutodiffMode::kReverseWithStack ||
-             autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  } else if (autodiff_mode == AutodiffMode::kReverse) {
     name = primal_name + "_reverse_grad";
   }
 
@@ -92,7 +91,9 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode, verbose,
+        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
+        /*ad_use_stack=*/true,
+        verbose,
         /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -102,6 +103,7 @@ void Kernel::lower(bool to_executable) {
   } else {
     irpass::compile_to_offloads(ir.get(), config, this, verbose,
                                 /*autodiff_mode=*/autodiff_mode,
+                                /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
 
@@ -431,8 +433,7 @@ void Kernel::init(Program &program,
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
-  } else if (autodiff_mode == AutodiffMode::kReverseWithStack ||
-             autodiff_mode == AutodiffMode::kReverseWithoutStack) {
+  } else if (autodiff_mode == AutodiffMode::kReverse) {
     name = primal_name + "_reverse_grad";
   }
 

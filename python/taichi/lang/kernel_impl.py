@@ -840,7 +840,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
                     autodiff_mode=AutodiffMode.NONE,
                     _classkernel=is_classkernel)
     adjoint = Kernel(_func,
-                     autodiff_mode=AutodiffMode.REVERSE_WITH_STACK,
+                     autodiff_mode=AutodiffMode.REVERSE,
                      _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint

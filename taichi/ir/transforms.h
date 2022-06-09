@@ -80,7 +80,8 @@ bool lower_access(IRNode *root,
                   const LowerAccessPass::Args &args);
 void auto_diff(IRNode *root,
                const CompileConfig &config,
-               AutodiffMode autodiffMode);
+               AutodiffMode autodiffMode,
+               bool use_stack = false);
 /**
  * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,
  * there are no side effects if called more than once or called when not needed.
@@ -148,6 +149,7 @@ void compile_to_offloads(IRNode *ir,
                          Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
+                         bool ad_use_stack,
                          bool start_from_ast);
 
 void offload_to_executable(IRNode *ir,
@@ -164,6 +166,7 @@ void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
                            AutodiffMode autodiff_mode,
+                           bool ad_use_stack,
                            bool verbose,
                            bool lower_global_access = true,
                            bool make_thread_local = false,

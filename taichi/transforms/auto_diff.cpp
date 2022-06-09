@@ -1193,28 +1193,31 @@ namespace irpass {
 
 void auto_diff(IRNode *root,
                const CompileConfig &config,
-               AutodiffMode autodiff_mode) {
+               AutodiffMode autodiff_mode,
+               bool use_stack) {
   TI_AUTO_PROF;
-  if (autodiff_mode == AutodiffMode::kReverseWithStack) {
-    auto IB = IdentifyIndependentBlocks::run(root);
-    ReverseOuterLoops::run(root, IB);
+  if (autodiff_mode == AutodiffMode::kReverse) {
+    if(use_stack){
+      auto IB = IdentifyIndependentBlocks::run(root);
+      ReverseOuterLoops::run(root, IB);
 
-    for (auto ib : IB) {
-      PromoteSSA2LocalVar::run(ib);
-      ReplaceLocalVarWithStacks replace(config.ad_stack_size);
-      ib->accept(&replace);
+      for (auto ib : IB) {
+        PromoteSSA2LocalVar::run(ib);
+        ReplaceLocalVarWithStacks replace(config.ad_stack_size);
+        ib->accept(&replace);
+        type_check(root, config);
+        MakeAdjoint::run(ib);
+        type_check(root, config);
+        BackupSSA::run(ib);
+        irpass::analysis::verify(root);
+      }
+    } else{
+      auto IB = IdentifyIndependentBlocks::run(root);
+      ReverseOuterLoops::run(root, IB);
       type_check(root, config);
-      MakeAdjoint::run(ib);
-      type_check(root, config);
-      BackupSSA::run(ib);
-      irpass::analysis::verify(root);
-    }
-  } else if (autodiff_mode == AutodiffMode::kReverseWithoutStack) {
-    auto IB = IdentifyIndependentBlocks::run(root);
-    ReverseOuterLoops::run(root, IB);
-    type_check(root, config);
-    for (auto ib : IB) {
-      MakeAdjoint::run(ib);
+      for (auto ib : IB) {
+        MakeAdjoint::run(ib);
+      }
     }
   } else if (autodiff_mode == AutodiffMode::kForward) {
     // Forward mode autodiff

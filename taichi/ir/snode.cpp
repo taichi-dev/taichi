@@ -326,7 +326,7 @@ void SNode::set_snode_tree_id(int id) {
   snode_tree_id_ = id;
 }
 
-int SNode::get_snode_tree_id() {
+int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
 }
 

@@ -40,6 +40,13 @@ class AotModuleBuilder {
 
   void add_graph(const std::string &name, const aot::CompiledGraph &graph);
 
+  void set_program(Program *prog) {
+    prog_ = prog;
+  }
+  Program *get_mutable_program() {
+    return prog_;
+  }
+
  protected:
   /**
    * Intended to be overriden by each backend's implementation.
@@ -81,6 +88,7 @@ class AotModuleBuilder {
 
  private:
   std::unordered_map<std::string, aot::CompiledGraph> graphs_;
+  Program *prog_ = nullptr;
 };
 
 }  // namespace lang

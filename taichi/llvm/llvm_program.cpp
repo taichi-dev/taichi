@@ -273,37 +273,22 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
 }
 
 void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
-  compile_snode_tree_types_impl(tree);
-}
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  int snode_tree_id = tree->id();
+  int root_id = tree->root()->id;
 
-static LlvmOfflineCache::FieldCacheData construct_filed_cache_data(
-    const SNodeTree &tree,
-    const StructCompiler &struct_compiler) {
-  LlvmOfflineCache::FieldCacheData ret;
-  ret.tree_id = tree.id();
-  ret.root_id = tree.root()->id;
-  ret.root_size = struct_compiler.root_size;
-
-  const auto &snodes = struct_compiler.snodes;
-  for (size_t i = 0; i < snodes.size(); i++) {
-    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
-    snode_cache_data.id = snodes[i]->id;
-    snode_cache_data.type = snodes[i]->type;
-    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
-    snode_cache_data.chunk_size = snodes[i]->chunk_size;
-
-    ret.snode_metas.emplace_back(std::move(snode_cache_data));
-  }
-
-  return ret;
+  // Add compiled result to Cache
+  cache_field(snode_tree_id, root_id, *struct_compiler);
 }
 
 void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                              uint64 *result_buffer) {
-  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  compile_snode_tree_types(tree);
+  int snode_tree_id = tree->id();
 
-  auto field_cache_data = construct_filed_cache_data(*tree, *struct_compiler);
-  initialize_llvm_runtime_snodes(field_cache_data, result_buffer);
+  TI_ASSERT(cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end());
+  initialize_llvm_runtime_snodes(cache_data_.fields.at(snode_tree_id),
+                                 result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -699,6 +684,33 @@ void LlvmProgramImpl::cache_kernel(
   kernel_cache.owned_module = llvm::CloneModule(*module);
   kernel_cache.args = std::move(args);
   kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
+}
+
+void LlvmProgramImpl::cache_field(int snode_tree_id,
+                                  int root_id,
+                                  const StructCompiler &struct_compiler) {
+  if (cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end()) {
+    // [TODO] check and update the Cache, instead of simply return.
+    return;
+  }
+
+  LlvmOfflineCache::FieldCacheData ret;
+  ret.tree_id = snode_tree_id;
+  ret.root_id = root_id;
+  ret.root_size = struct_compiler.root_size;
+
+  const auto &snodes = struct_compiler.snodes;
+  for (size_t i = 0; i < snodes.size(); i++) {
+    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
+    snode_cache_data.id = snodes[i]->id;
+    snode_cache_data.type = snodes[i]->type;
+    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
+    snode_cache_data.chunk_size = snodes[i]->chunk_size;
+
+    ret.snode_metas.emplace_back(std::move(snode_cache_data));
+  }
+
+  cache_data_.fields[snode_tree_id] = std::move(ret);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {

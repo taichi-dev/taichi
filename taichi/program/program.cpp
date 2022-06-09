@@ -610,7 +610,9 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   }
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
-    return program_impl_->make_aot_module_builder();
+    auto aot_builder = program_impl_->make_aot_module_builder();
+    aot_builder->set_program(this);
+    return aot_builder;
   }
   return nullptr;
 }

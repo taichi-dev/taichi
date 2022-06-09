@@ -1,11 +1,22 @@
 import time
 
+from PIL import Image
+
 import numpy as np
 from numpy.lib.function_base import average
 
 import taichi as ti
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.vulkan)
+
+tex_format = ti.u8
+brick_wall_texture = ti.Texture(tex_format, 4, (1024, 512))
+tex_ndarray = ti.Vector.ndarray(4, tex_format, shape=(1024, 512))
+pic = Image.open("Bricks079_1K_Color.png").convert("RGBA")
+pix = np.array(pic.getdata()).reshape(pic.size[0], pic.size[1], 4).astype(np.ubyte)
+tex_ndarray.from_numpy(pix)
+brick_wall_texture.from_ndarray(tex_ndarray)
+
 res = (800, 800)
 color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 count_var = ti.field(ti.i32, shape=(1, ))
@@ -219,7 +230,7 @@ def intersect_light(pos, d, tmax):
 
 
 @ti.func
-def intersect_scene(pos, ray_dir):
+def intersect_scene(pos, ray_dir, tex : ti.template()):
     closest, normal = inf, ti.Vector.zero(ti.f32, 3)
     c, mat = ti.Vector.zero(ti.f32, 3), mat_none
 
@@ -277,7 +288,9 @@ def intersect_scene(pos, ray_dir):
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
-        c, mat = gray, mat_lambertian
+        hit_p = pos + ray_dir * closest
+        c, mat = tex.sample_lod(hit_p.xy * ti.Vector([0.5, 1.0]), 0.0).rgb, mat_lambertian
+        c = ti.pow(c, 2.2)
     # light
     hit_l, cur_dist = intersect_light(pos, ray_dir, closest)
     if hit_l and 0 < cur_dist < closest:
@@ -290,11 +303,11 @@ def intersect_scene(pos, ray_dir):
 
 
 @ti.func
-def visible_to_light(pos, ray_dir):
+def visible_to_light(pos, ray_dir, tex : ti.template()):
     # eps*ray_dir is easy way to prevent rounding error
     # here is best way to check the float precision:
     # http://www.pbr-book.org/3ed-2018/Shapes/Managing_Rounding_Error.html
-    a, b, c, mat = intersect_scene(pos + eps * ray_dir, ray_dir)
+    a, b, c, mat = intersect_scene(pos + eps * ray_dir, ray_dir, tex)
     return mat == mat_light
 
 
@@ -365,7 +378,7 @@ def sample_brdf(normal):
 
 
 @ti.func
-def sample_direct_light(hit_pos, hit_normal, hit_color):
+def sample_direct_light(hit_pos, hit_normal, hit_color, tex : ti.template()):
     direct_li = ti.Vector([0.0, 0.0, 0.0])
     fl = lambertian_brdf * hit_color * light_color
     light_pdf, brdf_pdf = 0.0, 0.0
@@ -376,7 +389,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
         light_pdf = compute_area_light_pdf(hit_pos, to_light_dir)
         brdf_pdf = compute_brdf_pdf(hit_normal, to_light_dir)
         if light_pdf > 0 and brdf_pdf > 0:
-            l_visible = visible_to_light(hit_pos, to_light_dir)
+            l_visible = visible_to_light(hit_pos, to_light_dir, tex)
             if l_visible:
                 w = mis_power_heuristic(light_pdf, brdf_pdf)
                 nl = dot_or_zero(to_light_dir, hit_normal)
@@ -388,7 +401,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
     if brdf_pdf > 0:
         light_pdf = compute_area_light_pdf(hit_pos, brdf_dir)
         if light_pdf > 0:
-            l_visible = visible_to_light(hit_pos, brdf_dir)
+            l_visible = visible_to_light(hit_pos, brdf_dir, tex)
             if l_visible:
                 w = mis_power_heuristic(brdf_pdf, light_pdf)
                 nl = dot_or_zero(brdf_dir, hit_normal)
@@ -439,7 +452,7 @@ inv_stratify = 1.0 / 5.0
 
 
 @ti.kernel
-def render():
+def render(tex : ti.types.texture):
     for u, v in color_buffer:
         aspect_ratio = res[0] / res[1]
         pos = camera_pos
@@ -459,7 +472,7 @@ def render():
 
         depth = 0
         while depth < max_ray_depth:
-            closest, hit_normal, hit_color, mat = intersect_scene(pos, ray_dir)
+            closest, hit_normal, hit_color, mat = intersect_scene(pos, ray_dir, tex)
             if mat == mat_none:
                 break
 
@@ -470,7 +483,7 @@ def render():
                 break
             elif mat == mat_lambertian:
                 acc_color += throughput * sample_direct_light(
-                    hit_pos, hit_normal, hit_color)
+                    hit_pos, hit_normal, hit_color, tex)
 
             depth += 1
             ray_dir, pdf = sample_ray_dir(ray_dir, hit_normal, hit_pos, mat)
@@ -497,7 +510,7 @@ def main():
     last_t = time.time()
     i = 0
     while gui.running:
-        render()
+        render(brick_wall_texture)
         interval = 10
         if i % interval == 0:
             tonemap(i)

@@ -65,7 +65,7 @@ user_api[ti] = [
     'SNode', 'ScalarField', 'ScalarNdarray', 'Struct', 'StructField', 'TRACE',
     'TaichiAssertionError', 'TaichiCompilationError', 'TaichiNameError',
     'TaichiRuntimeError', 'TaichiRuntimeTypeError', 'TaichiSyntaxError',
-    'TaichiTypeError', 'Tape', 'TetMesh', 'TriMesh', 'Vector', 'VectorNdarray',
+    'TaichiTypeError', 'Tape', 'TetMesh', 'Texture', 'TriMesh', 'Vector', 'VectorNdarray',
     'WARN', 'abs', 'acos', 'activate', 'ad', 'aot', 'append', 'arm64', 'asin',
     'assume_in_range', 'atan2', 'atomic_add', 'atomic_and', 'atomic_max',
     'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor', 'axes', 'bit_cast',
@@ -116,6 +116,7 @@ user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
+user_api[ti.Texture] = ['device_allocation_ptr', 'from_ndarray']
 user_api[ti.SNode] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
     'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'

@@ -273,17 +273,8 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  // TODO: Update the codegen so that we don't reserve slots for element_shape
-  // in extra_args, especially in SOA case.
-  if (arr.layout == ExternalArrayLayout::kAOS) {
-    for (uint64 i = 0; i < arr.shape.size(); ++i) {
-      this->set_extra_arg_int(arg_id, i, arr.shape[i]);
-    }
-  } else {
-    auto element_dim = arr.element_shape.size();
-    for (uint64 i = element_dim; i < arr.total_shape().size(); ++i) {
-      this->set_extra_arg_int(arg_id, i, arr.shape[i - element_dim]);
-    }
+  for (uint64 i = 0; i < arr.shape.size(); ++i) {
+    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
   }
 }
 

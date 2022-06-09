@@ -26,12 +26,17 @@ class TI_DLL_EXPORT Ndarray {
                    const std::vector<int> &element_shape = {},
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
-  /* Constructs a Ndarray from an existing DeviceAllocation
+  /* Constructs a Ndarray from an existing DeviceAllocation.
    * It doesn't handle the allocation and deallocation.
+   * You can see a Ndarray as a view or interpretation of DeviceAllocation
+   * with specified element_shape & dtype & layout.
    */
   explicit Ndarray(DeviceAllocation &devalloc,
                    const DataType type,
-                   const std::vector<int> &shape);
+                   const std::vector<int> &shape,
+                   const std::vector<int> &element_shape = {},
+                   ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;
   std::vector<int> element_shape;

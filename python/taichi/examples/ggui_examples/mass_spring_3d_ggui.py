@@ -21,6 +21,7 @@ v = ti.Vector.field(3, dtype=float, shape=(n, n))
 num_triangles = (n - 1) * (n - 1) * 2
 indices = ti.field(int, shape=num_triangles * 3)
 vertices = ti.Vector.field(3, dtype=float, shape=n * n)
+colors = ti.Vector.field(3, dtype=float, shape=n * n)
 
 bending_springs = False
 
@@ -49,6 +50,11 @@ def initialize_mesh_indices():
         indices[quad_id * 6 + 4] = i * n + (j + 1)
         indices[quad_id * 6 + 5] = (i + 1) * n + j
 
+    for i, j in ti.ndrange(n, n):
+        if (i // 4 + j // 4) % 2 == 0:
+            colors[i * n + j] = (0.22, 0.72, 0.52)
+        else:
+            colors[i * n + j] = (1, 0.334, 0.52)
 
 initialize_mesh_indices()
 
@@ -130,13 +136,14 @@ while window.running:
     scene.set_camera(camera)
 
     scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
+    scene.ambient_light((0.5, 0.5, 0.5))
     scene.mesh(vertices,
                indices=indices,
-               color=(0.8, 0, 0),
+               per_vertex_color=colors,
                two_sided=True)
 
     # Draw a smaller ball to avoid visual penetration
-    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.2, 0.6, 1))
+    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0.42, 0.8))
     canvas.scene(scene)
     window.show()
 

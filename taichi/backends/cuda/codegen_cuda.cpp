@@ -548,10 +548,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
+            llvm_val[stmt] = extract_quant_int(data, bit_offset, int_in_mem);
           } else if (val_type->cast<CustomFloatType>()) {
             // TODO: support __ldg
-            llvm_val[stmt] = load_custom_float(stmt->src);
+            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
           } else {
             TI_NOT_IMPLEMENTED;
           }
@@ -710,6 +710,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 };
+
+#ifdef TI_WITH_LLVM
+// static
+std::unique_ptr<CodeGenLLVM> CodeGenCUDA::make_codegen_llvm(Kernel *kernel,
+                                                            IRNode *ir) {
+  return std::make_unique<CodeGenLLVMCUDA>(kernel, ir);
+}
+#endif  // TI_WITH_LLVM
 
 static void set_arg_external_array(RuntimeContext *ctx,
                                    const std::string &kernel_name,

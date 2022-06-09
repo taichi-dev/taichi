@@ -472,50 +472,30 @@ class KernelCodegenImpl : public IRVisitor {
       const int num_indices = stmt->indices.size();
       const auto &element_shape = stmt->element_shape;
       std::vector<std::string> size_exprs;
-      enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
-      const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
-
-      // Args buffer arrange dimensions from outer to inner
-      // AoS args buffer:   array_shape|element_shape
-      // SoA args buffer: element_shape|array_shape
-      //
-      // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.AOS)
-      // args buffer: 5, 4, 3, 2
-      // ti.Matrix.ndarray(3, 2, ti.f32, (5, 4), layout=ti.Layout.SOA)
-      // args buffer: 3, 2, 5, 4
+      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                                 : ExternalArrayLayout::kSOA;
       const int arr_shape_len = num_indices - element_shape.size();
-      int index_i = 0;
-      const auto add_elem_shape_exprs = [&]() {
-        for (int es : element_shape) {
-          size_exprs.push_back(std::to_string(es));
-          ++index_i;
-        }
-      };
-      int arr_shape_offset = 0;
-      if (layout == layout_SOA) {
-        add_elem_shape_exprs();
-        // When the layout is SOA, element shape comes before array shape, so
-        // we have to skip the element shapes first.
-        // TODO: Element shape is a compile-time known information, so extra
-        // args will always only need the array shape.
-        arr_shape_offset = element_shape.size();
-      }
+      const size_t element_shape_index_offset =
+          (layout == ExternalArrayLayout::kAOS) ? arr_shape_len : 0;
       for (int i = 0; i < arr_shape_len; i++) {
         std::string var_name =
             fmt::format("{}_arr_dim{}_", stmt->raw_name(), i);
         emit("const int {} = {}.extra_arg({}, {});", var_name, kContextVarName,
-             arg_id, i + arr_shape_offset);
+             arg_id, i);
         size_exprs.push_back(std::move(var_name));
-        ++index_i;
       }
-      if (layout == layout_AOS) {
-        add_elem_shape_exprs();
-      }
-      TI_ASSERT(index_i == num_indices);
+      size_t size_var_index = 0;
       for (int i = 0; i < num_indices; i++) {
-        emit("{} *= {};", linear_index_name, size_exprs[i]);
+        if (i >= element_shape_index_offset &&
+            i < element_shape_index_offset + element_shape.size()) {
+          emit("{} *= {};", linear_index_name,
+               element_shape[i - element_shape_index_offset]);
+        } else {
+          emit("{} *= {};", linear_index_name, size_exprs[size_var_index++]);
+        }
         emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
       }
+      TI_ASSERT(size_var_index == arr_shape_len);
     }
     emit("}}");
 
@@ -1030,7 +1010,7 @@ class KernelCodegenImpl : public IRVisitor {
       const auto loaded = construct_load_as_custom_int(
           stmt->src, cft->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
-      // See LLVM backend's reconstruct_custom_float()
+      // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
                          cft->get_scale());
     }

@@ -12,6 +12,7 @@ loss = ti.field(float, shape=(), needs_grad=True)
 def test():
     loss[None] += x[None]**3 + x[None]**2 + ti.sin(x[None])
 
+
 x[None] = 3.1415926 / 6
 x.dual[None] = 1.0
 x.adjoint[None] = 0.0

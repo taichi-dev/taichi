@@ -308,9 +308,9 @@ bool SNode::has_adjoint() const {
   return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }
 
-//bool SNode::has_dual() const {
-//  return is_primal() && (grad_info->dual_snode() != nullptr);
-//}
+// bool SNode::has_dual() const {
+//   return is_primal() && (grad_info->dual_snode() != nullptr);
+// }
 
 bool SNode::has_dual() const {
   return grad_info->dual_snode() != nullptr;

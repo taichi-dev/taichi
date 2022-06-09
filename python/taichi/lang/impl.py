@@ -506,7 +506,6 @@ def create_field_member(dtype, name):
         x_adjoint.ptr.set_is_primal(False)
         x.ptr.set_adjoint(x_adjoint.ptr)
 
-
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
         x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
@@ -564,7 +563,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             is not None), 'The shape cannot be None when offset is being set'
 
     x, x_adjoint, x_dual = create_field_member(dtype, name)
-    x, x_adjoint, x_dual = ScalarField(x), ScalarField(x_adjoint), ScalarField(x_dual)
+    x, x_adjoint, x_dual = ScalarField(x), ScalarField(x_adjoint), ScalarField(
+        x_dual)
     # x._set_grad(x_adjoint, reverse_mode=True)
     x._set_adjoint(x_adjoint)
     x._set_dual(x_dual)

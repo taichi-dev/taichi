@@ -1,8 +1,7 @@
 name: Performance Monitoring
 on:
-  push:
-    branches:
-      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   gpu_backends:
@@ -31,3 +30,4 @@ jobs:
           ./run.sh
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          CXX: /usr/bin/c++

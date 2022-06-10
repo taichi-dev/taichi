@@ -17,8 +17,10 @@ __aot_test_cases = {
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cpu.py'),
     "LlvmProgramTest.FullPipelineCUDA":
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cuda.py'),
-    "LlvmAOTTest.Field":
+    "LlvmAOTTest.CPUField":
     os.path.join('cpp', 'backends', 'llvm', 'field_aot_cpu.py'),
+    "LlvmAOTTest.CUDAField":
+    os.path.join('cpp', 'backends', 'llvm', 'field_aot_cuda.py'),
     "AotLoadGraph.Mpm88":
     os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'),
 }

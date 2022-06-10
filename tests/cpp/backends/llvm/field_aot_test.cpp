@@ -16,7 +16,87 @@
 namespace taichi {
 namespace lang {
 
-TEST(LlvmAOTTest, Field) {
+void run_field_tests(aot::Module *mod,
+                     LlvmProgramImpl *prog,
+                     uint64 *result_buffer) {
+  aot::Kernel *k_init_fields = mod->get_kernel("init_fields");
+  aot::Kernel *k_check_init_x = mod->get_kernel("check_init_x");
+  aot::Kernel *k_check_init_y = mod->get_kernel("check_init_y");
+
+  aot::Kernel *k_deactivate_pointer_fields =
+      mod->get_kernel("deactivate_pointer_fields");
+  aot::Kernel *k_activate_pointer_fields =
+      mod->get_kernel("activate_pointer_fields");
+
+  aot::Kernel *k_check_deactivate_pointer_fields =
+      mod->get_kernel("check_deactivate_pointer_fields");
+  aot::Kernel *k_check_activate_pointer_fields =
+      mod->get_kernel("check_activate_pointer_fields");
+
+  // Initialize Fields
+  aot::Field *field_x = mod->get_field("0" /*snode_tree_id*/);
+  aot::Field *field_y = mod->get_field("0" /*snode_tree_id*/);
+
+  finalize_aot_field(mod, field_x, result_buffer);
+  finalize_aot_field(mod, field_y, result_buffer);
+
+  int base_value = 10;
+  /* -------- Test Case 1 ------ */
+  // Kernel: init_fields(int)
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    ctx.set_arg(0, base_value);
+    k_init_fields->launch(&ctx);
+  }
+
+  // Kernel: check_init_x(int)
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    ctx.set_arg(0, base_value);
+    k_check_init_x->launch(&ctx);
+  }
+  // Kernel: check_init_y()
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    k_check_init_y->launch(&ctx);
+  }
+
+  /* -------- Test Case 2 ------ */
+  // Kernel: deactivate_pointer_fields()
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    k_deactivate_pointer_fields->launch(&ctx);
+  }
+  // Kernel: check_deactivate_pointer_fields()
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    k_check_deactivate_pointer_fields->launch(&ctx);
+  }
+
+  /* -------- Test Case 3 ------ */
+  // Kernel: activate_pointer_fields()
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    k_activate_pointer_fields->launch(&ctx);
+  }
+  // Kernel: check_activate_pointer_fields()
+  {
+    RuntimeContext ctx;
+    ctx.runtime = prog->get_llvm_runtime();
+    k_check_activate_pointer_fields->launch(&ctx);
+  }
+
+  // Check assertion error from ti.kernel
+  prog->check_runtime_error(result_buffer);
+}
+
+TEST(LlvmAOTTest, CPUField) {
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -39,81 +119,33 @@ TEST(LlvmAOTTest, Field) {
   aot_params.program = &prog;
   std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
 
-  aot::Kernel *k_init_fields = mod->get_kernel("init_fields");
-  aot::Kernel *k_check_init_x = mod->get_kernel("check_init_x");
-  aot::Kernel *k_check_init_y = mod->get_kernel("check_init_y");
+  run_field_tests(mod.get(), &prog, result_buffer);
+}
 
-  aot::Kernel *k_deactivate_pointer_fields =
-      mod->get_kernel("deactivate_pointer_fields");
-  aot::Kernel *k_activate_pointer_fields =
-      mod->get_kernel("activate_pointer_fields");
+TEST(LlvmAOTTest, CUDAField) {
+  if (is_cuda_api_available()) {
+    CompileConfig cfg;
+    cfg.arch = Arch::cuda;
+    cfg.kernel_profiler = false;
+    constexpr KernelProfilerBase *kNoProfiler = nullptr;
+    LlvmProgramImpl prog{cfg, kNoProfiler};
 
-  aot::Kernel *k_check_deactivate_pointer_fields =
-      mod->get_kernel("check_deactivate_pointer_fields");
-  aot::Kernel *k_check_activate_pointer_fields =
-      mod->get_kernel("check_activate_pointer_fields");
+    // Must have handled all the arch fallback logic by this point.
+    prog.initialize_host();
+    uint64 *result_buffer{nullptr};
+    prog.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
 
-  // Initialize Fields
-  aot::Field *field_x = mod->get_field("0" /*snode_tree_id*/);
-  aot::Field *field_y = mod->get_field("0" /*snode_tree_id*/);
+    cuda::AotModuleParams aot_params;
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
-  finalize_aot_field(mod.get(), field_x, result_buffer);
-  finalize_aot_field(mod.get(), field_y, result_buffer);
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
+    aot_params.module_path = aot_mod_ss.str();
+    aot_params.program = &prog;
+    auto mod = cuda::make_aot_module(aot_params);
 
-  int base_value = 10;
-  /* -------- Test Case 1 ------ */
-  // Kernel: init_fields(int)
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_init_fields->launch(&ctx);
+    run_field_tests(mod.get(), &prog, result_buffer);
   }
-
-  // Kernel: check_init_x(int)
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_check_init_x->launch(&ctx);
-  }
-  // Kernel: check_init_y()
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    k_check_init_y->launch(&ctx);
-  }
-
-  /* -------- Test Case 2 ------ */
-  // Kernel: deactivate_pointer_fields()
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    k_deactivate_pointer_fields->launch(&ctx);
-  }
-  // Kernel: check_deactivate_pointer_fields()
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    k_check_deactivate_pointer_fields->launch(&ctx);
-  }
-
-  /* -------- Test Case 3 ------ */
-  // Kernel: activate_pointer_fields()
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    k_activate_pointer_fields->launch(&ctx);
-  }
-  // Kernel: check_activate_pointer_fields()
-  {
-    RuntimeContext ctx;
-    ctx.runtime = prog.get_llvm_runtime();
-    k_check_activate_pointer_fields->launch(&ctx);
-  }
-
-  // Check assertion error from ti.kernel
-  prog.check_runtime_error(result_buffer);
 }
 
 }  // namespace lang

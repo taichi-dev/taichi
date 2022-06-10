@@ -316,15 +316,6 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
-      auto promote_custom_int_type = [&](Stmt *stmt, Stmt *hs) {
-        if (auto cit = hs->ret_type->cast<CustomIntType>()) {
-          return insert_type_cast_before(stmt, hs, cit->get_compute_type());
-        }
-        return hs;
-      };
-      stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
-      stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
-
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {
         // shift_ops does not follow the same type promotion rule as numerical

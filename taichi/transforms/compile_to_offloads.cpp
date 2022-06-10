@@ -33,7 +33,7 @@ void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,
                          bool verbose,
-                         bool grad,
+                         AutodiffMode autodiff_mode,
                          bool ad_use_stack,
                          bool start_from_ast) {
   TI_AUTO_PROF;
@@ -41,7 +41,7 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
-  if (grad) {
+  if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -57,7 +57,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (kernel->is_evaluator) {
-    TI_ASSERT(!grad);
+    TI_ASSERT(autodiff_mode == AutodiffMode::kNone);
 
     irpass::demote_operations(ir, config);
     print("Operations demoted");
@@ -85,12 +85,12 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
-  if (grad) {
+  if (autodiff_mode != AutodiffMode::kNone) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
     irpass::full_simplify(ir, config, {false, kernel->program});
-    irpass::auto_diff(ir, config, ad_use_stack);
+    irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
     irpass::full_simplify(ir, config, {false, kernel->program});
     print("Gradient");
     irpass::analysis::verify(ir);
@@ -256,7 +256,7 @@ void offload_to_executable(IRNode *ir,
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
-                           bool grad,
+                           AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,
                            bool lower_global_access,
@@ -265,19 +265,20 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, kernel, verbose, grad, ad_use_stack,
+  compile_to_offloads(ir, config, kernel, verbose, autodiff_mode, ad_use_stack,
                       start_from_ast);
 
-  offload_to_executable(ir, config, kernel, verbose,
-                        /*determine_ad_stack_size=*/grad && ad_use_stack,
-                        lower_global_access, make_thread_local,
-                        make_block_local);
+  offload_to_executable(
+      ir, config, kernel, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse &&
+          ad_use_stack,
+      lower_global_access, make_thread_local, make_block_local);
 }
 
 void compile_function(IRNode *ir,
                       const CompileConfig &config,
                       Function *func,
-                      bool grad,
+                      AutodiffMode autodiff_mode,
                       bool verbose,
                       bool start_from_ast) {
   TI_AUTO_PROF;
@@ -285,7 +286,7 @@ void compile_function(IRNode *ir,
   auto print = make_pass_printer(verbose, func->get_name(), ir);
   print("Initial IR");
 
-  if (grad) {
+  if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }

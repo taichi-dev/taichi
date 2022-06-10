@@ -95,6 +95,12 @@ void export_lang(py::module &m) {
       .value("NULL", ExternalArrayLayout::kNull)
       .export_values();
 
+  py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
+      .value("NONE", AutodiffMode::kNone)
+      .value("FORWARD", AutodiffMode::kForward)
+      .value("REVERSE", AutodiffMode::kReverse)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -365,9 +371,9 @@ void export_lang(py::module &m) {
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, bool grad) -> Kernel * {
+             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
             py::gil_scoped_release release;
-            return &program->kernel(body, name, grad);
+            return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
@@ -938,9 +944,13 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
-#if TI_WITH_LLVM
-  m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+  m.def("get_llvm_target_support", [] {
+#if defined(TI_WITH_LLVM)
+    return LLVM_VERSION_STRING;
+#else
+    return "targets unsupported";
 #endif
+  });
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

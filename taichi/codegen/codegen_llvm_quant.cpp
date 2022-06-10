@@ -51,7 +51,8 @@ llvm::Value *CodeGenLLVM::quant_fixed_to_quant_int(CustomFloatType *cft,
   // Compute int(real * (1.0 / scale) + 0.5)
   auto s_numeric = 1.0 / cft->get_scale();
   auto compute_type = cft->get_compute_type();
-  s = builder->CreateFPCast(tlctx->get_constant(s_numeric), llvm_type(compute_type));
+  s = builder->CreateFPCast(tlctx->get_constant(s_numeric),
+                            llvm_type(compute_type));
   auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 

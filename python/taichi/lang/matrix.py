@@ -1456,7 +1456,10 @@ class MatrixField(Field):
             self.dynamic_index_stride = 0
             return
         length = len(paths[0])
-        if any(len(path) != length or ti_core.is_quant(path[length - 1]._dtype) for path in paths):
+        if any(
+                len(path) != length or ti_core.is_quant(path[length -
+                                                             1]._dtype)
+                for path in paths):
             return
         for i in range(length):
             if any(path[i] != paths[0][i] for path in paths):

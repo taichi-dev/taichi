@@ -1062,9 +1062,9 @@ class KernelCodegenImpl : public IRVisitor {
     // variables) because |val_stmt| could be used multiple times. If the
     // intermediate variables are named based on |val_stmt|, it would result in
     // symbol redefinitions.
-    return fmt::format("mtl_quant_fixed_to_quant_int<{}>(/*inv_scale=*/{} * {})",
-                       metal_data_type_name(compute_dt), inv_scale,
-                       val_stmt->raw_name());
+    return fmt::format(
+        "mtl_quant_fixed_to_quant_int<{}>(/*inv_scale=*/{} * {})",
+        metal_data_type_name(compute_dt), inv_scale, val_stmt->raw_name());
   }
 
   // Returns expression of the loaded integer.

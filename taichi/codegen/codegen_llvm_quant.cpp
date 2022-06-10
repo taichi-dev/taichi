@@ -51,9 +51,7 @@ llvm::Value *CodeGenLLVM::quant_fixed_to_quant_int(CustomFloatType *cft,
   // Compute int(real * (1.0 / scale) + 0.5)
   auto s_numeric = 1.0 / cft->get_scale();
   auto compute_type = cft->get_compute_type();
-  s = builder->CreateFPCast(
-      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
-      llvm_type(compute_type));
+  s = builder->CreateFPCast(tlctx->get_constant(s_numeric), llvm_type(compute_type));
   auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
@@ -519,13 +517,12 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   // Compute float(digits) * scale
   llvm::Value *cast = nullptr;
   auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
-  if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+  if (cft->get_is_signed()) {
     cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
   } else {
     cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
   }
-  llvm::Value *s =
-      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+  llvm::Value *s = tlctx->get_constant(cft->get_scale());
   s = builder->CreateFPCast(s, llvm_type(compute_type));
   return builder->CreateFMul(cast, s);
 }

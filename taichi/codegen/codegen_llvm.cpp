@@ -324,28 +324,6 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
   kernel_name = kernel->name + "_kernel";
 }
 
-llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
-                                   Type *from,
-                                   Type *to) {
-  if (from == to)
-    return input_val;
-  auto from_size = 0;
-  if (from->is<CustomIntType>()) {
-    from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
-  } else {
-    from_size = data_type_size(from);
-  }
-  if (from_size < data_type_size(to)) {
-    if (is_signed(from)) {
-      return builder->CreateSExt(input_val, tlctx->get_data_type(to));
-    } else {
-      return builder->CreateZExt(input_val, tlctx->get_data_type(to));
-    }
-  } else {
-    return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
-  }
-}
-
 void CodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
@@ -404,9 +382,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         }
       }
     } else if (!is_real(from) && !is_real(to)) {
-      // TODO: implement casting into custom integer type
-      TI_ASSERT(!to->is<CustomIntType>());
-      llvm_val[stmt] = cast_int(llvm_val[stmt->operand], from, to);
+      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
+                                              llvm_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -1219,9 +1196,9 @@ llvm::Value *CodeGenLLVM::custom_type_atomic(AtomicOpStmt *stmt) {
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto cit = dst_type->cast<CustomIntType>()) {
-    return atomic_add_custom_int(stmt, cit);
+    return atomic_add_quant_int(stmt, cit);
   } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-    return atomic_add_custom_float(stmt, cft);
+    return atomic_add_quant_fixed(stmt, cft);
   } else {
     return nullptr;
   }
@@ -1378,7 +1355,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     llvm::Value *store_value = nullptr;
     auto *cit = pointee_type->as<CustomIntType>();
     store_value = llvm_val[stmt->val];
-    store_custom_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
+    store_quant_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
@@ -1391,10 +1368,10 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
-      llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->src], val_type);
+      llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
     } else if (val_type->cast<CustomFloatType>()) {
       TI_ASSERT(stmt->src->is<GetChStmt>());
-      llvm_val[stmt] = load_custom_float(stmt->src);
+      llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
     } else {
       TI_NOT_IMPLEMENTED
     }

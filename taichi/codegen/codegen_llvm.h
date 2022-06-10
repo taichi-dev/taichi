@@ -183,8 +183,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(RandStmt *stmt) override;
 
-  llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
-
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
 
   void visit(DecorationStmt *stmt) override;
@@ -221,14 +219,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_custom_float(AtomicOpStmt *stmt,
-                                       CustomFloatType *cft);
+  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, CustomFloatType *cft);
 
-  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
+  llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
-  llvm::Value *float_to_custom_int(CustomFloatType *cft,
-                                   CustomIntType *cit,
-                                   llvm::Value *real);
+  llvm::Value *quant_fixed_to_quant_int(CustomFloatType *cft,
+                                        CustomIntType *cit,
+                                        llvm::Value *real);
 
   virtual llvm::Value *optimized_reduction(AtomicOpStmt *stmt);
 
@@ -249,16 +246,16 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(PtrOffsetStmt *stmt) override;
 
-  void store_custom_int(llvm::Value *bit_ptr,
-                        CustomIntType *cit,
-                        llvm::Value *value,
-                        bool atomic);
+  void store_quant_int(llvm::Value *bit_ptr,
+                       CustomIntType *cit,
+                       llvm::Value *value,
+                       bool atomic);
 
-  void store_custom_int(llvm::Value *byte_ptr,
-                        llvm::Value *bit_offset,
-                        CustomIntType *cit,
-                        llvm::Value *value,
-                        bool atomic);
+  void store_quant_int(llvm::Value *byte_ptr,
+                       llvm::Value *bit_offset,
+                       CustomIntType *cit,
+                       llvm::Value *value,
+                       bool atomic);
 
   void store_masked(llvm::Value *byte_ptr,
                     uint64 mask,
@@ -274,31 +271,31 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(BitStructStoreStmt *stmt) override;
 
-  void store_floats_with_shared_exponents(BitStructStoreStmt *stmt);
+  void store_quant_floats_with_shared_exponents(BitStructStoreStmt *stmt);
 
-  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *local_bit_struct,
-                                                 SNode *digits);
+  llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
+                                   SNode *digits_snode);
 
-  llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
+  llvm::Value *load_quant_int(llvm::Value *ptr, Type *load_type);
 
-  llvm::Value *extract_custom_int(llvm::Value *physical_value,
-                                  llvm::Value *bit_offset,
-                                  Type *load_type);
+  llvm::Value *extract_quant_int(llvm::Value *physical_value,
+                                 llvm::Value *bit_offset,
+                                 Type *load_type);
 
-  llvm::Value *reconstruct_custom_float(llvm::Value *digits,
-                                        CustomFloatType *load_type);
+  llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
+                                       CustomFloatType *cft);
 
-  llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
-                                               llvm::Value *exponent_bit_ptr,
-                                               CustomFloatType *cft,
-                                               bool shared_exponent);
+  llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
+                                llvm::Value *exponent_bit_ptr,
+                                CustomFloatType *cft,
+                                bool shared_exponent);
 
-  llvm::Value *reconstruct_custom_float_with_exponent(llvm::Value *digits,
-                                                      llvm::Value *exponent_val,
-                                                      CustomFloatType *cft,
-                                                      bool shared_exponent);
+  llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
+                                       llvm::Value *input_exponent_val,
+                                       CustomFloatType *cft,
+                                       bool shared_exponent);
 
-  llvm::Value *load_custom_float(Stmt *ptr_stmt);
+  llvm::Value *load_quant_fixed_or_quant_float(Stmt *ptr_stmt);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -398,12 +395,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);
 
-  llvm::Value *extract_exponent_from_float(llvm::Value *f);
+  llvm::Value *extract_exponent_from_f32(llvm::Value *f);
 
-  llvm::Value *extract_digits_from_float(llvm::Value *f, bool full);
+  llvm::Value *extract_digits_from_f32(llvm::Value *f, bool full);
 
-  llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
-                                                      llvm::Value *shared_exp);
+  llvm::Value *extract_digits_from_quant_float_with_shared_exponent(
+      llvm::Value *f,
+      llvm::Value *shared_exp);
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 

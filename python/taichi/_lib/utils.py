@@ -146,8 +146,8 @@ def _print_taichi_header():
     except:
         pass
 
-    llvm_version = ti_core.get_llvm_version_string()
-    header += f'llvm {llvm_version}, '
+    llvm_target_support = ti_core.get_llvm_target_support()
+    header += f'llvm {llvm_target_support}, '
 
     commit_hash = ti_core.get_commit_hash()
     commit_hash = commit_hash[:8]

@@ -12,7 +12,7 @@ from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
-from taichi.lang.enums import Layout
+from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
                                    handle_exception_from_cpp)
@@ -210,7 +210,8 @@ class Func:
             return self.func(*args)
 
         if self.is_real_function:
-            if impl.get_runtime().current_kernel.is_grad:
+            if impl.get_runtime(
+            ).current_kernel.autodiff_mode != AutodiffMode.NONE:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
             instance_id, _ = self.mapper.lookup(args)
@@ -400,11 +401,11 @@ def _get_global_vars(_func):
 class Kernel:
     counter = 0
 
-    def __init__(self, _func, is_grad, _classkernel=False):
+    def __init__(self, _func, autodiff_mode, _classkernel=False):
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
-        self.is_grad = is_grad
+        self.autodiff_mode = autodiff_mode
         self.grad = None
         self.arguments = []
         self.return_type = None
@@ -422,7 +423,7 @@ class Kernel:
 
     def reset(self):
         self.runtime = impl.get_runtime()
-        if self.is_grad:
+        if self.autodiff_mode != AutodiffMode.NONE:
             self.compiled_functions = self.runtime.compiled_grad_functions
         else:
             self.compiled_functions = self.runtime.compiled_functions
@@ -485,7 +486,7 @@ class Kernel:
         if key in self.compiled_functions:
             return
         grad_suffix = ""
-        if self.is_grad:
+        if self.autodiff_mode != AutodiffMode.NONE:
             grad_suffix = "_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
@@ -496,7 +497,7 @@ class Kernel:
             excluded_parameters=self.template_slot_locations,
             arg_features=arg_features)
 
-        if self.is_grad:
+        if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
         if impl.current_cfg().use_mesh:
@@ -526,7 +527,7 @@ class Kernel:
                 self.runtime.current_kernel = None
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
-            taichi_ast_generator, kernel_name, self.is_grad)
+            taichi_ast_generator, kernel_name, self.autodiff_mode)
 
         self.kernel_cpp = taichi_kernel
 
@@ -725,7 +726,7 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if not self.is_grad and self.runtime.target_tape and not self.runtime.grad_replaced:
+            if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and (
@@ -797,7 +798,8 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         args = _process_args(self, args, kwargs)
-        if self.is_grad and impl.current_cfg().opt_level == 0:
+        if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
+        ).opt_level == 0:
             _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
@@ -845,8 +847,12 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(_func, is_grad=False, _classkernel=is_classkernel)
-    adjoint = Kernel(_func, is_grad=True, _classkernel=is_classkernel)
+    primal = Kernel(_func,
+                    autodiff_mode=AutodiffMode.NONE,
+                    _classkernel=is_classkernel)
+    adjoint = Kernel(_func,
+                     autodiff_mode=AutodiffMode.REVERSE,
+                     _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 

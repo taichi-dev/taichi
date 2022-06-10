@@ -42,7 +42,37 @@ struct LlvmOfflineCache {
     TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
 
-  std::unordered_map<std::string, KernelCacheData> kernels;
+  struct FieldCacheData {
+    struct SNodeCacheData {
+      int id{0};
+      SNodeType type = SNodeType::undefined;
+      size_t cell_size_bytes{0};
+      size_t chunk_size{0};
+
+      TI_IO_DEF(id, type, cell_size_bytes, chunk_size);
+    };
+
+    int tree_id{0};
+    int root_id{0};
+    size_t root_size{0};
+    std::vector<SNodeCacheData> snode_metas;
+
+    TI_IO_DEF(tree_id, root_id, root_size, snode_metas);
+
+    // TODO(zhanlue)
+    //  Serialize/Deserialize the llvm::Module from StructCompiler
+    //  At runtime, make sure loaded Field-Modules and Kernel-Modules are linked
+    //  altogether.
+  };
+
+  // TODO(zhanlue): we need a better identifier for each FieldCacheData
+  // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
+  // ask the users to remember each of the snode_tree_ids
+  // ** Find a way to name each SNodeTree **
+  std::unordered_map<int, FieldCacheData> fields;  // key = snode_tree_id
+
+  std::unordered_map<std::string, KernelCacheData>
+      kernels;  // key = kernel_name
 
   TI_IO_DEF(kernels);
 };

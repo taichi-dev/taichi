@@ -126,6 +126,15 @@ void ArgLoadExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TexturePtrExpression::type_check(CompileConfig *config) {
+}
+
+void TexturePtrExpression::flatten(FlattenContext *ctx) {
+  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt());
+  stmt = ctx->back_stmt();
+}
+
 void RandExpression::type_check(CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for RandExpression", dt->to_string());
@@ -586,6 +595,52 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
                 "ti.append only works on i32/f32 nodes.");
   }
+  stmt = ctx->back_stmt();
+}
+
+void TextureOpExpression::type_check(CompileConfig *config) {
+  if (op == TextureOpType::sample_lod) {
+    // UV, Lod
+    TI_ASSERT_INFO(args.size() == 3,
+                   "Invalid number of args for sample_lod Texture op");
+    TI_ASSERT_TYPE_CHECKED(args[0]);
+    TI_ASSERT_TYPE_CHECKED(args[1]);
+    TI_ASSERT_TYPE_CHECKED(args[2]);
+    if (args[0].get_ret_type() != PrimitiveType::f32 ||
+        args[1].get_ret_type() != PrimitiveType::f32 ||
+        args[2].get_ret_type() != PrimitiveType::f32) {
+      throw TaichiTypeError(
+          fmt::format("All arguments to sample_lod Texture op must be FP32"));
+    }
+  } else if (op == TextureOpType::fetch_texel) {
+    // index, int LOD
+    TI_ASSERT_INFO(args.size() == 3,
+                   "Invalid number of args for fetch_texel Texture op");
+    TI_ASSERT_TYPE_CHECKED(args[0]);
+    TI_ASSERT_TYPE_CHECKED(args[1]);
+    TI_ASSERT_TYPE_CHECKED(args[2]);
+    if (args[0].get_ret_type() != PrimitiveType::i32 ||
+        args[1].get_ret_type() != PrimitiveType::i32 ||
+        args[2].get_ret_type() != PrimitiveType::i32) {
+      throw TaichiTypeError(
+          fmt::format("All arguments to fetch_texel Texture op must be i32"));
+    }
+  } else {
+    TI_ERROR("Invalid TextureOpType");
+  }
+  ret_type =
+      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f32,
+                                                   /*is_bit_pointer=*/false);
+}
+
+void TextureOpExpression::flatten(FlattenContext *ctx) {
+  flatten_rvalue(texture_ptr, ctx);
+  std::vector<Stmt *> arg_stmts;
+  for (Expr &arg : args.exprs) {
+    flatten_rvalue(arg, ctx);
+    arg_stmts.push_back(arg->stmt);
+  }
+  ctx->push_back<TextureOpStmt>(op, texture_ptr->stmt, arg_stmts);
   stmt = ctx->back_stmt();
 }
 

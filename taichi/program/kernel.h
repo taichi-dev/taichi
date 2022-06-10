@@ -87,7 +87,12 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   void compile();
 
-  std::unique_ptr<aot::Kernel> compile_to_aot_kernel();
+  void compile_to_aot_kernel();
+
+  aot::Kernel *compiled_aot_kernel() {
+    return compiled_aot_kernel_.get();
+  }
+
   /**
    * Lowers |ir| to CHI IR level
    *
@@ -142,6 +147,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool ir_is_ast_{false};
   // The closure that, if invoked, lauches the backend kernel (shader)
   FunctionType compiled_{nullptr};
+  // TODO[#5114]: It's kinda redundant to keep both compiled_ (used for JIT
+  // execution) as well as compiled_aot_kernel_. In fact we'd better unify
+  // everything around compiled_aot_kernel and rename it.
+  std::unique_ptr<aot::Kernel> compiled_aot_kernel_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
   // lower inital AST all the way down to a bunch of
   // OffloadedStmt for async execution

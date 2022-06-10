@@ -1,3 +1,4 @@
+argcomplete
 cmake
 colorama
 coverage

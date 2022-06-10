@@ -55,7 +55,7 @@ def substep(g_x: float, g_y: float, g_z: float):
     for I in ti.grouped(grid_m):
         grid_v[I] = ti.zero(grid_v[I])
         grid_m[I] = 0
-    ti.block_dim(n_grid)
+    ti.loop_config(block_dim=n_grid)
     for p in x:
         if used[p] == 0:
             continue
@@ -114,7 +114,7 @@ def substep(g_x: float, g_y: float, g_z: float):
         cond = (I < bound) & (grid_v[I] < 0) | \
                (I > n_grid - bound) & (grid_v[I] > 0)
         grid_v[I] = 0 if cond else grid_v[I]
-    ti.block_dim(n_grid)
+    ti.loop_config(block_dim=n_grid)
     for p in x:
         if used[p] == 0:
             continue

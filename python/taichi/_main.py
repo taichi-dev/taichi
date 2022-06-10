@@ -11,6 +11,7 @@ from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 
+import argcomplete
 import numpy as np
 from colorama import Fore
 from taichi._lib import core as _ti_core
@@ -262,6 +263,7 @@ class TaichiMain:
             help="Save source code to current directory instead of running it")
 
         # TODO: Pass the arguments to downstream correctly(#3216).
+        argcomplete.autocomplete(parser)
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()

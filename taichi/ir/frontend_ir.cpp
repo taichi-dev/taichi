@@ -510,10 +510,8 @@ void AtomicOpExpression::type_check(CompileConfig *) {
   };
   if (!val->ret_type->is<PrimitiveType>())
     error();
-  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
-    ret_type = cit->get_compute_type();
-  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
-    ret_type = cft->get_compute_type();
+  if (is_quant(dest->ret_type)) {
+    ret_type = dest->ret_type->get_compute_type();
   } else if (dest->ret_type->is<PrimitiveType>()) {
     ret_type = dest->ret_type;
   } else {

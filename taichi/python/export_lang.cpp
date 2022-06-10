@@ -859,7 +859,7 @@ void export_lang(py::module &m) {
 #undef PER_TYPE
 
   m.def("data_type_size", data_type_size);
-  m.def("is_custom_type", is_custom_type);
+  m.def("is_quant", is_quant);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);

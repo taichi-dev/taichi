@@ -23,7 +23,7 @@ class TypeCheck : public IRVisitor {
                          Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
-    if (dst_type->is<CustomIntType>() || dst_type->is<CustomFloatType>()) {
+    if (is_quant(dst_type)) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_type = dst_type->get_compute_type();

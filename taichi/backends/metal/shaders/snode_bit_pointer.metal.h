@@ -38,7 +38,7 @@ STR(
 
     // |f| should already be scaled. |C| is the compute type.
     template <typename C>
-    C mtl_float_to_custom_int(float f) {
+    C mtl_quant_fixed_to_quant_int(float f) {
       // Branch free implementation of `f + sign(f) * 0.5`.
       // See rounding_prepare_f* in taichi/runtime/llvm/runtime.cpp
       const int32_t delta_bits =

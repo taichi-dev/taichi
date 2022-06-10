@@ -128,9 +128,9 @@ llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
       tlctx->get_constant(0));
 }
 
-llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
-                                              Type *input_type,
-                                              Type *output_type) {
+llvm::Value *CodeGenLLVM::quant_int_or_quant_fixed_to_bits(llvm::Value *val,
+                                                           Type *input_type,
+                                                           Type *output_type) {
   CustomIntType *cit = nullptr;
   if (auto cft = input_type->cast<CustomFloatType>()) {
     TI_ASSERT(cft->get_exponent_type() == nullptr);
@@ -262,7 +262,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       val = builder->CreateBitCast(val, llvm_type(bit_struct_physical_type));
       val = builder->CreateShl(val, digits_snode->bit_offset);
     } else {
-      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+      val = quant_int_or_quant_fixed_to_bits(val, dtype,
+                                             bit_struct_physical_type);
       val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
     }
 
@@ -374,8 +375,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
       auto ch_id = snode->child_id(user);
-      auto digits = extract_digits_from_quant_float_with_shared_exponent(
-          floats[c], max_exp_bits);
+      auto digits =
+          extract_digits_from_f32_with_shared_exponent(floats[c], max_exp_bits);
       auto digits_snode = snode->ch[ch_id].get();
       auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
@@ -435,7 +436,7 @@ llvm::Value *CodeGenLLVM::extract_digits_from_f32(llvm::Value *f, bool full) {
   return digits;
 }
 
-llvm::Value *CodeGenLLVM::extract_digits_from_quant_float_with_shared_exponent(
+llvm::Value *CodeGenLLVM::extract_digits_from_f32_with_shared_exponent(
     llvm::Value *f,
     llvm::Value *shared_exp) {
   auto exp = extract_exponent_from_f32(f);

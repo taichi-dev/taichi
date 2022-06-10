@@ -281,28 +281,6 @@ void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   cache_field(snode_tree_id, root_id, *struct_compiler);
 }
 
-static LlvmOfflineCache::FieldCacheData construct_filed_cache_data(
-    const SNodeTree &tree,
-    const StructCompiler &struct_compiler) {
-  LlvmOfflineCache::FieldCacheData ret;
-  ret.tree_id = tree.id();
-  ret.root_id = tree.root()->id;
-  ret.root_size = struct_compiler.root_size;
-
-  const auto &snodes = struct_compiler.snodes;
-  for (size_t i = 0; i < snodes.size(); i++) {
-    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
-    snode_cache_data.id = snodes[i]->id;
-    snode_cache_data.type = snodes[i]->type;
-    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
-    snode_cache_data.chunk_size = snodes[i]->chunk_size;
-
-    ret.snode_metas.emplace_back(std::move(snode_cache_data));
-  }
-
-  return ret;
-}
-
 void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                              uint64 *result_buffer) {
   compile_snode_tree_types(tree);

@@ -70,23 +70,24 @@ user_api[ti] = [
     'assume_in_range', 'atan2', 'atomic_add', 'atomic_and', 'atomic_max',
     'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor', 'axes', 'bit_cast',
     'bit_shr', 'block_local', 'cache_read_only', 'cast', 'cc', 'ceil',
-    'clear_all_gradients', 'cos', 'cpu', 'cuda', 'data_oriented', 'deactivate',
-    'deactivate_all_snodes', 'dx11', 'eig', 'exp', 'experimental', 'extension',
-    'f16', 'f32', 'f64', 'field', 'float16', 'float32', 'float64', 'floor',
-    'func', 'get_addr', 'global_thread_idx', 'gpu', 'graph', 'grouped',
-    'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8', 'ij', 'ijk', 'ijkl', 'ijl',
-    'ik', 'ikl', 'il', 'init', 'int16', 'int32', 'int64', 'int8', 'is_active',
-    'is_logging_effective', 'j', 'jk', 'jkl', 'jl', 'k', 'kernel', 'kl', 'l',
-    'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max',
-    'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange',
-    'no_activate', 'one', 'opengl', 'polar_decompose', 'pow', 'profiler',
-    'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
-    'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
-    'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'struct_class', 'svd',
-    'swizzle_generator', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
-    'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
-    'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+    'clear_all_gradients', 'cmap', 'cos', 'cpu', 'cuda', 'data_oriented',
+    'deactivate', 'deactivate_all_snodes', 'dx11', 'eig', 'exp',
+    'experimental', 'extension', 'f16', 'f32', 'f64', 'field', 'float16',
+    'float32', 'float64', 'floor', 'func', 'get_addr', 'global_thread_idx',
+    'gpu', 'graph', 'grouped', 'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8',
+    'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'init', 'int16', 'int32',
+    'int64', 'int8', 'is_active', 'is_logging_effective', 'j', 'jk', 'jkl',
+    'jl', 'k', 'kernel', 'kl', 'l', 'lang', 'length', 'linalg', 'log',
+    'loop_config', 'math', 'max', 'mesh_local', 'mesh_patch_idx', 'metal',
+    'min', 'ndarray', 'ndrange', 'no_activate', 'one', 'opengl',
+    'polar_decompose', 'pow', 'profiler', 'randn', 'random', 'raw_div',
+    'raw_mod', 'ref', 'rescale_index', 'reset', 'rgb_to_hex', 'root', 'round',
+    'rsqrt', 'select', 'set_logging_level', 'simt', 'sin', 'solve',
+    'sparse_matrix_builder', 'sqrt', 'static', 'static_assert', 'static_print',
+    'stop_grad', 'struct_class', 'svd', 'swizzle_generator', 'sym_eig', 'sync',
+    'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
+    'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64',
+    'x86_64', 'zero'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
@@ -136,6 +137,7 @@ user_api[ti.StructField] = [
 user_api[ti.VectorNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
+user_api[ti.cmap] = ["hot", "jet", "plasma", "rainbow", "viridis"]
 
 
 @pytest.mark.parametrize('src', user_api.keys())

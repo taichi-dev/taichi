@@ -1,5 +1,6 @@
 from taichi.lang.enums import AutodiffMode
 
+
 class ForwardModeManagerImpl:
     def __init__(self, runtime, recover_kernels=True):
         self.calls = []

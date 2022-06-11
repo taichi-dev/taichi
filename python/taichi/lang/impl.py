@@ -7,6 +7,7 @@ from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
+from taichi.lang.ad_fwd_mode_manager import ForwardModeManagerImpl
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
@@ -22,7 +23,6 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
-from taichi.lang.ad_fwd_mode_manager import ForwardModeManagerImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
@@ -237,7 +237,9 @@ class PyTaichi:
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions) + len(self.compiled_grad_functions) + len(self.compiled_fwd_mode_grad_functions)
+        return len(self.compiled_functions) + len(
+            self.compiled_grad_functions) + len(
+                self.compiled_fwd_mode_grad_functions)
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)

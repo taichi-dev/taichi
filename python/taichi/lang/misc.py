@@ -8,11 +8,11 @@ from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
+from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.impl import axes, get_runtime, field, index_nd
+from taichi.lang.impl import axes, field, get_runtime, index_nd
 from taichi.lang.snode import SNode
-from taichi._snode.fields_builder import FieldsBuilder
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -712,7 +712,7 @@ def fwdAD(loss, vars, seed=None, keep_primal=True):
         loss = [loss]
     if not isinstance(vars, list):
         vars = [vars]
-    
+
     all_fields = [*loss, *vars]
     fields_without_dual = []
 
@@ -732,11 +732,11 @@ def fwdAD(loss, vars, seed=None, keep_primal=True):
         seed[0] = 1.0
     else:
         assert len(vars) == len(seed)
-    
+
     # Set seed for each variable
     for var, s in zip(vars, seed):
         var.dual[None] = 1.0 * s
-    
+
     return impl.get_runtime().get_fwd_mode_manager(keep_primal)
 
 

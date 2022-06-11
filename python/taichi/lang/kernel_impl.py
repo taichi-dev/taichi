@@ -423,10 +423,14 @@ class Kernel:
 
     def reset(self):
         self.runtime = impl.get_runtime()
-        if self.autodiff_mode != AutodiffMode.NONE:
-            self.compiled_functions = self.runtime.compiled_grad_functions
-        else:
+        if self.autodiff_mode == AutodiffMode.NONE:
             self.compiled_functions = self.runtime.compiled_functions
+        elif self.autodiff_mode == AutodiffMode.REVERSE:
+            self.compiled_functions = self.runtime.compiled_grad_functions
+        elif self.autodiff_mode == AutodiffMode.FORWARD:
+            self.compiled_functions = self.runtime.compiled_fwd_mode_grad_functions
+        else:
+            raise NotImplementedError("Unknown autodiff mode.")
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -483,11 +487,22 @@ class Kernel:
         if key is None:
             key = (self.func, 0)
         self.runtime.materialize()
+
+        # Transform the primal kernel to forward mode grad kernel
+        # then recover to primal when exiting the forward mode manager 
+        if self.runtime.fwd_mode_manager:
+            self.autodiff_mode = AutodiffMode.FORWARD
+            self.runtime.fwd_mode_manager.insert(self)
+            self.compiled_functions = self.runtime.compiled_fwd_mode_grad_functions
+            
         if key in self.compiled_functions:
             return
+        
         grad_suffix = ""
-        if self.autodiff_mode != AutodiffMode.NONE:
-            grad_suffix = "_grad"
+        if self.autodiff_mode == AutodiffMode.FORWARD:
+            grad_suffix = "_forward_grad"
+        elif self.autodiff_mode == AutodiffMode.REVERSE:
+            grad_suffix = "_reverse_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
 

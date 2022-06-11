@@ -27,6 +27,7 @@ colors = ti.Vector.field(3, dtype=float, shape=n * n)
 
 bending_springs = False
 
+
 @ti.kernel
 def initialize_mass_points():
     random_offset = ti.Vector([ti.random() - 0.5, ti.random() - 0.5]) * 0.1
@@ -58,6 +59,7 @@ def initialize_mesh_indices():
         else:
             colors[i * n + j] = (1, 0.334, 0.52)
 
+
 initialize_mesh_indices()
 
 spring_offsets = []
@@ -72,6 +74,7 @@ else:
         for j in range(-2, 3):
             if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
                 spring_offsets.append(ti.Vector([i, j]))
+
 
 @ti.kernel
 def substep():
@@ -103,7 +106,6 @@ def substep():
             normal = offset_to_center.normalized()
             v[i] -= min(v[i].dot(normal), 0) * normal
         x[i] += dt * v[i]
-
 
 
 @ti.kernel
@@ -145,7 +147,9 @@ while window.running:
                two_sided=True)
 
     # Draw a smaller ball to avoid visual penetration
-    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0.42, 0.8))
+    scene.particles(ball_center,
+                    radius=ball_radius * 0.95,
+                    color=(0.5, 0.42, 0.8))
     canvas.scene(scene)
     window.show()
 

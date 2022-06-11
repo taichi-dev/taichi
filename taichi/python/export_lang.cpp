@@ -654,8 +654,6 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
-      .def("is_global_ptr",
-           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->is_primal;
@@ -841,9 +839,6 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_global_ptr_expr",
-        Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
-
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
     bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
@@ -882,8 +877,11 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("make_tensor_element_expr",
-        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+  m.def("make_index_expr",
+        Expr::make<IndexExpression, const Expr &, const ExprGroup &>);
+
+  m.def("make_stride_expr",
+        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {

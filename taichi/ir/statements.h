@@ -1446,6 +1446,37 @@ class InternalFuncStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class Texture;
+
+class TexturePtrStmt : public Stmt {
+ public:
+  Stmt *arg_load_stmt{nullptr};
+
+  explicit TexturePtrStmt(Stmt *stmt) : arg_load_stmt(stmt) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(arg_load_stmt);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class TextureOpStmt : public Stmt {
+ public:
+  TextureOpType op;
+  Stmt *texture_ptr;
+  std::vector<Stmt *> args;
+
+  explicit TextureOpStmt(TextureOpType op,
+                         Stmt *texture_ptr,
+                         const std::vector<Stmt *> &args)
+      : op(op), texture_ptr(texture_ptr), args(args) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(op, texture_ptr, args);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 /**
  * A local AD-stack.
  */

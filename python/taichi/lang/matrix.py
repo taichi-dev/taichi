@@ -41,7 +41,6 @@ def _gen_swizzles(cls):
 
     for key_group in KEYGROUP_SET:
         for index, attr in enumerate(key_group):
-
             def gen_property(attr, attr_idx, key_group):
                 checker = make_valid_attribs_checker(key_group)
 
@@ -122,7 +121,7 @@ class _MatrixBaseImpl:
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
         if len(args) == 1:
-            args = args + (0, )
+            args = args + (0,)
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
@@ -244,19 +243,16 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
-            assert self.dynamic_index_stride is not None
             if len(indices) == 1:
-                return impl.make_tensor_element_expr(self.local_tensor_proxy,
-                                                     (i, ), (self.n, ),
-                                                     self.dynamic_index_stride)
-            return impl.make_tensor_element_expr(self.local_tensor_proxy,
-                                                 (i, j), (self.n, self.m),
-                                                 self.dynamic_index_stride)
+                return impl.make_index_expr(self.local_tensor_proxy,
+                                            (i,))
+            return impl.make_index_expr(self.local_tensor_proxy,
+                                        (i, j))
         if impl.current_cfg(
         ).dynamic_index and is_global_mat and self.dynamic_index_stride:
-            return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
-                                                 (self.n, self.m),
-                                                 self.dynamic_index_stride)
+            return impl.make_stride_expr(self.entries[0].ptr, (i, j),
+                                         (self.n, self.m),
+                                         self.dynamic_index_stride)
         return self._get_entry(i, j)
 
     def _calc_slice(self, index, dim):
@@ -318,17 +314,15 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             local_tensor_proxy = impl.expr_init_local_tensor(
                 [len(arr)], dt,
                 expr.make_expr_group([expr.Expr(x) for x in arr]))
-            dynamic_index_stride = 1
             mat = []
             for i in range(len(arr)):
                 mat.append(
                     list([
-                        impl.make_tensor_element_expr(
+                        impl.make_index_expr(
                             local_tensor_proxy,
-                            (expr.Expr(i, dtype=primitive_types.i32), ),
-                            (len(arr), ), dynamic_index_stride)
+                            (expr.Expr(i, dtype=primitive_types.i32),))
                     ]))
-            return local_tensor_proxy, dynamic_index_stride, mat
+            return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
             return arr[0]
@@ -348,18 +342,16 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                 expr.make_expr_group(
                     [expr.Expr(x) for row in arr for x in row]))
 
-            dynamic_index_stride = 1
             mat = []
             for i in range(len(arr)):
                 mat.append([])
                 for j in range(len(arr[0])):
                     mat[i].append(
-                        impl.make_tensor_element_expr(
+                        impl.make_index_expr(
                             local_tensor_proxy,
                             (expr.Expr(i, dtype=primitive_types.i32),
-                             expr.Expr(j, dtype=primitive_types.i32)),
-                            (len(arr), len(arr[0])), dynamic_index_stride))
-            return local_tensor_proxy, dynamic_index_stride, mat
+                             expr.Expr(j, dtype=primitive_types.i32))))
+            return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
             return arr[0][0]
@@ -413,7 +405,6 @@ class Matrix(TaichiOperations):
 
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         local_tensor_proxy = None
-        dynamic_index_stride = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
             raise TaichiTypeError(
@@ -440,7 +431,7 @@ class Matrix(TaichiOperations):
                     )
                 if dt is None:
                     dt = initializer.infer_dt(arr)
-                local_tensor_proxy, dynamic_index_stride, mat = initializer.with_dynamic_index(
+                local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
 
         self.n, self.m = len(mat), 1
@@ -464,7 +455,7 @@ class Matrix(TaichiOperations):
             self._impl = _PyScopeMatrixImpl(m, n, entries)
         else:
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
-                                            dynamic_index_stride)
+                                            None)
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)

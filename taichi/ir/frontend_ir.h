@@ -293,6 +293,22 @@ class ArgLoadExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class Texture;
+
+class TexturePtrExpression : public Expression {
+ public:
+  int arg_id;
+
+  TexturePtrExpression(int arg_id) : arg_id(arg_id) {
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class RandExpression : public Expression {
  public:
   DataType dt;
@@ -462,12 +478,14 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class GlobalPtrExpression : public Expression {
+class IndexExpression : public Expression {
  public:
+  // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
+  // IdExpression
   Expr var;
   ExprGroup indices;
 
-  GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
   }
 
@@ -479,29 +497,37 @@ class GlobalPtrExpression : public Expression {
     return true;
   }
 
+  // whether the LocalLoad/Store or GlobalLoad/Store is to be used on the
+  // compiled stmt
+  bool is_local() const;
+  bool is_global() const;
+
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
+
+ private:
+  bool is_field() const;
+  bool is_ndarray() const;
+  bool is_tensor() const;
 };
 
-class TensorElementExpression : public Expression {
+class StrideExpression : public Expression {
  public:
+  // `var` must be an IndexExpression on a GlobalVariableExpression
+  // therefore the access is always global
   Expr var;
   ExprGroup indices;
   std::vector<int> shape;
   int stride{0};
 
-  TensorElementExpression(const Expr &var,
-                          const ExprGroup &indices,
-                          const std::vector<int> &shape,
-                          int stride)
+  StrideExpression(const Expr &var,
+                   const ExprGroup &indices,
+                   const std::vector<int> &shape,
+                   int stride)
       : var(var), indices(indices), shape(shape), stride(stride) {
     // TODO: shape & indices check
   }
 
   void type_check(CompileConfig *config) override;
-
-  bool is_local_tensor() const;
-
-  bool is_global_tensor() const;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -603,6 +629,25 @@ class SNodeOpExpression : public Expression {
                     const ExprGroup &indices,
                     const Expr &value)
       : snode(snode), op_type(op_type), indices(indices), value(value) {
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+class TextureOpExpression : public Expression {
+ public:
+  TextureOpType op;
+  Expr texture_ptr;
+  ExprGroup args;
+
+  explicit TextureOpExpression(TextureOpType op,
+                               Expr texture_ptr,
+                               const ExprGroup &args)
+      : op(op), texture_ptr(texture_ptr), args(args) {
   }
 
   void type_check(CompileConfig *config) override;

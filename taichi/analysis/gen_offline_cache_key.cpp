@@ -82,6 +82,18 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->arg_id);
   }
 
+  void visit(TexturePtrExpression *expr) override {
+    emit(ExprOpCode::TexturePtrExpression);
+    emit(expr->arg_id);
+  }
+
+  void visit(TextureOpExpression *expr) override {
+    emit(ExprOpCode::TextureOpExpression);
+    emit(expr->op);
+    emit(expr->texture_ptr);
+    emit(expr->args.exprs);
+  }
+
   void visit(RandExpression *expr) override {
     emit(ExprOpCode::RandExpression);
     emit(expr->dt);
@@ -139,14 +151,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dual);
   }
 
-  void visit(GlobalPtrExpression *expr) override {
-    emit(ExprOpCode::GlobalPtrExpression);
+  void visit(IndexExpression *expr) override {
+    emit(ExprOpCode::IndexExpression);
     emit(expr->var);
     emit(expr->indices.exprs);
   }
 
-  void visit(TensorElementExpression *expr) override {
-    emit(ExprOpCode::TensorElementExpression);
+  void visit(StrideExpression *expr) override {
+    emit(ExprOpCode::StrideExpression);
     emit(expr->var);
     emit(expr->indices.exprs);
     emit(expr->shape);
@@ -611,6 +623,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   DEFINE_EMIT_ENUM(SNodeAccessFlag);
   DEFINE_EMIT_ENUM(MeshRelationAccessType);
   DEFINE_EMIT_ENUM(ExternalFuncType);
+  DEFINE_EMIT_ENUM(TextureOpType);
   DEFINE_EMIT_ENUM(mesh::MeshElementType);
   DEFINE_EMIT_ENUM(mesh::MeshRelationType);
   DEFINE_EMIT_ENUM(mesh::ConvType);

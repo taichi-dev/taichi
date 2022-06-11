@@ -10,8 +10,9 @@ from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.impl import axes, get_runtime
+from taichi.lang.impl import axes, get_runtime, field, index_nd
 from taichi.lang.snode import SNode
+from taichi._snode.fields_builder import FieldsBuilder
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -705,6 +706,52 @@ def Tape(loss, clear_gradients=True):
     return impl.get_runtime().get_tape(loss)
 
 
+def fwdAD(loss, vars, seed=None, keep_primal=True):
+    impl.get_runtime().materialize()
+    if not isinstance(loss, list):
+        loss = [loss]
+    if not isinstance(vars, list):
+        vars = [vars]
+    
+    all_fields = [*loss, *vars]
+    fields_without_dual = []
+
+    for x in all_fields:
+        if not x.snode.ptr.has_dual():
+            fields_without_dual.append(x)
+
+    if len(fields_without_dual) > 0:
+        dual_root = FieldsBuilder()
+        for x in fields_without_dual:
+            allocate_dual(x, dual_root)
+        dual_root.finalize()
+
+    if not seed:
+        # Compute the derivative respect to the first variable by default
+        seed = [0.0 for _ in range(len(vars))]
+        seed[0] = 1.0
+    else:
+        assert len(vars) == len(seed)
+    
+    # Set seed for each variable
+    for var, s in zip(vars, seed):
+        var.dual[None] = 1.0 * s
+    
+    return impl.get_runtime().get_fwd_mode_manager(keep_primal)
+
+
+def allocate_dual(x, dual_root):
+    """Allocate dual field for forward mode autodiff
+    """
+    dtype = x.dtype
+    shape = x.shape
+    dim = len(shape)
+    x_dual = field(dtype)
+    x._set_grad(x_dual, reverse_mode=False)
+    x._get_field_members()[0].ptr.set_dual(x_dual._get_field_members()[0].ptr)
+    dual_root.dense(index_nd(dim), shape).place(x_dual)
+
+
 def clear_all_gradients():
     """Sets the gradients of all fields to zero.
     """
@@ -787,7 +834,7 @@ __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
-    'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
+    'global_thread_idx', 'Tape', 'fwdAD', 'assume_in_range', 'block_local',
     'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
     'no_activate', 'reset', 'mesh_patch_idx'
 ]

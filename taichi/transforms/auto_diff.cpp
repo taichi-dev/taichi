@@ -1073,7 +1073,7 @@ class MakeDual : public ADTransform {
     }
   }
 
-    // Accumulate [value] to the dual of [primal]
+  // Accumulate [value] to the dual of [primal]
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = dual(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())

@@ -489,15 +489,15 @@ class Kernel:
         self.runtime.materialize()
 
         # Transform the primal kernel to forward mode grad kernel
-        # then recover to primal when exiting the forward mode manager 
+        # then recover to primal when exiting the forward mode manager
         if self.runtime.fwd_mode_manager:
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self)
             self.compiled_functions = self.runtime.compiled_fwd_mode_grad_functions
-            
+
         if key in self.compiled_functions:
             return
-        
+
         grad_suffix = ""
         if self.autodiff_mode == AutodiffMode.FORWARD:
             grad_suffix = "_forward_grad"

@@ -283,7 +283,7 @@ void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_is_device_allocation(arg_id, true,
-                                       RuntimeContext::DevAllocType::texture);
+                                       RuntimeContext::DevAllocType::kTexture);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {

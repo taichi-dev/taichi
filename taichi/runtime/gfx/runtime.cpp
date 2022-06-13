@@ -60,7 +60,9 @@ class HostDeviceContextBlitter {
       char *device_ptr = device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
+          if (host_ctx_->device_allocation_type[i] ==
+                  RuntimeContext::DevAllocType::kNone &&
+              ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             DeviceAllocation buffer = ext_arrays.at(i);
             char *const device_arr_ptr =
@@ -131,7 +133,9 @@ class HostDeviceContextBlitter {
       for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
         const auto &arg = ctx_attribs_->args()[i];
         if (arg.is_array) {
-          if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
+          if (host_ctx_->device_allocation_type[i] ==
+                  RuntimeContext::DevAllocType::kNone &&
+              ext_arr_size.at(i)) {
             require_sync = true;
           }
         }
@@ -147,7 +151,9 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (!host_ctx_->is_device_allocations[i] && ext_arr_size.at(i)) {
+        if (host_ctx_->device_allocation_type[i] ==
+                RuntimeContext::DevAllocType::kNone &&
+            ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
           DeviceAllocation buffer = ext_arrays.at(i);
           char *const device_arr_ptr =
@@ -436,7 +442,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (host_ctx->is_device_allocations[i]) {
+        if (host_ctx->device_allocation_type[i] !=
+            RuntimeContext::DevAllocType::kNone) {
           // NDArray
           if (host_ctx->args[i]) {
             any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
@@ -507,7 +514,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Dealloc external arrays
   for (auto pair : any_arrays) {
     if (pair.second != kDeviceNullAllocation) {
-      if (!host_ctx->is_device_allocations[pair.first]) {
+      if (host_ctx->device_allocation_type[pair.first] ==
+          RuntimeContext::DevAllocType::kNone) {
         device_->dealloc_memory(pair.second);
       }
     }

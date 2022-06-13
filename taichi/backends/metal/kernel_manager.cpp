@@ -384,7 +384,8 @@ class CompiledTaichiKernel {
         continue;
       }
       const int arg_id = arg.index;
-      if (host_ctx.is_device_allocations[arg_id]) {
+      if (host_ctx.device_allocation_type[arg_id] !=
+          RuntimeContext::DevAllocType::kNone) {
         continue;
       }
       // Even in the face that external array has 0-length, we still allocate
@@ -483,7 +484,8 @@ class HostMetalCtxBlitter {
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
-        if (host_ctx_->is_device_allocations[i]) {
+        if (host_ctx_->device_allocation_type[arg_id] !=
+            RuntimeContext::DevAllocType::kNone) {
           // There is no way to write from host into Ndarray directly (yet), so
           // we don't have to do anything here.
         } else {
@@ -542,7 +544,8 @@ class HostMetalCtxBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (host_ctx_->is_device_allocations[i]) {
+        if (host_ctx_->device_allocation_type[arg_id] !=
+            RuntimeContext::DevAllocType::kNone) {
           continue;
         }
         const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
@@ -1228,7 +1231,8 @@ class KernelManager::Impl {
         continue;
       }
       DeviceAllocation dev_alloc;
-      if (host_ctx.is_device_allocations[arg.index]) {
+      if (host_ctx.device_allocation_type[arg.index] !=
+          RuntimeContext::DevAllocType::kNone) {
         dev_alloc = *reinterpret_cast<const DeviceAllocation *>(
             host_ctx.args[arg.index]);
         TI_TRACE("Ndarray arg_id={} alloc_id={}", arg.index,

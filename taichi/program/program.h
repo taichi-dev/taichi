@@ -366,7 +366,7 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
-  std::vector<Texture> textures_;
+  std::vector<std::unique_ptr<Texture>> textures_;
 };
 
 }  // namespace lang

@@ -2536,7 +2536,8 @@ FunctionType ModuleToFunctionConverter::convert(
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocations[i] &&
+      if (args[i].is_array &&
+          context.device_allocation_type[i] != RuntimeContext::DevAllocType::kNone &&
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));

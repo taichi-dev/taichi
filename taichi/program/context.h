@@ -14,7 +14,7 @@ struct DeviceAllocation;
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
 struct RuntimeContext {
-  enum class DevAllocType : int8_t { ndarray = 0, texture = 1, image = 2 };
+  enum class DevAllocType : int8_t { kNone = 0, kNdarray = 1, kTexture = 2, kImage = 3 };
 
   LLVMRuntime *runtime{nullptr};
   // args can contain:
@@ -32,10 +32,10 @@ struct RuntimeContext {
   // `array_runtime_size` records the runtime size of the
   // corresponding array arguments.
   uint64 array_runtime_sizes[taichi_max_num_args_total]{0};
-  // `is_device_allocations` is true iff i-th arg is a `DeviceAllocation*`.
-  bool is_device_allocations[taichi_max_num_args_total]{false};
+  // `device_allocation_type` is set iff i-th arg is a `DeviceAllocation*`,
+  // otherwise it is set to DevAllocType::kNone
   DevAllocType device_allocation_type[taichi_max_num_args_total]{
-      DevAllocType::ndarray};
+      DevAllocType::kNone};
   // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
   // because each real function need a place to store its result, but
   // LLVMRuntime is shared among functions. So we moved the pointer to
@@ -67,8 +67,7 @@ struct RuntimeContext {
   void set_array_is_device_allocation(
       int i,
       bool is_device_allocation,
-      DevAllocType usage = DevAllocType::ndarray) {
-    this->is_device_allocations[i] = is_device_allocation;
+      DevAllocType usage = DevAllocType::kNdarray) {
     this->device_allocation_type[i] = usage;
   }
 
@@ -80,7 +79,7 @@ struct RuntimeContext {
   void set_arg_texture(int arg_id, DeviceAllocation &alloc) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true,
-                                   DevAllocType::texture);
+                                   DevAllocType::kTexture);
   }
 
   void set_arg_devalloc(int arg_id,

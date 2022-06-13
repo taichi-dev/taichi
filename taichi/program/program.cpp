@@ -568,16 +568,16 @@ Texture *Program::create_texture(const DataType type,
                                  int num_channels,
                                  const std::vector<int> &shape) {
   if (shape.size() == 1) {
-    textures_.emplace_back(this, type, num_channels, shape[0], 1, 1);
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
   } else if (shape.size() == 2) {
-    textures_.emplace_back(this, type, num_channels, shape[0], shape[1], 1);
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels, shape[0], shape[1], 1));
   } else if (shape.size() == 3) {
-    textures_.emplace_back(this, type, num_channels, shape[0], shape[1],
-                           shape[2]);
+    textures_.push_back(std::make_unique<Texture>(
+        this, type, num_channels, shape[0], shape[1], shape[2]));
   } else {
     TI_ERROR("Texture shape invalid");
   }
-  return &textures_.back();
+  return textures_.back().get();
 }
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {

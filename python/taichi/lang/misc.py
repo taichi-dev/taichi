@@ -11,7 +11,6 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes, get_runtime
-# from taichi.lang.snode import SNode
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 

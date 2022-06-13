@@ -61,6 +61,8 @@ class Tape:
 
         from taichi._kernels import clear_loss  # pylint: disable=C0415
         clear_loss(self.loss)
+
+        # Attach the context manager to runtime
         self.runtime.target_tape = self
 
     def __exit__(self, _type, value, tb):

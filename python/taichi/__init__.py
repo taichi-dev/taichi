@@ -4,7 +4,6 @@ from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._logging import *
 from taichi._snode import *
-from taichi.ad import Tape
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.

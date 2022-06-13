@@ -354,7 +354,7 @@ class SNode {
 
   void set_snode_tree_id(int id);
 
-  int get_snode_tree_id();
+  int get_snode_tree_id() const;
 
   static void reset_counter() {
     counter = 0;

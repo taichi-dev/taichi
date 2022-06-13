@@ -248,8 +248,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
 
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_runtime_size(arg_id, size);
-  ctx_->set_array_device_allocation_type(arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray :
-                                           RuntimeContext::DevAllocType::kNone);
+  ctx_->set_array_device_allocation_type(
+      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
+                                   : RuntimeContext::DevAllocType::kNone);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(

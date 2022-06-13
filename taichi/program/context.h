@@ -69,8 +69,7 @@ struct RuntimeContext {
     this->array_runtime_sizes[i] = size;
   }
 
-  void set_array_device_allocation_type(
-      int i, DevAllocType usage) {
+  void set_array_device_allocation_type(int i, DevAllocType usage) {
     this->device_allocation_type[i] = usage;
   }
 

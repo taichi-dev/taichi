@@ -1111,11 +1111,15 @@ class MakeDual : public ADTransform {
     if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt, negate(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::abs) {
-      accumulate(stmt, sgn(dual(stmt->operand)));
+      accumulatgit e(stmt, sgn(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
+      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+        accumulate(stmt, dual(stmt->operand));
+      }
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
       TI_NOT_IMPLEMENTED

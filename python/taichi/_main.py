@@ -240,7 +240,7 @@ class TaichiMain:
             header_style='bold #2070b2',
             title='[bold][#3fdda4]TAICHI[#f8e020] EXAMPLES')
 
-        ncols = 4
+        ncols = 3
         choices = TaichiMain._get_available_examples()
         nrows, rem = divmod(len(choices), ncols)
         if rem > 0:

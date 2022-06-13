@@ -4,6 +4,105 @@ This module supplies two decorators for users to customize their
 gradient computation task.
 """
 from taichi.lang import impl
+from taichi.lang.snode import SNode
+
+from taichi import _snode
+
+
+class Tape:
+    def __init__(self, loss=None, clear_gradients=True):
+        """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
+        context manager would catching all of the callings of functions that
+        decorated by :func:`~taichi.lang.kernel_impl.kernel` or
+        :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
+        all the partial gradients of a given loss variable by calling all of the
+        gradient function of the callings caught in reverse order while `with`
+        statement ended.
+
+        See also :func:`~taichi.lang.kernel_impl.kernel` and
+        :func:`~taichi.ad.grad_replaced` for gradient functions.
+
+        Args:
+            loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
+            clear_gradients(Bool): Before `with` body start, clear all gradients or not.
+
+        Example::
+
+            >>> @ti.kernel
+            >>> def sum(a: ti.float32):
+            >>>     for I in ti.grouped(x):
+            >>>         y[None] += x[I] ** a
+            >>>
+            >>> with ti.Tape(loss = y):
+            >>>     sum(2)
+        """
+        self.calls = []
+        self.entered = False
+        self.gradient_evaluated = False
+        self.clear_gradients = clear_gradients
+        self.runtime = impl.get_runtime()
+        self.eval_on_exit = loss is not None
+        self.loss = loss
+
+    def __enter__(self):
+        self.runtime.target_tape = self
+        assert not self.entered, "Tape can be entered only once."
+        self.entered = True
+
+        impl.get_runtime().materialize()
+        if len(self.loss.shape) != 0:
+            raise RuntimeError(
+                'The loss of `Tape` must be a 0-D field, i.e. scalar')
+        if not self.loss.snode.ptr.has_adjoint():
+            raise RuntimeError(
+                'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
+                ' for all fields that are required by autodiff.')
+        if self.clear_gradients:
+            clear_all_gradients()
+
+        from taichi._kernels import clear_loss  # pylint: disable=C0415
+        clear_loss(self.loss)
+
+    def __exit__(self, _type, value, tb):
+        # print('# kernel calls', len(self.calls))
+        self.runtime.target_tape = None
+        if self.eval_on_exit:
+            self.grad()
+
+    def insert(self, func, args):
+        self.calls.append((func, args))
+
+    def grad(self):
+        assert self.entered, "Before evaluating gradients tape must be entered."
+        assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
+        for func, args in reversed(self.calls):
+            func.grad(*args)
+        self.gradient_evaluated = True
+
+
+def clear_all_gradients():
+    """Sets the gradients of all fields to zero.
+    """
+    impl.get_runtime().materialize()
+
+    def visit(node):
+        places = []
+        for _i in range(node.ptr.get_num_ch()):
+            ch = node.ptr.get_ch(_i)
+            if not ch.is_place():
+                visit(SNode(ch))
+            else:
+                if not ch.is_primal():
+                    places.append(ch.get_expr())
+
+        places = tuple(places)
+        if places:
+            from taichi._kernels import \
+                clear_gradients  # pylint: disable=C0415
+            clear_gradients(places)
+
+    for root_fb in _snode.FieldsBuilder._finalized_roots():
+        visit(root_fb)
 
 
 def grad_replaced(func):

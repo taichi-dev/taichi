@@ -11,7 +11,7 @@ from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes, get_runtime
-from taichi.lang.snode import SNode
+# from taichi.lang.snode import SNode
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -659,75 +659,50 @@ def mesh_patch_idx():
     )
 
 
-def Tape(loss, clear_gradients=True):
-    """Returns a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
-    context manager would catching all of the callings of functions that
-    decorated by :func:`~taichi.lang.kernel_impl.kernel` or
-    :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
-    all the partial gradients of a given loss variable by calling all of the
-    gradient function of the callings caught in reverse order while `with`
-    statement ended.
-
-    See also :func:`~taichi.lang.kernel_impl.kernel` and
-    :func:`~taichi.ad.grad_replaced` for gradient functions.
-
-    Args:
-        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
-        clear_gradients(Bool): Before `with` body start, clear all gradients or not.
-
-    Returns:
-        :class:`~taichi.lang.tape.TapeImpl`: The context manager.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def sum(a: ti.float32):
-        >>>     for I in ti.grouped(x):
-        >>>         y[None] += x[I] ** a
-        >>>
-        >>> with ti.Tape(loss = y):
-        >>>     sum(2)
-    """
-    impl.get_runtime().materialize()
-    if len(loss.shape) != 0:
-        raise RuntimeError(
-            'The loss of `Tape` must be a 0-D field, i.e. scalar')
-    if not loss.snode.ptr.has_adjoint():
-        raise RuntimeError(
-            'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
-            ' for all fields that are required by autodiff.')
-    if clear_gradients:
-        clear_all_gradients()
-
-    from taichi._kernels import clear_loss  # pylint: disable=C0415
-    clear_loss(loss)
-
-    return impl.get_runtime().get_tape(loss)
-
-
-def clear_all_gradients():
-    """Sets the gradients of all fields to zero.
-    """
-    impl.get_runtime().materialize()
-
-    def visit(node):
-        places = []
-        for _i in range(node.ptr.get_num_ch()):
-            ch = node.ptr.get_ch(_i)
-            if not ch.is_place():
-                visit(SNode(ch))
-            else:
-                if not ch.is_primal():
-                    places.append(ch.get_expr())
-
-        places = tuple(places)
-        if places:
-            from taichi._kernels import \
-                clear_gradients  # pylint: disable=C0415
-            clear_gradients(places)
-
-    for root_fb in _snode.FieldsBuilder._finalized_roots():
-        visit(root_fb)
+# def Tape(loss, clear_gradients=True):
+#     """Returns a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
+#     context manager would catching all of the callings of functions that
+#     decorated by :func:`~taichi.lang.kernel_impl.kernel` or
+#     :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
+#     all the partial gradients of a given loss variable by calling all of the
+#     gradient function of the callings caught in reverse order while `with`
+#     statement ended.
+#
+#     See also :func:`~taichi.lang.kernel_impl.kernel` and
+#     :func:`~taichi.ad.grad_replaced` for gradient functions.
+#
+#     Args:
+#         loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
+#         clear_gradients(Bool): Before `with` body start, clear all gradients or not.
+#
+#     Returns:
+#         :class:`~taichi.lang.tape.TapeImpl`: The context manager.
+#
+#     Example::
+#
+#         >>> @ti.kernel
+#         >>> def sum(a: ti.float32):
+#         >>>     for I in ti.grouped(x):
+#         >>>         y[None] += x[I] ** a
+#         >>>
+#         >>> with ti.Tape(loss = y):
+#         >>>     sum(2)
+#     """
+#     impl.get_runtime().materialize()
+#     if len(loss.shape) != 0:
+#         raise RuntimeError(
+#             'The loss of `Tape` must be a 0-D field, i.e. scalar')
+#     if not loss.snode.ptr.has_adjoint():
+#         raise RuntimeError(
+#             'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
+#             ' for all fields that are required by autodiff.')
+#     if clear_gradients:
+#         clear_all_gradients()
+#
+#     from taichi._kernels import clear_loss  # pylint: disable=C0415
+#     clear_loss(loss)
+#
+#     return impl.get_runtime().get_tape(loss)
 
 
 def is_arch_supported(arch, use_gles=False):
@@ -787,7 +762,6 @@ __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
-    'global_thread_idx', 'Tape', 'assume_in_range', 'block_local',
-    'cache_read_only', 'clear_all_gradients', 'init', 'mesh_local',
-    'no_activate', 'reset', 'mesh_patch_idx'
+    'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
+    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

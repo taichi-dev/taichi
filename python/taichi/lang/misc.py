@@ -707,7 +707,12 @@ def Tape(loss, clear_gradients=True):
     return impl.get_runtime().get_tape(loss)
 
 
-def fwdAD(loss, parameters, seed=None, keep_primal=True):
+def fwdAD(loss,
+          parameters,
+          seed=None,
+          keep_primal=True,
+          clear_gradients=True,
+          clear_loss=True):
     impl.get_runtime().materialize()
     if not isinstance(loss, list):
         loss = [loss]
@@ -755,6 +760,16 @@ def fwdAD(loss, parameters, seed=None, keep_primal=True):
     else:
         for idx, s in enumerate(seed):
             parameters.dual[idx] = 1.0 * s
+
+    # Clear gradients
+    if clear_gradients:
+        for ls in loss:
+            ls.dual.fill(0)
+
+    # Clear losses
+    if clear_loss:
+        for ls in loss:
+            ls.fill(0)
 
     return impl.get_runtime().get_fwd_mode_manager(keep_primal)
 

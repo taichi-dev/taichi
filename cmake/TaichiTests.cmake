@@ -48,6 +48,11 @@ target_include_directories(${TESTS_NAME}
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
   )
 
+target_include_directories(${TESTS_NAME} SYSTEM
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+  )
+
 if (NOT ANDROID)
   target_include_directories(${TESTS_NAME}
   PRIVATE

@@ -1,4 +1,4 @@
-#include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"

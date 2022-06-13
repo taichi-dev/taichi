@@ -16,5 +16,4 @@ astunparse
 pre-commit
 scikit-build
 numpy
-rich
 ninja; platform_system != 'Windows'

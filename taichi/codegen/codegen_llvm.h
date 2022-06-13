@@ -219,7 +219,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, CustomFixedType *cfxt);
+  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt,
+                                      CustomFixedType *cfxt);
 
   llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, CustomIntType *cit);
 

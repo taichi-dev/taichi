@@ -1030,8 +1030,8 @@ class KernelCodegenImpl : public IRVisitor {
       val_expr = stmt->val->raw_name();
     } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
       cit = cfxt->get_digits_type()->as<CustomIntType>();
-      val_expr = construct_quant_fixed_to_quant_int_expr(stmt->val,
-                                                         cfxt->get_scale(), cit);
+      val_expr = construct_quant_fixed_to_quant_int_expr(
+          stmt->val, cfxt->get_scale(), cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }

@@ -226,9 +226,7 @@ class CustomIntType : public Type {
 
 class CustomFixedType : public Type {
  public:
-  CustomFixedType(Type *digits_type,
-                  Type *compute_type,
-                  float64 scale);
+  CustomFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
 
@@ -254,9 +252,7 @@ class CustomFixedType : public Type {
 
 class CustomFloatType : public Type {
  public:
-  CustomFloatType(Type *digits_type,
-                  Type *exponent_type,
-                  Type *compute_type);
+  CustomFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
 
   std::string to_string() const override;
 

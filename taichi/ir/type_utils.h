@@ -74,13 +74,15 @@ inline PrimitiveTypeID get_primitive_data_type() {
 }
 
 inline bool is_quant(DataType dt) {
-  return dt->is<CustomIntType>() || dt->is<CustomFixedType>() || dt->is<CustomFloatType>();
+  return dt->is<CustomIntType>() || dt->is<CustomFixedType>() ||
+         dt->is<CustomFloatType>();
 }
 
 inline bool is_real(DataType dt) {
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||
-         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<CustomFixedType>() || dt->is<CustomFloatType>();
+         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<CustomFixedType>() ||
+         dt->is<CustomFloatType>();
 }
 
 inline bool is_integral(DataType dt) {

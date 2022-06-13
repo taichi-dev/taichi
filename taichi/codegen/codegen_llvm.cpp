@@ -1370,7 +1370,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
     } else {
-      TI_ASSERT(val_type->is<CustomFixedType>() || val_type->is<CustomFloatType>());
+      TI_ASSERT(val_type->is<CustomFixedType>() ||
+                val_type->is<CustomFloatType>());
       TI_ASSERT(stmt->src->is<GetChStmt>());
       llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
     }

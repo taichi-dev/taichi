@@ -548,7 +548,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             llvm_val[stmt] = extract_quant_int(data, bit_offset, int_in_mem);
           } else {
             // TODO: support __ldg
-            TI_ASSERT(val_type->is<CustomFixedType>() || val_type->is<CustomFloatType>());
+            TI_ASSERT(val_type->is<CustomFixedType>() ||
+                      val_type->is<CustomFloatType>());
             llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
           }
         } else {

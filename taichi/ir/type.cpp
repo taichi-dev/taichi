@@ -128,7 +128,8 @@ CustomFixedType::CustomFixedType(Type *digits_type,
 }
 
 std::string CustomFixedType::to_string() const {
-  return fmt::format("cfx(d={} c={} s={})", digits_type_->to_string(), compute_type_->to_string(), scale_);
+  return fmt::format("cfx(d={} c={} s={})", digits_type_->to_string(),
+                     compute_type_->to_string(), scale_);
 }
 
 bool CustomFixedType::get_is_signed() const {
@@ -152,7 +153,8 @@ CustomFloatType::CustomFloatType(Type *digits_type,
 }
 
 std::string CustomFloatType::to_string() const {
-  return fmt::format("cf(d={} e={} c={})", digits_type_->to_string(), exponent_type_->to_string(), compute_type_->to_string());
+  return fmt::format("cf(d={} e={} c={})", digits_type_->to_string(),
+                     exponent_type_->to_string(), compute_type_->to_string());
 }
 
 int CustomFloatType::get_exponent_conversion_offset() const {

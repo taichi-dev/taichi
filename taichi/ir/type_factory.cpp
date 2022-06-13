@@ -61,8 +61,8 @@ Type *TypeFactory::get_custom_fixed_type(Type *digits_type,
                                          float64 scale) {
   auto key = std::make_tuple(digits_type, compute_type, scale);
   if (custom_fixed_types_.find(key) == custom_fixed_types_.end()) {
-    custom_fixed_types_[key] = std::make_unique<CustomFixedType>(
-        digits_type, compute_type, scale);
+    custom_fixed_types_[key] =
+        std::make_unique<CustomFixedType>(digits_type, compute_type, scale);
   }
   return custom_fixed_types_[key].get();
 }

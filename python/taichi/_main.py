@@ -12,6 +12,7 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
+import rich
 from colorama import Fore
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
@@ -198,17 +199,9 @@ class TaichiMain:
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
             print("Demo source code:")
             print()
-            try:
-                import rich.console  # pylint: disable=C0415
-                import rich.syntax  # pylint: disable=C0415
-                content = rich.syntax.Syntax.from_path(script,
-                                                       line_numbers=True)
-                console = rich.console.Console()
-                console.print(content)
-            except ImportError:
-                with open(script, "r") as f:
-                    shutil.copyfileobj(f, sys.stdout)
-
+            content = rich.syntax.Syntax.from_path(script, line_numbers=True)
+            console = rich.console.Console()
+            console.print(content)
             self._exec_python_file(script)
 
         while gui.running:
@@ -230,15 +223,40 @@ class TaichiMain:
     @register
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name (or name.py)"""
+        def colormap(name):
+            from colorsys import hls_to_rgb  # pylint: disable=C0415
+            x = (ord(name[0].upper()) - 64.0) / 26.0
+            r, g, b = hls_to_rgb(x, 0.4, 1.0)
+            r = hex(int(r * 255) % 16)[2:]
+            g = hex(int(g * 255) % 16)[2:]
+            b = hex(int(b * 255) % 16)[2:]
+            return f"[#{r}{r}{g}{g}{b}{b}]{name}"
+
+        console = rich.console.Console()
+        table = rich.table.Table(
+            box=rich.box.HORIZONTALS,
+            show_header=False,
+            header_style='bold #2070b2',
+            title='[bold][#3fdda4]TAICHI[#f8e020] EXAMPLES')
+
+        ncols = 4
         choices = TaichiMain._get_available_examples()
+        nrows, rem = divmod(len(choices), ncols)
+        if rem > 0:
+            nrows += 1
+        names = sorted(choices.keys())
+        for k in range(nrows):
+            table.add_row(
+                *[colormap(names[j]) for j in range(k, len(choices), nrows)])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
-        parser.add_argument(
-            "name",
-            help="Name of an example (supports .py extension too)\n",
-            type=TaichiMain._example_choices_type(choices.keys()),
-            choices=sorted(choices.keys()))
+        parser.add_argument("name",
+                            type=TaichiMain._example_choices_type(
+                                choices.keys()),
+                            choices=sorted(choices.keys()),
+                            help=console.print(table),
+                            metavar="name")
         parser.add_argument(
             '-p',
             '--print',
@@ -280,13 +298,6 @@ class TaichiMain:
             return 0
 
         if args.pretty_print:
-            try:
-                import rich.console  # pylint: disable=C0415
-                import rich.syntax  # pylint: disable=C0415
-            except ImportError:
-                print('To make -P work, please: python3 -m pip install rich')
-                return 1
-            # https://rich.readthedocs.io/en/latest/syntax.html
             syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
             console = rich.console.Console()
             console.print(syntax)

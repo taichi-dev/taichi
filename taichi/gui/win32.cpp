@@ -157,7 +157,8 @@ void GUI::process_event() {
   }
 }
 
-// From: https://docs.microsoft.com/en-us/archive/msdn-magazine/2016/september/c-unicode-encoding-conversions-with-stl-strings-and-win32-apis
+// From:
+// https://docs.microsoft.com/en-us/archive/msdn-magazine/2016/september/c-unicode-encoding-conversions-with-stl-strings-and-win32-apis
 
 // Represents an error during UTF-8 encoding conversions
 class Utf8ConversionException : public std::runtime_error {
@@ -168,7 +169,7 @@ class Utf8ConversionException : public std::runtime_error {
   Utf8ConversionException(const char *message, uint32_t error_code)
       : std::runtime_error(message), _error_code(error_code) {
   }
-  
+
   uint32_t error_code() const {
     return _error_code;
   }
@@ -231,7 +232,6 @@ std::wstring utf8_to_utf16(const std::string &utf8) {
 
   return utf16;
 }
-
 
 void GUI::create_window() {
   static LPCWSTR CLASS_NAME = L"Taichi Win32 Window";

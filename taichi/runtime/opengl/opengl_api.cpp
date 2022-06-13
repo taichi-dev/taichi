@@ -402,7 +402,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     int i = item.first;
     TI_ASSERT(args[i].is_array);
     const auto arr_sz = ctx.array_runtime_sizes[i];
-    if (arr_sz == 0 || ctx.device_allocation_type[i] == RuntimeContext::DevAllocType::kNdarray) {
+    if (arr_sz == 0 || ctx.device_allocation_type[i] ==
+                           RuntimeContext::DevAllocType::kNdarray) {
       continue;
     }
     has_ext_arr = true;

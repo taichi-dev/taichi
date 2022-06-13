@@ -45,7 +45,6 @@ class Tape:
         self.loss = loss
 
     def __enter__(self):
-        self.runtime.target_tape = self
         assert not self.entered, "Tape can be entered only once."
         self.entered = True
 
@@ -62,6 +61,7 @@ class Tape:
 
         from taichi._kernels import clear_loss  # pylint: disable=C0415
         clear_loss(self.loss)
+        self.runtime.target_tape = self
 
     def __exit__(self, _type, value, tb):
         # print('# kernel calls', len(self.calls))

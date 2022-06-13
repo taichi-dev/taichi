@@ -2069,7 +2069,6 @@ class TaskCodegen : public IRVisitor {
     }
 
     if (buffer.type == BufferType::GlobalTmps) {
-
       // FORCE U32
       auto type_u32 = ir_->get_taichi_uint_type(PrimitiveType::u32);
       auto type_primitive_u32 = ir_->get_primitive_type(type_u32);
@@ -2180,13 +2179,14 @@ class TaskCodegen : public IRVisitor {
   std::vector<BufferBind> get_buffer_binds() {
     std::vector<BufferBind> result;
     for (auto &[key, val] : buffer_binding_map_) {
-      BufferBind bb {key.first, int(val)};
+      BufferBind bb{key.first, int(val)};
 
-      #ifdef TI_WITH_DX11
-      if (buffer_root_id_override_.find(key) != buffer_root_id_override_.end()) {
+#ifdef TI_WITH_DX11
+      if (buffer_root_id_override_.find(key) !=
+          buffer_root_id_override_.end()) {
         bb.buffer.root_id = buffer_root_id_override_[key];
       }
-      #endif
+#endif
 
       result.push_back(bb);
     }
@@ -2246,8 +2246,8 @@ class TaskCodegen : public IRVisitor {
   std::vector<TextureBind> texture_binds_;
 
   // for distinguishing between i32 and u32
-  std::unordered_map<std::pair<BufferInfo, int>, int,
-                     BufferInfoTypeTupleHasher> buffer_root_id_override_;
+  std::unordered_map<std::pair<BufferInfo, int>, int, BufferInfoTypeTupleHasher>
+      buffer_root_id_override_;
 
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;

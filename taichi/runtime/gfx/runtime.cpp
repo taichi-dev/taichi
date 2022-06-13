@@ -270,7 +270,7 @@ constexpr size_t kListGenBufferSize = 32 << 20;
 CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
       device_(ti_params.device) {
-  BufferInfo bi = { BufferType::GlobalTmps, 1 };
+  BufferInfo bi = {BufferType::GlobalTmps, 1};
   input_buffers_[bi] = ti_params.global_tmps_buffer_i32;
   bi.root_id = 2;
   input_buffers_[bi] = ti_params.global_tmps_buffer_u32;
@@ -646,9 +646,11 @@ void GfxRuntime::init_nonroot_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_i32_->get_ptr(0), kBufferSizeEntireSize,
+  cmdlist->buffer_fill(global_tmps_buffer_i32_->get_ptr(0),
+                       kBufferSizeEntireSize,
                        /*data=*/0);
-  cmdlist->buffer_fill(global_tmps_buffer_u32_->get_ptr(0), kBufferSizeEntireSize,
+  cmdlist->buffer_fill(global_tmps_buffer_u32_->get_ptr(0),
+                       kBufferSizeEntireSize,
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);

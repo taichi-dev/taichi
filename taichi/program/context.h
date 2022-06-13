@@ -62,17 +62,15 @@ struct RuntimeContext {
   template <typename T>
   void set_arg(int i, T v) {
     args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
-    set_array_is_device_allocation(i, /*is_device_allocation=*/false);
+    set_array_device_allocation_type(i, DevAllocType::kNone);
   }
 
   void set_array_runtime_size(int i, uint64 size) {
     this->array_runtime_sizes[i] = size;
   }
 
-  void set_array_is_device_allocation(
-      int i,
-      bool is_device_allocation,
-      DevAllocType usage = DevAllocType::kNdarray) {
+  void set_array_device_allocation_type(
+      int i, DevAllocType usage) {
     this->device_allocation_type[i] = usage;
   }
 
@@ -83,15 +81,14 @@ struct RuntimeContext {
 
   void set_arg_texture(int arg_id, DeviceAllocation &alloc) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true,
-                                   DevAllocType::kTexture);
+    set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
   }
 
   void set_arg_devalloc(int arg_id,
                         DeviceAllocation &alloc,
                         const std::vector<int> &shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true);
+    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {
       extra_args[arg_id][i] = shape[i];
@@ -103,7 +100,7 @@ struct RuntimeContext {
                         const std::vector<int> &shape,
                         const std::vector<int> &element_shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true);
+    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() + element_shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {
       extra_args[arg_id][i] = shape[i];

@@ -733,7 +733,9 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
   ctx->set_arg(arg_id, ptr);
   ctx->set_array_runtime_size(arg_id, size);
-  ctx->set_array_is_device_allocation(arg_id, is_device_allocation);
+  ctx->set_array_device_allocation_type(
+      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
+                                   : RuntimeContext::DevAllocType::kNone);
 }
 
 FunctionType CodeGenCUDA::codegen() {

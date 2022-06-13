@@ -2544,8 +2544,8 @@ FunctionType ModuleToFunctionConverter::convert(
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
-        context.set_array_is_device_allocation(i,
-                                               /*is_device_allocation=*/false);
+        context.set_array_device_allocation_type(
+            i, RuntimeContext::DevAllocType::kNone);
       }
     }
     for (auto task : task_funcs) {

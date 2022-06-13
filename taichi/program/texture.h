@@ -15,9 +15,8 @@ class Ndarray;
 
 class TI_DLL_EXPORT Texture {
  public:
-  /* Constructs a Ndarray managed by Program.
-   * Memory allocation and deallocation is handled by Program.
-   * TODO: Ideally Ndarray shouldn't worry about memory alloc/dealloc at all.
+  /* Constructs a Texture managed by Program.
+   * Texture object allocation and deallocation is handled by Program.
    */
   explicit Texture(Program *prog,
                    const DataType type,
@@ -26,7 +25,7 @@ class TI_DLL_EXPORT Texture {
                    int height,
                    int depth = 1);
 
-  /* Constructs a Ndarray from an existing DeviceAllocation
+  /* Constructs a Texture from an existing DeviceAllocation
    * It doesn't handle the allocation and deallocation.
    */
   explicit Texture(DeviceAllocation &devalloc,

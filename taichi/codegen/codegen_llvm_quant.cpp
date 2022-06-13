@@ -51,9 +51,8 @@ llvm::Value *CodeGenLLVM::quant_fixed_to_quant_int(CustomFloatType *cft,
   // Compute int(real * (1.0 / scale) + 0.5)
   auto s_numeric = 1.0 / cft->get_scale();
   auto compute_type = cft->get_compute_type();
-  s = builder->CreateFPCast(
-      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
-      llvm_type(compute_type));
+  s = builder->CreateFPCast(tlctx->get_constant(s_numeric),
+                            llvm_type(compute_type));
   auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
@@ -128,9 +127,9 @@ llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
       tlctx->get_constant(0));
 }
 
-llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
-                                              Type *input_type,
-                                              Type *output_type) {
+llvm::Value *CodeGenLLVM::quant_int_or_quant_fixed_to_bits(llvm::Value *val,
+                                                           Type *input_type,
+                                                           Type *output_type) {
   CustomIntType *cit = nullptr;
   if (auto cft = input_type->cast<CustomFloatType>()) {
     TI_ASSERT(cft->get_exponent_type() == nullptr);
@@ -262,7 +261,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       val = builder->CreateBitCast(val, llvm_type(bit_struct_physical_type));
       val = builder->CreateShl(val, digits_snode->bit_offset);
     } else {
-      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+      val = quant_int_or_quant_fixed_to_bits(val, dtype,
+                                             bit_struct_physical_type);
       val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
     }
 
@@ -374,8 +374,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
       auto ch_id = snode->child_id(user);
-      auto digits = extract_digits_from_quant_float_with_shared_exponent(
-          floats[c], max_exp_bits);
+      auto digits =
+          extract_digits_from_f32_with_shared_exponent(floats[c], max_exp_bits);
       auto digits_snode = snode->ch[ch_id].get();
       auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
@@ -435,7 +435,7 @@ llvm::Value *CodeGenLLVM::extract_digits_from_f32(llvm::Value *f, bool full) {
   return digits;
 }
 
-llvm::Value *CodeGenLLVM::extract_digits_from_quant_float_with_shared_exponent(
+llvm::Value *CodeGenLLVM::extract_digits_from_f32_with_shared_exponent(
     llvm::Value *f,
     llvm::Value *shared_exp) {
   auto exp = extract_exponent_from_f32(f);
@@ -518,13 +518,12 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   // Compute float(digits) * scale
   llvm::Value *cast = nullptr;
   auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
-  if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+  if (cft->get_is_signed()) {
     cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
   } else {
     cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
   }
-  llvm::Value *s =
-      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+  llvm::Value *s = tlctx->get_constant(cft->get_scale());
   s = builder->CreateFPCast(s, llvm_type(compute_type));
   return builder->CreateFMul(cast, s);
 }

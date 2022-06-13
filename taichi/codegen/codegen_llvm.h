@@ -265,9 +265,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalStoreStmt *stmt) override;
 
-  llvm::Value *custom_type_to_bits(llvm::Value *val,
-                                   Type *input_type,
-                                   Type *output_type);
+  llvm::Value *quant_int_or_quant_fixed_to_bits(llvm::Value *val,
+                                                Type *input_type,
+                                                Type *output_type);
 
   void visit(BitStructStoreStmt *stmt) override;
 
@@ -399,7 +399,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *extract_digits_from_f32(llvm::Value *f, bool full);
 
-  llvm::Value *extract_digits_from_quant_float_with_shared_exponent(
+  llvm::Value *extract_digits_from_f32_with_shared_exponent(
       llvm::Value *f,
       llvm::Value *shared_exp);
 

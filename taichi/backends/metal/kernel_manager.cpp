@@ -484,7 +484,7 @@ class HostMetalCtxBlitter {
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
-        if (host_ctx_->device_allocation_type[arg_id] !=
+        if (host_ctx_->device_allocation_type[i] !=
             RuntimeContext::DevAllocType::kNone) {
           // There is no way to write from host into Ndarray directly (yet), so
           // we don't have to do anything here.
@@ -544,7 +544,7 @@ class HostMetalCtxBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array) {
-        if (host_ctx_->device_allocation_type[arg_id] !=
+        if (host_ctx_->device_allocation_type[i] !=
             RuntimeContext::DevAllocType::kNone) {
           continue;
         }

@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import rich
 from colorama import Fore
+from rich.console import Console
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
 from taichi.tools import cc_compose, diagnose, video
@@ -232,7 +233,7 @@ class TaichiMain:
             b = hex(int(b * 255) % 16)[2:]
             return f"[#{r}{r}{g}{g}{b}{b}]{name}"
 
-        console = rich.console.Console()
+        console = Console()
         table = rich.table.Table(
             box=rich.box.HORIZONTALS,
             show_header=False,
@@ -299,7 +300,7 @@ class TaichiMain:
 
         if args.pretty_print:
             syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
-            console = rich.console.Console()
+            console = Console()
             console.print(syntax)
             return 0
 

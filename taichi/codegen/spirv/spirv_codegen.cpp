@@ -2068,6 +2068,22 @@ class TaskCodegen : public IRVisitor {
       return ret_buffer_value_;
     }
 
+    if (buffer.type == BufferType::GlobalTmps) {
+
+      // FORCE U32
+      auto type_u32 = ir_->get_taichi_uint_type(PrimitiveType::u32);
+      auto type_primitive_u32 = ir_->get_primitive_type(type_u32);
+      key.second = type_primitive_u32.id;
+      buffer_root_id_override_[key] = 2;
+
+      /*
+      if (dt->is_primitive(PrimitiveTypeID::i32)) {
+        buffer_root_id_override_[key] = 1;
+      } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+        buffer_root_id_override_[key] = 2;
+      }*/
+    }
+
     // Binding head starts at 2, so we don't break args and rets
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
@@ -2164,7 +2180,15 @@ class TaskCodegen : public IRVisitor {
   std::vector<BufferBind> get_buffer_binds() {
     std::vector<BufferBind> result;
     for (auto &[key, val] : buffer_binding_map_) {
-      result.push_back(BufferBind{key.first, int(val)});
+      BufferBind bb {key.first, int(val)};
+
+      #ifdef TI_WITH_DX11
+      if (buffer_root_id_override_.find(key) != buffer_root_id_override_.end()) {
+        bb.buffer.root_id = buffer_root_id_override_[key];
+      }
+      #endif
+
+      result.push_back(bb);
     }
     return result;
   }
@@ -2220,6 +2244,11 @@ class TaskCodegen : public IRVisitor {
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
   std::vector<TextureBind> texture_binds_;
+
+  // for distinguishing between i32 and u32
+  std::unordered_map<std::pair<BufferInfo, int>, int,
+                     BufferInfoTypeTupleHasher> buffer_root_id_override_;
+
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};

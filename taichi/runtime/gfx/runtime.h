@@ -41,7 +41,8 @@ class CompiledTaichiKernel {
 
     Device *device{nullptr};
     std::vector<DeviceAllocation *> root_buffers;
-    DeviceAllocation *global_tmps_buffer{nullptr};
+    DeviceAllocation *global_tmps_buffer_i32{nullptr};
+    DeviceAllocation *global_tmps_buffer_u32{nullptr};
     DeviceAllocation *listgen_buffer{nullptr};
   };
 
@@ -130,7 +131,8 @@ class TI_DLL_EXPORT GfxRuntime {
   uint64_t *const host_result_buffer_;
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
-  std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
+  std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_i32_;
+  std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_u32_;
   // FIXME: Support proper multiple lists
   std::unique_ptr<DeviceAllocationGuard> listgen_buffer_;
 

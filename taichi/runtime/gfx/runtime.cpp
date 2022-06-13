@@ -270,7 +270,10 @@ constexpr size_t kListGenBufferSize = 32 << 20;
 CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
       device_(ti_params.device) {
-  input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
+  BufferInfo bi = { BufferType::GlobalTmps, 1 };
+  input_buffers_[bi] = ti_params.global_tmps_buffer_i32;
+  bi.root_id = 2;
+  input_buffers_[bi] = ti_params.global_tmps_buffer_u32;
   input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
 
   // Compiled_structs can be empty if loading a kernel from an AOT module as
@@ -338,8 +341,9 @@ GfxRuntime::~GfxRuntime() {
     decltype(ti_kernels_) tmp;
     tmp.swap(ti_kernels_);
   }
-  global_tmps_buffer_.reset();
   listgen_buffer_.reset();
+  global_tmps_buffer_i32_.reset();
+  global_tmps_buffer_u32_.reset();
 }
 
 GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
@@ -352,7 +356,8 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
   for (int root = 0; root < root_buffers_.size(); ++root) {
     params.root_buffers.push_back(root_buffers_[root].get());
   }
-  params.global_tmps_buffer = global_tmps_buffer_.get();
+  params.global_tmps_buffer_i32 = global_tmps_buffer_i32_.get();
+  params.global_tmps_buffer_u32 = global_tmps_buffer_u32_.get();
   params.listgen_buffer = listgen_buffer_.get();
 
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
@@ -623,7 +628,11 @@ void GfxRuntime::submit_current_cmdlist_if_timeout() {
 }
 
 void GfxRuntime::init_nonroot_buffers() {
-  global_tmps_buffer_ = device_->allocate_memory_unique(
+  global_tmps_buffer_i32_ = device_->allocate_memory_unique(
+      {kGtmpBufferSize,
+       /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Storage});
+  global_tmps_buffer_u32_ = device_->allocate_memory_unique(
       {kGtmpBufferSize,
        /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false, AllocUsage::Storage});
@@ -637,7 +646,9 @@ void GfxRuntime::init_nonroot_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kBufferSizeEntireSize,
+  cmdlist->buffer_fill(global_tmps_buffer_i32_->get_ptr(0), kBufferSizeEntireSize,
+                       /*data=*/0);
+  cmdlist->buffer_fill(global_tmps_buffer_u32_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);

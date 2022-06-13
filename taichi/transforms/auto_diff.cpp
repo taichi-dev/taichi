@@ -1111,7 +1111,7 @@ class MakeDual : public ADTransform {
     if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt, negate(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::abs) {
-      accumulatgit e(stmt, sgn(dual(stmt->operand)));
+      accumulate(stmt, sgn(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {

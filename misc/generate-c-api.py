@@ -1,6 +1,6 @@
 import json
-from os import system
 import re
+from os import system
 
 JSON = None
 
@@ -276,8 +276,10 @@ class Function:
 
     def declr(self):
         return_value_type = "void" if self.return_value_type == None else self.return_value_type.type_name
-        out = ["TI_DLL_EXPORT " + return_value_type +
-               " TI_API_CALL " + self.func_name + "("]
+        out = [
+            "TI_DLL_EXPORT " + return_value_type + " TI_API_CALL " +
+            self.func_name + "("
+        ]
         out += [',\n'.join(f"  {param.declr()}" for param in self.params)]
         out += [");"]
         return '\n'.join(out)

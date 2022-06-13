@@ -1013,10 +1013,12 @@ void export_lang(py::module &m) {
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
+      .def("get_custom_fixed_type", &TypeFactory::get_custom_fixed_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::return_value_policy::reference)
       .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

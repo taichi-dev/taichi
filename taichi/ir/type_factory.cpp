@@ -56,14 +56,24 @@ Type *TypeFactory::get_custom_int_type(int num_bits,
   return custom_int_types_[key].get();
 }
 
-Type *TypeFactory::get_custom_float_type(Type *digits_type,
-                                         Type *exponent_type,
+Type *TypeFactory::get_custom_fixed_type(Type *digits_type,
                                          Type *compute_type,
                                          float64 scale) {
-  auto key = std::make_tuple(digits_type, exponent_type, compute_type, scale);
+  auto key = std::make_tuple(digits_type, compute_type, scale);
+  if (custom_fixed_types_.find(key) == custom_fixed_types_.end()) {
+    custom_fixed_types_[key] = std::make_unique<CustomFixedType>(
+        digits_type, compute_type, scale);
+  }
+  return custom_fixed_types_[key].get();
+}
+
+Type *TypeFactory::get_custom_float_type(Type *digits_type,
+                                         Type *exponent_type,
+                                         Type *compute_type) {
+  auto key = std::make_tuple(digits_type, exponent_type, compute_type);
   if (custom_float_types_.find(key) == custom_float_types_.end()) {
     custom_float_types_[key] = std::make_unique<CustomFloatType>(
-        digits_type, exponent_type, compute_type, scale);
+        digits_type, exponent_type, compute_type);
   }
   return custom_float_types_[key].get();
 }

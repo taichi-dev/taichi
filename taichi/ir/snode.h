@@ -135,7 +135,7 @@ class SNode {
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
-  SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
+  SNode *exp_snode{nullptr};  // for CustomFloatType
   int bit_offset{0};          // for children of bit_struct only
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};

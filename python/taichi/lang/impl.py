@@ -21,7 +21,6 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-# from taichi.ad import Tape
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
@@ -332,10 +331,6 @@ class PyTaichi:
             self.prog = None
         self._signal_handler_registry = None
         self.materialized = False
-
-    # def get_tape(self, loss=None):
-    #     from taichi.ad import Tape
-    #     return Tape(loss)
 
     def sync(self):
         self.materialize()

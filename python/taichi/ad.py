@@ -218,6 +218,3 @@ def no_grad(func):
 
     decorated.grad = placeholder
     return decorated
-
-
-__all__ = ["clear_all_gradients"]

@@ -17,7 +17,7 @@ namespace taichi {
 namespace meta {
 template <template <int> class F, int bgn, int end, typename... Args>
 struct RepeatFunctionHelper {
-  TI_FORCE_INLINE static void run(Args &&... args) {
+  TI_FORCE_INLINE static void run(Args &&...args) {
     F<bgn>::run(args...);
     RepeatFunctionHelper<F, bgn + 1, end, Args...>::run(
         std::forward<Args>(args)...);
@@ -26,13 +26,13 @@ struct RepeatFunctionHelper {
 
 template <template <int> class F, int bgn, typename... Args>
 struct RepeatFunctionHelper<F, bgn, bgn, Args...> {
-  TI_FORCE_INLINE static void run(Args &&... args) {
+  TI_FORCE_INLINE static void run(Args &&...args) {
     return;
   }
 };
 
 template <template <int> class F, int bgn, int end, typename... Args>
-TI_FORCE_INLINE void repeat_function(Args &&... args) {
+TI_FORCE_INLINE void repeat_function(Args &&...args) {
   RepeatFunctionHelper<F, bgn, end, Args...>::run(std::forward<Args>(args)...);
 }
 }  // namespace meta

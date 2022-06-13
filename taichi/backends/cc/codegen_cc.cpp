@@ -48,7 +48,8 @@ class CCTransformer : public IRVisitor {
     auto ir = kernel_->ir.get();
     auto config = kernel_->program->config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config, kernel_, kernel_->grad,
+    irpass::compile_to_executable(ir, config, kernel_,
+                                  /*autodiff_mode=*/kernel_->autodiff_mode,
                                   /*ad_use_stack=*/true, config.print_ir,
                                   /*lower_global_access*/ true);
   }
@@ -156,9 +157,23 @@ class CCTransformer : public IRVisitor {
     std::string offset = "0";
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
+    const auto element_shape = stmt->element_shape;
+    const auto layout = stmt->element_dim < 0 ? ExternalArrayLayout::kAOS
+                                              : ExternalArrayLayout::kSOA;
+    const size_t element_shape_index_offset =
+        (layout == ExternalArrayLayout::kAOS)
+            ? stmt->indices.size() - element_shape.size()
+            : 0;
+    size_t size_var_index = 0;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      auto stride = fmt::format("ti_ctx->earg[{} * {} + {}]", arg_id,
-                                taichi_max_num_indices, i);
+      std::string stride;
+      if (i >= element_shape_index_offset &&
+          i < element_shape_index_offset + element_shape.size()) {
+        stride = fmt::format("{}", element_shape[i - element_shape.size()]);
+      } else {
+        stride = fmt::format("ti_ctx->earg[{} * {} + {}]", arg_id,
+                             taichi_max_num_indices, size_var_index++);
+      }
       offset = fmt::format("({} * {} + {})", offset, stride,
                            stmt->indices[i]->raw_name());
     }
@@ -305,7 +320,7 @@ class CCTransformer : public IRVisitor {
   static inline std::string invoke_libc(std::string name,
                                         DataType dt,
                                         std::string const &fmt,
-                                        Args &&... args) {
+                                        Args &&...args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -594,12 +609,12 @@ class CCTransformer : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
-  void emit_header(std::string f, Args &&... args) {
+  void emit_header(std::string f, Args &&...args) {
     line_appender_header_.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp

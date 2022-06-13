@@ -1,21 +1,117 @@
+# pylint: disable=W0622
 """
 Math functions for glsl-like functions and other stuff.
 """
 from math import e, pi
 
+from taichi.lang import impl
+from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
+                             max, min, pow, round, sin, sqrt, tan, tanh)
+
 import taichi as ti
 
-mat2 = ti.types.matrix(2, 2, float)  # pylint: disable=E1101
-"""2x2 float matrix type
-"""
+_get_uint_ip = lambda: ti.u32 if impl.get_runtime(
+).default_ip == ti.i32 else ti.u64
 
-mat3 = ti.types.matrix(3, 3, float)  # pylint: disable=E1101
-"""3x3 float matrix type
-"""
 
-mat4 = ti.types.matrix(4, 4, float)  # pylint: disable=E1101
-"""4x4 float matrix type
-"""
+def vec2(*args):
+    """2D floating vector type.
+    """
+    return ti.types.vector(2, float)(*args)  # pylint: disable=E1101
+
+
+def vec3(*args):
+    """3D floating vector type.
+    """
+    return ti.types.vector(3, float)(*args)  # pylint: disable=E1101
+
+
+def vec4(*args):
+    """4D floating vector type.
+    """
+    return ti.types.vector(4, float)(*args)  # pylint: disable=E1101
+
+
+def ivec2(*args):
+    """2D signed int vector type.
+    """
+    return ti.types.vector(2, int)(*args)  # pylint: disable=E1101
+
+
+def ivec3(*args):
+    """3D signed int vector type.
+    """
+    return ti.types.vector(3, int)(*args)  # pylint: disable=E1101
+
+
+def ivec4(*args):
+    """4D signed int vector type.
+    """
+    return ti.types.vector(4, int)(*args)  # pylint: disable=E1101
+
+
+def uvec2(*args):
+    """2D unsigned int vector type.
+    """
+    return ti.types.vector(2, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def uvec3(*args):
+    """3D unsigned int vector type.
+    """
+    return ti.types.vector(3, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def uvec4(*args):
+    """4D unsigned int vector type.
+    """
+    return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
+
+
+def _gen_matrix(n, *args):
+    """Supports more matrix construction routines.
+
+    1. Usual contruction (from a 2d list or a single scalar).
+    2. From a 1-D array of n*n elements (glsl style).
+    3. From a list of n-D vectors (glsl style).
+    """
+    if len(args) == n * n:  # initialize with n*n scalars
+        data = [[args[k * n + i] for i in range(n)] for k in range(n)]
+        return ti.Matrix(data, float)
+
+    if len(args) == n:  # initialize with n vectors
+        # Matrix.rows() will do implict type inference
+        data = [list(x) for x in args]
+        return ti.Matrix(data, float)
+
+    if len(args) == 1:  # initialize with a scalar, a matrix or a 1d list
+        x = args[0]
+        if isinstance(x, ti.Matrix):
+            return x
+
+        if hasattr(x, "__len__") and len(x) == n * n:
+            data = [[x[k * n + i] for i in range(n)] for k in range(n)]
+            return ti.Matrix(data, float)
+
+    return ti.types.matrix(n, n, float)(*args)  # pylint: disable=E1101
+
+
+def mat2(*args):
+    """2x2 floating matrix type.
+    """
+    return _gen_matrix(2, *args)
+
+
+def mat3(*args):
+    """3x3 floating matrix type.
+    """
+    return _gen_matrix(3, *args)
+
+
+def mat4(*args):
+    """4x4 floating matrix type.
+    """
+    return _gen_matrix(4, *args)
 
 
 @ti.func
@@ -425,8 +521,182 @@ def mod(x, y):
     return x - y * ti.floor(x / y)
 
 
+@ti.func
+def rotate2d(p, ang):
+    """Rotates a 2d vector by a given angle in counter-clockwise.
+
+    Args:
+        p (:class:`~taichi.math.vec2`): The 2d vector to rotate.
+        ang (float): Angle of rotation, in radians.
+
+    Returns:
+        :class:`~taichi.math.vec2`: The vector after rotation.
+
+    Example::
+
+        >>> from taichi.math import *
+        >>> @ti.kernel
+        >>> def test():
+        >>>     v = vec2(1, 0)
+        >>>     print(rotate2d(v, radians(30)))
+        [0.866025, 0.500000]
+    """
+    ca, sa = ti.cos(ang), ti.sin(ang)
+    x, y = p
+    return vec2(x * ca - p.y * sa, x * sa + y * ca)
+
+
+@ti.func
+def rotate3d(p, axis, ang):
+    """Rotates a vector in 3d space, given an axis and angle of rotation.
+
+    The vector `axis` should be a unit vector.
+
+    See "https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula"
+
+    Args:
+        p (:class:`~taichi.math.vec3`): The 3d vector to rotate.
+        axis (:class:`~taichi.math.vec3`): Axis of rotation.
+        ang (float): Angle of rotation, in radians.
+
+    Example::
+
+        >>> from taichi.math import *
+        >>> @ti.kernel
+        >>> def test():
+        >>>     v = vec3(1, 0, 0)
+        >>>     axis = normalize(vec3(1, 1, 1))
+        >>>     print(rotate3d(v, axis, radians(30)))
+        [0.910684, 0.333333, -0.244017]
+
+    Returns:
+        :class:`~taichi.math.vec3`: The vector after rotation.
+    """
+    ca, sa = ti.cos(ang), ti.sin(ang)
+    return mix(dot(p, axis) * axis, p, ca) + cross(axis, p) * sa
+
+
+@ti.func
+def eye(n: ti.template()):
+    """Returns the nxn identiy matrix.
+
+    Alias for :func:`~taichi.Matrix.identity`.
+    """
+    return ti.Matrix.identity(float, n)
+
+
+@ti.func
+def rot2(ang):
+    """Returns the matrix representation of a 2d counter-clockwise rotation,
+    given the angle of rotation.
+
+    Args:
+        ang (float): Angle of rotation in radians.
+
+    Returns:
+        :class:`~taichi.math.mat2`: 2x2 rotation matrix.
+
+    Example::
+
+        >>> from taichi.math import *
+        >>> @ti.kernel
+        >>> def test():
+        >>>     M = rot2(radians(30))
+        [[0.866025, -0.500000], [0.500000, 0.866025]]
+    """
+    ca, sa = ti.cos(ang), ti.sin(ang)
+    return mat2([[ca, -sa], [sa, ca]])
+
+
+@ti.func
+def rot3(axis, ang):
+    """Returns the matrix representation of a 3d rotation,
+    given the axis and angle of rotation.
+
+    Args:
+        axis (:class:`~taichi.math.vec3`): Axis of rotation.
+        ang (float): Angle of rotation in radians.
+
+    Returns:
+        :class:`~taichi.math.mat3`: 3x3 rotation matrix.
+
+    Example::
+
+        >>> from taichi.math import *
+        >>> @ti.kernel
+        >>> def test():
+        >>>     M = rot3(normalize(vec3(1, 1, 1)), radians(30))
+        [[0.732051, -0.366025, 0.633975],
+         [0.633975, 0.732051, -0.366025],
+         [-0.366025, 0.633975, 0.732051]]
+    """
+    ca, sa = ti.cos(ang), ti.sin(ang)
+    x, y, z = axis
+    I = eye(3)
+    K = mat3([[0, -z, y], [z, 0, -x], [-y, x, 0]])
+    return I + sa * K + (1.0 - ca) * K @ K
+
+
+@ti.func
+def length(x):
+    """Calculate the length of a vector.
+
+    This function is equivalent to the `length` function in GLSL.
+    Args:
+        x (:class:`~taichi.Matrix`): The vector of which to calculate the length.
+
+    Returns:
+        The Euclidean norm of the vector.
+
+    Example::
+
+        >>> x = ti.Vector([1, 1, 1])
+        >>> length(x)
+        1.732051
+    """
+    return x.norm()
+
+
+@ti.func
+def determinant(m):
+    """Alias for :func:`taichi.Matrix.determinant`.
+    """
+    return m.determinant()
+
+
+@ti.func
+def inverse(mat):  # pylint: disable=R1710
+    """Calculate the inverse of a matrix.
+
+    This function is equivalent to the `inverse` function in GLSL.
+
+    Args:
+        mat (:class:`taichi.Matrix`): The matrix of which to take the inverse.
+
+    Returns:
+        Inverse of the input matrix.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     m = mat3([(1, 1, 0), (0, 1, 1), (0, 0, 1)])
+        >>>     print(inverse(m))
+        >>>
+        >>> test()
+        [[1.000000, -1.000000, 1.000000],
+         [0.000000, 1.000000, -1.000000],
+         [0.000000, 0.000000, 1.000000]]
+    """
+    return mat.inverse()
+
+
 __all__ = [
-    "clamp", "cross", "degrees", "distance", "dot", "e", "fract", "log2",
-    "mat2", "mat3", "mat4", "mix", "mod", "normalize", "pi", "radians",
-    "reflect", "refract", "sign", "smoothstep", "step"
+    "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
+    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
+    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
+    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
+    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

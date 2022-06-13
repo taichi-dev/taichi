@@ -20,7 +20,8 @@ endif ()
 # Do not enable lto for APPLE since it made linking extremely slow.
 if (WIN32)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=thin")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} -flto=thin")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -flto=thin")
     endif()
 endif()
 
@@ -46,7 +47,33 @@ else()
         message("Invalid compiler ${CMAKE_CXX_COMPILER_ID} detected.")
         message(FATAL_ERROR "clang and MSVC are the only supported compilers for Taichi compiler development. Consider using 'cmake -DCMAKE_CXX_COMPILER=clang' if you are on Linux.")
     endif()
+
+    # [Global] CXX compilation option to enable all warnings.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
+
+# Due to limited CI coverage, -Werror is only turned on with Clang-compiler for now.
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    if (NOT ANDROID) # (penguinliong) Blocking builds on Android.
+        # [Global] CXX compilation option to treat all warnings as errors.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror ")
+    endif()
+endif()
+
+    # [Global] By default, CXX compiler will throw a warning if it decides to ignore an attribute, for example "[[ maybe unused ]]".
+    # However, this behaviour diverges across different compilers (GCC/CLANG), as well as different compiler versions.
+    # Therefore we disable such warnings for now.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-attributes ")
+
+    # [Global] Clang warns if a C++ pointer's nullability wasn't marked explicitly (__nonnull, nullable, ...).
+    # Nullability seems to be a clang-specific feature, thus we disable this warning.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness ")
+
+    # [Global] Disable warning for unused-private-field for convenience in development.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field ")
+
+    # [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
+    # However, some of these "constexpr" are debug flags and will be manually enabled upon debuging.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 endif ()
 
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")

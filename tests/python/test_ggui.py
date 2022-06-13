@@ -290,3 +290,9 @@ def test_imgui():
     render()
     verify_image(window, 'test_imgui')
     window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_exit_without_showing():
+    window = ti.ui.Window("Taichi", (256, 256), show_window=False)

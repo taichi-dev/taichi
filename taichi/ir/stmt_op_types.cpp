@@ -77,6 +77,7 @@ std::string ternary_type_name(TernaryOpType type) {
     return #i;
 
     REGISTER_TYPE(select);
+    REGISTER_TYPE(ifte);
 
 #undef REGISTER_TYPE
     default:
@@ -137,6 +138,22 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);
     REGISTER_TYPE(clear);
+    REGISTER_TYPE(undefined);
+
+#undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+
+std::string texture_op_type_name(TextureOpType type) {
+  switch (type) {
+#define REGISTER_TYPE(i) \
+  case TextureOpType::i: \
+    return #i;
+
+    REGISTER_TYPE(sample_lod);
+    REGISTER_TYPE(fetch_texel);
     REGISTER_TYPE(undefined);
 
 #undef REGISTER_TYPE

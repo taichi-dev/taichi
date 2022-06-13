@@ -47,11 +47,13 @@ Push-Location $libsDir
 if (-not (Test-Path "taichi_llvm")) {
     WriteInfo("Download and extract LLVM")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
 }
 if (-not (Test-Path "taichi_clang")) {
     WriteInfo("Download and extract Clang")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
 $env:LLVM_DIR = "$libsDir\taichi_llvm"
@@ -60,6 +62,7 @@ if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
     if (-not (Test-Path "VulkanSDK")) {
         curl.exe --retry 10 --retry-delay 5 https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe -Lo VulkanSDK.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
         $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
         $installer.WaitForExit();
     }
@@ -76,7 +79,6 @@ python -m venv venv
 . venv\Scripts\activate.ps1
 python -m pip install wheel
 python -m pip install -r requirements_dev.txt
-python -m pip install -r requirements_test.txt
 if (-not $?) { exit 1 }
 WriteInfo("Building Taichi")
 $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$libsDir\\taichi_clang\\bin\\clang++.exe"

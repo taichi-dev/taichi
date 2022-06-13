@@ -23,22 +23,22 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               bool grad) {
-  this->init(program, func, primal_name, grad);
+               AutodiffMode autodiff_mode) {
+  this->init(program, func, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
-               bool grad) {
-  this->init(program, std::bind(func, this), primal_name, grad);
+               AutodiffMode autodiff_mode) {
+  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
-               bool grad)
-    : grad(grad), lowered_(false) {
+               AutodiffMode autodiff_mode)
+    : autodiff_mode(autodiff_mode), lowered_(false) {
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
@@ -49,10 +49,12 @@ Kernel::Kernel(Program &program,
 
   arch = program.config.arch;
 
-  if (!grad) {
+  if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
-  } else {
-    name = primal_name + "_grad";
+  } else if (autodiff_mode == AutodiffMode::kForward) {
+    name = primal_name + "_forward_grad";
+  } else if (autodiff_mode == AutodiffMode::kReverse) {
+    name = primal_name + "_reverse_grad";
   }
 
   if (!program.config.lazy_compilation)
@@ -62,6 +64,10 @@ Kernel::Kernel(Program &program,
 void Kernel::compile() {
   CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
+}
+
+void Kernel::compile_to_aot_kernel() {
+  compiled_aot_kernel_ = program->make_aot_kernel(*this);
 }
 
 void Kernel::lower(bool to_executable) {
@@ -85,15 +91,17 @@ void Kernel::lower(bool to_executable) {
 
   if (to_executable) {
     irpass::compile_to_executable(
-        ir.get(), config, this, grad,
-        /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
+        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
+        /*ad_use_stack=*/true, verbose,
+        /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
         is_extension_supported(config.arch, Extension::bls) &&
             config.make_block_local,
         /*start_from_ast=*/ir_is_ast_);
   } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose, grad,
+    irpass::compile_to_offloads(ir.get(), config, this, verbose,
+                                /*autodiff_mode=*/autodiff_mode,
                                 /*ad_use_stack=*/true,
                                 /*start_from_ast=*/ir_is_ast_);
   }
@@ -238,9 +246,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
-  ctx_->set_device_allocation(arg_id, is_device_allocation);
+  ctx_->set_array_runtime_size(arg_id, size);
+  ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
@@ -248,7 +256,8 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     uintptr_t ptr,
     uint64 size,
     const std::vector<int64> &shape) {
-  this->set_arg_external_array(arg_id, ptr, size, false);
+  this->set_arg_external_array(arg_id, ptr, size,
+                               /*is_device_allocation=*/false);
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   for (uint64 i = 0; i < shape.size(); ++i) {
@@ -260,7 +269,8 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                                    const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
   uint64 arr_size = arr.get_element_size() * arr.get_nelement();
-  this->set_arg_external_array(arg_id, ptr, arr_size, true);
+  this->set_arg_external_array(arg_id, ptr, arr_size,
+                               /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   for (uint64 i = 0; i < arr.shape.size(); ++i) {
@@ -391,8 +401,8 @@ std::string Kernel::get_name() const {
 void Kernel::init(Program &program,
                   const std::function<void()> &func,
                   const std::string &primal_name,
-                  bool grad) {
-  this->grad = grad;
+                  AutodiffMode autodiff_mode) {
+  this->autodiff_mode = autodiff_mode;
   this->lowered_ = false;
   this->program = &program;
 #ifdef TI_WITH_LLVM
@@ -409,10 +419,12 @@ void Kernel::init(Program &program,
 
   this->arch = program.config.arch;
 
-  if (!grad) {
-    this->name = primal_name;
-  } else {
-    this->name = primal_name + "_grad";
+  if (autodiff_mode == AutodiffMode::kNone) {
+    name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kForward) {
+    name = primal_name + "_forward_grad";
+  } else if (autodiff_mode == AutodiffMode::kReverse) {
+    name = primal_name + "_reverse_grad";
   }
 
   {

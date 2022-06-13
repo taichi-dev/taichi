@@ -41,7 +41,7 @@ def test_ternary_op():
         d = b if a else c
 
     with pytest.raises(TypeError,
-                       match="`if` conditions must be of type int32"):
+                       match="unsupported operand type\\(s\\) for 'ifte'"):
         select()
 
 

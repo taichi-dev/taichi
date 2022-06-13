@@ -47,6 +47,11 @@ inline bool binary_is_logical(BinaryOpType t) {
 
 std::string binary_op_type_name(BinaryOpType type);
 
+inline bool is_shift_op(BinaryOpType type) {
+  return type == BinaryOpType::bit_sar || type == BinaryOpType::bit_shl ||
+         type == BinaryOpType::bit_shr;
+}
+
 inline bool is_comparison(BinaryOpType type) {
   return starts_with(binary_op_type_name(type), "cmp");
 }
@@ -57,7 +62,7 @@ inline bool is_bit_op(BinaryOpType type) {
 
 std::string binary_op_type_symbol(BinaryOpType type);
 
-enum class TernaryOpType : int { select, undefined };
+enum class TernaryOpType : int { select, ifte, undefined };
 
 std::string ternary_type_name(TernaryOpType type);
 
@@ -78,6 +83,10 @@ enum class SNodeOpType : int {
 };
 
 std::string snode_op_type_name(SNodeOpType type);
+
+enum class TextureOpType : int { sample_lod, fetch_texel, undefined };
+
+std::string texture_op_type_name(TextureOpType type);
 
 }  // namespace lang
 }  // namespace taichi

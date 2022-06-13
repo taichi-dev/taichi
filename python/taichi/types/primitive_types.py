@@ -141,6 +141,16 @@ u64 = uint64
 
 # ----------------------------------------
 
+
+class RefType:
+    def __init__(self, tp):
+        self.tp = tp
+
+
+def ref(tp):
+    return RefType(tp)
+
+
 real_types = [f16, f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
 
@@ -173,4 +183,5 @@ __all__ = [
     'u32',
     'uint64',
     'u64',
+    'ref',
 ]

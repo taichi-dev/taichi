@@ -53,7 +53,7 @@ def discarded_after_first_return(a: ti.i32) -> ti.i32:
 
 discarded_after_first_return(0)  # OK: returns 1
 ```
-- If there are [compile-time evaluations](/lang/articles/advanced/meta.md#compile-time-evaluations) in the code, make sure there is a return statement under all circumstances.
+- If there are [compile-time evaluations](../advanced/meta.md#compile-time-evaluations) in the code, make sure there is a return statement under all circumstances.
 Otherwise, error occurs when a branch is chosen which does not have return statement.
 ```python {7-8,15-16,21,23-24}
 @ti.kernel
@@ -123,7 +123,7 @@ Currently, Taichi does not support `set`.
 List and dictionary before assigning to a variable works as the python list and dictionary.
 However, after assigning to a variable, the content of the list and the values (not keys) of the dictionary are converted to Taichi variables.
 
-Taichi does not have a runtime implementation of `in` currently. Therefore, operator `in` and `not in` only works in  [static scope](/lang/articles/advanced/meta.md#static-scope) (inside `ti.static()`).
+Taichi does not have a runtime implementation of `in` currently. Therefore, operator `in` and `not in` only works in  [static scope](../advanced/meta.md#static-scope) (inside `ti.static()`).
 
 ```python {3,11-12,20}
 @ti.kernel
@@ -155,7 +155,7 @@ Taichi partially supports list comprehension and dictionary comprehension,
 but does not support set comprehension.
 
 For list comprehensions and dictionary comprehensions, the `if`s and `for`s in them are evaluated at compile time.
-The iterators and conditions are implicitly in [static scope](/lang/articles/advanced/meta.md#static-scope).
+The iterators and conditions are implicitly in [static scope](../advanced/meta.md#static-scope).
 
 ### Operator `is`
 

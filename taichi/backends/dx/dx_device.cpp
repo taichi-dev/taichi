@@ -22,7 +22,7 @@ void dump_buffer(ID3D11Device *device,
 
 void check_dx_error(HRESULT hr, const char *msg) {
   if (!SUCCEEDED(hr)) {
-    TI_ERROR("Error in {}: {}", msg, hr);
+    TI_ERROR("Error in {}: {:x}", msg, uint32_t(hr));
   }
 }
 
@@ -79,17 +79,25 @@ Dx11ResourceBinder::~Dx11ResourceBinder() {
 }
 
 Dx11CommandList::Dx11CommandList(Dx11Device *ti_device) : device_(ti_device) {
+  HRESULT hr;
+  hr = device_->d3d11_device()->CreateDeferredContext(0,
+                                                      &d3d11_deferred_context_);
+  check_dx_error(hr, "create deferred context");
 }
 
 Dx11CommandList::~Dx11CommandList() {
+  for (ID3D11Buffer *cb : used_spv_workgroup_cb) {
+    cb->Release();
+  }
+  if (d3d11_command_list_) {
+    d3d11_command_list_->Release();
+  }
+  d3d11_deferred_context_->Release();
 }
 
 void Dx11CommandList::bind_pipeline(Pipeline *p) {
   Dx11Pipeline *pipeline = static_cast<Dx11Pipeline *>(p);
-  std::unique_ptr<CmdBindPipeline> cmd =
-      std::make_unique<CmdBindPipeline>(this);
-  cmd->compute_shader_ = pipeline->get_program();
-  recorded_commands_.push_back(std::move(cmd));
+  d3d11_deferred_context_->CSSetShader(pipeline->get_program(), nullptr, 0);
 }
 
 void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
@@ -97,22 +105,28 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
 
   // UAV
   for (auto &[binding, alloc_id] : binder->uav_binding_to_alloc_id()) {
-    std::unique_ptr<CmdBindUAVBufferToIndex> cmd =
-        std::make_unique<CmdBindUAVBufferToIndex>(this);
     ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(alloc_id);
-    cmd->binding = binding;
-    cmd->uav = uav;
-    recorded_commands_.push_back(std::move(cmd));
+    d3d11_deferred_context_->CSSetUnorderedAccessViews(binding, 1, &uav,
+                                                       nullptr);
   }
 
   // CBV
   for (auto &[binding, alloc_id] : binder->cb_binding_to_alloc_id()) {
-    std::unique_ptr<CmdBindConstantBufferToIndex> cmd =
-        std::make_unique<CmdBindConstantBufferToIndex>(this);
-    cmd->binding = binding;
-    cmd->cb_buffer = device_->create_or_get_cb_buffer(alloc_id);
-    cmd->buffer = device_->alloc_id_to_buffer(alloc_id);
-    recorded_commands_.push_back(std::move(cmd));
+    auto cb_buffer = device_->create_or_get_cb_buffer(alloc_id);
+    auto buffer = device_->alloc_id_to_buffer(alloc_id);
+
+    D3D11_BUFFER_DESC desc;
+    buffer->GetDesc(&desc);
+    D3D11_BOX box{};
+    box.left = 0;
+    box.right = desc.ByteWidth;
+    box.top = 0;
+    box.bottom = 1;  // 1 past the end!
+    box.front = 0;
+    box.back = 1;
+    d3d11_deferred_context_->CopySubresourceRegion(cb_buffer, 0, 0, 0, 0,
+                                                   buffer, 0, &box);
+    d3d11_deferred_context_->CSSetConstantBuffers(binding, 1, &cb_buffer);
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
   }
@@ -140,68 +154,26 @@ void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 }
 
 void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
-  std::unique_ptr<Dx11CommandList::CmdBufferFill> cmd =
-      std::make_unique<CmdBufferFill>(this);
   ID3D11Buffer *buf = device_->alloc_id_to_buffer(ptr.alloc_id);
   ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(ptr.alloc_id);
-  cmd->uav = uav;
-  D3D11_BUFFER_DESC desc;
-  buf->GetDesc(&desc);
-  cmd->size = desc.ByteWidth;
-  recorded_commands_.push_back(std::move(cmd));
-}
 
-void Dx11CommandList::CmdBufferFill::execute() {
-  ID3D11DeviceContext *context = cmdlist_->device_->d3d11_context();
   const UINT values[4] = {data, data, data, data};
-  context->ClearUnorderedAccessViewUint(uav, values);
-}
-
-void Dx11CommandList::CmdBindPipeline::execute() {
-  ID3D11DeviceContext *context = cmdlist_->device_->d3d11_context();
-  context->CSSetShader(compute_shader_, nullptr, 0);
-}
-
-void Dx11CommandList::CmdBindUAVBufferToIndex::execute() {
-  cmdlist_->device_->d3d11_context()->CSSetUnorderedAccessViews(binding, 1,
-                                                                &uav, nullptr);
-}
-
-void Dx11CommandList::CmdBindConstantBufferToIndex::execute() {
-  D3D11_BUFFER_DESC desc;
-  buffer->GetDesc(&desc);
-  D3D11_BOX box{};
-  box.left = 0;
-  box.right = desc.ByteWidth;
-  box.top = 0;
-  box.bottom = 1;  // 1 past the end!
-  box.front = 0;
-  box.back = 1;
-  cmdlist_->device_->d3d11_context()->CopySubresourceRegion(cb_buffer, 0, 0, 0,
-                                                            0, buffer, 0, &box);
-  cmdlist_->device_->d3d11_context()->CSSetConstantBuffers(binding, 1,
-                                                           &cb_buffer);
-}
-
-void Dx11CommandList::CmdDispatch::execute() {
-  cmdlist_->device_->set_spirv_cross_numworkgroups(x, y, z,
-                                                   spirv_cross_num_wg_cb_slot_);
-  cmdlist_->device_->d3d11_context()->Dispatch(x, y, z);
+  d3d11_deferred_context_->ClearUnorderedAccessViewUint(uav, values);
 }
 
 void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
-  std::unique_ptr<CmdDispatch> cmd = std::make_unique<CmdDispatch>(this);
-  cmd->x = x;
-  cmd->y = y;
-  cmd->z = z;
-
   // Set SPIRV_Cross_NumWorkgroups's CB slot based on the watermark
-  cmd->spirv_cross_num_wg_cb_slot_ = cb_slot_watermark_ + 1;
+  auto cb_slot = cb_slot_watermark_ + 1;
+  auto spirv_cross_numworkgroups_cb =
+      device_->set_spirv_cross_numworkgroups(x, y, z, cb_slot);
+  d3d11_deferred_context_->CSSetConstantBuffers(cb_slot, 1,
+                                                &spirv_cross_numworkgroups_cb);
+  used_spv_workgroup_cb.push_back(spirv_cross_numworkgroups_cb);
 
   // Reset watermark
   cb_slot_watermark_ = -1;
 
-  recorded_commands_.push_back(std::move(cmd));
+  d3d11_deferred_context_->Dispatch(x, y, z);
 }
 
 void Dx11CommandList::begin_renderpass(int x0,
@@ -260,19 +232,14 @@ void Dx11CommandList::image_to_buffer(DevicePtr dst_buf,
 }
 
 void Dx11CommandList::run_commands() {
-  for (const auto &cmd : recorded_commands_) {
-    cmd->execute();
+  if (!d3d11_command_list_) {
+    HRESULT hr;
+    hr =
+        d3d11_deferred_context_->FinishCommandList(FALSE, &d3d11_command_list_);
+    check_dx_error(hr, "error finishing command list");
   }
-}
 
-int Dx11CommandList::cb_count() {
-  int ret = 0;
-  for (const auto &cmd : recorded_commands_) {
-    if (dynamic_cast<CmdBindConstantBufferToIndex *>(cmd.get()) != nullptr) {
-      ret++;
-    }
-  }
-  return ret;
+  device_->d3d11_context()->ExecuteCommandList(d3d11_command_list_, TRUE);
 }
 
 namespace {
@@ -626,16 +593,21 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   uint32_t alloc_id = handle.alloc_id;
-  if (alloc_id_to_buffer_.count(alloc_id) == 0)
-    return;
+  if (alloc_id_to_buffer_.find(alloc_id) == alloc_id_to_buffer_.end())
+    TI_ERROR("Invalid handle, possible double free?");
   ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   buf->Release();
   alloc_id_to_buffer_.erase(alloc_id);
   ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
   uav->Release();
-  ID3D11Buffer *cpucopy = alloc_id_to_cpucopy_[alloc_id];
-  if (cpucopy)
-    cpucopy->Release();
+  if (alloc_id_to_cpucopy_.find(alloc_id) != alloc_id_to_cpucopy_.end()) {
+    alloc_id_to_cpucopy_[alloc_id]->Release();
+    alloc_id_to_cpucopy_.erase(alloc_id);
+  }
+  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
+    alloc_id_to_cb_copy_[alloc_id]->Release();
+    alloc_id_to_cb_copy_.erase(alloc_id);
+  }
   alloc_id_to_uav_.erase(alloc_id);
 }
 
@@ -739,6 +711,9 @@ void Dx11Device::image_to_buffer(DevicePtr dst_buf,
   TI_NOT_IMPLEMENTED;
 }
 
+void Dx11Device::wait_idle() {
+}
+
 ID3D11Buffer *Dx11Device::alloc_id_to_buffer(uint32_t alloc_id) {
   return alloc_id_to_buffer_.at(alloc_id);
 }
@@ -754,10 +729,9 @@ ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(uint32_t alloc_id) {
 }
 
 ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
-  if (alloc_id_to_cb_copy_.count(alloc_id) > 0) {
+  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
     return alloc_id_to_cb_copy_[alloc_id];
   }
-  assert(alloc_id_to_buffer_.count(alloc_id) > 0);
   ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   ID3D11Buffer *cb_buf;
   HRESULT hr = create_constant_buffer_copy(device_, buf, &cb_buf);
@@ -766,33 +740,35 @@ ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
   return cb_buf;
 }
 
-void Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
-                                               uint32_t y,
-                                               uint32_t z,
-                                               int cb_slot) {
-  if (spirv_cross_numworkgroups_ == nullptr) {
-    ID3D11Buffer *temp;
-    create_raw_buffer(device_, 16, nullptr, &temp);
-    create_cpu_accessible_buffer_copy(device_, temp,
-                                      &spirv_cross_numworkgroups_);
-    temp->Release();
-  }
-  if (spirv_cross_numworkgroups_cb_ == nullptr) {
-    create_constant_buffer_copy(device_, spirv_cross_numworkgroups_,
-                                &spirv_cross_numworkgroups_cb_);
-  }
+ID3D11Buffer *Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
+                                                        uint32_t y,
+                                                        uint32_t z,
+                                                        int cb_slot) {
+  ID3D11Buffer *spirv_cross_numworkgroups;
+  ID3D11Buffer *temp;
+  create_raw_buffer(device_, 16, nullptr, &temp);
+  create_cpu_accessible_buffer_copy(device_, temp, &spirv_cross_numworkgroups);
+  temp->Release();
+
+  ID3D11Buffer *spirv_cross_numworkgroups_cb;
+  create_constant_buffer_copy(device_, spirv_cross_numworkgroups,
+                              &spirv_cross_numworkgroups_cb);
 
   D3D11_MAPPED_SUBRESOURCE mapped;
-  context_->Map(spirv_cross_numworkgroups_, 0, D3D11_MAP_WRITE, 0, &mapped);
+  d3d11_context()->Map(spirv_cross_numworkgroups, 0, D3D11_MAP_WRITE, 0,
+                       &mapped);
   uint32_t *u = reinterpret_cast<uint32_t *>(mapped.pData);
   u[0] = x;
   u[1] = y;
   u[2] = z;
-  context_->Unmap(spirv_cross_numworkgroups_, 0);
+  d3d11_context()->Unmap(spirv_cross_numworkgroups, 0);
 
-  context_->CopyResource(spirv_cross_numworkgroups_cb_,
-                         spirv_cross_numworkgroups_);
-  context_->CSSetConstantBuffers(cb_slot, 1, &spirv_cross_numworkgroups_cb_);
+  d3d11_context()->CopyResource(spirv_cross_numworkgroups_cb,
+                                spirv_cross_numworkgroups);
+
+  spirv_cross_numworkgroups->Release();
+
+  return spirv_cross_numworkgroups_cb;
 }
 
 Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
@@ -805,15 +781,23 @@ std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
   return std::make_unique<Dx11CommandList>(device_);
 }
 
-void Dx11Stream::submit(CommandList *cmdlist) {
+StreamSemaphore Dx11Stream::submit(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
   dx_cmd_list->run_commands();
+
+  return nullptr;
 }
 
 // No difference for DX11
-void Dx11Stream::submit_synced(CommandList *cmdlist) {
+StreamSemaphore Dx11Stream::submit_synced(
+    CommandList *cmdlist,
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   Dx11CommandList *dx_cmd_list = static_cast<Dx11CommandList *>(cmdlist);
   dx_cmd_list->run_commands();
+
+  return nullptr;
 }
 
 void Dx11Stream::command_sync() {

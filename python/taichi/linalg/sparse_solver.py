@@ -1,6 +1,7 @@
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.linalg import SparseMatrix
 from taichi.types.primitive_types import f32
@@ -24,11 +25,15 @@ class SparseSolver:
             self.solver = _ti_core.make_sparse_solver(dtype, solver_type,
                                                       ordering)
         else:
-            assert False, f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
+            raise TaichiRuntimeError(
+                f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
+            )
 
     @staticmethod
     def _type_assert(sparse_matrix):
-        assert False, f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
+        raise TaichiRuntimeError(
+            f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
+        )
 
     def compute(self, sparse_matrix):
         """This method is equivalent to calling both `analyze_pattern` and then `factorize`.
@@ -63,7 +68,7 @@ class SparseSolver:
         else:
             self._type_assert(sparse_matrix)
 
-    def solve(self, b):
+    def solve(self, b):  # pylint: disable=R1710
         """Computes the solution of the linear systems.
         Args:
             b (numpy.array or Field): The right-hand side of the linear systems.
@@ -75,7 +80,9 @@ class SparseSolver:
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)
-        assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
+        raise TaichiRuntimeError(
+            f"The parameter type: {type(b)} is not supported in linear solvers for now."
+        )
 
     def info(self):
         """Check if the linear systems are solved successfully.

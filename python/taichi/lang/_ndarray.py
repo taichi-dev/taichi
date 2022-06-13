@@ -4,6 +4,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
+from taichi.types.ndarray_type import NdarrayTypeMetadata
 
 
 class Ndarray:
@@ -13,11 +14,16 @@ class Ndarray:
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the Ndarray.
     """
-    def __init__(self, dtype, arr_shape):
+    def __init__(self):
         self.host_accessor = None
-        self.dtype = cook_dtype(dtype)
-        self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype),
-                                    arr_shape)
+        self.layout = None
+        self.shape = None
+        self.element_type = None
+        self.dtype = None
+        self.arr = None
+
+    def get_type(self):
+        return NdarrayTypeMetadata(self.element_type, self.shape, self.layout)
 
     @property
     def element_shape(self):
@@ -27,15 +33,6 @@ class Ndarray:
             Tuple[Int]: Ndarray element shape.
         """
         raise NotImplementedError()
-
-    @property
-    def _data_handle(self):
-        """Gets the pointer to underlying data.
-
-        Returns:
-            int: The pointer to underlying data.
-        """
-        return self.arr.data_ptr()
 
     @python_scope
     def __setitem__(self, key, value):
@@ -70,11 +67,11 @@ class Ndarray:
         ).arch != _ti_core.Arch.x64:
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
-            self.arr.fill_float(val)
+            impl.get_runtime().prog.fill_float(self.arr, val)
         elif self.dtype == primitive_types.i32:
-            self.arr.fill_int(val)
+            impl.get_runtime().prog.fill_int(self.arr, val)
         elif self.dtype == primitive_types.u32:
-            self.arr.fill_uint(val)
+            impl.get_runtime().prog.fill_uint(self.arr, val)
         else:
             self._fill_by_kernel(val)
 
@@ -84,7 +81,8 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        arr = np.zeros(shape=self.arr.total_shape(),
+                       dtype=to_numpy_type(self.dtype))
         from taichi._kernels import ndarray_to_ext_arr  # pylint: disable=C0415
         ndarray_to_ext_arr(self, arr)
         impl.get_runtime().sync()
@@ -96,7 +94,8 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        arr = np.zeros(shape=self.arr.total_shape(),
+                       dtype=to_numpy_type(self.dtype))
         from taichi._kernels import \
             ndarray_matrix_to_ext_arr  # pylint: disable=C0415
         layout_is_aos = 1 if layout == Layout.AOS else 0
@@ -112,7 +111,7 @@ class Ndarray:
         """
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
-        if tuple(self.arr.shape) != tuple(arr.shape):
+        if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
@@ -131,7 +130,7 @@ class Ndarray:
         """
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
-        if tuple(self.arr.shape) != tuple(arr.shape):
+        if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
@@ -198,7 +197,7 @@ class Ndarray:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.arr.shape)
+        assert len(key) == len(self.arr.total_shape())
         return key
 
     def _initialize_host_accessor(self):
@@ -216,8 +215,12 @@ class ScalarNdarray(Ndarray):
         shape (Tuple[int]): Shape of the ndarray.
     """
     def __init__(self, dtype, arr_shape):
-        super().__init__(dtype, arr_shape)
+        super().__init__()
+        self.dtype = cook_dtype(dtype)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.dtype, arr_shape)
         self.shape = tuple(self.arr.shape)
+        self.element_type = dtype
 
     @property
     def element_shape(self):

@@ -181,13 +181,6 @@ def test_numpy_multiple_external_arrays():
 
 
 @test_utils.test()
-def test_index_mismatch():
-    with pytest.raises(AssertionError):
-        val = ti.field(ti.i32, shape=(1, 2, 3))
-        val[0, 0] = 1
-
-
-@test_utils.test()
 def test_numpy_zero():
     @ti.kernel
     def test_numpy(arr: ti.types.ndarray()):

@@ -239,11 +239,68 @@ jobs:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
           TI_CI: 1
 
+  build_and_test_cpu_windows:
+    name: Build and Test Windows (CPU)
+    needs: check_files
+    timeout-minutes: 90
+    runs-on: windows-2019
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        if: needs.check_files.outputs.run_job == 'true'
+        with:
+          path: ccache_cache
+          key: ccache-win64-cpu-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-cpu-
+
+      - name: Get docker images
+        shell: bash
+        if: needs.check_files.outputs.run_job == 'true'
+        run: |
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Test
+        shell: bash
+        run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          docker create --name taichi_build_test \
+            ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
+          docker start -a taichi_build_test
+          rm -rf ccache_cache
+          docker cp taichi_build_test:C:/taichi/ccache_cache ccache_cache
+
+      - name: clean docker container
+        shell: bash
+        if: always()
+        run: |
+          docker rm taichi_build_test -f
+
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
+    strategy:
+      matrix:
+        tags:
+          - [self-hosted, cuda, vulkan, cn, driver470]
+          - [self-hosted, cuda, vulkan, cn, driver510]
+
+    runs-on: ${{ matrix.tags }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -415,3 +472,57 @@ jobs:
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
           TI_CI: 1
+
+  build_libtaichi_export:
+    name: Build libtaichi_export.so(GPU)
+    needs: check_files
+    runs-on: [self-hosted, cuda, vulkan, cn]
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: py39
+            with_cc: ON
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-${{matrix.with_cc}}-
+
+      - name: Build For Desktop
+        run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
+          docker create --user dev --name taichi_build_desktop --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY -e EXPORT_CORE\
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
+          # A tarball is needed because sccache needs some permissions that only the file owner has.
+          # 1000 is the uid and gid of user "dev" in the container.
+          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build_desktop:/home/dev/
+          docker start -a taichi_build_desktop
+        env:
+          PY: ${{ matrix.python }}
+          GPU_BUILD: ON
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_LLVM:BOOL=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DTI_EXPORT_CORE:BOOL=ON
+          EXPORT_CORE: 1
+          DISPLAY: :1
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build_desktop -f

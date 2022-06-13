@@ -143,11 +143,10 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           TypeFactory::create_vector_or_scalar_type(1, data_type, true));
 
       auto zero = offload->tls_prologue->insert(
-          std::make_unique<ConstStmt>(dest.second == AtomicOpType::max
-                                          ? get_min_value(data_type)
-                                          : dest.second == AtomicOpType::min
-                                                ? get_max_value(data_type)
-                                                : TypedConstant(data_type, 0)),
+          std::make_unique<ConstStmt>(
+              dest.second == AtomicOpType::max   ? get_min_value(data_type)
+              : dest.second == AtomicOpType::min ? get_max_value(data_type)
+                                                 : TypedConstant(data_type, 0)),
           -1);
       // Zero-fill
       // TODO: do not use GlobalStore for TLS ptr.

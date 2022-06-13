@@ -690,13 +690,13 @@ class PrintStmt : public Stmt {
   }
 
   template <typename... Args>
-  PrintStmt(Stmt *t, Args &&... args)
+  PrintStmt(Stmt *t, Args &&...args)
       : contents(make_entries(t, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(const std::string &str, Args &&... args)
+  PrintStmt(const std::string &str, Args &&...args)
       : contents(make_entries(str, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
@@ -711,13 +711,13 @@ class PrintStmt : public Stmt {
   template <typename T, typename... Args>
   static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
                                   T &&t,
-                                  Args &&... values) {
+                                  Args &&...values) {
     entries.push_back(EntryType{t});
     make_entries_helper(entries, std::forward<Args>(values)...);
   }
 
   template <typename... Args>
-  static std::vector<EntryType> make_entries(Args &&... values) {
+  static std::vector<EntryType> make_entries(Args &&...values) {
     std::vector<EntryType> ret;
     make_entries_helper(ret, std::forward<Args>(values)...);
     return ret;
@@ -895,6 +895,26 @@ class FuncCallStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * A reference to a variable.
+ */
+class ReferenceStmt : public Stmt {
+ public:
+  Stmt *var;
+  bool global_side_effect{false};
+
+  ReferenceStmt(Stmt *var) : var(var) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return global_side_effect;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, var);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1423,6 +1443,37 @@ class InternalFuncStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, func_name, args, with_runtime_context);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class Texture;
+
+class TexturePtrStmt : public Stmt {
+ public:
+  Stmt *arg_load_stmt{nullptr};
+
+  explicit TexturePtrStmt(Stmt *stmt) : arg_load_stmt(stmt) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(arg_load_stmt);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class TextureOpStmt : public Stmt {
+ public:
+  TextureOpType op;
+  Stmt *texture_ptr;
+  std::vector<Stmt *> args;
+
+  explicit TextureOpStmt(TextureOpType op,
+                         Stmt *texture_ptr,
+                         const std::vector<Stmt *> &args)
+      : op(op), texture_ptr(texture_ptr), args(args) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(op, texture_ptr, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

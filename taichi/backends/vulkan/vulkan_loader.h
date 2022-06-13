@@ -10,7 +10,7 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-class VulkanLoader {
+class TI_DLL_EXPORT VulkanLoader {
  public:
   static VulkanLoader &instance() {
     static VulkanLoader instance;

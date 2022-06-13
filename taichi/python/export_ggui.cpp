@@ -17,6 +17,7 @@ namespace py = pybind11;
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include <memory>
@@ -244,6 +245,9 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
+    if (!lang::vulkan::is_vulkan_api_available()) {
+      throw std::runtime_error("Vulkan must be available for GGUI");
+    }
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 

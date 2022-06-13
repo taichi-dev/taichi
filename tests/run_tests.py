@@ -3,12 +3,15 @@ import os
 import pdb
 import subprocess
 import sys
+import tempfile
 import warnings
+
+from test_utils import __aot_test_cases, print_aot_test_guide
 
 import taichi as ti
 
 
-def _test_cpp():
+def _run_cpp_test(gtest_option="", extra_env=None):
     ti.reset()
     print("Running C++ tests...")
     ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
@@ -16,17 +19,48 @@ def _test_cpp():
     cpp_test_filename = 'taichi_cpp_tests'
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
+
     if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
         env_copy = os.environ.copy()
         env_copy['TI_LIB_DIR'] = ti_lib_dir
-        subprocess.check_call(f'./{cpp_test_filename}',
-                              env=env_copy,
-                              cwd=build_dir)
-    else:
-        warnings.warn(
-            f"C++ tests are skipped due to missing {cpp_test_filename} in {build_dir}."
-            "Try building taichi with `TAICHI_CMAKE_ARGS=\'-DTI_BUILD_TESTS:BOOL=ON\' python setup.py develop`"
-            "if you want to enable it.")
+
+        cmd = [f'./{cpp_test_filename}']
+        if gtest_option: cmd.append(gtest_option)
+        if extra_env: env_copy.update(extra_env)
+
+        subprocess.check_call(cmd, env=env_copy, cwd=build_dir)
+
+
+def _test_cpp_aot():
+    tests_visited = []
+    for cpp_test_name, python_rpath in __aot_test_cases.items():
+        # Temporary folder will be removed upon handle destruction
+        temp_handle = tempfile.TemporaryDirectory()
+        temp_folderpath = temp_handle.name
+
+        curr_dir = os.path.dirname(os.path.abspath(__file__))
+        python_file_path = os.path.join(curr_dir, python_rpath)
+
+        extra_env = {"TAICHI_AOT_FOLDER_PATH": temp_folderpath}
+        env_copy = os.environ.copy()
+        env_copy.update(extra_env)
+
+        subprocess.check_call([sys.executable, python_file_path], env=env_copy)
+
+        # Run AOT C++ codes
+        _run_cpp_test(f"--gtest_filter={cpp_test_name}", extra_env)
+        tests_visited.append(cpp_test_name)
+
+    exclude_tests_cmd = "--gtest_filter=-" + ":".join(tests_visited)
+    return exclude_tests_cmd
+
+
+def _test_cpp():
+    # Run AOT test cases
+    exclude_tests_cmd = _test_cpp_aot()
+
+    # Run rest of the cpp tests
+    _run_cpp_test(exclude_tests_cmd)
 
 
 def _test_python(args):
@@ -110,9 +144,9 @@ def test():
     parser.add_argument('-c',
                         '--cpp',
                         dest='cpp',
-                        default=True,
+                        default=False,
                         action='store_true',
-                        help='Run the C++ tests')
+                        help='Only run the C++ tests')
     parser.add_argument('-s',
                         '--show',
                         dest='show_output',
@@ -196,9 +230,17 @@ def test():
         action='store_true',
         help=
         'Exclude arch(s) from test instead of include them, together with -a')
+    parser.add_argument('--help-aot',
+                        action='store_true',
+                        default=False,
+                        help='Show AOT test programming guide')
 
     args = parser.parse_args()
     print(args)
+
+    if args.help_aot:
+        print_aot_test_guide()
+        exit(1)
 
     if args.arch:
         arch = args.arch
@@ -209,6 +251,7 @@ def test():
 
     if args.cpp:
         _test_cpp()
+        return
 
     if _test_python(args) != 0:
         exit(1)

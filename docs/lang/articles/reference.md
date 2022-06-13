@@ -7,12 +7,11 @@ sidebar_position: 9998
 This article describes the syntax and semantics of the Taichi programming
 language.
 
-**To users**: If you have gone through user tutorials and still feel uncertain
+**To users**: If you have gone through the user tutorials and still feel uncertain
 about your program behavior, then you are in the right place. If you find the
-actual behavior different from the one described in this article, feel free to
+actual behavior different from what is described in this article, feel free to
 create an [issue](https://github.com/taichi-dev/taichi/issues/new/choose).
-Anything unspecified in this article is subject to change, so you should not
-rely on it in your programs.
+You should not rely solely on this article since things unspecified are subject to changes.
 
 **To contributors**: This article specifies what the language *should* be. That
 is, you should try to match the implementation of the Taichi compiler with this
@@ -235,8 +234,8 @@ attributeref ::= primary "." identifier
 Attribute references are evaluated at compile time. The `primary` must be
 evaluated to a Python value with an attribute named `identifier`. Common use
 cases in Taichi include metadata queries of
-[field](https://docs.taichi.graphics/lang/articles/meta#field-metadata) and
-[matrices](https://docs.taichi.graphics/lang/articles/meta#matrix--vector-metadata).
+[field](advanced/meta.md#field-metadata) and
+[matrices](advanced/meta.md#matrix--vector-metadata).
 
 #### Subscriptions
 
@@ -440,9 +439,9 @@ The `positional_arguments` is evaluated at compile time, and the items inside mu
 - When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
 
 The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
-such as [compile-time loop unrolling and compile-time branching](lang/articles/advanced/meta.md#compile-time-evaluations).
+such as [compile-time loop unrolling and compile-time branching](advanced/meta.md#compile-time-evaluations).
 
-The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](lang/articles/advanced/syntax_sugars.md#aliases).
+The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](advanced/syntax_sugars.md#aliases).
 
 ### Expression lists
 
@@ -728,7 +727,7 @@ The `iter_expression` of ndrange `for` statement must be a call to `ti.ndrange()
 - If the `iter_expression` is a call to `ti.range()`, it is a normal ndrange `for`.
 - If the `iter_expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
 
-You can use grouped `for` loops to write [dimensionality-independent programs](lang/articles/advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
+You can use grouped `for` loops to write [dimensionality-independent programs](advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
 
 `ti.ndrange` receives arbitrary numbers of arguments.
 The k-th argument represents the iteration range of the k-th dimension,

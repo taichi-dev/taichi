@@ -156,6 +156,8 @@ class TI_DLL_EXPORT Program {
 
   void synchronize();
 
+  StreamSemaphore flush();
+
   // See AsyncEngine::flush().
   // Only useful when async mode is enabled.
   void async_flush();
@@ -171,9 +173,9 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
-                 bool grad = false) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();
@@ -181,9 +183,9 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
-                 bool grad = false) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();
@@ -196,6 +198,10 @@ class TI_DLL_EXPORT Program {
   // TODO: Optional offloaded is used by async mode, we might refactor it in the
   // future.
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
+
+  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
+    return program_impl_->make_aot_kernel(kernel);
+  }
 
   void check_runtime_error();
 
@@ -309,15 +315,21 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_graphics_device();
   }
 
-  std::shared_ptr<Device> get_device_shared() {
-    return program_impl_->get_device_shared();
-  }
-
   // TODO: do we still need result_buffer?
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
+
+  Ndarray *create_ndarray(
+      const DataType type,
+      const std::vector<int> &shape,
+      const std::vector<int> &element_shape = {},
+      ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+
+  intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
+
+  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
 
   ASTBuilder *current_ast_builder() {
     return current_callable ? &current_callable->context->builder() : nullptr;
@@ -349,6 +361,7 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
+  std::vector<std::unique_ptr<Ndarray>> ndarrays_;
 };
 
 }  // namespace lang

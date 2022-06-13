@@ -100,10 +100,35 @@ As a rule of thumb, implicit type casting is a major source of bugs. And Taichi 
 
 #### Implicit type casting in binary operations
 
-Taichi follows the [implicit conversion rules](https://en.cppreference.com/w/c/language/conversion) for the C programming language and implicitly casts operands in a [binary operation](https://en.wikipedia.org/wiki/Binary_operation) into a *common type* if the operation involves different data types. Following are two most straightforward rules for determining the common type in a binary operation:
+Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
 
-- `i32 + f32 = f32` (`int` + `float` = `float`)
-- `i32 + i64 = i64` (low precision bits + high precision bits = high precision bits)
+1. Integer + floating point -> floating point
+   - `i32 + f32 -> f32`
+   - `i16 + f16 -> f16`
+
+2. Low-precision bits + high-precision bits -> high-precision bits
+   - `i16 + i32 -> i32`
+   - `f16 + f32 -> f32`
+   - `u8 + u16 -> u16`
+
+3. Signed integer + unsigned integer -> unsigned integer
+   - `u32 + i32 -> u32`
+   - `u8 + i8 -> u8`
+
+When it comes to rule conflicts, the rule of the highest priority applies:
+  - `u8 + i16 -> i16` (when rule #2 conflicts with rule #3, rule #2 applies.)
+  - `f16 + i32 -> f16` (when rule #1 conflicts with rule #2, rule #1 applies.)
+
+A few exceptions:
+
+- bit-shift operations return lhs' (left hand side's) data type:
+  - `u8 << i32 -> u8`
+  - `i16 << i8 -> i16`
+- atan2 operations return `f64` if either side is `f64`, or `f32` otherwise.
+  - `i32 atan f32 -> f32`
+  - `i32 atan f64 -> f64`
+- Logical operations return `i32`.
+- Comparison operations return `i32`.
 
 #### Implicit type casting in assignments
 

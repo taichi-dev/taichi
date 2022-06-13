@@ -41,9 +41,7 @@ class CCProgramImpl : public ProgramImpl {
                            KernelProfilerBase *,
                            uint64 **result_buffer_ptr) override;
 
-  void materialize_snode_tree(SNodeTree *tree,
-                              std::vector<std::unique_ptr<SNodeTree>> &,
-                              uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
     // Not implemented yet.

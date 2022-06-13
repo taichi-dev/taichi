@@ -1,4 +1,4 @@
-#include "codegen_cuda.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
 
 #include <vector>
 #include <set>
@@ -15,6 +15,7 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/llvm/llvm_program.h"
+#include "taichi/util/action_recorder.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -35,116 +36,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;
   }
 
-  FunctionType compile_module_to_executable() override {
-#ifdef TI_WITH_CUDA
-    auto offloaded_local = offloaded_tasks;
-    for (auto &task : offloaded_local) {
-      llvm::Function *func = module->getFunction(task.name);
-      TI_ASSERT(func);
-      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
-    }
+  FunctionType gen() override {
+    auto compiled_res = run_compilation();
 
-    auto jit = kernel->program->get_llvm_program_impl()
-                   ->get_llvm_context(Arch::cuda)
-                   ->jit.get();
-    auto cuda_module =
-        jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
+    CUDAModuleToFunctionConverter converter{
+        tlctx, this->kernel->program->get_llvm_program_impl()};
 
-    return [offloaded_local, cuda_module,
-            kernel = this->kernel](RuntimeContext &context) {
-      CUDAContext::get_instance().make_current();
-      auto args = kernel->args;
-      std::vector<void *> arg_buffers(args.size(), nullptr);
-      std::vector<void *> device_buffers(args.size(), nullptr);
-
-      // We could also use kernel->make_launch_context() to create
-      // |ctx_builder|, but that implies the usage of Program's context. For the
-      // sake of decoupling, let's not do that and explicitly set the context we
-      // want to modify.
-      Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
-      bool transferred = false;
-      for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_array) {
-          if (args[i].size == 0)
-            continue;
-          arg_buffers[i] = context.get_arg<void *>(i);
-          if (!context.is_device_allocation[i]) {
-            // Note: both numpy and PyTorch support arrays/tensors with zeros
-            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // args[i].size = 0.
-            unsigned int attr_val = 0;
-            uint32_t ret_code =
-                CUDADriver::get_instance().mem_get_attribute.call(
-                    &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-                    (void *)arg_buffers[i]);
-            if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-              // Copy to device buffer if arg is on host
-              // - ret_code != CUDA_SUCCESS:
-              //   arg_buffers[i] is not on device
-              // - attr_val != CU_MEMORYTYPE_DEVICE:
-              //   Cuda driver is aware of arg_buffers[i] but it might be on
-              //   host.
-              // See CUDA driver API `cuPointerGetAttribute` for more details.
-              transferred = true;
-              CUDADriver::get_instance().malloc(&device_buffers[i],
-                                                args[i].size);
-              CUDADriver::get_instance().memcpy_host_to_device(
-                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
-            } else {
-              device_buffers[i] = arg_buffers[i];
-            }
-            // device_buffers[i] saves a raw ptr on CUDA device.
-            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
-                                               /*is_device_allocation=*/false);
-
-          } else if (args[i].size > 0) {
-            // arg_buffers[i] is a DeviceAllocation*
-            // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
-            // it's shared by cpu and cuda.
-            DeviceAllocation *ptr =
-                static_cast<DeviceAllocation *>(arg_buffers[i]);
-            device_buffers[i] = kernel->program->get_llvm_program_impl()
-                                    ->get_ndarray_alloc_info_ptr(*ptr);
-            // We compare arg_buffers[i] and device_buffers[i] later to check
-            // if transfer happened.
-            // TODO: this logic can be improved but I'll leave it to a followup
-            // PR.
-            arg_buffers[i] = device_buffers[i];
-
-            // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                               args[i].size,
-                                               /*is_device_allocation=*/false);
-          }
-        }
-      }
-      if (transferred) {
-        CUDADriver::get_instance().stream_synchronize(nullptr);
-      }
-
-      for (auto task : offloaded_local) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                 task.block_dim);
-        cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            {&context});
-      }
-      // copy data back to host
-      if (transferred) {
-        CUDADriver::get_instance().stream_synchronize(nullptr);
-        for (int i = 0; i < (int)args.size(); i++) {
-          if (device_buffers[i] != arg_buffers[i]) {
-            CUDADriver::get_instance().memcpy_device_to_host(
-                arg_buffers[i], (void *)device_buffers[i], args[i].size);
-            CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
-          }
-        }
-      }
-    };
-#else
-    TI_ERROR("No CUDA");
-    return nullptr;
-#endif  // TI_WITH_CUDA
+    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
+                             std::move(compiled_res.offloaded_tasks));
   }
 
   llvm::Value *create_print(std::string tag,
@@ -292,7 +191,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   // Not all reduction statements can be optimized.
   // If the operation cannot be optimized, this function returns nullptr.
-  llvm::Value *optimized_reduction(AtomicOpStmt *stmt) {
+  llvm::Value *optimized_reduction(AtomicOpStmt *stmt) override {
     if (!stmt->is_reduction) {
       return nullptr;
     }
@@ -326,39 +225,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               fast_reductions.at(prim_type).end());
     return create_call(fast_reductions.at(prim_type).at(op),
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
-  }
-
-  llvm::Value *custom_type_atomic(AtomicOpStmt *stmt) {
-    if (stmt->op_type != AtomicOpType::add) {
-      return nullptr;
-    }
-
-    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-    if (auto cit = dst_type->cast<CustomIntType>()) {
-      return atomic_add_custom_int(stmt, cit);
-    } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      return atomic_add_custom_float(stmt, cft);
-    } else {
-      return nullptr;
-    }
-  }
-
-  llvm::Value *integral_type_atomic(AtomicOpStmt *stmt) {
-    if (!is_integral(stmt->val->ret_type)) {
-      return nullptr;
-    }
-    std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
-    bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
-    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
-    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
-
-    bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
-    bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
-    bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
-    TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
-    return builder->CreateAtomicRMW(
-        bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
-        llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
@@ -412,7 +278,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,
       llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) override {
     llvm::PointerType *output_address_type =
         llvm::dyn_cast<llvm::PointerType>(output_address->getType());
     TI_ASSERT(output_address_type != nullptr);
@@ -505,86 +371,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     builder->SetInsertPoint(loop_exit_bb);
 
     return output_address;
-  }
-
-  llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
-    if (!stmt->val->ret_type->is<PrimitiveType>()) {
-      return nullptr;
-    }
-    AtomicOpType op = stmt->op_type;
-    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-      switch (op) {
-        case AtomicOpType::add:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
-        case AtomicOpType::max:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
-        case AtomicOpType::min:
-          return atomic_op_using_cas(
-              llvm_val[stmt->dest], llvm_val[stmt->val],
-              [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
-        default:
-          break;
-      }
-    }
-
-    PrimitiveTypeID prim_type =
-        stmt->val->ret_type->cast<PrimitiveType>()->type;
-
-    std::unordered_map<PrimitiveTypeID,
-                       std::unordered_map<AtomicOpType, std::string>>
-        atomics;
-
-    atomics[PrimitiveTypeID::f32][AtomicOpType::add] = "atomic_add_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::add] = "atomic_add_f64";
-    atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
-    atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
-    atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
-    atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
-    atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
-    atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
-    atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
-
-    if (atomics.find(prim_type) == atomics.end()) {
-      return nullptr;
-    }
-    if (is_integral(stmt->val->ret_type) &&
-        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
-      return nullptr;
-    }
-    TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
-
-    return create_call(atomics.at(prim_type).at(op),
-                       {llvm_val[stmt->dest], llvm_val[stmt->val]});
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    // https://llvm.org/docs/NVPTXUsage.html#address-spaces
-    bool is_local = stmt->dest->is<AllocaStmt>();
-    if (is_local) {
-      TI_ERROR("Local atomics should have been demoted.");
-    }
-    TI_ASSERT(stmt->width() == 1);
-    for (int l = 0; l < stmt->width(); l++) {
-      llvm::Value *old_value;
-
-      if (llvm::Value *result = optimized_reduction(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = custom_type_atomic(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
-        old_value = result;
-      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
-        old_value = result;
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-      llvm_val[stmt] = old_value;
-    }
   }
 
   void visit(RangeForStmt *for_stmt) override {
@@ -762,10 +548,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
+            llvm_val[stmt] = extract_quant_int(data, bit_offset, int_in_mem);
           } else if (val_type->cast<CustomFloatType>()) {
             // TODO: support __ldg
-            llvm_val[stmt] = load_custom_float(stmt->src);
+            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
           } else {
             TI_NOT_IMPLEMENTED;
           }
@@ -925,9 +711,150 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 };
 
+#ifdef TI_WITH_LLVM
+// static
+std::unique_ptr<CodeGenLLVM> CodeGenCUDA::make_codegen_llvm(Kernel *kernel,
+                                                            IRNode *ir) {
+  return std::make_unique<CodeGenLLVMCUDA>(kernel, ir);
+}
+#endif  // TI_WITH_LLVM
+
+static void set_arg_external_array(RuntimeContext *ctx,
+                                   const std::string &kernel_name,
+                                   int arg_id,
+                                   uintptr_t ptr,
+                                   uint64 size,
+                                   bool is_device_allocation) {
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_ext_ptr",
+      {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", arg_id),
+       ActionArg("address", fmt::format("0x{:x}", ptr)),
+       ActionArg("array_size_in_bytes", (int64)size)});
+
+  ctx->set_arg(arg_id, ptr);
+  ctx->set_array_runtime_size(arg_id, size);
+  ctx->set_array_is_device_allocation(arg_id, is_device_allocation);
+}
+
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
   return CodeGenLLVMCUDA(kernel, ir).gen();
+}
+
+FunctionType CUDAModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<LlvmLaunchArgInfo> &args,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+#ifdef TI_WITH_CUDA
+  for (const auto &task : tasks) {
+    llvm::Function *func = mod->getFunction(task.name);
+    TI_ASSERT(func);
+    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+  }
+
+  auto jit = tlctx_->jit.get();
+  auto cuda_module =
+      jit->add_module(std::move(mod), program_->config->gpu_max_reg);
+
+  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
+          program = this->program_](RuntimeContext &context) {
+    CUDAContext::get_instance().make_current();
+    std::vector<void *> arg_buffers(args.size(), nullptr);
+    std::vector<void *> device_buffers(args.size(), nullptr);
+
+    bool transferred = false;
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array) {
+        const auto arr_sz = context.array_runtime_sizes[i];
+        if (arr_sz == 0) {
+          continue;
+        }
+        arg_buffers[i] = context.get_arg<void *>(i);
+        if (!context.is_device_allocations[i]) {
+          // Note: both numpy and PyTorch support arrays/tensors with zeros
+          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+          // `arr_sz` zero.
+          unsigned int attr_val = 0;
+          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
+              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+              (void *)arg_buffers[i]);
+
+          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+            // Copy to device buffer if arg is on host
+            // - ret_code != CUDA_SUCCESS:
+            //   arg_buffers[i] is not on device
+            // - attr_val != CU_MEMORYTYPE_DEVICE:
+            //   Cuda driver is aware of arg_buffers[i] but it might be on
+            //   host.
+            // See CUDA driver API `cuPointerGetAttribute` for more details.
+            transferred = true;
+            CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
+            CUDADriver::get_instance().memcpy_host_to_device(
+                (void *)device_buffers[i], arg_buffers[i], arr_sz);
+          } else {
+            device_buffers[i] = arg_buffers[i];
+          }
+          // device_buffers[i] saves a raw ptr on CUDA device.
+          set_arg_external_array(&context, kernel_name, i,
+                                 (uint64)device_buffers[i], arr_sz,
+                                 /*is_device_allocation=*/false);
+
+        } else if (arr_sz > 0) {
+          // arg_buffers[i] is a DeviceAllocation*
+          // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
+          // it's shared by cpu and cuda.
+          DeviceAllocation *ptr =
+              static_cast<DeviceAllocation *>(arg_buffers[i]);
+          device_buffers[i] = program->get_ndarray_alloc_info_ptr(*ptr);
+          // We compare arg_buffers[i] and device_buffers[i] later to check
+          // if transfer happened.
+          // TODO: this logic can be improved but I'll leave it to a followup
+          // PR.
+          arg_buffers[i] = device_buffers[i];
+
+          // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
+          set_arg_external_array(&context, kernel_name, i,
+                                 (uint64)device_buffers[i], arr_sz,
+                                 /*is_device_allocation=*/false);
+        }
+      }
+    }
+    if (transferred) {
+      CUDADriver::get_instance().stream_synchronize(nullptr);
+    }
+
+    for (auto task : offloaded_tasks) {
+      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+               task.block_dim);
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                          {&context});
+    }
+    // copy data back to host
+    if (transferred) {
+      CUDADriver::get_instance().stream_synchronize(nullptr);
+      for (int i = 0; i < (int)args.size(); i++) {
+        if (device_buffers[i] != arg_buffers[i]) {
+          CUDADriver::get_instance().memcpy_device_to_host(
+              arg_buffers[i], (void *)device_buffers[i],
+              context.array_runtime_sizes[i]);
+          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+        }
+      }
+    }
+  };
+#else
+  TI_ERROR("No CUDA");
+  return nullptr;
+#endif  // TI_WITH_CUDA
+}
+
+FunctionType CUDAModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
+                 std::move(tasks));
 }
 
 TLANG_NAMESPACE_END

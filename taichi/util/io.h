@@ -22,7 +22,11 @@ inline void create_directories(const std::string &dir) {
 #if defined(TI_PLATFORM_WINDOWS)
   std::filesystem::create_directories(dir);
 #else
-  std::system(fmt::format("mkdir -p {}", dir).c_str());
+  int return_code = std::system(fmt::format("mkdir -p {}", dir).c_str());
+  if (return_code != 0) {
+    throw std::runtime_error(
+        fmt::format("Unable to create directory at: {dir}").c_str());
+  }
 #endif
 }
 

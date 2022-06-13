@@ -31,5 +31,6 @@ export TI_IN_DOCKER=true
 
 # Run tests
 ti diagnose
-python tests/run_tests.py -vr2 -t2 -k "not ndarray and not torch"
+# Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
+python tests/run_tests.py -vr2 -t2 -k "not ndarray and not torch and not paddle"
 python tests/run_tests.py -vr2 -t1 -k "ndarray or torch"

@@ -1,19 +1,5 @@
 // Frontend statements
-PER_STATEMENT(FrontendExternalFuncStmt)
-PER_STATEMENT(FrontendExprStmt)
-PER_STATEMENT(FrontendIfStmt)
-PER_STATEMENT(FrontendForStmt)
-PER_STATEMENT(FrontendPrintStmt)
-PER_STATEMENT(FrontendWhileStmt)
-PER_STATEMENT(FrontendBreakStmt)
-PER_STATEMENT(FrontendContinueStmt)
-PER_STATEMENT(FrontendAllocaStmt)
-PER_STATEMENT(FrontendAssignStmt)
-PER_STATEMENT(FrontendEvalStmt)
-PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
-PER_STATEMENT(FrontendAssertStmt)
-PER_STATEMENT(FrontendFuncDefStmt)
-PER_STATEMENT(FrontendReturnStmt)
+#include "frontend_statements.inc.h"
 
 // Middle-end statement
 
@@ -32,6 +18,7 @@ PER_STATEMENT(FuncCallStmt)
 PER_STATEMENT(ReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
+PER_STATEMENT(ReferenceStmt)
 PER_STATEMENT(ExternalPtrStmt)
 PER_STATEMENT(PtrOffsetStmt)
 PER_STATEMENT(ConstStmt)
@@ -91,6 +78,9 @@ PER_STATEMENT(BlockLocalPtrStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)
+
+PER_STATEMENT(TexturePtrStmt)
+PER_STATEMENT(TextureOpStmt)
 
 // Quantization
 PER_STATEMENT(BitStructStoreStmt)

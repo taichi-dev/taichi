@@ -1,15 +1,12 @@
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
+from taichi.aot.utils import (produce_injected_args,
+                              produce_injected_args_from_template)
 from taichi.lang import impl, kernel_impl
-from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.field import ScalarField
-from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
+from taichi.lang.matrix import MatrixField
 from taichi.types.annotations import template
-from taichi.types.ndarray_type import NdarrayType
-from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:
@@ -139,59 +136,19 @@ class Module:
         kernel_name = name or kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
-        injected_args = []
-        template_types = (NdarrayType, template)
-        num_template_args = len([
-            arg.annotation for arg in kernel.arguments
-            if isinstance(arg.annotation, template_types)
-        ])
-        if template_args is not None and num_template_args != len(
-                template_args):
-            raise TaichiCompilationError(
-                f'Need {num_template_args} inputs to instantiate the template '
-                f'parameters, got {len(template_args)}')
-        i = 0
-        for arg in kernel.arguments:
-            anno = arg.annotation
-            if isinstance(anno, template_types):
-                if template_args:
-                    injected_args.append(template_args[arg.name])
-                else:
-                    if not isinstance(anno, NdarrayType):
-                        raise TaichiCompilationError(
-                            f'Expected Ndaray type, got {anno}')
-                    if anno.element_shape is None or anno.field_dim is None:
-                        raise TaichiCompilationError(
-                            'Please either specify both `element_shape` and `field_dim` '
-                            'in the param annotation, or provide an example '
-                            f'ndarray for param={name}')
-                    if anno.element_dim == 0:
-                        injected_args.append(
-                            ScalarNdarray(f32, (2, ) * anno.field_dim))
-                    elif anno.element_dim == 1:
-                        injected_args.append(
-                            VectorNdarray(anno.element_shape[0],
-                                          dtype=f32,
-                                          shape=(2, ) * anno.field_dim,
-                                          layout=Layout.AOS))
-                    elif anno.element_dim == 2:
-                        injected_args.append(
-                            MatrixNdarray(anno.element_shape[0],
-                                          anno.element_shape[1],
-                                          dtype=f32,
-                                          shape=(2, ) * anno.field_dim,
-                                          layout=Layout.AOS))
-                    else:
-                        raise RuntimeError('')
-                i = i + 1
-            else:
-                # For primitive types, we can just inject a dummy value.
-                injected_args.append(0)
+        if template_args is not None:
+            injected_args = produce_injected_args_from_template(
+                kernel, template_args)
+        else:
+            injected_args = produce_injected_args(kernel)
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(kernel_name, kernel.kernel_cpp)
 
         # kernel AOT
         self._kernels.append(kernel)
+
+    def add_graph(self, name, graph):
+        self._aot_builder.add_graph(name, graph._compiled_graph)
 
     @contextmanager
     def add_kernel_template(self, kernel_fn):

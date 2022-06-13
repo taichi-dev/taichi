@@ -1,4 +1,5 @@
-#include "llvm_program.h"
+#include "taichi/llvm/llvm_program.h"
+
 #include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -11,10 +12,12 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/aot_module_builder_impl.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
 #include "taichi/backends/cuda/cuda_context.h"
@@ -147,16 +150,17 @@ void LlvmProgramImpl::synchronize() {
 
 std::unique_ptr<llvm::Module>
 LlvmProgramImpl::clone_struct_compiler_initial_context(
-    const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    bool has_multiple_snode_trees,
     TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
+  if (has_multiple_snode_trees) {
     return tlctx->clone_struct_module();
+  }
   return tlctx->clone_runtime_module();
 }
 
-void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                                     StructCompiler *scomp,
-                                                     uint64 *result_buffer) {
+void LlvmProgramImpl::initialize_llvm_runtime_snodes(
+    const LlvmOfflineCache::FieldCacheData &field_cache_data,
+    uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -171,15 +175,16 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   auto *const runtime_jit = tlctx->runtime_jit_module;
   // By the time this creator is called, "this" is already destroyed.
   // Therefore it is necessary to capture members by values.
-  const auto snodes = scomp->snodes;
-  const int root_id = tree->root()->id;
+  size_t root_size = field_cache_data.root_size;
+  const auto snode_metas = field_cache_data.snode_metas;
+  const int tree_id = field_cache_data.tree_id;
+  const int root_id = field_cache_data.root_id;
 
-  TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  std::size_t rounded_size =
-      taichi::iroundup(scomp->root_size, taichi_page_size);
+  TI_TRACE("Allocating data structure of size {} bytes", root_size);
+  std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
 
   Ptr root_buffer = snode_tree_buffer_manager_->allocate(
-      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
+      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree_id,
       result_buffer);
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -203,33 +208,33 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
     alloc = cpu_device()->import_memory(root_buffer, rounded_size);
   }
 
-  snode_tree_allocs_[tree->id()] = alloc;
+  snode_tree_allocs_[tree_id] = alloc;
 
   bool all_dense = config->demote_dense_struct_fors;
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (snodes[i]->type != SNodeType::dense &&
-        snodes[i]->type != SNodeType::place &&
-        snodes[i]->type != SNodeType::root) {
+  for (size_t i = 0; i < snode_metas.size(); i++) {
+    if (snode_metas[i].type != SNodeType::dense &&
+        snode_metas[i].type != SNodeType::place &&
+        snode_metas[i].type != SNodeType::root) {
       all_dense = false;
       break;
     }
   }
 
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", llvm_runtime_, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size, root_buffer, all_dense);
+      "runtime_initialize_snodes", llvm_runtime_, root_size, root_id,
+      (int)snode_metas.size(), tree_id, rounded_size, root_buffer, all_dense);
 
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (is_gc_able(snodes[i]->type)) {
-      const auto snode_id = snodes[i]->id;
+  for (size_t i = 0; i < snode_metas.size(); i++) {
+    if (is_gc_able(snode_metas[i].type)) {
+      const auto snode_id = snode_metas[i].id;
       std::size_t node_size;
-      auto element_size = snodes[i]->cell_size_bytes;
-      if (snodes[i]->type == SNodeType::pointer) {
+      auto element_size = snode_metas[i].cell_size_bytes;
+      if (snode_metas[i].type == SNodeType::pointer) {
         // pointer. Allocators are for single elements
         node_size = element_size;
       } else {
         // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
+        node_size = sizeof(void *) + element_size * snode_metas[i].chunk_size;
       }
       TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
                node_size);
@@ -244,32 +249,61 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
+    SNodeTree *tree) {
   auto *const root = tree->root();
+  const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
+  std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_host_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        has_multiple_snode_trees, llvm_context_host_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_device_.get());
-    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        has_multiple_snode_trees, llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module), tree->id());
   }
-  struct_compiler_->run(*root);
+  struct_compiler->run(*root);
+  ++num_snode_trees_processed_;
+  return struct_compiler;
 }
 
-void LlvmProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
-  compile_snode_tree_types(tree, snode_trees_);
-  initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
+void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
+  compile_snode_tree_types_impl(tree);
+}
+
+static LlvmOfflineCache::FieldCacheData construct_filed_cache_data(
+    const SNodeTree &tree,
+    const StructCompiler &struct_compiler) {
+  LlvmOfflineCache::FieldCacheData ret;
+  ret.tree_id = tree.id();
+  ret.root_id = tree.root()->id;
+  ret.root_size = struct_compiler.root_size;
+
+  const auto &snodes = struct_compiler.snodes;
+  for (size_t i = 0; i < snodes.size(); i++) {
+    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
+    snode_cache_data.id = snodes[i]->id;
+    snode_cache_data.type = snodes[i]->type;
+    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
+    snode_cache_data.chunk_size = snodes[i]->chunk_size;
+
+    ret.snode_metas.emplace_back(std::move(snode_cache_data));
+  }
+
+  return ret;
+}
+
+void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                             uint64 *result_buffer) {
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+
+  auto field_cache_data = construct_filed_cache_data(*tree, *struct_compiler);
+  initialize_llvm_runtime_snodes(field_cache_data, result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -327,6 +361,21 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
       list_manager_len, num_active_chunks, elements_per_chunk, element_size,
       size_MB);
+}
+
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
+  if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
+    return std::make_unique<cpu::AotModuleBuilderImpl>();
+  }
+
+#if defined(TI_WITH_CUDA)
+  if (config->arch == Arch::cuda) {
+    return std::make_unique<cuda::AotModuleBuilderImpl>();
+  }
+#endif
+
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -424,7 +473,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       llvm_runtime_,
                                       (void *)assert_failed_host);
   }
-  if (arch_is_cpu(config->arch)) {
+  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
     // Profiler functions can only be called on CPU kernels
     runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);
@@ -608,10 +657,6 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
        result_buffer});
 }
 
-std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
-  return device_;
-}
-
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
@@ -643,6 +688,7 @@ void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
+    std::vector<LlvmLaunchArgInfo> &&args,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &&offloaded_task_list) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
@@ -651,14 +697,15 @@ void LlvmProgramImpl::cache_kernel(
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
-  kernel_cache.offloaded_task_list = offloaded_task_list;
+  kernel_cache.args = std::move(args);
+  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache && !cache_data_.kernels.empty()) {
-    LlvmOfflineCacheFileWriter writer(config->offline_cache_file_path);
+    LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
-    writer.dump();
+    writer.dump(config->offline_cache_file_path);
   }
 }
 

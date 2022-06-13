@@ -1,24 +1,17 @@
-from taichi._lib import core as _ti_core
-from taichi.lang import expr
-from taichi.types import i32
+from taichi.lang import impl
 
 
 def barrier():
-    return expr.Expr(
-        _ti_core.insert_internal_func_call("subgroupBarrier",
-                                           expr.make_expr_group(), False))
+    return impl.call_internal("subgroupBarrier", with_runtime_context=False)
 
 
 def memory_barrier():
-    return expr.Expr(
-        _ti_core.insert_internal_func_call("subgroupMemoryBarrier",
-                                           expr.make_expr_group(), False))
+    return impl.call_internal("subgroupMemoryBarrier",
+                              with_runtime_context=False)
 
 
 def elect():
-    return expr.Expr(
-        _ti_core.insert_internal_func_call("subgroupElect",
-                                           expr.make_expr_group(), False))
+    return impl.call_internal("subgroupElect", with_runtime_context=False)
 
 
 def all_true(cond):
@@ -41,107 +34,90 @@ def broadcast_first(value):
     pass
 
 
-def broadcast(value, index: i32):
-    return expr.Expr(
-        _ti_core.insert_internal_func_call("subgroupBroadcast",
-                                           expr.make_expr_group(value, index),
-                                           False))
+def broadcast(value, index):
+    return impl.call_internal("subgroupBroadcast",
+                              value,
+                              index,
+                              with_runtime_context=False)
 
 
 def group_size():
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupSize", expr.make_expr_group(), False),
-                     dtype=i32)
+    return impl.call_internal("subgroupSize", with_runtime_context=False)
 
 
 def invocation_id():
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInvocationId", expr.make_expr_group(), False),
-                     dtype=i32)
+    return impl.call_internal("subgroupInvocationId",
+                              with_runtime_context=False)
 
 
 def reduce_add(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupAdd", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupAdd", value, with_runtime_context=False)
 
 
 def reduce_mul(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupMul", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupMul", value, with_runtime_context=False)
 
 
 def reduce_min(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupMin", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupMin", value, with_runtime_context=False)
 
 
 def reduce_max(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupMax", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupMax", value, with_runtime_context=False)
 
 
 def reduce_and(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupAnd", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupAnd", value, with_runtime_context=False)
 
 
 def reduce_or(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupOr", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupOr", value, with_runtime_context=False)
 
 
 def reduce_xor(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupXor", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupXor", value, with_runtime_context=False)
 
 
 def inclusive_add(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveAdd", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveAdd",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_mul(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveMul", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveMul",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_min(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveMin", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveMin",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_max(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveMax", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveMax",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_and(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveAnd", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveAnd",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_or(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveOr", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveOr",
+                              value,
+                              with_runtime_context=False)
 
 
 def inclusive_xor(value):
-    return expr.Expr(_ti_core.insert_internal_func_call(
-        "subgroupInclusiveXor", expr.make_expr_group(value), False),
-                     dtype=value.ptr.get_ret_type())
+    return impl.call_internal("subgroupInclusiveXor",
+                              value,
+                              with_runtime_context=False)
 
 
 def exclusive_add(value):

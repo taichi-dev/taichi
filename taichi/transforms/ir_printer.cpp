@@ -61,7 +61,7 @@ class IRPrinter : public IRVisitor {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 
@@ -424,6 +424,16 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
+  void visit(TexturePtrStmt *stmt) override {
+    print("<*Texture> {} = {}", stmt->name(), stmt->arg_load_stmt->name());
+  }
+
+  void visit(TextureOpStmt *stmt) override {
+    print("<struct> {} = texture_{}({}, {}, {})", stmt->name(),
+          texture_op_type_name(stmt->op), stmt->args[0]->name(),
+          stmt->args[1]->name(), stmt->args[2]->name());
+  }
+
   void visit(FrontendReturnStmt *stmt) override {
     print("{}{} : return [{}]", stmt->type_hint(), stmt->name(),
           expr_group_to_string(stmt->values));
@@ -551,6 +561,8 @@ class IRPrinter : public IRVisitor {
       }
       s += ")";
     }
+    s += fmt::format(" element_dim={} layout={}", stmt->element_dim,
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA");
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));
@@ -774,6 +786,10 @@ class IRPrinter : public IRVisitor {
     print(")");
   }
 
+  void visit(ReferenceStmt *stmt) override {
+    print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
+  }
+
  private:
   std::string expr_to_string(Expr &expr) {
     return expr_to_string(expr.expr.get());
@@ -803,12 +819,6 @@ namespace irpass {
 void print(IRNode *root, std::string *output) {
   ExpressionHumanFriendlyPrinter expr_printer;
   return IRPrinter::run(&expr_printer, root, output);
-}
-
-void gen_offline_cache_key(Program *prog, IRNode *root, std::string *output) {
-  irpass::re_id(root);
-  ExpressionOfflineCacheKeyGenerator cache_key_generator(prog);
-  return IRPrinter::run(&cache_key_generator, root, output);
 }
 
 }  // namespace irpass

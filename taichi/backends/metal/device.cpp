@@ -18,6 +18,7 @@ class ResourceBinderImpl : public ResourceBinder {
     DeviceAllocationId alloc_id{0};
     // Not sure if this info is necessary yet.
     // TODO: Make it an enum?
+    uint64_t offset{0};
     [[maybe_unused]] bool is_constant{false};
   };
   using BindingMap = std::unordered_map<uint32_t, Binding>;
@@ -34,12 +35,12 @@ class ResourceBinderImpl : public ResourceBinder {
                  uint32_t binding,
                  DevicePtr ptr,
                  size_t size) override {
-    TI_NOT_IMPLEMENTED;
+    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
   }
   void rw_buffer(uint32_t set,
                  uint32_t binding,
                  DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*is_constant=*/false);
+    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/false);
   }
 
   // Constant buffers
@@ -47,10 +48,10 @@ class ResourceBinderImpl : public ResourceBinder {
               uint32_t binding,
               DevicePtr ptr,
               size_t size) override {
-    TI_NOT_IMPLEMENTED;
+    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
   }
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*is_constant=*/true);
+    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/true);
   }
 
   const BindingMap &binding_map() const {
@@ -60,11 +61,12 @@ class ResourceBinderImpl : public ResourceBinder {
  private:
   void bind_buffer(uint32_t set,
                    uint32_t binding,
-                   DeviceAllocation alloc,
+                   const DeviceAllocation &alloc,
+                   uint64_t offset,
                    bool is_constant) {
     TI_ASSERT(set == 0);
     TI_ASSERT(alloc.device == dev_);
-    binding_map_[binding] = {alloc.alloc_id, is_constant};
+    binding_map_[binding] = {alloc.alloc_id, offset, is_constant};
   }
 
   const Device *const dev_;
@@ -136,9 +138,25 @@ class CommandListImpl : public CommandList {
   }
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override {
+    TI_ERROR_IF(dst.device != src.device,
+                "dst and src must be from the same MTLDevice");
+    TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
+    auto *dst_buf = alloc_buf_mapper_->find(dst).buffer;
+    TI_ASSERT(dst_buf != nullptr);
+    auto *src_buf = alloc_buf_mapper_->find(src).buffer;
+    TI_ASSERT(src_buf != nullptr);
+    auto encoder = new_blit_command_encoder(command_buffer_.get());
+    TI_ASSERT(encoder != nullptr);
+    if (!inflight_label_.empty()) {
+      metal::set_label(encoder.get(), inflight_label_);
+    }
+    copy_from_buffer_to_buffer(encoder.get(), src_buf, src.offset, dst_buf,
+                               dst.offset, size);
+    finish_encoder(encoder.get());
   }
 
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
+    TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
     if ((data & 0xff) != data) {
       // TODO: Maybe create a shader just for this filling purpose?
       TI_ERROR("Metal can only support 8-bit data for buffer_fill");
@@ -146,7 +164,9 @@ class CommandListImpl : public CommandList {
     }
     auto encoder = new_blit_command_encoder(command_buffer_.get());
     TI_ASSERT(encoder != nullptr);
-    metal::set_label(encoder.get(), inflight_label_);
+    if (!inflight_label_.empty()) {
+      metal::set_label(encoder.get(), inflight_label_);
+    }
     auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
     mac::TI_NSRange range;
@@ -170,6 +190,11 @@ class CommandListImpl : public CommandList {
     auto ceil_div = [](uint32_t a, uint32_t b) -> uint32_t {
       return (a + b - 1) / b;
     };
+    for (const auto &[idx, b] : builder.binding_map) {
+      auto *buf = alloc_buf_mapper_->find(b.alloc_id).buffer;
+      TI_ASSERT(buf != nullptr);
+      set_mtl_buffer(encoder.get(), buf, b.offset, idx);
+    }
     const auto num_blocks_x = ceil_div(grid_size.x, block_size.x);
     const auto num_blocks_y = ceil_div(grid_size.y, block_size.y);
     const auto num_blocks_z = ceil_div(grid_size.z, block_size.z);
@@ -215,14 +240,25 @@ class StreamImpl : public Stream {
     return std::make_unique<CommandListImpl>(std::move(cb), alloc_buf_mapper_);
   }
 
-  void submit(CommandList *cmdlist) override {
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
+
+    // FIXME: Implement semaphore mechanism for Metal backend
+    //        and return the actual semaphore corresponding to the submitted
+    //        cmds.
+    return nullptr;
   }
-  void submit_synced(CommandList *cmdlist) override {
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
     commit_command_buffer(cb);
     wait_until_completed(cb);
+
+    return nullptr;
   }
 
   void command_sync() override {
@@ -254,7 +290,9 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   DeviceAllocation allocate_memory(const AllocParams &params) override {
     DeviceAllocation res;
     res.device = this;
-    res.alloc_id = allocations_.size();
+    // Do not use `allocations_.size()` as `alloc_id`, as items could be erased
+    // from `allocations_`.
+    res.alloc_id = next_alloc_id_++;
 
     AllocationInternal &ialloc =
         allocations_[res.alloc_id];  // "i" for internal
@@ -329,15 +367,21 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     return stream_.get();
   }
 
-  BufferAndMem find(DeviceAllocation alloc) const override {
+  BufferAndMem find(DeviceAllocationId alloc_id) const override {
     BufferAndMem bm;
-    auto itr = allocations_.find(alloc.alloc_id);
+    auto itr = allocations_.find(alloc_id);
     if (itr == allocations_.end()) {
       return bm;
     }
     bm.buffer = itr->second.buffer.get();
     bm.mem = itr->second.buffer_mem.get();
     return bm;
+  }
+  // Un-shadow the overload from the base class
+  // https://stackoverflow.com/a/34466458/12003165
+  using AllocToMTLBufferMapper::find;
+
+  void wait_idle() override {
   }
 
  private:
@@ -352,6 +396,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   std::unique_ptr<StreamImpl> stream_{nullptr};
   std::unordered_map<DeviceAllocationId, AllocationInternal> allocations_;
+  DeviceAllocationId next_alloc_id_{0};
 };
 
 }  // namespace

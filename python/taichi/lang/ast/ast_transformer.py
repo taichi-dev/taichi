@@ -486,6 +486,12 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
                             ctx.func.arguments[i].annotation))
+                elif isinstance(ctx.func.arguments[i].annotation,
+                                primitive_types.RefType):
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_scalar_arg(
+                            ctx.func.arguments[i].annotation))
                 else:
                     ctx.global_vars[
                         arg.arg] = kernel_arguments.decl_scalar_arg(
@@ -500,29 +506,9 @@ class ASTTransformer(Builder):
             if ctx.is_real_function:
                 transform_as_kernel()
             else:
-                len_args = len(args.args)
-                len_default = len(args.defaults)
-                len_provided = len(ctx.argument_data)
-                len_minimum = len_args - len_default
-                if len_args < len_provided or len_args - len_default > len_provided:
-                    if len(args.defaults):
-                        raise TaichiSyntaxError(
-                            f"Function receives {len_minimum} to {len_args} argument(s) and {len_provided} provided."
-                        )
-                    else:
-                        raise TaichiSyntaxError(
-                            f"Function receives {len_args} argument(s) and {len_provided} provided."
-                        )
-                # Transform as force-inlined func
-                default_start = len_provided - len_minimum
-                ctx.argument_data = list(ctx.argument_data)
-                for arg in args.defaults[default_start:]:
-                    ctx.argument_data.append(build_stmt(ctx, arg))
                 assert len(args.args) == len(ctx.argument_data)
                 for i, (arg,
                         data) in enumerate(zip(args.args, ctx.argument_data)):
-                    # Remove annotations because they are not used.
-                    args.args[i].annotation = None
                     # Template arguments are passed by reference.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   annotations.template):
@@ -1122,17 +1108,7 @@ class ASTTransformer(Builder):
                 node.ptr = build_stmt(ctx, node.orelse)
             return node.ptr
 
-        val = impl.expr_init(None)
-
-        impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
-        ctx.ast_builder.begin_frontend_if_true()
-        val._assign(node.body.ptr)
-        ctx.ast_builder.pop_scope()
-        ctx.ast_builder.begin_frontend_if_false()
-        val._assign(node.orelse.ptr)
-        ctx.ast_builder.pop_scope()
-
-        node.ptr = val
+        node.ptr = ti_ops.ifte(node.test.ptr, node.body.ptr, node.orelse.ptr)
         return node.ptr
 
     @staticmethod

@@ -29,6 +29,7 @@ sidebar_position: 7
 - To start program in debug mode: `ti.init(debug=True)` or
   `ti debug your_script.py`.
 - To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
+- To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.
 
 ## Logging
 

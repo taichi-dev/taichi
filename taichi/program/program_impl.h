@@ -8,6 +8,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/backends/device.h"
+#include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
@@ -37,17 +38,13 @@ class ProgramImpl {
   /**
    * JIT compiles @param tree to backend-specific data types.
    */
-  virtual void compile_snode_tree_types(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees);
+  virtual void compile_snode_tree_types(SNodeTree *tree);
 
   /**
    * Compiles the @param tree types and allocates runtime buffer for it.
    */
-  virtual void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer_ptr) = 0;
+  virtual void materialize_snode_tree(SNodeTree *tree,
+                                      uint64 *result_buffer_ptr) = 0;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) = 0;
 
@@ -60,10 +57,22 @@ class ProgramImpl {
    */
   virtual void synchronize() = 0;
 
+  virtual StreamSemaphore flush() {
+    synchronize();
+    return nullptr;
+  }
+
   /**
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
+
+  /**
+   * Compile a taichi::lang::Kernel to taichi::lang::aot::Kernel.
+   */
+  virtual std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
+    TI_NOT_IMPLEMENTED;
+  }
 
   /**
    * Dump Offline-cache data to disk
@@ -76,10 +85,6 @@ class ProgramImpl {
   }
 
   virtual Device *get_graphics_device() {
-    return nullptr;
-  }
-
-  virtual std::shared_ptr<Device> get_device_shared() {
     return nullptr;
   }
 

@@ -1,14 +1,6 @@
-from enum import Enum, unique
+from taichi._lib import core as _ti_core
 
+Layout = _ti_core.Layout
+AutodiffMode = _ti_core.AutodiffMode
 
-@unique
-class Layout(Enum):
-    """Layout of a Taichi field or ndarray.
-
-    Currently, AOS (array of structures) and SOA (structure of arrays) are supported.
-    """
-    AOS = 1
-    SOA = 2
-
-
-__all__ = ['Layout']
+__all__ = ['Layout', 'AutodiffMode']

@@ -93,7 +93,8 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
-    virtual SNode *grad_snode() const = 0;
+    virtual SNode *adjoint_snode() const = 0;
+    virtual SNode *dual_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -119,7 +120,7 @@ class SNode {
   std::string name;
   // Product of the |shape| of all the activated axes identified by
   // |extractors|.
-  // See https://docs.taichi.graphics/lang/articles/internal for terms
+  // See https://docs.taichi-lang.org/docs/internal for terms
   // like cell and container.
   int64 num_cells_per_container{1};
   int total_num_bits{0};
@@ -286,9 +287,13 @@ class SNode {
 
   bool is_scalar() const;
 
-  bool has_grad() const;
+  bool has_adjoint() const;
 
-  SNode *get_grad() const;
+  SNode *get_adjoint() const;
+
+  bool has_dual() const;
+
+  SNode *get_dual() const;
 
   SNode *get_least_sparse_ancestor() const;
 

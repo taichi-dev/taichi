@@ -14,10 +14,7 @@ from tests import test_utils
 def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
     if use_cft:
         if use_exponent:
-            exp = ti.types.quantized_types.quant.int(6, False)
-            cit = ti.types.quantized_types.quant.int(13, True)
-            cft = ti.types.quantized_types.type_factory.custom_float(
-                significand_type=cit, exponent_type=exp, scale=1)
+            cft = ti.types.quant.float(exp=6, frac=13)
             x = ti.Vector.field(2, dtype=cft)
             if use_shared_exp:
                 ti.root.bit_struct(num_bits=32).place(x, shared_exponent=True)
@@ -25,9 +22,7 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0))
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1))
         else:
-            cit = ti.types.quantized_types.quant.int(16, True)
-            cft = ti.types.quantized_types.type_factory.custom_float(
-                significand_type=cit, scale=1 / 2**14)
+            cft = ti.types.quant.fixed(frac=16, range=2)
             x = ti.Vector.field(2, dtype=cft)
             ti.root.bit_struct(num_bits=32).place(x)
     else:

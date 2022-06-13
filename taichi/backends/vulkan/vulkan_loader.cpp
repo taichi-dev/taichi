@@ -4,6 +4,10 @@
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 
+#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
+#include "GLFW/glfw3.h"
+#endif
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -12,6 +16,10 @@ VulkanLoader::VulkanLoader() {
 }
 
 bool VulkanLoader::check_vulkan_device() {
+#ifdef __APPLE__
+  glfwInitVulkanLoader(vkGetInstanceProcAddr);
+#endif
+
   bool found_device_with_compute = false;
 
   // We create an temporary Vulkan instance to probe the Vulkan devices.

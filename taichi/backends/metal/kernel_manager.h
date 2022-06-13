@@ -52,7 +52,8 @@ class KernelManager {
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs);
+                              const KernelContextAttributes &ctx_attribs,
+                              const Kernel *kernel);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid

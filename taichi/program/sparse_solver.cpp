@@ -9,7 +9,8 @@
     {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> {              \
       using T = Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
                                         Eigen::order##Ordering<int>>;          \
-      return std::make_unique<EigenSparseSolver<T>>();                         \
+      return std::make_unique<                                                 \
+          EigenSparseSolver<T, Eigen::SparseMatrix<dt>>>();                    \
     }                                                                          \
   }
 
@@ -28,32 +29,41 @@ struct key_hash {
 namespace taichi {
 namespace lang {
 
-template <class EigenSolver>
-bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
-  solver_.compute(sm.get_matrix());
+#define GET_EM(sm) \
+  const EigenMatrix *mat = (const EigenMatrix *)(sm.get_matrix());
+
+template <class EigenSolver, class EigenMatrix>
+bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
+    const SparseMatrix &sm) {
+  GET_EM(sm);
+  solver_.compute(*mat);
   if (solver_.info() != Eigen::Success) {
     return false;
   } else
     return true;
 }
-template <class EigenSolver>
-void EigenSparseSolver<EigenSolver>::analyze_pattern(const SparseMatrix &sm) {
-  solver_.analyzePattern(sm.get_matrix());
+template <class EigenSolver, class EigenMatrix>
+void EigenSparseSolver<EigenSolver, EigenMatrix>::analyze_pattern(
+    const SparseMatrix &sm) {
+  GET_EM(sm);
+  solver_.analyzePattern(*mat);
 }
 
-template <class EigenSolver>
-void EigenSparseSolver<EigenSolver>::factorize(const SparseMatrix &sm) {
-  solver_.factorize(sm.get_matrix());
+template <class EigenSolver, class EigenMatrix>
+void EigenSparseSolver<EigenSolver, EigenMatrix>::factorize(
+    const SparseMatrix &sm) {
+  GET_EM(sm);
+  solver_.factorize(*mat);
 }
 
-template <class EigenSolver>
-Eigen::VectorXf EigenSparseSolver<EigenSolver>::solve(
+template <class EigenSolver, class EigenMatrix>
+Eigen::VectorXf EigenSparseSolver<EigenSolver, EigenMatrix>::solve(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
   return solver_.solve(b);
 }
 
-template <class EigenSolver>
-bool EigenSparseSolver<EigenSolver>::info() {
+template <class EigenSolver, class EigenMatrix>
+bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
   return solver_.info() == Eigen::Success;
 }
 
@@ -78,8 +88,9 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
     auto solver_func = solver_factory.at(solver_key);
     return solver_func();
   } else if (solver_type == "LU") {
-    using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
-    return std::make_unique<EigenSparseSolver<LU>>();
+    using EigenMatrix = Eigen::SparseMatrix<float32>;
+    using LU = Eigen::SparseLU<EigenMatrix>;
+    return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
   } else
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }

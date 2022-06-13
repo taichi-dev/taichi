@@ -3,6 +3,8 @@
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
+#include "taichi/program/ndarray.h"
+#include "taichi/program/program.h"
 
 #include "Eigen/Sparse"
 
@@ -13,11 +15,15 @@ class SparseMatrix;
 
 class SparseMatrixBuilder {
  public:
-  SparseMatrixBuilder(int rows, int cols, int max_num_triplets, DataType dtype);
+  SparseMatrixBuilder(int rows,
+                      int cols,
+                      int max_num_triplets,
+                      DataType dtype,
+                      const std::string &storage_format);
 
   void print_triplets();
 
-  SparseMatrix build();
+  std::unique_ptr<SparseMatrix> build();
 
   void clear();
 
@@ -26,7 +32,7 @@ class SparseMatrixBuilder {
   void print_template();
 
   template <typename T, typename G>
-  SparseMatrix build_template();
+  void build_template(std::unique_ptr<SparseMatrix> &);
 
  private:
   uint64 num_triplets_{0};
@@ -36,37 +42,161 @@ class SparseMatrixBuilder {
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
+  std::string storage_format_{"col_major"};
 };
 
 class SparseMatrix {
  public:
-  SparseMatrix() = delete;
-  SparseMatrix(int rows, int cols);
-  SparseMatrix(Eigen::SparseMatrix<float32> &matrix);
+  SparseMatrix() : rows_(0), cols_(0), dtype_(PrimitiveType::f32){};
+  SparseMatrix(int rows, int cols, DataType dt = PrimitiveType::f32)
+      : rows_{rows}, cols_(cols), dtype_(dt){};
+  SparseMatrix(SparseMatrix &sm)
+      : rows_(sm.rows_), cols_(sm.cols_), dtype_(sm.dtype_) {
+  }
+  SparseMatrix(SparseMatrix &&sm)
+      : rows_(sm.rows_), cols_(sm.cols_), dtype_(sm.dtype_) {
+  }
+  virtual ~SparseMatrix() = default;
 
-  const int num_rows() const;
-  const int num_cols() const;
-  const std::string to_string() const;
-  Eigen::SparseMatrix<float32> &get_matrix();
-  const Eigen::SparseMatrix<float32> &get_matrix() const;
-  float32 get_element(int row, int col);
-  void set_element(int row, int col, float32 value);
+  virtual void build_triplets(void *triplets_adr){};
 
-  friend SparseMatrix operator+(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  friend SparseMatrix operator-(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
-  friend SparseMatrix operator*(const SparseMatrix &sm, float scale);
-  friend SparseMatrix operator*(const SparseMatrix &sm1,
-                                const SparseMatrix &sm2);
-  SparseMatrix matmul(const SparseMatrix &sm);
-  Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+  inline const int num_rows() const {
+    return rows_;
+  }
 
-  SparseMatrix transpose();
+  inline const int num_cols() const {
+    return cols_;
+  }
+
+  virtual const std::string to_string() const {
+    return nullptr;
+  }
+
+  virtual const void *get_matrix() const {
+    return nullptr;
+  }
+
+  inline DataType get_data_type() {
+    return dtype_;
+  }
+
+  template <class T>
+  T get_element(int row, int col) {
+    std::cout << "get_element not implemented" << std::endl;
+    return 0;
+  }
+
+  template <class T>
+  void set_element(int row, int col, T value) {
+    std::cout << "set_element not implemented" << std::endl;
+    return;
+  }
+
+ protected:
+  int rows_{0};
+  int cols_{0};
+  DataType dtype_{PrimitiveType::f32};
+};
+
+template <class EigenMatrix>
+class EigenSparseMatrix : public SparseMatrix {
+ public:
+  explicit EigenSparseMatrix(int rows, int cols, DataType dt)
+      : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
+  }
+  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
+      : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
+        matrix_(sm.matrix_) {
+  }
+  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
+      : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
+        matrix_(sm.matrix_) {
+  }
+  explicit EigenSparseMatrix(const EigenMatrix &em)
+      : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
+  }
+
+  ~EigenSparseMatrix() override = default;
+  void build_triplets(void *triplets_adr) override;
+  const std::string to_string() const override;
+
+  const void *get_matrix() const override {
+    return &matrix_;
+  };
+
+  virtual EigenSparseMatrix &operator+=(const EigenSparseMatrix &other) {
+    this->matrix_ += other.matrix_;
+    return *this;
+  };
+
+  friend EigenSparseMatrix operator+(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_ + rhs.matrix_);
+  };
+
+  virtual EigenSparseMatrix &operator-=(const EigenSparseMatrix &other) {
+    this->matrix_ -= other.matrix_;
+    return *this;
+  }
+
+  friend EigenSparseMatrix operator-(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_ - rhs.matrix_);
+  };
+
+  virtual EigenSparseMatrix &operator*=(float scale) {
+    this->matrix_ *= scale;
+    return *this;
+  }
+
+  friend EigenSparseMatrix operator*(const EigenSparseMatrix &sm, float scale) {
+    return EigenSparseMatrix(sm.matrix_ * scale);
+  }
+
+  friend EigenSparseMatrix operator*(float scale, const EigenSparseMatrix &sm) {
+    return EigenSparseMatrix(sm.matrix_ * scale);
+  }
+
+  friend EigenSparseMatrix operator*(const EigenSparseMatrix &lhs,
+                                     const EigenSparseMatrix &rhs) {
+    return EigenSparseMatrix(lhs.matrix_.cwiseProduct(rhs.matrix_));
+  }
+
+  EigenSparseMatrix transpose() {
+    return EigenSparseMatrix(matrix_.transpose());
+  }
+
+  EigenSparseMatrix matmul(const EigenSparseMatrix &sm) {
+    return EigenSparseMatrix(matrix_ * sm.matrix_);
+  }
+
+  template <typename T>
+  T get_element(int row, int col) {
+    return matrix_.coeff(row, col);
+  }
+
+  template <typename T>
+  void set_element(int row, int col, T value) {
+    matrix_.coeffRef(row, col) = value;
+  }
+
+  template <class VT>
+  VT mat_vec_mul(const Eigen::Ref<const VT> &b) {
+    return matrix_ * b;
+  }
 
  private:
-  Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;
+  EigenMatrix matrix_;
 };
+
+std::unique_ptr<SparseMatrix> make_sparse_matrix(
+    int rows,
+    int cols,
+    DataType dt,
+    const std::string &storage_format);
+
+void make_sparse_matrix_from_ndarray(Program *prog,
+                                     SparseMatrix &sm,
+                                     const Ndarray &ndarray);
 }  // namespace lang
 }  // namespace taichi

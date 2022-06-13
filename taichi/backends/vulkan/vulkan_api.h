@@ -2,7 +2,7 @@
 
 #include "taichi/backends/vulkan/vulkan_common.h"
 
-#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #include <memory>
 #include <vector>

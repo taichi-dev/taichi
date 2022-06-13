@@ -32,10 +32,8 @@ void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   result_buffer_ = *result_buffer_ptr;
 }
 
-void CCProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &,
-    uint64 *result_buffer) {
+void CCProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                           uint64 *result_buffer) {
   auto *const root = tree->root();
   CCLayoutGen gen(this, root);
   layout_ = gen.compile();

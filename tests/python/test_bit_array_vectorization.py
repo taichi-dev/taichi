@@ -8,7 +8,7 @@ from tests import test_utils
                  debug=True,
                  cfg_optimization=False)
 def test_vectorized_struct_for():
-    cu1 = ti.types.quantized_types.quant.int(1, False)
+    cu1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=cu1)
     y = ti.field(dtype=cu1)
@@ -49,7 +49,7 @@ def test_vectorized_struct_for():
 
 @test_utils.test(require=ti.extension.quant)
 def test_offset_load():
-    ci1 = ti.types.quantized_types.quant.int(1, False)
+    ci1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -109,7 +109,7 @@ def test_offset_load():
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    ci1 = ti.types.quantized_types.quant.int(1, False)
+    ci1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)

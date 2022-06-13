@@ -22,7 +22,6 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
   VulkanDevice *vk_dev = dynamic_cast<VulkanDevice *>(dst.device);
   CpuDevice *cpu_dev = dynamic_cast<CpuDevice *>(src.device);
 
-  DeviceAllocation dst_alloc(dst);
   DeviceAllocation src_alloc(src);
 
   CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);

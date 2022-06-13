@@ -153,7 +153,7 @@ void GUI::process_event() {
 }
 
 void GUI::create_window() {
-  auto CLASS_NAME = L"Taichi Win32 Window";
+  const char *CLASS_NAME = "Taichi Win32 Window";
 
   DWORD dwVersion = 0;
   DWORD dwMajorVersion = 0;
@@ -164,13 +164,13 @@ void GUI::create_window() {
   dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
   dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
 
-  WNDCLASS wc = {};
+  WNDCLASSA wc = {};
 
   wc.lpfnWndProc = WindowProc;
-  wc.hInstance = GetModuleHandle(0);
+  wc.hInstance = GetModuleHandleA(0);
   wc.lpszClassName = CLASS_NAME;
 
-  RegisterClass(&wc);
+  RegisterClassA(&wc);
 
   RECT window_rect;
   window_rect.left = 0;
@@ -180,19 +180,18 @@ void GUI::create_window() {
 
   AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
 
-  hwnd = CreateWindowEx(0,           // Optional window styles.
-                        CLASS_NAME,  // Window class
-                        std::wstring(window_name.begin(), window_name.end())
-                            .data(),          // Window text
-                        WS_OVERLAPPEDWINDOW,  // Window style
-                        // Size and position
-                        CW_USEDEFAULT, CW_USEDEFAULT,
-                        window_rect.right - window_rect.left,
-                        window_rect.bottom - window_rect.top,
-                        NULL,                // Parent window
-                        NULL,                // Menu
-                        GetModuleHandle(0),  // Instance handle
-                        NULL                 // Additional application data
+  hwnd = CreateWindowExA(0,                    // Optional window styles.
+                         CLASS_NAME,           // Window class
+                         window_name.c_str(),  // Window text
+                         WS_OVERLAPPEDWINDOW,  // Window style
+                         // Size and position
+                         CW_USEDEFAULT, CW_USEDEFAULT,
+                         window_rect.right - window_rect.left,
+                         window_rect.bottom - window_rect.top,
+                         NULL,                 // Parent window
+                         NULL,                 // Menu
+                         GetModuleHandleA(0),  // Instance handle
+                         NULL                  // Additional application data
   );
   TI_ERROR_IF(hwnd == NULL, "Window creation failed");
   gui_from_hwnd[hwnd] = this;
@@ -201,7 +200,7 @@ void GUI::create_window() {
     // https://www.cnblogs.com/lidabo/archive/2012/07/17/2595452.html
     LONG style = GetWindowLong(hwnd, GWL_STYLE);
     style &= ~WS_CAPTION & ~WS_SIZEBOX;
-    SetWindowLong(hwnd, GWL_STYLE, style);
+    SetWindowLongA(hwnd, GWL_STYLE, style);
     SetWindowPos(hwnd, NULL, 0, 0, GetSystemMetrics(SM_CXSCREEN),
                  GetSystemMetrics(SM_CYSCREEN), SWP_NOZORDER);
   }
@@ -235,7 +234,7 @@ void GUI::redraw() {
 }
 
 void GUI::set_title(std::string title) {
-  SetWindowText(hwnd, std::wstring(title.begin(), title.end()).data());
+  SetWindowTextA(hwnd, title.c_str());
 }
 
 GUI::~GUI() {

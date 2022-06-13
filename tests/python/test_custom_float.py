@@ -8,7 +8,7 @@ from tests import test_utils
 
 @test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float():
-    cft = ti.types.quantized_types.quant.fixed(frac=32, num_range=2)
+    cft = ti.types.quant.fixed(frac=32, range=2)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -29,7 +29,7 @@ def test_custom_float():
 
 @test_utils.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
-    cft = ti.types.quantized_types.quant.fixed(frac=16, num_range=1.2)
+    cft = ti.types.quant.fixed(frac=16, range=1.2)
 
     x = ti.Matrix.field(2, 2, dtype=cft)
 
@@ -57,9 +57,7 @@ def test_custom_matrix_rotation():
 
 @test_utils.test(require=ti.extension.quant_basic)
 def test_custom_float_implicit_cast():
-    ci13 = ti.types.quantized_types.quant.int(bits=13)
-    cft = ti.types.quantized_types.type_factory.custom_float(
-        significand_type=ci13, scale=0.1)
+    cft = ti.types.quant.fixed(frac=13, scale=0.1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -74,9 +72,7 @@ def test_custom_float_implicit_cast():
 
 @test_utils.test(require=ti.extension.quant_basic)
 def test_cache_read_only():
-    ci15 = ti.types.quantized_types.quant.int(bits=15)
-    cft = ti.types.quantized_types.type_factory.custom_float(
-        significand_type=ci15, scale=0.1)
+    cft = ti.types.quant.fixed(frac=15, scale=0.1)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)

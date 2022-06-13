@@ -2,12 +2,12 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 
 project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)
-    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/dev_install for more details.")
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
     set(TI_VERSION_MINOR 0)
     set(TI_VERSION_PATCH 0)
@@ -49,7 +49,6 @@ else ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -71,8 +70,23 @@ if (USE_MOLD)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
 endif()
 
-# No support of Python for Android build
-if (NOT ANDROID)
+if (WIN32)
+  # For `Debug` configs MSVC links to a debuggable runtime by default which has
+  # symbol conflicts with the prebuilt LLVM in `Release`. We shoule be providing
+  # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
+  # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
+  # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
+  # every component in LLVM.
+  #
+  # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
+  # someday we can distribute `Debug` libraries, if it's ever needed.
+  SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+endif()
+
+# No support of Python for Android build; or in any case taichi is integrated
+# in another project as submodule.
+option(TI_WITH_PYTHON "Build with Python language binding" ON)
+if (TI_WITH_PYTHON AND NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
 endif()
 include(cmake/TaichiCXXFlags.cmake)
@@ -90,8 +104,6 @@ option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
 endif()
-
-include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
@@ -140,24 +152,18 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   unset(CLANG_EXECUTABLE)
   find_program(CLANG_EXECUTABLE NAMES clang-10 clang-11 clang-9 clang-8 clang-7)
   if (NOT CLANG_EXECUTABLE)
-    message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
+    message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
   else()
     check_clang_version()
     if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-      message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
+      message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
     endif()
   endif()
 endif()
 
-# Build llvm-runtime for host arch and cuda (if available)
-foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
-  add_custom_target(
-      "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
-  )
-  add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
-endforeach()
+if (TI_WITH_LLVM)
+  add_subdirectory(taichi/runtime/llvm)
+endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)

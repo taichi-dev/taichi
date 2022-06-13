@@ -189,3 +189,22 @@ def test_field_shape_0():
             ti._lib.core.TaichiRuntimeError,
             match="Every dimension of a Taichi field should be positive"):
         x = ti.field(dtype=ti.f32, shape=0)
+
+
+@test_utils.test()
+def test_index_mismatch():
+    with pytest.raises(AssertionError,
+                       match="Slicing is not supported on ti.field"):
+        val = ti.field(ti.i32, shape=(1, 2, 3))
+        val[0, 0] = 1
+
+
+@test_utils.test()
+def test_invalid_slicing():
+    with pytest.raises(
+            TypeError,
+            match=
+            "Detected illegal element of type: .*?\. Please be aware that slicing a ti.field is not supported so far."
+    ):
+        val = ti.field(ti.i32, shape=(2, 2))
+        val[0, :]

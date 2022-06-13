@@ -85,3 +85,4 @@ _build
 !docs/**/*.json
 imgui.ini
 /venv/
+/_skbuild/

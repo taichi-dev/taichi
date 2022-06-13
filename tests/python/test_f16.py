@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 import pytest
-from taichi.lang.util import has_pytorch
+from taichi.lang.util import has_paddle, has_pytorch
 
 import taichi as ti
 from tests import test_utils
@@ -97,6 +97,50 @@ def test_from_torch():
 
     init()
     z = y.to_torch()
+    for i in range(n):
+        assert (z[i] == i * 3)
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=archs_support_f16, exclude=[ti.vulkan, ti.dx11])
+def test_to_paddle():
+    import paddle
+    n = 16
+    x = ti.field(ti.f16, shape=n)
+
+    @ti.kernel
+    def init():
+        for i in x:
+            x[i] = i * 2
+
+    init()
+    y = x.to_paddle()
+    # paddle's operator slice doesn't have kernel for f16, so cast to f32
+    y = y.cast(paddle.float32)
+    print(y)
+    for i in range(n):
+        assert (y[i] == 2 * i)
+
+
+@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@test_utils.test(arch=archs_support_f16, exclude=[ti.vulkan, ti.dx11])
+def test_from_paddle():
+    import paddle
+    n = 16
+    y = ti.field(dtype=ti.f16, shape=n)
+    # paddle doesn't have arrange implementation for float16 so we need to create other type first and then convert
+    x = paddle.arange(0, n).cast(paddle.float16)
+    y.from_paddle(x)
+
+    @ti.kernel
+    def init():
+        for i in y:
+            y[i] = 3 * i
+
+    init()
+    z = y.to_paddle()
+    # paddle's operator slice doesn't have kernel for f16, so cast to f32
+    z = z.cast(paddle.float32)
     for i in range(n):
         assert (z[i] == i * 3)
 

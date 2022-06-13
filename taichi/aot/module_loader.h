@@ -10,13 +10,13 @@
 #include "taichi/aot/module_data.h"
 #include "taichi/backends/device.h"
 #include "taichi/ir/snode.h"
-#include "taichi/aot/module_data.h"
+#include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
 
 struct RuntimeContext;
-
+class Graph;
 namespace aot {
 
 class TI_DLL_EXPORT Field {
@@ -28,26 +28,6 @@ class TI_DLL_EXPORT Field {
   Field &operator=(const Field &) = delete;
   Field(Field &&) = default;
   Field &operator=(Field &&) = default;
-};
-
-class TI_DLL_EXPORT Kernel {
- public:
-  // Rule of 5 to make MSVC happy
-  Kernel() = default;
-  virtual ~Kernel() = default;
-  Kernel(const Kernel &) = delete;
-  Kernel &operator=(const Kernel &) = delete;
-  Kernel(Kernel &&) = default;
-  Kernel &operator=(Kernel &&) = default;
-
-  /**
-   * @brief Launches the kernel to the device
-   *
-   * This does not manage the device to host synchronization.
-   *
-   * @param ctx Host context
-   */
-  virtual void launch(RuntimeContext *ctx) = 0;
 };
 
 class TI_DLL_EXPORT KernelTemplateArg {
@@ -110,11 +90,16 @@ class TI_DLL_EXPORT Module {
   KernelTemplate *get_kernel_template(const std::string &name);
   Field *get_field(const std::string &name);
 
+  virtual std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) {
+    TI_NOT_IMPLEMENTED;
+  }
+
  protected:
   virtual std::unique_ptr<Kernel> make_new_kernel(const std::string &name) = 0;
   virtual std::unique_ptr<KernelTemplate> make_new_kernel_template(
       const std::string &name) = 0;
   virtual std::unique_ptr<Field> make_new_field(const std::string &name) = 0;
+  std::unordered_map<std::string, CompiledGraph> graphs_;
 
  private:
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
@@ -164,6 +149,9 @@ class TargetDevice : public Device {
     TI_NOT_IMPLEMENTED;
   }
   Stream *get_compute_stream() override {
+    TI_NOT_IMPLEMENTED;
+  }
+  void wait_idle() override {
     TI_NOT_IMPLEMENTED;
   }
 };

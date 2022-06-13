@@ -35,6 +35,8 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return std::vector<Stmt *>(1, stack_pop->stack);
   } else if (auto external_func = load_stmt->cast<ExternalFuncCallStmt>()) {
     return external_func->arg_stmts;
+  } else if (auto ref = load_stmt->cast<ReferenceStmt>()) {
+    return {ref->var};
   } else {
     return std::vector<Stmt *>();
   }

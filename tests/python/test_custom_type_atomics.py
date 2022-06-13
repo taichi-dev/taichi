@@ -9,9 +9,9 @@ from tests import test_utils
                  exclude=[ti.metal],
                  debug=True)
 def test_custom_int_atomics():
-    ci13 = ti.types.quantized_types.quant.int(13, True)
-    ci5 = ti.types.quantized_types.quant.int(5, True)
-    cu2 = ti.types.quantized_types.quant.int(2, False)
+    ci13 = ti.types.quant.int(13, True)
+    ci5 = ti.types.quant.int(5, True)
+    cu2 = ti.types.quant.int(2, False)
 
     x = ti.field(dtype=ci13)
     y = ti.field(dtype=ci5)
@@ -44,7 +44,7 @@ def test_custom_int_atomics():
 @test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
                  debug=True)
 def test_custom_int_atomics_b64():
-    ci13 = ti.types.quantized_types.quant.int(13, True)
+    ci13 = ti.types.quant.int(13, True)
 
     x = ti.field(dtype=ci13)
 
@@ -68,12 +68,8 @@ def test_custom_int_atomics_b64():
 
 @test_utils.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_float_atomics():
-    ci13 = ti.types.quantized_types.quant.int(13, True)
-    ci19 = ti.types.quantized_types.quant.int(19, False)
-    cft13 = ti.types.quantized_types.type_factory.custom_float(
-        significand_type=ci13, scale=0.1)
-    cft19 = ti.types.quantized_types.type_factory.custom_float(
-        significand_type=ci19, scale=0.1)
+    cft13 = ti.types.quant.fixed(frac=13, signed=True, scale=0.1)
+    cft19 = ti.types.quant.fixed(frac=19, signed=False, scale=0.1)
 
     x = ti.field(dtype=cft13)
     y = ti.field(dtype=cft19)

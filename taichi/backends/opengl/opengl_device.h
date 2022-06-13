@@ -53,12 +53,17 @@ class GLResourceBinder : public ResourceBinder {
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
-  const std::unordered_map<uint32_t, GLuint> &binding_map() {
-    return binding_map_;
+  const std::unordered_map<uint32_t, GLuint> &ssbo_binding_map() {
+    return ssbo_binding_map_;
+  }
+
+  const std::unordered_map<uint32_t, GLuint> &ubo_binding_map() {
+    return ubo_binding_map_;
   }
 
  private:
-  std::unordered_map<uint32_t, GLuint> binding_map_;
+  std::unordered_map<uint32_t, GLuint> ssbo_binding_map_;
+  std::unordered_map<uint32_t, GLuint> ubo_binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -141,6 +146,7 @@ class GLCommandList : public CommandList {
   struct CmdBindBufferToIndex : public Cmd {
     GLuint buffer{0};
     GLuint index{0};
+    GLenum target{GL_SHADER_STORAGE_BUFFER};
     void execute() override;
   };
 
@@ -198,8 +204,12 @@ class GLStream : public Stream {
   ~GLStream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
 
   void command_sync() override;
 };
@@ -237,6 +247,8 @@ class GLDevice : public GraphicsDevice {
 
   Stream *get_graphics_stream() override;
 
+  void wait_idle() override;
+
   std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
@@ -272,8 +284,10 @@ class GLSurface : public Surface {
  public:
   ~GLSurface() override;
 
+  StreamSemaphore acquire_next_image() override;
   DeviceAllocation get_target_image() override;
-  void present_image() override;
+  void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;

@@ -1,0 +1,16 @@
+name: Add issues to Taichi project
+
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  add-to-project:
+    name: Add issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@main
+        with:
+          project-url: https://github.com/orgs/taichi-dev/projects/1
+          github-token: ${{ secrets.ORG_PROJECT_PAT }}

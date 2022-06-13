@@ -156,7 +156,6 @@ class LowerAST : public IRVisitor {
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         fctx.stmts.size());
-    stmt->insert_before_me(std::make_unique<AllocaStmt>(PrimitiveType::i32));
     auto &&const_stmt =
         std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
     auto const_stmt_ptr = const_stmt.get();
@@ -314,16 +313,9 @@ class LowerAST : public IRVisitor {
     } else {
       auto tensor = stmt->global_var.cast<ExternalTensorExpression>();
       std::vector<Stmt *> shape;
-      if (tensor->element_dim > 0) {  // Layout.SOA
-        for (int i = tensor->element_dim; i < tensor->dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-              i, tensor->arg_id));
-        }
-      } else {  // Layout.AOS
-        for (int i = 0; i < tensor->dim + tensor->element_dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-              i, tensor->arg_id));
-        }
+      for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
+        shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+            i, tensor->arg_id));
       }
       Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
       Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
@@ -409,7 +401,9 @@ class LowerAST : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
     } else {  // global variable
-      TI_ASSERT(dest.is<GlobalPtrExpression>());
+      TI_ASSERT(dest.is<GlobalPtrExpression>() ||
+                (dest.is<ArgLoadExpression>() &&
+                 dest.cast<ArgLoadExpression>()->is_ptr));
       flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }

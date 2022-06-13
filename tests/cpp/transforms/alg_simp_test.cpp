@@ -96,7 +96,8 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   auto add = block->push_back<BinaryOpStmt>(BinaryOpType::add, mul, one);
   auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
       4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
-  auto global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
+  [[maybe_unused]] auto global_store =
+      block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;

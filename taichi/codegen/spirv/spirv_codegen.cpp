@@ -474,7 +474,6 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt = stmt->val->element_type();
 
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 
@@ -565,8 +564,15 @@ class TaskCodegen : public IRVisitor {
     {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
+      const auto &element_shape = stmt->element_shape;
+      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                                 : ExternalArrayLayout::kSOA;
       const auto extra_args_member_index = ctx_attribs_->args().size();
-      for (int i = 0; i < num_indices; i++) {
+      const size_t element_shape_index_offset =
+          (layout == ExternalArrayLayout::kAOS)
+              ? num_indices - element_shape.size()
+              : 0;
+      for (int i = 0; i < num_indices - element_shape.size(); i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
         const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
         spirv::Value var_ptr = ir_->make_value(
@@ -579,8 +585,17 @@ class TaskCodegen : public IRVisitor {
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
       }
+      int size_var_names_idx = 0;
       for (int i = 0; i < num_indices; i++) {
-        spirv::Value size_var = ir_->query_value(size_var_names[i]);
+        spirv::Value size_var;
+        // Use immediate numbers to flatten index for element shapes.
+        if (i >= element_shape_index_offset &&
+            i < element_shape_index_offset + element_shape.size()) {
+          size_var = ir_->uint_immediate_number(
+              ir_->i32_type(), element_shape[i - element_shape_index_offset]);
+        } else {
+          size_var = ir_->query_value(size_var_names[size_var_names_idx++]);
+        }
         spirv::Value indices = ir_->query_value(stmt->indices[i]->raw_name());
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
@@ -593,7 +608,6 @@ class TaskCodegen : public IRVisitor {
       ir_->decorate(spv::OpDecorate, linear_offset,
                     spv::DecorationNoSignedWrap);
     }
-
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,
@@ -2169,7 +2183,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 void lower(Kernel *kernel) {
   auto &config = kernel->program->config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel->ir.get(), config, kernel, kernel->grad,
+  irpass::compile_to_executable(kernel->ir.get(), config, kernel,
+                                kernel->autodiff_mode,
                                 /*ad_use_stack=*/false, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/false);

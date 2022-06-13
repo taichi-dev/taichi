@@ -14,6 +14,7 @@
 #include "taichi/backends/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/program/kernel.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
@@ -188,7 +189,7 @@ class UserMtlKernel : public CompiledMtlKernelBase {
     // 0 is valid for |num_threads|!
     TI_ASSERT(kernel_attribs_.advisory_total_num_threads >= 0);
     BindBuffers buffers;
-    for (const auto b : kernel_attribs_.buffers) {
+    for (const auto &b : kernel_attribs_.buffers) {
       buffers.push_back({input_buffers.find(b)->second, b});
     }
     launch_if_not_empty(std::move(buffers), command_buffer);
@@ -215,7 +216,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     BindBuffers buffers;
-    for (const auto b : kernel_attribs_.buffers) {
+    for (const auto &b : kernel_attribs_.buffers) {
       if (b.type() == BufferDescriptor::Type::Context) {
         buffers.push_back({args_buffer_.get(), b});
       } else {
@@ -292,11 +293,15 @@ class CompiledTaichiKernel {
     MemoryPool *mem_pool;
     KernelProfilerBase *profiler;
     const CompileConfig *compile_config;
+    const Kernel *kernel;
+    Device *rhi_device;
   };
 
   CompiledTaichiKernel(Params params)
       : ti_kernel_attribs(*params.ti_kernel_attribs),
-        ctx_attribs(*params.ctx_attribs) {
+        ctx_attribs(*params.ctx_attribs),
+        kernel_(params.kernel),
+        rhi_device_(params.rhi_device) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(
         device, params.mtl_source_code, params.compile_config->fast_math,
@@ -367,6 +372,49 @@ class CompiledTaichiKernel {
     }
   }
 
+  ~CompiledTaichiKernel() {
+    for (auto [_, alloc_n_sz] : ext_arr_arg_to_dev_alloc) {
+      rhi_device_->dealloc_memory(alloc_n_sz.alloc);
+    }
+  }
+
+  void maybe_make_dev_alloc_for_ext_arrs(const RuntimeContext &host_ctx) {
+    for (const auto &arg : ctx_attribs.args()) {
+      if (!arg.is_array) {
+        continue;
+      }
+      const int arg_id = arg.index;
+      if (host_ctx.is_device_allocations[arg_id]) {
+        continue;
+      }
+      // Even in the face that external array has 0-length, we still allocate
+      // something, to prevent runtime edge cases.
+      const auto arr_sz =
+          std::max(host_ctx.array_runtime_sizes[arg.index], (uint64)4);
+      auto itr = ext_arr_arg_to_dev_alloc.find(arg_id);
+      const bool already_allocated = (itr != ext_arr_arg_to_dev_alloc.end());
+      if (already_allocated && (itr->second.size >= arr_sz)) {
+        continue;
+      }
+      if (already_allocated) {
+        TI_TRACE("Dealloc dev_alloc for extarr size old={} new={}",
+                 itr->second.size, arr_sz);
+        rhi_device_->dealloc_memory(itr->second.alloc);
+      }
+      // This are the device buffers for "ext_arr". Unlike Ndarray, an ext_arr
+      // is actually a template param, so its size is always fixed per
+      // instantiated kernel.
+      Device::AllocParams aparams;
+      aparams.size = arr_sz;
+      aparams.host_read = true;
+      aparams.host_write = true;
+      AllocAndSize alloc_n_sz;
+      alloc_n_sz.alloc = rhi_device_->allocate_memory(aparams);
+      alloc_n_sz.size = aparams.size;
+      ext_arr_arg_to_dev_alloc[arg_id] = alloc_n_sz;
+    }
+  }
+
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
@@ -374,17 +422,32 @@ class CompiledTaichiKernel {
   KernelContextAttributes ctx_attribs;
   std::unique_ptr<BufferMemoryView> ctx_mem;
   nsobj_unique_ptr<MTLBuffer> ctx_buffer;
+
+  struct AllocAndSize {
+    DeviceAllocation alloc;
+    size_t size{0};
+  };
+  std::unordered_map<int, AllocAndSize> ext_arr_arg_to_dev_alloc;
+
+ private:
+  const Kernel *const kernel_;
+  Device *const rhi_device_;
 };
 
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
                       RuntimeContext *host_ctx,
+                      Device *rhi_device,
+                      AllocToMTLBufferMapper *alloc_mapper,
                       uint64_t *host_result_buffer,
                       const std::string &kernel_name)
-      : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
+      : cti_kernel_(&kernel),
+        ti_kernel_attribs_(&kernel.ti_kernel_attribs),
         ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
+        rhi_device_(rhi_device),
+        alloc_mapper_(alloc_mapper),
         host_result_buffer_(host_result_buffer),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
         kernel_ctx_buffer_(kernel.ctx_buffer.get()),
@@ -404,6 +467,11 @@ class HostMetalCtxBlitter {
       return;
     }
     char *const base = (char *)kernel_ctx_mem_->ptr();
+    struct BufferAndSize {
+      MTLBuffer *buffer{nullptr};
+      size_t size{0};
+    };
+    std::vector<BufferAndSize> buf_sz;
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
@@ -415,8 +483,22 @@ class HostMetalCtxBlitter {
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
-        const void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(device_ptr, host_ptr, arg.stride);
+        if (host_ctx_->is_device_allocations[i]) {
+          // There is no way to write from host into Ndarray directly (yet), so
+          // we don't have to do anything here.
+        } else {
+          const void *host_ptr = host_ctx_->get_arg<void *>(i);
+          const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
+          auto buf_mem = alloc_mapper_->find(alloc_n_sz.alloc);
+          TI_ASSERT(buf_mem.buffer != nullptr);
+          auto *mem = buf_mem.mem;
+          TI_ASSERT(mem != nullptr);
+          // NOTE: DO NOT use `alloc_n_sz.size`. That is the size for the
+          // allocation, NOT the array size.
+          const auto arr_size = host_ctx_->array_runtime_sizes[i];
+          std::memcpy(mem->ptr(), host_ptr, arr_size);
+          buf_sz.push_back(BufferAndSize{buf_mem.buffer, arr_size});
+        }
       } else if (dt == MetalDataType::i32) {
         TO_METAL(int32);
       } else if (dt == MetalDataType::u32) {
@@ -440,8 +522,11 @@ class HostMetalCtxBlitter {
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
-    did_modify_range(kernel_ctx_buffer_, /*location=*/0,
-                     kernel_ctx_mem_->size());
+    buf_sz.push_back(
+        BufferAndSize{kernel_ctx_buffer_, kernel_ctx_mem_->size()});
+    for (auto bs : buf_sz) {
+      did_modify_range(bs.buffer, /*length=*/0, bs.size);
+    }
   }
 
   void metal_to_host() {
@@ -456,11 +541,16 @@ class HostMetalCtxBlitter {
     char *const base = (char *)kernel_ctx_mem_->ptr();
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      char *device_ptr = base + arg.offset_in_mem;
       if (arg.is_array) {
+        if (host_ctx_->is_device_allocations[i]) {
+          continue;
+        }
+        const auto alloc_n_sz = cti_kernel_->ext_arr_arg_to_dev_alloc.at(i);
+        auto *mem = alloc_mapper_->find(alloc_n_sz.alloc).mem;
+        TI_ASSERT(mem != nullptr);
         void *host_ptr = host_ctx_->get_arg<void *>(i);
-        std::memcpy(host_ptr, device_ptr, arg.stride);
-
+        const auto arr_size = host_ctx_->array_runtime_sizes[i];
+        std::memcpy(host_ptr, mem->ptr(), arr_size);
         if (!ti_kernel_attribs_->is_jit_evaluator) {
           ActionRecorder::get_instance().record(
               "context_metal_to_host",
@@ -469,10 +559,6 @@ class HostMetalCtxBlitter {
                   ActionArg("arg_id", i),
                   ActionArg("arg_type", "ptr"),
                   ActionArg("size_in_bytes", (int64)arg.stride),
-                  ActionArg("host_address",
-                            fmt::format("0x{:x}", (uint64)host_ptr)),
-                  ActionArg("device_address",
-                            fmt::format("0x{:x}", (uint64)device_ptr)),
               });
         }
       }
@@ -512,23 +598,34 @@ class HostMetalCtxBlitter {
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
       RuntimeContext *ctx,
+      Device *rhi_device,
+      AllocToMTLBufferMapper *alloc_mapper,
       uint64_t *host_result_buffer,
       std::string name) {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx,
-                                                 host_result_buffer, name);
+    return std::make_unique<HostMetalCtxBlitter>(
+        kernel, ctx, rhi_device, alloc_mapper, host_result_buffer, name);
   }
 
  private:
+  const CompiledTaichiKernel *const cti_kernel_;
   const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
   RuntimeContext *const host_ctx_;
+  Device *const rhi_device_;
+  AllocToMTLBufferMapper *const alloc_mapper_;
   uint64_t *const host_result_buffer_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
   std::string kernel_name_;
+};
+
+struct DevAllocWithInternals {
+  DeviceAllocation handle;
+  BufferMemoryView *mem{nullptr};
+  MTLBuffer *buffer{nullptr};
 };
 
 }  // namespace
@@ -562,69 +659,64 @@ class KernelManager::Impl {
       devalloc_mapper_ = make_res.mapper;
     }
 
-    global_tmps_mem_ = std::make_unique<BufferMemoryView>(
-        taichi_global_tmp_buffer_size, mem_pool_);
+    global_tmps_idevalloc_ = make_idevalloc(taichi_global_tmp_buffer_size);
 
     ActionRecorder::get_instance().record(
         "allocate_global_tmp_buffer",
         {ActionArg("size_in_bytes", (int64)taichi_global_tmp_buffer_size)});
 
-    global_tmps_buffer_ = new_mtl_buffer_no_copy(
-        device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
-    TI_ASSERT(global_tmps_buffer_ != nullptr);
-
     const size_t mem_pool_bytes =
         (config_->device_memory_GB * 1024 * 1024 * 1024ULL);
-    runtime_mem_ = std::make_unique<BufferMemoryView>(
-        compiled_runtime_module_.runtime_size + mem_pool_bytes, mem_pool_);
-    runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
-                                             runtime_mem_->size());
+    runtime_idevalloc_ =
+        make_idevalloc(compiled_runtime_module_.runtime_size + mem_pool_bytes);
     buffer_meta_data_.runtime_buffer_size =
         compiled_runtime_module_.runtime_size;
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
-        runtime_mem_->size(), compiled_runtime_module_.runtime_size,
+        runtime_idevalloc_.mem->size(), compiled_runtime_module_.runtime_size,
         mem_pool_bytes);
 
     ActionRecorder::get_instance().record(
         "allocate_runtime_buffer",
-        {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
+        {ActionArg("runtime_buffer_size_in_bytes",
+                   (int64)runtime_idevalloc_.mem->size()),
          ActionArg("runtime_size_in_bytes",
                    (int64)compiled_runtime_module_.runtime_size),
          ActionArg("memory_pool_size", (int64)mem_pool_bytes)});
 
-    TI_ASSERT_INFO(
-        runtime_buffer_ != nullptr,
-        "Failed to allocate Metal runtime buffer, requested {} bytes",
-        runtime_mem_->size());
-    print_mem_ = std::make_unique<BufferMemoryView>(
-        shaders::kMetalPrintAssertBufferSize, mem_pool_);
-    print_buffer_ = new_mtl_buffer_no_copy(device_.get(), print_mem_->ptr(),
-                                           print_mem_->size());
-    TI_ASSERT(print_buffer_ != nullptr);
+    TI_ASSERT_INFO(runtime_idevalloc_.buffer != nullptr,
+                   "Failed to allocate Metal runtime buffer");
+    print_assert_idevalloc_ =
+        make_idevalloc(shaders::kMetalPrintAssertBufferSize);
+    TI_ASSERT(print_assert_idevalloc_.buffer != nullptr);
 
     init_runtime_buffer(compiled_runtime_module_, params.config->random_seed);
     clear_print_assert_buffer();
+  }
+
+  ~Impl() {
+    for (auto &rb : root_buffers_) {
+      rhi_device_->dealloc_memory(rb.idevalloc.handle);
+    }
+    rhi_device_->dealloc_memory(global_tmps_idevalloc_.handle);
+    rhi_device_->dealloc_memory(runtime_idevalloc_.handle);
+    rhi_device_->dealloc_memory(print_assert_idevalloc_.handle);
   }
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
     rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
-      rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
-                                                     mem_pool_);
-      rtbuf.buffer = new_mtl_buffer_no_copy(device_.get(), rtbuf.mem->ptr(),
-                                            rtbuf.mem->size());
-
-      TI_ASSERT(rtbuf.buffer != nullptr);
-      buffer_meta_data_.root_buffer_size += rtbuf.mem->size();
+      rtbuf.idevalloc = make_idevalloc(compiled_tree.root_size);
+      const auto buf_sz = rtbuf.idevalloc.mem->size();
+      buffer_meta_data_.root_buffer_size += buf_sz;
       TI_DEBUG("Metal root={} buffer_size={} bytes", compiled_tree.root_id,
-               rtbuf.mem->size());
+               buf_sz);
       ActionRecorder::get_instance().record(
           "allocate_root_buffer",
           {ActionArg("root_id={}", (int64)compiled_tree.root_id),
-           ActionArg("size_in_bytes", (int64)rtbuf.mem->size())});
+           ActionArg("size_in_bytes", (int64)buf_sz)});
     }
     init_snode_tree_sparse_runtime(compiled_tree);
 
@@ -635,7 +727,8 @@ class KernelManager::Impl {
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs) {
+                              const KernelContextAttributes &ctx_attribs,
+                              const Kernel *kernel) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
 
@@ -654,6 +747,8 @@ class KernelManager::Impl {
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
     params.compile_config = config_;
+    params.kernel = kernel;
+    params.rhi_device = rhi_device_.get();
     compiled_taichi_kernels_[taichi_kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
     TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);
@@ -662,31 +757,37 @@ class KernelManager::Impl {
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             RuntimeContext *ctx) {
     mac::ScopedAutoreleasePool pool;
-    auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
+    auto &cti_kernel =
+        *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
+    cti_kernel.maybe_make_dev_alloc_for_ext_arrs(*ctx);
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
-        ctk, ctx, host_result_buffer_, taichi_kernel_name);
+        cti_kernel, ctx, rhi_device_.get(), devalloc_mapper_,
+        host_result_buffer_, taichi_kernel_name);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
 
     InputBuffersMap input_buffers;
     for (auto &rb : root_buffers_) {
-      input_buffers[rb.desc] = rb.buffer.get();
+      input_buffers[rb.desc] = rb.idevalloc.buffer;
     }
-    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
-    input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
-    input_buffers[BufferDescriptor::print()] = print_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] =
+        global_tmps_idevalloc_.buffer;
+    input_buffers[BufferDescriptor::runtime()] = runtime_idevalloc_.buffer;
+    input_buffers[BufferDescriptor::print()] = print_assert_idevalloc_.buffer;
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = cti_kernel.ctx_buffer.get();
     }
+    auto ndarray_buffers = get_dev_alloc_buffers(cti_kernel, *ctx);
+    input_buffers.insert(ndarray_buffers.begin(), ndarray_buffers.end());
 
-    for (const auto &mk : ctk.compiled_mtl_kernels) {
+    for (const auto &mk : cti_kernel.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
 
-    const auto &used = ctk.ti_kernel_attribs.used_features;
+    const auto &used = cti_kernel.ti_kernel_attribs.used_features;
     const bool used_print_assert = (used.print || used.assertion);
     if (ctx_blitter || used_print_assert) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
@@ -698,7 +799,10 @@ class KernelManager::Impl {
       }
       if (used_print_assert) {
         clear_print_assert_buffer();
-        buffers_to_blit.push_back(print_buffer_.get());
+        buffers_to_blit.push_back(print_assert_idevalloc_.buffer);
+      }
+      for (auto [_, buf] : ndarray_buffers) {
+        buffers_to_blit.push_back(buf);
       }
       blit_buffers_and_sync(buffers_to_blit);
 
@@ -730,7 +834,7 @@ class KernelManager::Impl {
   std::size_t get_snode_num_dynamically_allocated(SNode *snode) {
     // TODO(k-ye): Have a generic way for querying these sparse runtime stats.
     mac::ScopedAutoreleasePool pool;
-    blit_buffers_and_sync({runtime_buffer_.get()});
+    blit_buffers_and_sync({runtime_idevalloc_.buffer});
     auto *sna = dev_runtime_mirror_.snode_allocators + snode->id;
     // WHY -1?
     //
@@ -747,7 +851,7 @@ class KernelManager::Impl {
  private:
   void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
                            int random_seed) {
-    char *addr = runtime_mem_->ptr();
+    char *addr = runtime_idevalloc_.mem->ptr();
     // init rand_seeds
     std::default_random_engine generator((unsigned int)random_seed);
     std::uniform_int_distribution<uint32_t> distr(
@@ -760,7 +864,7 @@ class KernelManager::Impl {
     TI_DEBUG("Initialized random seeds size={}", rtm_module.rand_seeds_size);
 
     using namespace shaders;
-    addr = runtime_mem_->ptr() + rtm_module.rand_seeds_size;
+    addr = runtime_idevalloc_.mem->ptr() + rtm_module.rand_seeds_size;
     const char *const addr_begin = addr;
     dev_runtime_mirror_.snode_metas = (SNodeMeta *)addr;
     size_t addr_offset = sizeof(SNodeMeta) * kMaxNumSNodes;
@@ -958,14 +1062,14 @@ class KernelManager::Impl {
   }
 
   void mark_runtime_buffer_modified() {
-    did_modify_range(runtime_buffer_.get(), /*location=*/0,
-                     runtime_mem_->size());
+    did_modify_range(runtime_idevalloc_.buffer, /*location=*/0,
+                     runtime_idevalloc_.mem->size());
   }
 
   void clear_print_assert_buffer() {
-    const auto sz = print_mem_->size();
-    std::memset(print_mem_->ptr(), 0, sz);
-    did_modify_range(print_buffer_.get(), /*location=*/0, sz);
+    const auto sz = print_assert_idevalloc_.mem->size();
+    std::memset(print_assert_idevalloc_.mem->ptr(), 0, sz);
+    did_modify_range(print_assert_idevalloc_.buffer, /*location=*/0, sz);
   }
 
   void blit_buffers_and_sync(
@@ -997,8 +1101,8 @@ class KernelManager::Impl {
   void check_assertion_failure() {
     // TODO: Copy this to program's result_buffer, and let the Taichi runtime
     // handle the assertion failures uniformly.
-    auto *asst_rec =
-        reinterpret_cast<shaders::AssertRecorderData *>(print_mem_->ptr());
+    auto *asst_rec = reinterpret_cast<shaders::AssertRecorderData *>(
+        print_assert_idevalloc_.mem->ptr());
     if (!asst_rec->flag) {
       return;
     }
@@ -1025,8 +1129,9 @@ class KernelManager::Impl {
     //
     //   check_assertion_failure();  <-- Code below is skipped...
     //   flush_print_buffers();
-    //   memset(print_mem_->ptr(), 0, print_mem_->size());
-    //   did_modify_range(print_buffer_);
+    //   memset(print_assert_idevalloc_.mem->ptr(), 0,
+    //          print_assert_idevalloc_.mem->size());
+    //   did_modify_range(print_assert_idevalloc_.buffer);
     //
     // As a workaround, we put [didModifyRange:] before sync, where the program
     // is still executing normally.
@@ -1036,7 +1141,7 @@ class KernelManager::Impl {
 
   void flush_print_buffers() {
     auto *pa = reinterpret_cast<shaders::PrintMsgAllocator *>(
-        print_mem_->ptr() + shaders::kMetalAssertBufferSize);
+        print_assert_idevalloc_.mem->ptr() + shaders::kMetalAssertBufferSize);
     const int used_sz =
         std::min(pa->next, shaders::kMetalPrintMsgsMaxQueueSize);
     TI_TRACE("Print buffer used bytes: {}", used_sz);
@@ -1095,14 +1200,53 @@ class KernelManager::Impl {
 
   template <typename T>
   inline T load_global_tmp(int offset) const {
-    return *reinterpret_cast<const T *>((const char *)global_tmps_mem_->ptr() +
-                                        offset);
+    return *reinterpret_cast<const T *>(
+        (const char *)global_tmps_idevalloc_.mem->ptr() + offset);
+  }
+
+  DevAllocWithInternals make_idevalloc(size_t size) {
+    Device::AllocParams params;
+    // host_read|write honestly don't matter at this point, because the Metal
+    // backend only uses .managed mode.
+    params.host_read = false;
+    params.host_write = false;
+    params.size = size;
+    params.usage = AllocUsage::Storage;
+    DevAllocWithInternals res;
+    res.handle = rhi_device_->allocate_memory(params);
+    auto bm = devalloc_mapper_->find(res.handle);
+    res.buffer = bm.buffer;
+    res.mem = bm.mem;
+    return res;
+  }
+
+  InputBuffersMap get_dev_alloc_buffers(const CompiledTaichiKernel &ctk,
+                                        const RuntimeContext &host_ctx) const {
+    InputBuffersMap res;
+    for (const auto &arg : ctk.ctx_attribs.args()) {
+      if (!arg.is_array) {
+        continue;
+      }
+      DeviceAllocation dev_alloc;
+      if (host_ctx.is_device_allocations[arg.index]) {
+        dev_alloc = *reinterpret_cast<const DeviceAllocation *>(
+            host_ctx.args[arg.index]);
+        TI_TRACE("Ndarray arg_id={} alloc_id={}", arg.index,
+                 dev_alloc.alloc_id);
+      } else {
+        dev_alloc = ctk.ext_arr_arg_to_dev_alloc.at(arg.index).alloc;
+        TI_TRACE("ExtArr arg_id={} alloc_id={}", arg.index, dev_alloc.alloc_id);
+      }
+      MTLBuffer *buffer = devalloc_mapper_->find(dev_alloc).buffer;
+      TI_ASSERT(buffer != nullptr);
+      res[BufferDescriptor::ndarray(arg.index)] = buffer;
+    }
+    return res;
   }
 
   struct SNodesRootBuffer {
     BufferDescriptor desc;
-    std::unique_ptr<BufferMemoryView> mem{nullptr};
-    nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
+    DevAllocWithInternals idevalloc;
   };
 
   CompileConfig *const config_;
@@ -1121,14 +1265,10 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
   std::size_t command_buffer_id_{0};
   std::vector<SNodesRootBuffer> root_buffers_;
-  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
-  std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> runtime_buffer_{nullptr};
+  DevAllocWithInternals global_tmps_idevalloc_;
+  DevAllocWithInternals runtime_idevalloc_;
+  DevAllocWithInternals print_assert_idevalloc_;
   int last_snode_id_used_in_runtime_{-1};
-  // TODO: Rename these to 'print_assert_{mem|buffer}_'
-  std::unique_ptr<BufferMemoryView> print_mem_{nullptr};
-  nsobj_unique_ptr<MTLBuffer> print_buffer_{nullptr};
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
   PrintStringTable print_strtable_;
@@ -1161,7 +1301,8 @@ class KernelManager::Impl {
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs) {
+                              const KernelContextAttributes &ctx_attribs,
+                              const Kernel *kernel) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1211,9 +1352,10 @@ void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
     const TaichiKernelAttributes &ti_kernel_attribs,
-    const KernelContextAttributes &ctx_attribs) {
+    const KernelContextAttributes &ctx_attribs,
+    const Kernel *kernel) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
-                                ti_kernel_attribs, ctx_attribs);
+                                ti_kernel_attribs, ctx_attribs, kernel);
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,

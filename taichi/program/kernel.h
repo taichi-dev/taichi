@@ -6,6 +6,7 @@
 #include "taichi/backends/arch.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/aot/graph_data.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,7 +20,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   bool is_accessor{false};
   bool is_evaluator{false};
-  bool grad{false};
+  AutodiffMode autodiff_mode{AutodiffMode::kNone};
 
   class LaunchContextBuilder {
    public:
@@ -68,23 +69,29 @@ class TI_DLL_EXPORT Kernel : public Callable {
   Kernel(Program &program,
          const std::function<void()> &func,
          const std::string &name = "",
-         bool grad = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   Kernel(Program &program,
          const std::function<void(Kernel *)> &func,
          const std::string &name = "",
-         bool grad = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   Kernel(Program &program,
          std::unique_ptr<IRNode> &&ir,
          const std::string &name = "",
-         bool grad = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   bool lowered() const {
     return lowered_;
   }
 
   void compile();
+
+  void compile_to_aot_kernel();
+
+  aot::Kernel *compiled_aot_kernel() {
+    return compiled_aot_kernel_.get();
+  }
 
   /**
    * Lowers |ir| to CHI IR level
@@ -134,12 +141,16 @@ class TI_DLL_EXPORT Kernel : public Callable {
   void init(Program &program,
             const std::function<void()> &func,
             const std::string &name = "",
-            bool grad = false);
+            AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
   // The closure that, if invoked, lauches the backend kernel (shader)
   FunctionType compiled_{nullptr};
+  // TODO[#5114]: It's kinda redundant to keep both compiled_ (used for JIT
+  // execution) as well as compiled_aot_kernel_. In fact we'd better unify
+  // everything around compiled_aot_kernel and rename it.
+  std::unique_ptr<aot::Kernel> compiled_aot_kernel_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
   // lower inital AST all the way down to a bunch of
   // OffloadedStmt for async execution

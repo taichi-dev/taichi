@@ -155,6 +155,13 @@ void fill_buffer(MTLBlitCommandEncoder *encoder,
                  mac::TI_NSRange range,
                  uint8_t value);
 
+void copy_from_buffer_to_buffer(MTLBlitCommandEncoder *encoder,
+                                MTLBuffer *source_buffer,
+                                size_t source_offset,
+                                MTLBuffer *destination_buffer,
+                                size_t destination_offset,
+                                size_t size);
+
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state);
 #endif  // TI_PLATFORM_OSX

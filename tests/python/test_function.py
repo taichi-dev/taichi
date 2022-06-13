@@ -304,3 +304,33 @@ def test_return_in_if_in_for():
 
     assert bar(10) == 11 * 5
     assert bar(200) == 99 * 50
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_ref():
+    @ti.experimental.real_func
+    def foo(a: ti.ref(ti.f32)):
+        a = 7
+
+    @ti.kernel
+    def bar():
+        a = 5.
+        foo(a)
+        assert a == 7
+
+    bar()
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_ref_atomic():
+    @ti.experimental.real_func
+    def foo(a: ti.ref(ti.f32)):
+        a += a
+
+    @ti.kernel
+    def bar():
+        a = 5.
+        foo(a)
+        assert a == 10.
+
+    bar()

@@ -71,9 +71,9 @@ class AotModuleImpl : public aot::Module {
       return nullptr;
     }
     auto *kernel_data = itr->second;
-    runtime_->register_taichi_kernel(name, kernel_data->source_code,
-                                     kernel_data->kernel_attribs,
-                                     kernel_data->ctx_attribs);
+    runtime_->register_taichi_kernel(
+        name, kernel_data->source_code, kernel_data->kernel_attribs,
+        kernel_data->ctx_attribs, /*kernel=*/nullptr);
     return std::make_unique<KernelImpl>(runtime_, name);
   }
 

@@ -55,6 +55,10 @@ using BufferType = BufferDescriptor::Type;
 using BufferDescSet =
     std::unordered_set<BufferDescriptor, BufferDescriptor::Hasher>;
 
+std::string ndarray_buffer_name(int arg_id) {
+  return fmt::format("ndarray_addr_{}", arg_id);
+}
+
 std::string buffer_to_name(const BufferDescriptor &b) {
   switch (b.type()) {
     case BufferType::Root:
@@ -67,6 +71,8 @@ std::string buffer_to_name(const BufferDescriptor &b) {
       return kRuntimeBufferName;
     case BufferType::Print:
       return kPrintAssertBufferName;
+    case BufferType::Ndarray:
+      return ndarray_buffer_name(b.ndarray_arg_id());
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -128,6 +134,7 @@ class TaskPreprocessor final : public BasicStmtVisitor {
  public:
   struct Result {
     bool should_init_randseeds{false};
+    std::unordered_map<int, int> arr_args_order;
   };
 
   static Result run(Stmt *s) {
@@ -140,6 +147,19 @@ class TaskPreprocessor final : public BasicStmtVisitor {
   void visit(RandStmt *) override {
     res_.should_init_randseeds = true;
   }
+
+  void visit(ArgLoadStmt *stmt) override {
+    if (!stmt->is_ptr) {
+      return;
+    }
+    const auto arg_id = stmt->arg_id;
+    if (res_.arr_args_order.count(arg_id) > 0) {
+      return;
+    }
+    const int order = res_.arr_args_order.size();
+    res_.arr_args_order[arg_id] = order;
+  }
+
   using BasicStmtVisitor::visit;
 
   TaskPreprocessor() = default;
@@ -190,7 +210,7 @@ class KernelCodegenImpl : public IRVisitor {
 
     for (int i = 0; i < compiled_snode_trees_.size(); ++i) {
       const auto &cst = compiled_snode_trees_[i];
-      for (const auto [node_id, _] : cst.snode_descriptors) {
+      for (const auto &[node_id, _] : cst.snode_descriptors) {
         RootInfo ri{};
         ri.snode_id = cst.root_id;
         ri.index_in_cst = i;
@@ -419,8 +439,9 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = metal_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      emit("device {} *{} = {}.arg{}();", dt, stmt->raw_name(), kContextVarName,
-           stmt->arg_id);
+      const auto type_str = fmt::format("device {} *", dt);
+      emit("{}{} = reinterpret_cast<{}>({});", type_str, stmt->raw_name(),
+           type_str, ndarray_buffer_name(stmt->arg_id));
     } else {
       emit("const {} {} = *{}.arg{}();", dt, stmt->raw_name(), kContextVarName,
            stmt->arg_id);
@@ -449,17 +470,32 @@ class KernelCodegenImpl : public IRVisitor {
       const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
       const int arg_id = argload->arg_id;
       const int num_indices = stmt->indices.size();
-      std::vector<std::string> size_var_names;
-      for (int i = 0; i < num_indices; i++) {
-        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+      const auto &element_shape = stmt->element_shape;
+      std::vector<std::string> size_exprs;
+      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                                 : ExternalArrayLayout::kSOA;
+      const int arr_shape_len = num_indices - element_shape.size();
+      const size_t element_shape_index_offset =
+          (layout == ExternalArrayLayout::kAOS) ? arr_shape_len : 0;
+      for (int i = 0; i < arr_shape_len; i++) {
+        std::string var_name =
+            fmt::format("{}_arr_dim{}_", stmt->raw_name(), i);
         emit("const int {} = {}.extra_arg({}, {});", var_name, kContextVarName,
              arg_id, i);
-        size_var_names.push_back(std::move(var_name));
+        size_exprs.push_back(std::move(var_name));
       }
+      size_t size_var_index = 0;
       for (int i = 0; i < num_indices; i++) {
-        emit("{} *= {};", linear_index_name, size_var_names[i]);
+        if (i >= element_shape_index_offset &&
+            i < element_shape_index_offset + element_shape.size()) {
+          emit("{} *= {};", linear_index_name,
+               element_shape[i - element_shape_index_offset]);
+        } else {
+          emit("{} *= {};", linear_index_name, size_exprs[size_var_index++]);
+        }
         emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
       }
+      TI_ASSERT(size_var_index == arr_shape_len);
     }
     emit("}}");
 
@@ -974,7 +1010,7 @@ class KernelCodegenImpl : public IRVisitor {
       const auto loaded = construct_load_as_custom_int(
           stmt->src, cft->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
-      // See LLVM backend's reconstruct_custom_float()
+      // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
                          cft->get_scale());
     }
@@ -1057,17 +1093,17 @@ class KernelCodegenImpl : public IRVisitor {
       ScopedIndent s(current_appender());
       emit("explicit {}(device byte* addr) : addr_(addr) {{}}", class_name);
       for (const auto &arg : ctx_attribs_.args()) {
+        if (arg.is_array) {
+          continue;
+        }
         const auto dt_name = metal_data_type_name(arg.dt);
         emit("device {}* arg{}() {{", dt_name, arg.index);
-        if (arg.is_array) {
-          emit("  // array, size={} B", arg.stride);
-        } else {
-          emit("  // scalar, size={} B", arg.stride);
-        }
+        emit("  // scalar, size={} B", arg.stride);
         emit("  return (device {}*)(addr_ + {});", dt_name, arg.offset_in_mem);
         emit("}}");
       }
       for (const auto &ret : ctx_attribs_.rets()) {
+        // TODO: Why return still needs this?
         const auto dt_name = metal_data_type_name(ret.dt);
         emit("device {}* ret{}() {{", dt_name, ret.index);
         if (ret.is_array) {
@@ -1124,6 +1160,24 @@ class KernelCodegenImpl : public IRVisitor {
     return result;
   }
 
+  static std::unordered_map<int, int> make_arr_args_to_binding_indices(
+      const std::unordered_map<int, int> &arr_args_order,
+      int binding_idx_offset) {
+    auto res = arr_args_order;
+    for (auto itr = res.begin(); itr != res.end(); ++itr) {
+      itr->second += binding_idx_offset;
+    }
+    return res;
+  }
+
+  static void append_arr_buffer_descriptors(
+      const std::unordered_map<int, int> &arr_bindings,
+      std::vector<BufferDescriptor> *descs) {
+    for (const auto &[arr_id, _] : arr_bindings) {
+      descs->push_back(BufferDescriptor::ndarray(arr_id));
+    }
+  }
+
   void generate_serial_kernel(OffloadedStmt *stmt,
                               const BufferDescSet &root_buffer_descs,
                               const TaskPreprocessor::Result &preproc_res) {
@@ -1133,6 +1187,10 @@ class KernelCodegenImpl : public IRVisitor {
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
     ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
+    ka.arr_args_to_binding_indices = make_arr_args_to_binding_indices(
+        preproc_res.arr_args_order, ka.buffers.size());
+    append_arr_buffer_descriptors(ka.arr_args_to_binding_indices,
+                                  &(ka.buffers));
     ka.advisory_total_num_threads = 1;
     ka.advisory_num_threads_per_group = 1;
 
@@ -1165,7 +1223,10 @@ class KernelCodegenImpl : public IRVisitor {
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
     ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
-
+    ka.arr_args_to_binding_indices = make_arr_args_to_binding_indices(
+        preproc_res.arr_args_order, ka.buffers.size());
+    append_arr_buffer_descriptors(ka.arr_args_to_binding_indices,
+                                  &(ka.buffers));
     const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
     kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
@@ -1263,7 +1324,10 @@ class KernelCodegenImpl : public IRVisitor {
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
     ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
-
+    ka.arr_args_to_binding_indices = make_arr_args_to_binding_indices(
+        preproc_res.arr_args_order, ka.buffers.size());
+    append_arr_buffer_descriptors(ka.arr_args_to_binding_indices,
+                                  &(ka.buffers));
     const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
     kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
@@ -1610,7 +1674,7 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     current_appender().append(std::move(f), std::forward<Args>(args)...);
   }
 
@@ -1681,7 +1745,7 @@ FunctionType compile_to_metal_executable(
                   kernel_mgr->print_strtable(), offloaded);
   kernel_mgr->register_taichi_kernel(
       compiled_res.kernel_name, compiled_res.source_code,
-      compiled_res.kernel_attribs, compiled_res.ctx_attribs);
+      compiled_res.kernel_attribs, compiled_res.ctx_attribs, kernel);
   return [kernel_mgr,
           kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);

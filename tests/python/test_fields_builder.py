@@ -38,7 +38,7 @@ def test_fields_with_shape():
         assert x[i] == i
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.dx11, ti.metal])
 def test_fields_builder_dense():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -139,10 +139,10 @@ def test_fields_builder_pointer():
 
 
 # We currently only consider data types that all platforms support.
-# See https://docs.taichi.graphics/lang/articles/type#primitive-types for more details.
+# See https://docs.taichi-lang.org/docs/type#primitive-types for more details.
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.dx11, ti.metal])
 def test_fields_builder_destroy(test_1d_size, field_type):
     def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
@@ -180,7 +180,7 @@ def test_fields_builder_destroy(test_1d_size, field_type):
             c.destroy()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.dx11])
 def test_field_initialize_zero():
     fb0 = ti.FieldsBuilder()
     a = ti.field(ti.i32)

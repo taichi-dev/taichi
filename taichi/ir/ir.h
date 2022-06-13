@@ -130,7 +130,7 @@ class VecStatement {
   Stmt *push_back(pStmt &&stmt);
 
   template <typename T, typename... Args>
-  T *push_back(Args &&... args) {
+  T *push_back(Args &&...args) {
     auto up = std::make_unique<T>(std::forward<Args>(args)...);
     auto ptr = up.get();
     stmts.push_back(std::move(up));
@@ -458,7 +458,7 @@ class StmtFieldManager {
   void operator()(const char *key, T &&value);
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &&t, Args &&... rest) {
+  void operator()(const char *key_, T &&t, Args &&...rest) {
     std::string key(key_);
     size_t pos = key.find(',');
     std::string first_name = key.substr(0, pos);
@@ -572,12 +572,12 @@ class Stmt : public IRNode {
   }
 
   template <typename T, typename... Args>
-  static std::unique_ptr<T> make_typed(Args &&... args) {
+  static std::unique_ptr<T> make_typed(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  static pStmt make(Args &&... args) {
+  static pStmt make(Args &&...args) {
     return make_typed<T>(std::forward<Args>(args)...);
   }
 
@@ -653,7 +653,7 @@ class Block : public IRNode {
   }
 
   template <typename T, typename... Args>
-  Stmt *push_back(Args &&... args) {
+  Stmt *push_back(Args &&...args) {
     auto stmt = std::make_unique<T>(std::forward<Args>(args)...);
     stmt->parent = this;
     statements.emplace_back(std::move(stmt));

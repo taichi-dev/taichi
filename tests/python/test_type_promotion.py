@@ -60,3 +60,39 @@ def test_sqrt():
     func()
 
     assert np.allclose(y.to_numpy(), np.sqrt(x.to_numpy()))
+
+
+@test_utils.test()
+def test_atan2():
+    N = 1
+    x = ti.field(ti.i32, shape=(N, ))
+    y = ti.field(ti.i32, shape=(N, ))
+
+    @ti.kernel
+    def test_case_0() -> ti.f32:
+        i = ti.i32(2)
+        return ti.atan2(i, 1)
+
+    @ti.kernel
+    def test_case_1() -> ti.f32:
+        x[0] = ti.i32(2)
+        return ti.atan2(x[0], 1)
+
+    @ti.kernel
+    def test_case_2() -> ti.f32:
+        x[0] = ti.i32(3)
+        y[0] = ti.i32(1)
+        return ti.atan2(x[0], y[0])
+
+    ti_res0 = test_case_0()
+    np_res0 = np.arctan2(2, 1)
+
+    ti_res1 = test_case_1()
+    np_res1 = np.arctan2(2, 1)
+
+    ti_res2 = test_case_2()
+    np_res2 = np.arctan2(3, 1)
+
+    assert np.allclose(ti_res0, np_res0)
+    assert np.allclose(ti_res1, np_res1)
+    assert np.allclose(ti_res2, np_res2)

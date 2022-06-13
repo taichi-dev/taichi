@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef TI_WITH_LLVM
 // Codegen for the hierarchical data structure (LLVM)
 #include "taichi/llvm/llvm_program.h"

@@ -35,21 +35,23 @@ ti_create_vulkan_runtime_ext(uint32_t api_version,
 
 // function.import_vulkan_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL
-ti_import_vulkan_runtime(TiVulkanRuntimeInteropInfo interop_info);
+ti_import_vulkan_runtime(const TiVulkanRuntimeInteropInfo *interop_info);
 
 // function.export_vulkan_runtime
 TI_DLL_EXPORT void TI_API_CALL
 ti_export_vulkan_runtime(TiRuntime runtime,
-                         TiVulkanRuntimeInteropInfo interop_info);
+                         TiVulkanRuntimeInteropInfo *interop_info);
 
 // function.import_vulkan_memory
 TI_DLL_EXPORT TiMemory TI_API_CALL
-ti_import_vulkan_memory(TiVulkanMemoryInteropInfo interop_info);
+ti_import_vulkan_memory(TiRuntime runtime,
+                        const TiVulkanMemoryInteropInfo *interop_info);
 
 // function.export_vulkan_memory
 TI_DLL_EXPORT void TI_API_CALL
-ti_export_vulkan_memory(TiMemory memory,
-                        TiVulkanMemoryInteropInfo interop_info);
+ti_export_vulkan_memory(TiRuntime runtime,
+                        TiMemory memory,
+                        TiVulkanMemoryInteropInfo *interop_info);
 
 #ifdef __cplusplus
 }  // extern "C"

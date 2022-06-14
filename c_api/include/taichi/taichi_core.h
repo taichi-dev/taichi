@@ -118,7 +118,8 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(TiRuntime runtime);
 
 // function.allocate_memory
 TI_DLL_EXPORT TiMemory TI_API_CALL
-ti_allocate_memory(TiRuntime runtime, TiMemoryAllocateInfo allocate_info);
+ti_allocate_memory(TiRuntime runtime,
+                   const TiMemoryAllocateInfo *allocate_info);
 
 // function.free_memory
 TI_DLL_EXPORT void TI_API_CALL ti_free_memory(TiRuntime runtime,
@@ -143,7 +144,7 @@ TI_DLL_EXPORT void TI_API_CALL
 ti_launch_compute_graph(TiRuntime runtime,
                         TiComputeGraph compute_graph,
                         uint32_t arg_count,
-                        const TiArgument *args);
+                        const TiNamedArgument *args);
 
 // function.submit
 TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);

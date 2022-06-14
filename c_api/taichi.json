@@ -228,7 +228,8 @@
                         },
                         {
                             "name": "allocate_info",
-                            "type": "structure.memory_allocate_info"
+                            "type": "structure.memory_allocate_info",
+                            "by_ref": true
                         }
                     ]
                 },
@@ -309,7 +310,7 @@
                         },
                         {
                             "name": "args",
-                            "type": "structure.argument",
+                            "type": "structure.named_argument",
                             "count": "arg_count"
                         }
                     ]
@@ -498,7 +499,8 @@
                         },
                         {
                             "name": "interop_info",
-                            "type": "structure.vulkan_runtime_interop_info"
+                            "type": "structure.vulkan_runtime_interop_info",
+                            "by_ref": true
                         }
                     ]
                 },
@@ -512,7 +514,7 @@
                         {
                             "name": "interop_info",
                             "type": "structure.vulkan_runtime_interop_info",
-                            "is_mutable": true
+                            "by_mut": true
                         }
                     ]
                 },
@@ -525,8 +527,12 @@
                             "type": "handle.memory"
                         },
                         {
+                            "type": "handle.runtime"
+                        },
+                        {
                             "name": "interop_info",
-                            "type": "structure.vulkan_memory_interop_info"
+                            "type": "structure.vulkan_memory_interop_info",
+                            "by_ref": true
                         }
                     ]
                 },
@@ -535,12 +541,15 @@
                     "type": "function",
                     "parameters": [
                         {
+                            "type": "handle.runtime"
+                        },
+                        {
                             "type": "handle.memory"
                         },
                         {
                             "name": "interop_info",
                             "type": "structure.vulkan_memory_interop_info",
-                            "is_mutable": true
+                            "by_mut": true
                         }
                     ]
                 }

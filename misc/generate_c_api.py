@@ -196,16 +196,20 @@ class Field:
             self.type = CType(j["type"])
             self.name = Name(j["name"])
         self.count = j["count"] if "count" in j else None
+        self.by_mut = j["by_mut"] if "by_mut" in j else None
+        self.by_ref = j["by_ref"] if "by_ref" in j else None
 
     def declr(self):
-        if self.count:
-            if isinstance(self.count, int):
-                # `count` is an integer so it's a static array.
-                return f"{self.type.type_name} {self.name}[{self.count}]"
-            else:
-                # In this case `count` is a name of another field. We use const
-                # pointers to declared runtime arrays.
-                return f"const {self.type.type_name}* {self.name}"
+        # `count` is an integer so it's a static array.
+        is_dyn_array = self.count and not isinstance(self.count, int)
+
+        is_ptr = self.by_ref or self.by_mut or is_dyn_array
+        const_q = "const" if not self.by_mut else ""
+
+        if is_ptr:
+            return f"{const_q} {self.type.type_name}* {self.name}"
+        elif self.count:
+            return f"{self.type.type_name} {self.name}[{self.count}]"
         else:
             return f"{self.type.type_name} {self.name}"
 

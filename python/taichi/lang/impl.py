@@ -219,6 +219,7 @@ class PyTaichi:
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
+        self.compiled_fwd_mode_grad_functions = {}
         self.compiled_grad_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
@@ -228,12 +229,15 @@ class PyTaichi:
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
+        self.fwd_mode_manager = None
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions) + len(self.compiled_grad_functions)
+        return len(self.compiled_functions) + len(
+            self.compiled_grad_functions) + len(
+                self.compiled_fwd_mode_grad_functions)
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)

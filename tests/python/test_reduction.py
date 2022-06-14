@@ -133,6 +133,18 @@ def test_reduction_different_scale():
 
 
 @test_utils.test()
+def test_reduction_non_full_warp():
+    @ti.kernel
+    def test() -> ti.i32:
+        hit_time = 1
+        ti.loop_config(block_dim=8)
+        for i in range(8):
+            ti.atomic_min(hit_time, 1)
+        return hit_time
+    assert test() == 1
+
+
+@test_utils.test()
 def test_reduction_ndarray():
     @ti.kernel
     def reduce(a: ti.types.ndarray()) -> ti.i32:

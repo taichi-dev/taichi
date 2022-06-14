@@ -92,10 +92,7 @@ bool is_full_bits(int bits) {
   return bits == (sizeof(uint32_t) * 8);
 }
 
-void validate_cft_for_metal(CustomFloatType *cft) {
-  if (cft->get_exponent_type() != nullptr) {
-    TI_NOT_IMPLEMENTED;
-  }
+void validate_cfxt_for_metal(CustomFixedType *cft) {
   if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
     TI_ERROR("Metal only supports 32-bit float");
   }
@@ -977,12 +974,12 @@ class KernelCodegenImpl : public IRVisitor {
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
       store_value_expr = stmt->val->raw_name();
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      validate_cft_for_metal(cft);
-      auto *digits_cit = cft->get_digits_type()->as<CustomIntType>();
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      validate_cfxt_for_metal(cfxt);
+      auto *digits_cit = cfxt->get_digits_type()->as<CustomIntType>();
       cit = digits_cit;
       store_value_expr = construct_quant_fixed_to_quant_int_expr(
-          stmt->val, cft->get_scale(), digits_cit);
+          stmt->val, cfxt->get_scale(), digits_cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1005,14 +1002,14 @@ class KernelCodegenImpl : public IRVisitor {
     auto *pointee_type = ptr_type->get_pointee_type();
     if (auto *cit = pointee_type->cast<CustomIntType>()) {
       return construct_load_quant_int(stmt->src, cit);
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      validate_cft_for_metal(cft);
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      validate_cfxt_for_metal(cfxt);
       const auto loaded = construct_load_quant_int(
-          stmt->src, cft->get_digits_type()->as<CustomIntType>());
+          stmt->src, cfxt->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
       // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
-                         cft->get_scale());
+                         cfxt->get_scale());
     }
     TI_NOT_IMPLEMENTED;
     return "";
@@ -1031,10 +1028,10 @@ class KernelCodegenImpl : public IRVisitor {
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
       val_expr = stmt->val->raw_name();
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      cit = cft->get_digits_type()->as<CustomIntType>();
-      val_expr = construct_quant_fixed_to_quant_int_expr(stmt->val,
-                                                         cft->get_scale(), cit);
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      cit = cfxt->get_digits_type()->as<CustomIntType>();
+      val_expr = construct_quant_fixed_to_quant_int_expr(
+          stmt->val, cfxt->get_scale(), cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }

@@ -489,7 +489,8 @@ class MCISO_Example(MCISO):
                          (0, 1))
                 if gui.is_pressed(gui.SPACE):
                     num = ret.shape[0]
-                    writer = ti.tools.PLYWriter(num_vertices=num * 3, num_faces=num)
+                    writer = ti.tools.PLYWriter(num_vertices=num * 3,
+                                                num_faces=num)
                     vertices = ret.reshape(num * 3, 3) * 2 - 1
                     writer.add_vertex_pos(vertices[:, 0], vertices[:, 1],
                                           vertices[:, 2])

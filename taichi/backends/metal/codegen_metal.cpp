@@ -92,10 +92,7 @@ bool is_full_bits(int bits) {
   return bits == (sizeof(uint32_t) * 8);
 }
 
-void validate_cft_for_metal(CustomFloatType *cft) {
-  if (cft->get_exponent_type() != nullptr) {
-    TI_NOT_IMPLEMENTED;
-  }
+void validate_cfxt_for_metal(CustomFixedType *cft) {
   if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
     TI_ERROR("Metal only supports 32-bit float");
   }
@@ -977,12 +974,12 @@ class KernelCodegenImpl : public IRVisitor {
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
       store_value_expr = stmt->val->raw_name();
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      validate_cft_for_metal(cft);
-      auto *digits_cit = cft->get_digits_type()->as<CustomIntType>();
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      validate_cfxt_for_metal(cfxt);
+      auto *digits_cit = cfxt->get_digits_type()->as<CustomIntType>();
       cit = digits_cit;
-      store_value_expr = construct_float_to_custom_int_expr(
-          stmt->val, cft->get_scale(), digits_cit);
+      store_value_expr = construct_quant_fixed_to_quant_int_expr(
+          stmt->val, cfxt->get_scale(), digits_cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1004,15 +1001,15 @@ class KernelCodegenImpl : public IRVisitor {
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
     if (auto *cit = pointee_type->cast<CustomIntType>()) {
-      return construct_load_as_custom_int(stmt->src, cit);
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      validate_cft_for_metal(cft);
-      const auto loaded = construct_load_as_custom_int(
-          stmt->src, cft->get_digits_type()->as<CustomIntType>());
+      return construct_load_quant_int(stmt->src, cit);
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      validate_cfxt_for_metal(cfxt);
+      const auto loaded = construct_load_quant_int(
+          stmt->src, cfxt->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
       // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
-                         cft->get_scale());
+                         cfxt->get_scale());
     }
     TI_NOT_IMPLEMENTED;
     return "";
@@ -1031,10 +1028,10 @@ class KernelCodegenImpl : public IRVisitor {
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
       val_expr = stmt->val->raw_name();
-    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      cit = cft->get_digits_type()->as<CustomIntType>();
-      val_expr =
-          construct_float_to_custom_int_expr(stmt->val, cft->get_scale(), cit);
+    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+      cit = cfxt->get_digits_type()->as<CustomIntType>();
+      val_expr = construct_quant_fixed_to_quant_int_expr(
+          stmt->val, cfxt->get_scale(), cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1051,7 +1048,7 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   // Returns the expression of `int(val_stmt * (1.0f / scale) + 0.5f)`
-  std::string construct_float_to_custom_int_expr(
+  std::string construct_quant_fixed_to_quant_int_expr(
       const Stmt *val_stmt,
       float64 scale,
       CustomIntType *digits_cit) const {
@@ -1062,14 +1059,14 @@ class KernelCodegenImpl : public IRVisitor {
     // variables) because |val_stmt| could be used multiple times. If the
     // intermediate variables are named based on |val_stmt|, it would result in
     // symbol redefinitions.
-    return fmt::format("mtl_float_to_custom_int<{}>(/*inv_scale=*/{} * {})",
-                       metal_data_type_name(compute_dt), inv_scale,
-                       val_stmt->raw_name());
+    return fmt::format(
+        "mtl_quant_fixed_to_quant_int<{}>(/*inv_scale=*/{} * {})",
+        metal_data_type_name(compute_dt), inv_scale, val_stmt->raw_name());
   }
 
   // Returns expression of the loaded integer.
-  std::string construct_load_as_custom_int(const Stmt *bit_ptr_stmt,
-                                           CustomIntType *cit) const {
+  std::string construct_load_quant_int(const Stmt *bit_ptr_stmt,
+                                       CustomIntType *cit) const {
     DataType compute_dt(cit->get_compute_type()->as<PrimitiveType>());
     const auto num_bits = cit->get_num_bits();
     if (is_full_bits(num_bits)) {

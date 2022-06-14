@@ -118,37 +118,43 @@ CustomIntType::CustomIntType(int num_bits,
   }
 }
 
-CustomFloatType::CustomFloatType(Type *digits_type,
-                                 Type *exponent_type,
+CustomFixedType::CustomFixedType(Type *digits_type,
                                  Type *compute_type,
                                  float64 scale)
-    : digits_type_(digits_type),
-      exponent_type_(exponent_type),
-      compute_type_(compute_type),
-      scale_(scale) {
+    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
   TI_ASSERT(digits_type->is<CustomIntType>());
   TI_ASSERT(compute_type->is<PrimitiveType>());
-  TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
+  TI_ASSERT(is_real(compute_type));
+}
 
-  if (exponent_type_) {
-    // We only support f32 as compute type when when using exponents
-    TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
-    // Exponent must be unsigned custom int
-    TI_ASSERT(exponent_type->is<CustomIntType>());
-    TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
-    TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
-    TI_ASSERT(get_digit_bits() <= 23);
-  }
+std::string CustomFixedType::to_string() const {
+  return fmt::format("cfx(d={} c={} s={})", digits_type_->to_string(),
+                     compute_type_->to_string(), scale_);
+}
+
+bool CustomFixedType::get_is_signed() const {
+  return digits_type_->as<CustomIntType>()->get_is_signed();
+}
+
+CustomFloatType::CustomFloatType(Type *digits_type,
+                                 Type *exponent_type,
+                                 Type *compute_type)
+    : digits_type_(digits_type),
+      exponent_type_(exponent_type),
+      compute_type_(compute_type) {
+  TI_ASSERT(digits_type->is<CustomIntType>());
+  // We only support f32 as compute type when when using exponents
+  TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
+  // Exponent must be unsigned custom int
+  TI_ASSERT(exponent_type->is<CustomIntType>());
+  TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
+  TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
+  TI_ASSERT(get_digit_bits() <= 23);
 }
 
 std::string CustomFloatType::to_string() const {
-  std::string e, s;
-  if (exponent_type_)
-    e = fmt::format(" e={}", exponent_type_->to_string());
-  if (scale_ != 1)
-    s = fmt::format(" s={}", scale_);
-  return fmt::format("cf(d={}{} c={}{})", digits_type_->to_string(), e,
-                     compute_type_->to_string(), s);
+  return fmt::format("cf(d={} e={} c={})", digits_type_->to_string(),
+                     exponent_type_->to_string(), compute_type_->to_string());
 }
 
 int CustomFloatType::get_exponent_conversion_offset() const {
@@ -178,6 +184,8 @@ BitStructType::BitStructType(PrimitiveType *physical_type,
     CustomIntType *component_cit = nullptr;
     if (auto cit = member_types_[i]->cast<CustomIntType>()) {
       component_cit = cit;
+    } else if (auto cfxt = member_types_[i]->cast<CustomFixedType>()) {
+      component_cit = cfxt->get_digits_type()->as<CustomIntType>();
     } else if (auto cft = member_types_[i]->cast<CustomFloatType>()) {
       component_cit = cft->get_digits_type()->as<CustomIntType>();
     } else {

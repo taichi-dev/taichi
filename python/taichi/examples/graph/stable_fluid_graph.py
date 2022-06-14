@@ -7,6 +7,7 @@
 import argparse
 
 import numpy as np
+
 import taichi as ti
 
 ti.init(arch=ti.vulkan)
@@ -214,11 +215,10 @@ def reset():
     pressures_pair.cur.fill(0)
     dyes_pair.cur.fill(0)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--baseline',
-        action='store_true')
+    parser.add_argument('--baseline', action='store_true')
     args, unknown = parser.parse_known_args()
 
     gui = ti.GUI('Stable Fluid', (res, res))
@@ -261,37 +261,43 @@ if __name__ == "__main__":
                                           'pressures_pair_nxt', ti.f32)
         velocity_divs = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'velocity_divs',
                                      ti.f32)
-        mouse_data = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'mouse_data', ti.f32)
+        mouse_data = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'mouse_data',
+                                  ti.f32)
 
         g1_builder = ti.graph.GraphBuilder()
         g1_builder.dispatch(advect, velocities_pair_cur, velocities_pair_cur,
-                    velocities_pair_nxt)
-        g1_builder.dispatch(advect, velocities_pair_cur, dyes_pair_cur, dyes_pair_nxt)
-        g1_builder.dispatch(apply_impulse, velocities_pair_nxt, dyes_pair_nxt, mouse_data)
+                            velocities_pair_nxt)
+        g1_builder.dispatch(advect, velocities_pair_cur, dyes_pair_cur,
+                            dyes_pair_nxt)
+        g1_builder.dispatch(apply_impulse, velocities_pair_nxt, dyes_pair_nxt,
+                            mouse_data)
         g1_builder.dispatch(divergence, velocities_pair_nxt, velocity_divs)
         # swap is unrolled in the loop so we only need p_jacobi_iters // 2 iterations.
         for _ in range(p_jacobi_iters // 2):
-            g1_builder.dispatch(pressure_jacobi, pressures_pair_cur, pressures_pair_nxt,
-                        velocity_divs)
-            g1_builder.dispatch(pressure_jacobi, pressures_pair_nxt, pressures_pair_cur,
-                        velocity_divs)
-        g1_builder.dispatch(subtract_gradient, velocities_pair_nxt, pressures_pair_cur)
+            g1_builder.dispatch(pressure_jacobi, pressures_pair_cur,
+                                pressures_pair_nxt, velocity_divs)
+            g1_builder.dispatch(pressure_jacobi, pressures_pair_nxt,
+                                pressures_pair_cur, velocity_divs)
+        g1_builder.dispatch(subtract_gradient, velocities_pair_nxt,
+                            pressures_pair_cur)
         g1 = g1_builder.compile()
 
         g2_builder = ti.graph.GraphBuilder()
         g2_builder.dispatch(advect, velocities_pair_nxt, velocities_pair_nxt,
-                    velocities_pair_cur)
-        g2_builder.dispatch(advect, velocities_pair_nxt, dyes_pair_nxt, dyes_pair_cur)
-        g2_builder.dispatch(apply_impulse, velocities_pair_cur, dyes_pair_cur, mouse_data)
+                            velocities_pair_cur)
+        g2_builder.dispatch(advect, velocities_pair_nxt, dyes_pair_nxt,
+                            dyes_pair_cur)
+        g2_builder.dispatch(apply_impulse, velocities_pair_cur, dyes_pair_cur,
+                            mouse_data)
         g2_builder.dispatch(divergence, velocities_pair_cur, velocity_divs)
         for _ in range(p_jacobi_iters // 2):
-            g2_builder.dispatch(pressure_jacobi, pressures_pair_cur, pressures_pair_nxt,
-                        velocity_divs)
-            g2_builder.dispatch(pressure_jacobi, pressures_pair_nxt, pressures_pair_cur,
-                        velocity_divs)
-        g2_builder.dispatch(subtract_gradient, velocities_pair_cur, pressures_pair_cur)
+            g2_builder.dispatch(pressure_jacobi, pressures_pair_cur,
+                                pressures_pair_nxt, velocity_divs)
+            g2_builder.dispatch(pressure_jacobi, pressures_pair_nxt,
+                                pressures_pair_cur, velocity_divs)
+        g2_builder.dispatch(subtract_gradient, velocities_pair_cur,
+                            pressures_pair_cur)
         g2 = g2_builder.compile()
-
 
     swap = True
 

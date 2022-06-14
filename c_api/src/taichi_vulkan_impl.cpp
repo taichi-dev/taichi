@@ -10,7 +10,6 @@ taichi::lang::vulkan::VulkanDevice &VulkanRuntime::get_vk() {
   return static_cast<taichi::lang::vulkan::VulkanDevice &>(get());
 }
 
-
 VulkanRuntimeImported::Workaround::Workaround(
     uint32_t api_version,
     const taichi::lang::vulkan::VulkanDevice::Params &params)
@@ -126,7 +125,7 @@ TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
     params.additional_device_extensions.push_back(device_extensions[i]);
   }
   params.surface_creator = nullptr;
-  return (TiRuntime)static_cast<Runtime *>(new VulkanRuntimeOwned(params));
+  return (TiRuntime) static_cast<Runtime *>(new VulkanRuntimeOwned(params));
 }
 TiRuntime ti_import_vulkan_runtime(
     const TiVulkanRuntimeInteropInfo *interop_info) {
@@ -139,7 +138,7 @@ TiRuntime ti_import_vulkan_runtime(
   params.graphics_queue = interop_info->graphics_queue;
   params.graphics_queue_family_index =
       interop_info->graphics_queue_family_index;
-  return (TiRuntime)static_cast<Runtime *>(
+  return (TiRuntime) static_cast<Runtime *>(
       new VulkanRuntimeImported(interop_info->api_version, params));
 }
 void ti_export_vulkan_runtime(TiRuntime runtime,

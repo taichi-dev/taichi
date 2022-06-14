@@ -85,7 +85,8 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.host_read = createInfo->host_read;
   params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
-  size_t alloc_id = ((Runtime *)runtime)->get().allocate_memory(params).alloc_id;
+  size_t alloc_id =
+      ((Runtime *)runtime)->get().allocate_memory(params).alloc_id;
   return (TiMemory)alloc_id;
 }
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
@@ -173,9 +174,9 @@ void ti_launch_compute_graph(TiRuntime runtime,
     const auto &arg = args[i];
     switch (arg.argument.type) {
       case TI_ARGUMENT_TYPE_I32: {
-        arg_map.emplace(std::make_pair(
-            arg.name,
-            taichi::lang::aot::IValue::create<int32_t>(arg.argument.value.i32)));
+        arg_map.emplace(
+            std::make_pair(arg.name, taichi::lang::aot::IValue::create<int32_t>(
+                                         arg.argument.value.i32)));
         break;
       }
       case TI_ARGUMENT_TYPE_F32: {

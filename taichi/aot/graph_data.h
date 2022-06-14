@@ -15,7 +15,7 @@ class Ndarray;
 struct RuntimeContext;
 namespace aot {
 // Currently only scalar and ndarray are supported.
-enum class ArgKind { kScalar, kNdarray, kUnknown };
+enum class ArgKind { kScalar, kNdarray, kMatrix, kUnknown};
 
 /**
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.
@@ -70,12 +70,31 @@ struct TI_DLL_EXPORT IValue {
     return IValue(reinterpret_cast<intptr_t>(&ndarray), ArgKind::kNdarray);
   }
 
+  template <typename T>
+  static IValue create(const std::vector<T> &matrix) {
+    TI_WARN("MATRIX create ival");
+    return IValue(reinterpret_cast<intptr_t>(&matrix), ArgKind::kMatrix);
+  }
+
   template <typename T,
-            typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
+            typename = std::enable_if_t<std::disjunction<std::is_same<T, int>, std::is_same<T, double>>::value, void>>
   static IValue create(T v) {
     return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
                   ArgKind::kScalar);
   }
+
+  // template <typename T,
+  //           typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
+  // static IValue create(T v) {
+  //   return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
+  //                 ArgKind::kScalar);
+  // }
+
+  // template <typename T>
+  // static IValue create(T v) {
+  //   return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
+  //                 ArgKind::kMatrix);
+  // }
 
  private:
   IValue(uint64 val, ArgKind tag) : val(val), tag(tag) {

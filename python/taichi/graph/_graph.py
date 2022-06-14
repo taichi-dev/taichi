@@ -2,6 +2,7 @@ from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
 from taichi.lang._ndarray import Ndarray
+from taichi.lang.matrix import Matrix
 from taichi.lang.exception import TaichiRuntimeError
 
 ArgKind = _ti_core.ArgKind
@@ -50,10 +51,13 @@ class Graph:
         self._compiled_graph = compiled_graph
 
     def run(self, args):
+        # Support native python numerical types (int, float), Ndarray.
+        # Taichi Matrix types are flattened into (int, float) arrays.
+        # TODO diminish the flatten behavior when Matrix becomes a Taichi native type.
         arg_ptrs = {}
-        # Only support native python numerical types (int, float) for now.
         arg_ints = {}
         arg_floats = {}
+        arg_matrices = {}
 
         for k, v in args.items():
             if isinstance(v, Ndarray):
@@ -62,11 +66,14 @@ class Graph:
                 arg_ints[k] = v
             elif isinstance(v, float):
                 arg_floats[k] = v
+            elif isinstance(v, Matrix):
+                arg_matrices[k] = tuple(v)
+                # raise TaichsiRuntimeError("MATRIX")
             else:
                 raise TaichiRuntimeError(
                     f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
-        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
+        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats, arg_matrices)
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

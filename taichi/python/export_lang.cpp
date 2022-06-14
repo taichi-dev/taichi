@@ -12,6 +12,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/eigen.h"
 #include "pybind11/numpy.h"
+#include "pybind11/stl.h"
 
 #include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
@@ -563,6 +564,7 @@ void export_lang(py::module &m) {
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
+      .value("MATRIX", aot::ArgKind::kMatrix)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
@@ -590,7 +592,8 @@ void export_lang(py::module &m) {
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
       .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats) {
+                     const py::dict &arg_ints, const py::dict &arg_floats,
+                     const py::dict &arg_matrices) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
@@ -604,6 +607,11 @@ void export_lang(py::module &m) {
         for (auto it : arg_floats) {
           args.insert({py::cast<std::string>(it.first),
                        aot::IValue::create(py::cast<double>(it.second))});
+        }
+        for (auto it : arg_matrices) {
+          auto val = py::cast<std::vector<int> >(it.second);
+          args.insert(
+              {py::cast<std::string>(it.first), aot::IValue::create(val)});
         }
         self->run(args);
       });

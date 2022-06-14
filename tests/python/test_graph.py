@@ -103,4 +103,3 @@ def test_vector_float():
     graph.run({"mat": A, "res": res})
     # assert (res.to_numpy()[0] == 57.5)
     assert test_utils.approx((res.to_numpy()[0] - 57.5), rel=1e-5)
-

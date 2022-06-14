@@ -3,7 +3,12 @@
 This module supplies two decorators for users to customize their
 gradient computation task.
 """
+from functools import reduce
+
+from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
+from taichi.lang.enums import AutodiffMode
+from taichi.lang.field import ScalarField
 
 
 def grad_replaced(func):
@@ -117,3 +122,101 @@ def no_grad(func):
 
     decorated.grad = placeholder
     return decorated
+
+
+class FwdMode:
+    def __init__(self, loss, parameters, seed=None, clear_gradients=True):
+        self.calls = []
+        self.entered = False
+        self.kernels_recovered = False
+        self.runtime = impl.get_runtime()
+        self.loss = loss
+        self.parameters = parameters
+        self.seed = seed
+        self.clear_gradients = clear_gradients
+
+    def __enter__(self):
+        assert not self.entered, "Forward mode manager can be entered only once."
+        self.entered = True
+
+        impl.get_runtime().materialize()
+        if not isinstance(self.loss, list):
+            self.loss = [self.loss]
+
+        # Currently we only support only one N-D field as a group of parameters,
+        # which is sufficient for computing Jacobian-vector product(Jvp).
+        # For cases with multiple groups of parameters, it requires to run the forward ad multiple times,
+        # which is out of scope of the current design for this interface.
+
+        # TODO: support vector field and matrix field
+        assert isinstance(self.parameters, ScalarField)
+
+        all_fields = [*self.loss, self.parameters]
+        fields_without_dual = []
+
+        for x in all_fields:
+            if not x.snode.ptr.has_dual():
+                fields_without_dual.append(x)
+
+        if len(fields_without_dual) > 0:
+            dual_root = FieldsBuilder()
+            for x in fields_without_dual:
+                allocate_dual(x, dual_root)
+            dual_root.finalize()
+
+        def shape_flatten(shape):
+            return reduce((lambda x, y: x * y), list(shape))
+
+        parameters_shape_flatten = shape_flatten(self.parameters.shape)
+
+        # Handle 0-D field
+        if parameters_shape_flatten == 0:
+            parameters_shape_flatten = 1
+
+        if not self.seed:
+            # Compute the derivative respect to the first variable by default
+            self.seed = [0.0 for _ in range(parameters_shape_flatten)]
+            self.seed[0] = 1.0
+        else:
+            assert parameters_shape_flatten == len(self.seed)
+
+        # Set seed for each variable
+        if len(self.seed) == 1:
+            self.parameters.dual[None] = 1.0 * self.seed[0]
+        else:
+            for idx, s in enumerate(self.seed):
+                self.parameters.dual[idx] = 1.0 * s
+
+        # Clear gradients
+        if self.clear_gradients:
+            for ls in self.loss:
+                ls.dual.fill(0)
+
+        # Attach the context manager to the runtime
+        self.runtime.fwd_mode_manager = self
+
+    def __exit__(self, _type, value, tb):
+        self.runtime.fwd_mode_manager = None
+        self.recover_kernels()
+
+    def insert(self, func):
+        self.calls.append(func)
+
+    def recover_kernels(self):
+        assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
+        for f in self.calls:
+            f.autodiff_mode = AutodiffMode.NONE
+            f.compiled_functions = f.runtime.compiled_functions
+        self.kernels_recovered = True
+
+
+def allocate_dual(x, dual_root):
+    """Allocate dual field for forward mode autodiff
+    """
+    dtype = x.dtype
+    shape = x.shape
+    dim = len(shape)
+    x_dual = impl.field(dtype)
+    x._set_grad(x_dual, reverse_mode=False)
+    x._get_field_members()[0].ptr.set_dual(x_dual._get_field_members()[0].ptr)
+    dual_root.dense(impl.index_nd(dim), shape).place(x_dual)

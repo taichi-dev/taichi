@@ -7,7 +7,6 @@ from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
-from taichi.lang.ad_fwd_mode_manager import ForwardModeManagerImpl
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
@@ -340,9 +339,6 @@ class PyTaichi:
 
     def get_tape(self, loss=None):
         return TapeImpl(self, loss)
-
-    def get_fwd_mode_manager(self, keep_primal=True):
-        return ForwardModeManagerImpl(self, keep_primal)
 
     def sync(self):
         self.materialize()

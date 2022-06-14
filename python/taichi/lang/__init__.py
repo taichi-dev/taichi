@@ -1,6 +1,7 @@
 from taichi.lang import impl, simt
 from taichi.lang._ndarray import *
 from taichi.lang._ndrange import ndrange
+from taichi.lang._texture import Texture
 from taichi.lang.enums import Layout
 from taichi.lang.exception import *
 from taichi.lang.field import *

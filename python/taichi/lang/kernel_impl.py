@@ -22,7 +22,7 @@ from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
-                          template)
+                          template, texture_type)
 
 from taichi import _logging
 
@@ -336,6 +336,8 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
+        if isinstance(anno, texture_type.TextureType):
+            return '#'
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
@@ -466,8 +468,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation,
-                              (template, ndarray_type.NdarrayType)):
+                if isinstance(annotation, (template, ndarray_type.NdarrayType,
+                                           texture_type.TextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -654,6 +656,12 @@ class Kernel:
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                elif isinstance(needed,
+                                texture_type.TextureType) and isinstance(
+                                    v, taichi.lang._texture.Texture):
+                    has_external_arrays = True
+                    v = v.tex
+                    launch_ctx.set_arg_texture(actual_argument_slot, v)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):

@@ -141,6 +141,7 @@ def test_reduction_non_full_warp():
         for i in range(8):
             ti.atomic_min(hit_time, 1)
         return hit_time
+
     assert test() == 1
 
 

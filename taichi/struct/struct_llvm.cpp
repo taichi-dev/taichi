@@ -92,6 +92,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       CustomIntType *component_cit = nullptr;
       if (auto cit = ch->dt->cast<CustomIntType>()) {
         component_cit = cit;
+      } else if (auto cfxt = ch->dt->cast<CustomFixedType>()) {
+        component_cit = cfxt->get_digits_type()->as<CustomIntType>();
       } else if (auto cft = ch->dt->cast<CustomFloatType>()) {
         component_cit = cft->get_digits_type()->as<CustomIntType>();
       } else {

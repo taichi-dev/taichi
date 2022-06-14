@@ -248,7 +248,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
 
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_runtime_size(arg_id, size);
-  ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);
+  ctx_->set_array_device_allocation_type(
+      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
+                                   : RuntimeContext::DevAllocType::kNone);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
@@ -276,6 +278,14 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
   for (uint64 i = 0; i < arr.shape.size(); ++i) {
     this->set_extra_arg_int(arg_id, i, arr.shape[i]);
   }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
+                                                   const Texture &tex) {
+  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
+  ctx_->set_arg(arg_id, ptr);
+  ctx_->set_array_device_allocation_type(
+      arg_id, RuntimeContext::DevAllocType::kTexture);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {

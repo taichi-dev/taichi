@@ -224,18 +224,37 @@ class CustomIntType : public Type {
   bool is_signed_{true};
 };
 
-class CustomFloatType : public Type {
+class CustomFixedType : public Type {
  public:
-  CustomFloatType(Type *digits_type,
-                  Type *exponent_type,
-                  Type *compute_type,
-                  float64 scale);
+  CustomFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
+
+  bool get_is_signed() const;
+
+  Type *get_digits_type() {
+    return digits_type_;
+  }
+
+  Type *get_compute_type() override {
+    return compute_type_;
+  }
 
   float64 get_scale() const {
     return scale_;
   }
+
+ private:
+  Type *digits_type_{nullptr};
+  Type *compute_type_{nullptr};
+  float64 scale_{1.0};
+};
+
+class CustomFloatType : public Type {
+ public:
+  CustomFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
+
+  std::string to_string() const override;
 
   Type *get_digits_type() {
     return digits_type_;
@@ -259,7 +278,6 @@ class CustomFloatType : public Type {
   Type *digits_type_{nullptr};
   Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
-  float64 scale_;
 };
 
 class BitStructType : public Type {

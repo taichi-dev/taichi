@@ -1169,16 +1169,21 @@ i32 op_xor_i32(i32 a, i32 b) {
 }
 
 #define DEFINE_REDUCTION(op, dtype)                                       \
-  dtype warp_reduce_##op##_##dtype(dtype val) {                           \
+  dtype warp_reduce_##op##_##dtype(uint32_t mask, dtype val) {            \
     for (int offset = 16; offset > 0; offset /= 2)                        \
       val = op_##op##_##dtype(                                            \
-          val, cuda_shfl_down_sync_##dtype(0xFFFFFFFF, val, offset, 31)); \
+          val, cuda_shfl_down_sync_##dtype(mask, val, offset, 31));       \
     return val;                                                           \
   }                                                                       \
   dtype reduce_##op##_##dtype(dtype *result, dtype val) {                 \
-    dtype warp_result = warp_reduce_##op##_##dtype(val);                  \
-    if ((thread_idx() & (warp_size() - 1)) == 0) {                        \
-      atomic_##op##_##dtype(result, warp_result);                         \
+    uint32_t mask = cuda_active_mask();                                   \
+    if (mask != 0xFFFFFFFF) {                                             \
+      atomic_##op##_##dtype(result, val);                                 \
+    } else {                                                              \
+      dtype warp_result = warp_reduce_##op##_##dtype(0xFFFFFFFF, val);    \
+      if ((thread_idx() & (warp_size() - 1)) == 0) {                      \
+        atomic_##op##_##dtype(result, warp_result);                       \
+      }                                                                   \
     }                                                                     \
     return val;                                                           \
   }

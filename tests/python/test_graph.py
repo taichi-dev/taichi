@@ -102,4 +102,3 @@ def test_vector_float():
     graph = build_graph("vector", n, dtype=ti.f32)
     graph.run({"mat": A, "res": res})
     assert test_utils.approx((res.to_numpy()[0] - 57.5), rel=1e-5)
-

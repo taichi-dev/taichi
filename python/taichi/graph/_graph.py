@@ -57,6 +57,7 @@ class Graph:
         arg_ptrs = {}
         arg_ints = {}
         arg_floats = {}
+        arg_doubles = {}
 
         for k, v in args.items():
             if isinstance(v, Ndarray):
@@ -64,7 +65,7 @@ class Graph:
             elif isinstance(v, int):
                 arg_ints[k] = v
             elif isinstance(v, float):
-                arg_floats[k] = v
+                arg_doubles[k] = v
             elif isinstance(v, Matrix):
                 mat_val_id = 0
                 for a in range(v.n):
@@ -83,7 +84,7 @@ class Graph:
                 raise TaichiRuntimeError(
                     f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
-        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
+        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats, arg_doubles)
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

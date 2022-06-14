@@ -593,7 +593,8 @@ void export_lang(py::module &m) {
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
       .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats) {
+                     const py::dict &arg_ints, const py::dict &arg_floats,
+                     const py::dict &arg_doubles) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
@@ -606,7 +607,11 @@ void export_lang(py::module &m) {
         }
         for (auto it : arg_floats) {
           args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<float>(it.second))});
+                       aot::IValue::create(py::cast<float32>(it.second))});
+        }
+        for (auto it : arg_doubles) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<double>(it.second))});
         }
         self->run(args);
       });

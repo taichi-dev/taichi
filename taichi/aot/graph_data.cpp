@@ -30,9 +30,9 @@ void CompiledGraph::run(
         mat_arg_count = 0;
         for (auto arg : args) {
           if (std::regex_match(arg.first, arg_match, mat_arg_regex)) {
-            auto find_idx = arg_match.str().find_last_of("mat_");
-            std::string idx_str(arg_match.str().begin() + find_idx + 1,
-                                arg_match.str().end());
+            auto find_idx = arg.first.find_last_of("_mat_");
+            std::string idx_str(arg.first.begin() + find_idx + 1,
+                                arg.first.end());
             size_t mat_arg_idx = std::stoi(idx_str);
             ctx.set_arg(argument_slot_id + mat_arg_idx, arg.second.val);
             mat_arg_count++;
@@ -58,7 +58,6 @@ void CompiledGraph::run(
         TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
       }
     }
-
     dispatch.compiled_kernel->launch(&ctx);
   }
 }

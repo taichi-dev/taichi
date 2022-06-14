@@ -43,7 +43,7 @@ a = TiArray(32)
 a.inc()
 ```
 
-Definitions of Taich fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a data-oriented class. For example,
+Definitions of Taichi fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a data-oriented class. For example,
 
 ```python {21,25}
 import taichi as ti

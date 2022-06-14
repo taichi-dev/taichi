@@ -46,8 +46,8 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
 }
 
 Type *TypeFactory::get_quant_int_type(int num_bits,
-                                       bool is_signed,
-                                       Type *compute_type) {
+                                      bool is_signed,
+                                      Type *compute_type) {
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
   if (quant_int_types_.find(key) == quant_int_types_.end()) {
     quant_int_types_[key] =
@@ -57,8 +57,8 @@ Type *TypeFactory::get_quant_int_type(int num_bits,
 }
 
 Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
-                                         Type *compute_type,
-                                         float64 scale) {
+                                        Type *compute_type,
+                                        float64 scale) {
   auto key = std::make_tuple(digits_type, compute_type, scale);
   if (quant_fixed_types_.find(key) == quant_fixed_types_.end()) {
     quant_fixed_types_[key] =
@@ -68,8 +68,8 @@ Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
 }
 
 Type *TypeFactory::get_quant_float_type(Type *digits_type,
-                                         Type *exponent_type,
-                                         Type *compute_type) {
+                                        Type *exponent_type,
+                                        Type *compute_type) {
   auto key = std::make_tuple(digits_type, exponent_type, compute_type);
   if (quant_float_types_.find(key) == quant_float_types_.end()) {
     quant_float_types_[key] = std::make_unique<QuantFloatType>(

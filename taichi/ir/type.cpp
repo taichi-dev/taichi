@@ -104,9 +104,9 @@ std::string QuantIntType::to_string() const {
 }
 
 QuantIntType::QuantIntType(int num_bits,
-                             bool is_signed,
-                             Type *compute_type,
-                             Type *physical_type)
+                           bool is_signed,
+                           Type *compute_type,
+                           Type *physical_type)
     : compute_type_(compute_type),
       physical_type_(physical_type),
       num_bits_(num_bits),
@@ -119,8 +119,8 @@ QuantIntType::QuantIntType(int num_bits,
 }
 
 QuantFixedType::QuantFixedType(Type *digits_type,
-                                 Type *compute_type,
-                                 float64 scale)
+                               Type *compute_type,
+                               float64 scale)
     : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
   TI_ASSERT(digits_type->is<QuantIntType>());
   TI_ASSERT(compute_type->is<PrimitiveType>());
@@ -137,8 +137,8 @@ bool QuantFixedType::get_is_signed() const {
 }
 
 QuantFloatType::QuantFloatType(Type *digits_type,
-                                 Type *exponent_type,
-                                 Type *compute_type)
+                               Type *exponent_type,
+                               Type *compute_type)
     : digits_type_(digits_type),
       exponent_type_(exponent_type),
       compute_type_(compute_type) {
@@ -159,8 +159,8 @@ std::string QuantFloatType::to_string() const {
 
 int QuantFloatType::get_exponent_conversion_offset() const {
   // Note that f32 has exponent offset -127
-  return 127 -
-         (1 << (exponent_type_->as<QuantIntType>()->get_num_bits() - 1)) + 1;
+  return 127 - (1 << (exponent_type_->as<QuantIntType>()->get_num_bits() - 1)) +
+         1;
 }
 
 int QuantFloatType::get_digit_bits() const {

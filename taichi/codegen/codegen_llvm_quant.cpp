@@ -376,7 +376,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
       auto qflt = digits_snode->dt->as<QuantFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
 
-      int right_shift_bits = 23 + qflt->get_is_signed() - qflt->get_digit_bits();
+      int right_shift_bits =
+          23 + qflt->get_is_signed() - qflt->get_digit_bits();
       if (!qflt->get_is_signed()) {
         // unsigned
         right_shift_bits += 1;

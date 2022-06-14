@@ -538,8 +538,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             ptr_type->is_bit_pointer()) {
           // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
-          if (auto cit = val_type->cast<QuantIntType>()) {
-            dtype = cit->get_physical_type();
+          if (auto qit = val_type->cast<QuantIntType>()) {
+            dtype = qit->get_physical_type();
             auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);

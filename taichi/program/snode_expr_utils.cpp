@@ -52,8 +52,8 @@ void place_child(Expr *expr_arg,
     TI_ERROR_IF(glb_var_expr->snode != nullptr,
                 "This variable has been placed.");
     SNode *new_exp_snode = nullptr;
-    if (auto cft = glb_var_expr->dt->cast<QuantFloatType>()) {
-      auto exp = cft->get_exponent_type();
+    if (auto qflt = glb_var_expr->dt->cast<QuantFloatType>()) {
+      auto exp = qflt->get_exponent_type();
       // Non-empty exponent type. First create a place SNode for the
       // exponent value.
       if (parent->placing_shared_exp &&

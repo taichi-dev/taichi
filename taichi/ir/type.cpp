@@ -100,7 +100,7 @@ bool Type::is_primitive(PrimitiveTypeID type) const {
 }
 
 std::string QuantIntType::to_string() const {
-  return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
+  return fmt::format("q{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
 QuantIntType::QuantIntType(int num_bits,
@@ -128,7 +128,7 @@ QuantFixedType::QuantFixedType(Type *digits_type,
 }
 
 std::string QuantFixedType::to_string() const {
-  return fmt::format("cfx(d={} c={} s={})", digits_type_->to_string(),
+  return fmt::format("qfx(d={} c={} s={})", digits_type_->to_string(),
                      compute_type_->to_string(), scale_);
 }
 
@@ -153,7 +153,7 @@ QuantFloatType::QuantFloatType(Type *digits_type,
 }
 
 std::string QuantFloatType::to_string() const {
-  return fmt::format("cf(d={} e={} c={})", digits_type_->to_string(),
+  return fmt::format("qfl(d={} e={} c={})", digits_type_->to_string(),
                      exponent_type_->to_string(), compute_type_->to_string());
 }
 
@@ -181,17 +181,17 @@ BitStructType::BitStructType(PrimitiveType *physical_type,
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
   int physical_type_bits = data_type_bits(physical_type);
   for (auto i = 0; i < member_types_.size(); ++i) {
-    QuantIntType *component_cit = nullptr;
-    if (auto cit = member_types_[i]->cast<QuantIntType>()) {
-      component_cit = cit;
-    } else if (auto cfxt = member_types_[i]->cast<QuantFixedType>()) {
-      component_cit = cfxt->get_digits_type()->as<QuantIntType>();
-    } else if (auto cft = member_types_[i]->cast<QuantFloatType>()) {
-      component_cit = cft->get_digits_type()->as<QuantIntType>();
+    QuantIntType *component_qit = nullptr;
+    if (auto qit = member_types_[i]->cast<QuantIntType>()) {
+      component_qit = qit;
+    } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {
+      component_qit = qfxt->get_digits_type()->as<QuantIntType>();
+    } else if (auto qflt = member_types_[i]->cast<QuantFloatType>()) {
+      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     } else {
       TI_NOT_IMPLEMENTED
     }
-    auto bits_end = component_cit->get_num_bits() + member_bit_offsets_[i];
+    auto bits_end = component_qit->get_num_bits() + member_bit_offsets_[i];
     TI_ASSERT(physical_type_bits >= bits_end)
   }
 }

@@ -1025,8 +1025,8 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
-  if (auto cit = type->cast<QuantIntType>()) {
-    if (cit->get_is_signed())
+  if (auto qit = type->cast<QuantIntType>()) {
+    if (qit->get_is_signed())
       dest_ty = tlctx->get_data_type(PrimitiveType::i32);
     else
       dest_ty = tlctx->get_data_type(PrimitiveType::u32);
@@ -1056,8 +1056,8 @@ llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   if (type.is_pointer()) {
     return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
   }
-  if (auto cit = type->cast<QuantIntType>()) {
-    intermediate_bits = data_type_bits(cit->get_compute_type());
+  if (auto qit = type->cast<QuantIntType>()) {
+    intermediate_bits = data_type_bits(qit->get_compute_type());
   } else {
     intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
   }
@@ -1195,10 +1195,10 @@ llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   }
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-  if (auto cit = dst_type->cast<QuantIntType>()) {
-    return atomic_add_quant_int(stmt, cit);
-  } else if (auto cfxt = dst_type->cast<QuantFixedType>()) {
-    return atomic_add_quant_fixed(stmt, cfxt);
+  if (auto qit = dst_type->cast<QuantIntType>()) {
+    return atomic_add_quant_int(stmt, qit);
+  } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
+    return atomic_add_quant_fixed(stmt, qfxt);
   } else {
     return nullptr;
   }
@@ -1353,9 +1353,9 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       }
     }
     llvm::Value *store_value = nullptr;
-    auto *cit = pointee_type->as<QuantIntType>();
+    auto *qit = pointee_type->as<QuantIntType>();
     store_value = llvm_val[stmt->val];
-    store_quant_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
+    store_quant_int(llvm_val[stmt->dest], qit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }

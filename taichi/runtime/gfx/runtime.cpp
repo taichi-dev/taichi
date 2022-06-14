@@ -315,7 +315,8 @@ void CompiledTaichiKernel::generate_command_list(
     CommandList *cmdlist,
     DeviceAllocationGuard *args_buffer,
     DeviceAllocationGuard *ret_buffer,
-    const std::unordered_map<int, DeviceAllocation> &ext_arrs) const {
+    const std::unordered_map<int, DeviceAllocation> &ext_arrs,
+    const std::unordered_map<int, DeviceAllocation> &textures) const {
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
 
   for (int i = 0; i < task_attribs.size(); ++i) {
@@ -338,6 +339,13 @@ void CompiledTaichiKernel::generate_command_list(
           binder->rw_buffer(0, bind.binding, *alloc);
         }
       }
+    }
+
+    for (auto &bind : attribs.texture_binds) {
+      DeviceAllocation texture = textures.at(bind.arg_id);
+      cmdlist->image_transition(texture, ImageLayout::undefined,
+                                ImageLayout::shader_read);
+      binder->image(0, bind.binding, texture, {});
     }
 
     if (attribs.task_type == OffloadedTaskType::listgen) {
@@ -432,6 +440,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
   std::unordered_map<int, size_t> ext_array_size;
+  std::unordered_map<int, DeviceAllocation> textures;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
@@ -444,11 +453,21 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       if (arg.is_array) {
         if (host_ctx->device_allocation_type[i] !=
             RuntimeContext::DevAllocType::kNone) {
-          // NDArray
+          DeviceAllocation devalloc = kDeviceNullAllocation;
+
+          // NDArray / Texture
           if (host_ctx->args[i]) {
-            any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+            devalloc = *(DeviceAllocation *)(host_ctx->args[i]);
+          }
+
+          if (host_ctx->device_allocation_type[i] ==
+              RuntimeContext::DevAllocType::kNdarray) {
+            any_arrays[i] = devalloc;
+          } else if (host_ctx->device_allocation_type[i] ==
+                     RuntimeContext::DevAllocType::kTexture) {
+            textures[i] = devalloc;
           } else {
-            any_arrays[i] = kDeviceNullAllocation;
+            TI_NOT_IMPLEMENTED;
           }
         } else {
           ext_array_size[i] = host_ctx->array_runtime_sizes[i];
@@ -478,7 +497,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // Record commands
   ti_kernel->generate_command_list(current_cmdlist_.get(), args_buffer.get(),
-                                   ret_buffer.get(), any_arrays);
+                                   ret_buffer.get(), any_arrays, textures);
 
   // Keep context buffers used in this dispatch
   if (ti_kernel->get_args_buffer_size()) {
@@ -564,6 +583,7 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
+
   stream->submit_synced(cmdlist.get());
 }
 

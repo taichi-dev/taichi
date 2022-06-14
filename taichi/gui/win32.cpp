@@ -7,6 +7,11 @@
 #include <cctype>
 #include <map>
 
+#include <Windows.h>
+#include <string>
+#include <stdint.h>
+#include <stdexcept>
+
 // Note: some code is copied from MSDN:
 // https://docs.microsoft.com/en-us/windows/desktop/learnwin32/introduction-to-windows-programming-in-c--
 
@@ -152,8 +157,84 @@ void GUI::process_event() {
   }
 }
 
+// From:
+// https://docs.microsoft.com/en-us/archive/msdn-magazine/2016/september/c-unicode-encoding-conversions-with-stl-strings-and-win32-apis
+
+// Represents an error during UTF-8 encoding conversions
+class Utf8ConversionException : public std::runtime_error {
+ private:
+  uint32_t _error_code;
+
+ public:
+  Utf8ConversionException(const char *message, uint32_t error_code)
+      : std::runtime_error(message), _error_code(error_code) {
+  }
+
+  uint32_t error_code() const {
+    return _error_code;
+  }
+};
+
+std::wstring utf8_to_utf16(const std::string &utf8) {
+  std::wstring utf16;  // Result
+  if (utf8.empty()) {
+    return utf16;
+  }
+
+  // Safely fails if an invalid UTF-8 character
+  // is encountered in the input string
+  constexpr DWORD kFlags = MB_ERR_INVALID_CHARS;
+
+  if (utf8.length() > static_cast<size_t>((std::numeric_limits<int>::max)())) {
+    throw std::overflow_error(
+        "Input string too long: size_t-length doesn't fit into int.");
+  }
+
+  // Safely convert from size_t (STL string's length)
+  // to int (for Win32 APIs)
+  const int utf8_length = static_cast<int>(utf8.length());
+  const int utf16_length = ::MultiByteToWideChar(
+      CP_UTF8,      // Source string is in UTF-8
+      kFlags,       // Conversion flags
+      utf8.data(),  // Source UTF-8 string pointer
+      utf8_length,  // Length of the source UTF-8 string, in chars
+      nullptr,      // Unused - no conversion done in this step
+      0             // Request size of destination buffer, in wchar_ts
+  );
+  if (utf16_length == 0) {
+    // Conversion error: capture error code and throw
+    const DWORD error = ::GetLastError();
+    throw Utf8ConversionException(
+        "Cannot get result string length when converting "
+        "from UTF-8 to UTF-16 (MultiByteToWideChar failed).",
+        error);
+  }
+  utf16.resize(utf16_length);
+
+  // Convert from UTF-8 to UTF-16
+  int result = ::MultiByteToWideChar(
+      CP_UTF8,      // Source string is in UTF-8
+      kFlags,       // Conversion flags
+      utf8.data(),  // Source UTF-8 string pointer
+      utf8_length,  // Length of source UTF-8 string, in chars
+      &utf16[0],    // Pointer to destination buffer
+      utf16_length  // Size of destination buffer, in wchar_ts
+  );
+
+  if (result == 0) {
+    // Conversion error: capture error code and throw
+    const DWORD error = ::GetLastError();
+    throw Utf8ConversionException(
+        "Cannot convert from UTF-8 to UTF-16 "
+        "(MultiByteToWideChar failed).",
+        error);
+  }
+
+  return utf16;
+}
+
 void GUI::create_window() {
-  const char *CLASS_NAME = "Taichi Win32 Window";
+  static LPCWSTR CLASS_NAME = L"Taichi Win32 Window";
 
   DWORD dwVersion = 0;
   DWORD dwMajorVersion = 0;
@@ -164,13 +245,13 @@ void GUI::create_window() {
   dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
   dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
 
-  WNDCLASSA wc = {};
+  WNDCLASSW wc = {};
 
   wc.lpfnWndProc = WindowProc;
   wc.hInstance = GetModuleHandleA(0);
   wc.lpszClassName = CLASS_NAME;
 
-  RegisterClassA(&wc);
+  RegisterClassW(&wc);
 
   RECT window_rect;
   window_rect.left = 0;
@@ -180,9 +261,11 @@ void GUI::create_window() {
 
   AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
 
-  hwnd = CreateWindowExA(0,                    // Optional window styles.
+  std::wstring w_name = utf8_to_utf16(window_name);
+
+  hwnd = CreateWindowExW(0,                    // Optional window styles.
                          CLASS_NAME,           // Window class
-                         window_name.c_str(),  // Window text
+                         w_name.c_str(),       // Window text
                          WS_OVERLAPPEDWINDOW,  // Window style
                          // Size and position
                          CW_USEDEFAULT, CW_USEDEFAULT,
@@ -200,7 +283,7 @@ void GUI::create_window() {
     // https://www.cnblogs.com/lidabo/archive/2012/07/17/2595452.html
     LONG style = GetWindowLong(hwnd, GWL_STYLE);
     style &= ~WS_CAPTION & ~WS_SIZEBOX;
-    SetWindowLongA(hwnd, GWL_STYLE, style);
+    SetWindowLongW(hwnd, GWL_STYLE, style);
     SetWindowPos(hwnd, NULL, 0, 0, GetSystemMetrics(SM_CXSCREEN),
                  GetSystemMetrics(SM_CYSCREEN), SWP_NOZORDER);
   }
@@ -234,7 +317,8 @@ void GUI::redraw() {
 }
 
 void GUI::set_title(std::string title) {
-  SetWindowTextA(hwnd, title.c_str());
+  std::wstring w_title = utf8_to_utf16(title);
+  SetWindowTextW(hwnd, w_title.c_str());
 }
 
 GUI::~GUI() {

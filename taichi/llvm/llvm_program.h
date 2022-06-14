@@ -118,9 +118,26 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
 
+  void cache_field(int snode_tree_id,
+                   int root_id,
+                   const StructCompiler &struct_compiler);
+
+  LlvmOfflineCache::FieldCacheData get_cached_field(int snode_tree_id) const {
+    TI_ASSERT(cache_data_.fields.find(snode_tree_id) !=
+              cache_data_.fields.end());
+    return cache_data_.fields.at(snode_tree_id);
+  }
+
   Device *get_compute_device() override {
     return device_.get();
   }
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -129,12 +146,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(
-      const LlvmOfflineCache::FieldCacheData &field_cache_data,
-      uint64 *result_buffer);
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 

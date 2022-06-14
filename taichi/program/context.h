@@ -14,6 +14,13 @@ struct DeviceAllocation;
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
 struct RuntimeContext {
+  enum class DevAllocType : int8_t {
+    kNone = 0,
+    kNdarray = 1,
+    kTexture = 2,
+    kImage = 3
+  };
+
   LLVMRuntime *runtime{nullptr};
   // args can contain:
   // - primitive_types
@@ -30,8 +37,10 @@ struct RuntimeContext {
   // `array_runtime_size` records the runtime size of the
   // corresponding array arguments.
   uint64 array_runtime_sizes[taichi_max_num_args_total]{0};
-  // `is_device_allocations` is true iff i-th arg is a `DeviceAllocation*`.
-  bool is_device_allocations[taichi_max_num_args_total]{false};
+  // `device_allocation_type` is set iff i-th arg is a `DeviceAllocation*`,
+  // otherwise it is set to DevAllocType::kNone
+  DevAllocType device_allocation_type[taichi_max_num_args_total]{
+      DevAllocType::kNone};
   // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
   // because each real function need a place to store its result, but
   // LLVMRuntime is shared among functions. So we moved the pointer to
@@ -53,15 +62,15 @@ struct RuntimeContext {
   template <typename T>
   void set_arg(int i, T v) {
     args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
-    set_array_is_device_allocation(i, /*is_device_allocation=*/false);
+    set_array_device_allocation_type(i, DevAllocType::kNone);
   }
 
   void set_array_runtime_size(int i, uint64 size) {
     this->array_runtime_sizes[i] = size;
   }
 
-  void set_array_is_device_allocation(int i, bool is_device_allocation) {
-    this->is_device_allocations[i] = is_device_allocation;
+  void set_array_device_allocation_type(int i, DevAllocType usage) {
+    this->device_allocation_type[i] = usage;
   }
 
   template <typename T>
@@ -69,11 +78,16 @@ struct RuntimeContext {
     return taichi_union_cast_with_different_sizes<T>(result_buffer[i]);
   }
 
+  void set_arg_texture(int arg_id, DeviceAllocation &alloc) {
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
+    set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
+  }
+
   void set_arg_devalloc(int arg_id,
                         DeviceAllocation &alloc,
                         const std::vector<int> &shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true);
+    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {
       extra_args[arg_id][i] = shape[i];
@@ -85,7 +99,7 @@ struct RuntimeContext {
                         const std::vector<int> &shape,
                         const std::vector<int> &element_shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_is_device_allocation(arg_id, /*is_device_allocation=*/true);
+    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() + element_shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {
       extra_args[arg_id][i] = shape[i];

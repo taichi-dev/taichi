@@ -11,7 +11,7 @@ from tests import test_utils
                          [(False, False, False), (True, False, False),
                           (True, True, False), (True, True, True)])
 @test_utils.test(require=ti.extension.quant)
-def test_quant_float_time_integration(use_quant, use_exponent, use_shared_exp):
+def test_quant_time_integration(use_quant, use_exponent, use_shared_exp):
     if use_quant:
         if use_exponent:
             qflt = ti.types.quant.float(exp=6, frac=13)

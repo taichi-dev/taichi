@@ -30,7 +30,7 @@ class Runtime {
   virtual void submit() = 0;
   virtual void wait() = 0;
 
-  struct VulkanRuntime *as_vk();
+  class VulkanRuntime *as_vk();
 };
 
 class AotModule {

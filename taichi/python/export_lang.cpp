@@ -563,6 +563,7 @@ void export_lang(py::module &m) {
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
+      // Using this MATRIX as Scalar alias, we can move to native matrix type when supported
       .value("MATRIX", aot::ArgKind::kScalar)
       .export_values();
 

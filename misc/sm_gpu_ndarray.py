@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-ti.init(arch=ti.cuda, gdb_trigger=True)
+ti.init(arch=ti.cuda, gdb_trigger=False)
 
 idx_dt = ti.int32
 val_dt = ti.f32

@@ -195,9 +195,19 @@ class Field:
             # The type is not (yet) registered, treat it as a untracked C type.
             self.type = CType(j["type"])
             self.name = Name(j["name"])
+        self.count = j["count"] if "count" in j else None
 
     def declr(self):
-        return f"{self.type.type_name} {self.name}"
+        if self.count:
+            if isinstance(self.count, int):
+                # `count` is an integer so it's a static array.
+                return f"{self.type.type_name} {self.name}[{self.count}]"
+            else:
+                # In this case `count` is a name of another field. We use const
+                # pointers to declared runtime arrays.
+                return f"const {self.type.type_name}* {self.name}"
+        else:
+            return f"{self.type.type_name} {self.name}"
 
 
 class Structure:

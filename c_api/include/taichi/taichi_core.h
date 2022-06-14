@@ -81,7 +81,7 @@ typedef struct TiMemoryAllocateInfo {
 // structure.nd_shape
 typedef struct TiNdShape {
   uint32_t dim_count;
-  uint32_t dims;
+  uint32_t dims[16];
 } TiNdShape;
 
 // structure.nd_array
@@ -136,14 +136,14 @@ TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,
                                                 TiKernel kernel,
                                                 uint32_t arg_count,
-                                                TiArgument args);
+                                                const TiArgument *args);
 
 // function.launch_compute_graph
 TI_DLL_EXPORT void TI_API_CALL
 ti_launch_compute_graph(TiRuntime runtime,
                         TiComputeGraph compute_graph,
                         uint32_t arg_count,
-                        TiArgument args);
+                        const TiArgument *args);
 
 // function.submit
 TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);

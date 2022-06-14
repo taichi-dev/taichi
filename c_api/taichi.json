@@ -126,7 +126,7 @@
                         {
                             "name": "dims",
                             "type": "uint32_t",
-                            "count": "16"
+                            "count": 16
                         }
                     ]
                 },

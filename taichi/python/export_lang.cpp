@@ -606,7 +606,7 @@ void export_lang(py::module &m) {
         }
         for (auto it : arg_floats) {
           args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<double>(it.second))});
+                       aot::IValue::create(py::cast<float>(it.second))});
         }
         self->run(args);
       });

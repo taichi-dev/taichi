@@ -78,12 +78,10 @@ def test_matrix_int():
 def test_matrix_float():
     n = 4
     A = ti.Matrix([4.2, 5.7] * n)
-    # res = ti.ndarray(ti.f32, shape=(1))
-    # graph = build_graph("matrix", n, dtype=ti.f32)
-    res = ti.ndarray(ti.f64, shape=(1))
-    graph = build_graph("matrix", n, dtype=ti.f64)
+    res = ti.ndarray(ti.f32, shape=(1))
+    graph = build_graph("matrix", n, dtype=ti.f32)
     graph.run({"mat": A, "res": res})
-    assert (res.to_numpy()[0] == 39.6)
+    assert test_utils.approx((res.to_numpy()[0] - 39.6), rel=1e-5)
 
 
 @test_utils.test(arch=ti.vulkan)
@@ -100,7 +98,9 @@ def test_vector_int():
 def test_vector_float():
     n = 8
     A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6])
-    res = ti.ndarray(ti.f64, shape=(1, ))
-    graph = build_graph("vector", n, dtype=ti.f64)
+    res = ti.ndarray(ti.f32, shape=(1, ))
+    graph = build_graph("vector", n, dtype=ti.f32)
     graph.run({"mat": A, "res": res})
-    assert (res.to_numpy()[0] == 57.5)
+    # assert (res.to_numpy()[0] == 57.5)
+    assert test_utils.approx((res.to_numpy()[0] - 57.5), rel=1e-5)
+

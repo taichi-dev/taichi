@@ -1,14 +1,6 @@
 import json
 import re
-from os import system
-
-JSON = None
-
-with open("c_api/taichi.json") as f:
-    JSON = json.load(f)
-
-VERSION = JSON["version"]
-print("taichi c-api version is:", VERSION)
+#from os import system
 
 
 class Name:
@@ -33,6 +25,8 @@ class Name:
 
 
 class DeclarationRegistry:
+    current = None
+
     def __init__(self):
         # "xxx.yyy" -> Xxx(yyy) Look-up table.
         self._inner = {}
@@ -56,8 +50,9 @@ class DeclarationRegistry:
     def __iter__(self):
         return iter(self._inner)
 
-
-DECLR_REG = None
+    @staticmethod
+    def set_current(declr_reg):
+        DeclarationRegistry.current = declr_reg
 
 
 class Alias:
@@ -183,7 +178,7 @@ class CType:
 
 class Field:
     def __init__(self, j):
-        ty = DECLR_REG.resolve(j["type"])
+        ty = DeclarationRegistry.current.resolve(j["type"])
         if ty != None:
             # The type has been registered.
             self.type = ty
@@ -299,17 +294,15 @@ class Function:
         return '\n'.join(out)
 
 
-MODULES = {}
-
-
 class Module:
+    all_modules = {}
+
     def __init__(self, j):
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry()
         self.required_modules = []
 
-        global DECLR_REG
-        DECLR_REG = self.declr_reg
+        DeclarationRegistry.set_current(self.declr_reg)
 
         if "is_built_in" in j:
             self.is_built_in = True
@@ -318,8 +311,8 @@ class Module:
 
         if "required_modules" in j:
             for x in j["required_modules"]:
-                assert x in MODULES
-                module = MODULES[x]
+                assert x in Module.all_modules
+                module = Module.all_modules[x]
                 self.declr_reg.import_declrs(module.declr_reg)
                 self.required_modules += [x]
 
@@ -346,7 +339,7 @@ class Module:
                 else:
                     print(f"ignored unrecognized type declaration '{k}'")
 
-        DECLR_REG = None
+        DeclarationRegistry.set_current(None)
 
     def declr(self):
         out = ["#pragma once"]
@@ -379,22 +372,30 @@ class Module:
 
         return '\n'.join(out)
 
+    @staticmethod
+    def generate_header(j):
+        module_name = j["name"]
+        module = Module(j)
+        Module.all_modules[module_name] = module
 
-def generate_module_header(j):
-    module_name = j["name"]
-    module = Module(j)
-    MODULES[module_name] = module
+        if module.is_built_in:
+            return
 
-    if module.is_built_in:
-        return
+        print(f"processing module '{module_name}'")
+        path = f"c_api/include/{module_name}"
+        with open(path, "w") as f:
+            f.write(module.declr())
 
-    print(f"processing module '{module_name}'")
-    path = f"c_api/include/{module_name}"
-    with open(path, "w") as f:
-        f.write(module.declr())
-
-    system(f"clang-format {path} -i")
+        #system(f"clang-format {path} -i")
 
 
-for module in JSON["modules"]:
-    generate_module_header(module)
+if __name__ == "__main__":
+    j = None
+    with open("c_api/taichi.json") as f:
+        j = json.load(f)
+
+    version = j["version"]
+    print("taichi c-api version is:", version)
+
+    for module in j["modules"]:
+        Module.generate_header(module)

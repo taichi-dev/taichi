@@ -29,7 +29,7 @@
 #include "taichi/backends/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 #ifdef TI_WITH_DX11
@@ -562,6 +562,24 @@ Ndarray *Program::create_ndarray(const DataType type,
   ndarrays_.emplace_back(
       std::make_unique<Ndarray>(this, type, shape, element_shape, layout));
   return ndarrays_.back().get();
+}
+
+Texture *Program::create_texture(const DataType type,
+                                 int num_channels,
+                                 const std::vector<int> &shape) {
+  if (shape.size() == 1) {
+    textures_.push_back(
+        std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
+  } else if (shape.size() == 2) {
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels,
+                                                  shape[0], shape[1], 1));
+  } else if (shape.size() == 3) {
+    textures_.push_back(std::make_unique<Texture>(
+        this, type, num_channels, shape[0], shape[1], shape[2]));
+  } else {
+    TI_ERROR("Texture shape invalid");
+  }
+  return textures_.back().get();
 }
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {

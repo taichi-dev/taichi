@@ -173,9 +173,9 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
-                 bool grad = false) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();
@@ -183,9 +183,9 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
-                 bool grad = false) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, grad);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();
@@ -327,6 +327,10 @@ class TI_DLL_EXPORT Program {
       const std::vector<int> &element_shape = {},
       ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
+  Texture *create_texture(const DataType type,
+                          int num_channels,
+                          const std::vector<int> &shape);
+
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
   void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
@@ -362,6 +366,7 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
+  std::vector<std::unique_ptr<Texture>> textures_;
 };
 
 }  // namespace lang

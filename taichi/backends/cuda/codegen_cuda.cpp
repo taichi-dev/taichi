@@ -548,10 +548,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
+            llvm_val[stmt] = extract_quant_int(data, bit_offset, int_in_mem);
           } else if (val_type->cast<CustomFloatType>()) {
             // TODO: support __ldg
-            llvm_val[stmt] = load_custom_float(stmt->src);
+            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
           } else {
             TI_NOT_IMPLEMENTED;
           }
@@ -733,7 +733,9 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
   ctx->set_arg(arg_id, ptr);
   ctx->set_array_runtime_size(arg_id, size);
-  ctx->set_array_is_device_allocation(arg_id, is_device_allocation);
+  ctx->set_array_device_allocation_type(
+      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
+                                   : RuntimeContext::DevAllocType::kNone);
 }
 
 FunctionType CodeGenCUDA::codegen() {
@@ -771,7 +773,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           continue;
         }
         arg_buffers[i] = context.get_arg<void *>(i);
-        if (!context.is_device_allocations[i]) {
+        if (context.device_allocation_type[i] ==
+            RuntimeContext::DevAllocType::kNone) {
           // Note: both numpy and PyTorch support arrays/tensors with zeros
           // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
           // `arr_sz` zero.

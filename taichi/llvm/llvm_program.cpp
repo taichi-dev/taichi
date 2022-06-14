@@ -350,12 +350,12 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
 
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>();
+    return std::make_unique<cpu::AotModuleBuilderImpl>(this);
   }
 
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>();
+    return std::make_unique<cuda::AotModuleBuilderImpl>(this);
   }
 #endif
 

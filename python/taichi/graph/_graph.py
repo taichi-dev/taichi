@@ -12,8 +12,8 @@ def gen_cpp_kernel(kernel_fn, args):
     kernel = kernel_fn._primal
     assert isinstance(kernel, kernel_impl.Kernel)
     injected_args = produce_injected_args(kernel, symbolic_args=args)
-    kernel.ensure_compiled(*injected_args)
-    return kernel.kernel_cpp
+    key = kernel.ensure_compiled(*injected_args)
+    return kernel.compiled_kernels[key]
 
 
 class Sequential:
@@ -64,7 +64,7 @@ class Graph:
                 arg_floats[k] = v
             else:
                 raise TaichiRuntimeError(
-                    'Only python int, float and ti.Ndarray are supported as runtime arguments'
+                    f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
         self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
 

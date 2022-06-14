@@ -293,6 +293,22 @@ class ArgLoadExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class Texture;
+
+class TexturePtrExpression : public Expression {
+ public:
+  int arg_id;
+
+  TexturePtrExpression(int arg_id) : arg_id(arg_id) {
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class RandExpression : public Expression {
  public:
   DataType dt;
@@ -603,6 +619,25 @@ class SNodeOpExpression : public Expression {
                     const ExprGroup &indices,
                     const Expr &value)
       : snode(snode), op_type(op_type), indices(indices), value(value) {
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+class TextureOpExpression : public Expression {
+ public:
+  TextureOpType op;
+  Expr texture_ptr;
+  ExprGroup args;
+
+  explicit TextureOpExpression(TextureOpType op,
+                               Expr texture_ptr,
+                               const ExprGroup &args)
+      : op(op), texture_ptr(texture_ptr), args(args) {
   }
 
   void type_check(CompileConfig *config) override;

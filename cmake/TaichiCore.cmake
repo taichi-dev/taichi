@@ -90,6 +90,7 @@ endif()
 
 
 
+# TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "tests/cpp/task/*.cpp")
@@ -103,7 +104,6 @@ file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
 
@@ -195,7 +195,6 @@ endif()
 
 if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
 
 
@@ -229,6 +228,18 @@ file(GLOB TAICHI_EMBIND_SOURCE
 if (TAICHI_EMBIND_SOURCE)
   list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_EMBIND_SOURCE})
 endif()
+
+
+# TODO(#4832), Remove vulkan runtime files from TAICHI_CORE_SOURCE
+# Remove this after all sources are splitted into targets.
+file(GLOB TAICHI_VULKAN_TEMP_SOURCE
+  "taichi/backends/vulkan/*.h"
+  "taichi/backends/vulkan/*.cpp"
+  "taichi/runtime/program_impls/vulkan/*.h"
+  "taichi/runtime/program_impls/vulkan/*.cpp"
+)
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VULKAN_TEMP_SOURCE})
+
 
 # TODO(#2196): Rename these CMAKE variables:
 # CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME
@@ -381,16 +392,9 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
 add_subdirectory(taichi/runtime/gfx)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 
+
 # Vulkan Device API
 if (TI_WITH_VULKAN)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/Vulkan-Headers/include)
-
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/volk)
-
-
-    # By specifying SYSTEM, we suppressed the warnings from third-party headers.
-    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
-
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
@@ -399,6 +403,14 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
+    add_subdirectory(taichi/backends/vulkan)
+
+    # TODO: this dependency is here because program.cpp includes vulkan_program.h
+    # Should be removed
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
+
+    add_subdirectory(taichi/runtime/program_impls)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
 endif ()
 
 
@@ -492,6 +504,10 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
         ${PROJECT_SOURCE_DIR}/external/imgui
         ${PROJECT_SOURCE_DIR}/external/imgui/backends
       )
+      target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME} SYSTEM
+        PRIVATE
+          ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+        )
 
     if (NOT ANDROID)
       target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}

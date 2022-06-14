@@ -9,6 +9,9 @@ namespace lang {
 
 class LlvmAotModuleBuilder : public AotModuleBuilder {
  public:
+  explicit LlvmAotModuleBuilder(LlvmProgramImpl *prog) : prog_(prog) {
+  }
+
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
@@ -26,6 +29,7 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
 
  private:
   mutable LlvmOfflineCache cache_;
+  LlvmProgramImpl *prog_ = nullptr;
 };
 
 }  // namespace lang

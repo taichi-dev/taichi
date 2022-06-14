@@ -59,10 +59,9 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
   // By the time "add_field_per_backend()" is called,
   // SNodeTrees should have already been finalized,
   // with compiled info stored in LlvmProgramImpl::cache_data_.
-  const LlvmProgramImpl *prog =
-      this->get_mutable_program()->get_llvm_program_impl();
+  TI_ASSERT(prog_ != nullptr);
   LlvmOfflineCache::FieldCacheData field_cache =
-      prog->get_cached_field(snode_tree_id);
+      prog_->get_cached_field(snode_tree_id);
 
   // 3. Update AOT Cache
   cache_.fields[snode_tree_id] = std::move(field_cache);

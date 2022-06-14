@@ -13,9 +13,9 @@ from taichi.lang.misc import is_arch_supported
 import taichi as ti
 
 __aot_test_cases = {
-    "LlvmProgramTest.FullPipeline":
+    "LlvmAOTTest.CPUKernel":
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cpu.py'),
-    "LlvmProgramTest.FullPipelineCUDA":
+    "LlvmAOTTest.CUDAKernel":
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cuda.py'),
     "LlvmAOTTest.CPUField":
     os.path.join('cpp', 'backends', 'llvm', 'field_aot_cpu.py'),

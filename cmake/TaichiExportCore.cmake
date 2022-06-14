@@ -69,12 +69,13 @@ install(DIRECTORY
       ${PROJECT_SOURCE_DIR}/external/spdlog/include/spdlog
       ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include/vulkan
       ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include/vulkan
-      ${PROJECT_SOURCE_DIR}/external/glm
+      ${PROJECT_SOURCE_DIR}/external/glm/glm
       ${PROJECT_SOURCE_DIR}/external/eigen
     DESTINATION include
     FILES_MATCHING
     PATTERN *.h
     PATTERN *.hpp
+    PATTERN *.inl
     )
 install(DIRECTORY
       ${PROJECT_SOURCE_DIR}/external/eigen/Eigen

@@ -189,9 +189,9 @@ class TensorType : public Type {
 class QuantIntType : public Type {
  public:
   QuantIntType(int num_bits,
-                bool is_signed,
-                Type *compute_type = nullptr,
-                Type *physical_type = nullptr);
+               bool is_signed,
+               Type *compute_type = nullptr,
+               Type *physical_type = nullptr);
 
   std::string to_string() const override;
 

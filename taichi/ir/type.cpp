@@ -145,7 +145,7 @@ QuantFloatType::QuantFloatType(Type *digits_type,
   TI_ASSERT(digits_type->is<QuantIntType>());
   // We only support f32 as compute type when when using exponents
   TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
-  // Exponent must be unsigned custom int
+  // Exponent must be unsigned quant int
   TI_ASSERT(exponent_type->is<QuantIntType>());
   TI_ASSERT(exponent_type->as<QuantIntType>()->get_num_bits() <= 8);
   TI_ASSERT(exponent_type->as<QuantIntType>()->get_is_signed() == false);

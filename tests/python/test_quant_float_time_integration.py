@@ -7,23 +7,23 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',
+@pytest.mark.parametrize('use_quant,use_exponent,use_shared_exp',
                          [(False, False, False), (True, False, False),
                           (True, True, False), (True, True, True)])
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
-    if use_cft:
+def test_quant_float_time_integration(use_quant, use_exponent, use_shared_exp):
+    if use_quant:
         if use_exponent:
-            cft = ti.types.quant.float(exp=6, frac=13)
-            x = ti.Vector.field(2, dtype=cft)
+            qflt = ti.types.quant.float(exp=6, frac=13)
+            x = ti.Vector.field(2, dtype=qflt)
             if use_shared_exp:
                 ti.root.bit_struct(num_bits=32).place(x, shared_exponent=True)
             else:
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0))
                 ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1))
         else:
-            cft = ti.types.quant.fixed(frac=16, range=2)
-            x = ti.Vector.field(2, dtype=cft)
+            qfxt = ti.types.quant.fixed(frac=16, range=2)
+            x = ti.Vector.field(2, dtype=qfxt)
             ti.root.bit_struct(num_bits=32).place(x)
     else:
         x = ti.Vector.field(2, dtype=ti.f32, shape=())

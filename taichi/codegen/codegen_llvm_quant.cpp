@@ -82,8 +82,7 @@ void CodeGenLLVM::store_quant_int(llvm::Value *byte_ptr,
                                   llvm::Value *value,
                                   bool atomic) {
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
-  // Try to support CustomInt/FloatType with 8/16-bit physical
-  // types.
+  // Try to support 8/16-bit physical types.
   create_call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
                           data_type_bits(cit->get_physical_type())),
               {builder->CreateBitCast(byte_ptr,
@@ -119,7 +118,7 @@ llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
                                               QuantFloatType *cft) {
   // Since we have fewer bits in the exponent type than in f32, an
   // offset is necessary to make sure the stored exponent values are
-  // representable by the exponent custom int type.
+  // representable by the exponent quant int type.
   auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, exponent,
                                   tlctx->get_constant(0));
   return builder->CreateSelect(
@@ -190,7 +189,7 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     auto dtype = ch->dt;
 
     if (auto cft = dtype->cast<QuantFloatType>()) {
-      // Custom float type with non-shared exponent.
+      // Quant float type with non-shared exponent.
       llvm::Value *digit_bits = nullptr;
       // Extract exponent and digits from compute type (assumed to be f32 for
       // now).

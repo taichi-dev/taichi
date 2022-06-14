@@ -1189,7 +1189,7 @@ llvm::Value *CodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
 }
 
 llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
-  // TODO(type): support all AtomicOpTypes on custom types
+  // TODO(type): support all AtomicOpTypes on quant types
   if (stmt->op_type != AtomicOpType::add) {
     return nullptr;
   }
@@ -1349,7 +1349,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             "handled by BitStructStoreStmt.",
             pointee_type->to_string());
       } else {
-        TI_ERROR("Bit array only supports custom int type.");
+        TI_ERROR("Bit array only supports quant int type.");
       }
     }
     llvm::Value *store_value = nullptr;

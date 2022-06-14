@@ -101,6 +101,5 @@ def test_vector_float():
     res = ti.ndarray(ti.f32, shape=(1, ))
     graph = build_graph("vector", n, dtype=ti.f32)
     graph.run({"mat": A, "res": res})
-    # assert (res.to_numpy()[0] == 57.5)
     assert test_utils.approx((res.to_numpy()[0] - 57.5), rel=1e-5)
 

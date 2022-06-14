@@ -43,7 +43,7 @@ a = TiArray(32)
 a.inc()
 ```
 
-Programmers used to define Taichi fields in `__init__` functions of `@ti.data_oriented` classes. With the new **Dynamic SNode** feature (released in `v0.8.0`, see [Field (advanced)](layout.md#dynamic-field-allocation-and-destruction) for more details), you can define Taichi fields **at any places** of Python-scope functions. For example,
+Definitions of Taichi fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a data-oriented class. For example,
 
 ```python {21,25}
 import taichi as ti
@@ -174,9 +174,6 @@ Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classm
 [^1]: [Python built-in functions - staticmethod](https://docs.python.org/3/library/functions.html#staticmethod)
 [^2]: [Python built-in functions - classmethod](https://docs.python.org/3/library/functions.html#classmethod)
 
-:::note
-`@property` decorator is not supported now in the stable version. Would be fixed soon in the `v0.8.2` release. If in need, you can try it on the nightly version.
-:::
 
 `staticmethod` example :
 

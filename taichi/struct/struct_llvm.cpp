@@ -89,13 +89,13 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       auto &ch = snode.ch[i];
       ch_types.push_back(ch->dt);
       ch_offsets.push_back(total_offset);
-      CustomIntType *component_cit = nullptr;
-      if (auto cit = ch->dt->cast<CustomIntType>()) {
+      QuantIntType *component_cit = nullptr;
+      if (auto cit = ch->dt->cast<QuantIntType>()) {
         component_cit = cit;
-      } else if (auto cfxt = ch->dt->cast<CustomFixedType>()) {
-        component_cit = cfxt->get_digits_type()->as<CustomIntType>();
-      } else if (auto cft = ch->dt->cast<CustomFloatType>()) {
-        component_cit = cft->get_digits_type()->as<CustomIntType>();
+      } else if (auto cfxt = ch->dt->cast<QuantFixedType>()) {
+        component_cit = cfxt->get_digits_type()->as<QuantIntType>();
+      } else if (auto cft = ch->dt->cast<QuantFloatType>()) {
+        component_cit = cft->get_digits_type()->as<QuantIntType>();
       } else {
         TI_ERROR("Type {} not supported.", ch->dt->to_string());
       }
@@ -123,7 +123,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt;
-    ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
+    ch->dt->as<QuantIntType>()->set_physical_type(snode.physical_type);
     if (!arch_is_cpu(arch_)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
                   "bit_array physical type must be at least 32 bits on "

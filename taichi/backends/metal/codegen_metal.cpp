@@ -92,7 +92,7 @@ bool is_full_bits(int bits) {
   return bits == (sizeof(uint32_t) * 8);
 }
 
-void validate_cfxt_for_metal(CustomFixedType *cft) {
+void validate_cfxt_for_metal(QuantFixedType *cft) {
   if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
     TI_ERROR("Metal only supports 32-bit float");
   }
@@ -969,14 +969,14 @@ class KernelCodegenImpl : public IRVisitor {
     auto *ptr_type = stmt->dest->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
-    CustomIntType *cit = nullptr;
+    QuantIntType *cit = nullptr;
     std::string store_value_expr;
-    if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
+    if (auto *cit_cast = pointee_type->cast<QuantIntType>()) {
       cit = cit_cast;
       store_value_expr = stmt->val->raw_name();
-    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+    } else if (auto *cfxt = pointee_type->cast<QuantFixedType>()) {
       validate_cfxt_for_metal(cfxt);
-      auto *digits_cit = cfxt->get_digits_type()->as<CustomIntType>();
+      auto *digits_cit = cfxt->get_digits_type()->as<QuantIntType>();
       cit = digits_cit;
       store_value_expr = construct_quant_fixed_to_quant_int_expr(
           stmt->val, cfxt->get_scale(), digits_cit);
@@ -1000,12 +1000,12 @@ class KernelCodegenImpl : public IRVisitor {
     auto *ptr_type = stmt->src->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
-    if (auto *cit = pointee_type->cast<CustomIntType>()) {
+    if (auto *cit = pointee_type->cast<QuantIntType>()) {
       return construct_load_quant_int(stmt->src, cit);
-    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
+    } else if (auto *cfxt = pointee_type->cast<QuantFixedType>()) {
       validate_cfxt_for_metal(cfxt);
       const auto loaded = construct_load_quant_int(
-          stmt->src, cfxt->get_digits_type()->as<CustomIntType>());
+          stmt->src, cfxt->get_digits_type()->as<QuantIntType>());
       // Computes `float(digits_expr) * scale`
       // See LLVM backend's reconstruct_quant_fixed()
       return fmt::format("(static_cast<float>({}) * {})", loaded,
@@ -1023,13 +1023,13 @@ class KernelCodegenImpl : public IRVisitor {
     auto *ptr_type = dest_ptr->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
-    CustomIntType *cit = nullptr;
+    QuantIntType *cit = nullptr;
     std::string val_expr;
-    if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
+    if (auto *cit_cast = pointee_type->cast<QuantIntType>()) {
       cit = cit_cast;
       val_expr = stmt->val->raw_name();
-    } else if (auto *cfxt = pointee_type->cast<CustomFixedType>()) {
-      cit = cfxt->get_digits_type()->as<CustomIntType>();
+    } else if (auto *cfxt = pointee_type->cast<QuantFixedType>()) {
+      cit = cfxt->get_digits_type()->as<QuantIntType>();
       val_expr = construct_quant_fixed_to_quant_int_expr(
           stmt->val, cfxt->get_scale(), cit);
     } else {
@@ -1051,7 +1051,7 @@ class KernelCodegenImpl : public IRVisitor {
   std::string construct_quant_fixed_to_quant_int_expr(
       const Stmt *val_stmt,
       float64 scale,
-      CustomIntType *digits_cit) const {
+      QuantIntType *digits_cit) const {
     DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
     // This implicitly casts double to float on the host.
     const float inv_scale = 1.0 / scale;
@@ -1066,7 +1066,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   // Returns expression of the loaded integer.
   std::string construct_load_quant_int(const Stmt *bit_ptr_stmt,
-                                       CustomIntType *cit) const {
+                                       QuantIntType *cit) const {
     DataType compute_dt(cit->get_compute_type()->as<PrimitiveType>());
     const auto num_bits = cit->get_num_bits();
     if (is_full_bits(num_bits)) {

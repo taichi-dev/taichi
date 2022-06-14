@@ -1025,7 +1025,7 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
-  if (auto cit = type->cast<CustomIntType>()) {
+  if (auto cit = type->cast<QuantIntType>()) {
     if (cit->get_is_signed())
       dest_ty = tlctx->get_data_type(PrimitiveType::i32);
     else
@@ -1056,7 +1056,7 @@ llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   if (type.is_pointer()) {
     return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
   }
-  if (auto cit = type->cast<CustomIntType>()) {
+  if (auto cit = type->cast<QuantIntType>()) {
     intermediate_bits = data_type_bits(cit->get_compute_type());
   } else {
     intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
@@ -1188,16 +1188,16 @@ llvm::Value *CodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
   return nullptr;
 }
 
-llvm::Value *CodeGenLLVM::custom_type_atomic(AtomicOpStmt *stmt) {
+llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   // TODO(type): support all AtomicOpTypes on custom types
   if (stmt->op_type != AtomicOpType::add) {
     return nullptr;
   }
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-  if (auto cit = dst_type->cast<CustomIntType>()) {
+  if (auto cit = dst_type->cast<QuantIntType>()) {
     return atomic_add_quant_int(stmt, cit);
-  } else if (auto cfxt = dst_type->cast<CustomFixedType>()) {
+  } else if (auto cfxt = dst_type->cast<QuantFixedType>()) {
     return atomic_add_quant_fixed(stmt, cfxt);
   } else {
     return nullptr;
@@ -1318,7 +1318,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
 
     if (llvm::Value *result = optimized_reduction(stmt)) {
       old_value = result;
-    } else if (llvm::Value *result = custom_type_atomic(stmt)) {
+    } else if (llvm::Value *result = quant_type_atomic(stmt)) {
       old_value = result;
     } else if (llvm::Value *result = real_type_atomic(stmt)) {
       old_value = result;
@@ -1341,7 +1341,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (!pointee_type->is<CustomIntType>()) {
+    if (!pointee_type->is<QuantIntType>()) {
       if (stmt->dest->as<GetChStmt>()->input_snode->type ==
           SNodeType::bit_struct) {
         TI_ERROR(
@@ -1353,7 +1353,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       }
     }
     llvm::Value *store_value = nullptr;
-    auto *cit = pointee_type->as<CustomIntType>();
+    auto *cit = pointee_type->as<QuantIntType>();
     store_value = llvm_val[stmt->val];
     store_quant_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
   } else {
@@ -1367,11 +1367,11 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
-    if (val_type->is<CustomIntType>()) {
+    if (val_type->is<QuantIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
     } else {
-      TI_ASSERT(val_type->is<CustomFixedType>() ||
-                val_type->is<CustomFloatType>());
+      TI_ASSERT(val_type->is<QuantFixedType>() ||
+                val_type->is<QuantFloatType>());
       TI_ASSERT(stmt->src->is<GetChStmt>());
       llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
     }

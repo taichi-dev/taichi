@@ -50,7 +50,7 @@ Program::Program(Arch desired_arch)
     : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
-  // For performance considerations and correctness of CustomFloatType
+  // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
 #if defined(TI_ARCH_x64)

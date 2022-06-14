@@ -40,7 +40,7 @@ class BitLoopVectorize : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     auto ptr_type = stmt->src->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
-      if (ptr_type->get_pointee_type()->cast<CustomIntType>()) {
+      if (ptr_type->get_pointee_type()->cast<QuantIntType>()) {
         // rewrite the previous GlobalPtrStmt's return type from *cit to
         // *phy_type
         auto ptr = stmt->src->cast<GlobalPtrStmt>();
@@ -127,7 +127,7 @@ class BitLoopVectorize : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     auto ptr_type = stmt->dest->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
-      if (ptr_type->get_pointee_type()->cast<CustomIntType>()) {
+      if (ptr_type->get_pointee_type()->cast<QuantIntType>()) {
         // rewrite the previous GlobalPtrStmt's return type from *cit to
         // *phy_type
         auto ptr = stmt->dest->cast<GlobalPtrStmt>();

@@ -51,7 +51,7 @@ Type *TypeFactory::get_custom_int_type(int num_bits,
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
   if (custom_int_types_.find(key) == custom_int_types_.end()) {
     custom_int_types_[key] =
-        std::make_unique<CustomIntType>(num_bits, is_signed, compute_type);
+        std::make_unique<QuantIntType>(num_bits, is_signed, compute_type);
   }
   return custom_int_types_[key].get();
 }
@@ -62,7 +62,7 @@ Type *TypeFactory::get_custom_fixed_type(Type *digits_type,
   auto key = std::make_tuple(digits_type, compute_type, scale);
   if (custom_fixed_types_.find(key) == custom_fixed_types_.end()) {
     custom_fixed_types_[key] =
-        std::make_unique<CustomFixedType>(digits_type, compute_type, scale);
+        std::make_unique<QuantFixedType>(digits_type, compute_type, scale);
   }
   return custom_fixed_types_[key].get();
 }
@@ -72,7 +72,7 @@ Type *TypeFactory::get_custom_float_type(Type *digits_type,
                                          Type *compute_type) {
   auto key = std::make_tuple(digits_type, exponent_type, compute_type);
   if (custom_float_types_.find(key) == custom_float_types_.end()) {
-    custom_float_types_[key] = std::make_unique<CustomFloatType>(
+    custom_float_types_[key] = std::make_unique<QuantFloatType>(
         digits_type, exponent_type, compute_type);
   }
   return custom_float_types_[key].get();

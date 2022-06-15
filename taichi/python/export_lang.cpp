@@ -1036,13 +1036,13 @@ void export_lang(py::module &m) {
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
-      .def("get_custom_fixed_type", &TypeFactory::get_custom_fixed_type,
+      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
            py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
            py::return_value_policy::reference)
-      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
            py::arg("compute_type"), py::return_value_policy::reference);
 

@@ -99,14 +99,14 @@ bool Type::is_primitive(PrimitiveTypeID type) const {
   }
 }
 
-std::string CustomIntType::to_string() const {
-  return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
+std::string QuantIntType::to_string() const {
+  return fmt::format("q{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-CustomIntType::CustomIntType(int num_bits,
-                             bool is_signed,
-                             Type *compute_type,
-                             Type *physical_type)
+QuantIntType::QuantIntType(int num_bits,
+                           bool is_signed,
+                           Type *compute_type,
+                           Type *physical_type)
     : compute_type_(compute_type),
       physical_type_(physical_type),
       num_bits_(num_bits),
@@ -118,58 +118,58 @@ CustomIntType::CustomIntType(int num_bits,
   }
 }
 
-CustomFixedType::CustomFixedType(Type *digits_type,
-                                 Type *compute_type,
-                                 float64 scale)
+QuantFixedType::QuantFixedType(Type *digits_type,
+                               Type *compute_type,
+                               float64 scale)
     : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
-  TI_ASSERT(digits_type->is<CustomIntType>());
+  TI_ASSERT(digits_type->is<QuantIntType>());
   TI_ASSERT(compute_type->is<PrimitiveType>());
   TI_ASSERT(is_real(compute_type));
 }
 
-std::string CustomFixedType::to_string() const {
-  return fmt::format("cfx(d={} c={} s={})", digits_type_->to_string(),
+std::string QuantFixedType::to_string() const {
+  return fmt::format("qfx(d={} c={} s={})", digits_type_->to_string(),
                      compute_type_->to_string(), scale_);
 }
 
-bool CustomFixedType::get_is_signed() const {
-  return digits_type_->as<CustomIntType>()->get_is_signed();
+bool QuantFixedType::get_is_signed() const {
+  return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
-CustomFloatType::CustomFloatType(Type *digits_type,
-                                 Type *exponent_type,
-                                 Type *compute_type)
+QuantFloatType::QuantFloatType(Type *digits_type,
+                               Type *exponent_type,
+                               Type *compute_type)
     : digits_type_(digits_type),
       exponent_type_(exponent_type),
       compute_type_(compute_type) {
-  TI_ASSERT(digits_type->is<CustomIntType>());
+  TI_ASSERT(digits_type->is<QuantIntType>());
   // We only support f32 as compute type when when using exponents
   TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
-  // Exponent must be unsigned custom int
-  TI_ASSERT(exponent_type->is<CustomIntType>());
-  TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
-  TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
+  // Exponent must be unsigned quant int
+  TI_ASSERT(exponent_type->is<QuantIntType>());
+  TI_ASSERT(exponent_type->as<QuantIntType>()->get_num_bits() <= 8);
+  TI_ASSERT(exponent_type->as<QuantIntType>()->get_is_signed() == false);
   TI_ASSERT(get_digit_bits() <= 23);
 }
 
-std::string CustomFloatType::to_string() const {
-  return fmt::format("cf(d={} e={} c={})", digits_type_->to_string(),
+std::string QuantFloatType::to_string() const {
+  return fmt::format("qfl(d={} e={} c={})", digits_type_->to_string(),
                      exponent_type_->to_string(), compute_type_->to_string());
 }
 
-int CustomFloatType::get_exponent_conversion_offset() const {
+int QuantFloatType::get_exponent_conversion_offset() const {
   // Note that f32 has exponent offset -127
-  return 127 -
-         (1 << (exponent_type_->as<CustomIntType>()->get_num_bits() - 1)) + 1;
+  return 127 - (1 << (exponent_type_->as<QuantIntType>()->get_num_bits() - 1)) +
+         1;
 }
 
-int CustomFloatType::get_digit_bits() const {
-  return digits_type_->as<CustomIntType>()->get_num_bits() -
+int QuantFloatType::get_digit_bits() const {
+  return digits_type_->as<QuantIntType>()->get_num_bits() -
          (int)get_is_signed();
 }
 
-bool CustomFloatType::get_is_signed() const {
-  return digits_type_->as<CustomIntType>()->get_is_signed();
+bool QuantFloatType::get_is_signed() const {
+  return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,
@@ -181,17 +181,17 @@ BitStructType::BitStructType(PrimitiveType *physical_type,
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
   int physical_type_bits = data_type_bits(physical_type);
   for (auto i = 0; i < member_types_.size(); ++i) {
-    CustomIntType *component_cit = nullptr;
-    if (auto cit = member_types_[i]->cast<CustomIntType>()) {
-      component_cit = cit;
-    } else if (auto cfxt = member_types_[i]->cast<CustomFixedType>()) {
-      component_cit = cfxt->get_digits_type()->as<CustomIntType>();
-    } else if (auto cft = member_types_[i]->cast<CustomFloatType>()) {
-      component_cit = cft->get_digits_type()->as<CustomIntType>();
+    QuantIntType *component_qit = nullptr;
+    if (auto qit = member_types_[i]->cast<QuantIntType>()) {
+      component_qit = qit;
+    } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {
+      component_qit = qfxt->get_digits_type()->as<QuantIntType>();
+    } else if (auto qflt = member_types_[i]->cast<QuantFloatType>()) {
+      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     } else {
       TI_NOT_IMPLEMENTED
     }
-    auto bits_end = component_cit->get_num_bits() + member_bit_offsets_[i];
+    auto bits_end = component_qit->get_num_bits() + member_bit_offsets_[i];
     TI_ASSERT(physical_type_bits >= bits_end)
   }
 }

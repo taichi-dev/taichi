@@ -6,9 +6,9 @@ from tests import test_utils
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    cu1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=cu1)
+    x = ti.field(dtype=qu1)
 
     N = 32
 
@@ -30,9 +30,9 @@ def test_1D_bit_array():
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_2D_bit_array():
-    ci1 = ti.types.quant.int(1, False)
+    qi1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
+    x = ti.field(dtype=qi1)
 
     M, N = 4, 8
 

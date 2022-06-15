@@ -7,9 +7,9 @@ from tests import test_utils
 
 
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_unsigned():
-    cft = ti.types.quant.float(exp=6, frac=13, signed=False)
-    x = ti.field(dtype=cft)
+def test_quant_float_unsigned():
+    qflt = ti.types.quant.float(exp=6, frac=13, signed=False)
+    x = ti.field(dtype=qflt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -26,9 +26,9 @@ def test_custom_float_unsigned():
 
 
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_signed():
-    cft = ti.types.quant.float(exp=6, frac=13, signed=True)
-    x = ti.field(dtype=cft)
+def test_quant_float_signed():
+    qflt = ti.types.quant.float(exp=6, frac=13, signed=True)
+    x = ti.field(dtype=qflt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -54,9 +54,9 @@ def test_custom_float_signed():
 
 @pytest.mark.parametrize('digits_bits', [23, 24])
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_precision(digits_bits):
-    cft = ti.types.quant.float(exp=8, frac=digits_bits)
-    x = ti.field(dtype=cft)
+def test_quant_float_precision(digits_bits):
+    qflt = ti.types.quant.float(exp=8, frac=digits_bits)
+    x = ti.field(dtype=qflt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -75,9 +75,9 @@ def test_custom_float_precision(digits_bits):
 
 @pytest.mark.parametrize('signed', [True, False])
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_truncation(signed):
-    cft = ti.types.quant.float(exp=5, frac=2, signed=signed)
-    x = ti.field(dtype=cft)
+def test_quant_float_truncation(signed):
+    qflt = ti.types.quant.float(exp=5, frac=2, signed=signed)
+    x = ti.field(dtype=qflt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -103,9 +103,9 @@ def test_custom_float_truncation(signed):
 
 
 @test_utils.test(require=ti.extension.quant)
-def test_custom_float_atomic_demotion():
-    cft = ti.types.quant.float(exp=5, frac=2)
-    x = ti.field(dtype=cft)
+def test_quant_float_atomic_demotion():
+    qflt = ti.types.quant.float(exp=5, frac=2)
+    x = ti.field(dtype=qflt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 

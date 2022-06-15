@@ -320,3 +320,9 @@ def allocate_dual(x, dual_root):
     x._set_grad(x_dual, reverse_mode=False)
     x._get_field_members()[0].ptr.set_dual(x_dual._get_field_members()[0].ptr)
     dual_root.dense(impl.index_nd(dim), shape).place(x_dual)
+
+
+__all__ = [
+    'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
+    'no_grad'
+]

@@ -72,7 +72,11 @@ class HostDeviceContextBlitter {
             device_->unmap(buffer);
           }
           // Substitue in the device address if supported
-          if (device_->get_cap(
+          if ((host_ctx_->device_allocation_type[i] ==
+                   RuntimeContext::DevAllocType::kNone ||
+               host_ctx_->device_allocation_type[i] ==
+                   RuntimeContext::DevAllocType::kNdarray) &&
+              device_->get_cap(
                   DeviceCapability::spirv_has_physical_storage_buffer)) {
             uint64_t addr =
                 device_->get_memory_physical_pointer(ext_arrays.at(i));
@@ -435,6 +439,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       host_result_buffer_, args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> allocated_buffers;
   std::unordered_map<int, DeviceAllocation> any_arrays;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
@@ -473,10 +478,11 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           ext_array_size[i] = host_ctx->array_runtime_sizes[i];
           // Alloc ext arr
           if (ext_array_size[i]) {
-            DeviceAllocation extarr_buf = device_->allocate_memory(
+            auto allocated = device_->allocate_memory_unique(
                 {ext_array_size[i], /*host_write=*/true, /*host_read=*/true,
                  /*export_sharing=*/false, AllocUsage::Storage});
-            any_arrays[i] = extarr_buf;
+            any_arrays[i] = *allocated.get();
+            allocated_buffers.push_back(std::move(allocated));
           } else {
             any_arrays[i] = kDeviceNullAllocation;
           }
@@ -527,16 +533,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
       flush();
-    }
-  }
-
-  // Dealloc external arrays
-  for (auto pair : any_arrays) {
-    if (pair.second != kDeviceNullAllocation) {
-      if (host_ctx->device_allocation_type[pair.first] ==
-          RuntimeContext::DevAllocType::kNone) {
-        device_->dealloc_memory(pair.second);
-      }
     }
   }
 }

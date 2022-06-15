@@ -30,7 +30,14 @@ class GraphBuilder:
         self._graph_builder = _ti_core.GraphBuilder()
 
     def dispatch(self, kernel_fn, *args):
-        unzipped_args = [arg for arg_tuple in args for arg in arg_tuple]
+        unzipped_args = []
+        # Tuple for matrix args
+        # FIXME remove this when native Matrix type is ready
+        for arg_tuple in args:
+            if isinstance(arg_tuple, list):
+                unzipped_args.extend(arg_tuple)
+            else:
+                unzipped_args.append(arg_tuple)
         kernel_cpp = gen_cpp_kernel(kernel_fn, unzipped_args)
         self._graph_builder.dispatch(kernel_cpp, unzipped_args)
 
@@ -98,7 +105,7 @@ def Arg(tag, name, dtype, element_shape=()):
             _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
                          element_shape) for i in range(total_size)
         ]
-    return [_ti_core.Arg(tag, name, dtype, element_shape)]
+    return _ti_core.Arg(tag, name, dtype, element_shape)
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

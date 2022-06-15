@@ -56,44 +56,36 @@ An informal quick summary of evaluation rules:
 ### Variables and scope
 
 A variable contains a *name*, a *type* and a *value*. In Taichi, a variable can
-be defined in the following ways:
+be defined by:
 - A parameter. The name of the variable is the parameter name. The type of the
 variable is the parameter type annotation. The value of the variable is passed
 in at runtime.
-- An [assignment](#assignment-statements) statement, if the name on the
+- An [assignment](#assignment-statements) statement—if the name on the
 left-hand side appears for the first time. The name of the variable is the name
-on the left-hand side. If there is a type annotation on the left-hand side, the
-type of the variable is the type annotation; otherwise, the type of the
-variable is inferred from the expression on the right-hand side. The value of
-the variable is the evaluation result of the expression on the right-hand side
-at runtime.
+on the left-hand side. The type of the variable is the type annotation on the left-hand side (if any); otherwise, the type is inferred from expression on the right-hand side. The value of
+the variable is the runtime evaluation result of the right-hand side.
 
 Taichi is statically-typed. That is, you cannot change the type of a variable
-after its definition. However, you can change the value of a variable if there
-is another assignment statement after its definition.
+after its definition. However, you can re-assign a value to it with an assignment statement.
 
-Taichi adopts [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_science)).
+Taichi adopts the [lexical scope](https://en.wikipedia.org/wiki/Scope_(computer_science)).
 Therefore, if a variable is defined in a [block](#compound-statements), it is
 invisible outside that block.
 
 ### Common rules of binary operations
 
-Following the [Values and types](#values-and-types) section, if both operands
-of a binary operation are Python values, compile-time evaluation is triggered
-and a result Python value is produced. If only one operand is a Python value,
-it is first turned into a Taichi value with
-[default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
-Now the only remaining case is that both operands are Taichi values.
+As discussed in [Values and types](#values-and-types), a binary operation with two Python-value operands triggers the compile-time evaluation, which produces a result Python value; when a binary operation combines one Python value and one Taichi value, the Python value is transformed into a Taichi value of the 
+[default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers) before the evaluation proceeds.
+Then, what if both operands are Taichi values?
 
-Binary operations can happen between Taichi values of either primitive type or
-compound type. There are three cases in total:
-- Two primitive type values. The return type is also a primitive type.
-- One primitive type value and one compound type value. The primitive type
-value is first broadcast into the shape of the compound type value. Now it
-belongs to the case of two compound type values.
-- Two compound type values. For operators other than matrix multiplication,
+Binary operations between Taichi values of either primitive type or
+compound type are valid, giving rise to the following three scenarios:
+- Both operands are of primitive type: The return value is also of primitive type.
+- One operand is of primitive type and the other of compound type: The primitive-type
+value is braodcast to the shape of the compound-type value. Now the binary operation deals with values of the same type.
+- Both operands are of compound type: For operators other than matrix multiplication,
 both values are required to have the same shape, and the operator is conducted
-element-wise, resulting in a compound type value with same shape.
+element-wise, resulting in a compound-type value with the same shape.
 
 ## Expressions
 

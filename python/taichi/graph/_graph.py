@@ -4,7 +4,6 @@ from taichi.lang import kernel_impl
 from taichi.lang._ndarray import Ndarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.matrix import Matrix, MatrixType
-from math import prod
 
 ArgKind = _ti_core.ArgKind
 
@@ -90,7 +89,9 @@ class Graph:
 
 def Arg(tag, name, dtype, element_shape=()):
     if isinstance(dtype, MatrixType):
-        total_size = dtype.m * dtype.n * prod(element_shape)
+        if (len(element_shape) > 0):
+            raise TaichiRuntimeError(f'Element shape for MatrixType argument "{name}" is not supported.')
+        total_size = dtype.m * dtype.n
         return [
             _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype, element_shape)
             for i in range(total_size)

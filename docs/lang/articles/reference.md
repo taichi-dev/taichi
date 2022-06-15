@@ -16,9 +16,9 @@ article, and you can easily tell whether a certain behavior is *correct*, *buggy
 ## Introduction
 
 Given that Taichi is a domain-specific language embedded in Python, it makes perfect sense that Taichi follows the latter's syntax. Therefore, there is no need to reinvent the wheel, and we model this article after the [Python language reference](https://docs.python.org/3/reference/). Specifically, Taichi adopts Python's [notation](https://docs.python.org/3/reference/introduction.html#notation) and
-[lexical analysis](https://docs.python.org/3/reference/lexical_analysis.html) without any disagreement. It is always a good idea to familiarize yourself with the two sections before you get down to Taichi. 
+[lexical analysis](https://docs.python.org/3/reference/lexical_analysis.html) without any disagreement. It is always a good idea to familiarize yourself with the two sections before you get down to Taichi.
 
-What sets Taichi and Python apart is [Kernels and functions](basic/syntax.md). The code inside a kernel or a Taichi function falls within the Taichi scope and thus should be written in the Taichi language; otherwise, the code follows Python rules. You should keep it in mind that this article is about *the Taichi language*. 
+What sets Taichi and Python apart is [Kernels and functions](basic/syntax.md). The code inside a kernel or a Taichi function falls within the Taichi scope and thus should be written in the Taichi language; otherwise, the code follows Python rules. You should keep it in mind that this article is about *the Taichi language*.
 
 ## Basic concepts
 
@@ -42,7 +42,7 @@ Android](tutorials/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
 Matrix](advanced/sparse_matrix.md)
 
-The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known at compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values at runtime. 
+The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known at compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values at runtime.
 
 In addition, Taichi provides an adanced environment for the compile-time evaluation via `ti.static()`, which supports more operations. This is a feature conducive to [meta-programming](advanced/meta.md).
 

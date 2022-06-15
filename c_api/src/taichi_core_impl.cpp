@@ -10,7 +10,7 @@ taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
       &runtime.get(), (taichi::lang::DeviceAllocationId)((size_t)devmem)};
 }
 
-} // namespace
+}  // namespace
 
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
 }

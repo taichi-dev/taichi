@@ -40,7 +40,7 @@
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/util/file_sequence_writer.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/llvm/llvm_context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -102,10 +102,11 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
-  JITSessionCPU(LlvmProgramImpl *llvm_prog,
+  JITSessionCPU(TaichiLLVMContext *tlctx,
+                CompileConfig *config,
                 JITTargetMachineBuilder JTMB,
                 DataLayout DL)
-      : JITSession(llvm_prog),
+      : JITSession(tlctx, config),
         object_layer_(es_,
                       [&]() {
                         auto smgr = std::make_unique<SectionMemoryManager>();
@@ -148,9 +149,8 @@ class JITSessionCPU : public JITSession {
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
-    auto *thread_safe_context = this->llvm_prog()
-                                    ->get_llvm_context(host_arch())
-                                    ->get_this_thread_thread_safe_context();
+    auto *thread_safe_context =
+        this->tlctx_->get_this_thread_thread_safe_context();
     cantFail(compile_layer_.add(
         dylib,
         llvm::orc::ThreadSafeModule(std::move(M), *thread_safe_context)));
@@ -210,7 +210,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
 
   TargetOptions options;
   options.PrintMachineCode = false;
-  if (this->llvm_prog()->config->fast_math) {
+  if (this->config_->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
@@ -268,7 +268,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     module_pass_manager.run(*module);
   }
 
-  if (this->llvm_prog()->config->print_kernel_llvm_ir_optimized) {
+  if (this->config_->print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module);
@@ -281,11 +281,12 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
 }
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
-    LlvmProgramImpl *llvm_prog,
+    TaichiLLVMContext *tlctx,
+    CompileConfig *config,
     Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
-  return std::make_unique<JITSessionCPU>(llvm_prog, target_info.first,
+  return std::make_unique<JITSessionCPU>(tlctx, config, target_info.first,
                                          target_info.second);
 }
 

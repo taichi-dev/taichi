@@ -66,6 +66,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
   llvm_context_host_ = std::make_unique<TaichiLLVMContext>(this, host_arch());
+
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs{1};
@@ -114,8 +115,11 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
     CUDAContext::get_instance().set_debug(config->debug);
     device_ = std::make_shared<cuda::CudaDevice>();
+
+    this->maybe_initialize_cuda_llvm_context();
   }
 #endif
+  this->initialize_host();
 }
 
 void LlvmProgramImpl::initialize_host() {
@@ -366,8 +370,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {
-  maybe_initialize_cuda_llvm_context();
-
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
   if (config->arch == Arch::cuda) {

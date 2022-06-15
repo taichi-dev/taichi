@@ -1,7 +1,7 @@
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
-from taichi.lang.matrix import MatrixNdarray, VectorNdarray, MatrixType
+from taichi.lang.matrix import MatrixNdarray, MatrixType, VectorNdarray
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 

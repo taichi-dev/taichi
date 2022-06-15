@@ -48,7 +48,8 @@ def build_graph_vector(N, dtype):
                    res: ti.types.ndarray(field_dim=1)):
         res[0] = mat.sum() + mat[2]
 
-    sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat', ti.types.vector(N, dtype))
+    sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
+                         ti.types.vector(N, dtype))
     sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(vector_sum, sym_A, sym_res)
@@ -62,7 +63,8 @@ def build_graph_matrix(N, dtype):
                    res: ti.types.ndarray(field_dim=1)):
         res[0] = mat.sum()
 
-    sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat', ti.types.matrix(N, 2, dtype))
+    sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
+                         ti.types.matrix(N, 2, dtype))
     sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(matrix_sum, sym_A, sym_res)

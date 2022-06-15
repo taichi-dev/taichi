@@ -538,22 +538,17 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             ptr_type->is_bit_pointer()) {
           // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
-          Type *int_in_mem = nullptr;
-          // For CustomIntType "int_in_mem" refers to the type itself;
-          // for CustomFloatType "int_in_mem" refers to the CustomIntType of the
-          // digits.
           if (auto cit = val_type->cast<CustomIntType>()) {
-            int_in_mem = val_type;
             dtype = cit->get_physical_type();
             auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_quant_int(data, bit_offset, int_in_mem);
-          } else if (val_type->cast<CustomFloatType>()) {
-            // TODO: support __ldg
-            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
+            llvm_val[stmt] = extract_quant_int(data, bit_offset, val_type);
           } else {
-            TI_NOT_IMPLEMENTED;
+            // TODO: support __ldg
+            TI_ASSERT(val_type->is<CustomFixedType>() ||
+                      val_type->is<CustomFloatType>());
+            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
           }
         } else {
           // Byte pointer case.

@@ -1197,8 +1197,8 @@ llvm::Value *CodeGenLLVM::custom_type_atomic(AtomicOpStmt *stmt) {
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto cit = dst_type->cast<CustomIntType>()) {
     return atomic_add_quant_int(stmt, cit);
-  } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-    return atomic_add_quant_fixed(stmt, cft);
+  } else if (auto cfxt = dst_type->cast<CustomFixedType>()) {
+    return atomic_add_quant_fixed(stmt, cfxt);
   } else {
     return nullptr;
   }
@@ -1369,11 +1369,11 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
-    } else if (val_type->cast<CustomFloatType>()) {
+    } else {
+      TI_ASSERT(val_type->is<CustomFixedType>() ||
+                val_type->is<CustomFloatType>());
       TI_ASSERT(stmt->src->is<GetChStmt>());
       llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
-    } else {
-      TI_NOT_IMPLEMENTED
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

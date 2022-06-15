@@ -3,10 +3,10 @@ from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
 from taichi.lang._ndarray import Ndarray
 from taichi.lang.exception import TaichiRuntimeError
-from taichi.lang.matrix import Matrix
+from taichi.lang.matrix import Matrix, MatrixType
+from math import prod
 
 ArgKind = _ti_core.ArgKind
-Arg = _ti_core.Arg
 
 
 def gen_cpp_kernel(kernel_fn, args):
@@ -31,8 +31,9 @@ class GraphBuilder:
         self._graph_builder = _ti_core.GraphBuilder()
 
     def dispatch(self, kernel_fn, *args):
-        kernel_cpp = gen_cpp_kernel(kernel_fn, args)
-        self._graph_builder.dispatch(kernel_cpp, args)
+        unzipped_args = [arg for arg_tuple in args for arg in arg_tuple]
+        kernel_cpp = gen_cpp_kernel(kernel_fn, unzipped_args)
+        self._graph_builder.dispatch(kernel_cpp, unzipped_args)
 
     def create_sequential(self):
         return Sequential(self._graph_builder.create_sequential())
@@ -70,7 +71,7 @@ class Graph:
                 mat_val_id = 0
                 for a in range(v.n):
                     for b in range(v.m):
-                        key = f"{k}_mat_{mat_val_id}"
+                        key = f"{k}_mat_arg_{mat_val_id}"
                         mat_val_id += 1
                         if isinstance(v[a, b], int):
                             arg_ints[key] = int(v[a, b])
@@ -85,6 +86,17 @@ class Graph:
                     f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
         self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats, arg_doubles)
+
+
+def Arg(tag, name, dtype, element_shape=()):
+    if isinstance(dtype, MatrixType):
+        total_size = dtype.m * dtype.n * prod(element_shape)
+        return [
+            _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype, element_shape)
+            for i in range(total_size)
+        ]
+    else:
+        return [_ti_core.Arg(tag, name, dtype, element_shape)]
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

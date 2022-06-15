@@ -1,7 +1,7 @@
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
-from taichi.lang.matrix import MatrixNdarray, VectorNdarray
+from taichi.lang.matrix import MatrixNdarray, VectorNdarray, MatrixType
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 
@@ -66,6 +66,8 @@ def produce_injected_args(kernel, symbolic_args=None):
                                   layout=Layout.AOS))
             else:
                 raise RuntimeError('')
+        elif isinstance(anno, MatrixType):
+            injected_args.append(anno)
         else:
             # For primitive types, we can just inject a dummy value.
             injected_args.append(0)

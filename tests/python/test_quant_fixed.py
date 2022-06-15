@@ -7,9 +7,9 @@ from tests import test_utils
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_custom_float():
-    cft = ti.types.quant.fixed(frac=32, range=2)
-    x = ti.field(dtype=cft)
+def test_quant_fixed():
+    qfxt = ti.types.quant.fixed(frac=32, range=2)
+    x = ti.field(dtype=qfxt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -28,10 +28,10 @@ def test_custom_float():
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_custom_matrix_rotation():
-    cft = ti.types.quant.fixed(frac=16, range=1.2)
+def test_quant_fixed_matrix_rotation():
+    qfxt = ti.types.quant.fixed(frac=16, range=1.2)
 
-    x = ti.Matrix.field(2, 2, dtype=cft)
+    x = ti.Matrix.field(2, 2, dtype=qfxt)
 
     ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0, 0),
                                           x.get_scalar_field(0, 1))
@@ -56,9 +56,9 @@ def test_custom_matrix_rotation():
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_custom_float_implicit_cast():
-    cft = ti.types.quant.fixed(frac=13, scale=0.1)
-    x = ti.field(dtype=cft)
+def test_quant_fixed_implicit_cast():
+    qfxt = ti.types.quant.fixed(frac=13, scale=0.1)
+    x = ti.field(dtype=qfxt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 
@@ -71,9 +71,9 @@ def test_custom_float_implicit_cast():
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_cache_read_only():
-    cft = ti.types.quant.fixed(frac=15, scale=0.1)
-    x = ti.field(dtype=cft)
+def test_quant_fixed_cache_read_only():
+    qfxt = ti.types.quant.fixed(frac=15, scale=0.1)
+    x = ti.field(dtype=qfxt)
 
     ti.root.bit_struct(num_bits=32).place(x)
 

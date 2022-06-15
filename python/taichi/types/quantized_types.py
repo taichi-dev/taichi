@@ -24,7 +24,7 @@ def int(bits, signed=True, compute=None):  # pylint: disable=W0622
         compute = impl.get_runtime().default_ip
     if isinstance(compute, _ti_core.DataType):
         compute = compute.get_ptr()
-    return _type_factory.get_custom_int_type(bits, signed, compute)
+    return _type_factory.get_quant_int_type(bits, signed, compute)
 
 
 def fixed(frac, signed=True, range=1.0, compute=None, scale=None):  # pylint: disable=W0622
@@ -51,7 +51,7 @@ def fixed(frac, signed=True, range=1.0, compute=None, scale=None):  # pylint: di
             scale = range / 2**(frac - 1)
         else:
             scale = range / 2**frac
-    return _type_factory.get_custom_fixed_type(frac_type, compute, scale)
+    return _type_factory.get_quant_fixed_type(frac_type, compute, scale)
 
 
 def float(exp, frac, signed=True, compute=None):  # pylint: disable=W0622
@@ -74,7 +74,7 @@ def float(exp, frac, signed=True, compute=None):  # pylint: disable=W0622
     exp_type = int(bits=exp, signed=False, compute=i32)
     # TODO: handle cases with frac > 32
     frac_type = int(bits=frac, signed=signed, compute=i32)
-    return _type_factory.get_custom_float_type(frac_type, exp_type, compute)
+    return _type_factory.get_quant_float_type(frac_type, exp_type, compute)
 
 
 __all__ = ['int', 'fixed', 'float']

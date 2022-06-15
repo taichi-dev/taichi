@@ -15,7 +15,7 @@
 namespace taichi {
 namespace lang {
 
-TEST(LlvmProgramTest, FullPipeline) {
+TEST(LlvmAotTest, CpuKernel) {
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -55,7 +55,7 @@ TEST(LlvmProgramTest, FullPipeline) {
   }
 }
 
-TEST(LlvmProgramTest, FullPipelineCUDA) {
+TEST(LlvmAotTest, CudaKernel) {
   if (is_cuda_api_available()) {
     CompileConfig cfg;
     cfg.arch = Arch::cuda;

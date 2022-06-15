@@ -8,10 +8,10 @@ from tests import test_utils
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponents(exponent_bits):
-    cft1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
-    cft2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
-    a = ti.field(dtype=cft1)
-    b = ti.field(dtype=cft2)
+    qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
+    qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
+    a = ti.field(dtype=qflt1)
+    b = ti.field(dtype=qflt2)
     ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     assert a[None] == 0.0
@@ -71,10 +71,10 @@ def test_shared_exponents(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
-    cft1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
-    cft2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
-    a = ti.field(dtype=cft1)
-    b = ti.field(dtype=cft2)
+    qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
+    qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
+    a = ti.field(dtype=qflt1)
+    b = ti.field(dtype=qflt2)
     ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     @ti.kernel
@@ -104,10 +104,10 @@ def test_shared_exponent_add(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_borrow(exponent_bits):
-    cft1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
-    cft2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
-    a = ti.field(dtype=cft1)
-    b = ti.field(dtype=cft2)
+    qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
+    qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
+    a = ti.field(dtype=qflt1)
+    b = ti.field(dtype=qflt2)
     ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     @ti.kernel
@@ -129,11 +129,11 @@ def test_shared_exponent_borrow(exponent_bits):
 
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
-def test_negative(exponent_bits):
-    cft1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
-    cft2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=True)
-    a = ti.field(dtype=cft1)
-    b = ti.field(dtype=cft2)
+def test_shared_exponent_negative(exponent_bits):
+    qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
+    qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=True)
+    a = ti.field(dtype=qflt1)
+    b = ti.field(dtype=qflt2)
     ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     a[None] = 37
@@ -144,4 +144,4 @@ def test_negative(exponent_bits):
 
 # TODO: test precision
 # TODO: make sure unsigned has one more effective significand bit
-# TODO: test shared exponent floats with custom int in a single bit struct
+# TODO: test shared exponent floats with quant int in a single bit struct

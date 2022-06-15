@@ -2,11 +2,15 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi/program/ndarray.h"
 
+namespace {
+
 taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
                                                TiMemory devmem) {
   return taichi::lang::DeviceAllocation{
       &runtime.get(), (taichi::lang::DeviceAllocationId)((size_t)devmem)};
 }
+
+} // namespace
 
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
 }

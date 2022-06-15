@@ -5,7 +5,7 @@ class TextureType:
         pass
 
 
-texture = TextureType()
+texture = TextureType
 """Alias for :class:`~taichi.types.ndarray_type.TextureType`.
 """
 

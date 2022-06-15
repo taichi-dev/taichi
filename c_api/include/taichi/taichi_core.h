@@ -72,9 +72,9 @@ typedef TiFlags TiMemoryUsageFlags;
 // structure.memory_allocate_info
 typedef struct TiMemoryAllocateInfo {
   uint64_t size;
-  bool host_write;
-  bool host_read;
-  bool export_sharing;
+  TiBool host_write;
+  TiBool host_read;
+  TiBool export_sharing;
   TiMemoryUsageFlagBits usage;
 } TiMemoryAllocateInfo;
 

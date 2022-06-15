@@ -13,13 +13,13 @@ from taichi.lang.misc import is_arch_supported
 import taichi as ti
 
 __aot_test_cases = {
-    "LlvmAOTTest.CPUKernel":
+    "LlvmAotTest.CpuKernel":
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cpu.py'),
-    "LlvmAOTTest.CUDAKernel":
+    "LlvmAotTest.CudaKernel":
     os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cuda.py'),
-    "LlvmAOTTest.CPUField":
+    "LlvmAotTest.CpuField":
     os.path.join('cpp', 'backends', 'llvm', 'field_aot_cpu.py'),
-    "LlvmAOTTest.CUDAField":
+    "LlvmAotTest.CudaField":
     os.path.join('cpp', 'backends', 'llvm', 'field_aot_cuda.py'),
     "AotLoadGraph.Mpm88":
     os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'),

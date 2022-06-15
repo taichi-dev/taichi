@@ -96,7 +96,7 @@ void run_field_tests(aot::Module *mod,
   prog->check_runtime_error(result_buffer);
 }
 
-TEST(LlvmAOTTest, CPUField) {
+TEST(LlvmAotTest, CpuField) {
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -122,7 +122,7 @@ TEST(LlvmAOTTest, CPUField) {
   run_field_tests(mod.get(), &prog, result_buffer);
 }
 
-TEST(LlvmAOTTest, CUDAField) {
+TEST(LlvmAotTest, CudaField) {
   if (is_cuda_api_available()) {
     CompileConfig cfg;
     cfg.arch = Arch::cuda;

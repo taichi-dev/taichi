@@ -1,5 +1,3 @@
-from math import prod
-
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
@@ -91,15 +89,16 @@ class Graph:
 
 def Arg(tag, name, dtype, element_shape=()):
     if isinstance(dtype, MatrixType):
-        if (len(element_shape) > 0):
-            raise TaichiRuntimeError(f'Element shape for MatrixType argument "{name}" is not supported.')
+        if len(element_shape) > 0:
+            raise TaichiRuntimeError(
+                f'Element shape for MatrixType argument "{name}" is not supported.'
+            )
         total_size = dtype.m * dtype.n
         return [
             _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
                          element_shape) for i in range(total_size)
         ]
-    else:
-        return [_ti_core.Arg(tag, name, dtype, element_shape)]
+    return [_ti_core.Arg(tag, name, dtype, element_shape)]
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

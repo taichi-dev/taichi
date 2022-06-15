@@ -298,8 +298,8 @@ class FwdMode:
         self.runtime.fwd_mode_manager = None
         self.recover_kernels()
 
-    def insert(self, func):
-        self.calls.append(func)
+    def insert(self, func, mode_original):
+        self.calls.append((func, mode_original))
 
     def recover_kernels(self):
         assert self.entered, "Before recover the kernels, fwd mode manager must be entered."

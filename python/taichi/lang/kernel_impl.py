@@ -814,7 +814,7 @@ class Kernel:
             # to avoid duplicate computation for 1st-order derivatives
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
-            self.runtime.fwd_mode_manager.insert((self, mode_original))
+            self.runtime.fwd_mode_manager.insert(self, mode_original)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:

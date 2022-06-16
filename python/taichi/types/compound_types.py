@@ -5,6 +5,12 @@ class CompoundType:
     pass
 
 
+class TensorType(CompoundType):
+    def __init__(self, shape, dtype):
+        self.dtype = dtype
+        self.shape = shape
+
+
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?
 def matrix(n, m, dtype):
     """Creates a matrix type with given shape and data type.

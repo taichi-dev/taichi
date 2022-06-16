@@ -106,7 +106,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
         offload, [](GlobalPtrStmt *dest) {
           // We can only optimized reductions to global ptrs with form like
           // loss[None] (0-D fields) for now.
-          // No TLS on CustomInt/FloatType.
+          // No TLS on quant types.
           return (dest->snodes[0]->type == SNodeType::place) &&
                  dest->indices.empty() &&
                  dest->snodes[0]->dt->is<PrimitiveType>();

@@ -16,12 +16,20 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return glb_var_->is_primal;
   }
 
-  SNode *grad_snode() const override {
+  SNode *adjoint_snode() const override {
     auto &adj = glb_var_->adjoint;
     if (adj.expr == nullptr) {
       return nullptr;
     }
     return adj.snode();
+  }
+
+  SNode *dual_snode() const override {
+    auto &dual = glb_var_->dual;
+    if (dual.expr == nullptr) {
+      return nullptr;
+    }
+    return dual.snode();
   }
 
  private:
@@ -44,26 +52,25 @@ void place_child(Expr *expr_arg,
     TI_ERROR_IF(glb_var_expr->snode != nullptr,
                 "This variable has been placed.");
     SNode *new_exp_snode = nullptr;
-    if (auto cft = glb_var_expr->dt->cast<CustomFloatType>()) {
-      if (auto exp = cft->get_exponent_type()) {
-        // Non-empty exponent type. First create a place SNode for the
-        // exponent value.
-        if (parent->placing_shared_exp &&
-            parent->currently_placing_exp_snode != nullptr) {
-          // Reuse existing exponent
-          TI_ASSERT_INFO(parent->currently_placing_exp_snode_dtype == exp,
-                         "CustomFloatTypes with shared exponents must have "
-                         "exactly the same exponent type.");
-          new_exp_snode = parent->currently_placing_exp_snode;
-        } else {
-          auto &exp_node = parent->insert_children(SNodeType::place);
-          exp_node.dt = exp;
-          exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
-          new_exp_snode = &exp_node;
-          if (parent->placing_shared_exp) {
-            parent->currently_placing_exp_snode = new_exp_snode;
-            parent->currently_placing_exp_snode_dtype = exp;
-          }
+    if (auto qflt = glb_var_expr->dt->cast<QuantFloatType>()) {
+      auto exp = qflt->get_exponent_type();
+      // Non-empty exponent type. First create a place SNode for the
+      // exponent value.
+      if (parent->placing_shared_exp &&
+          parent->currently_placing_exp_snode != nullptr) {
+        // Reuse existing exponent
+        TI_ASSERT_INFO(parent->currently_placing_exp_snode_dtype == exp,
+                       "QuantFloatTypes with shared exponents must have "
+                       "exactly the same exponent type.");
+        new_exp_snode = parent->currently_placing_exp_snode;
+      } else {
+        auto &exp_node = parent->insert_children(SNodeType::place);
+        exp_node.dt = exp;
+        exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
+        new_exp_snode = &exp_node;
+        if (parent->placing_shared_exp) {
+          parent->currently_placing_exp_snode = new_exp_snode;
+          parent->currently_placing_exp_snode_dtype = exp;
         }
       }
     }
@@ -102,8 +109,9 @@ void make_lazy_grad(SNode *snode, SNodeGlobalVarExprMap *snode_to_exprs) {
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
+    // TODO: handle the dual SNode
     if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_grad()) {
+        !c->has_adjoint()) {
       new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
     }
   }

@@ -324,28 +324,6 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
   kernel_name = kernel->name + "_kernel";
 }
 
-llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
-                                   Type *from,
-                                   Type *to) {
-  if (from == to)
-    return input_val;
-  auto from_size = 0;
-  if (from->is<CustomIntType>()) {
-    from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
-  } else {
-    from_size = data_type_size(from);
-  }
-  if (from_size < data_type_size(to)) {
-    if (is_signed(from)) {
-      return builder->CreateSExt(input_val, tlctx->get_data_type(to));
-    } else {
-      return builder->CreateZExt(input_val, tlctx->get_data_type(to));
-    }
-  } else {
-    return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
-  }
-}
-
 void CodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
@@ -404,9 +382,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         }
       }
     } else if (!is_real(from) && !is_real(to)) {
-      // TODO: implement casting into custom integer type
-      TI_ASSERT(!to->is<CustomIntType>());
-      llvm_val[stmt] = cast_int(llvm_val[stmt->operand], from, to);
+      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
+                                              llvm_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -1048,8 +1025,8 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
-  if (auto cit = type->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
+  if (auto qit = type->cast<QuantIntType>()) {
+    if (qit->get_is_signed())
       dest_ty = tlctx->get_data_type(PrimitiveType::i32);
     else
       dest_ty = tlctx->get_data_type(PrimitiveType::u32);
@@ -1079,8 +1056,8 @@ llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   if (type.is_pointer()) {
     return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
   }
-  if (auto cit = type->cast<CustomIntType>()) {
-    intermediate_bits = data_type_bits(cit->get_compute_type());
+  if (auto qit = type->cast<QuantIntType>()) {
+    intermediate_bits = data_type_bits(qit->get_compute_type());
   } else {
     intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
   }
@@ -1207,6 +1184,49 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
+  return nullptr;
+}
+
+llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
+  // TODO(type): support all AtomicOpTypes on quant types
+  if (stmt->op_type != AtomicOpType::add) {
+    return nullptr;
+  }
+
+  auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+  if (auto qit = dst_type->cast<QuantIntType>()) {
+    return atomic_add_quant_int(stmt, qit);
+  } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
+    return atomic_add_quant_fixed(stmt, qfxt);
+  } else {
+    return nullptr;
+  }
+}
+
+llvm::Value *CodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
+  if (!is_integral(stmt->val->ret_type)) {
+    return nullptr;
+  }
+
+  std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
+  bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
+  if (is_signed(stmt->val->ret_type)) {
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
+  } else {
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::UMin;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::UMax;
+  }
+  bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
+  bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
+  bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
+  TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
+  return builder->CreateAtomicRMW(bin_op.at(stmt->op_type),
+                                  llvm_val[stmt->dest], llvm_val[stmt->val],
+                                  llvm::AtomicOrdering::SequentiallyConsistent);
+}
+
 llvm::Value *CodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
@@ -1242,104 +1262,68 @@ llvm::Value *CodeGenLLVM::atomic_op_using_cas(
   return old_val;
 }
 
+llvm::Value *CodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
+  if (!is_real(stmt->val->ret_type)) {
+    return nullptr;
+  }
+
+  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
+  AtomicOpType op = stmt->op_type;
+  if (prim_type == PrimitiveTypeID::f16) {
+    switch (op) {
+      case AtomicOpType::add:
+        return atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+      case AtomicOpType::max:
+        return atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+      case AtomicOpType::min:
+        return atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+      default:
+        break;
+    }
+  }
+
+  if (op == AtomicOpType::add) {
+    return builder->CreateAtomicRMW(
+        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+        llvm::AtomicOrdering::SequentiallyConsistent);
+  }
+
+  std::unordered_map<PrimitiveTypeID,
+                     std::unordered_map<AtomicOpType, std::string>>
+      atomics;
+  atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
+  atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
+  atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
+  atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+  TI_ASSERT(atomics.find(prim_type) != atomics.end());
+  TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
+  return create_call(atomics.at(prim_type).at(op),
+                     {llvm_val[stmt->dest], llvm_val[stmt->val]});
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
-  // auto mask = stmt->parent->mask();
-  // TODO: deal with mask when vectorized
-  // TODO(type): support all AtomicOpTypes on custom types
+  bool is_local = stmt->dest->is<AllocaStmt>();
+  if (is_local) {
+    TI_ERROR("Local atomics should have been demoted.");
+  }
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
-    if (stmt->op_type == AtomicOpType::add) {
-      auto dst_type =
-          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-      if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (!dst_type->is<CustomFloatType>() &&
-                 is_real(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::FAdd, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (auto cit = dst_type->cast<CustomIntType>()) {
-        old_value = atomic_add_custom_int(stmt, cit);
-      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-        old_value = atomic_add_custom_float(stmt, cft);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->op_type == AtomicOpType::min) {
-      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
-        old_value = create_call("atomic_min_u32",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
-        old_value = create_call("atomic_min_u64",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-        old_value = atomic_op_using_cas(
-            llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value = create_call("atomic_min_f32",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value = create_call("atomic_min_f64",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->op_type == AtomicOpType::max) {
-      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
-        old_value = create_call("atomic_max_u32",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
-        old_value = create_call("atomic_max_u64",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-        old_value = atomic_op_using_cas(
-            llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value = create_call("atomic_max_f32",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value = create_call("atomic_max_f64",
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->op_type == AtomicOpType::bit_and) {
-      if (is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->op_type == AtomicOpType::bit_or) {
-      if (is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->op_type == AtomicOpType::bit_xor) {
-      if (is_integral(stmt->val->ret_type)) {
-        old_value = builder->CreateAtomicRMW(
-            llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
-            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
+
+    if (llvm::Value *result = optimized_reduction(stmt)) {
+      old_value = result;
+    } else if (llvm::Value *result = quant_type_atomic(stmt)) {
+      old_value = result;
+    } else if (llvm::Value *result = real_type_atomic(stmt)) {
+      old_value = result;
+    } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+      old_value = result;
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -1357,7 +1341,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (!pointee_type->is<CustomIntType>()) {
+    if (!pointee_type->is<QuantIntType>()) {
       if (stmt->dest->as<GetChStmt>()->input_snode->type ==
           SNodeType::bit_struct) {
         TI_ERROR(
@@ -1365,13 +1349,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             "handled by BitStructStoreStmt.",
             pointee_type->to_string());
       } else {
-        TI_ERROR("Bit array only supports custom int type.");
+        TI_ERROR("Bit array only supports quant int type.");
       }
     }
     llvm::Value *store_value = nullptr;
-    auto *cit = pointee_type->as<CustomIntType>();
+    auto *qit = pointee_type->as<QuantIntType>();
     store_value = llvm_val[stmt->val];
-    store_custom_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
+    store_quant_int(llvm_val[stmt->dest], qit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
@@ -1383,13 +1367,13 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
-    if (val_type->is<CustomIntType>()) {
-      llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->src], val_type);
-    } else if (val_type->cast<CustomFloatType>()) {
-      TI_ASSERT(stmt->src->is<GetChStmt>());
-      llvm_val[stmt] = load_custom_float(stmt->src);
+    if (val_type->is<QuantIntType>()) {
+      llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
     } else {
-      TI_NOT_IMPLEMENTED
+      TI_ASSERT(val_type->is<QuantFixedType>() ||
+                val_type->is<QuantFloatType>());
+      TI_ASSERT(stmt->src->is<GetChStmt>());
+      llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
@@ -1534,6 +1518,22 @@ llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *input_bit_ptr,
   return create_bit_ptr_struct(byte_ptr_base, new_bit_offset);
 }
 
+std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_pointer(
+    llvm::Value *ptr) {
+  // 1. load byte pointer
+  auto byte_ptr_in_bit_struct =
+      builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(0)});
+  auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
+  TI_ASSERT(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
+
+  // 2. load bit offset
+  auto bit_offset_in_bit_struct =
+      builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(1)});
+  auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
+  TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
+  return std::make_tuple(byte_ptr, bit_offset);
+}
+
 void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   llvm::Value *parent = nullptr;
   parent = llvm_val[stmt->input_snode];
@@ -1609,8 +1609,14 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
+  const auto &element_shape = stmt->element_shape;
+  const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                             : ExternalArrayLayout::kSOA;
+  const size_t element_shape_index_offset =
+      (layout == ExternalArrayLayout::kAOS) ? num_indices - element_shape.size()
+                                            : 0;
 
-  for (int i = 0; i < num_indices; i++) {
+  for (int i = 0; i < num_indices - element_shape.size(); i++) {
     auto raw_arg = create_call(
         "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
@@ -1623,11 +1629,19 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 
   auto linear_index = tlctx->get_constant(0);
+  size_t size_var_index = 0;
   for (int i = 0; i < num_indices; i++) {
-    linear_index = builder->CreateMul(linear_index, sizes[i]);
+    if (i >= element_shape_index_offset &&
+        i < element_shape_index_offset + element_shape.size()) {
+      llvm::Value *size_var =
+          tlctx->get_constant(element_shape[i - element_shape_index_offset]);
+      linear_index = builder->CreateMul(linear_index, size_var);
+    } else {
+      linear_index = builder->CreateMul(linear_index, sizes[size_var_index++]);
+    }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
-
+  TI_ASSERT(size_var_index == num_indices - element_shape.size())
   llvm_val[stmt] = builder->CreateGEP(base, linear_index);
 }
 
@@ -2522,14 +2536,16 @@ FunctionType ModuleToFunctionConverter::convert(
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocations[i] &&
+      if (args[i].is_array &&
+          context.device_allocation_type[i] !=
+              RuntimeContext::DevAllocType::kNone &&
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
-        context.set_array_is_device_allocation(i,
-                                               /*is_device_allocation=*/false);
+        context.set_array_device_allocation_type(
+            i, RuntimeContext::DevAllocType::kNone);
       }
     }
     for (auto task : task_funcs) {

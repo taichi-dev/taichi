@@ -53,12 +53,17 @@ class GLResourceBinder : public ResourceBinder {
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
-  const std::unordered_map<uint32_t, GLuint> &binding_map() {
-    return binding_map_;
+  const std::unordered_map<uint32_t, GLuint> &ssbo_binding_map() {
+    return ssbo_binding_map_;
+  }
+
+  const std::unordered_map<uint32_t, GLuint> &ubo_binding_map() {
+    return ubo_binding_map_;
   }
 
  private:
-  std::unordered_map<uint32_t, GLuint> binding_map_;
+  std::unordered_map<uint32_t, GLuint> ssbo_binding_map_;
+  std::unordered_map<uint32_t, GLuint> ubo_binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -141,6 +146,7 @@ class GLCommandList : public CommandList {
   struct CmdBindBufferToIndex : public Cmd {
     GLuint buffer{0};
     GLuint index{0};
+    GLenum target{GL_SHADER_STORAGE_BUFFER};
     void execute() override;
   };
 

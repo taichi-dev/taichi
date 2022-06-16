@@ -1,0 +1,559 @@
+{
+    "version": "1.0.2",
+    "modules": [
+        {
+            "name": "taichi/taichi_platform.h",
+            "is_built_in": true
+        },
+        {
+            "name": "vulkan/vulkan.h",
+            "is_built_in": true
+        },
+        {
+            "name": "taichi/taichi_core.h",
+            "required_modules": [
+                "taichi/taichi_platform.h"
+            ],
+            "declarations": [
+                {
+                    "name": "bool",
+                    "type": "alias",
+                    "alias_of": "uint32_t"
+                },
+                {
+                    "name": "false",
+                    "type": "definition",
+                    "value": "0"
+                },
+                {
+                    "name": "true",
+                    "type": "definition",
+                    "value": "1"
+                },
+                {
+                    "name": "flags",
+                    "type": "alias",
+                    "alias_of": "uint32_t"
+                },
+                {
+                    "name": "null_handle",
+                    "type": "definition",
+                    "value": "0"
+                },
+                {
+                    "name": "runtime",
+                    "type": "handle",
+                    "is_dispatchable": true
+                },
+                {
+                    "name": "aot_module",
+                    "type": "handle",
+                    "is_dispatchable": true
+                },
+                {
+                    "name": "memory",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "kernel",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "compute_graph",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "arch",
+                    "type": "enumeration",
+                    "inc_cases": "archs"
+                },
+                {
+                    "name": "argument_type",
+                    "type": "enumeration",
+                    "cases": {
+                        "i32": 0,
+                        "f32": 1,
+                        "ndarray": 2
+                    }
+                },
+                {
+                    "name": "memory_usage",
+                    "type": "bit_field",
+                    "bits": {
+                        "storage": 0,
+                        "uniform": 1,
+                        "vertex": 2,
+                        "index": 3
+                    }
+                },
+                {
+                    "name": "memory_allocate_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        },
+                        {
+                            "name": "host_write",
+                            "type": "alias.bool"
+                        },
+                        {
+                            "name": "host_read",
+                            "type": "alias.bool"
+                        },
+                        {
+                            "name": "export_sharing",
+                            "type": "alias.bool"
+                        },
+                        {
+                            "name": "usage",
+                            "type": "bit_field.memory_usage"
+                        }
+                    ]
+                },
+                {
+                    "name": "nd_shape",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "dim_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "dims",
+                            "type": "uint32_t",
+                            "count": 16
+                        }
+                    ]
+                },
+                {
+                    "name": "nd_array",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "memory",
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "shape",
+                            "type": "structure.nd_shape"
+                        },
+                        {
+                            "name": "elem_shape",
+                            "type": "structure.nd_shape"
+                        }
+                    ]
+                },
+                {
+                    "name": "argument_value",
+                    "type": "union",
+                    "variants": [
+                        {
+                            "name": "i32",
+                            "type": "int32_t"
+                        },
+                        {
+                            "name": "f32",
+                            "type": "float"
+                        },
+                        {
+                            "name": "ndarray",
+                            "type": "structure.nd_array"
+                        }
+                    ]
+                },
+                {
+                    "name": "argument",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "type",
+                            "type": "enumeration.argument_type"
+                        },
+                        {
+                            "name": "value",
+                            "type": "union.argument_value"
+                        }
+                    ]
+                },
+                {
+                    "name": "named_argument",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "name",
+                            "type": "const char*"
+                        },
+                        {
+                            "type": "structure.argument"
+                        }
+                    ]
+                },
+                {
+                    "name": "create_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "enumeration.arch"
+                        }
+                    ]
+                },
+                {
+                    "name": "destroy_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "allocate_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.memory"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "allocate_info",
+                            "type": "structure.memory_allocate_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "free_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        }
+                    ]
+                },
+                {
+                    "name": "map_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "void*"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        }
+                    ]
+                },
+                {
+                    "name": "unmap_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        }
+                    ]
+                },
+                {
+                    "name": "launch_kernel",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.kernel"
+                        },
+                        {
+                            "name": "arg_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "args",
+                            "type": "structure.argument",
+                            "count": "arg_count"
+                        }
+                    ]
+                },
+                {
+                    "name": "launch_compute_graph",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.compute_graph"
+                        },
+                        {
+                            "name": "arg_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "args",
+                            "type": "structure.named_argument",
+                            "count": "arg_count"
+                        }
+                    ]
+                },
+                {
+                    "name": "submit",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "wait",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "load_aot_module",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "module_path",
+                            "type": "const char*"
+                        }
+                    ]
+                },
+                {
+                    "name": "destroy_aot_module",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.aot_module"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_aot_module_kernel",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.kernel"
+                        },
+                        {
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "name": "name",
+                            "type": "const char*"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_aot_module_compute_graph",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.compute_graph"
+                        },
+                        {
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "name": "name",
+                            "type": "const char*"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "taichi/taichi_vulkan.h",
+            "required_modules": [
+                "taichi/taichi_core.h",
+                "vulkan/vulkan.h"
+            ],
+            "declarations": [
+                {
+                    "name": "vulkan_runtime_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "api_version",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "instance",
+                            "type": "VkInstance"
+                        },
+                        {
+                            "name": "physical_device",
+                            "type": "VkPhysicalDevice"
+                        },
+                        {
+                            "name": "device",
+                            "type": "VkDevice"
+                        },
+                        {
+                            "name": "compute_queue",
+                            "type": "VkQueue"
+                        },
+                        {
+                            "name": "compute_queue_family_index",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "graphics_queue",
+                            "type": "VkQueue"
+                        },
+                        {
+                            "name": "graphics_queue_family_index",
+                            "type": "uint32_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "vulkan_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "buffer",
+                            "type": "VkBuffer"
+                        },
+                        {
+                            "name": "size",
+                            "type": "size_t"
+                        },
+                        {
+                            "name": "usage",
+                            "type": "VkBufferUsageFlags"
+                        }
+                    ]
+                },
+                {
+                    "name": "create_vulkan_runtime",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "api_version",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "instance_extension_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "instance_extensions",
+                            "type": "const char**"
+                        },
+                        {
+                            "name": "device_extension_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "device_extensions",
+                            "type": "const char**"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_vulkan_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_runtime_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_vulkan_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "import_vulkan_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.memory"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_memory_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_vulkan_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -112,8 +112,11 @@ static void get_offline_cache_key_of_snode_impl(
     serializer(snode->ambient_val.stringify());
   }
   if (snode->grad_info && !snode->grad_info->is_primal()) {
-    if (auto *grad_snode = snode->grad_info->grad_snode()) {
-      get_offline_cache_key_of_snode_impl(grad_snode, serializer, visited);
+    if (auto *adjoint_snode = snode->grad_info->adjoint_snode()) {
+      get_offline_cache_key_of_snode_impl(adjoint_snode, serializer, visited);
+    }
+    if (auto *dual_snode = snode->grad_info->dual_snode()) {
+      get_offline_cache_key_of_snode_impl(dual_snode, serializer, visited);
     }
   }
   if (snode->exp_snode) {
@@ -178,7 +181,8 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
   hasher.finish();
 
   auto res = picosha2::get_hash_hex_string(hasher);
-  res.insert(res.begin(), kernel->grad ? 'g' : 'n');
+  res.insert(res.begin(),
+             kernel->autodiff_mode != AutodiffMode::kNone ? 'g' : 'n');
   return res;
 }
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "taichi/ir/type.h"
 #include "taichi/aot/module_data.h"
 
 template <typename T, typename G>
@@ -23,10 +24,38 @@ struct Arg {
   ArgKind tag;
   std::string name;
   // TODO: real element dtype = dtype + element_shape
-  std::string dtype_name;
+  PrimitiveTypeID dtype_id;
   std::vector<int> element_shape;
 
-  TI_IO_DEF(name, dtype_name, tag, element_shape);
+  // For serialization & deserialization
+  explicit Arg()
+      : tag(ArgKind::kUnknown),
+        name(""),
+        dtype_id(PrimitiveTypeID::unknown),
+        element_shape({}) {
+  }
+
+  explicit Arg(ArgKind tag,
+               const std::string &name,
+               PrimitiveTypeID dtype_id,
+               const std::vector<int> &element_shape)
+      : tag(tag), name(name), dtype_id(dtype_id), element_shape(element_shape) {
+  }
+
+  // Python/C++ interface that's user facing.
+  explicit Arg(ArgKind tag,
+               const std::string &name,
+               const DataType &dtype,
+               const std::vector<int> &element_shape = {})
+      : tag(tag), name(name), element_shape(element_shape) {
+    dtype_id = dtype->as<PrimitiveType>()->type;
+  }
+
+  DataType dtype() const {
+    return PrimitiveType::get(dtype_id);
+  }
+
+  TI_IO_DEF(name, dtype_id, tag, element_shape);
 };
 
 /**

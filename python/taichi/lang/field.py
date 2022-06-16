@@ -19,6 +19,8 @@ class Field:
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
+        self.adjoint = None
+        self.dual = None
 
     @property
     def snode(self):
@@ -92,13 +94,35 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def _set_grad(self, grad):
-        """Sets corresponding gradient field.
+    def _set_grad(self, grad, reverse_mode=True):
+        """Binds corresponding gradient field to adjoint or dual.
 
         Args:
             grad (Field): Corresponding gradient field.
+            reverse_mode (Bool): set for reverse or forward mode
         """
-        self.grad = grad
+        if reverse_mode:
+            self._set_adjoint(grad)
+            self.grad = self.adjoint
+        else:
+            self._set_dual(grad)
+            self.grad = self.dual
+
+    def _set_adjoint(self, adjoint):
+        """Sets corresponding adjoint field (reverse mode).
+
+        Args:
+            adjoint (Field): Corresponding adjoint field.
+        """
+        self.adjoint = adjoint
+
+    def _set_dual(self, dual):
+        """Sets corresponding dual field (forward mode).
+
+        Args:
+            dual (Field): Corresponding dual field.
+        """
+        self.dual = dual
 
     @python_scope
     def fill(self, val):

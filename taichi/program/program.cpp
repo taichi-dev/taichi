@@ -29,7 +29,7 @@
 #include "taichi/backends/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 #ifdef TI_WITH_DX11
@@ -50,7 +50,7 @@ Program::Program(Arch desired_arch)
     : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
-  // For performance considerations and correctness of CustomFloatType
+  // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
 #if defined(TI_ARCH_x64)
@@ -125,13 +125,6 @@ Program::Program(Arch desired_arch)
   total_compilation_time_ = 0;
   num_instances_ += 1;
   SNode::counter = 0;
-  if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
 
   result_buffer = nullptr;
   current_callable = nullptr;
@@ -193,7 +186,8 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan);
+  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan ||
+            config.arch == Arch::dx11);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -407,7 +401,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
   auto kernel_name =
       fmt::format("ndarray_reader_{}", ndarray_reader_counter_++);
-  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;
     for (int i = 0; i < keys.num_active_indices; i++) {
@@ -433,7 +427,7 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
   auto kernel_name =
       fmt::format("ndarray_writer_{}", ndarray_writer_counter_++);
-  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
   auto &ker = kernel([keys, this] {
     ExprGroup indices;
     for (int i = 0; i < keys.num_active_indices; i++) {
@@ -555,9 +549,30 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 }
 
 Ndarray *Program::create_ndarray(const DataType type,
-                                 const std::vector<int> &shape) {
-  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape));
+                                 const std::vector<int> &shape,
+                                 const std::vector<int> &element_shape,
+                                 ExternalArrayLayout layout) {
+  ndarrays_.emplace_back(
+      std::make_unique<Ndarray>(this, type, shape, element_shape, layout));
   return ndarrays_.back().get();
+}
+
+Texture *Program::create_texture(const DataType type,
+                                 int num_channels,
+                                 const std::vector<int> &shape) {
+  if (shape.size() == 1) {
+    textures_.push_back(
+        std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
+  } else if (shape.size() == 2) {
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels,
+                                                  shape[0], shape[1], 1));
+  } else if (shape.size() == 3) {
+    textures_.push_back(std::make_unique<Texture>(
+        this, type, num_channels, shape[0], shape[1], shape[2]));
+  } else {
+    TI_ERROR("Texture shape invalid");
+  }
+  return textures_.back().get();
 }
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
@@ -579,8 +594,9 @@ void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
 // This is a temporary solution to bypass device api.
 // Should be moved to CommandList once available in CUDA.
 #ifdef TI_WITH_LLVM
-  get_llvm_program_impl()->fill_ndarray(ndarray->ndarray_alloc_,
-                                        ndarray->get_nelement(), val);
+  get_llvm_program_impl()->fill_ndarray(
+      ndarray->ndarray_alloc_,
+      ndarray->get_nelement() * ndarray->get_element_size(), val);
 #else
   TI_ERROR("Not supported");
 #endif

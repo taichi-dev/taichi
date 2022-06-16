@@ -304,20 +304,29 @@ bool SNode::is_primal() const {
   return grad_info->is_primal();
 }
 
-bool SNode::has_grad() const {
-  return is_primal() && (grad_info->grad_snode() != nullptr);
+bool SNode::has_adjoint() const {
+  return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }
 
-SNode *SNode::get_grad() const {
-  TI_ASSERT(has_grad());
-  return grad_info->grad_snode();
+bool SNode::has_dual() const {
+  return is_primal() && (grad_info->dual_snode() != nullptr);
+}
+
+SNode *SNode::get_adjoint() const {
+  TI_ASSERT(has_adjoint());
+  return grad_info->adjoint_snode();
+}
+
+SNode *SNode::get_dual() const {
+  TI_ASSERT(has_dual());
+  return grad_info->dual_snode();
 }
 
 void SNode::set_snode_tree_id(int id) {
   snode_tree_id_ = id;
 }
 
-int SNode::get_snode_tree_id() {
+int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
 }
 

@@ -25,7 +25,7 @@ class Ndarray;
  * in get_ndarray_reader/writer in program.cpp.
  */
 struct NdarrayRwKeys {
-  int num_active_indices;
+  size_t num_active_indices;
   DataType dtype;
 
   struct Hasher {

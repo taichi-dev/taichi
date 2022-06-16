@@ -12,7 +12,7 @@ from taichi.lang import impl, ops, runtime_ops
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
-from taichi.lang.enums import Layout
+from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
                                    handle_exception_from_cpp)
@@ -22,7 +22,7 @@ from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
-                          template)
+                          template, texture_type)
 
 from taichi import _logging
 
@@ -210,7 +210,8 @@ class Func:
             return self.func(*args)
 
         if self.is_real_function:
-            if impl.get_runtime().current_kernel.is_grad:
+            if impl.get_runtime(
+            ).current_kernel.autodiff_mode != AutodiffMode.NONE:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
             instance_id, _ = self.mapper.lookup(args)
@@ -335,23 +336,17 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
+        if isinstance(anno, texture_type.TextureType):
+            return '#'
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
-                anno._check_element_dim(arg, 0)
-                anno._check_element_shape(())
-                anno._check_field_dim(len(arg.shape))
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno._check_element_dim(arg, 1)
-                anno._check_element_shape((arg.n, ))
-                anno._check_field_dim(len(arg.shape))
-                anno._check_layout(arg)
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno._check_element_dim(arg, 2)
-                anno._check_element_shape((arg.n, arg.m))
-                anno._check_field_dim(len(arg.shape))
-                anno._check_layout(arg)
+                anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), arg.layout
             # external arrays
@@ -408,11 +403,13 @@ def _get_global_vars(_func):
 class Kernel:
     counter = 0
 
-    def __init__(self, _func, is_grad, _classkernel=False):
+    def __init__(self, _func, autodiff_mode, _classkernel=False):
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
-        self.is_grad = is_grad
+        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.FORWARD,
+                                 AutodiffMode.REVERSE)
+        self.autodiff_mode = autodiff_mode
         self.grad = None
         self.arguments = []
         self.return_type = None
@@ -427,13 +424,12 @@ class Kernel:
         impl.get_runtime().kernels.append(self)
         self.reset()
         self.kernel_cpp = None
+        # TODO[#5114]: get rid of compiled_functions and use compiled_kernels instead.
+        # Main motivation is that compiled_kernels can be potentially serialized in the AOT scenario.
+        self.compiled_kernels = {}
 
     def reset(self):
         self.runtime = impl.get_runtime()
-        if self.is_grad:
-            self.compiled_functions = self.runtime.compiled_grad_functions
-        else:
-            self.compiled_functions = self.runtime.compiled_functions
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -470,8 +466,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation,
-                              (template, ndarray_type.NdarrayType)):
+                if isinstance(annotation, (template, ndarray_type.NdarrayType,
+                                           texture_type.TextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -488,13 +484,17 @@ class Kernel:
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
-            key = (self.func, 0)
+            key = (self.func, 0, self.autodiff_mode)
         self.runtime.materialize()
-        if key in self.compiled_functions:
+
+        if key in self.runtime.compiled_functions:
             return
+
         grad_suffix = ""
-        if self.is_grad:
-            grad_suffix = "_grad"
+        if self.autodiff_mode == AutodiffMode.FORWARD:
+            grad_suffix = "_forward_grad"
+        elif self.autodiff_mode == AutodiffMode.REVERSE:
+            grad_suffix = "_reverse_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
 
@@ -504,7 +504,7 @@ class Kernel:
             excluded_parameters=self.template_slot_locations,
             arg_features=arg_features)
 
-        if self.is_grad:
+        if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
         if impl.current_cfg().use_mesh:
@@ -534,12 +534,14 @@ class Kernel:
                 self.runtime.current_kernel = None
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
-            taichi_ast_generator, kernel_name, self.is_grad)
+            taichi_ast_generator, kernel_name, self.autodiff_mode)
 
         self.kernel_cpp = taichi_kernel
 
-        assert key not in self.compiled_functions
-        self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+        assert key not in self.runtime.compiled_functions
+        self.runtime.compiled_functions[key] = self.get_function_body(
+            taichi_kernel)
+        self.compiled_kernels[key] = taichi_kernel
 
     def get_torch_callbacks(self, v, has_torch, is_ndarray=True):
         callbacks = []
@@ -657,6 +659,12 @@ class Kernel:
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                elif isinstance(needed,
+                                texture_type.TextureType) and isinstance(
+                                    v, taichi.lang._texture.Texture):
+                    has_external_arrays = True
+                    v = v.tex
+                    launch_ctx.set_arg_texture(actual_argument_slot, v)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
@@ -664,13 +672,24 @@ class Kernel:
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
+
+                    # Element shapes are already spcialized in Taichi codegen.
+                    # The shape information for element dims are no longer needed.
+                    # Therefore we strip the element shapes from the shape vector,
+                    # so that it only holds "real" array shapes.
+                    is_soa = needed.layout == Layout.SOA
+                    array_shape = v.shape
+                    element_dim = needed.element_dim
+                    if element_dim:
+                        array_shape = v.shape[
+                            element_dim:] if is_soa else v.shape[:-element_dim]
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, v.shape)
+                            tmp.nbytes, array_shape)
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
@@ -678,7 +697,7 @@ class Kernel:
                         callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape)
+                            tmp.element_size() * tmp.nelement(), array_shape)
                     else:
                         # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
                         tmp, paddle_callbacks = self.get_paddle_callbacks(
@@ -686,7 +705,7 @@ class Kernel:
                         callbacks += paddle_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
-                            v.element_size() * v.size, v.shape)
+                            v.element_size() * v.size, array_shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:
@@ -722,7 +741,7 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if not self.is_grad and self.runtime.target_tape and not self.runtime.grad_replaced:
+            if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and (
@@ -785,7 +804,7 @@ class Kernel:
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
+        key = (self.func, instance_id, self.autodiff_mode)
         self.materialize(key=key, args=args, arg_features=arg_features)
         return key
 
@@ -794,13 +813,25 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         args = _process_args(self, args, kwargs)
-        if self.is_grad and impl.current_cfg().opt_level == 0:
+
+        # Transform the primal kernel to forward mode grad kernel
+        # then recover to primal when exiting the forward mode manager
+        if self.runtime.fwd_mode_manager:
+            # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
+            # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
+            # to avoid duplicate computation for 1st-order derivatives
+            mode_original = self.autodiff_mode
+            self.autodiff_mode = AutodiffMode.FORWARD
+            self.runtime.fwd_mode_manager.insert(self, mode_original)
+
+        if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
+        ).opt_level == 0:
             _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1
         key = self.ensure_compiled(*args)
-        return self.compiled_functions[key](*args)
+        return self.runtime.compiled_functions[key](*args)
 
 
 # For a Taichi class definition like below:
@@ -842,8 +873,12 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(_func, is_grad=False, _classkernel=is_classkernel)
-    adjoint = Kernel(_func, is_grad=True, _classkernel=is_classkernel)
+    primal = Kernel(_func,
+                    autodiff_mode=AutodiffMode.NONE,
+                    _classkernel=is_classkernel)
+    adjoint = Kernel(_func,
+                     autodiff_mode=AutodiffMode.REVERSE,
+                     _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 

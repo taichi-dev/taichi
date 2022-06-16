@@ -33,8 +33,9 @@ np_ops = {
 
 def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
-    if (ti.lang.impl.current_cfg().arch == ti.opengl or
-            ti.lang.impl.current_cfg().arch == ti.vulkan) and dtype == ti.f32:
+    if (ti.lang.impl.current_cfg().arch == ti.opengl
+            or ti.lang.impl.current_cfg().arch == ti.vulkan
+            or ti.lang.impl.current_cfg().arch == ti.dx11) and dtype == ti.f32:
         # OpenGL/Vulkan are not capable of such large number in its float32...
         N = 1024 * 16
 
@@ -129,6 +130,19 @@ def test_reduction_different_scale():
     # 1024 and 100000 since OpenGL max threads per group ~= 1792
     for n in [1, 10, 60, 1024, 100000]:
         assert n == func(n)
+
+
+@test_utils.test()
+def test_reduction_non_full_warp():
+    @ti.kernel
+    def test() -> ti.i32:
+        hit_time = 1
+        ti.loop_config(block_dim=8)
+        for i in range(8):
+            ti.atomic_min(hit_time, 1)
+        return hit_time
+
+    assert test() == 1
 
 
 @test_utils.test()

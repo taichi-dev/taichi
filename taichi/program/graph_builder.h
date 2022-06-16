@@ -36,7 +36,6 @@ class Dispatch : public Node {
  private:
   mutable bool serialized_{false};
   Kernel *kernel_{nullptr};
-  std::unique_ptr<aot::Kernel> compiled_kernel_{nullptr};
   std::vector<aot::Arg> symbolic_args_;
 };
 

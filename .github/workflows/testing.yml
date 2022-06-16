@@ -406,6 +406,8 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
+        env:
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         shell: powershell
@@ -414,7 +416,6 @@ jobs:
           .\.github\workflows\scripts\win_test.ps1
         env:
           TI_WANTED_ARCHS: cpu,cuda,opengl
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
           PYTHON: '3.7'

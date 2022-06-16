@@ -105,8 +105,6 @@ if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
-
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -178,4 +176,10 @@ endif()
 
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)
+endif()
+
+option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+
+if (TI_WITH_C_API)
+  include(cmake/TaichiCAPI.cmake)
 endif()

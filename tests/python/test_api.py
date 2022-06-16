@@ -65,12 +65,12 @@ user_api[ti] = [
     'SNode', 'ScalarField', 'ScalarNdarray', 'Struct', 'StructField', 'TRACE',
     'TaichiAssertionError', 'TaichiCompilationError', 'TaichiNameError',
     'TaichiRuntimeError', 'TaichiRuntimeTypeError', 'TaichiSyntaxError',
-    'TaichiTypeError', 'Tape', 'TetMesh', 'TriMesh', 'Vector', 'VectorNdarray',
-    'WARN', 'abs', 'acos', 'activate', 'ad', 'aot', 'append', 'arm64', 'asin',
-    'assume_in_range', 'atan2', 'atomic_add', 'atomic_and', 'atomic_max',
-    'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor', 'axes', 'bit_cast',
-    'bit_shr', 'block_local', 'cache_read_only', 'cast', 'cc', 'ceil',
-    'clear_all_gradients', 'cos', 'cpu', 'cuda', 'data_oriented', 'deactivate',
+    'TaichiTypeError', 'TetMesh', 'Texture', 'TriMesh', 'Vector',
+    'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad', 'aot', 'append',
+    'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add', 'atomic_and',
+    'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor',
+    'axes', 'bit_cast', 'bit_shr', 'block_local', 'cache_read_only', 'cast',
+    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'deactivate',
     'deactivate_all_snodes', 'dx11', 'eig', 'exp', 'experimental', 'extension',
     'f16', 'f32', 'f64', 'field', 'float16', 'float32', 'float64', 'floor',
     'func', 'get_addr', 'global_thread_idx', 'gpu', 'graph', 'grouped',
@@ -83,10 +83,14 @@ user_api[ti] = [
     'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator',
-    'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools', 'types', 'u16',
-    'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan',
-    'wasm', 'x64', 'x86_64', 'zero'
+    'static_assert', 'static_print', 'stop_grad', 'struct_class', 'svd',
+    'swizzle_generator', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
+    'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
+    'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+]
+user_api[ti.ad] = [
+    'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
+    'no_grad'
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
@@ -113,9 +117,10 @@ user_api[ti.MatrixField] = [
     'to_torch'
 ]
 user_api[ti.MatrixNdarray] = [
-    'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
+    'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
-user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill']
+user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
+user_api[ti.Texture] = ['device_allocation_ptr', 'from_ndarray']
 user_api[ti.SNode] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
     'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
@@ -125,7 +130,7 @@ user_api[ti.ScalarField] = [
     'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.ScalarNdarray] = [
-    'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
+    'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
@@ -134,7 +139,7 @@ user_api[ti.StructField] = [
     'to_paddle', 'to_torch'
 ]
 user_api[ti.VectorNdarray] = [
-    'copy_from', 'element_shape', 'fill', 'from_numpy', 'to_numpy'
+    'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 
 

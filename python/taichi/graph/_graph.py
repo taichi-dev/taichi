@@ -12,8 +12,8 @@ def gen_cpp_kernel(kernel_fn, args):
     kernel = kernel_fn._primal
     assert isinstance(kernel, kernel_impl.Kernel)
     injected_args = produce_injected_args(kernel, symbolic_args=args)
-    kernel.ensure_compiled(*injected_args)
-    return kernel.kernel_cpp
+    key = kernel.ensure_compiled(*injected_args)
+    return kernel.compiled_kernels[key]
 
 
 class Sequential:
@@ -25,10 +25,9 @@ class Sequential:
         self.seq_.dispatch(kernel_cpp, args)
 
 
-class Graph:
+class GraphBuilder:
     def __init__(self):
         self._graph_builder = _ti_core.GraphBuilder()
-        self._compiled_graph = None
 
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
@@ -43,7 +42,12 @@ class Graph:
         self._graph_builder.seq().append(node.seq_)
 
     def compile(self):
-        self._compiled_graph = self._graph_builder.compile()
+        return Graph(self._graph_builder.compile())
+
+
+class Graph:
+    def __init__(self, compiled_graph) -> None:
+        self._compiled_graph = compiled_graph
 
     def run(self, args):
         arg_ptrs = {}
@@ -60,9 +64,9 @@ class Graph:
                 arg_floats[k] = v
             else:
                 raise TaichiRuntimeError(
-                    'Only python int, float and ti.Ndarray are supported as runtime arguments'
+                    f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
         self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats)
 
 
-__all__ = ['Graph', 'Arg', 'ArgKind']
+__all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

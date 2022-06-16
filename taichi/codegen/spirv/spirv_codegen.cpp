@@ -36,6 +36,8 @@ using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
+using TextureBind = TaskAttributes::TextureBind;
+
 std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
   switch (b.type) {
@@ -564,8 +566,15 @@ class TaskCodegen : public IRVisitor {
     {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
+      const auto &element_shape = stmt->element_shape;
+      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
+                                                 : ExternalArrayLayout::kSOA;
       const auto extra_args_member_index = ctx_attribs_->args().size();
-      for (int i = 0; i < num_indices; i++) {
+      const size_t element_shape_index_offset =
+          (layout == ExternalArrayLayout::kAOS)
+              ? num_indices - element_shape.size()
+              : 0;
+      for (int i = 0; i < num_indices - element_shape.size(); i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
         const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
         spirv::Value var_ptr = ir_->make_value(
@@ -578,8 +587,17 @@ class TaskCodegen : public IRVisitor {
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
       }
+      int size_var_names_idx = 0;
       for (int i = 0; i < num_indices; i++) {
-        spirv::Value size_var = ir_->query_value(size_var_names[i]);
+        spirv::Value size_var;
+        // Use immediate numbers to flatten index for element shapes.
+        if (i >= element_shape_index_offset &&
+            i < element_shape_index_offset + element_shape.size()) {
+          size_var = ir_->uint_immediate_number(
+              ir_->i32_type(), element_shape[i - element_shape_index_offset]);
+        } else {
+          size_var = ir_->query_value(size_var_names[size_var_names_idx++]);
+        }
         spirv::Value indices = ir_->query_value(stmt->indices[i]->raw_name());
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
@@ -592,7 +610,6 @@ class TaskCodegen : public IRVisitor {
       ir_->decorate(spv::OpDecorate, linear_offset,
                     spv::DecorationNoSignedWrap);
     }
-
     if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,
@@ -919,8 +936,57 @@ class TaskCodegen : public IRVisitor {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
   }
 
+  void visit(TexturePtrStmt *stmt) override {
+    spirv::Value val;
+
+    int arg_id = stmt->arg_load_stmt->as<ArgLoadStmt>()->arg_id;
+    if (argid_to_tex_value_.find(arg_id) != argid_to_tex_value_.end()) {
+      val = argid_to_tex_value_.at(arg_id);
+    } else {
+      int binding = binding_head_++;
+      val = ir_->texture_argument(4, 0, binding);
+      TextureBind bind;
+      bind.arg_id = arg_id;
+      bind.binding = binding;
+      texture_binds_.push_back(bind);
+      argid_to_tex_value_[arg_id] = val;
+    }
+
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
+  void visit(TextureOpStmt *stmt) override {
+    spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
+    spirv::Value u = ir_->query_value(stmt->args[0]->raw_name());
+    spirv::Value v = ir_->query_value(stmt->args[1]->raw_name());
+    spirv::Value lod = ir_->query_value(stmt->args[2]->raw_name());
+    spirv::Value val;
+    if (stmt->op == TextureOpType::sample_lod) {
+      val = ir_->sample_texture(tex, u, v, lod);
+    } else if (stmt->op == TextureOpType::fetch_texel) {
+      val = ir_->fetch_texel(tex, u, v, lod);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
+
+    if (stmt->func_name == "composite_extract_0") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 0);
+    } else if (stmt->func_name == "composite_extract_1") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 1);
+    } else if (stmt->func_name == "composite_extract_2") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 2);
+    } else if (stmt->func_name == "composite_extract_3") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 3);
+    }
 
     const std::unordered_set<std::string> reduction_ops{
         "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
@@ -1389,7 +1455,6 @@ class TaskCodegen : public IRVisitor {
   void generate_serial_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::serial;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 1;
 
@@ -1418,6 +1483,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void gen_array_range(Stmt *stmt) {
@@ -1432,7 +1498,6 @@ class TaskCodegen : public IRVisitor {
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::range_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
 
     task_attribs_.range_for_attribs = TaskAttributes::RangeForAttributes();
     auto &range_for_attribs = task_attribs_.range_for_attribs.value();
@@ -1573,12 +1638,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_listgen_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::listgen;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 32;
 
@@ -1725,12 +1790,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::struct_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 65536;
     task_attribs_.advisory_num_threads_per_group = 128;
 
@@ -1792,6 +1857,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
@@ -1967,6 +2033,10 @@ class TaskCodegen : public IRVisitor {
     return result;
   }
 
+  std::vector<TextureBind> get_texture_binds() {
+    return texture_binds_;
+  }
+
   void push_loop_control_labels(spirv::Label continue_label,
                                 spirv::Label merge_label) {
     continue_label_stack_.push_back(continue_label);
@@ -2013,6 +2083,7 @@ class TaskCodegen : public IRVisitor {
                      uint32_t,
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
+  std::vector<TextureBind> texture_binds_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
@@ -2038,6 +2109,7 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<int, GetRootStmt *>
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
+  std::unordered_map<int, Value> argid_to_tex_value_;
 };
 }  // namespace
 
@@ -2168,7 +2240,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 void lower(Kernel *kernel) {
   auto &config = kernel->program->config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel->ir.get(), config, kernel, kernel->grad,
+  irpass::compile_to_executable(kernel->ir.get(), config, kernel,
+                                kernel->autodiff_mode,
                                 /*ad_use_stack=*/false, config.print_ir,
                                 /*lower_global_access=*/true,
                                 /*make_thread_local=*/false);

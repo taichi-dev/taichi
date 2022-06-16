@@ -1,6 +1,6 @@
 #include "taichi/aot/module_loader.h"
 
-#include "taichi/backends/vulkan/aot_module_loader_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/backends/metal/aot_module_loader_impl.h"
 
 namespace taichi {
@@ -32,19 +32,18 @@ Kernel *KernelTemplate::get_kernel(
 std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
   if (arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
-    return vulkan::make_aot_module(mod_params);
-#else
-    TI_NOT_IMPLEMENTED
+    return gfx::make_aot_module(mod_params, arch);
+#endif
+  } else if (arch == Arch::dx11) {
+#ifdef TI_WITH_DX11
+    return gfx::make_aot_module(mod_params, arch);
 #endif
   } else if (arch == Arch::metal) {
 #ifdef TI_WITH_METAL
     return metal::make_aot_module(mod_params);
-#else
-    TI_NOT_IMPLEMENTED
 #endif
-  } else {
-    TI_NOT_IMPLEMENTED;
   }
+  TI_NOT_IMPLEMENTED;
 }
 
 Kernel *Module::get_kernel(const std::string &name) {

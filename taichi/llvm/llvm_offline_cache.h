@@ -42,9 +42,60 @@ struct LlvmOfflineCache {
     TI_IO_DEF(kernel_key, args, offloaded_task_list);
   };
 
-  std::unordered_map<std::string, KernelCacheData> kernels;
+  struct FieldCacheData {
+    struct SNodeCacheData {
+      int id{0};
+      SNodeType type = SNodeType::undefined;
+      size_t cell_size_bytes{0};
+      size_t chunk_size{0};
 
-  TI_IO_DEF(kernels);
+      TI_IO_DEF(id, type, cell_size_bytes, chunk_size);
+    };
+
+    int tree_id{0};
+    int root_id{0};
+    size_t root_size{0};
+    std::vector<SNodeCacheData> snode_metas;
+
+    TI_IO_DEF(tree_id, root_id, root_size, snode_metas);
+
+    // TODO(zhanlue): refactor llvm::Modules
+    //
+    // struct_module will eventually get cloned into each kernel_module,
+    // so there's no need to serialize it here.
+    //
+    // We have three different types of llvm::Module
+    // 1. runtime_module: contains runtime functions.
+    // 2. struct_module: contains compiled SNodeTree in llvm::Type.
+    // 3. kernel_modules: contains compiled kernel codes.
+    //
+    // The way those modules work rely on a recursive clone mechanism:
+    //   runtime_module = load("runtime.bc")
+    //   struct_module = clone(runtime_module) + compiled-SNodeTree
+    //   kernel_module = clone(struct_module) + compiled-Kernel
+    //
+    // As a result, every kernel_module contains a copy of struct_module +
+    // runtime_module.
+    //
+    // This recursive clone mechanism is super fragile,
+    // which potentially causes inconsistency between modules if not handled
+    // properly.
+    //
+    // Let's turn to use llvm::link to bind the modules,
+    // and make runtime_module, struct_module, kernel_module independent of each
+    // other
+  };
+
+  // TODO(zhanlue): we need a better identifier for each FieldCacheData
+  // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
+  // ask the users to remember each of the snode_tree_ids
+  // ** Find a way to name each SNodeTree **
+  std::unordered_map<int, FieldCacheData> fields;  // key = snode_tree_id
+
+  std::unordered_map<std::string, KernelCacheData>
+      kernels;  // key = kernel_name
+
+  TI_IO_DEF(fields, kernels);
 };
 
 class LlvmOfflineCacheFileReader {
@@ -52,6 +103,9 @@ class LlvmOfflineCacheFileReader {
   bool get_kernel_cache(LlvmOfflineCache::KernelCacheData &res,
                         const std::string &key,
                         llvm::LLVMContext &llvm_ctx);
+
+  bool get_field_cache(LlvmOfflineCache::FieldCacheData &res,
+                       int snode_tree_id);
 
   static std::unique_ptr<LlvmOfflineCacheFileReader> make(
       const std::string &path,

@@ -100,37 +100,35 @@ As a rule of thumb, implicit type casting is a major source of bugs. And Taichi 
 
 #### Implicit type casting in binary operations
 
-Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion).
+Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
 
-In general we have three rules with descending priority:
+1. Integer + floating point -> floating point
+   - `i32 + f32 -> f32`
+   - `i16 + f16 -> f16`
 
-1. integral OP floating_point -> floating_point
-- `i32 + f32 -> f32`
-- `i16 + f16 -> f16`
+2. Low-precision bits + high-precision bits -> high-precision bits
+   - `i16 + i32 -> i32`
+   - `f16 + f32 -> f32`
+   - `u8 + u16 -> u16`
 
-2. low_precision_bits OP high_precision_bits -> high_precision_bits
-- `i16 + i32 -> i32`
-- `u8 + u16 -> u16`
+3. Signed integer + unsigned integer -> unsigned integer
+   - `u32 + i32 -> u32`
+   - `u8 + i8 -> u8`
 
-3. signed OP unsigned -> unsigned
-- `u32 + i32 -> u32`
-- `u8 + i8 -> u8`
-
-For conflicting rules, only the highest priority one will be applied.
-- `u8 + i16 -> i16` (rule #2 conflicts with rule #3: apply rule #2)
-- `f16 + i32 -> f16` (rule #1 conflicts with rule #2: apply rule #1)
+When it comes to rule conflicts, the rule of the highest priority applies:
+  - `u8 + i16 -> i16` (when rule #2 conflicts with rule #3, rule #2 applies.)
+  - `f16 + i32 -> f16` (when rule #1 conflicts with rule #2, rule #1 applies.)
 
 A few exceptions:
-1. bit-shift operations: always follow lhs's dtype
-- `u8 << i32 -> u8`
-- `i16 << i8 -> i16`
 
-2. atan2 operation: return fp64 if either lhs or rhs is fp64, otherwise return fp32.
-- `i32 atan f32 -> f32`
-- `i32 atan f64 -> f64`
-
-3. logical operations: always return i32
-4. comparison operations: always return i32
+- bit-shift operations return lhs' (left hand side's) data type:
+  - `u8 << i32 -> u8`
+  - `i16 << i8 -> i16`
+- atan2 operations return `f64` if either side is `f64`, or `f32` otherwise.
+  - `i32 atan f32 -> f32`
+  - `i32 atan f64 -> f64`
+- Logical operations return `i32`.
+- Comparison operations return `i32`.
 
 #### Implicit type casting in assignments
 

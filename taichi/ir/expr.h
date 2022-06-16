@@ -83,8 +83,6 @@ class Expr {
 
   Expr operator[](const ExprGroup &indices) const;
 
-  Expr operator!();
-
   template <typename T, typename... Args>
   static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
@@ -95,7 +93,9 @@ class Expr {
   // traceback for type checking error message
   void set_tb(const std::string &tb);
 
-  void set_grad(const Expr &o);
+  void set_adjoint(const Expr &o);
+
+  void set_dual(const Expr &o);
 
   void set_attribute(const std::string &key, const std::string &value);
 

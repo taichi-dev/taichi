@@ -93,7 +93,8 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
-    virtual SNode *grad_snode() const = 0;
+    virtual SNode *adjoint_snode() const = 0;
+    virtual SNode *dual_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -134,7 +135,7 @@ class SNode {
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
-  SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
+  SNode *exp_snode{nullptr};  // for QuantFloatType
   int bit_offset{0};          // for children of bit_struct only
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};
@@ -286,9 +287,13 @@ class SNode {
 
   bool is_scalar() const;
 
-  bool has_grad() const;
+  bool has_adjoint() const;
 
-  SNode *get_grad() const;
+  SNode *get_adjoint() const;
+
+  bool has_dual() const;
+
+  SNode *get_dual() const;
 
   SNode *get_least_sparse_ancestor() const;
 
@@ -349,7 +354,7 @@ class SNode {
 
   void set_snode_tree_id(int id);
 
-  int get_snode_tree_id();
+  int get_snode_tree_id() const;
 
   static void reset_counter() {
     counter = 0;

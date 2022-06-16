@@ -124,6 +124,7 @@ DEFINE_EXPRESSION_FUNC_BINARY(floordiv)
 DEFINE_EXPRESSION_FUNC_BINARY(bit_shr)
 
 DEFINE_EXPRESSION_FUNC_TERNARY(select)
+DEFINE_EXPRESSION_FUNC_TERNARY(ifte)
 
 }  // namespace lang
 }  // namespace taichi

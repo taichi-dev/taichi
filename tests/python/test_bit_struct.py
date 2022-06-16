@@ -7,11 +7,11 @@ from tests import test_utils
 
 @test_utils.test(require=ti.extension.quant_basic, debug=True)
 def test_simple_array():
-    ci13 = ti.types.quant.int(13, True)
-    cu19 = ti.types.quant.int(19, False)
+    qi13 = ti.types.quant.int(13, True)
+    qu19 = ti.types.quant.int(19, False)
 
-    x = ti.field(dtype=ci13)
-    y = ti.field(dtype=cu19)
+    x = ti.field(dtype=qi13)
+    y = ti.field(dtype=qu19)
 
     N = 12
 
@@ -41,14 +41,14 @@ def test_simple_array():
 @test_utils.test(require=ti.extension.quant_basic,
                  exclude=[ti.metal],
                  debug=True)
-def test_custom_int_load_and_store():
-    ci13 = ti.types.quant.int(13, True)
-    cu14 = ti.types.quant.int(14, False)
-    ci5 = ti.types.quant.int(5, True)
+def test_quant_int_load_and_store():
+    qi13 = ti.types.quant.int(13, True)
+    qu14 = ti.types.quant.int(14, False)
+    qi5 = ti.types.quant.int(5, True)
 
-    x = ti.field(dtype=ci13)
-    y = ti.field(dtype=cu14)
-    z = ti.field(dtype=ci5)
+    x = ti.field(dtype=qi13)
+    y = ti.field(dtype=qu14)
+    z = ti.field(dtype=qi5)
 
     test_case_np = np.array(
         [[2**12 - 1, 2**14 - 1, -(2**3)], [2**11 - 1, 2**13 - 1, -(2**2)],
@@ -82,9 +82,9 @@ def test_custom_int_load_and_store():
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_custom_int_full_struct():
-    cit = ti.types.quant.int(32, True)
-    x = ti.field(dtype=cit)
+def test_quant_int_full_struct():
+    qit = ti.types.quant.int(32, True)
+    x = ti.field(dtype=qit)
     ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(x)
 
     x[0] = 15
@@ -95,17 +95,17 @@ def test_custom_int_full_struct():
 
 
 def test_bit_struct():
-    def test_single_bit_struct(physical_type, compute_type, custom_bits,
+    def test_single_bit_struct(physical_type, compute_type, quant_bits,
                                test_case):
         ti.init(arch=ti.cpu, debug=True)
 
-        cit1 = ti.types.quant.int(custom_bits[0], True, compute_type)
-        cit2 = ti.types.quant.int(custom_bits[1], False, compute_type)
-        cit3 = ti.types.quant.int(custom_bits[2], True, compute_type)
+        qit1 = ti.types.quant.int(quant_bits[0], True, compute_type)
+        qit2 = ti.types.quant.int(quant_bits[1], False, compute_type)
+        qit3 = ti.types.quant.int(quant_bits[2], True, compute_type)
 
-        a = ti.field(dtype=cit1)
-        b = ti.field(dtype=cit2)
-        c = ti.field(dtype=cit3)
+        a = ti.field(dtype=qit1)
+        b = ti.field(dtype=qit2)
+        c = ti.field(dtype=qit3)
         ti.root.bit_struct(num_bits=physical_type).place(a, b, c)
 
         @ti.kernel

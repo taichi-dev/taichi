@@ -165,6 +165,27 @@ def test_ndarray_2d():
     _test_ndarray_2d()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_compound_element():
+    n = 10
+    a = ti.ndarray(ti.i32, shape=(n, ))
+
+    vec3 = ti.types.vector(3, ti.i32)
+    b = ti.ndarray(vec3, shape=(n, n))
+    assert isinstance(b, ti.MatrixNdarray)
+    assert b.shape == (n, n)
+    assert b.element_type.dtype == ti.i32
+    assert b.element_type.shape == (3, 1)
+
+    matrix34 = ti.types.matrix(3, 4, float)
+    c = ti.ndarray(matrix34, shape=(n, n + 1), layout=ti.Layout.SOA)
+    assert isinstance(c, ti.MatrixNdarray)
+    assert c.shape == (n, n + 1)
+    assert c.element_type.dtype == ti.f32
+    assert c.element_type.shape == (3, 4)
+    assert c.layout == ti.Layout.SOA
+
+
 def _test_ndarray_copy_from_ndarray():
     n = 16
     a = ti.ndarray(ti.i32, shape=n)
@@ -282,13 +303,13 @@ def test_ndarray_fill():
     assert (a.to_numpy() == anp).all()
 
     b = ti.Vector.ndarray(4, ti.f32, shape=(n))
-    bnp = np.ones(shape=b.arr.shape, dtype=np.float32)
+    bnp = np.ones(shape=b.arr.total_shape(), dtype=np.float32)
     b.fill(2.5)
     bnp.fill(2.5)
     assert (b.to_numpy() == bnp).all()
 
     c = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
-    cnp = np.ones(shape=c.arr.shape, dtype=np.float32)
+    cnp = np.ones(shape=c.arr.total_shape(), dtype=np.float32)
     c.fill(1.5)
     cnp.fill(1.5)
     assert (c.to_numpy() == cnp).all()
@@ -590,8 +611,8 @@ def _test_size_in_bytes():
     assert a._get_nelement() == 8
 
     b = ti.Vector.ndarray(10, ti.f64, 5)
-    assert b._get_element_size() == 8
-    assert b._get_nelement() == 50
+    assert b._get_element_size() == 80
+    assert b._get_nelement() == 5
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

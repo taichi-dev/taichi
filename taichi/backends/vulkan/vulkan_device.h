@@ -2,7 +2,7 @@
 
 #include "taichi/backends/vulkan/vulkan_api.h"
 
-#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #ifdef ANDROID
 #include <android/native_window_jni.h>

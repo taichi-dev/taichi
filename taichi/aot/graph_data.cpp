@@ -26,10 +26,7 @@ void CompiledGraph::run(
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
         TI_ERROR_IF(ival.tag != aot::ArgKind::kNdarray,
                     "Required a ndarray for argument {}", symbolic_arg.name);
-        auto ndarray_elem_shape = std::vector<int>(
-            arr->shape.end() - symbolic_arg.element_shape.size(),
-            arr->shape.end());
-        TI_ERROR_IF(ndarray_elem_shape != symbolic_arg.element_shape,
+        TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
         set_runtime_ctx_ndarray(&ctx, i, arr);

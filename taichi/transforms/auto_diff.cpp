@@ -33,7 +33,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
     for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      if (node->has_grad()) {
+      if (node->has_adjoint()) {
         qualified_atomics_ = false;
         break;
       }
@@ -488,10 +488,9 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   }
 };
 
-// Generate the adjoint version of an independent block
-
-class MakeAdjoint : public IRVisitor {
- private:
+// Base class for both reverse (make adjoint) and forward (make dual) mode
+class ADTransform : public IRVisitor {
+ protected:
   Stmt *constant(float32 x) {
     return insert<ConstStmt>(TypedConstant(x));
   }
@@ -556,6 +555,107 @@ class MakeAdjoint : public IRVisitor {
   }
 
  public:
+  virtual Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) = 0;
+
+  template <typename T, typename... Args>
+  Stmt *insert(Args &&...args) {
+    return insert_grad_stmt(Stmt::make<T>(args...));
+  }
+
+  void visit(AllocaStmt *alloca) override {
+    // do nothing.
+  }
+
+  void visit(AdStackAllocaStmt *alloca) override {
+    // do nothing.
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    // do nothing.
+  }
+
+  void visit(LoopIndexStmt *stmt) override {
+    // do nothing.
+  }
+
+  void visit(PrintStmt *print_stmt) override {
+    // do nothing
+  }
+
+  void visit(ConstStmt *const_stmt) override {
+    // do nothing
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void visit(WhileStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    // do nothing
+  }
+
+  Stmt *load(Stmt *alloc) {
+    TI_ASSERT(alloc != nullptr);
+    if (alloc->is<AllocaStmt>()) {
+      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+    } else {
+      // non alloca
+      return alloc;
+    }
+  }
+
+  bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
+    for (auto block = stmt->parent; block; block = block->parent_block()) {
+      for (auto s : block->stop_gradients) {
+        if (s == snode) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void visit(ElementShuffleStmt *stmt) override {
+    TI_NOT_IMPLEMENTED
+  }
+
+  void visit(AssertStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(RangeAssumptionStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(BitExtractStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(IntegerOffsetStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(RandStmt *stmt) override {
+    TI_ERROR("RandStmt not supported in AutoDiff for now.");
+  }
+};
+
+// Generate the adjoint version of an independent block
+class MakeAdjoint : public ADTransform {
+ public:
+  using ADTransform::visit;
   Block *current_block;
   Block *alloca_block;
   // Backup the forward pass (the forward pass might be modified during the
@@ -593,15 +693,10 @@ class MakeAdjoint : public IRVisitor {
     }
   }
 
-  Stmt *insert_back(std::unique_ptr<Stmt> &&stmt) {
+  Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
     auto ptr = stmt.get();
     current_block->insert(std::move(stmt), -1);
     return ptr;
-  }
-
-  template <typename T, typename... Args>
-  Stmt *insert(Args &&...args) {
-    return insert_back(Stmt::make<T>(args...));
   }
 
   // Accumulate [value] to the adjoint of [primal]
@@ -673,22 +768,6 @@ class MakeAdjoint : public IRVisitor {
       }
     }
     return adjoint_stmt[stmt];
-  }
-
-  void visit(AllocaStmt *alloca) override {
-    // do nothing.
-  }
-
-  void visit(AdStackAllocaStmt *alloca) override {
-    // do nothing.
-  }
-
-  void visit(ArgLoadStmt *stmt) override {
-    // do nothing.
-  }
-
-  void visit(LoopIndexStmt *stmt) override {
-    // do nothing.
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -827,34 +906,14 @@ class MakeAdjoint : public IRVisitor {
       }
       current_block = old_current_block;
     }
-    insert_back(std::move(new_if));
-  }
-
-  void visit(PrintStmt *print_stmt) override {
-    // do nothing
-  }
-
-  void visit(ConstStmt *const_stmt) override {
-    // do nothing
-  }
-
-  void visit(WhileControlStmt *stmt) override {
-    TI_NOT_IMPLEMENTED
-  }
-
-  void visit(ContinueStmt *stmt) override {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void visit(WhileStmt *stmt) override {
-    TI_NOT_IMPLEMENTED
+    insert_grad_stmt(std::move(new_if));
   }
 
   void visit(RangeForStmt *for_stmt) override {
     auto new_for = for_stmt->clone();
     auto new_for_ptr = new_for->as<RangeForStmt>();
     new_for_ptr->reversed = !new_for_ptr->reversed;
-    insert_back(std::move(new_for));
+    insert_grad_stmt(std::move(new_for));
     const int len = new_for_ptr->body->size();
 
     for (int i = 0; i < len; i++) {
@@ -887,10 +946,6 @@ class MakeAdjoint : public IRVisitor {
   void visit(StructForStmt *for_stmt) override {
     alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
-  }
-
-  void visit(GlobalPtrStmt *stmt) override {
-    // do nothing
   }
 
   // Equivalent to AdStackLoadTopStmt when no stack is needed
@@ -927,33 +982,12 @@ class MakeAdjoint : public IRVisitor {
     insert<AdStackPopStmt>(stmt->stack);
   }
 
-  Stmt *load(Stmt *alloc) {
-    TI_ASSERT(alloc != nullptr);
-    if (alloc->is<AllocaStmt>()) {
-      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
-    } else {
-      // non alloca
-      return alloc;
-    }
-  }
-
-  bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
-    for (auto block = stmt->parent; block; block = block->parent_block()) {
-      for (auto s : block->stop_gradients) {
-        if (s == snode) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_grad()) {
+    if (!snodes[0]->has_adjoint()) {
       // No adjoint SNode. Do nothing
       return;
     }
@@ -961,8 +995,8 @@ class MakeAdjoint : public IRVisitor {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_grad() != nullptr);
-    snodes[0] = snodes[0]->get_grad();
+    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
@@ -972,12 +1006,12 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_grad()) {
+    if (!snodes[0]->has_adjoint()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_grad() != nullptr);
-    snodes[0] = snodes[0]->get_grad();
+    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     auto load = insert<GlobalLoadStmt>(adjoint_ptr);
     accumulate(stmt->val, load);
@@ -989,9 +1023,9 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (snodes[0]->has_grad()) {
-      TI_ASSERT(snodes[0]->get_grad() != nullptr);
-      snodes[0] = snodes[0]->get_grad();
+    if (snodes[0]->has_adjoint()) {
+      TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
+      snodes[0] = snodes[0]->get_adjoint();
       auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     } else {
@@ -999,33 +1033,161 @@ class MakeAdjoint : public IRVisitor {
     }
     stmt->parent->erase(stmt);
   }
+};
 
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_NOT_IMPLEMENTED
+// Forward mode autodiff
+class MakeDual : public ADTransform {
+ public:
+  using ADTransform::visit;
+  Stmt *current_stmt;
+  Block *current_block;
+  // Block *alloca_block;
+  std::map<Stmt *, Stmt *> dual_stmt;
+
+  MakeDual(Block *block) {
+    current_stmt = nullptr;
+    // alloca_block = block;
+    current_block = block;
   }
 
-  void visit(AssertStmt *stmt) override {
-    // do nothing
+  static void run(Block *block) {
+    auto p = MakeDual(block);
+    block->accept(&p);
   }
 
-  void visit(RangeAssumptionStmt *stmt) override {
-    // do nothing
+  Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
+    auto ptr = stmt.get();
+    current_stmt = current_stmt->insert_after_me(std::move(stmt));
+    return ptr;
   }
 
-  void visit(LinearizeStmt *stmt) override {
-    // do nothing
+  void visit(Block *block) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : block->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
+    }
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    // do nothing
+  // Accumulate [value] to the dual of [primal]
+  void accumulate(Stmt *primal, Stmt *value) {
+    auto alloca_ = dual(primal);
+    if (!alloca_ || alloca_->is<ConstStmt>())
+      return;  // primal may be int variable
+
+    TI_ASSERT(alloca_->is<AllocaStmt>());
+    auto alloca = alloca_->as<AllocaStmt>();
+    TI_ASSERT(alloca->width() == 1);
+    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+    insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
 
-  void visit(IntegerOffsetStmt *stmt) override {
-    // do nothing
+  Stmt *dual(Stmt *stmt) {
+    if (!needs_grad(stmt->ret_type)) {
+      return constant(0);
+    }
+    if (dual_stmt.find(stmt) == dual_stmt.end()) {
+      // normal SSA cases
+
+      // create the alloca
+      // auto alloca =
+      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      // maybe it's better to use the statement data type than the default type
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      dual_stmt[stmt] = alloca.get();
+
+      // TODO: check whether this is correct when in for-loop
+      // check whether each stmt has a parent...
+      current_stmt->parent->insert(std::move(alloca), 0);
+    }
+    return dual_stmt[stmt];
   }
 
-  void visit(RandStmt *stmt) override {
-    TI_ERROR("RandStmt not supported in AutoDiff for now.");
+  void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::neg) {
+      accumulate(stmt, negate(dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::abs) {
+      accumulate(stmt, sgn(dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::sin) {
+      accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::cos) {
+      accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
+      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+        accumulate(stmt, dual(stmt->operand));
+      }
+    } else {
+      TI_P(unary_op_type_name(stmt->op_type));
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(BinaryOpStmt *bin) override {
+    if (bin->op_type == BinaryOpType::add) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, dual(bin->rhs));
+    } else if (bin->op_type == BinaryOpType::sub) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, negate(dual(bin->rhs)));
+    } else if (bin->op_type == BinaryOpType::mul) {
+      // d (x * y) = y * dx + x * dy
+      accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
+      accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    } else {
+      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    // issue global store to dual
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (!snodes[0]->has_dual()) {
+      // No dual SNode. Do nothing
+      return;
+    }
+    if (gradients_stopped(stmt, snodes[0])) {
+      // gradients stopped, do nothing.
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_dual()) {
+      // no gradient (likely integer types)
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_dual()) {
+      // no gradient (likely integer types)
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 };
 
@@ -1125,29 +1287,39 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
+void auto_diff(IRNode *root,
+               const CompileConfig &config,
+               AutodiffMode autodiff_mode,
+               bool use_stack) {
   TI_AUTO_PROF;
-  if (use_stack) {
-    auto IB = IdentifyIndependentBlocks::run(root);
-    ReverseOuterLoops::run(root, IB);
+  if (autodiff_mode == AutodiffMode::kReverse) {
+    if (use_stack) {
+      auto IB = IdentifyIndependentBlocks::run(root);
+      ReverseOuterLoops::run(root, IB);
 
-    for (auto ib : IB) {
-      PromoteSSA2LocalVar::run(ib);
-      ReplaceLocalVarWithStacks replace(config.ad_stack_size);
-      ib->accept(&replace);
+      for (auto ib : IB) {
+        PromoteSSA2LocalVar::run(ib);
+        ReplaceLocalVarWithStacks replace(config.ad_stack_size);
+        ib->accept(&replace);
+        type_check(root, config);
+        MakeAdjoint::run(ib);
+        type_check(root, config);
+        BackupSSA::run(ib);
+        irpass::analysis::verify(root);
+      }
+    } else {
+      auto IB = IdentifyIndependentBlocks::run(root);
+      ReverseOuterLoops::run(root, IB);
       type_check(root, config);
-      MakeAdjoint::run(ib);
-      type_check(root, config);
-      BackupSSA::run(ib);
-      irpass::analysis::verify(root);
+      for (auto ib : IB) {
+        MakeAdjoint::run(ib);
+      }
     }
-  } else {
-    auto IB = IdentifyIndependentBlocks::run(root);
-    ReverseOuterLoops::run(root, IB);
-    type_check(root, config);
-    for (auto ib : IB) {
-      MakeAdjoint::run(ib);
-    }
+  } else if (autodiff_mode == AutodiffMode::kForward) {
+    // Forward mode autodiff
+    Block *block = root->as<Block>();
+    PromoteSSA2LocalVar::run(block);
+    MakeDual::run(block);
   }
   type_check(root, config);
   irpass::analysis::verify(root);

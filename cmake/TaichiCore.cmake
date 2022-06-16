@@ -90,6 +90,7 @@ endif()
 
 
 
+# TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
         "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "tests/cpp/task/*.cpp")
@@ -103,7 +104,6 @@ file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
 
@@ -195,7 +195,6 @@ endif()
 
 if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
 
 
@@ -230,6 +229,18 @@ if (TAICHI_EMBIND_SOURCE)
   list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_EMBIND_SOURCE})
 endif()
 
+
+# TODO(#4832), Remove vulkan runtime files from TAICHI_CORE_SOURCE
+# Remove this after all sources are splitted into targets.
+file(GLOB TAICHI_VULKAN_TEMP_SOURCE
+  "taichi/backends/vulkan/*.h"
+  "taichi/backends/vulkan/*.cpp"
+  "taichi/runtime/program_impls/vulkan/*.h"
+  "taichi/runtime/program_impls/vulkan/*.cpp"
+)
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VULKAN_TEMP_SOURCE})
+
+
 # TODO(#2196): Rename these CMAKE variables:
 # CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME
 # CORE_WITH_PYBIND_LIBRARY_NAME --> TAICHI_CORE_LIB_NAME
@@ -252,12 +263,14 @@ if (APPLE)
 endif()
 
 # TODO: replace these includes per target basis
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(external/include)
-include_directories(external/spdlog/include)
-include_directories(external/glad/include)
-include_directories(external/SPIRV-Tools/include)
-include_directories(external/PicoSHA2)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/spdlog/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
+
+
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
 endif()
@@ -294,7 +307,8 @@ if(TI_WITH_LLVM)
         message(FATAL_ERROR "LLVM version < 10 is not supported")
     endif()
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-    include_directories(${LLVM_INCLUDE_DIRS})
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${LLVM_INCLUDE_DIRS})
+
     message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
     message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
     add_definitions(${LLVM_DEFINITIONS})
@@ -339,8 +353,8 @@ if (TI_WITH_CUDA_TOOLKIT)
         message(STATUS "TI_WITH_CUDA_TOOLKIT = ON")
         message(STATUS "CUDA_TOOLKIT_ROOT_DIR=$ENV{CUDA_TOOLKIT_ROOT_DIR}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
-        include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
-        link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
+        target_include_directories(${CORE_LIBRARY_NAME} PRIVATE $ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
+        target_link_directories(${CORE_LIBRARY_NAME} PRIVATE $ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
         #libraries for cuda kernel profiler CuptiToolkit
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cupti nvperf_host)
     endif()
@@ -372,24 +386,15 @@ add_subdirectory(external/SPIRV-Tools)
 # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
 
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
+
+add_subdirectory(taichi/runtime/gfx)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+
+
+# Vulkan Device API
 if (TI_WITH_VULKAN)
-    include_directories(SYSTEM external/Vulkan-Headers/include)
-
-    include_directories(SYSTEM external/volk)
-
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
-
-    # By specifying SYSTEM, we suppressed the warnings from third-party headers.
-    target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
-
-    if (LINUX)
-        # shaderc requires pthread
-        set(THREADS_PREFER_PTHREAD_FLAG ON)
-        find_package(Threads REQUIRED)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE Threads::Threads)
-    endif()
-
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
@@ -398,9 +403,14 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
+    add_subdirectory(taichi/backends/vulkan)
 
-    add_subdirectory(taichi/runtime/vulkan)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_runtime)
+    # TODO: this dependency is here because program.cpp includes vulkan_program.h
+    # Should be removed
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
+
+    add_subdirectory(taichi/runtime/program_impls)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
 endif ()
 
 
@@ -481,6 +491,31 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
 
+    # TODO 4832: move some header dependencis to other targets, e.g., gui
+    target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
+      PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/external/spdlog/include
+        ${PROJECT_SOURCE_DIR}/external/glad/include
+        ${PROJECT_SOURCE_DIR}/external/eigen
+        ${PROJECT_SOURCE_DIR}/external/volk
+        ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
+        ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+        ${PROJECT_SOURCE_DIR}/external/imgui
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends
+      )
+      target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME} SYSTEM
+        PRIVATE
+          ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+        )
+
+    if (NOT ANDROID)
+      target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
+        PRIVATE
+          external/glfw/include
+        )
+    endif ()
+
     # These commands should apply to the DLL that is loaded from python, not the OBJECT library.
     if (MSVC)
         set_property(TARGET ${CORE_WITH_PYBIND_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
@@ -507,18 +542,26 @@ if(TI_EMSCRIPTENED)
 endif()
 
 if(TI_WITH_GGUI)
-    include_directories(SYSTEM PRIVATE external/glm)
+    # PUBLIC as required by python module
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glm)
 
     # Dear ImGui
     add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
     set(IMGUI_DIR external/imgui)
-    include_directories(SYSTEM ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
 if(ANDROID)
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_android.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
+
+target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+
 else()
     include_directories(external/glfw/include)
     add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
+
+    target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+    target_include_directories(imgui PRIVATE external/glfw/include)
+
 endif()
+    target_include_directories(imgui PRIVATE external/Vulkan-Headers/include)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
 
 endif()

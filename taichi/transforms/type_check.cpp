@@ -23,7 +23,7 @@ class TypeCheck : public IRVisitor {
                          Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
-    if (dst_type->is<CustomIntType>() || dst_type->is<CustomFloatType>()) {
+    if (is_quant(dst_type)) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_type = dst_type->get_compute_type();
@@ -123,11 +123,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     auto pointee_type = stmt->src->ret_type.ptr_removed();
-    if (auto bit_struct = pointee_type->cast<BitStructType>()) {
-      stmt->ret_type = bit_struct->get_physical_type();
-    } else {
-      stmt->ret_type = pointee_type->get_compute_type();
-    }
+    stmt->ret_type = pointee_type->get_compute_type();
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -320,15 +316,6 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
-      auto promote_custom_int_type = [&](Stmt *stmt, Stmt *hs) {
-        if (auto cit = hs->ret_type->cast<CustomIntType>()) {
-          return insert_type_cast_before(stmt, hs, cit->get_compute_type());
-        }
-        return hs;
-      };
-      stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
-      stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
-
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {
         // shift_ops does not follow the same type promotion rule as numerical

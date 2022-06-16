@@ -15,7 +15,8 @@ from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
-from taichi.types import annotations, ndarray_type, primitive_types
+from taichi.types import (annotations, ndarray_type, primitive_types,
+                          texture_type)
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -481,6 +482,10 @@ class ASTTransformer(Builder):
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
+                elif isinstance(ctx.func.arguments[i].annotation,
+                                texture_type.TextureType):
+                    ctx.create_variable(arg.arg,
+                                        kernel_arguments.decl_texture_arg())
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
@@ -1108,17 +1113,7 @@ class ASTTransformer(Builder):
                 node.ptr = build_stmt(ctx, node.orelse)
             return node.ptr
 
-        val = impl.expr_init(None)
-
-        impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
-        ctx.ast_builder.begin_frontend_if_true()
-        val._assign(node.body.ptr)
-        ctx.ast_builder.pop_scope()
-        ctx.ast_builder.begin_frontend_if_false()
-        val._assign(node.orelse.ptr)
-        ctx.ast_builder.pop_scope()
-
-        node.ptr = val
+        node.ptr = ti_ops.ifte(node.test.ptr, node.body.ptr, node.orelse.ptr)
         return node.ptr
 
     @staticmethod

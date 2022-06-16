@@ -59,6 +59,7 @@ TLANG_NAMESPACE_END
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
+  using namespace std::placeholders;
 
   py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
                                           PyExc_TypeError);
@@ -87,6 +88,18 @@ void export_lang(py::module &m) {
 #define PER_EXTENSION(x) .value(#x, Extension::x)
 #include "taichi/inc/extensions.inc.h"
 #undef PER_EXTENSION
+      .export_values();
+
+  py::enum_<ExternalArrayLayout>(m, "Layout", py::arithmetic())
+      .value("AOS", ExternalArrayLayout::kAOS)
+      .value("SOA", ExternalArrayLayout::kSOA)
+      .value("NULL", ExternalArrayLayout::kNull)
+      .export_values();
+
+  py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
+      .value("NONE", AutodiffMode::kNone)
+      .value("FORWARD", AutodiffMode::kForward)
+      .value("REVERSE", AutodiffMode::kReverse)
       .export_values();
 
   // TODO(type): This should be removed
@@ -359,9 +372,9 @@ void export_lang(py::module &m) {
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, bool grad) -> Kernel * {
+             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
             py::gil_scoped_release release;
-            return &program->kernel(body, name, grad);
+            return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
@@ -435,10 +448,23 @@ void export_lang(py::module &m) {
       .def(
           "create_ndarray",
           [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape) -> Ndarray * {
-            return program->create_ndarray(dt, shape);
+              const std::vector<int> &shape,
+              const std::vector<int> &element_shape,
+              ExternalArrayLayout layout) -> Ndarray * {
+            return program->create_ndarray(dt, shape, element_shape, layout);
           },
+          py::arg("dt"), py::arg("shape"),
+          py::arg("element_shape") = py::tuple(),
+          py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
+      .def(
+          "create_texture",
+          [&](Program *program, const DataType &dt, int num_channels,
+              const std::vector<int> &shape) -> Texture * {
+            return program->create_texture(dt, num_channels, shape);
+          },
+          py::arg("dt"), py::arg("num_channels"),
+          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -509,7 +535,8 @@ void export_lang(py::module &m) {
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
-      .def("has_grad", &SNode::has_grad)
+      .def("has_adjoint", &SNode::has_adjoint)
+      .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
@@ -545,8 +572,14 @@ void export_lang(py::module &m) {
       .def("read_float", &Ndarray::read_float)
       .def("write_int", &Ndarray::write_int)
       .def("write_float", &Ndarray::write_float)
+      .def("total_shape", &Ndarray::total_shape)
       .def_readonly("dtype", &Ndarray::dtype)
+      .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
+
+  py::class_<Texture>(m, "Texture")
+      .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
+      .def("from_ndarray", &Texture::from_ndarray);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
@@ -554,11 +587,12 @@ void export_lang(py::module &m) {
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
-      .def(py::init<aot::ArgKind, std::string, std::string, std::vector<int>>(),
-           py::arg("tag"), py::arg("name"), py::arg("dtype_name"),
-           py::arg("element_shape"))
+      .def(py::init<aot::ArgKind, std::string, DataType &, std::vector<int>>(),
+           py::arg("tag"), py::arg("name"), py::arg("dtype"),
+           py::arg("element_shape") = py::tuple())
       .def_readonly("name", &aot::Arg::name)
-      .def_readonly("element_shape", &aot::Arg::element_shape);
+      .def_readonly("element_shape", &aot::Arg::element_shape)
+      .def("dtype", &aot::Arg::dtype);
 
   py::class_<Node>(m, "Node");
 
@@ -621,6 +655,7 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -656,7 +691,8 @@ void export_lang(py::module &m) {
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
-      .def("set_grad", &Expr::set_grad)
+      .def("set_adjoint", &Expr::set_adjoint)
+      .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
@@ -770,6 +806,7 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(log)
 
   DEFINE_EXPRESSION_OP(select)
+  DEFINE_EXPRESSION_OP(ifte)
 
   DEFINE_EXPRESSION_OP(cmp_le)
   DEFINE_EXPRESSION_OP(cmp_lt)
@@ -829,6 +866,18 @@ void export_lang(py::module &m) {
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
 
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+
+  auto &&texture =
+      py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+  for (int t = 0; t <= (int)TextureOpType::undefined; t++)
+    texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
+                  TextureOpType(t));
+  texture.export_values();
+  m.def("make_texture_op_expr",
+        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
+                   const ExprGroup &>);
+
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
     bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
@@ -850,7 +899,7 @@ void export_lang(py::module &m) {
 #undef PER_TYPE
 
   m.def("data_type_size", data_type_size);
-  m.def("is_custom_type", is_custom_type);
+  m.def("is_quant", is_quant);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
@@ -870,10 +919,6 @@ void export_lang(py::module &m) {
   m.def("make_tensor_element_expr",
         Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
-
-  m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices);
-  });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
@@ -933,9 +978,13 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
-#if TI_WITH_LLVM
-  m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+  m.def("get_llvm_target_support", [] {
+#if defined(TI_WITH_LLVM)
+    return LLVM_VERSION_STRING;
+#else
+    return "targets unsupported";
 #endif
+  });
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
@@ -995,13 +1044,15 @@ void export_lang(py::module &m) {
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
-      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::return_value_policy::reference)
+      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
@@ -1195,6 +1246,13 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->relations.insert(std::pair(
               type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
+
+  m.def("wait_for_debugger", []() {
+#ifdef WIN32
+    while (!::IsDebuggerPresent())
+      ::Sleep(100);
+#endif
+  });
 }
 
 TI_NAMESPACE_END

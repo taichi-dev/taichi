@@ -18,6 +18,7 @@ namespace taichi {
 namespace lang {
 
 class JITSessionCPU;
+class LlvmProgramImpl;
 
 /**
  * Manages an LLVMContext for Taichi's usage.

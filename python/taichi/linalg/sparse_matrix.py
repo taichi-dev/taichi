@@ -1,3 +1,5 @@
+from functools import reduce
+
 import numpy as np
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
@@ -183,7 +185,9 @@ class SparseMatrix:
             [5, 0, 0, 0, 0]
         """
         if isinstance(ndarray, Ndarray):
-            if ndarray.arr.nelement() % 3 != 0:
+            num_scalars = reduce(lambda x, y: x * y,
+                                 ndarray.shape + ndarray.element_shape)
+            if num_scalars % 3 != 0:
                 raise TaichiRuntimeError(
                     "The number of ndarray elements must have a length that is divisible by 3."
                 )

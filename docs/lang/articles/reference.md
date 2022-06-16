@@ -42,7 +42,7 @@ Android](tutorials/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
 Matrix](advanced/sparse_matrix.md)
 
-The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known at compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values at runtime. 
+The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known during compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values during runtime. 
 
 In addition, Taichi provides an adanced environment for the compile-time evaluation via `ti.static()`, which supports more operations. This is a feature conducive to [meta-programming](advanced/meta.md).
 
@@ -82,10 +82,10 @@ Binary operations between Taichi values of either primitive type or
 compound type are valid, giving rise to the following three scenarios:
 - Both operands are of primitive type: The return value is also of primitive type.
 - One operand is of primitive type and the other of compound type: The primitive-type
-value is braodcast to the shape of the compound-type value. Now the binary operation deals with values of the same type.
-- Both operands are of compound type: For operators other than matrix multiplication,
-both values are required to have the same shape, and the operator is conducted
-element-wise, resulting in a compound-type value with the same shape.
+value is broadcast to the shape of the compound-type value. Now the binary operation deals with values of the same type.
+- Both operands are of compound type: For an operator except for matrix multiplication,
+both values are required to have the same shape, and the same shape applies to the output value because the operator is performed 
+element-wise.
 
 ## Expressions
 
@@ -94,8 +94,8 @@ The section explains the syntax and semantics of expressions in Taichi.
 ### Atoms
 
 Atoms are the most basic elements of expressions. The simplest atoms are
-identifiers or literals. Forms enclosed in parentheses, brackets or braces
-are also categorized syntactically as atoms.
+identifiers or literals. Forms enclosed in parentheses, brackets, or braces
+are also classified syntactically as atoms:
 
 ```
 atom      ::= identifier | literal | enclosure
@@ -104,15 +104,15 @@ enclosure ::= parenth_form | list_display | dict_display
 
 #### Identifiers (Names)
 
-Lexical definition of
+Lexical definitions of
 [identifiers](https://docs.python.org/3/reference/lexical_analysis.html#identifiers)
-(also referred to as names) in Taichi follows Python.
+(also referred to as *names*) in Taichi follow those in Python.
 
-There are three cases during evaluation:
+There are three evaluation scenarios:
 - The name is visible and corresponds to a variable defined in Taichi. Then the
-evaluation result is the value of the variable at runtime.
-- The name is only visible in Python, i.e., the name binding is outside Taichi.
-Then compile-time evaluation is triggered, resulting in the Python value bound
+evaluation result is the value of the variable during runtime.
+- The name is only visible in Python. This means the name binding is outside Taichi.
+Then the compile-time evaluation is triggered, resulting in a Python value bound
 to that name.
 - The name is invisible. Then a `TaichiNameError` is thrown.
 
@@ -135,7 +135,7 @@ parenth_form ::= "(" [expression_list] ")"
 ```
 
 A parenthesized expression list is evaluated to whatever the expression list is
-evaluated to. An empty pair of parentheses is evaluated to an empty tuple at
+evaluated to. An empty pair of parentheses is evaluated to an empty tuple during
 compile time.
 
 #### List and dictionary displays
@@ -143,9 +143,10 @@ compile time.
 Taichi supports
 [displays](https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries)
 for container (list and dictionary only) construction. Like in Python, a
-display is one of:
-- listing the container items explicitly;
-- providing a *comprehension* (a set of looping and filtering instructions) to
+display either:
+- lists the container items explicitly;
+or:
+- provides a *comprehension* (a set of looping and filtering instructions) to
 compute the container items.
 
 ```
@@ -163,12 +164,11 @@ comp_if            ::= "if" or_test [comp_iter]
 ```
 
 The semantics of list and dict displays in Taichi mainly follow Python. Note
-that they are evaluated at compile time, so all expressions in `comp_for`,
-as well as keys in `key_datum`, are required to be evaluated to Python values.
+that they are evaluated during compile time; thus all expressions in `comp_for` and keys in `key_datum` are required to be evaluated to Python values.
 
 For example, in the following code snippet, `a` can be successfully defined
-while `b` cannot because `p` cannot be evaluated to a Python value at compile
-time.
+while `b` cannot because `p` cannot be evaluated to a Python value during compile
+time:
 
 ```python
 @ti.kernel
@@ -179,7 +179,7 @@ def test(p: ti.i32):
 
 ### Primaries
 
-Primaries represent the most tightly bound operations.
+Primaries represent the most tightly bound operations:
 
 ```
 primary ::= atom | attributeref | subscription | slicing | call
@@ -191,7 +191,7 @@ primary ::= atom | attributeref | subscription | slicing | call
 attributeref ::= primary "." identifier
 ```
 
-Attribute references are evaluated at compile time. The `primary` must be
+Attribute references are evaluated during compile time. `primary` must be
 evaluated to a Python value with an attribute named `identifier`. Common use
 cases in Taichi include metadata queries of
 [field](advanced/meta.md#field-metadata) and
@@ -203,19 +203,18 @@ cases in Taichi include metadata queries of
 subscription ::= primary "[" expression_list "]"
 ```
 
-If `primary` is evaluated to a Python value (e.g., a list or a dictionary),
+If `primary` is evaluated to a Python value (such as a list or a dictionary),
 then all expressions in `expression_list` are required to be evaluated to
-Python values, and the subscription is evaluated at compile time following
+Python values, and the subscription is evaluated during compile time the same as in
 [Python](https://docs.python.org/3/reference/expressions.html#subscriptions).
 
-Otherwise, `primary` has a Taichi type. All Taichi types excluding primitive
-types support subscriptions. You can refer to documentation of these types
+Otherwise, `primary` has a Taichi type. All Taichi data types, excluding the primitive
+type, support subscriptions. You can refer to documentation of these types
 for subscription usage.
 
 :::note
 When `primary` has a Taichi matrix type, all expressions in `expression_list`
-are required to be evaluated to Python values. This restriction can be got rid
-of by setting `ti.init(dynamic_index=True)`.
+are required to be evaluated to Python values. You can set `ti.init(dynamic_index=True)`to avoid this restriction.
 :::
 
 #### Slicings
@@ -228,11 +227,11 @@ proper_slice ::= [expression] ":" [expression] [ ":" [expression] ]
 ```
 
 Currently, slicings are only supported when `primary` has a Taichi matrix type,
-and the evaluation happens at compile time.
+and the evaluation happens during compile time.
 When `slice_item` is in the form of:
-- a single `expression`: it is required to be evaluated to a Python value
+- A single `expression`: It is required to be evaluated to a Python value
 unless `ti.init(dynamic_index=True)` is set.
-- `proper_slice`: all expressions (the lower bound, the upper bound, and the
+- `proper_slice`: All expressions (the lower bound, the upper bound, and the
 stride) inside have to be evaluated to Python values.
 
 #### Calls
@@ -243,11 +242,11 @@ positional_arguments ::= positional_item ("," positional_item)*
 positional_item      ::= assignment_expression | "*" expression
 ```
 
-The `primary` must be evaluated to one of:
+`primary` must be evaluated to one of the following:
 - A [Taichi function](basic/syntax.md#taichi-function).
 - A [Taichi builtin function](basic/operator.md#other-arithmetic-functions).
-- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
-- A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
+- A Taichi primitive type, which serves as a type annotation for a literal. In this case, `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value of that annotated type.
+- A Python callable object. If it is not inside a [static expression](#static-expressions), a warning appears.
 
 ### The power operator
 
@@ -263,18 +262,16 @@ The power operator has the same semantics as the builtin `pow()` function.
 u_expr ::= power | "-" power | "+" power | "~" power
 ```
 
-Similar to [rules for binary operations](#common-rules-of-binary-operations),
-if the operand is a Python value, compile-time evaluation is triggered and a
-result Python value is produced. Now the remaining case is that the operand is
-a Taichi value:
-- If the operand is a primitive type value, the return type is also a primitive
+Similar to [binary operations](#common-rules-of-binary-operations), unary operations also depend on the value types of their operands.
+A Python-value operand triggers the complie-time evaluation, producing a
+result Python value. However, when the operand is a Taichi value, there are two scenarios:
+- For a primitive-type operand, the return value is also of primitive
 type.
-- If the operand is a compound type value, the operator is conducted
-element-wise, resulting in a compound type value with same shape.
+- For a compound-type operand, the return value is also of compound type and shares the same shape because the operator is performed element-wise.
 
 See [arithmetic operators](basic/operator.md#arithmetic-operators) and
 [bitwise operators](basic/operator.md#bitwise-operators) for operator details.
-Note that `~` can only be used with integer type values.
+Note that `~` can only apply to values of integer type.
 
 ### Binary arithmetic operations
 
@@ -286,8 +283,9 @@ a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
 and [arithmetic operators](basic/operator.md#arithmetic-operators). Note that
-the `@` operator is for matrix multiplication and only operates on matrix type
-arguments.
+the `@` operator is intended for matrix multiplication and apply to matrix-type
+arguments only.
+
 ### Shifting operations
 
 ```
@@ -296,8 +294,7 @@ shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
-are required to have integer types.
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands of a shifting operation should be integers.
 
 ### Binary bitwise operations
 
@@ -309,8 +306,8 @@ or_expr  ::= xor_expr | or_expr "|" xor_expr
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
-are required to have integer types.
+and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands of a binary bitwise operation
+are required to be integers.
 
 ### Comparisons
 
@@ -319,7 +316,7 @@ comparison    ::= or_expr (comp_operator or_expr)*
 comp_operator ::= "<" | ">" | "==" | ">=" | "<=" | "!=" | ["not"] "in"
 ```
 
-Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x < y) & (y <= z)`.
+Comparisons can be chained arbitrarily. For example, `x < y <= z` is equivalent to `(x < y) & (y <= z)`.
 
 #### Value comparisons
 
@@ -330,8 +327,8 @@ and [comparison operators](basic/operator.md#comparison-operators).
 #### Membership test operations
 
 The semantics of membership test operations follow
-[Python](https://docs.python.org/3/reference/expressions.html#membership-test-operations),
-but they are only supported in [static expressions](#static-expressions).
+[Python](https://docs.python.org/3/reference/expressions.html#membership-test-operations).
+Note that only [static expressions](#static-expressions) support membership tests.
 ### Boolean operations
 
 ```
@@ -340,15 +337,15 @@ and_test ::= not_test | and_test "and" not_test
 not_test ::= comparison | "not" not_test
 ```
 
-When the operator is inside a [static expression](#static-expressions),
-the evaluation rule of the operator follows [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
+An operator inside a [static expression](#static-expressions) follows the same
+the boolean evaluation rules as in [Python](https://docs.python.org/3/reference/expressions.html#boolean-operations).
 Otherwise, the behavior depends on the `short_circuit_operators` option of `ti.init()`:
 - If `short_circuit_operators` is `False` (default), a *logical and* will be
 treated as a *bitwise AND*, and a *logical or* will be treated as a *bitwise
 OR*. See [binary bitwise operations](#binary-bitwise-operations) for details.
 - If `short_circuit_operators` is `True`, the normal short circuiting behavior
-is adopted, and the operands are required to be boolean values. Since Taichi
-does not have boolean type yet, `ti.i32` is served as a temporary alternative.
+is adopted, and the operands are required to be boolean values. In Taichi, which
+does not have the boolean type yet, `ti.i32` is served as a temporary alternative.
 A `ti.i32` value is considered `False` if and only if the value is evaluated to 0.
 
 ### Assignment expressions
@@ -358,10 +355,9 @@ assignment_expression ::= [identifier ":="] expression
 ```
 
 An assignment expression assigns an expression to an identifier (see
-[assignment statements](#assignment-statements) for more details),
-while also returning the value of the expression.
+[assignment statements](#assignment-statements) for more details) and returns the value of the expression.
 
-Example:
+For example:
 ```python
 @ti.kernel
 def foo() -> ti.i32:
@@ -372,7 +368,7 @@ def foo() -> ti.i32:
 ```
 
 :::note
-This operator is supported since Python 3.8.
+This operator is supported by Python 3.8 and onwards.
 :::
 
 ### Conditional expressions
@@ -383,7 +379,7 @@ expression             ::= conditional_expression
 ```
 
 The expression `x if C else y` first evaluates the condition, `C` rather than `x`.
-If `C` is `True` (the meaning of `True` and `False` has been mentioned at [boolean operations](#boolean-operations)), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
+If `C` is `True` (check [boolean operations](#boolean-operations) for the meaning of `True` and `False`), `x` is evaluated and its value is returned; otherwise,`y` is evaluated and its value is returned.
 
 ### Static expressions
 
@@ -392,13 +388,13 @@ static_expression ::= "ti.static(" positional_arguments ")"
 ```
 
 Static expressions are expressions that are wrapped by a call to `ti.static()`.
-The `positional_arguments` is evaluated at compile time, and the items inside must be evaluated to Python values.
+`positional_arguments` is evaluated during compile time, and the items inside must be evaluated to Python values.
 
-`ti.static()` receives one or more arguments.
+`ti.static()` receives one or more arguments:
 - When a single argument is passed in, it returns the argument.
 - When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
 
-The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
+The static expressions work as a mechanism to trigger many meta-programming functions in Taichi,
 such as [compile-time loop unrolling and compile-time branching](advanced/meta.md#compile-time-evaluations).
 
 The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](advanced/syntax_sugars.md#aliases).
@@ -409,8 +405,8 @@ The static expressions can also be used to [create aliases for Taichi fields and
 expression_list ::= expression ("," expression)* [","]
 ```
 
-Except when part of a list display, an expression list containing at least one
-comma is evaluated to a tuple at compile time. The component expressions are
+Except when part of a list displays, an expression list containing at least one
+comma is evaluated to a tuple during compile time. The component expressions are
 evaluated from left to right.
 
 The trailing comma is required only to create a tuple with length 1; it is

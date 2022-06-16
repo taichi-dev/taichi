@@ -3,12 +3,13 @@ import inspect
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops
+from taichi.lang._texture import TextureSampler
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype
-from taichi.types.primitive_types import RefType, u64
+from taichi.types.primitive_types import RefType, f32, u64
 
 
 class KernelArgument:
@@ -81,6 +82,11 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
         _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim,
                                            element_shape), element_shape,
         layout)
+
+
+def decl_texture_arg():
+    arg_id = impl.get_runtime().prog.decl_arg(f32, True)
+    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id))
 
 
 def decl_ret(dtype):

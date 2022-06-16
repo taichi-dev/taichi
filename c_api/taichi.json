@@ -99,15 +99,15 @@
                         },
                         {
                             "name": "host_write",
-                            "type": "bool"
+                            "type": "alias.bool"
                         },
                         {
                             "name": "host_read",
-                            "type": "bool"
+                            "type": "alias.bool"
                         },
                         {
                             "name": "export_sharing",
-                            "type": "bool"
+                            "type": "alias.bool"
                         },
                         {
                             "name": "usage",

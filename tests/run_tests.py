@@ -1,6 +1,7 @@
 import argparse
 import os
 import pdb
+import platform
 import subprocess
 import sys
 import tempfile
@@ -16,15 +17,21 @@ def _run_cpp_test(gtest_option="", extra_env=None):
     print("Running C++ tests...")
     ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
 
-    cpp_test_filename = 'taichi_cpp_tests'
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(curr_dir, '../build')
+    if platform.system() == "Windows":
+        cpp_test_filename = 'taichi_cpp_tests.exe'
+        build_dir = os.path.join(curr_dir, '../bin')
+    else:
+        cpp_test_filename = 'taichi_cpp_tests'
+        build_dir = os.path.join(curr_dir, '../build')
 
-    if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+    fullpath = os.path.join(build_dir, cpp_test_filename)
+
+    if os.path.exists(fullpath):
         env_copy = os.environ.copy()
         env_copy['TI_LIB_DIR'] = ti_lib_dir
 
-        cmd = [f'./{cpp_test_filename}']
+        cmd = [fullpath]
         if gtest_option: cmd.append(gtest_option)
         if extra_env: env_copy.update(extra_env)
 

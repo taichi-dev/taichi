@@ -177,3 +177,9 @@ endif()
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)
 endif()
+
+option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+
+if (TI_WITH_C_API)
+  include(cmake/TaichiCAPI.cmake)
+endif()

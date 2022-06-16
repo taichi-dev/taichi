@@ -22,7 +22,7 @@ from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
-                          template)
+                          template, texture_type)
 
 from taichi import _logging
 
@@ -336,6 +336,8 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
+        if isinstance(anno, texture_type.TextureType):
+            return '#'
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
@@ -405,6 +407,8 @@ class Kernel:
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
+        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.FORWARD,
+                                 AutodiffMode.REVERSE)
         self.autodiff_mode = autodiff_mode
         self.grad = None
         self.arguments = []
@@ -426,14 +430,6 @@ class Kernel:
 
     def reset(self):
         self.runtime = impl.get_runtime()
-        if self.autodiff_mode == AutodiffMode.NONE:
-            self.compiled_functions = self.runtime.compiled_functions
-        elif self.autodiff_mode == AutodiffMode.REVERSE:
-            self.compiled_functions = self.runtime.compiled_grad_functions
-        elif self.autodiff_mode == AutodiffMode.FORWARD:
-            self.compiled_functions = self.runtime.compiled_fwd_mode_grad_functions
-        else:
-            raise NotImplementedError("Unknown autodiff mode.")
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -470,8 +466,8 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation,
-                              (template, ndarray_type.NdarrayType)):
+                if isinstance(annotation, (template, ndarray_type.NdarrayType,
+                                           texture_type.TextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -488,17 +484,10 @@ class Kernel:
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
-            key = (self.func, 0)
+            key = (self.func, 0, self.autodiff_mode)
         self.runtime.materialize()
 
-        # Transform the primal kernel to forward mode grad kernel
-        # then recover to primal when exiting the forward mode manager
-        if self.runtime.fwd_mode_manager:
-            self.autodiff_mode = AutodiffMode.FORWARD
-            self.runtime.fwd_mode_manager.insert(self)
-            self.compiled_functions = self.runtime.compiled_fwd_mode_grad_functions
-
-        if key in self.compiled_functions:
+        if key in self.runtime.compiled_functions:
             return
 
         grad_suffix = ""
@@ -549,8 +538,9 @@ class Kernel:
 
         self.kernel_cpp = taichi_kernel
 
-        assert key not in self.compiled_functions
-        self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+        assert key not in self.runtime.compiled_functions
+        self.runtime.compiled_functions[key] = self.get_function_body(
+            taichi_kernel)
         self.compiled_kernels[key] = taichi_kernel
 
     def get_torch_callbacks(self, v, has_torch, is_ndarray=True):
@@ -669,6 +659,12 @@ class Kernel:
                     has_external_arrays = True
                     v = v.arr
                     launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                elif isinstance(needed,
+                                texture_type.TextureType) and isinstance(
+                                    v, taichi.lang._texture.Texture):
+                    has_external_arrays = True
+                    v = v.tex
+                    launch_ctx.set_arg_texture(actual_argument_slot, v)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
@@ -808,7 +804,7 @@ class Kernel:
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
+        key = (self.func, instance_id, self.autodiff_mode)
         self.materialize(key=key, args=args, arg_features=arg_features)
         return key
 
@@ -817,6 +813,17 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         args = _process_args(self, args, kwargs)
+
+        # Transform the primal kernel to forward mode grad kernel
+        # then recover to primal when exiting the forward mode manager
+        if self.runtime.fwd_mode_manager:
+            # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
+            # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
+            # to avoid duplicate computation for 1st-order derivatives
+            mode_original = self.autodiff_mode
+            self.autodiff_mode = AutodiffMode.FORWARD
+            self.runtime.fwd_mode_manager.insert(self, mode_original)
+
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:
             _logging.warn(
@@ -824,7 +831,7 @@ class Kernel:
             )
             impl.current_cfg().opt_level = 1
         key = self.ensure_compiled(*args)
-        return self.compiled_functions[key](*args)
+        return self.runtime.compiled_functions[key](*args)
 
 
 # For a Taichi class definition like below:

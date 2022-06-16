@@ -7,7 +7,6 @@ from functools import reduce
 
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
-from taichi.lang.enums import AutodiffMode
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
 
@@ -299,14 +298,13 @@ class FwdMode:
         self.runtime.fwd_mode_manager = None
         self.recover_kernels()
 
-    def insert(self, func):
-        self.calls.append(func)
+    def insert(self, func, mode_original):
+        self.calls.append((func, mode_original))
 
     def recover_kernels(self):
         assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
-        for f in self.calls:
-            f.autodiff_mode = AutodiffMode.NONE
-            f.compiled_functions = f.runtime.compiled_functions
+        for f, mode_original in self.calls:
+            f.autodiff_mode = mode_original
         self.kernels_recovered = True
 
 

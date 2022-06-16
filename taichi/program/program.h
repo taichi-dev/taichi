@@ -77,7 +77,6 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
-class LlvmProgramImpl;
 class AsyncEngine;
 
 /**
@@ -301,7 +300,9 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
-  LlvmProgramImpl *get_llvm_program_impl();
+  ProgramImpl *get_program_impl() {
+    return program_impl_.get();
+  }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
@@ -342,6 +343,8 @@ class TI_DLL_EXPORT Program {
   Identifier get_next_global_id(const std::string &name = "") {
     return Identifier(global_id_counter_++, name);
   }
+
+  void prepare_runtime_context(RuntimeContext *ctx);
 
  private:
   uint64 ndarray_writer_counter_{0};

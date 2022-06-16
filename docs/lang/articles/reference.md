@@ -43,7 +43,7 @@ Android](tutorials/ndarray_android.md)
 Matrix](advanced/sparse_matrix.md)
 
 <<<<<<< HEAD
-The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known during compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values during runtime. 
+The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known during compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values during runtime.
 =======
 The evaluation process varies accordingly. The *compile-time evaluation* occurs when all the operands of an operation are Python values, which are known at compile time; and the evaluation result is a Python value as well. The compile-time evaluation is followed by the *runtime evaluation*, where all the remaining expressions are evaluated to Taichi values at runtime.
 >>>>>>> 62098320dbc62cdaa919c83d79433d56e2b2666d
@@ -78,7 +78,7 @@ invisible outside that block.
 
 ### Common rules of binary operations
 
-As discussed in [Values and types](#values-and-types), a binary operation with two Python-value operands triggers the compile-time evaluation, which produces a result Python value; when a binary operation combines one Python value and one Taichi value, the Python value is transformed into a Taichi value of the 
+As discussed in [Values and types](#values-and-types), a binary operation with two Python-value operands triggers the compile-time evaluation, which produces a result Python value; when a binary operation combines one Python value and one Taichi value, the Python value is transformed into a Taichi value of the
 [default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers) before the evaluation proceeds.
 Then, what if both operands are Taichi values?
 
@@ -88,7 +88,7 @@ compound type are valid, giving rise to the following three scenarios:
 - One operand is of primitive type and the other of compound type: The primitive-type
 value is broadcast to the shape of the compound-type value. Now the binary operation deals with values of the same type.
 - Both operands are of compound type: For an operator except for matrix multiplication,
-both values are required to have the same shape, and the same shape applies to the output value because the operator is performed 
+both values are required to have the same shape, and the same shape applies to the output value because the operator is performed
 element-wise.
 
 ## Expressions

@@ -30,15 +30,16 @@ class GraphBuilder:
         self._graph_builder = _ti_core.GraphBuilder()
 
     def dispatch(self, kernel_fn, *args):
+        kernel_cpp = gen_cpp_kernel(kernel_fn, args)
         unzipped_args = []
         # Tuple for matrix args
         # FIXME remove this when native Matrix type is ready
-        for arg_tuple in args:
-            if isinstance(arg_tuple, list):
-                unzipped_args.extend(arg_tuple)
+        for arg in args:
+            if isinstance(arg, list):
+                for sublist in arg:
+                    unzipped_args.extend(sublist)
             else:
-                unzipped_args.append(arg_tuple)
-        kernel_cpp = gen_cpp_kernel(kernel_fn, unzipped_args)
+                unzipped_args.append(arg)
         self._graph_builder.dispatch(kernel_cpp, unzipped_args)
 
     def create_sequential(self):
@@ -100,11 +101,19 @@ def Arg(tag, name, dtype, element_shape=()):
             raise TaichiRuntimeError(
                 f'Element shape for MatrixType argument "{name}" is not supported.'
             )
-        total_size = dtype.m * dtype.n
-        return [
-            _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
-                         element_shape) for i in range(total_size)
-        ]
+        mat_type = dtype
+        arg_list = []
+        i = 0
+        for a in range(mat_type.m):
+            arg_sublist = []
+            for b in range(mat_type.n):
+                arg_sublist.append(
+                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
+                                 element_shape))
+                i += 1
+            arg_list.append(arg_sublist)
+        return arg_list
+
     return _ti_core.Arg(tag, name, dtype, element_shape)
 
 

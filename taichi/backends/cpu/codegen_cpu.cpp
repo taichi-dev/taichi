@@ -60,12 +60,12 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     // adaptive block_dim
     if (prog->config.cpu_block_dim_adaptive) {
-      int num_items = (end - begin) / std::abs(step);
-      // ensure each thread has at least ~32 tasks for load balancing
-      // and each task has at least 512 items to amortize scheduler overhead
+      int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
       int num_threads = stmt->num_cpu_threads;
-      stmt->block_dim =
-          std::min(512, std::max(1, num_items / (num_threads * 32)));
+      int items_per_thread = std::max(1, num_items / (num_threads * 32));
+      // keep each task has at least 512 items to amortize scheduler overhead
+      // also saturate the value to 1024 for better load balancing
+      stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
     }
 
     create_call(

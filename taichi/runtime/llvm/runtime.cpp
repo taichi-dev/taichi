@@ -1467,13 +1467,6 @@ void cpu_parallel_range_for(RuntimeContext *context,
     taichi_printf(context->runtime, "step must not be %d\n", step);
     exit(-1);
   }
-  if (block_dim == 0) {
-    // adaptive block dim
-    auto num_items = (ctx.end - ctx.begin) / std::abs(step);
-    // ensure each thread has at least ~32 tasks for load balancing
-    // and each task has at least 512 items to amortize scheduler overhead
-    block_dim = std::min(512, std::max(1, num_items / (num_threads * 32)));
-  }
   ctx.block_size = block_dim;
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool,

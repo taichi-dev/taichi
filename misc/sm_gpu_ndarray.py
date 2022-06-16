@@ -27,7 +27,9 @@ Y.fill(0.0)
 
 A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
 
-A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr, X, Y)
+A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
+
+A.spmv(X, Y)
 
 for i in range(4):
     print(f"{Y[i]} == {h_Y_result[i]} :  {Y[i] == h_Y_result[i]}")

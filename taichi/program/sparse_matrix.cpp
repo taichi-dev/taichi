@@ -163,6 +163,10 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
              storage_format);
 }
 
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,int cols,DataType dt){
+  return  std::unique_ptr<SparseMatrix>(std::make_unique<CuSparseMatrix>(rows, cols, dt));
+}
+
 template <typename T>
 void build_ndarray_template(SparseMatrix &sm,
                             intptr_t data_ptr,
@@ -192,9 +196,19 @@ void make_sparse_matrix_from_ndarray(Program *prog,
   }
 }
 
+
+void CuSparseMatrix::build_csr(void *csr_ptr, void* csr_indices_ptr, void* csr_values_ptr, int nnz){
+  CUSPARSEDriver::get_instance().cpCreateCsr(&matrix_,     rows_,     cols_, nnz,
+                                      csr_ptr, csr_indices_ptr, csr_values_ptr,
+                                      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+}
+CuSparseMatrix::~CuSparseMatrix(){
+  CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
+}
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                      SparseMatrix &sm,
-                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values, const Ndarray &x, Ndarray &y) {
+                                     const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values) {
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
     if (!load_success) {
@@ -205,36 +219,62 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
   size_t col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
   size_t values_csr = prog->get_ndarray_data_ptr_as_int(&values);
   int nnz = values.get_nelement();
-  int A_num_rows = sm.num_rows();
-  int A_num_cols = sm.num_cols();
-  cusparseSpMatDescr_t matA;
-  CUSPARSEDriver::get_instance().cpCreateCsr(&matA,     A_num_rows,     A_num_cols, nnz,
-                                      (void*)row_csr, (void*)col_csr, (void*)values_csr,
-                                      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
-                                      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  sm.build_csr((void*)row_csr, (void*)col_csr, (void*)values_csr, nnz);
+
+  // int A_num_rows = sm.num_rows();
+  // int A_num_cols = sm.num_cols();
+  // cusparseSpMatDescr_t matA;
+  // CUSPARSEDriver::get_instance().cpCreateCsr(&matA,     A_num_rows,     A_num_cols, nnz,
+  //                                     (void*)row_csr, (void*)col_csr, (void*)values_csr,
+  //                                     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+  //                                     CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  // size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  // size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  // cusparseDnVecDescr_t vecX, vecY;
+  // CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, A_num_cols,(void*) dX, CUDA_R_32F);
+  // CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, A_num_cols,(void*) dY, CUDA_R_32F);
+  // cusparseHandle_t cusparse_handle;
+  // CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
+  // float alpha = 1.0f, beta = 0.0f;
+  // size_t bufferSize = 0;
+  // CUSPARSEDriver::get_instance().cpSpMV_bufferSize(cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  //                                &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+  //                                CUSPARSE_SPMV_CSR_ALG1, &bufferSize);
+  // void* dBuffer = NULL;
+  // // CUDADriver::get_instance().stream_synchronize(nullptr);
+  // CUDADriver::get_instance().malloc(&dBuffer, bufferSize);
+  // CUSPARSEDriver::get_instance().cpSpMV( cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  //                                &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+  //                                CUSPARSE_SPMV_CSR_ALG1, dBuffer);
+  // CUSPARSEDriver::get_instance().cpDestroySpMat(matA);
+  // CUSPARSEDriver::get_instance().cpDestroyDnVec(vecX);
+  // CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);      
+  // CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);                      
+  // CUDADriver::get_instance().mem_free(dBuffer);
+}
+
+void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y){
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
  
   cusparseDnVecDescr_t vecX, vecY;
-  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, A_num_cols,(void*) dX, CUDA_R_32F);
-  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, A_num_cols,(void*) dY, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, cols_,(void*) dX, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, rows_,(void*) dY, CUDA_R_32F);
 
   cusparseHandle_t cusparse_handle;
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
   float alpha = 1.0f, beta = 0.0f;
   size_t bufferSize = 0;
   CUSPARSEDriver::get_instance().cpSpMV_bufferSize(cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-                                 &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+                                 &alpha, matrix_, vecX, &beta, vecY, CUDA_R_32F,
                                  CUSPARSE_SPMV_CSR_ALG1, &bufferSize);
 
   void* dBuffer = NULL;
-  // CUDADriver::get_instance().stream_synchronize(nullptr);
   CUDADriver::get_instance().malloc(&dBuffer, bufferSize);
   CUSPARSEDriver::get_instance().cpSpMV( cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-                                 &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
+                                 &alpha, matrix_, vecX, &beta, vecY, CUDA_R_32F,
                                  CUSPARSE_SPMV_CSR_ALG1, dBuffer);
 
-  CUSPARSEDriver::get_instance().cpDestroySpMat(matA);
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecX);
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);      
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);                      

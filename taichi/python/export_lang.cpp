@@ -379,17 +379,20 @@ void export_lang(py::module &m) {
               std::string storage_format) {
             //  TI_ERROR_IF(!arch_is_cpu(program->config.arch),
             //              "SparseMatrix only supports CPU for now.");
-             return make_sparse_matrix(n, m, dtype, storage_format);
+            if (arch_is_cpu(program->config.arch))
+              return make_sparse_matrix(n, m, dtype, storage_format);
+            else
+              return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-            //  TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+            //  TI_ERROR_IF(!arch_is_cpu(program->config.arch),m
             //              "SparseMatrix only supports CPU for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
       .def("make_sparse_matrix_from_ndarray_cusparse",
-          [](Program *program, SparseMatrix &sm, const Ndarray &row_csr, const Ndarray &col_csr, const Ndarray &val_csr, const Ndarray &x, Ndarray &y) {
-             return make_sparse_matrix_from_ndarray_cusparse(program, sm, row_csr, col_csr, val_csr, x, y);
+          [](Program *program, CuSparseMatrix &sm, const Ndarray &row_csr, const Ndarray &col_csr, const Ndarray &val_csr) {
+             return make_sparse_matrix_from_ndarray_cusparse(program, sm, row_csr, col_csr, val_csr);
            }
       )
       .def(
@@ -1071,6 +1074,10 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(32, RowMajor, f);
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
+
+  py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
+      .def("spmv",&CuSparseMatrix::spmv);
+
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

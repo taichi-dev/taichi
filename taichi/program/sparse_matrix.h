@@ -59,7 +59,13 @@ class SparseMatrix {
   }
   virtual ~SparseMatrix() = default;
 
-  virtual void build_triplets(void *triplets_adr){};
+  virtual void build_triplets(void *triplets_adr){
+    TI_WARN("SparseMatrix::build_triplets is not implemented!");
+  };
+
+  virtual void build_csr(void *csr_ptr, void* csr_indices_ptr, void* csr_values_ptr, int nnz){
+    TI_WARN("SparseMatrix::build_csr is not implemented yet");
+  };
 
   inline const int num_rows() const {
     return rows_;
@@ -190,11 +196,28 @@ class EigenSparseMatrix : public SparseMatrix {
   EigenMatrix matrix_;
 };
 
+
+class CuSparseMatrix : public SparseMatrix {
+public:
+  explicit CuSparseMatrix(int rows, int cols, DataType dt)
+      : SparseMatrix(rows, cols, dt){
+  }
+
+  virtual ~CuSparseMatrix();
+  void build_csr(void *csr_ptr, void* csr_indices_ptr, void* csr_values_ptr, int nnz) override;
+
+  void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+
+private:
+  cusparseSpMatDescr_t matrix_;
+};
+
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
     int cols,
     DataType dt,
     const std::string &storage_format);
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,int cols,DataType dt);
 
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
@@ -203,8 +226,6 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &row_offsets,
                                      const Ndarray &col_indices,
-                                     const Ndarray &values,
-                                     const Ndarray &x,
-                                     Ndarray &y);                      
+                                     const Ndarray &values);                      
 }  // namespace lang
 }  // namespace taichi

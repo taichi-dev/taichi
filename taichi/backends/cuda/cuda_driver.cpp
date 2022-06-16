@@ -69,7 +69,7 @@ CUDADriverBase::CUDADriverBase() {
   }
 }
 
-void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
+bool CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
 #if defined(TI_PLATFORM_LINUX)
   auto lib_name = lib_linux;
 #elif defined(TI_PLATFORM_WINDOWS)
@@ -81,26 +81,34 @@ void CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
   loader_ = std::make_unique<DynamicLoader>(lib_name);
   if (!loader_->loaded()) {
     TI_WARN("{} lib not found.", lib_name);
-    return;
+    return false;
   } else {
     TI_TRACE("{} loaded!", lib_name);
   }
+  return true;
 }
 
 CUSPARSEDriver::CUSPARSEDriver() {
-  load_lib("libcusparse.so", "cusparse.dll");
+}
 
+CUSPARSEDriver &CUSPARSEDriver::get_instance() {
+  static CUSPARSEDriver *instance = new CUSPARSEDriver();
+  return *instance;
+}
+
+bool CUSPARSEDriver::load_cusparse() {
+  cusparse_loaded_ = load_lib("libcusparse.so", "cusparse.dll");
+
+  if (!cusparse_loaded_) {
+    return false;
+  }
   #define PER_CUSPARSE_FUNCTION(name, symbol_name, ...)  \
           name.set(loader_->load_function(#symbol_name)); \
           name.set_lock(&lock_);                          \
           name.set_names(#name, #symbol_name);
   #include "taichi/backends/cuda/cusparse_functions.inc.h"
   #undef PER_CUSPARSE_FUNCTION
-}
-
-CUSPARSEDriver &CUSPARSEDriver::get_instance() {
-  static CUSPARSEDriver *instance = new CUSPARSEDriver();
-  return *instance;
+  return cusparse_loaded_;
 }
 
 CUSOLVERDriver::CUSOLVERDriver() {

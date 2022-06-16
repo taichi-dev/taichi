@@ -195,6 +195,12 @@ void make_sparse_matrix_from_ndarray(Program *prog,
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &row_offsets,const Ndarray &col_indices,const Ndarray &values, const Ndarray &x, Ndarray &y) {
+  if (!CUSPARSEDriver::get_instance().is_loaded()) {
+    bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
+    if (!load_success) {
+      TI_ERROR("Failed to load cusparse library!");
+    }
+  }
   size_t row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
   size_t col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
   size_t values_csr = prog->get_ndarray_data_ptr_as_int(&values);

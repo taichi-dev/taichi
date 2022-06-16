@@ -103,7 +103,7 @@ class CUDADriverBase {
   std::unique_ptr<DynamicLoader> loader_;
   CUDADriverBase();
 
-  void load_lib(std::string lib_linux, std::string lib_windows);
+  bool load_lib(std::string lib_linux, std::string lib_windows);
 
   bool disabled_by_env_{false};
 };
@@ -145,10 +145,15 @@ class CUSPARSEDriver : protected CUDADriverBase {
   #include "taichi/backends/cuda/cusparse_functions.inc.h"
   #undef PER_CUSPARSE_FUNCTION
 
+  bool load_cusparse();
 
+  bool is_loaded() {
+    return cusparse_loaded_;
+  }
  private:
   CUSPARSEDriver();
   std::mutex lock_;
+  bool cusparse_loaded_{false};
 };
 
 class CUSOLVERDriver : protected CUDADriverBase {

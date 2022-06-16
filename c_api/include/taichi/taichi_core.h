@@ -9,16 +9,16 @@ extern "C" {
 typedef uint32_t TiBool;
 
 // definition.false
-#define FALSE 0
+#define TI_FALSE 0
 
 // definition.true
-#define TRUE 1
+#define TI_TRUE 1
 
 // alias.flags
 typedef uint32_t TiFlags;
 
 // definition.null_handle
-#define NULL_HANDLE 0
+#define TI_NULL_HANDLE 0
 
 // handle.runtime
 typedef struct TiRuntime_t *TiRuntime;
@@ -72,9 +72,9 @@ typedef TiFlags TiMemoryUsageFlags;
 // structure.memory_allocate_info
 typedef struct TiMemoryAllocateInfo {
   uint64_t size;
-  bool host_write;
-  bool host_read;
-  bool export_sharing;
+  TiBool host_write;
+  TiBool host_read;
+  TiBool export_sharing;
   TiMemoryUsageFlagBits usage;
 } TiMemoryAllocateInfo;
 

@@ -125,13 +125,6 @@ Program::Program(Arch desired_arch)
   total_compilation_time_ = 0;
   num_instances_ += 1;
   SNode::counter = 0;
-  if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
 
   result_buffer = nullptr;
   current_callable = nullptr;

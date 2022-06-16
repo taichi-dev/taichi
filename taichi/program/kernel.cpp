@@ -415,11 +415,7 @@ void Kernel::init(Program &program,
   this->autodiff_mode = autodiff_mode;
   this->lowered_ = false;
   this->program = &program;
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-#endif
+
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;

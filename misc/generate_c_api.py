@@ -77,7 +77,7 @@ class Definition:
         self.value = j["value"]
 
     def declr(self):
-        return f"#define {self.name.screaming_snake_case} {self.value}"
+        return f"#define TI_{self.name.screaming_snake_case} {self.value}"
 
 
 class Handle:

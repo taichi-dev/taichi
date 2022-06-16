@@ -1,11 +1,11 @@
 #pragma once
 
+#include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
-#include "taichi/backends/cuda/cuda_context.h"
 
 #include "Eigen/Sparse"
 

@@ -137,7 +137,6 @@ class CUDADriver : protected CUDADriverBase {
 
 class CUSPARSEDriver : protected CUDADriverBase {
  public:
-  // TODO: Add cusparse function APIs
   static CUSPARSEDriver &get_instance();
 
   #define PER_CUSPARSE_FUNCTION(name, symbol_name, ...) \
@@ -147,9 +146,8 @@ class CUSPARSEDriver : protected CUDADriverBase {
 
   bool load_cusparse();
 
-  bool is_loaded() {
-    return cusparse_loaded_;
-  }
+  inline bool is_loaded() { return cusparse_loaded_;}
+
  private:
   CUSPARSEDriver();
   std::mutex lock_;

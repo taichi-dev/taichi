@@ -13,9 +13,7 @@
 TLANG_NAMESPACE_BEGIN
 
 CUDAContext::CUDAContext()
-    : profiler_(nullptr),
-      driver_(CUDADriver::get_instance_without_context())
-    {
+    : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
   dev_count_ = 0;
   driver_.init(0);
@@ -129,7 +127,6 @@ CUDAContext::~CUDAContext() {
       CUDADriver::get_instance().cuModuleUnload(cudaModule);
   CUDADriver::get_instance().cuCtxDestroy(context);
   */
-//  cusparse_driver_.cpDestroy(cusparse_handle_);
 }
 
 CUDAContext &CUDAContext::get_instance() {

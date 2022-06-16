@@ -70,10 +70,6 @@ class CUDAContext {
     return compute_capability_;
   }
 
-  // cusparseHandle_t& get_cusparse_handle(){
-  //     return cusparse_handle_;
-  // }
-
   ~CUDAContext();
 
   class ContextGuard {
@@ -93,8 +89,6 @@ class CUDAContext {
         CUDADriver::get_instance().context_set_current(old_ctx_);
       }
     }
-
-
   };
 
   ContextGuard get_guard() {

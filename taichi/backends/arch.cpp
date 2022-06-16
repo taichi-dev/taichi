@@ -43,6 +43,10 @@ bool arch_is_cpu(Arch arch) {
   }
 }
 
+bool arch_uses_cuda(Arch arch){
+  return arch == Arch::cuda;
+}
+
 bool arch_uses_llvm(Arch arch) {
   return (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::cuda ||
           arch == Arch::wasm);

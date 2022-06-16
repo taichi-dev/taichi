@@ -99,13 +99,13 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer);
+      uint64 *result_buffer) override;
 
   void synchronize() override;
 
-  void check_runtime_error(uint64 *result_buffer);
+  void check_runtime_error(uint64 *result_buffer) override;
 
-  void finalize();
+  void finalize() override;
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
@@ -151,7 +151,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer);
+  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {

@@ -474,6 +474,8 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 }
 
 void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
+  TI_ASSERT(arch_uses_llvm(config->arch));
+
   synchronize();
   auto tlctx = llvm_context_host_.get();
   if (llvm_context_device_) {

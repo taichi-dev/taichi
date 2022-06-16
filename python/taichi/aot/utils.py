@@ -68,8 +68,12 @@ def produce_injected_args(kernel, symbolic_args=None):
             else:
                 raise RuntimeError('')
         elif isinstance(anno, MatrixType):
+            if not isinstance(symbolic_args[i], list):
+                raise RuntimeError('Expected a symbolic arg with Matrix type.')
+
             symbolic_mat_m = len(symbolic_args[i])
             symbolic_mat_n = len(symbolic_args[i][0])
+
             if not symbolic_mat_m == anno.m and symbolic_mat_n == anno.n:
                 raise RuntimeError(
                     f'Matrix dimension mismatch, expected ({anno.m}, {anno.n}) '

@@ -57,6 +57,17 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     llvm::Value *epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
+
+    // adaptive block_dim
+    if (prog->config.cpu_block_dim_adaptive) {
+      int num_items = (end - begin) / std::abs(step);
+      // ensure each thread has at least ~32 tasks for load balancing
+      // and each task has at least 512 items to amortize scheduler overhead
+      int num_threads = stmt->num_cpu_threads;
+      stmt->block_dim =
+          std::min(512, std::max(1, num_items / (num_threads * 32)));
+    }
+
     create_call(
         "cpu_parallel_range_for",
         {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,

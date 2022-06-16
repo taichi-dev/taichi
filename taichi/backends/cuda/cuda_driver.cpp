@@ -20,7 +20,7 @@ bool CUDADriver::detected() {
 }
 
 CUDADriver::CUDADriver() {
-  load_lib("libcuda.so", "nvcuda.dll");
+  if (!load_lib("libcuda.so", "nvcuda.dll")) return;
 
   loader_->load_function("cuGetErrorName", get_error_name);
   loader_->load_function("cuGetErrorString", get_error_string);

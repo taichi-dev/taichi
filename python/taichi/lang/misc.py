@@ -589,7 +589,10 @@ def _block_dim(dim):
 def _block_dim_adaptive(block_dim_adaptive):
     """Enable/Disable backends set block_dim adaptively.
     """
-    get_runtime().prog.config.cpu_block_dim_adaptive = block_dim_adaptive
+    if get_runtime().prog.config.arch != cpu:
+        _logging.warn('Adaptive block_dim is supported on CPU backend only')
+    else:
+        get_runtime().prog.config.cpu_block_dim_adaptive = block_dim_adaptive
 
 
 def loop_config(*,

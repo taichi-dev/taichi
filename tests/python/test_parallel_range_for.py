@@ -71,7 +71,7 @@ def test_loop_config_serial_for():
     assert foo() == 50
 
 
-@test_utils.test()
+@test_utils.test(arch=[ti.cpu])
 def test_loop_config_block_dim_adaptive():
     n = 4096
     val = ti.field(ti.i32, shape=(n))

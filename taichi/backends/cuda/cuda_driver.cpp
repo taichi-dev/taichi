@@ -84,8 +84,8 @@ bool CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
     return false;
   } else {
     TI_TRACE("{} loaded!", lib_name);
+    return true;
   }
-  return true;
 }
 
 CUSPARSEDriver::CUSPARSEDriver() {

@@ -150,6 +150,7 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -170,6 +171,13 @@ jobs:
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: shared/dist/*
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -223,6 +231,7 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
+
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -230,6 +239,7 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -238,6 +248,13 @@ jobs:
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
           TI_CI: 1
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
 
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
@@ -270,6 +287,7 @@ jobs:
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
+      # TODO: split build and test
       - name: Build and Test
         shell: bash
         run: |
@@ -289,6 +307,14 @@ jobs:
         if: always()
         run: |
           docker rm taichi_build_test -f
+
+      # - name: Save wheel if test failed
+      #   if: failure() && steps.build_and_test.conclusion == 'failure'
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: broken-wheel
+      #     path: dist/*
+
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -341,6 +367,7 @@ jobs:
           DISPLAY: :1
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -363,10 +390,18 @@ jobs:
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
 
+
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: shared/dist/*
 
   build_and_test_windows:
     name: Build and Test Windows
@@ -410,6 +445,7 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
+        id: test
         shell: powershell
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
@@ -420,6 +456,13 @@ jobs:
           TI_CI: 1
           PYTHON: '3.7'
           TI_DEVICE_MEMORY_GB: '0.7'
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -462,6 +505,7 @@ jobs:
           CXX: clang++
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -473,6 +517,13 @@ jobs:
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
           TI_CI: 1
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
 
   build_libtaichi_export:
     name: Build libtaichi_export.so(GPU)

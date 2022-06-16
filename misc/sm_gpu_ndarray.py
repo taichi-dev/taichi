@@ -31,7 +31,7 @@ Y.fill(0.0)
 A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
 
 # Build the CSR matrix A with Taichi ndarray
-A.build_csr_cusparse(row_csr, col_csr, value_csr)
+A.build_csr_cusparse(value_csr,col_csr, row_csr)
 
 # Compute Y = A @ X
 A.spmv(X, Y)

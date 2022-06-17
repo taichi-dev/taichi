@@ -1,4 +1,4 @@
-# ./taichi/backends/vulkan/CMakeLists.txt
+# ./taichi/backends/opengl/CMakeLists.txt
 
 set(OPENGL_RHI opengl_rhi)
 add_library(${OPENGL_RHI})
@@ -9,7 +9,6 @@ target_sources(${OPENGL_RHI}
 
 #TODO 4832, some dependencies here should not be required as they
 # are build requirements of other targets.
-# public dirs here are required by backends/device.cpp
 target_include_directories(${OPENGL_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}

@@ -22,10 +22,10 @@ Taichi Lang is an open-source, imperative, parallel programming language for hig
 
 The language has broad applications spanning real-time physical simulation, numberical computation, augmented reality, artificial intelligence, vision and robotics, visual effects in films and games, general-purpose computing, and much more.
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/mpm128.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/mpm128.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/mpm128.gif" height="192px"></a>
 <a href="https://github.com/taichi-dev/quantaichi"> <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/smoke_3d.gif" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/rendering/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/euler.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
 
 <a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/elastic_letters.gif" height="213px"></a>
 <a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fluid_with_bunnies.gif" height="213px"></a>

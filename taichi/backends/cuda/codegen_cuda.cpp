@@ -39,8 +39,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   FunctionType gen() override {
     auto compiled_res = run_compilation();
 
-    auto *llvm_prog = static_cast<LlvmProgramImpl *>(
-        this->kernel->program->get_program_impl());
+    auto *llvm_prog = get_llvm_program(kernel->program);
     CUDAModuleToFunctionConverter converter{tlctx, llvm_prog};
 
     return converter.convert(this->kernel, std::move(compiled_res.llvm_module),

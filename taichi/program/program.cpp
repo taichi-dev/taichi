@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/llvm/struct_llvm.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/opengl_program.h"

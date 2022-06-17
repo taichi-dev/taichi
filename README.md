@@ -12,7 +12,7 @@
 
 ```shell
 pip install taichi # Install Taichi Lang
-ti gallary         # Launch demo gallary
+ti gallery         # Launch demo gallery
 ```
 
 ## What is Taichi Lang?

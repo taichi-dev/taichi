@@ -74,7 +74,7 @@ def produce_injected_args(kernel, symbolic_args=None):
             symbolic_mat_m = len(symbolic_args[i])
             symbolic_mat_n = len(symbolic_args[i][0])
 
-            if not symbolic_mat_m == anno.m and symbolic_mat_n == anno.n:
+            if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
                 raise RuntimeError(
                     f'Matrix dimension mismatch, expected ({anno.m}, {anno.n}) '
                     f'but dispathed shape ({symbolic_mat_m}, {symbolic_mat_n}).'

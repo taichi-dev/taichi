@@ -24,7 +24,10 @@ TRAIN_OUTPUT_IMG = False
 TRAIN_VISUAL = False
 TRAIN_VISUAL_SHOW = False
 INFER_OUTPUT_IMG = False
-ti.init(arch=ti.gpu, device_memory_fraction=0.5, random_seed=5)
+arch = ti.gpu
+if arch == ti.metal:
+    arch = ti.vulkan
+ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5)
 screen_res = (1000, 1000)
 
 dtype_f_np = np.float32

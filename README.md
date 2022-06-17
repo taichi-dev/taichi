@@ -10,8 +10,8 @@
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/taichidev/taichi?label=Docker%20Image&logo=docker)](https://hub.docker.com/r/taichidev/taichi)
 [![Python Codecov Status](https://img.shields.io/codecov/c/github/taichi-dev/taichi?label=Python%20Coverage&logo=codecov)](https://codecov.io/gh/taichi-dev/taichi/src/master)
 
-```py
-import taichi as ti
+```shell
+python3 -m pip install taichi && ti gallary
 ```
 
 ## What is Taichi Lang?

@@ -370,6 +370,9 @@ if (TI_WITH_OPENGL)
 
     add_subdirectory(taichi/runtime/opengl)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
+
+    add_subdirectory(taichi/runtime/program_impls/opengl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
 endif()
 
 if (TI_WITH_DX11)
@@ -409,7 +412,7 @@ if (TI_WITH_VULKAN)
     # Should be removed
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
 
-    add_subdirectory(taichi/runtime/program_impls)
+    add_subdirectory(taichi/runtime/program_impls/vulkan)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
 endif ()
 

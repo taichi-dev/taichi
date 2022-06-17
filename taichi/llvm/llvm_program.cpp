@@ -15,6 +15,7 @@
 #include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/program/program.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/aot_module_builder_impl.h"
@@ -723,6 +724,13 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
     writer.set_data(std::move(cache_data_));
     writer.dump(config->offline_cache_file_path);
   }
+}
+
+LlvmProgramImpl *get_llvm_program(Program *prog) {
+  LlvmProgramImpl *llvm_prog =
+      dynamic_cast<LlvmProgramImpl *>(prog->get_program_impl());
+  TI_ASSERT(llvm_prog != nullptr);
+  return llvm_prog;
 }
 
 }  // namespace lang

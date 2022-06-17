@@ -30,6 +30,7 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
+class Program;
 
 namespace cuda {
 class CudaDevice;
@@ -200,5 +201,7 @@ class LlvmProgramImpl : public ProgramImpl {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
 };
+
+LlvmProgramImpl *get_llvm_program(Program *prog);
 }  // namespace lang
 }  // namespace taichi

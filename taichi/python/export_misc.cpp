@@ -138,8 +138,12 @@ void export_misc(py::module &m) {
   m.def("toggle_python_print_buffer", [](bool opt) { py_cout.enabled = opt; });
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
+#ifdef TI_WITH_VULKAN
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available,
         py::arg("use_gles") = false);
+#else
+  m.def("with_opengl", []() { return false; });
+#endif
 #ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
   m.def("set_vulkan_visible_device",

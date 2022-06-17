@@ -162,6 +162,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::move_loop_invariant_outside_if)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
+      .def_readwrite("cpu_block_dim_adaptive",
+                     &CompileConfig::cpu_block_dim_adaptive)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("gpu_max_reg", &CompileConfig::gpu_max_reg)

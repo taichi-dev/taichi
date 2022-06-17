@@ -1,7 +1,7 @@
-#include "taichi/backends/opengl/aot_module_builder_impl.h"
+#include "taichi/runtime/opengl/aot_module_builder_impl.h"
 
 #include "taichi/aot/module_data.h"
-#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/runtime/opengl/opengl_utils.h"
 
 #if !defined(TI_PLATFORM_WINDOWS)
 #include <stdio.h>

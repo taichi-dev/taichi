@@ -14,5 +14,6 @@ target_include_directories(${OPENGL_RHI}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/glad/include
+    ${PROJECT_SOURCE_DIR}/external/glfw/include
     ${LLVM_INCLUDE_DIRS}
   )

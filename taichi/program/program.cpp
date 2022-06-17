@@ -490,8 +490,9 @@ void Program::finalize() {
 
   synchronize();
   memory_pool_->terminate();
-
-  program_impl_->finalize();
+  if (arch_uses_llvm(config.arch)) {
+    program_impl_->finalize();
+  }
 
   Stmt::reset_counter();
   TaskLaunchRecord::reset_counter();

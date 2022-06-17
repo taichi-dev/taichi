@@ -22,7 +22,7 @@ Note, if python complains that a package is missing, simply rerun install.py and
 
 Windows
 -------------------------------
-Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py>`_ with python3.
+Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/legacy/install.py>`_ with python3.
 
 Additional environment variables: (assuming taichi is installed in ``DIR/taichi``)
 Set ``TAICHI_REPO_DIR`` as  ``DIR/taichi`` (e.g. ``E:/repos/taichi``).

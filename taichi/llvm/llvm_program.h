@@ -30,6 +30,7 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
+class Program;
 
 namespace cuda {
 class CudaDevice;
@@ -62,6 +63,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   LLVMRuntime *get_llvm_runtime() {
     return static_cast<LLVMRuntime *>(llvm_runtime_);
+  }
+
+  void prepare_runtime_context(RuntimeContext *ctx) override {
+    ctx->runtime = get_llvm_runtime();
   }
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
@@ -106,11 +111,11 @@ class LlvmProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
+  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override;
 
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
-                    uint32_t data);
+                    uint32_t data) override;
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
@@ -196,5 +201,7 @@ class LlvmProgramImpl : public ProgramImpl {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
 };
+
+LlvmProgramImpl *get_llvm_program(Program *prog);
 }  // namespace lang
 }  // namespace taichi

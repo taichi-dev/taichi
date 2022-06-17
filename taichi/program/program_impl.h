@@ -13,6 +13,8 @@
 namespace taichi {
 namespace lang {
 
+struct RuntimeContext;
+
 class ProgramImpl {
  public:
   // TODO: Make it safer, we exposed it for now as it's directly accessed
@@ -97,6 +99,21 @@ class ProgramImpl {
     return kDeviceNullAllocation;
   }
   virtual ~ProgramImpl() {
+  }
+
+  virtual uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) {
+    TI_ERROR(
+        "get_ndarray_alloc_info_ptr() not implemented on the current backend");
+    return nullptr;
+  }
+
+  virtual void fill_ndarray(const DeviceAllocation &alloc,
+                            std::size_t size,
+                            uint32_t data) {
+    TI_ERROR("fill_ndarray() not implemented on the current backend");
+  }
+
+  virtual void prepare_runtime_context(RuntimeContext *ctx) {
   }
 
  private:

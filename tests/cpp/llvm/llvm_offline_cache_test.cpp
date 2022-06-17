@@ -46,7 +46,8 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
     config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch);
-    tlctx_ = prog_->get_llvm_program_impl()->get_llvm_context(arch);
+    auto *llvm_prog_ = get_llvm_program(prog_.get());
+    tlctx_ = llvm_prog_->get_llvm_context(arch);
   }
 
   static std::unique_ptr<llvm::Module> make_module(

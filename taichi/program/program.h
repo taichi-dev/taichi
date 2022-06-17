@@ -77,7 +77,6 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
-class LlvmProgramImpl;
 class AsyncEngine;
 
 /**
@@ -301,8 +300,6 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
-  LlvmProgramImpl *get_llvm_program_impl();
-
   DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
   }
@@ -343,6 +340,29 @@ class TI_DLL_EXPORT Program {
     return Identifier(global_id_counter_++, name);
   }
 
+  void prepare_runtime_context(RuntimeContext *ctx);
+
+  /**
+   * TODO(zhanlue): Remove this interface
+   *
+   * Gets the underlying ProgramImpl object
+   *
+   * This interface is essentially a hack to temporarily accommodate
+   * historical design issues with LLVM backend
+   *
+   * Please limit its use to LLVM backend only
+   */
+  ProgramImpl *get_program_impl() {
+    TI_ASSERT(arch_uses_llvm(config.arch));
+    return program_impl_.get();
+  }
+
+  // TODO(zhanlue): Move these members and corresponding interfaces to
+  // ProgramImpl Ideally, Program should serve as a pure interface class and all
+  // the implementations should fall inside ProgramImpl
+  //
+  // Once we migrated these implementations to ProgramImpl, lower-level objects
+  // could store ProgramImpl rather than Program.
  private:
   uint64 ndarray_writer_counter_{0};
   uint64 ndarray_reader_counter_{0};

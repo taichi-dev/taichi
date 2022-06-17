@@ -305,12 +305,11 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
-          module == nullptr ? kernel->program->get_llvm_program_impl()
+          module == nullptr ? get_llvm_program(kernel->program)
                                   ->get_llvm_context(kernel->arch)
                                   ->clone_struct_module()
                             : std::move(module),
-          kernel->program->get_llvm_program_impl()->get_llvm_context(
-              kernel->arch)),
+          get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -2292,7 +2291,7 @@ FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
 }
 
 void CodeGenLLVM::initialize_context() {
-  tlctx = prog->get_llvm_program_impl()->get_llvm_context(kernel->arch);
+  tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
@@ -2399,8 +2398,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx =
-      this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
@@ -2422,8 +2420,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
 FunctionType CodeGenLLVM::gen() {
   auto compiled_res = run_compilation();
 
-  ModuleToFunctionConverter converter{tlctx,
-                                      kernel->program->get_llvm_program_impl()};
+  ModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
   return converter.convert(kernel, std::move(compiled_res.llvm_module),
                            std::move(compiled_res.offloaded_tasks));
 }
@@ -2504,9 +2501,9 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
     task_cache.block_dim = task.block_dim;
     task_cache.grid_dim = task.grid_dim;
   }
-  prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
-                                              infer_launch_args(kernel),
-                                              std::move(offloaded_task_list));
+  get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
+                                       infer_launch_args(kernel),
+                                       std::move(offloaded_task_list));
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,

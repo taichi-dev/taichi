@@ -11,8 +11,8 @@
 [![Python Codecov Status](https://img.shields.io/codecov/c/github/taichi-dev/taichi?label=Python%20Coverage&logo=codecov)](https://codecov.io/gh/taichi-dev/taichi/src/master)
 
 ```shell
-pip install taichi # Install Taichi Lang
-ti gallery         # Launch demo gallery
+pip install taichi  # Install Taichi Lang
+ti gallery          # Launch demo gallery
 ```
 
 ## What is Taichi Lang?

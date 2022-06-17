@@ -12,7 +12,7 @@
 #include "taichi/llvm/launch_arg_info.h"
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
 TLANG_NAMESPACE_BEGIN

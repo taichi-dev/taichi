@@ -14,7 +14,7 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"

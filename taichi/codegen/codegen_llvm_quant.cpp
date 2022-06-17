@@ -2,7 +2,7 @@
 #include "taichi/codegen/codegen_llvm.h"
 
 #include "taichi/ir/statements.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 
 TLANG_NAMESPACE_BEGIN
 

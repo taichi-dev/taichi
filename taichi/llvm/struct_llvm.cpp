@@ -1,5 +1,4 @@
-#ifdef TI_WITH_LLVM
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IRBuilder.h"
@@ -363,5 +362,3 @@ llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
 
 }  // namespace lang
 }  // namespace taichi
-
-#endif  //#ifdef TI_WITH_LLVM

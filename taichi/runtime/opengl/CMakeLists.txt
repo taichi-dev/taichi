@@ -4,6 +4,8 @@ add_library(opengl_runtime)
 target_sources(opengl_runtime
   PRIVATE
     opengl_api.cpp
+    aot_module_builder_impl.cpp
+    opengl_utils.cpp
   )
 
 #TODO #4832, some path here should not be included as they are
@@ -20,3 +22,6 @@ target_include_directories(opengl_runtime
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
   )
+
+target_link_libraries(opengl_runtime PRIVATE opengl_rhi)
+target_link_libraries(opengl_runtime PRIVATE glfw)

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/opengl/opengl_program.h"
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
 
 namespace taichi {
 namespace lang {

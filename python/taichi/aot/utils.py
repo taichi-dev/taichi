@@ -1,4 +1,3 @@
-import numpy as np
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
@@ -71,16 +70,15 @@ def produce_injected_args(kernel, symbolic_args=None):
             if not isinstance(symbolic_args[i], list):
                 raise RuntimeError('Expected a symbolic arg with Matrix type.')
 
-            symbolic_mat_m = len(symbolic_args[i])
-            symbolic_mat_n = len(symbolic_args[i][0])
+            symbolic_mat_n = len(symbolic_args[i])
+            symbolic_mat_m = len(symbolic_args[i][0])
 
             if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
                 raise RuntimeError(
-                    f'Matrix dimension mismatch, expected ({anno.m}, {anno.n}) '
-                    f'but dispathed shape ({symbolic_mat_m}, {symbolic_mat_n}).'
+                    f'Matrix dimension mismatch, expected ({anno.n}, {anno.m}) '
+                    f'but dispathed shape ({symbolic_mat_n}, {symbolic_mat_m}).'
                 )
-            dummy_arr = np.zeros((anno.m, anno.n))
-            injected_args.append(Matrix(dummy_arr, dt=anno.dtype))
+            injected_args.append(Matrix([0] * anno.n * anno.m, dt=anno.dtype))
         else:
             # For primitive types, we can just inject a dummy value.
             injected_args.append(0)

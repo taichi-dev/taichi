@@ -565,7 +565,7 @@ void export_lang(py::module &m) {
       .value("NDARRAY", aot::ArgKind::kNdarray)
       // Using this MATRIX as Scalar alias, we can move to native matrix type
       // when supported
-      .value("MATRIX", aot::ArgKind::kScalar)
+      .value("MATRIX", aot::ArgKind::kMatrix)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")

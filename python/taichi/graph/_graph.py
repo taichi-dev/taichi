@@ -104,9 +104,9 @@ def Arg(tag, name, dtype, element_shape=()):
         mat_type = dtype
         arg_list = []
         i = 0
-        for a in range(mat_type.m):
+        for _ in range(mat_type.n):
             arg_sublist = []
-            for b in range(mat_type.n):
+            for _ in range(mat_type.m):
                 arg_sublist.append(
                     _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
                                  element_shape))

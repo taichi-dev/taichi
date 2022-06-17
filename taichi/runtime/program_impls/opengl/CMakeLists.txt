@@ -11,6 +11,7 @@ target_include_directories(opengl_program_impl
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(opengl_program_impl PRIVATE opengl_runtime)

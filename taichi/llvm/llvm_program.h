@@ -200,5 +200,13 @@ class LlvmProgramImpl : public ProgramImpl {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
 };
+
+inline LlvmProgramImpl *get_llvm_program(Program *prog) {
+  LlvmProgramImpl *llvm_prog =
+      dynamic_cast<LlvmProgramImpl *>(prog->get_program_impl());
+  TI_ASSERT(llvm_prog != nullptr);
+  return llvm_prog;
+}
+
 }  // namespace lang
 }  // namespace taichi

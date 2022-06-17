@@ -108,7 +108,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch_);
-    auto *llvm_prog_ = get_llvm_program(prog_);
+    auto *llvm_prog_ = get_llvm_program(prog_.get());
     tlctx_ = llvm_prog_->get_llvm_context(arch_);
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);

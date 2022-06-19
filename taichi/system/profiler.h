@@ -13,7 +13,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/system/timer.h"
-#include "spdlog/fmt/bundled/color.h"
+// #include "spdlog/fmt/bundled/color.h"
 
 TI_NAMESPACE_BEGIN
 

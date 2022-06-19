@@ -69,12 +69,12 @@ def test_matrix():
 
 
 @test_utils.test(require=ti.extension.quant_basic)
-def test_custom_type():
-    cit1 = ti.types.quant.int(bits=10, signed=True)
-    cft1 = ti.types.quant.fixed(frac=10, signed=True, scale=0.1)
-    cit2 = ti.types.quant.int(bits=22, signed=False)
-    cft2 = ti.types.quant.fixed(frac=22, signed=False, scale=0.1)
-    type_list = [[cit1, cft2], [cft1, cit2]]
+def test_quant_type():
+    qit1 = ti.types.quant.int(bits=10, signed=True)
+    qfxt1 = ti.types.quant.fixed(frac=10, signed=True, scale=0.1)
+    qit2 = ti.types.quant.int(bits=22, signed=False)
+    qfxt2 = ti.types.quant.fixed(frac=22, signed=False, scale=0.1)
+    type_list = [[qit1, qfxt2], [qfxt1, qit2]]
     a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     c = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)

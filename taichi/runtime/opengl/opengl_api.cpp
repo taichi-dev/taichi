@@ -2,8 +2,8 @@
 
 #include <list>
 
-#include "taichi/backends/opengl/opengl_kernel_util.h"
-#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/runtime/opengl/opengl_kernel_util.h"
+#include "taichi/runtime/opengl/opengl_utils.h"
 #include "taichi/runtime/opengl/shaders/runtime.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
@@ -402,7 +402,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     int i = item.first;
     TI_ASSERT(args[i].is_array);
     const auto arr_sz = ctx.array_runtime_sizes[i];
-    if (arr_sz == 0 || ctx.is_device_allocations[i]) {
+    if (arr_sz == 0 || ctx.device_allocation_type[i] ==
+                           RuntimeContext::DevAllocType::kNdarray) {
       continue;
     }
     has_ext_arr = true;
@@ -471,7 +472,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
     for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      if (ctx.is_device_allocations[arg_id]) {
+      if (ctx.device_allocation_type[arg_id] ==
+          RuntimeContext::DevAllocType::kNdarray) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
@@ -507,7 +509,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     for (auto &item : program_.arr_args) {
       int i = item.first;
       const auto arr_sz = ctx.array_runtime_sizes[i];
-      if (arr_sz > 0 && !ctx.is_device_allocations[i]) {
+      if (arr_sz > 0 && ctx.device_allocation_type[i] ==
+                            RuntimeContext::DevAllocType::kNone) {
         uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
         memcpy((void *)ctx.args[i], baseptr, arr_sz);
         device_->unmap(ext_arr_bufs_[i]);

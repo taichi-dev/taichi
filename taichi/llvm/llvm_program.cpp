@@ -15,6 +15,7 @@
 #include "taichi/backends/cpu/aot_module_builder_impl.h"
 #include "taichi/backends/cpu/cpu_device.h"
 #include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/program/program.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/aot_module_builder_impl.h"
@@ -66,6 +67,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   preallocated_device_buffer_ = nullptr;
   llvm_runtime_ = nullptr;
   llvm_context_host_ = std::make_unique<TaichiLLVMContext>(this, host_arch());
+
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs{1};
@@ -114,8 +116,11 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
     CUDAContext::get_instance().set_debug(config->debug);
     device_ = std::make_shared<cuda::CudaDevice>();
+
+    this->maybe_initialize_cuda_llvm_context();
   }
 #endif
+  this->initialize_host();
 }
 
 void LlvmProgramImpl::initialize_host() {
@@ -273,37 +278,22 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
 }
 
 void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
-  compile_snode_tree_types_impl(tree);
-}
+  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  int snode_tree_id = tree->id();
+  int root_id = tree->root()->id;
 
-static LlvmOfflineCache::FieldCacheData construct_filed_cache_data(
-    const SNodeTree &tree,
-    const StructCompiler &struct_compiler) {
-  LlvmOfflineCache::FieldCacheData ret;
-  ret.tree_id = tree.id();
-  ret.root_id = tree.root()->id;
-  ret.root_size = struct_compiler.root_size;
-
-  const auto &snodes = struct_compiler.snodes;
-  for (size_t i = 0; i < snodes.size(); i++) {
-    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
-    snode_cache_data.id = snodes[i]->id;
-    snode_cache_data.type = snodes[i]->type;
-    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
-    snode_cache_data.chunk_size = snodes[i]->chunk_size;
-
-    ret.snode_metas.emplace_back(std::move(snode_cache_data));
-  }
-
-  return ret;
+  // Add compiled result to Cache
+  cache_field(snode_tree_id, root_id, *struct_compiler);
 }
 
 void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                              uint64 *result_buffer) {
-  auto struct_compiler = compile_snode_tree_types_impl(tree);
+  compile_snode_tree_types(tree);
+  int snode_tree_id = tree->id();
 
-  auto field_cache_data = construct_filed_cache_data(*tree, *struct_compiler);
-  initialize_llvm_runtime_snodes(field_cache_data, result_buffer);
+  TI_ASSERT(cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end());
+  initialize_llvm_runtime_snodes(cache_data_.fields.at(snode_tree_id),
+                                 result_buffer);
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -365,12 +355,12 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
 
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>();
+    return std::make_unique<cpu::AotModuleBuilderImpl>(this);
   }
 
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>();
+    return std::make_unique<cuda::AotModuleBuilderImpl>(this);
   }
 #endif
 
@@ -381,8 +371,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {
-  maybe_initialize_cuda_llvm_context();
-
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
   if (config->arch == Arch::cuda) {
@@ -701,12 +689,46 @@ void LlvmProgramImpl::cache_kernel(
   kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
+void LlvmProgramImpl::cache_field(int snode_tree_id,
+                                  int root_id,
+                                  const StructCompiler &struct_compiler) {
+  if (cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end()) {
+    // [TODO] check and update the Cache, instead of simply return.
+    return;
+  }
+
+  LlvmOfflineCache::FieldCacheData ret;
+  ret.tree_id = snode_tree_id;
+  ret.root_id = root_id;
+  ret.root_size = struct_compiler.root_size;
+
+  const auto &snodes = struct_compiler.snodes;
+  for (size_t i = 0; i < snodes.size(); i++) {
+    LlvmOfflineCache::FieldCacheData::SNodeCacheData snode_cache_data;
+    snode_cache_data.id = snodes[i]->id;
+    snode_cache_data.type = snodes[i]->type;
+    snode_cache_data.cell_size_bytes = snodes[i]->cell_size_bytes;
+    snode_cache_data.chunk_size = snodes[i]->chunk_size;
+
+    ret.snode_metas.emplace_back(std::move(snode_cache_data));
+  }
+
+  cache_data_.fields[snode_tree_id] = std::move(ret);
+}
+
 void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache && !cache_data_.kernels.empty()) {
     LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
     writer.dump(config->offline_cache_file_path);
   }
+}
+
+LlvmProgramImpl *get_llvm_program(Program *prog) {
+  LlvmProgramImpl *llvm_prog =
+      dynamic_cast<LlvmProgramImpl *>(prog->get_program_impl());
+  TI_ASSERT(llvm_prog != nullptr);
+  return llvm_prog;
 }
 
 }  // namespace lang

@@ -73,14 +73,16 @@ inline PrimitiveTypeID get_primitive_data_type() {
   }
 }
 
-inline bool is_custom_type(DataType dt) {
-  return dt->is<CustomIntType>() || dt->is<CustomFloatType>();
+inline bool is_quant(DataType dt) {
+  return dt->is<QuantIntType>() || dt->is<QuantFixedType>() ||
+         dt->is<QuantFloatType>();
 }
 
 inline bool is_real(DataType dt) {
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||
-         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<CustomFloatType>();
+         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<QuantFixedType>() ||
+         dt->is<QuantFloatType>();
 }
 
 inline bool is_integral(DataType dt) {
@@ -91,13 +93,13 @@ inline bool is_integral(DataType dt) {
          dt->is_primitive(PrimitiveTypeID::u8) ||
          dt->is_primitive(PrimitiveTypeID::u16) ||
          dt->is_primitive(PrimitiveTypeID::u32) ||
-         dt->is_primitive(PrimitiveTypeID::u64) || dt->is<CustomIntType>();
+         dt->is_primitive(PrimitiveTypeID::u64) || dt->is<QuantIntType>();
 }
 
 inline bool is_signed(DataType dt) {
   // Shall we return false if is_integral returns false?
   TI_ASSERT(is_integral(dt));
-  if (auto t = dt->cast<CustomIntType>())
+  if (auto t = dt->cast<QuantIntType>())
     return t->get_is_signed();
   return dt->is_primitive(PrimitiveTypeID::i8) ||
          dt->is_primitive(PrimitiveTypeID::i16) ||

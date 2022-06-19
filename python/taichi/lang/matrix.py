@@ -1448,8 +1448,8 @@ class MatrixField(Field):
             return
         length = len(paths[0])
         if any(
-                len(path) != length or ti_core.is_custom_type(path[length -
-                                                                   1]._dtype)
+                len(path) != length or ti_core.is_quant(path[length -
+                                                             1]._dtype)
                 for path in paths):
             return
         for i in range(length):

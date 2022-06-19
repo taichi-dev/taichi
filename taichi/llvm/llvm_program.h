@@ -30,6 +30,7 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
+class Program;
 
 namespace cuda {
 class CudaDevice;
@@ -62,6 +63,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   LLVMRuntime *get_llvm_runtime() {
     return static_cast<LLVMRuntime *>(llvm_runtime_);
+  }
+
+  void prepare_runtime_context(RuntimeContext *ctx) override {
+    ctx->runtime = get_llvm_runtime();
   }
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
@@ -106,11 +111,11 @@ class LlvmProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
+  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override;
 
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
-                    uint32_t data);
+                    uint32_t data) override;
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
@@ -118,9 +123,26 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
 
+  void cache_field(int snode_tree_id,
+                   int root_id,
+                   const StructCompiler &struct_compiler);
+
+  LlvmOfflineCache::FieldCacheData get_cached_field(int snode_tree_id) const {
+    TI_ASSERT(cache_data_.fields.find(snode_tree_id) !=
+              cache_data_.fields.end());
+    return cache_data_.fields.at(snode_tree_id);
+  }
+
   Device *get_compute_device() override {
     return device_.get();
   }
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -129,12 +151,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(
-      const LlvmOfflineCache::FieldCacheData &field_cache_data,
-      uint64 *result_buffer);
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 
@@ -185,5 +201,7 @@ class LlvmProgramImpl : public ProgramImpl {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
 };
+
+LlvmProgramImpl *get_llvm_program(Program *prog);
 }  // namespace lang
 }  // namespace taichi

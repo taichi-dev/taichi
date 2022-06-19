@@ -41,6 +41,7 @@
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
+#include "taichi/llvm/llvm_program.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -93,7 +94,7 @@ TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(llvm_prog, arch);
+  jit = JITSession::create(this, llvm_prog->config, arch);
   TI_TRACE("Taichi llvm context created.");
 }
 

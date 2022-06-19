@@ -9,7 +9,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
-#include "taichi/backends/opengl/opengl_program.h"
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/backends/metal/metal_program.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -50,7 +50,7 @@ Program::Program(Arch desired_arch)
     : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
-  // For performance considerations and correctness of CustomFloatType
+  // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
 #if defined(TI_ARCH_x64)
@@ -102,8 +102,12 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with DX11");
 #endif
   } else if (config.arch == Arch::opengl) {
+#ifdef TI_WITH_OPENGL
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
@@ -125,13 +129,6 @@ Program::Program(Arch desired_arch)
   total_compilation_time_ = 0;
   num_instances_ += 1;
   SNode::counter = 0;
-  if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
 
   result_buffer = nullptr;
   current_callable = nullptr;
@@ -564,31 +561,41 @@ Ndarray *Program::create_ndarray(const DataType type,
   return ndarrays_.back().get();
 }
 
+Texture *Program::create_texture(const DataType type,
+                                 int num_channels,
+                                 const std::vector<int> &shape) {
+  if (shape.size() == 1) {
+    textures_.push_back(
+        std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
+  } else if (shape.size() == 2) {
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels,
+                                                  shape[0], shape[1], 1));
+  } else if (shape.size() == 3) {
+    textures_.push_back(std::make_unique<Texture>(
+        this, type, num_channels, shape[0], shape[1], shape[2]));
+  } else {
+    TI_ERROR("Texture shape invalid");
+  }
+  return textures_.back().get();
+}
+
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-#ifdef TI_WITH_LLVM
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
-    data_ptr = get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
-        ndarray->ndarray_alloc_);
+    data_ptr =
+        program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
   }
-#else
-  TI_ERROR("Llvm disabled");
-#endif
 
   return reinterpret_cast<intptr_t>(data_ptr);
 }
 
 void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
-// This is a temporary solution to bypass device api.
-// Should be moved to CommandList once available in CUDA.
-#ifdef TI_WITH_LLVM
-  get_llvm_program_impl()->fill_ndarray(
+  // This is a temporary solution to bypass device api.
+  // Should be moved to CommandList once available in CUDA.
+  program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
       ndarray->get_nelement() * ndarray->get_element_size(), val);
-#else
-  TI_ERROR("Not supported");
-#endif
 }
 
 Program::~Program() {
@@ -615,14 +622,6 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   return nullptr;
 }
 
-LlvmProgramImpl *Program::get_llvm_program_impl() {
-#ifdef TI_WITH_LLVM
-  return static_cast<LlvmProgramImpl *>(program_impl_.get());
-#else
-  TI_ERROR("Llvm disabled");
-#endif
-}
-
 int Program::allocate_snode_tree_id() {
   if (free_snode_tree_ids_.empty()) {
     return snode_trees_.size();
@@ -631,6 +630,11 @@ int Program::allocate_snode_tree_id() {
     free_snode_tree_ids_.pop();
     return id;
   }
+}
+
+void Program::prepare_runtime_context(RuntimeContext *ctx) {
+  ctx->result_buffer = result_buffer;
+  program_impl_->prepare_runtime_context(ctx);
 }
 
 }  // namespace lang

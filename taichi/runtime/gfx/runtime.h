@@ -58,7 +58,8 @@ class CompiledTaichiKernel {
       CommandList *cmdlist,
       DeviceAllocationGuard *args_buffer,
       DeviceAllocationGuard *ret_buffer,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrs) const;
+      const std::unordered_map<int, DeviceAllocation> &ext_arrs,
+      const std::unordered_map<int, DeviceAllocation> &textures) const;
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;

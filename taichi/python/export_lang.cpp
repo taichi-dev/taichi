@@ -59,6 +59,7 @@ TLANG_NAMESPACE_END
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
+  using namespace std::placeholders;
 
   py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
                                           PyExc_TypeError);
@@ -161,6 +162,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::move_loop_invariant_outside_if)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
+      .def_readwrite("cpu_block_dim_adaptive",
+                     &CompileConfig::cpu_block_dim_adaptive)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("gpu_max_reg", &CompileConfig::gpu_max_reg)
@@ -448,6 +451,14 @@ void export_lang(py::module &m) {
           py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
+      .def(
+          "create_texture",
+          [&](Program *program, const DataType &dt, int num_channels,
+              const std::vector<int> &shape) -> Texture * {
+            return program->create_texture(dt, num_channels, shape);
+          },
+          py::arg("dt"), py::arg("num_channels"),
+          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -560,9 +571,16 @@ void export_lang(py::module &m) {
       .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::class_<Texture>(m, "Texture")
+      .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
+      .def("from_ndarray", &Texture::from_ndarray);
+
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
+      // Using this MATRIX as Scalar alias, we can move to native matrix type
+      // when supported
+      .value("MATRIX", aot::ArgKind::kMatrix)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
@@ -590,7 +608,8 @@ void export_lang(py::module &m) {
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
       .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats) {
+                     const py::dict &arg_ints, const py::dict &arg_floats,
+                     const py::dict &arg_doubles) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
@@ -602,6 +621,10 @@ void export_lang(py::module &m) {
                        aot::IValue::create(py::cast<int>(it.second))});
         }
         for (auto it : arg_floats) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<float32>(it.second))});
+        }
+        for (auto it : arg_doubles) {
           args.insert({py::cast<std::string>(it.first),
                        aot::IValue::create(py::cast<double>(it.second))});
         }
@@ -634,6 +657,7 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -839,6 +863,18 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+
+  auto &&texture =
+      py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+  for (int t = 0; t <= (int)TextureOpType::undefined; t++)
+    texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
+                  TextureOpType(t));
+  texture.export_values();
+  m.def("make_texture_op_expr",
+        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
+                   const ExprGroup &>);
+
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
     bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
@@ -860,7 +896,7 @@ void export_lang(py::module &m) {
 #undef PER_TYPE
 
   m.def("data_type_size", data_type_size);
-  m.def("is_custom_type", is_custom_type);
+  m.def("is_quant", is_quant);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
@@ -1008,13 +1044,15 @@ void export_lang(py::module &m) {
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
-      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::return_value_policy::reference)
+      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
@@ -1204,6 +1242,13 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->relations.insert(std::pair(
               type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
+
+  m.def("wait_for_debugger", []() {
+#ifdef WIN32
+    while (!::IsDebuggerPresent())
+      ::Sleep(100);
+#endif
+  });
 }
 
 TI_NAMESPACE_END

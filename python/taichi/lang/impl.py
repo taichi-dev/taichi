@@ -21,7 +21,6 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
@@ -226,7 +225,6 @@ class PyTaichi:
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
-        self.compiled_grad_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
@@ -235,12 +233,13 @@ class PyTaichi:
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
+        self.fwd_mode_manager = None
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions) + len(self.compiled_grad_functions)
+        return len(self.compiled_functions)
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)
@@ -338,9 +337,6 @@ class PyTaichi:
             self.prog = None
         self._signal_handler_registry = None
         self.materialized = False
-
-    def get_tape(self, loss=None):
-        return TapeImpl(self, loss)
 
     def sync(self):
         self.materialize()

@@ -305,12 +305,11 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
-          module == nullptr ? kernel->program->get_llvm_program_impl()
+          module == nullptr ? get_llvm_program(kernel->program)
                                   ->get_llvm_context(kernel->arch)
                                   ->clone_struct_module()
                             : std::move(module),
-          kernel->program->get_llvm_program_impl()->get_llvm_context(
-              kernel->arch)),
+          get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -1025,8 +1024,8 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 llvm::Value *CodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
-  if (auto cit = type->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
+  if (auto qit = type->cast<QuantIntType>()) {
+    if (qit->get_is_signed())
       dest_ty = tlctx->get_data_type(PrimitiveType::i32);
     else
       dest_ty = tlctx->get_data_type(PrimitiveType::u32);
@@ -1056,8 +1055,8 @@ llvm::Value *CodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   if (type.is_pointer()) {
     return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
   }
-  if (auto cit = type->cast<CustomIntType>()) {
-    intermediate_bits = data_type_bits(cit->get_compute_type());
+  if (auto qit = type->cast<QuantIntType>()) {
+    intermediate_bits = data_type_bits(qit->get_compute_type());
   } else {
     intermediate_bits = tlctx->get_data_type(type)->getPrimitiveSizeInBits();
   }
@@ -1188,17 +1187,17 @@ llvm::Value *CodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
   return nullptr;
 }
 
-llvm::Value *CodeGenLLVM::custom_type_atomic(AtomicOpStmt *stmt) {
-  // TODO(type): support all AtomicOpTypes on custom types
+llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
+  // TODO(type): support all AtomicOpTypes on quant types
   if (stmt->op_type != AtomicOpType::add) {
     return nullptr;
   }
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-  if (auto cit = dst_type->cast<CustomIntType>()) {
-    return atomic_add_quant_int(stmt, cit);
-  } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-    return atomic_add_quant_fixed(stmt, cft);
+  if (auto qit = dst_type->cast<QuantIntType>()) {
+    return atomic_add_quant_int(stmt, qit);
+  } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
+    return atomic_add_quant_fixed(stmt, qfxt);
   } else {
     return nullptr;
   }
@@ -1318,7 +1317,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
 
     if (llvm::Value *result = optimized_reduction(stmt)) {
       old_value = result;
-    } else if (llvm::Value *result = custom_type_atomic(stmt)) {
+    } else if (llvm::Value *result = quant_type_atomic(stmt)) {
       old_value = result;
     } else if (llvm::Value *result = real_type_atomic(stmt)) {
       old_value = result;
@@ -1341,7 +1340,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (!pointee_type->is<CustomIntType>()) {
+    if (!pointee_type->is<QuantIntType>()) {
       if (stmt->dest->as<GetChStmt>()->input_snode->type ==
           SNodeType::bit_struct) {
         TI_ERROR(
@@ -1349,13 +1348,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             "handled by BitStructStoreStmt.",
             pointee_type->to_string());
       } else {
-        TI_ERROR("Bit array only supports custom int type.");
+        TI_ERROR("Bit array only supports quant int type.");
       }
     }
     llvm::Value *store_value = nullptr;
-    auto *cit = pointee_type->as<CustomIntType>();
+    auto *qit = pointee_type->as<QuantIntType>();
     store_value = llvm_val[stmt->val];
-    store_quant_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
+    store_quant_int(llvm_val[stmt->dest], qit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
@@ -1367,13 +1366,13 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
-    if (val_type->is<CustomIntType>()) {
+    if (val_type->is<QuantIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], val_type);
-    } else if (val_type->cast<CustomFloatType>()) {
+    } else {
+      TI_ASSERT(val_type->is<QuantFixedType>() ||
+                val_type->is<QuantFloatType>());
       TI_ASSERT(stmt->src->is<GetChStmt>());
       llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
-    } else {
-      TI_NOT_IMPLEMENTED
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
@@ -2292,7 +2291,7 @@ FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
 }
 
 void CodeGenLLVM::initialize_context() {
-  tlctx = prog->get_llvm_program_impl()->get_llvm_context(kernel->arch);
+  tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
@@ -2399,8 +2398,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx =
-      this->prog->get_llvm_program_impl()->get_llvm_context(config.arch);
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
@@ -2422,8 +2420,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
 FunctionType CodeGenLLVM::gen() {
   auto compiled_res = run_compilation();
 
-  ModuleToFunctionConverter converter{tlctx,
-                                      kernel->program->get_llvm_program_impl()};
+  ModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
   return converter.convert(kernel, std::move(compiled_res.llvm_module),
                            std::move(compiled_res.offloaded_tasks));
 }
@@ -2504,9 +2501,9 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
     task_cache.block_dim = task.block_dim;
     task_cache.grid_dim = task.grid_dim;
   }
-  prog->get_llvm_program_impl()->cache_kernel(kernel_key, this->module.get(),
-                                              infer_launch_args(kernel),
-                                              std::move(offloaded_task_list));
+  get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
+                                       infer_launch_args(kernel),
+                                       std::move(offloaded_task_list));
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
@@ -2536,14 +2533,16 @@ FunctionType ModuleToFunctionConverter::convert(
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array && context.is_device_allocations[i] &&
+      if (args[i].is_array &&
+          context.device_allocation_type[i] !=
+              RuntimeContext::DevAllocType::kNone &&
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
-        context.set_array_is_device_allocation(i,
-                                               /*is_device_allocation=*/false);
+        context.set_array_device_allocation_type(
+            i, RuntimeContext::DevAllocType::kNone);
       }
     }
     for (auto task : task_funcs) {

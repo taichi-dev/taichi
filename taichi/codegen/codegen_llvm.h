@@ -219,17 +219,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, CustomFloatType *cft);
+  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, QuantFixedType *qfxt);
 
-  llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, CustomIntType *cit);
+  llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, QuantIntType *qit);
 
-  llvm::Value *quant_fixed_to_quant_int(CustomFloatType *cft,
-                                        CustomIntType *cit,
+  llvm::Value *quant_fixed_to_quant_int(QuantFixedType *qfxt,
+                                        QuantIntType *qit,
                                         llvm::Value *real);
 
   virtual llvm::Value *optimized_reduction(AtomicOpStmt *stmt);
 
-  virtual llvm::Value *custom_type_atomic(AtomicOpStmt *stmt);
+  virtual llvm::Value *quant_type_atomic(AtomicOpStmt *stmt);
 
   virtual llvm::Value *integral_type_atomic(AtomicOpStmt *stmt);
 
@@ -247,13 +247,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(PtrOffsetStmt *stmt) override;
 
   void store_quant_int(llvm::Value *bit_ptr,
-                       CustomIntType *cit,
+                       QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
 
   void store_quant_int(llvm::Value *byte_ptr,
                        llvm::Value *bit_offset,
-                       CustomIntType *cit,
+                       QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
 
@@ -265,9 +265,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalStoreStmt *stmt) override;
 
-  llvm::Value *custom_type_to_bits(llvm::Value *val,
-                                   Type *input_type,
-                                   Type *output_type);
+  llvm::Value *quant_int_or_quant_fixed_to_bits(llvm::Value *val,
+                                                Type *input_type,
+                                                Type *output_type);
 
   void visit(BitStructStoreStmt *stmt) override;
 
@@ -283,16 +283,16 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                  Type *load_type);
 
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
-                                       CustomFloatType *cft);
+                                       QuantFixedType *qfxt);
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 llvm::Value *exponent_bit_ptr,
-                                CustomFloatType *cft,
+                                QuantFloatType *qflt,
                                 bool shared_exponent);
 
   llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
                                        llvm::Value *input_exponent_val,
-                                       CustomFloatType *cft,
+                                       QuantFloatType *qflt,
                                        bool shared_exponent);
 
   llvm::Value *load_quant_fixed_or_quant_float(Stmt *ptr_stmt);
@@ -399,11 +399,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *extract_digits_from_f32(llvm::Value *f, bool full);
 
-  llvm::Value *extract_digits_from_quant_float_with_shared_exponent(
+  llvm::Value *extract_digits_from_f32_with_shared_exponent(
       llvm::Value *f,
       llvm::Value *shared_exp);
 
-  llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
+  llvm::Value *get_exponent_offset(llvm::Value *exponent, QuantFloatType *qflt);
 
   void visit(FuncCallStmt *stmt) override;
 

@@ -3,7 +3,6 @@ import re
 
 #from os import system
 
-
 TYPE_MAP = {
     "void": "void",
     "int32_t": "int",
@@ -15,9 +14,11 @@ TYPE_MAP = {
     "void*": "IntPtr",
 }
 
+
 class InternalAlias:
     def __init__(self, name: str):
         self.name = name
+
     @property
     def type_name(self):
         self.name
@@ -192,10 +193,7 @@ class BitField:
         return "TI_" + self.name.screaming_snake_case + "_" + flag_name.screaming_snake_case + "_BIT"
 
     def declr(self):
-        out = [
-            "[Flags]",
-            "public enum " + self.type_name + " {"
-        ]
+        out = ["[Flags]", "public enum " + self.type_name + " {"]
         for name, value in self.bits.items():
             out += [f"  {name} = 1 << {value},"]
         out += ["};"]
@@ -367,6 +365,7 @@ class Function:
         if self.version > 1:
             name += f"_{self.version}"
         return name
+
     @property
     def func_name(self):
         name = self.name.upper_camel_case
@@ -385,15 +384,19 @@ class Function:
             "#else",
             '    [DllImport("taichi_c_api")]',
             "#endif",
-            "private static extern " + return_value_type + " " + self.c_func_name + "(",
-            ',\n'.join(f"  {param.declr_c_function_param()}" for param in self.params),
+            "private static extern " + return_value_type + " " +
+            self.c_func_name + "(",
+            ',\n'.join(f"  {param.declr_c_function_param()}"
+                       for param in self.params),
             ");",
             "public static " + return_value_type + " " + self.func_name + "(",
-            ',\n'.join(f"  {param.declr_function_param()}" for param in self.params),
+            ',\n'.join(f"  {param.declr_function_param()}"
+                       for param in self.params),
             ") {",
         ]
         for param in self.params:
-            if (isinstance(param.type, Structure) or isinstance(param.type, Union)) and not param.count:
+            if (isinstance(param.type, Structure)
+                    or isinstance(param.type, Union)) and not param.count:
                 out += [
                     f"  IntPtr hglobal_{param.name} = Marshal.AllocHGlobal(Marshal.SizeOf(typeof({param.type.type_name})));",
                     f"  Marshal.StructureToPtr({param.name}, hglobal_{param.name}, false);"
@@ -403,22 +406,23 @@ class Function:
         else:
             out += [f"  {self.c_func_name}("]
         for i, param in enumerate(self.params):
-            if (isinstance(param.type, Structure) or isinstance(param.type, Union)) and not param.count:
-                out += [f"    hglobal_{param.name}{','if i + 1 != len(self.params) else ''}"]
+            if (isinstance(param.type, Structure)
+                    or isinstance(param.type, Union)) and not param.count:
+                out += [
+                    f"    hglobal_{param.name}{','if i + 1 != len(self.params) else ''}"
+                ]
             else:
-                out += [f"    {param.name}{','if i + 1 != len(self.params) else ''}"]
+                out += [
+                    f"    {param.name}{','if i + 1 != len(self.params) else ''}"
+                ]
         out += ["  );"]
         for param in self.params:
-            if (isinstance(param.type, Structure) or isinstance(param.type, Union)) and not param.count:
-                out += [
-                    f"  Marshal.FreeHGlobal(hglobal_{param.name});"
-                ]
+            if (isinstance(param.type, Structure)
+                    or isinstance(param.type, Union)) and not param.count:
+                out += [f"  Marshal.FreeHGlobal(hglobal_{param.name});"]
         if self.return_value_type:
             out += [f"  return rv;"]
-        out += [
-            "}",
-            "}"
-        ]
+        out += ["}", "}"]
         return '\n'.join(out)
 
 
@@ -485,11 +489,11 @@ class Module:
         ]
 
         for x in self.declr_reg:
-                out += [
-                    "",
-                    f"// {x}",
-                    self.declr_reg.resolve(x).declr(),
-                ]
+            out += [
+                "",
+                f"// {x}",
+                self.declr_reg.resolve(x).declr(),
+            ]
 
         out += [
             "",

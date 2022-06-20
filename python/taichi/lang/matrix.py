@@ -41,6 +41,7 @@ def _gen_swizzles(cls):
 
     for key_group in KEYGROUP_SET:
         for index, attr in enumerate(key_group):
+
             def gen_property(attr, attr_idx, key_group):
                 checker = make_valid_attribs_checker(key_group)
 
@@ -121,7 +122,7 @@ class _MatrixBaseImpl:
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
         if len(args) == 1:
-            args = args + (0,)
+            args = args + (0, )
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
@@ -244,10 +245,8 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
             if len(indices) == 1:
-                return impl.make_index_expr(self.local_tensor_proxy,
-                                            (i,))
-            return impl.make_index_expr(self.local_tensor_proxy,
-                                        (i, j))
+                return impl.make_index_expr(self.local_tensor_proxy, (i, ))
+            return impl.make_index_expr(self.local_tensor_proxy, (i, j))
         if impl.current_cfg(
         ).dynamic_index and is_global_mat and self.dynamic_index_stride:
             return impl.make_stride_expr(self.entries[0].ptr, (i, j),
@@ -320,7 +319,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                     list([
                         impl.make_index_expr(
                             local_tensor_proxy,
-                            (expr.Expr(i, dtype=primitive_types.i32),))
+                            (expr.Expr(i, dtype=primitive_types.i32), ))
                     ]))
             return local_tensor_proxy, mat
 

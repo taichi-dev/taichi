@@ -220,13 +220,7 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::check_runtime_error() {
-#ifdef TI_WITH_LLVM
-  TI_ASSERT(arch_uses_llvm(config.arch));
-  static_cast<LlvmProgramImpl *>(program_impl_.get())
-      ->check_runtime_error(result_buffer);
-#else
-  TI_ERROR("Llvm disabled");
-#endif
+  program_impl_->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {
@@ -455,15 +449,7 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
 }
 
 uint64 Program::fetch_result_uint64(int i) {
-  if (arch_uses_llvm(config.arch)) {
-#ifdef TI_WITH_LLVM
-    return static_cast<LlvmProgramImpl *>(program_impl_.get())
-        ->fetch_result<uint64>(i, result_buffer);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
-  return result_buffer[i];
+  return program_impl_->fetch_result_uint64(i, result_buffer);
 }
 
 void Program::finalize() {
@@ -509,13 +495,8 @@ void Program::finalize() {
 
   synchronize();
   memory_pool_->terminate();
-
   if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
+    program_impl_->finalize();
   }
 
   Stmt::reset_counter();
@@ -536,13 +517,7 @@ int Program::default_block_dim(const CompileConfig &config) {
 }
 
 void Program::print_memory_profiler_info() {
-#ifdef TI_WITH_LLVM
-  TI_ASSERT(arch_uses_llvm(config.arch));
-  static_cast<LlvmProgramImpl *>(program_impl_.get())
-      ->print_memory_profiler_info(snode_trees_, result_buffer);
-#else
-  TI_ERROR("Llvm disabled");
-#endif
+  program_impl_->print_memory_profiler_info(snode_trees_, result_buffer);
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {

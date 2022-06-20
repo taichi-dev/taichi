@@ -372,90 +372,47 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-void GlobalPtrExpression::type_check(CompileConfig *) {
-  // Currently, dimension compatibility check happens in Python
-  if (var.is<GlobalVariableExpression>()) {
-    ret_type =
-        var.cast<GlobalVariableExpression>()->snode->dt->get_compute_type();
-  } else if (var.is<ExternalTensorExpression>()) {
-    for (int i = 0; i < indices.exprs.size(); i++) {
-      auto &expr = indices.exprs[i];
-      TI_ASSERT_TYPE_CHECKED(expr);
-      if (!is_integral(expr->ret_type))
-        throw TaichiTypeError(
-            fmt::format("indices must be integers, however '{}' is "
-                        "provided as index {}",
-                        expr->ret_type->to_string(), i));
-    }
-    ret_type = var.cast<ExternalTensorExpression>()->dt;
-  } else {
-    TI_ERROR("Invalid GlobalPtrExpression");
-  }
-}
-
-void GlobalPtrExpression::flatten(FlattenContext *ctx) {
+Stmt *make_field_access(Expression::FlattenContext *ctx,
+                        Expr var,
+                        ExprGroup indices) {
   std::vector<Stmt *> index_stmts;
-  std::vector<int> offsets;
-  SNode *snode = nullptr;
-  if (var.is<GlobalVariableExpression>()) {
-    snode = var.cast<GlobalVariableExpression>()->snode;
-    offsets = snode->index_offsets;
-  }
+  SNode *snode = var.cast<GlobalVariableExpression>()->snode;
+  std::vector<int> offsets = snode->index_offsets;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
     Stmt *ind = indices.exprs[i]->stmt;
     if (!offsets.empty()) {
-      // Subtract offsets from indices so that new indices are
-      // within [0, +inf)
       auto offset = ctx->push_back<ConstStmt>(TypedConstant(offsets[i]));
       ind = ctx->push_back<BinaryOpStmt>(BinaryOpType::sub, ind, offset);
     }
     index_stmts.push_back(ind);
   }
-  if (snode) {
-    ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
-  } else {
-    TI_ASSERT(var.is<ExternalTensorExpression>());
-    flatten_lvalue(var, ctx);
-    auto expr = var.cast<ExternalTensorExpression>();
-    ctx->push_back(std::make_unique<ExternalPtrStmt>(
-        expr->stmt, index_stmts, expr->element_shape, expr->element_dim));
+  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
+}
+
+Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
+                          Expr var,
+                          ExprGroup indices) {
+  std::vector<Stmt *> index_stmts;
+  for (int i = 0; i < (int)indices.size(); i++) {
+    flatten_rvalue(indices.exprs[i], ctx);
+    Stmt *ind = indices.exprs[i]->stmt;
+    index_stmts.push_back(ind);
   }
-  stmt = ctx->back_stmt();
+  flatten_lvalue(var, ctx);
+  auto expr = var.cast<ExternalTensorExpression>();
+  return ctx->push_back(std::make_unique<ExternalPtrStmt>(
+      expr->stmt, index_stmts, expr->element_shape, expr->element_dim));
 }
 
-void TensorElementExpression::type_check(CompileConfig *) {
-  std::string invalid_msg{
-      "Invalid TensorElementExpression: the source is neither a local tensor "
-      "nor a global tensor field"};
-  if (is_local_tensor()) {
-    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
-    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
-  } else if (is_global_tensor()) {
-    TI_ASSERT_INFO(
-        var.is<GlobalPtrExpression>() &&
-            var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(),
-        invalid_msg);
-    ret_type = var.cast<GlobalPtrExpression>()
-                   ->var.cast<GlobalVariableExpression>()
-                   ->snode->dt;
-  } else {
-    TI_ERROR(invalid_msg);
-  }
-}
-
-bool TensorElementExpression::is_local_tensor() const {
-  return var.is<IdExpression>();
-}
-
-bool TensorElementExpression::is_global_tensor() const {
-  return var.is<GlobalPtrExpression>();
-}
-
-void TensorElementExpression::flatten(FlattenContext *ctx) {
+Stmt *make_tensor_access(Expression::FlattenContext *ctx,
+                         Expr var,
+                         ExprGroup indices,
+                         std::vector<int> shape,
+                         int stride) {
   flatten_lvalue(var, ctx);
   Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
-  for (int i = 0; i < (int)shape.size(); ++i) {
+  for (int i = 0; i < (int)indices.size(); ++i) {
     flatten_rvalue(indices[i], ctx);
     Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
     Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
@@ -463,10 +420,83 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
                                                indices[i]->stmt);
   }
-  Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
-  offset_stmt =
-      ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, stride_stmt);
-  stmt = ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
+  if (stride != 1) {
+    Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
+    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                               stride_stmt);
+  }
+  return ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
+}
+
+bool IndexExpression::is_field() const {
+  return var.is<GlobalVariableExpression>();
+}
+
+bool IndexExpression::is_ndarray() const {
+  return var.is<ExternalTensorExpression>();
+}
+
+bool IndexExpression::is_tensor() const {
+  return var->ret_type->is<TensorType>();
+}
+
+bool IndexExpression::is_local() const {
+  return is_tensor();
+}
+
+bool IndexExpression::is_global() const {
+  return !is_local();
+}
+
+void IndexExpression::type_check(CompileConfig *) {
+  // TODO: Change to type-based solution
+  // Currently, dimension compatibility check happens in Python
+  if (is_field()) {  // field
+    ret_type = var.cast<GlobalVariableExpression>()->dt->get_compute_type();
+  } else if (is_ndarray()) {  // ndarray
+    ret_type = var.cast<ExternalTensorExpression>()->dt;
+  } else if (is_tensor()) {  // local tensor
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else {
+    throw TaichiTypeError(
+        "Invalid IndexExpression: the source is neither a field nor a tensor");
+  }
+
+  for (int i = 0; i < indices.exprs.size(); i++) {
+    auto &expr = indices.exprs[i];
+    TI_ASSERT_TYPE_CHECKED(expr);
+    if (!is_integral(expr->ret_type))
+      throw TaichiTypeError(
+          fmt::format("indices must be integers, however '{}' is "
+                      "provided as index {}",
+                      expr->ret_type->to_string(), i));
+  }
+}
+
+void IndexExpression::flatten(FlattenContext *ctx) {
+  if (is_field()) {
+    stmt = make_field_access(ctx, var, indices);
+  } else if (is_ndarray()) {
+    stmt = make_ndarray_access(ctx, var, indices);
+  } else if (is_tensor()) {
+    stmt = make_tensor_access(
+        ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
+  }
+}
+
+void StrideExpression::type_check(CompileConfig *) {
+  // This is an ugly hack for global tensors
+  if (var.is<IndexExpression>() &&
+      var.cast<IndexExpression>()->var.is<GlobalVariableExpression>())
+    ret_type = var->ret_type;
+  else
+    throw TaichiTypeError(
+        "Invalid StrideExpression: The source being indexed must be an element "
+        "of a field");
+}
+
+void StrideExpression::flatten(FlattenContext *ctx) {
+  stmt = make_tensor_access(ctx, var, indices, shape, stride);
 }
 
 void RangeAssumptionExpression::type_check(CompileConfig *) {
@@ -547,8 +577,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, src_val);
   } else {
-    TI_ASSERT(dest.is<GlobalPtrExpression>() ||
-              dest.is<TensorElementExpression>() ||
+    TI_ASSERT(dest.is<IndexExpression>() || dest.is<StrideExpression>() ||
               (dest.is<ArgLoadExpression>() &&
                dest.cast<ArgLoadExpression>()->is_ptr));
     flatten_lvalue(dest, ctx);
@@ -905,8 +934,7 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
     for (int d = 0; d < (int)shape.size(); ++d)
       indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
     this->insert(std::make_unique<FrontendAssignStmt>(
-        Expr::make<TensorElementExpression>(var, indices, shape, 1),
-        elements.exprs[i]));
+        Expr::make<IndexExpression>(var, indices), elements.exprs[i]));
   }
   return var;
 }
@@ -1043,21 +1071,19 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     if (ptr->stmt->is<AllocaStmt>()) {
       flatten_local_load(ptr, ctx);
     }
-  } else if (ptr.is<GlobalPtrExpression>()) {
+  } else if (ptr.is<IndexExpression>()) {
+    auto ix = ptr.cast<IndexExpression>();
+    if (ix->is_local()) {
+      flatten_local_load(ptr, ctx);
+    } else {
+      flatten_global_load(ptr, ctx);
+    }
+  } else if (ptr.is<StrideExpression>()) {
     flatten_global_load(ptr, ctx);
   } else if (ptr.is<GlobalVariableExpression>()) {
     TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
               0);
     flatten_global_load(ptr[ExprGroup()], ctx);
-  } else if (ptr.is<TensorElementExpression>()) {
-    auto tensor_ptr = ptr.cast<TensorElementExpression>();
-    if (tensor_ptr->is_global_tensor())
-      flatten_global_load(ptr, ctx);
-    else if (tensor_ptr->is_local_tensor())
-      flatten_local_load(ptr, ctx);
-    else {
-      TI_NOT_IMPLEMENTED
-    }
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {
     flatten_global_load(ptr, ctx);

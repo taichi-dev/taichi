@@ -160,7 +160,7 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
       vk_device.graphics_queue_family_index();
 }
 
-TiMemory ti_import_vulkan_runtime_allocation(
+TiMemory ti_import_vulkan_memory(
     TiRuntime runtime,
     const TiVulkanMemoryInteropInfo *interop_info) {
   Runtime *runtime2 = (Runtime *)runtime;

@@ -24,9 +24,11 @@ TRAIN_OUTPUT_IMG = False
 TRAIN_VISUAL = False
 TRAIN_VISUAL_SHOW = False
 INFER_OUTPUT_IMG = False
-ti.init(arch=ti.gpu, device_memory_fraction=0.5, random_seed=5)
+arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
+ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5)
 screen_res = (1000, 1000)
 
+dtype_f_np = np.float32
 real = ti.f32
 scalar = lambda: ti.field(dtype=real)
 
@@ -242,9 +244,10 @@ else:
     print(f"Model at {file_dir_path} loaded. ")
 
 # Simulation configuration
-boundary_box_np = np.array([[0, 0, 0], [0.5, 1.5, 0.5]])
-spawn_box_np = np.array([[0.0, 0.0, 0.0], [0.5, 0.05, 0.5]])
-target_box_np = np.array([[0.15, 0.90, 0.15], [0.2, 0.95, 0.2]])
+boundary_box_np = np.array([[0, 0, 0], [0.5, 1.5, 0.5]], dtype=dtype_f_np)
+spawn_box_np = np.array([[0.0, 0.0, 0.0], [0.5, 0.05, 0.5]], dtype=dtype_f_np)
+target_box_np = np.array([[0.15, 0.90, 0.15], [0.2, 0.95, 0.2]],
+                         dtype=dtype_f_np)
 
 target_centers = ti.Vector.field(3, float, shape=batch_size, needs_grad=True)
 min_dist = ti.field(float, shape=batch_size, needs_grad=True)

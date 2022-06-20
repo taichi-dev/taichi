@@ -9,7 +9,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
-#include "taichi/backends/opengl/opengl_program.h"
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/backends/metal/metal_program.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -102,8 +102,12 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with DX11");
 #endif
   } else if (config.arch == Arch::opengl) {
+#ifdef TI_WITH_OPENGL
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);

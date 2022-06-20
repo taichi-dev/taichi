@@ -1,5 +1,5 @@
-#include "taichi/backends/opengl/opengl_program.h"
-#include "taichi/backends/opengl/aot_module_builder_impl.h"
+#include "opengl_program.h"
+#include "taichi/runtime/opengl/aot_module_builder_impl.h"
 using namespace taichi::lang::opengl;
 
 namespace taichi {

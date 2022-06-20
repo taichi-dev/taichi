@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "taichi/aot/module_builder.h"
-#include "taichi/backends/opengl/aot_data.h"
+#include "taichi/runtime/opengl/aot_data.h"
 
 namespace taichi {
 namespace lang {

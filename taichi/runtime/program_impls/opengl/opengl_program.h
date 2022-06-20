@@ -1,10 +1,10 @@
 #pragma once
 
-#include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/codegen/opengl/struct_opengl.h"
 
 #include "taichi/runtime/opengl/opengl_kernel_launcher.h"
 #include "taichi/runtime/opengl/opengl_api.h"
-#include "taichi/backends/opengl/codegen_opengl.h"
+#include "taichi/codegen/opengl/codegen_opengl.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"

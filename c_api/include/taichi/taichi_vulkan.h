@@ -21,7 +21,7 @@ typedef struct TiVulkanRuntimeInteropInfo {
 // structure.vulkan_memory_interop_info
 typedef struct TiVulkanMemoryInteropInfo {
   VkBuffer buffer;
-  size_t size;
+  uint64_t size;
   VkBufferUsageFlags usage;
 } TiVulkanMemoryInteropInfo;
 

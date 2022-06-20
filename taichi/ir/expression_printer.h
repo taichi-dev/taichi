@@ -110,14 +110,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     }
   }
 
-  void visit(GlobalPtrExpression *expr) override {
+  void visit(IndexExpression *expr) override {
     expr->var->accept(this);
     emit('[');
     emit_vector(expr->indices.exprs);
     emit(']');
   }
 
-  void visit(TensorElementExpression *expr) override {
+  void visit(StrideExpression *expr) override {
     expr->var->accept(this);
     emit('[');
     emit_vector(expr->indices.exprs);

@@ -15,6 +15,7 @@ import numpy as np
 import rich
 from colorama import Fore
 from rich.console import Console
+from rich.syntax import Syntax
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
 from taichi.tools import cc_compose, diagnose, video
@@ -200,7 +201,7 @@ class TaichiMain:
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
             print("Demo source code:")
             print()
-            content = rich.syntax.Syntax.from_path(script, line_numbers=True)
+            content = Syntax.from_path(script, line_numbers=True)
             console = rich.console.Console()
             console.print(content)
             self._exec_python_file(script)

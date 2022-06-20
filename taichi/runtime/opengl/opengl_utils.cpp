@@ -1,4 +1,4 @@
-#include "taichi/backends/opengl/opengl_utils.h"
+#include "taichi/runtime/opengl/opengl_utils.h"
 #include "glad/gl.h"
 
 namespace taichi {

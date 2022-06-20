@@ -949,9 +949,12 @@ Value IRBuilder::load_variable(Value pointer, const SType &res_type) {
             pointer.flag == ValueKind::kPhysicalPtr);
   Value ret = new_value(res_type, ValueKind::kNormal);
   if (pointer.flag == ValueKind::kPhysicalPtr) {
-    Value alignment = uint_immediate_number(
-        t_uint32_, get_primitive_type_size(res_type.dt));
-    ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer, spv::MemoryAccessAlignedMask, alignment).commit(&function_);
+    Value alignment =
+        uint_immediate_number(t_uint32_, get_primitive_type_size(res_type.dt));
+    ib_.begin(spv::OpLoad)
+        .add_seq(res_type, ret, pointer, spv::MemoryAccessAlignedMask,
+                 alignment)
+        .commit(&function_);
   } else {
     ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer).commit(&function_);
   }

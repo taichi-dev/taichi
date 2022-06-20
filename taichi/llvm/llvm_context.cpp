@@ -59,7 +59,7 @@ namespace lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
+TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
     : arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
@@ -94,7 +94,7 @@ TaichiLLVMContext::TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch)
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(this, llvm_prog->config, arch);
+  jit = JITSession::create(this, config, arch);
   TI_TRACE("Taichi llvm context created.");
 }
 

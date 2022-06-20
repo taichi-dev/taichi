@@ -54,12 +54,11 @@ class CompiledTaichiKernel {
   size_t get_args_buffer_size() const;
   size_t get_ret_buffer_size() const;
 
-  void generate_command_list(
-      CommandList *cmdlist,
-      DeviceAllocationGuard *args_buffer,
-      DeviceAllocationGuard *ret_buffer,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrs,
-      const std::unordered_map<int, DeviceAllocation> &textures) const;
+  Pipeline *get_pipeline(int i);
+
+  DeviceAllocation *get_buffer_bind(const BufferInfo &bind) {
+    return input_buffers_[bind];
+  }
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;

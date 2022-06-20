@@ -99,6 +99,7 @@ class TaskCodegen : public IRVisitor {
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
+    std::unordered_map<int, irpass::ExternalPtrAccess> arr_access;
   };
 
   Result run() {
@@ -129,6 +130,7 @@ class TaskCodegen : public IRVisitor {
     Result res;
     res.spirv_code = ir_->finalize();
     res.task_attribs = std::move(task_attribs_);
+    res.arr_access = irpass::detect_external_ptr_access_in_task(task_ir_);
 
     return res;
   }
@@ -1968,6 +1970,7 @@ class TaskCodegen : public IRVisitor {
     if (!ctx_attribs_->has_args())
       return;
 
+    /*
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
     for (auto &arg : ctx_attribs_->args()) {
@@ -1991,6 +1994,31 @@ class TaskCodegen : public IRVisitor {
           ctx_attribs_->extra_args_mem_offset() + i * 4);
     }
     args_struct_type_ = ir_->create_struct_type(struct_components_);
+    */
+
+    tinyir::Block blk;
+    std::vector<const tinyir::Type *> element_types;
+    for (auto &arg : ctx_attribs_->args()) {
+      const tinyir::Type *t;
+      if (arg.is_array &&
+          device_->get_cap(
+              DeviceCapability::spirv_has_physical_storage_buffer)) {
+        t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
+      } else {
+        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
+      }
+      element_types.push_back(t);
+    }
+    const tinyir::Type *i32_type =
+        blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);
+    for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
+      element_types.push_back(i32_type);
+    }
+    const tinyir::Type *struct_type = blk.emplace_back<StructType>(element_types);
+
+    STD140LayoutContext layout_ctx;
+    auto map = ir_translate_to_spirv(&blk, layout_ctx, ir_.get());
+    args_struct_type_.id = map[struct_type];
 
     args_buffer_value_ =
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
@@ -2198,6 +2226,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     TaskCodegen cgen(tp);
     auto task_res = cgen.run();
+
+    for (auto &[id, access] : task_res.arr_access) {
+      ctx_attribs_.arr_access[id] = ctx_attribs_.arr_access[id] | access;
+    }
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 

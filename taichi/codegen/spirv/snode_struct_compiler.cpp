@@ -14,11 +14,55 @@ class StructCompiler {
     result.root = &root;
     result.root_size = compute_snode_size(&root);
     result.snode_descriptors = std::move(snode_descriptors_);
+    /*
+    result.type_factory = new tinyir::Block;
+    result.root_type = construct(*result.type_factory, &root);
+    */
     TI_TRACE("RootBuffer size={}", result.root_size);
+
+    /*
+    std::unique_ptr<tinyir::Block> b = ir_reduce_types(result.type_factory);
+
+    TI_WARN("Original types:\n{}", ir_print_types(result.type_factory));
+
+    TI_WARN("Reduced types:\n{}", ir_print_types(b.get()));
+    */
+
     return result;
   }
 
  private:
+
+  const tinyir::Type *construct(tinyir::Block &ir_module, SNode *sn) {
+    const tinyir::Type *cell_type = nullptr;
+
+    if (sn->is_place()) {
+      // Each cell is a single Type
+      cell_type = translate_ti_primitive(ir_module, sn->dt);
+    } else {
+      // Each cell is a struct
+      std::vector<const tinyir::Type *> struct_elements;
+      for (auto &ch : sn->ch) {
+        const tinyir::Type *elem_type = construct(ir_module, ch.get());
+        struct_elements.push_back(elem_type);
+      }
+      tinyir::Type *st = ir_module.emplace_back<StructType>(struct_elements);
+      st->set_debug_name(fmt::format("{}_{}", snode_type_name(sn->type), sn->get_name()));
+      cell_type = st;
+
+      if (sn->type == SNodeType::pointer) {
+        cell_type = ir_module.emplace_back<PhysicalPointerType>(cell_type);
+      }
+    }
+
+    if (sn->num_cells_per_container == 1 || sn->is_scalar()) {
+      return cell_type;
+    } else {
+      return ir_module.emplace_back<ArrayType>(cell_type,
+                                               sn->num_cells_per_container);
+    }
+  }
+
   std::size_t compute_snode_size(SNode *sn) {
     const bool is_place = sn->is_place();
 

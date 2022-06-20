@@ -109,8 +109,8 @@ file(GLOB TAICHI_CORE_SOURCE
         "taichi/system/*"
         "taichi/transforms/*"
         "taichi/util/*"
-        "taichi/platform/cuda/*" "taichi/platform/mac/*"
-	"taichi/platform/windows/*"
+        "taichi/gui/*"
+        "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
         "taichi/lang_util.h" "taichi/lang_util.cpp"
         "taichi/runtime/*.h" "taichi/runtime/*.cpp"
         "taichi/backends/*.h" "taichi/backends/*.cpp"
@@ -127,7 +127,6 @@ file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
     "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp" "taichi/ui/*.h"
     "taichi/ui/*/*.h" "taichi/ui/*/*/*.h" "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
-    "taichi/gui/*"
 )
 file(GLOB TAICHI_GGUI_GLFW_SOURCE
   "taichi/ui/common/window_base.cpp"

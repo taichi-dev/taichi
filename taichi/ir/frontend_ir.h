@@ -478,12 +478,14 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class GlobalPtrExpression : public Expression {
+class IndexExpression : public Expression {
  public:
+  // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
+  // IdExpression
   Expr var;
   ExprGroup indices;
 
-  GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
   }
 
@@ -495,29 +497,37 @@ class GlobalPtrExpression : public Expression {
     return true;
   }
 
+  // whether the LocalLoad/Store or GlobalLoad/Store is to be used on the
+  // compiled stmt
+  bool is_local() const;
+  bool is_global() const;
+
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
+
+ private:
+  bool is_field() const;
+  bool is_ndarray() const;
+  bool is_tensor() const;
 };
 
-class TensorElementExpression : public Expression {
+class StrideExpression : public Expression {
  public:
+  // `var` must be an IndexExpression on a GlobalVariableExpression
+  // therefore the access is always global
   Expr var;
   ExprGroup indices;
   std::vector<int> shape;
   int stride{0};
 
-  TensorElementExpression(const Expr &var,
-                          const ExprGroup &indices,
-                          const std::vector<int> &shape,
-                          int stride)
+  StrideExpression(const Expr &var,
+                   const ExprGroup &indices,
+                   const std::vector<int> &shape,
+                   int stride)
       : var(var), indices(indices), shape(shape), stride(stride) {
     // TODO: shape & indices check
   }
 
   void type_check(CompileConfig *config) override;
-
-  bool is_local_tensor() const;
-
-  bool is_global_tensor() const;
 
   void flatten(FlattenContext *ctx) override;
 

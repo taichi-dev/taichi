@@ -5,7 +5,7 @@
 
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
+#include "taichi/llvm/snode_tree_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"

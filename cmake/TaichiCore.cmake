@@ -89,34 +89,49 @@ if(NOT TI_WITH_LLVM)
 endif()
 
 
-
-# TODO 4832: Split source per target, do not include everything in taichi_core_source
+## TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
-        "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
-        "taichi/*/*/*/*.h" "taichi/*/*/*.h" "taichi/*/*.h" "taichi/*.h" "tests/cpp/task/*.cpp")
-
-file(GLOB TAICHI_BACKEND_SOURCE "taichi/backends/**/*.cpp" "taichi/backends/**/*.h")
+        "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
+        "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
+	"taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
+        "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
+        "taichi/codegen/opengl/shaders/*" #CODEGEN
+        "taichi/codegen/spirv/*" #CODEGEN
+        "taichi/common/*"
+        "taichi/ir/*"
+        "taichi/jit/*"
+        "taichi/llvm/*"
+        "taichi/math/*"
+        "taichi/program/*"
+        "taichi/struct/*"
+        "taichi/system/*"
+        "taichi/transforms/*"
+        "taichi/util/*"
+        "taichi/platform/cuda/*" "taichi/platform/mac/*"
+	"taichi/platform/windows/*"
+        "taichi/lang_util.h" "taichi/lang_util.cpp"
+        "taichi/runtime/*.h" "taichi/runtime/*.cpp"
+        "taichi/backends/*.h" "taichi/backends/*.cpp"
+)
 
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
-file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/*.h")
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
-file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
-file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-
+file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
+file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/*.h")
 
 file(GLOB TAICHI_GGUI_SOURCE
-    "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
-    "taichi/ui/*.h"  "taichi/ui/*/*.h" "taichi/ui/*/*/*.h"  "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
+    "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
+    "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp" "taichi/ui/*.h"
+    "taichi/ui/*/*.h" "taichi/ui/*/*/*.h" "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
+    "taichi/gui/*"
 )
 file(GLOB TAICHI_GGUI_GLFW_SOURCE
   "taichi/ui/common/window_base.cpp"
   "taichi/ui/backends/vulkan/window.cpp"
 )
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
-
 
 if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
@@ -144,7 +159,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/struct_opengl.*"
 )
 
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
@@ -177,14 +191,6 @@ if (TI_WITH_METAL)
 endif()
 
 
-if (TI_WITH_OPENGL)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-  # Q: Why not external/glad/src/*.c?
-  # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
-  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/gl.c" "external/glad/src/egl.c")
-  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
-  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
-endif()
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
 
 if (TI_WITH_CC)
@@ -228,31 +234,6 @@ file(GLOB TAICHI_EMBIND_SOURCE
 if (TAICHI_EMBIND_SOURCE)
   list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_EMBIND_SOURCE})
 endif()
-
-
-# TODO(#4832), Remove vulkan runtime files from TAICHI_CORE_SOURCE
-# Remove this after all sources are splitted into targets.
-file(GLOB TAICHI_VULKAN_TEMP_SOURCE
-  "taichi/backends/vulkan/*.h"
-  "taichi/backends/vulkan/*.cpp"
-  "taichi/runtime/gfx/*.h"
-  "taichi/runtime/gfx/*.cpp"
-  "taichi/runtime/program_impls/vulkan/*.h"
-  "taichi/runtime/program_impls/vulkan/*.cpp"
-)
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VULKAN_TEMP_SOURCE})
-
-# TODO(#4832), Remove opengl runtime files from TAICHI_CORE_SOURCE
-# Remove this after all sources are splitted into targets.
-file(GLOB TAICHI_OPENGL_TEMP_SOURCE
-  "taichi/backends/opengl/*.h"
-  "taichi/backends/opengl/*.cpp"
-  "taichi/runtime/opengl/*.h"
-  "taichi/runtime/opengl/*.cpp"
-  "taichi/runtime/program_impls/opengl/*.h"
-  "taichi/runtime/program_impls/opengl/*.cpp"
-)
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_OPENGL_TEMP_SOURCE})
 
 
 # TODO(#2196): Rename these CMAKE variables:
@@ -377,6 +358,7 @@ else()
 endif()
 
 if (TI_WITH_OPENGL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
     set(SPIRV_CROSS_CLI false)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)

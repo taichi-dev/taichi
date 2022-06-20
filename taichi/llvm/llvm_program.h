@@ -64,6 +64,12 @@ class LlvmRuntimeExecutor {
         taichi_result_buffer_runtime_query_id, result_buffer));
   }
 
+  template <typename T>
+  T fetch_result(int i, uint64 *result_buffer) {
+    return taichi_union_cast_with_different_sizes<T>(
+        fetch_result_uint64(i, result_buffer));
+  }
+
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
   void synchronize();
@@ -71,6 +77,12 @@ class LlvmRuntimeExecutor {
   LLVMRuntime *get_llvm_runtime() {
     return static_cast<LLVMRuntime *>(llvm_runtime_);
   }
+
+  void check_runtime_error(uint64 *result_buffer);
+
+  void print_memory_profiler_info(
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      uint64 *result_buffer);
 
  private:
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
@@ -83,6 +95,9 @@ class LlvmRuntimeExecutor {
    * Not thread safe.
    */
   void maybe_initialize_cuda_llvm_context();
+
+  std::size_t get_snode_num_dynamically_allocated(SNode *snode,
+                                                  uint64 *result_buffer);
 
  private:
   CompileConfig *config_;
@@ -109,8 +124,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   template <typename T>
   T fetch_result(int i, uint64 *result_buffer) {
-    return taichi_union_cast_with_different_sizes<T>(
-        fetch_result_uint64(i, result_buffer));
+    return runtime_exec_->fetch_result<T>(i, result_buffer);
   }
 
   /**
@@ -120,21 +134,11 @@ class LlvmProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  std::size_t get_snode_num_dynamically_allocated(
-      SNode *snode,
-      uint64 *result_buffer) override;
-
   void destroy_snode_tree(SNodeTree *snode_tree) override {
     get_llvm_context(host_arch())
         ->delete_functions_of_snode_tree(snode_tree->id());
     snode_tree_buffer_manager_->destroy(snode_tree);
   }
-
-  void print_memory_profiler_info(
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer);
-
-  void check_runtime_error(uint64 *result_buffer);
 
   void finalize();
 
@@ -192,10 +196,6 @@ class LlvmProgramImpl : public ProgramImpl {
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */
  public:
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
-    return runtime_exec_->fetch_result_uint64(i, result_buffer);
-  }
-
   void initialize_host() {
     runtime_exec_->initialize_host();
   }
@@ -214,6 +214,12 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->print_list_manager_info(list_manager, result_buffer);
   }
 
+  void print_memory_profiler_info(
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      uint64 *result_buffer) {
+    runtime_exec_->print_memory_profiler_info(snode_trees_, result_buffer);
+  }
+
   TaichiLLVMContext *get_llvm_context(Arch arch) {
     return runtime_exec_->get_llvm_context(arch);
   }
@@ -224,6 +230,17 @@ class LlvmProgramImpl : public ProgramImpl {
 
   LLVMRuntime *get_llvm_runtime() {
     return runtime_exec_->get_llvm_runtime();
+  }
+
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override {
+    return runtime_exec_->get_snode_num_dynamically_allocated(snode,
+                                                              result_buffer);
+  }
+
+  void check_runtime_error(uint64 *result_buffer) {
+    runtime_exec_->check_runtime_error(result_buffer);
   }
 
  private:

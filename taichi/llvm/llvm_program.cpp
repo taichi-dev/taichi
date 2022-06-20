@@ -270,21 +270,6 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                  result_buffer);
 }
 
-std::size_t LlvmProgramImpl::get_snode_num_dynamically_allocated(
-    SNode *snode,
-    uint64 *result_buffer) {
-  TI_ASSERT(arch_uses_llvm(config->arch));
-
-  auto node_allocator =
-      runtime_query<void *>("LLVMRuntime_get_node_allocators", result_buffer,
-                            runtime_exec_->llvm_runtime_, snode->id);
-  auto data_list = runtime_query<void *>("NodeManager_get_data_list",
-                                         result_buffer, node_allocator);
-
-  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
-                                           result_buffer, data_list);
-}
-
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
     return std::make_unique<cpu::AotModuleBuilderImpl>(this);
@@ -407,54 +392,6 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   }
 }
 
-void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
-  synchronize();
-  auto tlctx = runtime_exec_->llvm_context_host_.get();
-  if (runtime_exec_->llvm_context_device_) {
-    // In case there is a standalone device context (e.g. CUDA without unified
-    // memory), use the device context instead.
-    tlctx = runtime_exec_->llvm_context_device_.get();
-  }
-  auto *runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
-                                   runtime_exec_->llvm_runtime_);
-  auto error_code =
-      fetch_result<int64>(taichi_result_buffer_error_id, result_buffer);
-
-  if (error_code) {
-    std::string error_message_template;
-
-    // Here we fetch the error_message_template char by char.
-    // This is not efficient, but fortunately we only need to do this when an
-    // assertion fails. Note that we may not have unified memory here, so using
-    // "fetch_result" that works across device/host memroy is necessary.
-    for (int i = 0;; i++) {
-      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                       runtime_exec_->llvm_runtime_, i);
-      auto c = fetch_result<char>(taichi_result_buffer_error_id, result_buffer);
-      error_message_template += c;
-      if (c == '\0') {
-        break;
-      }
-    }
-
-    if (error_code == 1) {
-      const auto error_message_formatted = format_error_message(
-          error_message_template,
-          [runtime_jit_module, result_buffer, this](int argument_id) {
-            runtime_jit_module->call<void *>(
-                "runtime_retrieve_error_message_argument",
-                runtime_exec_->llvm_runtime_, argument_id);
-            return fetch_result<uint64>(taichi_result_buffer_error_id,
-                                        result_buffer);
-          });
-      throw TaichiAssertionError(error_message_formatted);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  }
-}
-
 void LlvmProgramImpl::finalize() {
   if (runtime_mem_info_)
     runtime_mem_info_->set_profiler(nullptr);
@@ -463,79 +400,6 @@ void LlvmProgramImpl::finalize() {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
   }
 #endif
-}
-
-void LlvmProgramImpl::print_memory_profiler_info(
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    uint64 *result_buffer) {
-  TI_ASSERT(arch_uses_llvm(config->arch));
-
-  fmt::print("\n[Memory Profiler]\n");
-
-  std::locale::global(std::locale("en_US.UTF-8"));
-  // So that thousand separators are added to "{:n}" slots in fmtlib.
-  // E.g., 10000 is printed as "10,000".
-  // TODO: is there a way to set locale only locally in this function?
-
-  std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    auto element_list =
-        runtime_query<void *>("LLVMRuntime_get_element_lists", result_buffer,
-                              runtime_exec_->llvm_runtime_, snode->id);
-
-    if (snode->type != SNodeType::place) {
-      fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
-
-      if (element_list) {
-        fmt::print("  active element list:");
-        print_list_manager_info(element_list, result_buffer);
-
-        auto node_allocator = runtime_query<void *>(
-            "LLVMRuntime_get_node_allocators", result_buffer,
-            runtime_exec_->llvm_runtime_, snode->id);
-
-        if (node_allocator) {
-          auto free_list = runtime_query<void *>("NodeManager_get_free_list",
-                                                 result_buffer, node_allocator);
-          auto recycled_list = runtime_query<void *>(
-              "NodeManager_get_recycled_list", result_buffer, node_allocator);
-
-          auto free_list_len = runtime_query<int32>(
-              "ListManager_get_num_elements", result_buffer, free_list);
-
-          auto recycled_list_len = runtime_query<int32>(
-              "ListManager_get_num_elements", result_buffer, recycled_list);
-
-          auto free_list_used = runtime_query<int32>(
-              "NodeManager_get_free_list_used", result_buffer, node_allocator);
-
-          auto data_list = runtime_query<void *>("NodeManager_get_data_list",
-                                                 result_buffer, node_allocator);
-          fmt::print("  data list:          ");
-          print_list_manager_info(data_list, result_buffer);
-
-          fmt::print(
-              "  Allocated elements={:n}; free list length={:n}; recycled list "
-              "length={:n}\n",
-              free_list_used, free_list_len, recycled_list_len);
-        }
-      }
-    }
-    for (const auto &ch : snode->ch) {
-      visit(ch.get(), depth + 1);
-    }
-  };
-
-  for (auto &a : snode_trees_) {
-    visit(a->root(), /*depth=*/0);
-  }
-
-  auto total_requested_memory =
-      runtime_query<std::size_t>("LLVMRuntime_get_total_requested_memory",
-                                 result_buffer, runtime_exec_->llvm_runtime_);
-
-  fmt::print(
-      "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
-      total_requested_memory);
 }
 
 cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
@@ -752,6 +616,141 @@ uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
     ret = result_buffer[i];
   }
   return ret;
+}
+
+std::size_t LlvmRuntimeExecutor::get_snode_num_dynamically_allocated(
+    SNode *snode,
+    uint64 *result_buffer) {
+  TI_ASSERT(arch_uses_llvm(config_->arch));
+
+  auto node_allocator =
+      runtime_query<void *>("LLVMRuntime_get_node_allocators", result_buffer,
+                            llvm_runtime_, snode->id);
+  auto data_list = runtime_query<void *>("NodeManager_get_data_list",
+                                         result_buffer, node_allocator);
+
+  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
+                                           result_buffer, data_list);
+}
+
+void LlvmRuntimeExecutor::check_runtime_error(uint64 *result_buffer) {
+  synchronize();
+  auto tlctx = llvm_context_host_.get();
+  if (llvm_context_device_) {
+    // In case there is a standalone device context (e.g. CUDA without unified
+    // memory), use the device context instead.
+    tlctx = llvm_context_device_.get();
+  }
+  auto *runtime_jit_module = tlctx->runtime_jit_module;
+  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
+                                   llvm_runtime_);
+  auto error_code =
+      fetch_result<int64>(taichi_result_buffer_error_id, result_buffer);
+
+  if (error_code) {
+    std::string error_message_template;
+
+    // Here we fetch the error_message_template char by char.
+    // This is not efficient, but fortunately we only need to do this when an
+    // assertion fails. Note that we may not have unified memory here, so using
+    // "fetch_result" that works across device/host memroy is necessary.
+    for (int i = 0;; i++) {
+      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
+                                       llvm_runtime_, i);
+      auto c = fetch_result<char>(taichi_result_buffer_error_id, result_buffer);
+      error_message_template += c;
+      if (c == '\0') {
+        break;
+      }
+    }
+
+    if (error_code == 1) {
+      const auto error_message_formatted = format_error_message(
+          error_message_template,
+          [runtime_jit_module, result_buffer, this](int argument_id) {
+            runtime_jit_module->call<void *>(
+                "runtime_retrieve_error_message_argument", llvm_runtime_,
+                argument_id);
+            return fetch_result<uint64>(taichi_result_buffer_error_id,
+                                        result_buffer);
+          });
+      throw TaichiAssertionError(error_message_formatted);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+}
+
+void LlvmRuntimeExecutor::print_memory_profiler_info(
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    uint64 *result_buffer) {
+  TI_ASSERT(arch_uses_llvm(config_->arch));
+
+  fmt::print("\n[Memory Profiler]\n");
+
+  std::locale::global(std::locale("en_US.UTF-8"));
+  // So that thousand separators are added to "{:n}" slots in fmtlib.
+  // E.g., 10000 is printed as "10,000".
+  // TODO: is there a way to set locale only locally in this function?
+
+  std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
+    auto element_list =
+        runtime_query<void *>("LLVMRuntime_get_element_lists", result_buffer,
+                              llvm_runtime_, snode->id);
+
+    if (snode->type != SNodeType::place) {
+      fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
+
+      if (element_list) {
+        fmt::print("  active element list:");
+        print_list_manager_info(element_list, result_buffer);
+
+        auto node_allocator =
+            runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                                  result_buffer, llvm_runtime_, snode->id);
+
+        if (node_allocator) {
+          auto free_list = runtime_query<void *>("NodeManager_get_free_list",
+                                                 result_buffer, node_allocator);
+          auto recycled_list = runtime_query<void *>(
+              "NodeManager_get_recycled_list", result_buffer, node_allocator);
+
+          auto free_list_len = runtime_query<int32>(
+              "ListManager_get_num_elements", result_buffer, free_list);
+
+          auto recycled_list_len = runtime_query<int32>(
+              "ListManager_get_num_elements", result_buffer, recycled_list);
+
+          auto free_list_used = runtime_query<int32>(
+              "NodeManager_get_free_list_used", result_buffer, node_allocator);
+
+          auto data_list = runtime_query<void *>("NodeManager_get_data_list",
+                                                 result_buffer, node_allocator);
+          fmt::print("  data list:          ");
+          print_list_manager_info(data_list, result_buffer);
+
+          fmt::print(
+              "  Allocated elements={:n}; free list length={:n}; recycled list "
+              "length={:n}\n",
+              free_list_used, free_list_len, recycled_list_len);
+        }
+      }
+    }
+    for (const auto &ch : snode->ch) {
+      visit(ch.get(), depth + 1);
+    }
+  };
+
+  for (auto &a : snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
+
+  auto total_requested_memory = runtime_query<std::size_t>(
+      "LLVMRuntime_get_total_requested_memory", result_buffer, llvm_runtime_);
+
+  fmt::print(
+      "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
+      total_requested_memory);
 }
 
 }  // namespace lang

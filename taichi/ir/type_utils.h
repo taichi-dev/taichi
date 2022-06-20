@@ -212,7 +212,7 @@ class BitStructTypeBuilder {
     return old_member_total_bits;
   }
 
-  Type *build() {
+  Type *build() const {
     return TypeFactory::get_instance().get_bit_struct_type(
         physical_type_, member_types_, member_bit_offsets_);
   }

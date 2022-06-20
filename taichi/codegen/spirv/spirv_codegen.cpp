@@ -1970,32 +1970,7 @@ class TaskCodegen : public IRVisitor {
     if (!ctx_attribs_->has_args())
       return;
 
-    /*
-    std::vector<std::tuple<spirv::SType, std::string, size_t>>
-        struct_components_;
-    for (auto &arg : ctx_attribs_->args()) {
-      if (arg.is_array &&
-          device_->get_cap(
-              DeviceCapability::spirv_has_physical_storage_buffer)) {
-        struct_components_.emplace_back(ir_->u64_type(),
-                                        "arg_ptr" + std::to_string(arg.index),
-                                        arg.offset_in_mem);
-      } else {
-        struct_components_.emplace_back(
-            ir_->get_primitive_type(PrimitiveType::get(arg.dtype)),
-            "arg" + std::to_string(arg.index), arg.offset_in_mem);
-      }
-    }
-    // A compromise for use in constants buffer
-    // where scalar arrays follow very weird packing rules
-    for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
-      struct_components_.emplace_back(
-          ir_->i32_type(), "extra_args" + std::to_string(i),
-          ctx_attribs_->extra_args_mem_offset() + i * 4);
-    }
-    args_struct_type_ = ir_->create_struct_type(struct_components_);
-    */
-
+    // Generate struct IR
     tinyir::Block blk;
     std::vector<const tinyir::Type *> element_types;
     for (auto &arg : ctx_attribs_->args()) {
@@ -2016,8 +1991,14 @@ class TaskCodegen : public IRVisitor {
     }
     const tinyir::Type *struct_type = blk.emplace_back<StructType>(element_types);
 
+    // Reduce struct IR
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> old2new;
+    auto reduced_blk = ir_reduce_types(&blk, old2new);
+    struct_type = old2new[struct_type];
+
+    // Layout & translate to SPIR-V
     STD140LayoutContext layout_ctx;
-    auto map = ir_translate_to_spirv(&blk, layout_ctx, ir_.get());
+    auto map = ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
     args_struct_type_.id = map[struct_type];
 
     args_buffer_value_ =

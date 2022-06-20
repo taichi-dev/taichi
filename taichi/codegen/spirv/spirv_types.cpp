@@ -284,22 +284,25 @@ std::string ir_print_types(const tinyir::Block *block) {
 }
 
 class TypeReducer : public TypeVisitor {
- private:
-  std::unique_ptr<tinyir::Block> copy_{nullptr};
-  std::unordered_map<const tinyir::Type *, const tinyir::Type *> oldptr2newptr_;
-
  public:
-  TypeReducer() {
-    copy_ = std::make_unique<tinyir::Block>();
+  std::unique_ptr<tinyir::Block> copy{nullptr};
+  std::unordered_map<const tinyir::Type *, const tinyir::Type *>
+      &oldptr2newptr;
+
+  TypeReducer(
+      std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new)
+      : oldptr2newptr(old2new) {
+    copy = std::make_unique<tinyir::Block>();
+    old2new.clear();
   }
 
   const tinyir::Type *check_type(const tinyir::Type *type) {
-    if (oldptr2newptr_.find(type) != oldptr2newptr_.end()) {
-      return oldptr2newptr_[type];
+    if (oldptr2newptr.find(type) != oldptr2newptr.end()) {
+      return oldptr2newptr[type];
     }
-    for (const auto &t : copy_->nodes()) {
+    for (const auto &t : copy->nodes()) {
       if (t->equals(type)) {
-        oldptr2newptr_[type] = (const tinyir::Type *)t.get();
+        oldptr2newptr[type] = (const tinyir::Type *)t.get();
         return (const tinyir::Type *)t.get();
       }
     }
@@ -308,13 +311,13 @@ class TypeReducer : public TypeVisitor {
 
   void visit_int_type(const IntType *type) override {
     if (!check_type(type)) {
-      oldptr2newptr_[type] = copy_->emplace_back<IntType>(*type);
+      oldptr2newptr[type] = copy->emplace_back<IntType>(*type);
     }
   }
 
   void visit_float_type(const FloatType *type) override {
     if (!check_type(type)) {
-      oldptr2newptr_[type] = copy_->emplace_back<FloatType>(*type);
+      oldptr2newptr[type] = copy->emplace_back<FloatType>(*type);
     }
   }
 
@@ -322,7 +325,7 @@ class TypeReducer : public TypeVisitor {
     if (!check_type(type)) {
       const tinyir::Type *pointed = check_type(type->get_pointed_type());
       TI_ASSERT(pointed);
-      oldptr2newptr_[type] = copy_->emplace_back<PhysicalPointerType>(pointed);
+      oldptr2newptr[type] = copy->emplace_back<PhysicalPointerType>(pointed);
     }
   }
 
@@ -334,7 +337,7 @@ class TypeReducer : public TypeVisitor {
         TI_ASSERT(elm);
         elements.push_back(elm);
       }
-      oldptr2newptr_[type] = copy_->emplace_back<StructType>(elements);
+      oldptr2newptr[type] = copy->emplace_back<StructType>(elements);
     }
   }
 
@@ -342,7 +345,7 @@ class TypeReducer : public TypeVisitor {
     if (!check_type(type)) {
       const tinyir::Type *element = check_type(type->element_type());
       TI_ASSERT(element);
-      oldptr2newptr_[type] = copy_->emplace_back<SmallVectorType>(
+      oldptr2newptr[type] = copy->emplace_back<SmallVectorType>(
           element, type->get_constant_shape()[0]);
     }
   }
@@ -351,20 +354,18 @@ class TypeReducer : public TypeVisitor {
     if (!check_type(type)) {
       const tinyir::Type *element = check_type(type->element_type());
       TI_ASSERT(element);
-      oldptr2newptr_[type] = copy_->emplace_back<ArrayType>(
+      oldptr2newptr[type] = copy->emplace_back<ArrayType>(
           element, type->get_constant_shape()[0]);
     }
   }
-
-  static std::unique_ptr<tinyir::Block> reduce(tinyir::Block *blk) {
-    TypeReducer reducer;
-    reducer.visit(blk);
-    return std::move(reducer.copy_);
-  }
 };
 
-std::unique_ptr<tinyir::Block> ir_reduce_types(tinyir::Block *blk) {
-  return TypeReducer::reduce(blk);
+std::unique_ptr<tinyir::Block> ir_reduce_types(
+    tinyir::Block *blk,
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new) {
+  TypeReducer reducer(old2new);
+  reducer.visit(blk);
+  return std::move(reducer.copy);
 }
 
 class Translate2Spirv : public TypeVisitor {

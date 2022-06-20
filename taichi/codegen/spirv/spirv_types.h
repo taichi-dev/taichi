@@ -227,7 +227,9 @@ const tinyir::Type *translate_ti_primitive(tinyir::Block &ir_module,
 
 std::string ir_print_types(const tinyir::Block *block);
 
-std::unique_ptr<tinyir::Block> ir_reduce_types(tinyir::Block *blk);
+std::unique_ptr<tinyir::Block> ir_reduce_types(
+    tinyir::Block *blk,
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new);
 
 class IRBuilder;
 

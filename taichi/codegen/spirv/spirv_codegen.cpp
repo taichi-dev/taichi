@@ -1989,7 +1989,8 @@ class TaskCodegen : public IRVisitor {
     for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
       element_types.push_back(i32_type);
     }
-    const tinyir::Type *struct_type = blk.emplace_back<StructType>(element_types);
+    const tinyir::Type *struct_type =
+        blk.emplace_back<StructType>(element_types);
 
     // Reduce struct IR
     std::unordered_map<const tinyir::Type *, const tinyir::Type *> old2new;

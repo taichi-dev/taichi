@@ -28,7 +28,8 @@ size_t StructType::memory_size(tinyir::LayoutContext &ctx) const {
   }
 
   if (ctx.is<STD140LayoutContext>()) {
-    // With STD140 layout, the next member is rounded up to the alignment size. Thus we should simply size up the struct to the alignment.
+    // With STD140 layout, the next member is rounded up to the alignment size.
+    // Thus we should simply size up the struct to the alignment.
     size_t self_alignment = this->memory_alignment_size(ctx);
     size_head = tinyir::ceil_div(size_head, self_alignment) * self_alignment;
   }
@@ -37,8 +38,7 @@ size_t StructType::memory_size(tinyir::LayoutContext &ctx) const {
   return size_head;
 }
 
-size_t StructType::memory_alignment_size(
-    tinyir::LayoutContext &ctx) const {
+size_t StructType::memory_alignment_size(tinyir::LayoutContext &ctx) const {
   if (size_t s = ctx.query_alignment(this)) {
     return s;
   }
@@ -46,7 +46,9 @@ size_t StructType::memory_alignment_size(
   size_t max_align = 0;
   for (const Type *elem : elements_) {
     TI_ASSERT(elem->is<tinyir::MemRefElementTypeInterface>());
-    max_align = std::max(max_align, elem->cast<MemRefElementTypeInterface>()->memory_alignment_size(ctx));
+    max_align = std::max(
+        max_align,
+        elem->cast<MemRefElementTypeInterface>()->memory_alignment_size(ctx));
   }
 
   if (ctx.is<STD140LayoutContext>()) {
@@ -70,20 +72,22 @@ SmallVectorType::SmallVectorType(const Type *element_type, int num_elements)
   TI_ASSERT(num_elements > 1 && num_elements_ <= 4);
 }
 
-
 size_t SmallVectorType::memory_size(tinyir::LayoutContext &ctx) const {
   if (size_t s = ctx.query_size(this)) {
     return s;
   }
 
-  size_t size = element_type_->cast<tinyir::MemRefElementTypeInterface>()
-      ->memory_size(ctx) * num_elements_;
+  size_t size =
+      element_type_->cast<tinyir::MemRefElementTypeInterface>()->memory_size(
+          ctx) *
+      num_elements_;
 
   ctx.register_size(this, size);
   return size;
 }
 
-size_t SmallVectorType::memory_alignment_size(tinyir::LayoutContext &ctx) const {
+size_t SmallVectorType::memory_alignment_size(
+    tinyir::LayoutContext &ctx) const {
   if (size_t s = ctx.query_alignment(this)) {
     return s;
   }
@@ -94,7 +98,8 @@ size_t SmallVectorType::memory_alignment_size(tinyir::LayoutContext &ctx) const 
 
   if (ctx.is<STD430LayoutContext>() || ctx.is<STD140LayoutContext>()) {
     // For STD140 / STD430, small vectors are Power-of-Two aligned
-    // In C or "Scalar block layout", blocks are aligned to its compoment alignment
+    // In C or "Scalar block layout", blocks are aligned to its compoment
+    // alignment
     if (num_elements_ == 2) {
       align *= 2;
     } else {
@@ -111,12 +116,12 @@ size_t ArrayType::memory_size(tinyir::LayoutContext &ctx) const {
     return s;
   }
 
-  size_t elem_align =
-      element_type_->cast<tinyir::MemRefElementTypeInterface>()->memory_alignment_size(
-          ctx);
+  size_t elem_align = element_type_->cast<tinyir::MemRefElementTypeInterface>()
+                          ->memory_alignment_size(ctx);
 
   if (ctx.is<STD140LayoutContext>()) {
-    // For STD140, arrays element stride equals the base alignment of the array itself
+    // For STD140, arrays element stride equals the base alignment of the array
+    // itself
     elem_align = this->memory_alignment_size(ctx);
   }
   size_t size = elem_align * size_;
@@ -149,9 +154,7 @@ size_t ArrayType::nth_element_offset(int n, tinyir::LayoutContext &ctx) const {
   return elem_align * n;
 }
 
-bool bitcast_possible(tinyir::Type *a,
-                      tinyir::Type *b,
-                      bool _inverted) {
+bool bitcast_possible(tinyir::Type *a, tinyir::Type *b, bool _inverted) {
   if (a->is<IntType>() && b->is<IntType>()) {
     return a->as<IntType>()->num_bits() == b->as<IntType>()->num_bits();
   } else if (a->is<FloatType>() && b->is<IntType>()) {
@@ -286,8 +289,7 @@ std::string ir_print_types(const tinyir::Block *block) {
 class TypeReducer : public TypeVisitor {
  public:
   std::unique_ptr<tinyir::Block> copy{nullptr};
-  std::unordered_map<const tinyir::Type *, const tinyir::Type *>
-      &oldptr2newptr;
+  std::unordered_map<const tinyir::Type *, const tinyir::Type *> &oldptr2newptr;
 
   TypeReducer(
       std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new)
@@ -354,8 +356,8 @@ class TypeReducer : public TypeVisitor {
     if (!check_type(type)) {
       const tinyir::Type *element = check_type(type->element_type());
       TI_ASSERT(element);
-      oldptr2newptr[type] = copy->emplace_back<ArrayType>(
-          element, type->get_constant_shape()[0]);
+      oldptr2newptr[type] =
+          copy->emplace_back<ArrayType>(element, type->get_constant_shape()[0]);
     }
   }
 };
@@ -411,7 +413,8 @@ class Translate2Spirv : public TypeVisitor {
     spir_builder_->declare_global(spv::OpTypeStruct, vt, element_ids);
     ir_node_2_spv_value[type] = vt.id;
     for (int i = 0; i < type->get_num_elements(); i++) {
-      spir_builder_->decorate(spv::OpMemberDecorate, vt, i, spv::DecorationOffset,
+      spir_builder_->decorate(spv::OpMemberDecorate, vt, i,
+                              spv::DecorationOffset,
                               type->nth_element_offset(i, layout_context_));
     }
   }
@@ -444,6 +447,6 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
   return std::move(translator.ir_node_2_spv_value);
 }
 
-}
-}
-}
+}  // namespace spirv
+}  // namespace lang
+}  // namespace taichi

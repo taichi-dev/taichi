@@ -71,7 +71,7 @@ class Polymorphic {
 class Node : public Polymorphic {
  public:
   using NodeRefs = const std::vector<const Node *>;
-  
+
   Node() {
   }
 
@@ -102,7 +102,7 @@ class Node : public Polymorphic {
     return false;
   }
 
- private:  
+ private:
   virtual bool is_equal(const Polymorphic &other) const {
     return false;
   }
@@ -147,7 +147,8 @@ class LayoutContext : public Polymorphic {
   }
 
   void register_elem_offset(const MemRefAggregateTypeInterface *t,
-                            int n, size_t offset) {
+                            int n,
+                            size_t offset) {
     TI_ASSERT(elem_offset_cache_.find(t) != elem_offset_cache_.end());
     elem_offset_cache_[t][n] = offset;
   }
@@ -186,7 +187,7 @@ class LayoutContext : public Polymorphic {
 
 class MemRefElementTypeInterface {
  public:
-  virtual size_t memory_size(LayoutContext& ctx) const = 0;
+  virtual size_t memory_size(LayoutContext &ctx) const = 0;
   virtual size_t memory_alignment_size(LayoutContext &ctx) const = 0;
 };
 
@@ -215,7 +216,7 @@ class PointerTypeInterface {
 
 class Block {
  public:
-  template<typename T, class... E>
+  template <typename T, class... E>
   T *emplace_back(E... args) {
     nodes_.push_back(std::make_unique<T>(args...));
     return static_cast<T *>(nodes_.back().get());
@@ -257,6 +258,5 @@ class Visitor {
   }
 };
 
-}
-}
-
+}  // namespace tinyir
+}  // namespace taichi

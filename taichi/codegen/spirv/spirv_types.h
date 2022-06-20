@@ -24,10 +24,10 @@ class IntType : public tinyir::Type, public tinyir::MemRefElementTypeInterface {
     return is_signed_;
   }
 
-  size_t memory_size(tinyir::LayoutContext &ctx) const override{
+  size_t memory_size(tinyir::LayoutContext &ctx) const override {
     return tinyir::ceil_div(num_bits(), 8);
   }
-  
+
   size_t memory_alignment_size(tinyir::LayoutContext &ctx) const override {
     return tinyir::ceil_div(num_bits(), 8);
   }
@@ -42,10 +42,10 @@ class IntType : public tinyir::Type, public tinyir::MemRefElementTypeInterface {
   bool is_signed_{false};
 };
 
-class FloatType : public tinyir::Type, public tinyir::MemRefElementTypeInterface {
+class FloatType : public tinyir::Type,
+                  public tinyir::MemRefElementTypeInterface {
  public:
-  FloatType(int num_bits)
-      : num_bits_(num_bits) {
+  FloatType(int num_bits) : num_bits_(num_bits) {
   }
 
   int num_bits() const {
@@ -73,7 +73,8 @@ class PhysicalPointerType : public IntType,
                             public tinyir::PointerTypeInterface {
  public:
   PhysicalPointerType(const tinyir::Type *pointed_type)
-      : IntType(/*num_bits=*/64, /*is_signed=*/false), pointed_type_(pointed_type) {
+      : IntType(/*num_bits=*/64, /*is_signed=*/false),
+        pointed_type_(pointed_type) {
   }
 
   const tinyir::Type *get_pointed_type() const override {
@@ -94,7 +95,8 @@ class StructType : public tinyir::Type,
                    public tinyir::AggregateTypeInterface,
                    public tinyir::MemRefAggregateTypeInterface {
  public:
-  StructType(std::vector<const tinyir::Type *> &elements) : elements_(elements) {
+  StructType(std::vector<const tinyir::Type *> &elements)
+      : elements_(elements) {
   }
 
   const tinyir::Type *nth_element_type(int n) const override {
@@ -153,7 +155,8 @@ class SmallVectorType : public tinyir::Type,
  private:
   bool is_equal(const Polymorphic &other) const override {
     const SmallVectorType &t = (const SmallVectorType &)other;
-    return num_elements_ == t.num_elements_ && element_type_->equals(t.element_type_);
+    return num_elements_ == t.num_elements_ &&
+           element_type_->equals(t.element_type_);
   }
 
   const tinyir::Type *element_type_{nullptr};
@@ -189,8 +192,7 @@ class ArrayType : public tinyir::Type,
  private:
   bool is_equal(const Polymorphic &other) const override {
     const ArrayType &t = (const ArrayType &)other;
-    return size_ == t.size_ &&
-           element_type_->equals(t.element_type_);
+    return size_ == t.size_ && element_type_->equals(t.element_type_);
   }
 
   const tinyir::Type *element_type_{nullptr};
@@ -234,9 +236,10 @@ std::unique_ptr<tinyir::Block> ir_reduce_types(
 class IRBuilder;
 
 std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
-    const tinyir::Block *blk, tinyir::LayoutContext &layout_ctx,
+    const tinyir::Block *blk,
+    tinyir::LayoutContext &layout_ctx,
     IRBuilder *spir_builder);
 
-}
-}
-}
+}  // namespace spirv
+}  // namespace lang
+}  // namespace taichi

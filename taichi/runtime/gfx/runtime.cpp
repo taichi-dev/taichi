@@ -431,11 +431,13 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           }
         } else {
           ext_array_size[i] = host_ctx->array_runtime_sizes[i];
-          uint32_t access = uint32_t(ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
-          
+          uint32_t access = uint32_t(
+              ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
+
           // Alloc ext arr
           if (ext_array_size[i]) {
-            bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);
+            bool host_write =
+                access & uint32_t(irpass::ExternalPtrAccess::READ);
             auto allocated = device_->allocate_memory_unique(
                 {ext_array_size[i], host_write, false,
                  /*export_sharing=*/false, AllocUsage::Storage});
@@ -497,7 +499,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     for (auto &bind : attribs.texture_binds) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                ImageLayout::shader_read);
+                                         ImageLayout::shader_read);
       binder->image(0, bind.binding, texture, {});
     }
 
@@ -507,8 +509,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           // FIXME: properlly support multiple list
           current_cmdlist_->buffer_fill(
               ti_kernel->get_buffer_bind(bind.buffer)->get_ptr(0),
-                               kBufferSizeEntireSize,
-                               /*data=*/0);
+              kBufferSizeEntireSize,
+              /*data=*/0);
           current_cmdlist_->buffer_barrier(
               *ti_kernel->get_buffer_bind(bind.buffer));
         }
@@ -522,9 +524,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   for (auto &[id, shadow] : any_array_shadows) {
-    current_cmdlist_->buffer_copy(shadow.get_ptr(0),
-                                  any_arrays.at(id).get_ptr(0),
-                                  ext_array_size.at(id));
+    current_cmdlist_->buffer_copy(
+        shadow.get_ptr(0), any_arrays.at(id).get_ptr(0), ext_array_size.at(id));
   }
 
   // Keep context buffers used in this dispatch

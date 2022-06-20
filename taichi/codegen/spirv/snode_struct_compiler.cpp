@@ -32,7 +32,6 @@ class StructCompiler {
   }
 
  private:
-
   const tinyir::Type *construct(tinyir::Block &ir_module, SNode *sn) {
     const tinyir::Type *cell_type = nullptr;
 
@@ -47,7 +46,8 @@ class StructCompiler {
         struct_elements.push_back(elem_type);
       }
       tinyir::Type *st = ir_module.emplace_back<StructType>(struct_elements);
-      st->set_debug_name(fmt::format("{}_{}", snode_type_name(sn->type), sn->get_name()));
+      st->set_debug_name(
+          fmt::format("{}_{}", snode_type_name(sn->type), sn->get_name()));
       cell_type = st;
 
       if (sn->type == SNodeType::pointer) {

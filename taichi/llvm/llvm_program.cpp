@@ -60,8 +60,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
   }
 
-  snode_tree_buffer_manager_ = std::make_unique<SNodeTreeBufferManager>(this);
-
   thread_pool_ = std::make_unique<ThreadPool>(config->cpu_max_num_threads);
 
   preallocated_device_buffer_ = nullptr;
@@ -99,7 +97,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
-    device_ = std::make_shared<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info_) {
@@ -113,7 +110,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
-    device_ = std::make_shared<cuda::CudaDevice>();
   }
 #endif
 
@@ -134,98 +130,6 @@ LlvmProgramImpl::clone_struct_compiler_initial_context(
     return tlctx->clone_struct_module();
   }
   return tlctx->clone_runtime_module();
-}
-
-void LlvmProgramImpl::initialize_llvm_runtime_snodes(
-    const LlvmOfflineCache::FieldCacheData &field_cache_data,
-    uint64 *result_buffer) {
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    tlctx = runtime_exec_->llvm_context_device_.get();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    tlctx = runtime_exec_->llvm_context_host_.get();
-  }
-
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  // By the time this creator is called, "this" is already destroyed.
-  // Therefore it is necessary to capture members by values.
-  size_t root_size = field_cache_data.root_size;
-  const auto snode_metas = field_cache_data.snode_metas;
-  const int tree_id = field_cache_data.tree_id;
-  const int root_id = field_cache_data.root_id;
-
-  TI_TRACE("Allocating data structure of size {} bytes", root_size);
-  std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
-
-  Ptr root_buffer = snode_tree_buffer_manager_->allocate(
-      runtime_jit, runtime_exec_->llvm_runtime_, rounded_size, taichi_page_size,
-      tree_id, result_buffer);
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    std::memset(root_buffer, 0, rounded_size);
-  }
-
-  DeviceAllocation alloc{kDeviceNullAllocation};
-
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
-  }
-
-  snode_tree_allocs_[tree_id] = alloc;
-
-  bool all_dense = config->demote_dense_struct_fors;
-  for (size_t i = 0; i < snode_metas.size(); i++) {
-    if (snode_metas[i].type != SNodeType::dense &&
-        snode_metas[i].type != SNodeType::place &&
-        snode_metas[i].type != SNodeType::root) {
-      all_dense = false;
-      break;
-    }
-  }
-
-  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", runtime_exec_->llvm_runtime_, root_size,
-      root_id, (int)snode_metas.size(), tree_id, rounded_size, root_buffer,
-      all_dense);
-
-  for (size_t i = 0; i < snode_metas.size(); i++) {
-    if (is_gc_able(snode_metas[i].type)) {
-      const auto snode_id = snode_metas[i].id;
-      std::size_t node_size;
-      auto element_size = snode_metas[i].cell_size_bytes;
-      if (snode_metas[i].type == SNodeType::pointer) {
-        // pointer. Allocators are for single elements
-        node_size = element_size;
-      } else {
-        // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) + element_size * snode_metas[i].chunk_size;
-      }
-      TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
-               node_size);
-      auto rt = runtime_exec_->llvm_runtime_;
-      runtime_jit->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
-      TI_TRACE("Allocating ambient element for snode {} (node size {})",
-               snode_id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, snode_id,
-                                     node_size);
-    }
-  }
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
@@ -402,28 +306,6 @@ void LlvmProgramImpl::finalize() {
 #endif
 }
 
-cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
-  if (config->arch != Arch::cuda) {
-    TI_ERROR("arch is not cuda");
-  }
-  return static_cast<cuda::CudaDevice *>(device_.get());
-}
-
-cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
-  TI_ERROR_IF(!arch_is_cpu(config->arch), "arch is not cpu");
-  return static_cast<cpu::CpuDevice *>(device_.get());
-}
-
-LlvmDevice *LlvmProgramImpl::llvm_device() {
-  TI_ASSERT(dynamic_cast<LlvmDevice *>(device_.get()));
-  return static_cast<LlvmDevice *>(device_.get());
-}
-
-DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
-  DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
-  return tree_alloc.get_ptr();
-}
-
 DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
@@ -534,15 +416,23 @@ LlvmProgramImpl *get_llvm_program(Program *prog) {
 /* --------------------------------- */
 LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config)
     : config_(&config) {
+  llvm_runtime_ = nullptr;
+  snode_tree_buffer_manager_ = std::make_unique<SNodeTreeBufferManager>(this);
+
   llvm_context_host_ =
       std::make_unique<TaichiLLVMContext>(&config, host_arch());
+
   this->initialize_host();
 
+  if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-  this->maybe_initialize_cuda_llvm_context();
+    this->maybe_initialize_cuda_llvm_context();
+    device_ = std::make_shared<cuda::CudaDevice>();
 #endif
 
-  llvm_runtime_ = nullptr;
+  } else if (arch_is_cpu(config.arch)) {
+    device_ = std::make_shared<cpu::CpuDevice>();
+  }
 }
 
 TaichiLLVMContext *LlvmRuntimeExecutor::get_llvm_context(Arch arch) {
@@ -751,6 +641,119 @@ void LlvmRuntimeExecutor::print_memory_profiler_info(
   fmt::print(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
       total_requested_memory);
+}
+
+DevicePtr LlvmRuntimeExecutor::get_snode_tree_device_ptr(int tree_id) {
+  DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
+  return tree_alloc.get_ptr();
+}
+
+void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
+    const LlvmOfflineCache::FieldCacheData &field_cache_data,
+    uint64 *result_buffer) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    tlctx = llvm_context_device_.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    tlctx = llvm_context_host_.get();
+  }
+
+  auto *const runtime_jit = tlctx->runtime_jit_module;
+  // By the time this creator is called, "this" is already destroyed.
+  // Therefore it is necessary to capture members by values.
+  size_t root_size = field_cache_data.root_size;
+  const auto snode_metas = field_cache_data.snode_metas;
+  const int tree_id = field_cache_data.tree_id;
+  const int root_id = field_cache_data.root_id;
+
+  TI_TRACE("Allocating data structure of size {} bytes", root_size);
+  std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
+
+  Ptr root_buffer = snode_tree_buffer_manager_->allocate(
+      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree_id,
+      result_buffer);
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    std::memset(root_buffer, 0, rounded_size);
+  }
+
+  DeviceAllocation alloc{kDeviceNullAllocation};
+
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
+  }
+
+  snode_tree_allocs_[tree_id] = alloc;
+
+  bool all_dense = config_->demote_dense_struct_fors;
+  for (size_t i = 0; i < snode_metas.size(); i++) {
+    if (snode_metas[i].type != SNodeType::dense &&
+        snode_metas[i].type != SNodeType::place &&
+        snode_metas[i].type != SNodeType::root) {
+      all_dense = false;
+      break;
+    }
+  }
+
+  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
+      "runtime_initialize_snodes", llvm_runtime_, root_size, root_id,
+      (int)snode_metas.size(), tree_id, rounded_size, root_buffer, all_dense);
+
+  for (size_t i = 0; i < snode_metas.size(); i++) {
+    if (is_gc_able(snode_metas[i].type)) {
+      const auto snode_id = snode_metas[i].id;
+      std::size_t node_size;
+      auto element_size = snode_metas[i].cell_size_bytes;
+      if (snode_metas[i].type == SNodeType::pointer) {
+        // pointer. Allocators are for single elements
+        node_size = element_size;
+      } else {
+        // dynamic. Allocators are for the chunks
+        node_size = sizeof(void *) + element_size * snode_metas[i].chunk_size;
+      }
+      TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
+               node_size);
+      runtime_jit->call<void *, int, std::size_t>(
+          "runtime_NodeAllocator_initialize", llvm_runtime_, snode_id,
+          node_size);
+      TI_TRACE("Allocating ambient element for snode {} (node size {})",
+               snode_id, node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", llvm_runtime_,
+                                     snode_id, node_size);
+    }
+  }
+}
+
+cuda::CudaDevice *LlvmRuntimeExecutor::cuda_device() {
+  if (config_->arch != Arch::cuda) {
+    TI_ERROR("arch is not cuda");
+  }
+  return static_cast<cuda::CudaDevice *>(device_.get());
+}
+
+cpu::CpuDevice *LlvmRuntimeExecutor::cpu_device() {
+  TI_ERROR_IF(!arch_is_cpu(config_->arch), "arch is not cpu");
+  return static_cast<cpu::CpuDevice *>(device_.get());
+}
+
+LlvmDevice *LlvmRuntimeExecutor::llvm_device() {
+  TI_ASSERT(dynamic_cast<LlvmDevice *>(device_.get()));
+  return static_cast<LlvmDevice *>(device_.get());
 }
 
 }  // namespace lang

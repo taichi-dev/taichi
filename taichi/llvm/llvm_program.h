@@ -84,6 +84,12 @@ class LlvmRuntimeExecutor {
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
 
+  DevicePtr get_snode_tree_device_ptr(int tree_id);
+
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer);
+
  private:
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 
@@ -99,12 +105,31 @@ class LlvmRuntimeExecutor {
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
 
+  cuda::CudaDevice *cuda_device();
+  cpu::CpuDevice *cpu_device();
+  LlvmDevice *llvm_device();
+
+  Device *get_compute_device() {
+    return device_.get();
+  }
+
+  void destroy_snode_tree(SNodeTree *snode_tree) {
+    get_llvm_context(host_arch())
+        ->delete_functions_of_snode_tree(snode_tree->id());
+    snode_tree_buffer_manager_->destroy(snode_tree);
+  }
+
  private:
   CompileConfig *config_;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
+  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   void *llvm_runtime_{nullptr};
 
+  std::shared_ptr<Device> device_{nullptr};
+
+  // good buddy
   friend LlvmProgramImpl;
 };
 
@@ -135,9 +160,7 @@ class LlvmProgramImpl : public ProgramImpl {
                            uint64 **result_buffer_ptr) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
-    get_llvm_context(host_arch())
-        ->delete_functions_of_snode_tree(snode_tree->id());
-    snode_tree_buffer_manager_->destroy(snode_tree);
+    return runtime_exec_->destroy_snode_tree(snode_tree);
   }
 
   void finalize();
@@ -167,17 +190,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return cache_data_.fields.at(snode_tree_id);
   }
 
-  Device *get_compute_device() override {
-    return device_.get();
-  }
-
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(
-      const LlvmOfflineCache::FieldCacheData &field_cache_data,
-      uint64 *result_buffer);
-
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       bool has_multiple_snode_trees,
@@ -188,14 +200,26 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
-  DevicePtr get_snode_tree_device_ptr(int tree_id) override;
-
   void dump_cache_data_to_disk() override;
 
   /* -------------------------------- */
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */
  public:
+  Device *get_compute_device() override {
+    return runtime_exec_->get_compute_device();
+  }
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer) {
+    runtime_exec_->initialize_llvm_runtime_snodes(field_cache_data,
+                                                  result_buffer);
+  }
+
   void initialize_host() {
     runtime_exec_->initialize_host();
   }
@@ -243,6 +267,22 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->check_runtime_error(result_buffer);
   }
 
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return runtime_exec_->get_snode_tree_device_ptr(tree_id);
+  }
+
+  cuda::CudaDevice *cuda_device() {
+    return runtime_exec_->cuda_device();
+  }
+
+  cpu::CpuDevice *cpu_device() {
+    return runtime_exec_->cpu_device();
+  }
+
+  LlvmDevice *llvm_device() {
+    return runtime_exec_->llvm_device();
+  }
+
  private:
   std::size_t num_snode_trees_processed_{0};
   LlvmOfflineCache cache_data_;
@@ -251,17 +291,10 @@ class LlvmProgramImpl : public ProgramImpl {
   /* ------- Runtime: move to LlvmRuntimeExecutor --------- */
   std::unique_ptr<ThreadPool> thread_pool_{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
 
   void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
 
   DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
-  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  std::shared_ptr<Device> device_{nullptr};
-
-  cuda::CudaDevice *cuda_device();
-  cpu::CpuDevice *cpu_device();
-  LlvmDevice *llvm_device();
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

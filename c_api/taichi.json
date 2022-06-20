@@ -450,7 +450,7 @@
                         },
                         {
                             "name": "size",
-                            "type": "size_t"
+                            "type": "uint64_t"
                         },
                         {
                             "name": "usage",

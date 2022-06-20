@@ -85,7 +85,7 @@ TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   snode->dt = PrimitiveType::u8;
   auto global_var =
       Expr::make<GlobalVariableExpression>(snode.get(), Identifier(0));
-  auto index = value<float32>(2);
+  auto index = value<int32>(2);
   index->type_check(nullptr);
   auto global_ptr = global_var[ExprGroup(index)];
   global_ptr->type_check(nullptr);
@@ -115,8 +115,7 @@ TEST(FrontendTypeInference, TensorElement) {
   var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;
   auto index = value<int32>(2);
   index->type_check(nullptr);
-  auto tensor_element =
-      Expr::make<TensorElementExpression>(var, ExprGroup(index), shape, 1);
+  auto tensor_element = Expr::make<IndexExpression>(var, ExprGroup(index));
   tensor_element->type_check(nullptr);
   EXPECT_EQ(tensor_element->ret_type, PrimitiveType::u32);
 }

@@ -109,7 +109,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define DEBUG_TRIGGER
 #endif
 
-#define TI_STATIC_ASSERT(x) static_assert((x), #x);
+#define TI_STATIC_ASSERT(x) static_assert((x), #x)
 
 #define TI_NAMESPACE_BEGIN namespace taichi {
 #define TI_NAMESPACE_END }

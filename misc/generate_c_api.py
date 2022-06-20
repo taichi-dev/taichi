@@ -162,7 +162,7 @@ class BitField:
     def declr(self):
         out = ["typedef enum " + self.type_name + " {"]
         for name, value in self.bits.items():
-            out += [f"  {name} = {value},"]
+            out += [f"  {name} = 1 << {value},"]
         out += ["} " + self.type_name + ";"]
         out += [f"typedef TiFlags {self.field_type_name};"]
         return '\n'.join(out)

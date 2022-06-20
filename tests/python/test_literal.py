@@ -80,3 +80,25 @@ def test_literal_float_annotation_error():
             "Floating-point literals must be annotated with a floating-point type. For type casting, use `ti.cast`."
     ):
         float_annotation_error()
+
+
+@test_utils.test()
+def test_literal_exceed_default_ip():
+    @ti.kernel
+    def func():
+        b = 0x80000000
+
+    with pytest.raises(ti.TaichiTypeError,
+                       match="exceeded the range of default_ip"):
+        func()
+
+
+@test_utils.test()
+def test_literal_exceed_specified_dtype():
+    @ti.kernel
+    def func():
+        b = ti.u16(-1)
+
+    with pytest.raises(ti.TaichiTypeError,
+                       match="exceeded the range of specified dtype"):
+        func()

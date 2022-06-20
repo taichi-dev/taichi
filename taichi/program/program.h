@@ -363,6 +363,7 @@ class TI_DLL_EXPORT Program {
   //
   // Once we migrated these implementations to ProgramImpl, lower-level objects
   // could store ProgramImpl rather than Program.
+
  private:
   uint64 ndarray_writer_counter_{0};
   uint64 ndarray_reader_counter_{0};

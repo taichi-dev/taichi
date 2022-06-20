@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/backends/metal/api.h"
+#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/backends/dx/dx_api.h"
 #include "taichi/common/core.h"

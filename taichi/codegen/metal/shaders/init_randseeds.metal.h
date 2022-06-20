@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/shaders/prolog.h"
+#include "taichi/runtime/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 

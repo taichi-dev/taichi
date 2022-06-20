@@ -8,10 +8,10 @@
 #include "taichi/inc/constants.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
-#include "taichi/backends/metal/data_types.h"
-#include "taichi/backends/metal/kernel_manager.h"
-#include "taichi/backends/metal/kernel_utils.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/runtime/metal/data_types.h"
+#include "taichi/runtime/metal/kernel_manager.h"
+#include "taichi/runtime/metal/kernel_utils.h"
+#include "taichi/codegen/metal/struct_metal.h"
 
 namespace taichi {
 namespace lang {

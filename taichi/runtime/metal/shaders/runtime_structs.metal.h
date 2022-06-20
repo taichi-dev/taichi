@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/shaders/prolog.h"
+#include "taichi/runtime/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -156,4 +156,4 @@ METAL_END_RUNTIME_STRUCTS_DEF
 #undef METAL_BEGIN_RUNTIME_STRUCTS_DEF
 #undef METAL_END_RUNTIME_STRUCTS_DEF
 
-#include "taichi/backends/metal/shaders/epilog.h"
+#include "taichi/runtime/metal/shaders/epilog.h"

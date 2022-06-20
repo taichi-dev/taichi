@@ -1,8 +1,8 @@
 #include <unordered_set>
 
 #include "metal_program.h"
-#include "taichi/backends/metal/codegen_metal.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/codegen/metal/codegen_metal.h"
+#include "taichi/codegen/metal/struct_metal.h"
 
 namespace taichi {
 namespace lang {

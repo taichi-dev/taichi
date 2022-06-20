@@ -96,6 +96,8 @@ file(GLOB TAICHI_CORE_SOURCE
 	"taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
         "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
         "taichi/codegen/opengl/shaders/*" #CODEGEN
+        "taichi/codegen/metal/*.cpp" "taichi/codegen/metal/*.h" #CODEGEN
+        "taichi/codegen/metal/shaders/*" #CODEGEN
         "taichi/codegen/spirv/*" #CODEGEN
         "taichi/common/*"
         "taichi/ir/*"
@@ -119,7 +121,6 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/*.h")
 
 file(GLOB TAICHI_GGUI_SOURCE
@@ -182,13 +183,6 @@ if(NOT CUDA_VERSION)
 endif()
 
 
-# By default, TI_WITH_METAL is ON for all platforms.
-# As of right now, on non-macOS platforms, the metal backend won't work at all.
-# We have future plans to allow metal AOT to run on non-macOS devices.
-if (TI_WITH_METAL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
-endif()
 
 
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
@@ -265,6 +259,19 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/inc
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 
+# By default, TI_WITH_METAL is ON for all platforms.
+# As of right now, on non-macOS platforms, the metal backend won't work at all.
+# We have future plans to allow metal AOT to run on non-macOS devices.
+if (TI_WITH_METAL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
+
+    add_subdirectory(taichi/backends/metal)
+    add_subdirectory(taichi/runtime/metal)
+    add_subdirectory(taichi/runtime/program_impls/metal)
+
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
+endif()
 
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)

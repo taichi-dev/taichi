@@ -1,14 +1,14 @@
 #ifndef TI_METAL_NESTED_INCLUDE
 
 #define TI_METAL_NESTED_INCLUDE
-#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+#include "taichi/runtime/metal/shaders/runtime_structs.metal.h"
 #undef TI_METAL_NESTED_INCLUDE
 
 #else
-#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+#include "taichi/runtime/metal/shaders/runtime_structs.metal.h"
 #endif  // TI_METAL_NESTED_INCLUDE
 
-#include "taichi/backends/metal/shaders/prolog.h"
+#include "taichi/runtime/metal/shaders/prolog.h"
 
 #ifdef TI_INSIDE_METAL_CODEGEN
 
@@ -568,4 +568,4 @@ METAL_END_RUNTIME_UTILS_DEF
 #undef METAL_BEGIN_RUNTIME_UTILS_DEF
 #undef METAL_END_RUNTIME_UTILS_DEF
 
-#include "taichi/backends/metal/shaders/epilog.h"
+#include "taichi/runtime/metal/shaders/epilog.h"

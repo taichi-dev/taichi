@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/api.h"
+#include "taichi/runtime/metal/api.h"
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/util/environ_config.h"

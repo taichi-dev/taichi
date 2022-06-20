@@ -262,16 +262,6 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # By default, TI_WITH_METAL is ON for all platforms.
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
-if (TI_WITH_METAL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
-
-    add_subdirectory(taichi/backends/metal)
-    add_subdirectory(taichi/runtime/metal)
-    add_subdirectory(taichi/runtime/program_impls/metal)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
-endif()
 
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
@@ -362,6 +352,17 @@ if (TI_WITH_CUDA_TOOLKIT)
     endif()
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
+endif()
+
+if (TI_WITH_METAL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
+
+    add_subdirectory(taichi/backends/metal)
+    add_subdirectory(taichi/runtime/metal)
+    add_subdirectory(taichi/runtime/program_impls/metal)
+
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
 endif()
 
 if (TI_WITH_OPENGL)

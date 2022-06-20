@@ -511,7 +511,7 @@ class Module:
         print(f"processing module '{module_name}'")
         assert re.match("taichi/\w+.h", module_name)
         module_name = module_name[len("taichi/"):-len(".h")]
-        path = f"unity/{module_name}.cs"
+        path = f"c_api/unity/{module_name}.cs"
         with open(path, "w") as f:
             f.write(module.declr())
 

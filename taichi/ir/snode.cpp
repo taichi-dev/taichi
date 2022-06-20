@@ -140,6 +140,7 @@ SNode &SNode::bit_struct(int num_bits, bool packed) {
   auto &snode = create_node({}, {}, SNodeType::bit_struct, packed);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
+  snode.bit_struct_type_builder = std::make_unique<BitStructTypeBuilder>(snode.physical_type);
   return snode;
 }
 

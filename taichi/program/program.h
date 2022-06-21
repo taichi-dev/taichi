@@ -34,6 +34,19 @@
 namespace taichi {
 namespace lang {
 
+struct ProgramDispatcher {
+  template <Arch arch>
+  static std::unique_ptr<ProgramImpl> instantiate_program_impl(
+      CompileConfig &config,
+      KernelProfilerBase *profiler) {
+    if (arch_uses_llvm(config.arch)) {
+      TI_ERROR("This taichi is not compiled with LLVM");
+    }
+
+    return nullptr;
+  }
+};
+
 struct JITEvaluatorId {
   std::thread::id thread_id;
   // Note that on certain backends (e.g. CUDA), functions created in one

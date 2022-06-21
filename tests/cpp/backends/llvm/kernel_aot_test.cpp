@@ -1,12 +1,15 @@
 #include "gtest/gtest.h"
 
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/llvm/llvm_program.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/backends/cpu/aot_module_loader_impl.h"
 #include "taichi/backends/cuda/aot_module_loader_impl.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
+
+#if TI_WITH_LLVM
+#include "taichi/llvm/llvm_program.h"
+#endif
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -16,6 +19,7 @@ namespace taichi {
 namespace lang {
 
 TEST(LlvmAotTest, CpuKernel) {
+#if TI_WITH_LLVM
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -53,9 +57,11 @@ TEST(LlvmAotTest, CpuKernel) {
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(data[i], i);
   }
+#endif
 }
 
 TEST(LlvmAotTest, CudaKernel) {
+#if TI_WITH_LLVM
   if (is_cuda_api_available()) {
     CompileConfig cfg;
     cfg.arch = Arch::cuda;
@@ -99,6 +105,7 @@ TEST(LlvmAotTest, CudaKernel) {
       EXPECT_EQ(cpu_data[i], i);
     }
   }
+#endif
 }
 
 }  // namespace lang

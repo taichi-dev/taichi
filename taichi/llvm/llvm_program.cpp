@@ -26,6 +26,13 @@
 
 namespace taichi {
 namespace lang {
+
+template <>
+std::unique_ptr<ProgramImpl> ProgramDispatcher::instantiate_program_impl<
+    Arch::llvm>(CompileConfig &config, KernelProfilerBase *profiler) {
+  return std::make_unique<LlvmProgramImpl>(config, profiler);
+}
+
 namespace {
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);

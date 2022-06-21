@@ -1,13 +1,16 @@
 #include "gtest/gtest.h"
 
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/llvm/llvm_program.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/backends/cpu/aot_module_loader_impl.h"
 #include "taichi/backends/cuda/aot_module_loader_impl.h"
-#include "taichi/llvm/llvm_aot_module_loader.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
+
+#if TI_WITH_LLVM
+#include "taichi/llvm/llvm_aot_module_loader.h"
+#include "taichi/llvm/llvm_program.h"
+#endif
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -16,6 +19,7 @@
 namespace taichi {
 namespace lang {
 
+#if TI_WITH_LLVM
 void run_field_tests(aot::Module *mod,
                      LlvmProgramImpl *prog,
                      uint64 *result_buffer) {
@@ -95,8 +99,10 @@ void run_field_tests(aot::Module *mod,
   // Check assertion error from ti.kernel
   prog->check_runtime_error(result_buffer);
 }
+#endif
 
 TEST(LlvmAotTest, CpuField) {
+#if TI_WITH_LLVM
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -120,9 +126,11 @@ TEST(LlvmAotTest, CpuField) {
   std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
 
   run_field_tests(mod.get(), &prog, result_buffer);
+#endif
 }
 
 TEST(LlvmAotTest, CudaField) {
+#if TI_WITH_LLVM
   if (is_cuda_api_available()) {
     CompileConfig cfg;
     cfg.arch = Arch::cuda;
@@ -146,6 +154,7 @@ TEST(LlvmAotTest, CudaField) {
 
     run_field_tests(mod.get(), &prog, result_buffer);
   }
+#endif
 }
 
 }  // namespace lang

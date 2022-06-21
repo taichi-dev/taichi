@@ -20,9 +20,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
-#ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
-#endif
 
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/cc_program.h"
@@ -43,6 +40,9 @@
 
 namespace taichi {
 namespace lang {
+
+#include <iostream>
+
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch)
@@ -74,11 +74,9 @@ Program::Program(Arch desired_arch)
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
-#ifdef TI_WITH_LLVM
-    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
-#else
-    TI_ERROR("This taichi is not compiled with LLVM");
-#endif
+    program_impl_ = ProgramDispatcher::instantiate_program_impl<Arch::llvm>(
+        config, profiler.get());
+
   } else if (config.arch == Arch::metal) {
 #ifdef TI_WITH_METAL
     TI_ASSERT(metal::is_metal_api_available());

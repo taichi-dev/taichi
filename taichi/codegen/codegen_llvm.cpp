@@ -1195,9 +1195,11 @@ llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto qit = dst_type->cast<QuantIntType>()) {
-    return atomic_add_quant_int(stmt, qit,stmt->dest->as<GetChStmt>()->input_snode->physical_type);
+    return atomic_add_quant_int(
+        stmt, qit, stmt->dest->as<GetChStmt>()->input_snode->physical_type);
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
-    return atomic_add_quant_fixed(stmt, qfxt, stmt->dest->as<GetChStmt>()->input_snode->physical_type);
+    return atomic_add_quant_fixed(
+        stmt, qfxt, stmt->dest->as<GetChStmt>()->input_snode->physical_type);
   } else {
     return nullptr;
   }
@@ -1351,7 +1353,9 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         TI_ERROR("Bit array only supports quant int type.");
       }
     }
-    store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(), stmt->dest->as<GetChStmt>()->input_snode->physical_type, llvm_val[stmt->val], true);
+    store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(),
+                    stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+                    llvm_val[stmt->val], true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
@@ -1364,7 +1368,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     if (auto qit = val_type->cast<QuantIntType>()) {
-      llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], qit, stmt->src->as<GetChStmt>()->input_snode->physical_type);
+      llvm_val[stmt] = load_quant_int(
+          llvm_val[stmt->src], qit,
+          stmt->src->as<GetChStmt>()->input_snode->physical_type);
     } else {
       TI_ASSERT(val_type->is<QuantFixedType>() ||
                 val_type->is<QuantFloatType>());

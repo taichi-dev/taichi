@@ -13,7 +13,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 
 namespace taichi {
 

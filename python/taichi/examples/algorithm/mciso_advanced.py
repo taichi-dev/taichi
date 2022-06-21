@@ -327,31 +327,31 @@ class MCISO:
         r_n = 0
 
         for I in ti.grouped(ti.ndrange(*[[1, self.N - 1]] * self.dim)):
-            id = 0
+            idx = 0
             if ti.static(self.dim == 2):
                 i, j = I
-                if self.m[i, j] > 1: id |= 1
-                if self.m[i + 1, j] > 1: id |= 2
-                if self.m[i, j + 1] > 1: id |= 4
-                if self.m[i + 1, j + 1] > 1: id |= 8
+                if self.m[i, j] > 1: idx |= 1
+                if self.m[i + 1, j] > 1: idx |= 2
+                if self.m[i, j + 1] > 1: idx |= 4
+                if self.m[i + 1, j + 1] > 1: idx |= 8
             else:
                 i, j, k = I
-                if self.m[i, j, k] > 1: id |= 1
-                if self.m[i + 1, j, k] > 1: id |= 2
-                if self.m[i + 1, j + 1, k] > 1: id |= 4
-                if self.m[i, j + 1, k] > 1: id |= 8
-                if self.m[i, j, k + 1] > 1: id |= 16
-                if self.m[i + 1, j, k + 1] > 1: id |= 32
-                if self.m[i + 1, j + 1, k + 1] > 1: id |= 64
-                if self.m[i, j + 1, k + 1] > 1: id |= 128
+                if self.m[i, j, k] > 1: idx |= 1
+                if self.m[i + 1, j, k] > 1: idx |= 2
+                if self.m[i + 1, j + 1, k] > 1: idx |= 4
+                if self.m[i, j + 1, k] > 1: idx |= 8
+                if self.m[i, j, k + 1] > 1: idx |= 16
+                if self.m[i + 1, j, k + 1] > 1: idx |= 32
+                if self.m[i + 1, j + 1, k + 1] > 1: idx |= 64
+                if self.m[i, j + 1, k + 1] > 1: idx |= 128
 
             for m in range(self.et.shape[1]):
-                if self.et[id, m][0] == -1:
+                if self.et[idx, m][0] == -1:
                     break
 
                 n = ti.atomic_add(r_n, 1)
                 for l in ti.static(range(self.dim)):
-                    e = self.et[id, m][l]
+                    e = self.et[idx, m][l]
                     R = float(I)
 
                     if ti.static(self.dim == 2):

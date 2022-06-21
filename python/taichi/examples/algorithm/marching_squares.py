@@ -92,16 +92,21 @@ def march(level: float) -> int:
     return n_edges
 
 
-level = 0.2
+def main():
+    level = 0.2
 
-gui = ti.GUI('Marching squares')
-while gui.running and not gui.get_event(gui.ESCAPE):
-    touch(*gui.get_cursor_pos(), 0.05)
-    n_edges = march(level)
-    edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
-    gui.set_image(ti.tools.imresize(pixels, *gui.res) / level)
-    gui.lines(edge_coords_np[:, 0],
-              edge_coords_np[:, 1],
-              color=0xff66cc,
-              radius=1.5)
-    gui.show()
+    gui = ti.GUI('Marching squares')
+    while gui.running and not gui.get_event(gui.ESCAPE):
+        touch(*gui.get_cursor_pos(), 0.05)
+        n_edges = march(level)
+        edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
+        gui.set_image(ti.tools.imresize(pixels, *gui.res) / level)
+        gui.lines(edge_coords_np[:, 0],
+                  edge_coords_np[:, 1],
+                  color=0xff66cc,
+                  radius=1.5)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

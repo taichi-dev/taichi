@@ -1,4 +1,3 @@
-import math
 import time
 
 import numpy as np
@@ -31,17 +30,21 @@ def paint(t: float):
         y = locations[i, 1]
         dirs[i, 0] = ti.sin((t * x - y))
         dirs[i, 1] = ti.cos(t * y - x)
-        len = (dirs[i, 0]**2 + dirs[i, 1]**2)**0.5
-        dirs[i, 0] /= len * 40
-        dirs[i, 1] /= len * 40
+        l = (dirs[i, 0]**2 + dirs[i, 1]**2)**0.5
+        dirs[i, 0] /= l * 40
+        dirs[i, 1] /= l * 40
 
 
-gui = ti.GUI("Vector Field", res=(500, 500))
+def main():
+    gui = ti.GUI("Vector Field", res=(500, 500))
 
-begining = time.time_ns()
-for k in range(1000000):
-    start_time = time.time_ns()
-    paint((time.time_ns() - begining) * 0.00000001)
-    dirs_np = dirs.to_numpy()
-    gui.arrows(locations_np, dirs_np, radius=1)
-    gui.show()
+    begining = time.time_ns()
+    for k in range(1000000):
+        paint((time.time_ns() - begining) * 0.00000001)
+        dirs_np = dirs.to_numpy()
+        gui.arrows(locations_np, dirs_np, radius=1)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

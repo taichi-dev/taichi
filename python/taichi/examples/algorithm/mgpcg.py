@@ -27,16 +27,17 @@ p = ti.field(dtype=real)  # conjugate gradient
 Ap = ti.field(dtype=real)  # matrix-vector product
 alpha = ti.field(dtype=real)  # step size
 beta = ti.field(dtype=real)  # step size
-sum = ti.field(dtype=real)  # storage for reductions
+sum_ = ti.field(dtype=real)  # storage for reductions
 pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 
 ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
-for l in range(n_mg_levels):
-    ti.root.pointer(ti.ijk, [N_tot // (4 * 2**l)]).dense(ti.ijk,
-                                                         4).place(r[l], z[l])
+for lvl in range(n_mg_levels):
+    ti.root.pointer(ti.ijk,
+                    [N_tot // (4 * 2**lvl)]).dense(ti.ijk,
+                                                   4).place(r[lvl], z[lvl])
 
-ti.root.place(alpha, beta, sum)
+ti.root.place(alpha, beta, sum_)
 
 
 @ti.kernel
@@ -65,9 +66,9 @@ def compute_Ap():
 
 
 @ti.kernel
-def reduce(p: ti.template(), q: ti.template()):
-    for I in ti.grouped(p):
-        sum[None] += p[I] * q[I]
+def reduce(p_: ti.template(), q_: ti.template()):
+    for I in ti.grouped(p_):
+        sum_[None] += p_[I] * q_[I]
 
 
 @ti.kernel
@@ -144,69 +145,74 @@ def paint():
         pixels[i, j] = x[ii, jj, kk] / N_tot
 
 
-gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
+def main():
+    gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
 
-init()
+    init()
 
-sum[None] = 0.0
-reduce(r[0], r[0])
-initial_rTr = sum[None]
-
-# r = b - Ax = b    since x = 0
-# p = r = r + 0 p
-if use_multigrid:
-    apply_preconditioner()
-else:
-    z[0].copy_from(r[0])
-
-update_p()
-
-sum[None] = 0.0
-reduce(z[0], r[0])
-old_zTr = sum[None]
-
-# CG
-for i in range(400):
-    # alpha = rTr / pTAp
-    compute_Ap()
-    sum[None] = 0.0
-    reduce(p, Ap)
-    pAp = sum[None]
-    alpha[None] = old_zTr / pAp
-
-    # x = x + alpha p
-    update_x()
-
-    # r = r - alpha Ap
-    update_r()
-
-    # check for convergence
-    sum[None] = 0.0
+    sum_[None] = 0.0
     reduce(r[0], r[0])
-    rTr = sum[None]
-    if rTr < initial_rTr * 1.0e-12:
-        break
+    initial_rTr = sum_[None]
 
-    # z = M^-1 r
+    # r = b - Ax = b    since x = 0
+    # p = r = r + 0 p
     if use_multigrid:
         apply_preconditioner()
     else:
         z[0].copy_from(r[0])
 
-    # beta = new_rTr / old_rTr
-    sum[None] = 0.0
-    reduce(z[0], r[0])
-    new_zTr = sum[None]
-    beta[None] = new_zTr / old_zTr
-
-    # p = z + beta p
     update_p()
-    old_zTr = new_zTr
 
-    print(' ')
-    print(f'Iter = {i:4}, Residual = {rTr:e}')
-    paint()
-    gui.set_image(pixels)
-    gui.show()
+    sum_[None] = 0.0
+    reduce(z[0], r[0])
+    old_zTr = sum_[None]
 
-ti.profiler.print_kernel_profiler_info()
+    # CG
+    for i in range(400):
+        # alpha = rTr / pTAp
+        compute_Ap()
+        sum_[None] = 0.0
+        reduce(p, Ap)
+        pAp = sum_[None]
+        alpha[None] = old_zTr / pAp
+
+        # x = x + alpha p
+        update_x()
+
+        # r = r - alpha Ap
+        update_r()
+
+        # check for convergence
+        sum_[None] = 0.0
+        reduce(r[0], r[0])
+        rTr = sum_[None]
+        if rTr < initial_rTr * 1.0e-12:
+            break
+
+        # z = M^-1 r
+        if use_multigrid:
+            apply_preconditioner()
+        else:
+            z[0].copy_from(r[0])
+
+        # beta = new_rTr / old_rTr
+        sum_[None] = 0.0
+        reduce(z[0], r[0])
+        new_zTr = sum_[None]
+        beta[None] = new_zTr / old_zTr
+
+        # p = z + beta p
+        update_p()
+        old_zTr = new_zTr
+
+        print(' ')
+        print(f'Iter = {i:4}, Residual = {rTr:e}')
+        paint()
+        gui.set_image(pixels)
+        gui.show()
+
+    ti.profiler.print_kernel_profiler_info()
+
+
+if __name__ == '__main__':
+    main()

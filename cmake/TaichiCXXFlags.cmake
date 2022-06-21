@@ -17,14 +17,6 @@ if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif ()
 
-# Do not enable lto for APPLE since it made linking extremely slow.
-if (WIN32)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} -flto=thin")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -flto=thin")
-    endif()
-endif()
-
 if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     if (MSVC)

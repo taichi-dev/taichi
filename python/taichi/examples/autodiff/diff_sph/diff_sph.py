@@ -155,9 +155,10 @@ class Linear:
                 val = val[0]
             self.copy_from_numpy(w, val, model_id)
 
+    @staticmethod
     @ti.kernel
-    def copy_from_numpy(self, dst: ti.template(), src: ti.ext_arr(),
-                        model_id: ti.i32):
+    def copy_from_numpy(
+            dst: ti.template(), src: ti.ext_arr(), model_id: ti.i32):
         for I in ti.grouped(src):
             dst[model_id, I] = src[I]
 

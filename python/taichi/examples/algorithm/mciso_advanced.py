@@ -330,20 +330,32 @@ class MCISO:
             idx = 0
             if ti.static(self.dim == 2):
                 i, j = I
-                if self.m[i, j] > 1: idx |= 1
-                if self.m[i + 1, j] > 1: idx |= 2
-                if self.m[i, j + 1] > 1: idx |= 4
-                if self.m[i + 1, j + 1] > 1: idx |= 8
+                if self.m[i, j] > 1:
+                    idx |= 1
+                if self.m[i + 1, j] > 1:
+                    idx |= 2
+                if self.m[i, j + 1] > 1:
+                    idx |= 4
+                if self.m[i + 1, j + 1] > 1:
+                    idx |= 8
             else:
                 i, j, k = I
-                if self.m[i, j, k] > 1: idx |= 1
-                if self.m[i + 1, j, k] > 1: idx |= 2
-                if self.m[i + 1, j + 1, k] > 1: idx |= 4
-                if self.m[i, j + 1, k] > 1: idx |= 8
-                if self.m[i, j, k + 1] > 1: idx |= 16
-                if self.m[i + 1, j, k + 1] > 1: idx |= 32
-                if self.m[i + 1, j + 1, k + 1] > 1: idx |= 64
-                if self.m[i, j + 1, k + 1] > 1: idx |= 128
+                if self.m[i, j, k] > 1:
+                    idx |= 1
+                if self.m[i + 1, j, k] > 1:
+                    idx |= 2
+                if self.m[i + 1, j + 1, k] > 1:
+                    idx |= 4
+                if self.m[i, j + 1, k] > 1:
+                    idx |= 8
+                if self.m[i, j, k + 1] > 1:
+                    idx |= 16
+                if self.m[i + 1, j, k + 1] > 1:
+                    idx |= 32
+                if self.m[i + 1, j + 1, k + 1] > 1:
+                    idx |= 64
+                if self.m[i, j + 1, k + 1] > 1:
+                    idx |= 128
 
             for m in range(self.et.shape[1]):
                 if self.et[idx, m][0] == -1:
@@ -435,8 +447,9 @@ class MCISO:
 
 
 class MCISO_Example(MCISO):
+    @staticmethod
     @ti.func
-    def gauss(self, x):
+    def gauss(x):
         return ti.exp(-6 * x**2)
 
     @ti.kernel

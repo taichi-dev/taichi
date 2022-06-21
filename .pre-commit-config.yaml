@@ -33,13 +33,3 @@ repos:
       - id: pylint
         args: ['-rn', '-sn']
         files: ^python/taichi/
-        exclude: ^python/taichi/examples/.*.py
-
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.13.4
-    hooks:
-      - id: pylint
-        alias: pylint-examples
-        name: pylint (for examples)
-        args: ['-rn', '-sn', '--rcfile=python/taichi/examples/.pylintrc']
-        files: ^python/taichi/examples/.*.py

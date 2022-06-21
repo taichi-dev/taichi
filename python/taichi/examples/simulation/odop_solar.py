@@ -42,7 +42,8 @@ class SolarSystem:
             self.v[i] += self.dt * self.gravity(self.x[i])
             self.x[i] += self.dt * self.v[i]
 
-    def render(self, gui):  # Render the scene on GUI
+    @staticmethod
+    def render(gui):  # Render the scene on GUI
         gui.circle([0.5, 0.5], radius=10, color=0xffaa88)
         gui.circles(solar.x.to_numpy(), radius=3, color=0xffffff)
 

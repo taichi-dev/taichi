@@ -18,6 +18,13 @@ if (MINGW)
 endif ()
 
 if (WIN32)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} -fno-lto")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fno-lto")
+    endif()
+endif()
+
+if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     if (MSVC)
         set(CMAKE_CXX_FLAGS

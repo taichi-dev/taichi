@@ -42,7 +42,7 @@ class CpuDevice;
 
 class LlvmRuntimeExecutor {
  public:
-  LlvmRuntimeExecutor(CompileConfig &config);
+  LlvmRuntimeExecutor(CompileConfig &config, KernelProfilerBase *profiler);
 
   TaichiLLVMContext *get_llvm_context(Arch arch);
 
@@ -119,15 +119,24 @@ class LlvmRuntimeExecutor {
     snode_tree_buffer_manager_->destroy(snode_tree);
   }
 
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer);
+
  private:
   CompileConfig *config_;
+  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
+
   std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
-  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   void *llvm_runtime_{nullptr};
 
+  std::unique_ptr<ThreadPool> thread_pool_{nullptr};
   std::shared_ptr<Device> device_{nullptr};
+
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
+  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
+  void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
+  DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
 
   // good buddy
   friend LlvmProgramImpl;
@@ -164,9 +173,6 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   void finalize() override;
-
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer) override;
 
   uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override;
 
@@ -206,6 +212,11 @@ class LlvmProgramImpl : public ProgramImpl {
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */
  public:
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override {
+    return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
   Device *get_compute_device() override {
     return runtime_exec_->get_compute_device();
   }
@@ -287,14 +298,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::size_t num_snode_trees_processed_{0};
   LlvmOfflineCache cache_data_;
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
-
-  /* ------- Runtime: move to LlvmRuntimeExecutor --------- */
-  std::unique_ptr<ThreadPool> thread_pool_{nullptr};
-  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
-
-  void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
-
-  DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

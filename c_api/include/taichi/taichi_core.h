@@ -62,10 +62,10 @@ typedef enum TiArgumentType {
 
 // bit_field.memory_usage
 typedef enum TiMemoryUsageFlagBits {
-  TI_MEMORY_USAGE_STORAGE_BIT = 0,
-  TI_MEMORY_USAGE_UNIFORM_BIT = 1,
-  TI_MEMORY_USAGE_VERTEX_BIT = 2,
-  TI_MEMORY_USAGE_INDEX_BIT = 3,
+  TI_MEMORY_USAGE_STORAGE_BIT = 1 << 0,
+  TI_MEMORY_USAGE_UNIFORM_BIT = 1 << 1,
+  TI_MEMORY_USAGE_VERTEX_BIT = 1 << 2,
+  TI_MEMORY_USAGE_INDEX_BIT = 1 << 3,
 } TiMemoryUsageFlagBits;
 typedef TiFlags TiMemoryUsageFlags;
 

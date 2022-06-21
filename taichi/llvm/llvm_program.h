@@ -5,7 +5,7 @@
 
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
+#include "taichi/llvm/snode_tree_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
@@ -14,7 +14,7 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
@@ -100,13 +100,13 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer);
+      uint64 *result_buffer) override;
 
   void synchronize() override;
 
-  void check_runtime_error(uint64 *result_buffer);
+  void check_runtime_error(uint64 *result_buffer) override;
 
-  void finalize();
+  void finalize() override;
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
@@ -152,7 +152,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer);
+  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {

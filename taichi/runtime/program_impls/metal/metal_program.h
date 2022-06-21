@@ -2,15 +2,15 @@
 
 #include <vector>
 
-#include "taichi/backends/metal/kernel_manager.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/runtime/metal/kernel_manager.h"
+#include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/backends/metal/data_types.h"
-#include "taichi/backends/metal/aot_module_builder_impl.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/runtime/metal/data_types.h"
+#include "taichi/runtime/metal/aot_module_builder_impl.h"
+#include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/program/program_impl.h"
 
 namespace taichi {

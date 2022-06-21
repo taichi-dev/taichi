@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/runtime/metal/kernel_manager.h"
 
 #include <algorithm>
 #include <chrono>
@@ -10,8 +10,8 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/device.h"
-#include "taichi/backends/metal/features.h"
-#include "taichi/backends/metal/runtime_utils.h"
+#include "taichi/runtime/metal/features.h"
+#include "taichi/runtime/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/program/kernel.h"
@@ -27,7 +27,7 @@
 
 #include <algorithm>
 
-#include "taichi/backends/metal/api.h"
+#include "taichi/runtime/metal/api.h"
 #include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 
@@ -39,8 +39,8 @@ namespace metal {
 
 namespace {
 namespace shaders {
-#include "taichi/backends/metal/shaders/print.metal.h"
-#include "taichi/backends/metal/shaders/runtime_utils.metal.h"
+#include "taichi/runtime/metal/shaders/print.metal.h"
+#include "taichi/runtime/metal/shaders/runtime_utils.metal.h"
 }  // namespace shaders
 
 using KernelTaskType = OffloadedTaskType;

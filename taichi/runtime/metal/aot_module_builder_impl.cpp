@@ -1,8 +1,8 @@
-#include "taichi/backends/metal/aot_module_builder_impl.h"
+#include "taichi/runtime/metal/aot_module_builder_impl.h"
 
 #include <fstream>
 
-#include "taichi/backends/metal/codegen_metal.h"
+#include "taichi/codegen/metal/codegen_metal.h"
 
 namespace taichi {
 namespace lang {

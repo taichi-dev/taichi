@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "taichi/ir/offloaded_task_type.h"
-#include "taichi/backends/metal/data_types.h"
+#include "taichi/runtime/metal/data_types.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
 // structures. However, they serve as a boundary between Taichi and Metal and

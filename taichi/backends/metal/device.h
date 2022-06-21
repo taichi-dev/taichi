@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "taichi/backends/device.h"
-#include "taichi/backends/metal/api.h"
-#include "taichi/backends/metal/runtime_utils.h"
+#include "taichi/runtime/metal/api.h"
+#include "taichi/runtime/metal/runtime_utils.h"
 
 namespace taichi {
 namespace lang {

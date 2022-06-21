@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/runtime_utils.h"
+#include "taichi/runtime/metal/runtime_utils.h"
 
 #include <cstring>
 

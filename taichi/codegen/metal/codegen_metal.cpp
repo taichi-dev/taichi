@@ -3,10 +3,10 @@
 #include <functional>
 #include <string>
 
-#include "taichi/backends/metal/api.h"
+#include "taichi/runtime/metal/api.h"
 #include "taichi/backends/metal/constants.h"
-#include "taichi/backends/metal/env_config.h"
-#include "taichi/backends/metal/features.h"
+#include "taichi/codegen/metal/env_config.h"
+#include "taichi/runtime/metal/features.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -21,15 +21,15 @@ namespace {
 
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/backends/metal/shaders/ad_stack.metal.h"
-#include "taichi/backends/metal/shaders/helpers.metal.h"
-#include "taichi/backends/metal/shaders/init_randseeds.metal.h"
-#include "taichi/backends/metal/shaders/print.metal.h"
-#include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
+#include "taichi/codegen/metal/shaders/ad_stack.metal.h"
+#include "taichi/codegen/metal/shaders/helpers.metal.h"
+#include "taichi/codegen/metal/shaders/init_randseeds.metal.h"
+#include "taichi/runtime/metal/shaders/print.metal.h"
+#include "taichi/runtime/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
-#include "taichi/backends/metal/shaders/print.metal.h"
-#include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+#include "taichi/runtime/metal/shaders/print.metal.h"
+#include "taichi/runtime/metal/shaders/runtime_structs.metal.h"
 
 }  // namespace shaders
 

@@ -5,8 +5,8 @@
 #include <unordered_set>
 
 #include "taichi/aot/module_builder.h"
-#include "taichi/backends/metal/aot_utils.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/runtime/metal/aot_utils.h"
+#include "taichi/codegen/metal/struct_metal.h"
 
 namespace taichi {
 namespace lang {

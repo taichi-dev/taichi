@@ -7,7 +7,7 @@ target_sources(${METAL_RHI}
     device.cpp
   )
 
-#TODO 4832, some dependencies here should not be required as they
+# TODO(#4832) some dependencies here should not be required as they
 # are build requirements of other targets.
 target_include_directories(${METAL_RHI}
   PRIVATE

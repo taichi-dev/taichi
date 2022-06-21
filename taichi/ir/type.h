@@ -190,18 +190,9 @@ class QuantIntType : public Type {
  public:
   QuantIntType(int num_bits,
                bool is_signed,
-               Type *compute_type = nullptr,
-               Type *physical_type = nullptr);
+               Type *compute_type = nullptr);
 
   std::string to_string() const override;
-
-  void set_physical_type(Type *physical_type) {
-    this->physical_type_ = physical_type;
-  }
-
-  Type *get_physical_type() {
-    return physical_type_;
-  }
 
   Type *get_compute_type() override {
     return compute_type_;
@@ -219,7 +210,6 @@ class QuantIntType : public Type {
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
   Type *compute_type_{nullptr};
-  Type *physical_type_{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
 };

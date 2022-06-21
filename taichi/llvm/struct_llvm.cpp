@@ -92,7 +92,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt;
-    ch->dt->as<QuantIntType>()->set_physical_type(snode.physical_type);
     if (!arch_is_cpu(arch_)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
                   "bit_array physical type must be at least 32 bits on "

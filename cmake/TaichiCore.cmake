@@ -91,29 +91,29 @@ endif()
 
 ## TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
-        "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
-        "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
-	"taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
-        "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
-        "taichi/codegen/opengl/shaders/*" #CODEGEN
-        "taichi/codegen/metal/*.cpp" "taichi/codegen/metal/*.h" #CODEGEN
-        "taichi/codegen/metal/shaders/*" #CODEGEN
-        "taichi/codegen/spirv/*" #CODEGEN
-        "taichi/common/*"
-        "taichi/ir/*"
-        "taichi/jit/*"
-        "taichi/llvm/*"
-        "taichi/math/*"
-        "taichi/program/*"
-        "taichi/struct/*"
-        "taichi/system/*"
-        "taichi/transforms/*"
-        "taichi/util/*"
-        "taichi/gui/*"
-        "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
-        "taichi/lang_util.h" "taichi/lang_util.cpp"
-        "taichi/runtime/*.h" "taichi/runtime/*.cpp"
-        "taichi/backends/*.h" "taichi/backends/*.cpp"
+    "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
+    "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
+    "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
+    "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
+    "taichi/codegen/opengl/shaders/*" #CODEGEN
+    "taichi/codegen/metal/*.cpp" "taichi/codegen/metal/*.h" #CODEGEN
+    "taichi/codegen/metal/shaders/*" #CODEGEN
+    "taichi/codegen/spirv/*" #CODEGEN
+    "taichi/common/*"
+    "taichi/ir/*"
+    "taichi/jit/*"
+    "taichi/llvm/*"
+    "taichi/math/*"
+    "taichi/program/*"
+    "taichi/struct/*"
+    "taichi/system/*"
+    "taichi/transforms/*"
+    "taichi/util/*"
+    "taichi/gui/*"
+    "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
+    "taichi/lang_util.h" "taichi/lang_util.cpp"
+    "taichi/runtime/*.h" "taichi/runtime/*.cpp"
+    "taichi/backends/*.h" "taichi/backends/*.cpp"
 )
 
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")

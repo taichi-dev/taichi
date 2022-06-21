@@ -59,6 +59,7 @@ class VideoManager:
 
     Args:
         output_dir (str): directory to save the frames.
+        video_filename (str): filename for the video. default filename is video.mp4.
         width, height (int): resolution of the video.
         post_processor (object): any object that implements the `process(img)`
             method, which accepts an image as a `numpy.ndarray` and returns
@@ -81,6 +82,7 @@ class VideoManager:
     """
     def __init__(self,
                  output_dir,
+                 video_filename=None,
                  width=None,
                  height=None,
                  post_processor=None,
@@ -95,6 +97,7 @@ class VideoManager:
             os.makedirs(self.frame_directory)
         except:
             pass
+        self.video_filename = video_filename
         self.next_video_checkpoint = 4
         self.framerate = framerate
         self.post_processor = post_processor
@@ -103,7 +106,13 @@ class VideoManager:
         self.automatic_build = automatic_build
 
     def get_output_filename(self, suffix):
-        return os.path.join(self.directory, 'video' + suffix)
+        if not self.video_filename:
+            return os.path.join(self.directory, 'video' + suffix)
+        else:
+            filename, extension = os.path.splitext(self.video_filename)
+            if extension is not None:
+                print(f'Warning: file extension {extension} will be disregarded!')
+            return os.path.join(self.directory, filename + suffix)
 
     def write_frame(self, img):
         """Write an `numpy.ndarray` `img` to an image file.

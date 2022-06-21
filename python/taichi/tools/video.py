@@ -111,7 +111,9 @@ class VideoManager:
         else:
             filename, extension = os.path.splitext(self.video_filename)
             if extension is not None:
-                print(f'Warning: file extension {extension} will be disregarded!')
+                print(
+                    f'Warning: file extension {extension} will be disregarded!'
+                )
             return os.path.join(self.directory, filename + suffix)
 
     def write_frame(self, img):

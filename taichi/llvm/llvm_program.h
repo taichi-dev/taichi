@@ -163,7 +163,7 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->destroy_snode_tree(snode_tree);
   }
 
-  void finalize();
+  void finalize() override;
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
@@ -240,7 +240,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer) {
+      uint64 *result_buffer) override {
     runtime_exec_->print_memory_profiler_info(snode_trees_, result_buffer);
   }
 
@@ -263,7 +263,7 @@ class LlvmProgramImpl : public ProgramImpl {
                                                               result_buffer);
   }
 
-  void check_runtime_error(uint64 *result_buffer) {
+  void check_runtime_error(uint64 *result_buffer) override {
     runtime_exec_->check_runtime_error(result_buffer);
   }
 

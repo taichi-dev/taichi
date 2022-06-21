@@ -81,4 +81,3 @@ void SNodeTreeBufferManager::destroy(SNodeTree *snode_tree) {
 }
 
 TLANG_NAMESPACE_END
-#endif

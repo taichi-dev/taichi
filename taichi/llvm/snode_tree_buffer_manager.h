@@ -13,7 +13,6 @@ class JITModule;
 class ProgramImpl;
 class LlvmRuntimeExecutor;
 
-#ifdef TI_WITH_LLVM
 class SNodeTreeBufferManager {
  public:
   SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
@@ -36,7 +35,5 @@ class SNodeTreeBufferManager {
   Ptr roots_[kMaxNumSnodeTreesLlvm];
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };
-
-#endif
 
 TLANG_NAMESPACE_END

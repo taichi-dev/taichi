@@ -5,7 +5,7 @@
 
 #include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
+#include "taichi/llvm/snode_tree_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
@@ -14,7 +14,7 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/llvm/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"

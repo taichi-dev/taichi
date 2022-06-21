@@ -4,8 +4,8 @@
 #include <string>
 
 #include "taichi/runtime/opengl/opengl_api.h"
-#include "taichi/backends/opengl/opengl_data_types.h"
-#include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/codegen/opengl/opengl_data_types.h"
+#include "taichi/runtime/opengl/opengl_kernel_util.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -30,12 +30,12 @@ namespace shaders {
   _(arr7)
 
 #define TI_INSIDE_OPENGL_CODEGEN
-#include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
+#include "taichi/codegen/opengl/shaders/atomics_macro_f32.glsl.h"
 #include "taichi/runtime/opengl/shaders/runtime.h"
-#include "taichi/backends/opengl/shaders/random.glsl.h"
-#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
-#include "taichi/backends/opengl/shaders/print.glsl.h"
-#include "taichi/backends/opengl/shaders/reduction.glsl.h"
+#include "taichi/codegen/opengl/shaders/random.glsl.h"
+#include "taichi/codegen/opengl/shaders/fast_pow.glsl.h"
+#include "taichi/codegen/opengl/shaders/print.glsl.h"
+#include "taichi/codegen/opengl/shaders/reduction.glsl.h"
 
 GENERATE_OPENGL_ATOMIC_F32(data);
 GENERATE_OPENGL_ATOMIC_F32(gtmp);

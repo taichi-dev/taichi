@@ -235,10 +235,24 @@ endif()
 file(GLOB TAICHI_VULKAN_TEMP_SOURCE
   "taichi/backends/vulkan/*.h"
   "taichi/backends/vulkan/*.cpp"
+  "taichi/runtime/gfx/*.h"
+  "taichi/runtime/gfx/*.cpp"
   "taichi/runtime/program_impls/vulkan/*.h"
   "taichi/runtime/program_impls/vulkan/*.cpp"
 )
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_VULKAN_TEMP_SOURCE})
+
+# TODO(#4832), Remove opengl runtime files from TAICHI_CORE_SOURCE
+# Remove this after all sources are splitted into targets.
+file(GLOB TAICHI_OPENGL_TEMP_SOURCE
+  "taichi/backends/opengl/*.h"
+  "taichi/backends/opengl/*.cpp"
+  "taichi/runtime/opengl/*.h"
+  "taichi/runtime/opengl/*.cpp"
+  "taichi/runtime/program_impls/opengl/*.h"
+  "taichi/runtime/program_impls/opengl/*.cpp"
+)
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_OPENGL_TEMP_SOURCE})
 
 
 # TODO(#2196): Rename these CMAKE variables:
@@ -368,8 +382,13 @@ if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
 
+    add_subdirectory(taichi/backends/opengl)
     add_subdirectory(taichi/runtime/opengl)
+    add_subdirectory(taichi/runtime/program_impls/opengl)
+
+
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
 endif()
 
 if (TI_WITH_DX11)
@@ -409,7 +428,7 @@ if (TI_WITH_VULKAN)
     # Should be removed
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
 
-    add_subdirectory(taichi/runtime/program_impls)
+    add_subdirectory(taichi/runtime/program_impls/vulkan)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
 endif ()
 

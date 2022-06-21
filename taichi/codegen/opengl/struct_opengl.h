@@ -2,7 +2,7 @@
 #pragma once
 
 #include "taichi/runtime/opengl/opengl_kernel_launcher.h"
-#include "taichi/backends/opengl/opengl_data_types.h"
+#include "taichi/codegen/opengl/opengl_data_types.h"
 #include "taichi/ir/snode.h"
 
 #include <algorithm>

@@ -35,8 +35,9 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>());
-  return Expr::make<GlobalPtrExpression>(*this, indices);
+  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>() ||
+            is<IdExpression>());
+  return Expr::make<IndexExpression>(*this, indices);
 }
 
 Expr &Expr::operator=(const Expr &o) {

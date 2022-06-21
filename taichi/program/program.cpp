@@ -41,7 +41,16 @@
 namespace taichi {
 namespace lang {
 
-#include <iostream>
+template <Arch arch>
+std::unique_ptr<ProgramImpl> ProgramDispatcher::instantiate_program_impl(
+    CompileConfig &config,
+    KernelProfilerBase *profiler) {
+  if (arch_uses_llvm(config.arch)) {
+    TI_ERROR("This taichi is not compiled with LLVM");
+  }
+
+  return nullptr;
+}
 
 std::atomic<int> Program::num_instances_;
 

@@ -36,15 +36,9 @@ namespace lang {
 
 struct ProgramDispatcher {
   template <Arch arch>
-  static std::unique_ptr<ProgramImpl> instantiate_program_impl(
+  static inline std::unique_ptr<ProgramImpl> instantiate_program_impl(
       CompileConfig &config,
-      KernelProfilerBase *profiler) {
-    if (arch_uses_llvm(config.arch)) {
-      TI_ERROR("This taichi is not compiled with LLVM");
-    }
-
-    return nullptr;
-  }
+      KernelProfilerBase *profiler);
 };
 
 struct JITEvaluatorId {

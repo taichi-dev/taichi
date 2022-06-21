@@ -66,6 +66,7 @@ void place_child(Expr *expr_arg,
       } else {
         auto &exp_node = parent->insert_children(SNodeType::place);
         exp_node.dt = exp;
+        exp_node.bit_offset = parent->bit_struct_type_builder->add_member(exp);
         exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
         new_exp_snode = &exp_node;
         if (parent->placing_shared_exp) {
@@ -92,6 +93,9 @@ void place_child(Expr *expr_arg,
       child.owns_shared_exponent = true;
     }
     child.dt = glb_var_expr->dt;
+    if (parent->bit_struct_type_builder) {
+      child.bit_offset = parent->bit_struct_type_builder->add_member(child.dt);
+    }
     if (new_exp_snode) {
       child.exp_snode = new_exp_snode;
       new_exp_snode->exponent_users.push_back(&child);

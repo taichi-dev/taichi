@@ -1137,9 +1137,36 @@ class MakeDual : public ADTransform {
       // d (x * y) = y * dx + x * dy
       accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
       accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+      // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
       TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    if (if_stmt->true_statements) {
+      std::vector<Stmt *> true_statements;
+      for (auto &stmt : if_stmt->true_statements->statements) {
+        true_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : true_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
+    }
+    if (if_stmt->false_statements) {
+      std::vector<Stmt *> false_statements;
+      for (auto &stmt : if_stmt->false_statements->statements) {
+        false_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : false_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
     }
   }
 

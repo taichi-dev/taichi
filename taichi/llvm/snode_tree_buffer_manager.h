@@ -10,7 +10,6 @@ using Ptr = uint8_t *;
 TLANG_NAMESPACE_BEGIN
 
 class JITModule;
-class ProgramImpl;
 class LlvmRuntimeExecutor;
 
 class SNodeTreeBufferManager {

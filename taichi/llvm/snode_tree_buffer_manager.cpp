@@ -1,6 +1,5 @@
 #include "snode_tree_buffer_manager.h"
-#include "taichi/program/program.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/llvm/llvm_runtime.h"
 
 TLANG_NAMESPACE_BEGIN
 

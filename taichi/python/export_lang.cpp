@@ -534,6 +534,7 @@ void export_lang(py::module &m) {
       .def("has_dual", &SNode::has_dual)
       .def("activate_dual", &SNode::activate_dual)
       .def("deactivate_dual", &SNode::deactivate_dual)
+      .def("is_dual_activated", &SNode::is_dual_activated)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)

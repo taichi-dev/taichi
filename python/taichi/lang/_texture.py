@@ -19,9 +19,8 @@ class TextureSampler:
             args_group = impl.make_expr_group(uv.x, uv.y, lod)
         elif self.num_dims == 3:
             args_group = impl.make_expr_group(uv.x, uv.y, uv.z, lod)
-        v = _ti_core.make_texture_op_expr(
-            _ti_core.TextureOpType.sample_lod, self.ptr_expr,
-            args_group)
+        v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.sample_lod,
+                                          self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
                                v,
                                with_runtime_context=False)
@@ -45,8 +44,8 @@ class TextureSampler:
             args_group = impl.make_expr_group(index.x, index.y, lod)
         elif self.num_dims == 3:
             args_group = impl.make_expr_group(index.x, index.y, index.z, lod)
-        v = _ti_core.make_texture_op_expr(
-            _ti_core.TextureOpType.fetch_texel, self.ptr_expr, args_group)
+        v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.fetch_texel,
+                                          self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
                                v,
                                with_runtime_context=False)

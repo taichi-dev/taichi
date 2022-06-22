@@ -944,7 +944,8 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       int binding = binding_head_++;
-      val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions, /*set=*/0, binding);
+      val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
+                                  /*set=*/0, binding);
       TextureBind bind;
       bind.arg_id = arg_id;
       bind.binding = binding;

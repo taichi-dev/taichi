@@ -356,9 +356,13 @@ class IRBuilder {
                          uint32_t descriptor_set,
                          uint32_t binding);
 
-  Value sample_texture(Value texture_var, const std::vector<Value> &args, Value lod);
+  Value sample_texture(Value texture_var,
+                       const std::vector<Value> &args,
+                       Value lod);
 
-  Value fetch_texel(Value texture_var, const std::vector<Value> &args, Value lod);
+  Value fetch_texel(Value texture_var,
+                    const std::vector<Value> &args,
+                    Value lod);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main

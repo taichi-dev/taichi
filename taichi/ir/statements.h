@@ -1453,7 +1453,8 @@ class TexturePtrStmt : public Stmt {
   Stmt *arg_load_stmt{nullptr};
   int dimensions{2};
 
-  explicit TexturePtrStmt(Stmt *stmt, int dimensions) : arg_load_stmt(stmt), dimensions(dimensions) {
+  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
+      : arg_load_stmt(stmt), dimensions(dimensions) {
     TI_STMT_REG_FIELDS;
   }
 

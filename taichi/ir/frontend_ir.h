@@ -300,7 +300,8 @@ class TexturePtrExpression : public Expression {
   int arg_id;
   int num_dims;
 
-  TexturePtrExpression(int arg_id, int num_dims = 2) : arg_id(arg_id), num_dims(num_dims) {
+  TexturePtrExpression(int arg_id, int num_dims = 2)
+      : arg_id(arg_id), num_dims(num_dims) {
   }
 
   void type_check(CompileConfig *config) override;

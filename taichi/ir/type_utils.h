@@ -202,7 +202,6 @@ class BitStructTypeBuilder {
     } else {
       TI_ERROR("Only a QuantType can be a member of a BitStructType.");
     }
-    member_qit->set_physical_type(physical_type_);
     auto old_member_total_bits = member_total_bits_;
     member_total_bits_ += member_qit->get_num_bits();
     auto physical_bits = data_type_bits(physical_type_);

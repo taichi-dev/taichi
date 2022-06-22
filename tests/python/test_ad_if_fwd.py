@@ -6,6 +6,23 @@ from tests import test_utils
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu])
+def test_ad_if_simple_fwd():
+    x = ti.field(ti.f32, shape=())
+    y = ti.field(ti.f32, shape=())
+
+    @ti.kernel
+    def func():
+        if x[None] > 0.:
+            y[None] = x[None]
+
+    x[None] = 1
+    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+        func()
+
+    assert y.grad[None] == 1
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu])
 def test_ad_if():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)

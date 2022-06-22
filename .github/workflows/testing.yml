@@ -413,7 +413,11 @@ jobs:
       - name: Cleanup
         shell: powershell
         run: |
-          remove-item '${{ github.workspace }}\*' -recurse -force
+          $r = Get-Random
+          $ws = '${{ github.workspace }}'
+          Rename-Item $ws "$ws.$a" -ErrorAction Continue
+          Remove-Item "$ws.$a" -Recurse -Force -ErrorAction Continue
+          exit 0
 
       - uses: actions/checkout@v2
         with:

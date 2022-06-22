@@ -1,9 +1,9 @@
 #include "taichi/backends/metal/device.h"
 
 #include "taichi/platform/mac/objc_api.h"
-#include "taichi/backends/metal/api.h"
+#include "taichi/runtime/metal/api.h"
 #include "taichi/backends/metal/constants.h"
-#include "taichi/backends/metal/runtime_utils.h"
+#include "taichi/runtime/metal/runtime_utils.h"
 
 namespace taichi {
 namespace lang {

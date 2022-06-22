@@ -1,15 +1,16 @@
 #pragma once
 
 #include "taichi/ir/type.h"
+#include "taichi/ir/type_factory.h"
 
 namespace taichi {
 namespace lang {
 
-std::string data_type_name(DataType t);
+TI_DLL_EXPORT std::string data_type_name(DataType t);
 
-std::string data_type_format(DataType dt);
+TI_DLL_EXPORT int data_type_size(DataType t);
 
-int data_type_size(DataType t);
+TI_DLL_EXPORT std::string data_type_format(DataType dt);
 
 inline int data_type_bits(DataType t) {
   return data_type_size(t) * 8;
@@ -181,6 +182,47 @@ inline TypedConstant get_min_value(DataType dt) {
     TI_NOT_IMPLEMENTED;
   }
 }
+
+class BitStructTypeBuilder {
+ public:
+  explicit BitStructTypeBuilder(PrimitiveType *physical_type)
+      : physical_type_(physical_type) {
+  }
+
+  int add_member(Type *member_type) {
+    member_types_.push_back(member_type);
+    member_bit_offsets_.push_back(member_total_bits_);
+    QuantIntType *member_qit = nullptr;
+    if (auto qit = member_type->cast<QuantIntType>()) {
+      member_qit = qit;
+    } else if (auto qfxt = member_type->cast<QuantFixedType>()) {
+      member_qit = qfxt->get_digits_type()->as<QuantIntType>();
+    } else if (auto qflt = member_type->cast<QuantFloatType>()) {
+      member_qit = qflt->get_digits_type()->as<QuantIntType>();
+    } else {
+      TI_ERROR("Only a QuantType can be a member of a BitStructType.");
+    }
+    member_qit->set_physical_type(physical_type_);
+    auto old_member_total_bits = member_total_bits_;
+    member_total_bits_ += member_qit->get_num_bits();
+    auto physical_bits = data_type_bits(physical_type_);
+    TI_ERROR_IF(member_total_bits_ > physical_bits,
+                "BitStructType overflows: {} bits used out of {}.",
+                member_total_bits_, physical_bits);
+    return old_member_total_bits;
+  }
+
+  Type *build() const {
+    return TypeFactory::get_instance().get_bit_struct_type(
+        physical_type_, member_types_, member_bit_offsets_);
+  }
+
+ private:
+  PrimitiveType *physical_type_{nullptr};
+  std::vector<Type *> member_types_;
+  std::vector<int> member_bit_offsets_;
+  int member_total_bits_{0};
+};
 
 }  // namespace lang
 }  // namespace taichi

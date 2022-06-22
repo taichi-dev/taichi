@@ -1,18 +1,20 @@
-# ./taichi/runtime/opengl/CMakeLists.txt
+# ./taichi/runtime/metal/CMakeLists.txt
 
-add_library(opengl_runtime)
-target_sources(opengl_runtime
+add_library(metal_runtime)
+target_sources(metal_runtime
   PRIVATE
-    opengl_api.cpp
+    api.cpp
     aot_module_builder_impl.cpp
-    opengl_utils.cpp
-    ${PROJECT_SOURCE_DIR}/external/glad/src/gl.c
-    ${PROJECT_SOURCE_DIR}/external/glad/src/egl.c
+    aot_module_loader_impl.cpp
+    data_types.cpp
+    kernel_manager.cpp
+    kernel_utils.cpp
+    runtime_utils.cpp
   )
 
 #TODO #4832, some path here should not be included as they are
 # dependencies of other targets.
-target_include_directories(opengl_runtime
+target_include_directories(metal_runtime
   PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/shaders
@@ -25,5 +27,4 @@ target_include_directories(opengl_runtime
     ${LLVM_INCLUDE_DIRS}
   )
 
-target_link_libraries(opengl_runtime PRIVATE opengl_rhi)
-target_link_libraries(opengl_runtime PRIVATE glfw)
+target_link_libraries(metal_runtime PRIVATE metal_rhi)

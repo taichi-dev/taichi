@@ -117,154 +117,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
   return nullptr;
 }
 
-void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                          KernelProfilerBase *profiler,
-                                          uint64 **result_buffer_ptr) {
-  std::size_t prealloc_size = 0;
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().malloc(
-        (void **)result_buffer_ptr,
-        sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = runtime_exec_->runtime_mem_info_->get_total_memory();
-    if (config->device_memory_fraction == 0) {
-      TI_ASSERT(config->device_memory_GB > 0);
-      prealloc_size = std::size_t(config->device_memory_GB * (1UL << 30));
-    } else {
-      prealloc_size = std::size_t(config->device_memory_fraction * total_mem);
-    }
-    TI_ASSERT(prealloc_size <= total_mem);
-
-    TI_TRACE("Allocating device memory {:.2f} GB",
-             1.0 * prealloc_size / (1UL << 30));
-
-    Device::AllocParams preallocated_device_buffer_alloc_params;
-    preallocated_device_buffer_alloc_params.size = prealloc_size;
-    runtime_exec_->preallocated_device_buffer_alloc_ =
-        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
-    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        cuda_device()->get_alloc_info(
-            runtime_exec_->preallocated_device_buffer_alloc_);
-    runtime_exec_->preallocated_device_buffer_ =
-        preallocated_device_buffer_alloc_info.ptr;
-
-    CUDADriver::get_instance().memset(
-        runtime_exec_->preallocated_device_buffer_, 0, prealloc_size);
-    tlctx = runtime_exec_->llvm_context_device_.get();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-    tlctx = runtime_exec_->llvm_context_host_.get();
-  }
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-
-  // Starting random state for the program calculated using the random seed.
-  // The seed is multiplied by 2^20 so that two programs with different seeds
-  // will not have overlapping random states in any thread.
-  int starting_rand_state = config->random_seed * 1048576;
-
-  // Number of random states. One per CPU/CUDA thread.
-  int num_rand_states = 0;
-
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    // It is important to make sure that every CUDA thread has its own random
-    // state so that we do not need expensive per-state locks.
-    num_rand_states = config->saturating_grid_dim * config->max_block_dim;
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    num_rand_states = config->cpu_max_num_threads;
-  }
-
-  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
-
-  runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
-                    void *, void *>(
-      "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
-      runtime_exec_->preallocated_device_buffer_, starting_rand_state,
-      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
-      (void *)std::vsnprintf);
-
-  TI_TRACE("LLVMRuntime initialized (excluding `root`)");
-  runtime_exec_->llvm_runtime_ = fetch_result<void *>(
-      taichi_result_buffer_ret_value_id, *result_buffer_ptr);
-  TI_TRACE("LLVMRuntime pointer fetched");
-
-  if (arch_use_host_memory(config->arch)) {
-    runtime_jit->call<void *>("runtime_get_mem_req_queue",
-                              runtime_exec_->llvm_runtime_);
-    auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
-                                              *result_buffer_ptr);
-    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
-  }
-
-  if (arch_use_host_memory(config->arch)) {
-    runtime_jit->call<void *, void *, void *>(
-        "LLVMRuntime_initialize_thread_pool", runtime_exec_->llvm_runtime_,
-        runtime_exec_->thread_pool_.get(), (void *)ThreadPool::static_run);
-
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
-                                      runtime_exec_->llvm_runtime_,
-                                      (void *)assert_failed_host);
-  }
-  if (arch_is_cpu(config->arch) && (profiler != nullptr)) {
-    // Profiler functions can only be called on CPU kernels
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler",
-                                      runtime_exec_->llvm_runtime_, profiler);
-    runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_start", runtime_exec_->llvm_runtime_,
-        (void *)&KernelProfilerBase::profiler_start);
-    runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_stop", runtime_exec_->llvm_runtime_,
-        (void *)&KernelProfilerBase::profiler_stop);
-  }
-}
-
-void LlvmProgramImpl::finalize() {
-  if (runtime_exec_->runtime_mem_info_)
-    runtime_exec_->runtime_mem_info_->set_profiler(nullptr);
-#if defined(TI_WITH_CUDA)
-  if (runtime_exec_->preallocated_device_buffer_ != nullptr) {
-    cuda_device()->dealloc_memory(
-        runtime_exec_->preallocated_device_buffer_alloc_);
-  }
-#endif
-}
-
-uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(
-    const DeviceAllocation &alloc) {
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
-  }
-}
-
-void LlvmProgramImpl::fill_ndarray(const DeviceAllocation &alloc,
-                                   std::size_t size,
-                                   uint32_t data) {
-  auto ptr = get_ndarray_alloc_info_ptr(alloc);
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
-  }
-}
-
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
@@ -751,6 +603,168 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
        tlctx->runtime_jit_module,
        get_llvm_runtime(),
        result_buffer});
+}
+
+void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
+                                       std::size_t size,
+                                       uint32_t data) {
+  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
+  }
+}
+
+uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
+    const DeviceAllocation &alloc) {
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
+  }
+}
+
+void LlvmRuntimeExecutor::finalize() {
+  if (runtime_mem_info_)
+    runtime_mem_info_->set_profiler(nullptr);
+#if defined(TI_WITH_CUDA)
+  if (preallocated_device_buffer_ != nullptr) {
+    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+  }
+#endif
+}
+
+void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
+                                              KernelProfilerBase *profiler,
+                                              uint64 **result_buffer_ptr) {
+  std::size_t prealloc_size = 0;
+  TaichiLLVMContext *tlctx = nullptr;
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().malloc(
+        (void **)result_buffer_ptr,
+        sizeof(uint64) * taichi_result_buffer_entries);
+    const auto total_mem = runtime_mem_info_->get_total_memory();
+    if (config_->device_memory_fraction == 0) {
+      TI_ASSERT(config_->device_memory_GB > 0);
+      prealloc_size = std::size_t(config_->device_memory_GB * (1UL << 30));
+    } else {
+      prealloc_size = std::size_t(config_->device_memory_fraction * total_mem);
+    }
+    TI_ASSERT(prealloc_size <= total_mem);
+
+    TI_TRACE("Allocating device memory {:.2f} GB",
+             1.0 * prealloc_size / (1UL << 30));
+
+    Device::AllocParams preallocated_device_buffer_alloc_params;
+    preallocated_device_buffer_alloc_params.size = prealloc_size;
+    preallocated_device_buffer_alloc_ =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc_);
+    preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
+
+    CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
+                                      prealloc_size);
+    tlctx = llvm_context_device_.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
+    tlctx = llvm_context_host_.get();
+  }
+  auto *const runtime_jit = tlctx->runtime_jit_module;
+
+  // Starting random state for the program calculated using the random seed.
+  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // will not have overlapping random states in any thread.
+  int starting_rand_state = config_->random_seed * 1048576;
+
+  // Number of random states. One per CPU/CUDA thread.
+  int num_rand_states = 0;
+
+  if (config_->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    // It is important to make sure that every CUDA thread has its own random
+    // state so that we do not need expensive per-state locks.
+    num_rand_states = config_->saturating_grid_dim * config_->max_block_dim;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    num_rand_states = config_->cpu_max_num_threads;
+  }
+
+  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
+
+  runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
+                    void *, void *>(
+      "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
+      preallocated_device_buffer_, starting_rand_state, num_rand_states,
+      (void *)&taichi_allocate_aligned, (void *)std::printf,
+      (void *)std::vsnprintf);
+
+  TI_TRACE("LLVMRuntime initialized (excluding `root`)");
+  llvm_runtime_ = fetch_result<void *>(taichi_result_buffer_ret_value_id,
+                                       *result_buffer_ptr);
+  TI_TRACE("LLVMRuntime pointer fetched");
+
+  if (arch_use_host_memory(config_->arch)) {
+    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime_);
+    auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
+                                              *result_buffer_ptr);
+    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
+  }
+
+  if (arch_use_host_memory(config_->arch)) {
+    runtime_jit->call<void *, void *, void *>(
+        "LLVMRuntime_initialize_thread_pool", llvm_runtime_, thread_pool_.get(),
+        (void *)ThreadPool::static_run);
+
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
+                                      llvm_runtime_,
+                                      (void *)assert_failed_host);
+  }
+  if (arch_is_cpu(config_->arch) && (profiler != nullptr)) {
+    // Profiler functions can only be called on CPU kernels
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
+                                      profiler);
+    runtime_jit->call<void *, void *>(
+        "LLVMRuntime_set_profiler_start", llvm_runtime_,
+        (void *)&KernelProfilerBase::profiler_start);
+    runtime_jit->call<void *, void *>(
+        "LLVMRuntime_set_profiler_stop", llvm_runtime_,
+        (void *)&KernelProfilerBase::profiler_stop);
+  }
+}
+
+void LlvmRuntimeExecutor::destroy_snode_tree(SNodeTree *snode_tree) {
+  get_llvm_context(host_arch())
+      ->delete_functions_of_snode_tree(snode_tree->id());
+  snode_tree_buffer_manager_->destroy(snode_tree);
+}
+
+Device *LlvmRuntimeExecutor::get_compute_device() {
+  return device_.get();
+}
+
+LLVMRuntime *LlvmRuntimeExecutor::get_llvm_runtime() {
+  return static_cast<LLVMRuntime *>(llvm_runtime_);
+}
+
+void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
+  ctx->runtime = get_llvm_runtime();
 }
 
 }  // namespace lang

@@ -1250,6 +1250,25 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
 }
 
 VulkanDevice::~VulkanDevice() {
+  // Note: Ideally whoever allocated the buffer & image should be responsible
+  // for deallocation as well.
+  // These manual deallocations work as last resort for the case where we
+  // have GGUI window whose lifetime is controlled by Python but
+  // shares the same underlying VulkanDevice with Program. In an extreme
+  // edge case when Python shuts down and program gets destructed before
+  // GGUI Window, buffers and images allocated through GGUI window won't
+  // be properly deallocated before VulkanDevice destruction. This isn't
+  // the most proper fix but is less intrusive compared to other
+  // approaches.
+  for (auto &alloc : allocations_) {
+    alloc.second.buffer.reset();
+  }
+  for (auto &alloc : image_allocations_) {
+    alloc.second.image.reset();
+  }
+  allocations_.clear();
+  image_allocations_.clear();
+
   vkDeviceWaitIdle(device_);
 
   desc_pool_ = nullptr;

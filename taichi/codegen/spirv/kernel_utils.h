@@ -173,7 +173,7 @@ class KernelContextAttributes {
   struct RetAttributes : public AttribsBase {};
 
   KernelContextAttributes() = default;
-  explicit KernelContextAttributes(const Kernel &kernel);
+  explicit KernelContextAttributes(const Kernel &kernel, Device *device);
 
   /**
    * Whether this kernel has any argument

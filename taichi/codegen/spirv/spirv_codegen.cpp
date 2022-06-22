@@ -2144,7 +2144,7 @@ static void spriv_message_consumer(spv_message_level_t level,
 }
 
 KernelCodegen::KernelCodegen(const Params &params)
-    : params_(params), ctx_attribs_(*params.kernel) {
+    : params_(params), ctx_attribs_(*params.kernel, params.device) {
   spv_target_env target_env = SPV_ENV_VULKAN_1_0;
   uint32_t spirv_version =
       params.device->get_cap(DeviceCapability::spirv_version);

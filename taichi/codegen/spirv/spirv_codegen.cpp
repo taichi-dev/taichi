@@ -1999,7 +1999,8 @@ class TaskCodegen : public IRVisitor {
 
     // Layout & translate to SPIR-V
     STD140LayoutContext layout_ctx;
-    auto ir2spirv_map = ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
+    auto ir2spirv_map =
+        ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
     args_struct_type_.id = ir2spirv_map[struct_type];
 
     args_buffer_value_ =

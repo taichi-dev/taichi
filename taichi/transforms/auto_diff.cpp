@@ -1148,7 +1148,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_dual()) {
+    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
       // No dual SNode. Do nothing
       return;
     }
@@ -1166,7 +1166,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
       // no gradient (likely integer types)
       return;
     }
@@ -1180,7 +1180,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
       // no gradient (likely integer types)
       return;
     }
@@ -1318,7 +1318,6 @@ void auto_diff(IRNode *root,
   } else if (autodiff_mode == AutodiffMode::kForward) {
     // Forward mode autodiff
     Block *block = root->as<Block>();
-    PromoteSSA2LocalVar::run(block);
     MakeDual::run(block);
   }
   type_check(root, config);

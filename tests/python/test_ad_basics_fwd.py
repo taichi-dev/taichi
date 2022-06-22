@@ -15,7 +15,7 @@ def test_ad_fwd_add():
     def ad_fwd_add():
         loss[1] += 2 * x[3]
 
-    with ti.ad.FwdMode(loss=[loss], parameters=x, seed=[0, 0, 0, 1, 0]):
+    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[0, 0, 0, 1, 0]):
         ad_fwd_add()
 
     assert loss.grad[1] == 2
@@ -34,7 +34,7 @@ def test_ad_fwd_multiply():
     def ad_fwd_multiply():
         loss[1] += x[3] * x[4]
 
-    with ti.ad.FwdMode(loss=[loss], parameters=x, seed=[0, 0, 0, 1, 1]):
+    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[0, 0, 0, 1, 1]):
         ad_fwd_multiply()
 
     assert loss.grad[1] == 7

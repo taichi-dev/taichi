@@ -385,6 +385,20 @@ class TaichiCallableTemplateMapper:
             self.mapping[key] = count
         return self.mapping[key], key
 
+    # TODO: Get rid of this function when SNodeTree can be passed as kernel arguments for autodiff kernels
+    def lookup_autodiff(self, args, autodiff_kernel_key):
+        if len(args) != self.num_args:
+            raise TypeError(
+                f'{self.num_args} argument(s) needed but {len(args)} provided.'
+            )
+
+        key = self.extract(args)
+        key = (*key, autodiff_kernel_key)
+        if key not in self.mapping:
+            count = len(self.mapping)
+            self.mapping[key] = count
+        return self.mapping[key], key
+
 
 def _get_global_vars(_func):
     # Discussions: https://github.com/taichi-dev/taichi/issues/282
@@ -410,6 +424,7 @@ class Kernel:
         assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.FORWARD,
                                  AutodiffMode.REVERSE)
         self.autodiff_mode = autodiff_mode
+        self.autodiff_kernel_key = None
         self.grad = None
         self.arguments = []
         self.return_type = None
@@ -803,7 +818,16 @@ class Kernel:
         return has_array
 
     def ensure_compiled(self, *args):
-        instance_id, arg_features = self.mapper.lookup(args)
+        if self.autodiff_mode == AutodiffMode.FORWARD:
+            # TODO: This additional argument is used for generating keys to distinguish autodiff kernels with same primal name but computing derivatives respect to different variables
+            # The reason for this is that the existence of the grad fields (e.g. dual) affects the computation graph generation during the compilation process, while the grad fields
+            # can be modified outside the kernel without passing values by kernel arguments. Thus, these changes are not captured and the kernel key keeps the same, which is incorrect.
+            # Currently, we use the SNodeTree id of the grad fields as an additional argument, we can get rid of this after the SNodeTree can be passed as a kernel argument.
+            instance_id, arg_features = self.mapper.lookup_autodiff(
+                args, self.autodiff_kernel_key)
+        else:
+            instance_id, arg_features = self.mapper.lookup(args)
+
         key = (self.func, instance_id, self.autodiff_mode)
         self.materialize(key=key, args=args, arg_features=arg_features)
         return key
@@ -821,6 +845,8 @@ class Kernel:
             # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
             # to avoid duplicate computation for 1st-order derivatives
             mode_original = self.autodiff_mode
+            self.autodiff_kernel_key = self.runtime.fwd_mode_manager.gen_kernel_cache_key(
+            )
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
 

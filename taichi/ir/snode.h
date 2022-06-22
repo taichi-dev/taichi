@@ -95,6 +95,7 @@ class SNode {
     virtual bool is_primal() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
+    bool dual_snode_activated = true;
 
     template <typename T>
     T *cast() {
@@ -294,6 +295,12 @@ class SNode {
   SNode *get_adjoint() const;
 
   bool has_dual() const;
+
+  bool is_dual_activated() const;
+
+  void deactivate_dual();
+
+  void activate_dual();
 
   SNode *get_dual() const;
 

@@ -182,8 +182,12 @@ class SNode:
             n -= 1
         if p is None:
             return None
+
         if p.type == _ti_core.SNodeType.root:
-            return impl.root
+            # The default root FieldsBuilder always has a SNode tree id equals to 0.
+            if p.get_snode_tree_id() == 0:
+                return impl.root
+
         return SNode(p)
 
     def _path_from_root(self):

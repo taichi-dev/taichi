@@ -53,6 +53,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
     : args_bytes_(0),
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
+  arr_access.resize(kernel.args.size(), irpass::ExternalPtrAccess(0));
   arg_attribs_vec_.reserve(kernel.args.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.

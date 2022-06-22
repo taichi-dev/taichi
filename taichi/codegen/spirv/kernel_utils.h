@@ -235,7 +235,7 @@ class KernelContextAttributes {
     return args_bytes();
   }
 
-  std::unordered_map<int, irpass::ExternalPtrAccess> arr_access;
+  std::vector<irpass::ExternalPtrAccess> arr_access;
 
   TI_IO_DEF(arg_attribs_vec_,
             ret_attribs_vec_,

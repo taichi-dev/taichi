@@ -29,30 +29,32 @@ The concept of decoupling is further extended to the type system. Nowadays, as G
 
 Taichi is intuitive. If you know Python, you know Taichi. If you write Taichi, you awaken your GPU (or CPU as a fallback). Ever since its debut, this simple idea has gained so much popularity that contributors keep experimenting on and incorporating new backends, including Vulkan, OpenGL, and DirectX (working in progress). Without our strong and dedicated community, Taichi would never have been where it is now.
 
-We are never afaid to aim high. Going forward, we see pleanty more opportunities where Taichi can make a difference. We would like to share some (definitely not exhaustive) application scenarios with you and hopefully might offer a taste of our vision.
+We are never afaid to aim high. Going forward, we see pleanty more opportunities where Taichi can make a difference. We would like to share some (definitely not exhaustive) application scenarios with you and hopefully might give a taste of our vision.
 
-**Academia**
+## Where Taichi can offer relief
 
-90% of the research code will be trashed due to the nature of research where assumptions keep being broken and ideas keep being iterated. Swiftly coding without thinking too much about performance may lead to incorrect conclusions, while pre-matured code optimization can be a waste of time and often produces a tangled mess. The high performance and productivity are, therefore, extremely helpful for research projects.
+### Academia
 
-Taichi will keep embracing the academia. The key features we have (or plan to have) for high-performance computing research projects include small-scale linear algebra (inside kernels), large-scale sparse systems, and efficient neighbor accessing for both structured and unstructured data.
+The nature of research makes it a painful fact that 90% of the research code is trashed because assumptions keep being broken and ideas keep being iterated. Swift coding without considering performance may lead to incorrect conclusions, and pre-matured code optimization can be a waste of time and often produces a tangled mess. Therefore, a language offering high performance and productivity can tremendously benefit research projects.
 
-Taichi also provides an automatic differentiation module via source code transformation (at IR level), making it a sweet differentiable simulation tool for machine learning projects.
+Taichi keeps embracing the academia. The key features we have (or plan to have) for high-performance computing research projects include small-scale linear algebra (inside kernels), large-scale sparse systems, and efficient neighbor accessing for both structured and unstructured data. Taichi also provides an automatic differentiation module via source code transformation (at IR level), making it a sweet differentiable simulation tool for machine learning projects.
 
-**Apps & game engine integration**
+### Apps & game engine integration
 
-One huge advantange of Taichi lies in its portability, thanks to the support for a wide variety of backends. During the development process, we have also recognized the increasing demands from our industry users for multi-platform packaging and deployment. Below shows an experimental demo of integrating Taichi with Unity. By exporting Taichi kernels as SPIR-V shaders, we can easily import them into a Unity project.
+One huge advantange of Taichi lies in its portability, thanks to the support for a wide variety of backends. During the development process, we have recognized the increasing demand from our industry users for multi-platform packaging and deployment. 
+
+The experimental demo Below shows a seamless integration of Taichi and Unity. By exporting Taichi kernels as SPIR-V shaders, we can easily import them into a Unity project.
 
 ![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/unity_fluid.gif)
 
-**General-purpose computing**
+### General-purpose computing
 
 While originally designed for physics simulation, Taichi has found its application in many other areas that can be boosted by GPU general-purpose computing.
 
-* [taichimd](https://github.com/victoriacity/taichimd): Interactive, GPU-accelerated Molecular (& Macroscopic) Dynamics using the Taichi programming language
-* [TaichiSLAM](https://github.com/xuhao1/TaichiSLAM): a 3D Dense mapping backend library of SLAM based Taichi-Lang, designed for the aerial swarm.
+* [taichimd](https://github.com/victoriacity/taichimd): Interactive, GPU-accelerated Molecular (& Macroscopic) Dynamics using the Taichi programming language.
+* [TaichiSLAM](https://github.com/xuhao1/TaichiSLAM): a 3D Dense mapping backend library of SLAM based on Taichi-Lang, designed for the aerial swarm.
 * [Stannum](https://github.com/ifsheldon/stannum): Fusing Taichi into PyTorch.
 
-**Maybe a new frontend?**
+### Maybe a new frontend?
 
 The benefit of adopting the compiler approach is that you can decouple the frontend from the backend. Taichi is *currently* embedded in Python, but who says it needs to stay that way? Stay tuned [:](https://taichi-js.com/playground)-)

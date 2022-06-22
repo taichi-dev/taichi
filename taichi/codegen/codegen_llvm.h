@@ -269,8 +269,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
                                    SNode *digits_snode);
 
-  llvm::Value *load_quant_int(llvm::Value *ptr,
-                              QuantIntType *qit);
+  llvm::Value *load_quant_int(llvm::Value *ptr, QuantIntType *qit);
 
   llvm::Value *extract_quant_int(llvm::Value *physical_value,
                                  llvm::Value *bit_offset,

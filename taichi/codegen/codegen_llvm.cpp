@@ -1474,32 +1474,43 @@ void CodeGenLLVM::visit(LinearizeStmt *stmt) {
 
 void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
 
-llvm::Value *CodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr, llvm::Value *bit_offset) {
+llvm::Value *CodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
+                                         llvm::Value *bit_offset) {
   // 1. define the bit pointer struct (X=8/16/32/64)
   // struct bit_pointer_X {
   //    iX* byte_ptr;
   //    i32 bit_offset;
   // };
   TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
-  auto struct_type = llvm::StructType::get(*llvm_context, {byte_ptr->getType(), bit_offset->getType()});
+  auto struct_type = llvm::StructType::get(
+      *llvm_context, {byte_ptr->getType(), bit_offset->getType()});
   // 2. allocate the bit pointer struct
   auto bit_ptr = create_entry_block_alloca(struct_type);
   // 3. store `byte_ptr`
-  builder->CreateStore(byte_ptr, builder->CreateGEP(bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+  builder->CreateStore(
+      byte_ptr, builder->CreateGEP(
+                    bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   // 4. store `bit_offset
-  builder->CreateStore(bit_offset,builder->CreateGEP(bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+  builder->CreateStore(bit_offset,
+                       builder->CreateGEP(bit_ptr, {tlctx->get_constant(0),
+                                                    tlctx->get_constant(1)}));
   return bit_ptr;
 }
 
-std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(llvm::Value *bit_ptr) {
-  auto byte_ptr = builder->CreateLoad(builder->CreateGEP(bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
-  auto bit_offset = builder->CreateLoad(builder->CreateGEP(bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
+    llvm::Value *bit_ptr) {
+  auto byte_ptr = builder->CreateLoad(builder->CreateGEP(
+      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+  auto bit_offset = builder->CreateLoad(builder->CreateGEP(
+      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
   return std::make_tuple(byte_ptr, bit_offset);
 }
 
-llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *bit_ptr, int bit_offset_delta) {
+llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *bit_ptr,
+                                         int bit_offset_delta) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(bit_ptr);
-  auto new_bit_offset = builder->CreateAdd(bit_offset, tlctx->get_constant(bit_offset_delta));
+  auto new_bit_offset =
+      builder->CreateAdd(bit_offset, tlctx->get_constant(bit_offset_delta));
   return create_bit_ptr(byte_ptr, new_bit_offset);
 }
 

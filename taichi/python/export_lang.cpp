@@ -863,7 +863,7 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

@@ -131,7 +131,7 @@ void TexturePtrExpression::type_check(CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
-  ctx->push_back<TexturePtrStmt>(ctx->back_stmt());
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims);
   stmt = ctx->back_stmt();
 }
 
@@ -626,38 +626,38 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void TextureOpExpression::type_check(CompileConfig *config) {
+  TI_ASSERT(texture_ptr.is<TexturePtrExpression>());
+  auto ptr = texture_ptr.cast<TexturePtrExpression>();
   if (op == TextureOpType::sample_lod) {
     // UV, Lod
-    TI_ASSERT_INFO(args.size() == 3,
-                   "Invalid number of args for sample_lod Texture op");
-    TI_ASSERT_TYPE_CHECKED(args[0]);
-    TI_ASSERT_TYPE_CHECKED(args[1]);
-    TI_ASSERT_TYPE_CHECKED(args[2]);
-    if (args[0].get_ret_type() != PrimitiveType::f32 ||
-        args[1].get_ret_type() != PrimitiveType::f32 ||
-        args[2].get_ret_type() != PrimitiveType::f32) {
-      throw TaichiTypeError(
-          fmt::format("All arguments to sample_lod Texture op must be FP32"));
+    TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
+                   "Invalid number of args for sample_lod Texture op with a {}-dimension texture", ptr->num_dims);
+    for (int i = 0; i < ptr->num_dims; i++) {
+      TI_ASSERT_TYPE_CHECKED(args[i]);
+      if (args[i].get_ret_type() != PrimitiveType::f32) {
+        throw TaichiTypeError(
+            fmt::format("Invalid type for texture sample_lod: '{}', all arguments must be f32",
+                        args[i].get_ret_type()->to_string()));
+      }
     }
   } else if (op == TextureOpType::fetch_texel) {
     // index, int LOD
-    TI_ASSERT_INFO(args.size() == 3,
-                   "Invalid number of args for fetch_texel Texture op");
-    TI_ASSERT_TYPE_CHECKED(args[0]);
-    TI_ASSERT_TYPE_CHECKED(args[1]);
-    TI_ASSERT_TYPE_CHECKED(args[2]);
-    if (args[0].get_ret_type() != PrimitiveType::i32 ||
-        args[1].get_ret_type() != PrimitiveType::i32 ||
-        args[2].get_ret_type() != PrimitiveType::i32) {
-      throw TaichiTypeError(
-          fmt::format("All arguments to fetch_texel Texture op must be i32"));
+    TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
+                   "Invalid number of args for fetch_texel Texture op with a {}-dimension texture", ptr->num_dims);
+    for (int i = 0; i < ptr->num_dims; i++) {
+      TI_ASSERT_TYPE_CHECKED(args[i]);
+      if (args[i].get_ret_type() != PrimitiveType::i32) {
+        throw TaichiTypeError(
+            fmt::format("Invalid type for texture fetch_texel: '{}', all arguments must be i32",
+                        args[i].get_ret_type()->to_string()));
+      }
     }
   } else {
     TI_ERROR("Invalid TextureOpType");
   }
   ret_type =
-      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f32,
-                                                   /*is_bit_pointer=*/false);
+    TypeFactory::get_instance().get_pointer_type(PrimitiveType::f32,
+                                                  /*is_bit_pointer=*/false);
 }
 
 void TextureOpExpression::flatten(FlattenContext *ctx) {

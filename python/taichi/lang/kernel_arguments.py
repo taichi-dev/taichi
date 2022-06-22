@@ -84,9 +84,9 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
         layout)
 
 
-def decl_texture_arg():
+def decl_texture_arg(num_dimensions):
     arg_id = impl.get_runtime().prog.decl_arg(f32, True)
-    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id))
+    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
 def decl_ret(dtype):

@@ -280,10 +280,10 @@ class FwdMode:
         def shape_flatten(shape):
             return reduce((lambda x, y: x * y), list(shape))
 
-        parameters_shape_flatten = shape_flatten(self.parameters.shape)
-
         # Handle 0-D field
-        if parameters_shape_flatten == 0:
+        if self.parameters.shape:
+            parameters_shape_flatten = shape_flatten(self.parameters.shape)
+        else:
             parameters_shape_flatten = 1
 
         if not self.seed:

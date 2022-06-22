@@ -415,8 +415,8 @@ jobs:
         run: |
           $r = Get-Random
           $ws = '${{ github.workspace }}'
-          Rename-Item $ws "$ws.$a" -ErrorAction Continue
-          Remove-Item "$ws.$a" -Recurse -Force -ErrorAction Continue
+          Rename-Item $ws "$ws.$r" -ErrorAction Continue
+          Remove-Item "$ws.$r" -Recurse -Force -ErrorAction Continue
           exit 0
 
       - uses: actions/checkout@v2

@@ -231,7 +231,9 @@ struct PyCanvas {
 };
 
 struct PyWindow {
-  std::unique_ptr<WindowBase> window{nullptr};
+  // std::unique_ptr<WindowBase> window{nullptr};
+  WindowBase *window{nullptr};
+  bool need_clean{false};
 
   PyWindow(Program *prog,
            std::string name,
@@ -248,7 +250,12 @@ struct PyWindow {
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
     }
-    window = std::make_unique<vulkan::Window>(prog, config);
+    // if (ti_arch == Arch::vulkan || prog == nullptr) {
+    window = new vulkan::Window(prog, config);
+    need_clean = true;
+    //} else {
+    // window = prog->create_window(config);
+    //}
   }
 
   void write_image(const std::string &filename) {
@@ -305,8 +312,11 @@ struct PyWindow {
   }
 
   void destroy() {
-    if (window) {
-      window.reset();
+    // if (window) {
+    // window.reset();
+    //}
+    if (need_clean) {
+      delete window;
     }
   }
 };

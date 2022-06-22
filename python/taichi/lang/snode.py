@@ -198,7 +198,7 @@ class SNode:
         """
         p = self
         res = [p]
-        while p != impl.root:
+        while p.ptr.type != _ti_core.SNodeType.root:
             p = p.parent()
             res.append(p)
         res.reverse()

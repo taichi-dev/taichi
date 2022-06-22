@@ -85,7 +85,6 @@ void Window::present_frame() {
 }
 
 Window::~Window() {
-  std::cout << "destroy window" << std::endl;
   gui_.reset();
   renderer_.reset();
   if (config_.show_window) {

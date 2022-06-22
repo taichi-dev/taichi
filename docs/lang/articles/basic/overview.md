@@ -41,7 +41,7 @@ Taichi keeps embracing academia. The key features we have (or plan to have) for 
 
 ### Apps & game engine integration
 
-One huge advantage of Taichi lies in its portability, thanks to the support for a wide variety of backends. During the development process, we have recognized the increasing demand from our industry users for multi-platform packaging and deployment. 
+One huge advantage of Taichi lies in its portability, thanks to the support for a wide variety of backends. During the development process, we have recognized the increasing demand from our industry users for multi-platform packaging and deployment.
 
 The experimental demo below shows a seamless integration of Taichi and Unity. By exporting Taichi kernels as SPIR-V shaders, we can easily import them into a Unity project.
 

@@ -385,6 +385,7 @@ GfxRuntime::~GfxRuntime() {
     tmp.swap(ti_kernels_);
   }
   global_tmps_buffer_.reset();
+  listgen_buffer_.reset();
 }
 
 GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(

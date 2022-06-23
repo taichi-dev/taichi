@@ -80,49 +80,18 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   } else if (type == SNodeType::place) {
     body_type = tlctx_->get_data_type(snode.dt);
   } else if (type == SNodeType::bit_struct) {
-    // Generate the bit_struct type
-    std::vector<Type *> ch_types;
-    std::vector<int> ch_offsets;
-    int total_offset = 0;
-    for (int i = 0; i < snode.ch.size(); i++) {
-      auto &ch = snode.ch[i];
-      ch_types.push_back(ch->dt);
-      ch_offsets.push_back(total_offset);
-      QuantIntType *component_qit = nullptr;
-      if (auto qit = ch->dt->cast<QuantIntType>()) {
-        component_qit = qit;
-      } else if (auto qfxt = ch->dt->cast<QuantFixedType>()) {
-        component_qit = qfxt->get_digits_type()->as<QuantIntType>();
-      } else if (auto qflt = ch->dt->cast<QuantFloatType>()) {
-        component_qit = qflt->get_digits_type()->as<QuantIntType>();
-      } else {
-        TI_ERROR("Type {} not supported.", ch->dt->to_string());
-      }
-      component_qit->set_physical_type(snode.physical_type);
-      if (!arch_is_cpu(arch_)) {
-        TI_ERROR_IF(data_type_bits(snode.physical_type) < 32,
-                    "bit_struct physical type must be at least 32 bits on "
-                    "non-CPU backends.");
-      }
-      ch->bit_offset = total_offset;
-      total_offset += component_qit->get_num_bits();
-      auto bit_struct_size = data_type_bits(snode.physical_type);
-      TI_ERROR_IF(total_offset > bit_struct_size,
-                  "Bit struct overflows: {} bits used out of {}.", total_offset,
-                  bit_struct_size);
+    if (!arch_is_cpu(arch_)) {
+      TI_ERROR_IF(data_type_bits(snode.physical_type) < 32,
+                  "bit_struct physical type must be at least 32 bits on "
+                  "non-CPU backends.");
     }
-
-    snode.dt = TypeFactory::get_instance().get_bit_struct_type(
-        snode.physical_type, ch_types, ch_offsets);
-
-    DataType container_primitive_type(snode.physical_type);
-    body_type = tlctx_->get_data_type(container_primitive_type);
+    snode.dt = snode.bit_struct_type_builder->build();
+    body_type = tlctx_->get_data_type(snode.physical_type);
   } else if (type == SNodeType::bit_array) {
     // A bit array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt;
-    ch->dt->as<QuantIntType>()->set_physical_type(snode.physical_type);
     if (!arch_is_cpu(arch_)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
                   "bit_array physical type must be at least 32 bits on "

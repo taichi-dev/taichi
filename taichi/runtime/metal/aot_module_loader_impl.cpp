@@ -1,7 +1,7 @@
-#include "taichi/backends/metal/aot_module_loader_impl.h"
+#include "taichi/runtime/metal/aot_module_loader_impl.h"
 
-#include "taichi/backends/metal/aot_utils.h"
-#include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/runtime/metal/aot_utils.h"
+#include "taichi/runtime/metal/kernel_manager.h"
 
 namespace taichi {
 namespace lang {

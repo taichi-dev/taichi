@@ -1315,7 +1315,6 @@ class TaskCodegen : public IRVisitor {
     spirv::Label body_label = ir_->new_label();
     spirv::Label continue_label = ir_->new_label();
     spirv::Label merge_label = ir_->new_label();
-    ir_->make_inst(spv::OpBranch, head_label);
 
     spirv::Value begin_ = ir_->query_value(for_stmt->begin->raw_name());
     spirv::Value end_ = ir_->query_value(for_stmt->end->raw_name());
@@ -1329,6 +1328,7 @@ class TaskCodegen : public IRVisitor {
       init_value = ir_->sub(end_, ir_->const_i32_one_);
       extent_value = begin_;
     }
+    ir_->make_inst(spv::OpBranch, head_label);
 
     // Loop head
     ir_->start_label(head_label);

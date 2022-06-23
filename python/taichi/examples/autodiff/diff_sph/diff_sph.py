@@ -25,7 +25,7 @@ TRAIN_VISUAL = False
 TRAIN_VISUAL_SHOW = False
 INFER_OUTPUT_IMG = False
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
-ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5)
+ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5, print_ir=True)
 screen_res = (1000, 1000)
 
 dtype_f_np = np.float32
@@ -158,7 +158,7 @@ class Linear:
     @staticmethod
     @ti.kernel
     def copy_from_numpy(
-            dst: ti.template(), src: ti.ext_arr(), model_id: ti.i32):
+            dst: ti.template(), src: ti.types.ndarray(), model_id: ti.i32):
         for I in ti.grouped(src):
             dst[model_id, I] = src[I]
 
@@ -166,6 +166,7 @@ class Linear:
 def init_nn_model():
     global BATCH_SIZE, steps, input_states, fc1, fc2
     global training_sample_num, training_data, loss
+    global optimizer
     # NN model
     model_num = 1
     steps = 128
@@ -550,7 +551,7 @@ def copy_from_output_to_vis(t: ti.int32):
 
 
 @ti.kernel
-def fill_target_centers(current_pos: ti.int32, data: ti.any_arr()):
+def fill_target_centers(current_pos: ti.int32, data: ti.types.ndarray()):
     for i in range(current_pos, current_pos + BATCH_SIZE):
         for j in ti.static(range(3)):
             target_centers[i][j] = data[i, j]
@@ -596,7 +597,7 @@ def main():
                                            current_data_offset)
                 fc1.clear()
                 fc2.clear()
-                with ti.Tape(loss=loss):
+                with ti.ad.Tape(loss=loss):
                     for i in range(1, steps):
                         initialize_density(i - 1)
                         update_density(i - 1)
@@ -605,7 +606,7 @@ def main():
                         fc2.forward(i - 1, fc1.output)
                         controller_output(i - 1)
                         apply_force(i - 1)
-                        update_force(i - 1)
+                        # update_force(i - 1)
                         advance(i)
                         boundary_handle(i)
                         if i % substeps == 0:

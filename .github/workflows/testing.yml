@@ -21,18 +21,9 @@ jobs:
         run: |
           remove-item '${{ github.workspace }}\*' -recurse -force
 
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
-
-      - name: Add Visual Studio Shell to ENV
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
 
       - name: Build
         shell: powershell

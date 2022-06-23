@@ -34,14 +34,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: ccache_cache
-          key: ccache-win64-${{ github.sha }}
-          restore-keys: |
-            ccache-win64-
-
       - name: Build
         shell: powershell
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
@@ -62,10 +54,3 @@ jobs:
           TI_CI: 1
           PYTHON: '3.7'
           TI_DEVICE_MEMORY_GB: '0.7'
-
-      - name: Save wheel if test failed
-        if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
-        with:
-          name: broken-wheel
-          path: dist/*

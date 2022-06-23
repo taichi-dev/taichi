@@ -17,6 +17,7 @@ class _Ndrange:
                 raise TaichiSyntaxError(
                     "Every argument of ndrange should be a scalar or a tuple/list like (begin, end)"
                 )
+            args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         for arg in args:
             for bound in arg:
                 if not isinstance(bound, int) and not (
@@ -25,7 +26,6 @@ class _Ndrange:
                     raise TaichiTypeError(
                         "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
                     )
-        args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         self.bounds = args
 
         self.dimensions = [None] * len(args)

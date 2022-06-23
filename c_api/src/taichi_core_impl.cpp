@@ -28,10 +28,9 @@ VulkanRuntime *Runtime::as_vk() {
 
 AotModule::AotModule(Runtime &runtime,
                      std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
-    : runtime_(&runtime),
-      aot_module_(std::forward<std::unique_ptr<taichi::lang::aot::Module>>(
-          aot_module)) {
+    : runtime_(&runtime), aot_module_(std::move(aot_module)) {
 }
+
 taichi::lang::aot::CompiledGraph &AotModule::get_cgraph(
     const std::string &name) {
   auto it = loaded_cgraphs_.find(name);

@@ -80,7 +80,9 @@ class LlvmRuntimeExecutor {
   void prepare_runtime_context(RuntimeContext *ctx);
 
   template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+  T runtime_query(const std::string &key,
+                  uint64 *result_buffer,
+                  Args &&...args) {
     TI_ASSERT(arch_uses_llvm(config_->arch));
 
     TaichiLLVMContext *tlctx = nullptr;

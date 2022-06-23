@@ -182,8 +182,8 @@ void Texture::from_snode(SNode *snode) {
   cmdlist->buffer_barrier(devptr);
   cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
                             ImageLayout::transfer_dst);
-  cmdlist->buffer_to_image(texture_alloc_, devptr,
-                           ImageLayout::transfer_dst, params);
+  cmdlist->buffer_to_image(texture_alloc_, devptr, ImageLayout::transfer_dst,
+                           params);
 
   stream->submit_synced(cmdlist.get(), {semaphore});
 }

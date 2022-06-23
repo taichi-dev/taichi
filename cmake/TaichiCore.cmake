@@ -121,7 +121,6 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/*.h")
 
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
@@ -163,7 +162,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
 else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
@@ -335,6 +333,12 @@ if(TI_WITH_LLVM)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
         target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_ptx_libs})
     endif()
+
+    add_subdirectory(taichi/codegen/wasm)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_codegen)
+
+    add_subdirectory(taichi/runtime/wasm)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
 endif()
 
 if (TI_WITH_CUDA_TOOLKIT)

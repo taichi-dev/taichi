@@ -8,7 +8,7 @@
 #include "taichi/struct/struct.h"
 #include "taichi/llvm/struct_llvm.h"
 #include "taichi/runtime/metal/api.h"
-#include "taichi/backends/wasm/aot_module_builder_impl.h"
+#include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
 #include "taichi/backends/cc/cc_program.h"

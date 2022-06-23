@@ -12,8 +12,6 @@ namespace directx11 {
 
 // Only enable debug layer when the corresponding testing facility is enabled
 constexpr bool kD3d11DebugEnabled = false;
-// Verbose outputs, prints the contents of command lists
-constexpr bool kD3d11Verbose = false;
 // Force REF device. May be used to
 // force software rendering.
 constexpr bool kD3d11ForceRef = false;
@@ -209,13 +207,19 @@ class Dx11Device : public GraphicsDevice {
     return context_;
   }
 
-  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
-  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
-  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_default_copy(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_buffer(ID3D11DeviceContext *context,
+                                   uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_staging_buffer(ID3D11DeviceContext *context,
+                                            uint32_t alloc_id);
+  ID3D11UnorderedAccessView *alloc_id_to_uav(ID3D11DeviceContext *context,
+                                             uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_cb_buffer(ID3D11DeviceContext *context,
+                                        uint32_t alloc_id);
+
   ID3D11Device *d3d11_device() {
     return device_;
   }
-  ID3D11Buffer *create_or_get_cb_buffer(uint32_t alloc_id);
 
   // cb_slot should be 1 after pre-occupied buffers
   // example: in the presence of args_t, cb_slot will be cb0
@@ -231,14 +235,58 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Device *device_{};
   ID3D11DeviceContext *context_{};
   std::unique_ptr<Dx11InfoQueue> info_queue_{};
-  std::unordered_map<uint32_t, ID3D11Buffer *>
-      alloc_id_to_buffer_;  // binding ID to buffer
-  std::unordered_map<uint32_t, ID3D11Buffer *>
-      alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
-  std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
-      alloc_id_to_uav_;  // binding ID to UAV
-  std::unordered_map<uint32_t, ID3D11Buffer *>
-      alloc_id_to_cb_copy_;  // binding ID to constant buffer copy of buffer
+
+  struct BufferTuple {
+    ID3D11Buffer *raw_buffer{nullptr};
+    ID3D11Buffer *dynamic_constants{nullptr};
+    ID3D11Buffer *staging{nullptr};
+    ID3D11UnorderedAccessView *raw_uav{nullptr};
+
+    ID3D11Buffer *mapped{nullptr};
+
+    size_t size{0};
+    bool cpu_read{false};
+    bool cpu_write{false};
+    int default_copy{0};
+
+    ~BufferTuple();
+
+    ID3D11Buffer *get_default_copy(ID3D11Device *device) {
+      if (default_copy == 0) {
+        return get_raw_buffer(nullptr, device);
+      } else if (default_copy == 1) {
+        return get_dynamic_constants(nullptr, device);
+      } else {
+        return get_staging(nullptr, device);
+      }
+    }
+
+    void clear_derived();
+
+    ID3D11Buffer *get_raw_buffer(ID3D11DeviceContext *context, ID3D11Device *device);
+    ID3D11Buffer *get_dynamic_constants(ID3D11DeviceContext *context,
+                                        ID3D11Device *device);
+    ID3D11Buffer *get_staging(ID3D11DeviceContext *context,
+                              ID3D11Device *device);
+
+    ID3D11Buffer *get_cpu_write_copy(ID3D11DeviceContext *context,
+                                     ID3D11Device *device) {
+      if (default_copy == 2) {
+        return get_staging(context, device);
+      }
+      return get_dynamic_constants(context, device);
+    }
+
+    void copy_back(ID3D11Buffer *buffer,
+                   ID3D11DeviceContext *context,
+                   ID3D11Device *device);
+
+    ID3D11UnorderedAccessView *get_uav(ID3D11DeviceContext *context,
+                                       ID3D11Device *device);
+  };
+
+  std::unordered_map<uint32_t, BufferTuple>
+      alloc_id_to_buffer_;
   int alloc_serial_;
   Dx11Stream *stream_;
 

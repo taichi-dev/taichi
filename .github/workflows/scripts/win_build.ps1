@@ -12,7 +12,6 @@ $ErrorActionPreference = "Stop"
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'
 
-WriteInfo("Setting up Python environment")
 python -m venv venv
 . venv\Scripts\activate.ps1
 python -m pip install wheel

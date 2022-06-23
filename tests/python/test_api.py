@@ -120,7 +120,7 @@ user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
-user_api[ti.Texture] = ['device_allocation_ptr', 'from_ndarray']
+user_api[ti.Texture] = ['device_allocation_ptr', 'from_texture', 'from_ndarray']
 user_api[ti.SNode] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
     'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'

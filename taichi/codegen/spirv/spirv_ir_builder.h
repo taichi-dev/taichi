@@ -454,6 +454,14 @@ class IRBuilder {
   Value query_value(std::string name) const;
   // Check whether a value has been evaluated
   bool check_value_existence(const std::string &name) const;
+  // Create a new SSA value
+  Value new_value(const SType &type, ValueKind flag) {
+    Value val;
+    val.id = id_counter_++;
+    val.stype = type;
+    val.flag = flag;
+    return val;
+  }
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -508,14 +516,6 @@ class IRBuilder {
   Value rand_i32(Value global_tmp_);
 
  private:
-  Value new_value(const SType &type, ValueKind flag) {
-    Value val;
-    val.id = id_counter_++;
-    val.stype = type;
-    val.flag = flag;
-    return val;
-  }
-
   Value get_const(const SType &dtype, const uint64_t *pvalue, bool cache);
   SType declare_primitive_type(DataType dt);
 

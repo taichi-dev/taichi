@@ -1329,7 +1329,6 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.usage & AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
-  buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
   uint32_t queue_family_indices[] = {compute_queue_family_index_,
                                      graphics_queue_family_index_};
@@ -1370,20 +1369,22 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.host_read && params.host_write) {
 #endif  //__APPLE__
     // This should be the unified memory on integrated GPUs
-    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                                VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                               VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 #ifdef __APPLE__
     // weird behavior on apple: if coherent bit is not set, then the memory
     // writes between map() and unmap() cannot be seen by gpu
     alloc_info.preferredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 #endif  //__APPLE__
   } else if (params.host_read) {
-    alloc_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
   } else if (params.host_write) {
-    alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   } else {
-    alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
   if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {

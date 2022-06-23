@@ -717,7 +717,8 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache && !cache_data_.kernels.empty()) {
     LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
-    writer.dump(config->offline_cache_file_path);
+    // Note: For offline-cache, new-metadata should be merged with old-metadata
+    writer.dump(config->offline_cache_file_path, true);
   }
 }
 

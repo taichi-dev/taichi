@@ -33,13 +33,6 @@ class LlvmRuntimeExecutor {
  public:
   LlvmRuntimeExecutor(CompileConfig &config, KernelProfilerBase *profiler);
 
-  /* ------------------------ */
-  /* ---- Initialization ---- */
-  /* ------------------------ */
-  void initialize_llvm_runtime_snodes(
-      const LlvmOfflineCache::FieldCacheData &field_cache_data,
-      uint64 *result_buffer);
-
   /**
    * Initializes the runtime system for LLVM based backends.
    */
@@ -47,6 +40,18 @@ class LlvmRuntimeExecutor {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr);
 
+  // SNodeTree Allocation
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer);
+
+  // Ndarray Allocation
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer);
+
+  void check_runtime_error(uint64 *result_buffer);
+
+ private:
   /* ----------------------- */
   /* ------ Allocation ----- */
   /* ----------------------- */
@@ -57,9 +62,6 @@ class LlvmRuntimeExecutor {
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
-
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer);
 
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
@@ -76,8 +78,6 @@ class LlvmRuntimeExecutor {
       uint64 *result_buffer);
 
   void prepare_runtime_context(RuntimeContext *ctx);
-
-  void check_runtime_error(uint64 *result_buffer);
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
@@ -110,7 +110,6 @@ class LlvmRuntimeExecutor {
   TaichiLLVMContext *get_llvm_context(Arch arch);
   LLVMRuntime *get_llvm_runtime();
 
- private:
   void initialize_host();
 
   /**
@@ -149,6 +148,7 @@ class LlvmRuntimeExecutor {
 
   // good buddy
   friend LlvmProgramImpl;
+  friend SNodeTreeBufferManager;
 };
 
 }  // namespace lang

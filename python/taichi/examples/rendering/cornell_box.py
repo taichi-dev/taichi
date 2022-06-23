@@ -1,7 +1,6 @@
 import time
 
 import numpy as np
-from numpy.lib.function_base import average
 
 import taichi as ti
 
@@ -65,9 +64,9 @@ def make_box_transform_matrices():
 
 
 # left box
-box_min = ti.Vector([0.0, 0.0, 0.0])
-box_max = ti.Vector([0.55, 1.1, 0.55])
-box_m_inv, box_m_inv_t = make_box_transform_matrices()
+BOX_MIN = ti.Vector([0.0, 0.0, 0.0])
+BOX_MAX = ti.Vector([0.55, 1.1, 0.55])
+BOX_M_INV, BOX_M_INV_T = make_box_transform_matrices()
 
 
 @ti.func
@@ -194,13 +193,13 @@ def intersect_aabb(box_min, box_max, o, d):
 @ti.func
 def intersect_aabb_transformed(box_min, box_max, o, d):
     # Transform the ray to the box's local space
-    obj_o = mat_mul_point(box_m_inv, o)
-    obj_d = mat_mul_vec(box_m_inv, d)
+    obj_o = mat_mul_point(BOX_M_INV, o)
+    obj_d = mat_mul_vec(BOX_M_INV, d)
     intersect, near_t, _, near_norm = intersect_aabb(box_min, box_max, obj_o,
                                                      obj_d)
     if intersect and 0 < near_t:
         # Transform the normal in the box's local space to world space
-        near_norm = mat_mul_vec(box_m_inv_t, near_norm)
+        near_norm = mat_mul_vec(BOX_M_INV_T, near_norm)
     else:
         intersect = 0
     return intersect, near_t, near_norm
@@ -230,7 +229,7 @@ def intersect_scene(pos, ray_dir):
         normal = (hit_pos - sp1_center).normalized()
         c, mat = ti.Vector([1.0, 1.0, 1.0]), mat_glass
     # left box
-    hit, cur_dist, pnorm = intersect_aabb_transformed(box_min, box_max, pos,
+    hit, cur_dist, pnorm = intersect_aabb_transformed(BOX_MIN, BOX_MAX, pos,
                                                       ray_dir)
     if hit and 0 < cur_dist < closest:
         closest = cur_dist
@@ -501,8 +500,9 @@ def main():
         interval = 10
         if i % interval == 0:
             tonemap(i)
-            print("{:.2f} samples/s ({} iters)".format(
-                interval / (time.time() - last_t), i))
+            print(
+                f"{interval / (time.time() - last_t):.2f} samples/s ({i} iters)"
+            )
             last_t = time.time()
             gui.set_image(tonemapped_buffer)
             gui.show()

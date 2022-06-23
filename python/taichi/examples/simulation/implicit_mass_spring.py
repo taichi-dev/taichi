@@ -217,7 +217,7 @@ class Cloth:
         canvas.circles(self.pos, radius, color)
 
 
-if __name__ == "__main__":
+def main():
     ti.init(arch=ti.cpu)
     h = 0.01
     cloth = Cloth(N=5)
@@ -261,3 +261,7 @@ if __name__ == "__main__":
             canvas = window.get_canvas()
             cloth.displayGGUI(canvas)
             window.show()
+
+
+if __name__ == '__main__':
+    main()

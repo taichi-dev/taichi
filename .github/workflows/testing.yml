@@ -85,7 +85,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, windows, gpu]
+    runs-on: [self-hosted, debug]
     timeout-minutes: 90
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161

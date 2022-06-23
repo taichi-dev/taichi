@@ -11,6 +11,7 @@ target_include_directories(wasm_runtime
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/eigen
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(wasm_runtime PRIVATE wasm_codegen)

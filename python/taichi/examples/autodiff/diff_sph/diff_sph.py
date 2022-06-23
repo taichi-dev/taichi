@@ -25,7 +25,7 @@ TRAIN_VISUAL = False
 TRAIN_VISUAL_SHOW = False
 INFER_OUTPUT_IMG = False
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
-ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5, print_ir=True)
+ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5)
 screen_res = (1000, 1000)
 
 dtype_f_np = np.float32
@@ -606,7 +606,7 @@ def main():
                         fc2.forward(i - 1, fc1.output)
                         controller_output(i - 1)
                         apply_force(i - 1)
-                        # update_force(i - 1)
+                        update_force(i - 1)
                         advance(i)
                         boundary_handle(i)
                         if i % substeps == 0:

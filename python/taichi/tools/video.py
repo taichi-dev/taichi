@@ -108,13 +108,10 @@ class VideoManager:
     def get_output_filename(self, suffix):
         if not self.video_filename:
             return os.path.join(self.directory, 'video' + suffix)
-        else:
-            filename, extension = os.path.splitext(self.video_filename)
-            if extension is not None:
-                print(
-                    f'Warning: file extension {extension} will be disregarded!'
-                )
-            return os.path.join(self.directory, filename + suffix)
+        filename, extension = os.path.splitext(self.video_filename)
+        if extension is not None:
+            print(f'Warning: file extension {extension} will be disregarded!')
+        return os.path.join(self.directory, filename + suffix)
 
     def write_frame(self, img):
         """Write an `numpy.ndarray` `img` to an image file.

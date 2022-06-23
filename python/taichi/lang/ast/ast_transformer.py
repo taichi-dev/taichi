@@ -12,7 +12,7 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -818,12 +818,6 @@ class ASTTransformer(Builder):
     def build_ndrange_for(ctx, node):
         with ctx.variable_scope_guard():
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter))
-            for bound in ndrange_var.bounds:
-                for elt in bound:
-                    if not isinstance(elt, int):
-                        raise TaichiTypeError(
-                            f"ndrange should have int bounds, found type {type(elt).__name__}"
-                        )
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),

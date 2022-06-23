@@ -151,14 +151,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dual);
   }
 
-  void visit(GlobalPtrExpression *expr) override {
-    emit(ExprOpCode::GlobalPtrExpression);
+  void visit(IndexExpression *expr) override {
+    emit(ExprOpCode::IndexExpression);
     emit(expr->var);
     emit(expr->indices.exprs);
   }
 
-  void visit(TensorElementExpression *expr) override {
-    emit(ExprOpCode::TensorElementExpression);
+  void visit(StrideExpression *expr) override {
+    emit(ExprOpCode::StrideExpression);
     emit(expr->var);
     emit(expr->indices.exprs);
     emit(expr->shape);

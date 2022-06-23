@@ -11,7 +11,6 @@ namespace taichi {
 namespace lang {
 
 class Program;
-class LlvmProgramImpl;
 class NdarrayRwAccessorsBank;
 
 class TI_DLL_EXPORT Ndarray {

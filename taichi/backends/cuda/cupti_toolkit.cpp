@@ -145,7 +145,7 @@ ScopeExit<T> MoveScopeExit(T t) {
 
 #define SCOPE_EXIT(func)                                      \
   const auto NV_ANONYMOUS_VARIABLE_INDIRECT(EXIT, __LINE__) = \
-      MoveScopeExit([=]() { func; })
+      MoveScopeExit([=]() { (void)(func); })
 
 #define CUPTI_API_CALL(api_func_call)                                      \
   do {                                                                     \
@@ -1045,7 +1045,6 @@ bool CuptiToolkit::update_record(
       range_name += description_ptrs[description_index];
     }
 
-    const bool isolated = true;
     std::vector<double> gpu_values;
     gpu_values.resize(cupti_config_.metric_list.size());
 

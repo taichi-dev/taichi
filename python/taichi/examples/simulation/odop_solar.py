@@ -42,22 +42,31 @@ class SolarSystem:
             self.v[i] += self.dt * self.gravity(self.x[i])
             self.x[i] += self.dt * self.v[i]
 
-    def render(self, gui):  # Render the scene on GUI
+    @staticmethod
+    def render(gui):  # Render the scene on GUI
         gui.circle([0.5, 0.5], radius=10, color=0xffaa88)
         gui.circles(solar.x.to_numpy(), radius=3, color=0xffffff)
 
 
-solar = SolarSystem(8, 0.0001)
-solar.center[None] = [0.5, 0.5]
-solar.initialize_particles()
+def main():
+    global solar
 
-gui = ti.GUI("Solar System", background_color=0x0071a)
-while gui.running:
-    if gui.get_event() and gui.is_pressed(gui.SPACE):
-        solar.initialize_particles()  # reinitialize when space bar pressed.
+    solar = SolarSystem(8, 0.0001)
+    solar.center[None] = [0.5, 0.5]
+    solar.initialize_particles()
 
-    for i in range(10):  # Time integration
-        solar.integrate()
+    gui = ti.GUI("Solar System", background_color=0x0071a)
+    while gui.running:
+        if gui.get_event() and gui.is_pressed(gui.SPACE):
+            solar.initialize_particles(
+            )  # reinitialize when space bar pressed.
 
-    solar.render(gui)
-    gui.show()
+        for _ in range(10):  # Time integration
+            solar.integrate()
+
+        solar.render(gui)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

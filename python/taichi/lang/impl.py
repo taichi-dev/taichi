@@ -23,7 +23,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
+from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
 
 
 @taichi_scope
@@ -196,10 +196,15 @@ def subscript(value, *_indices, skip_reordered=False):
 
 
 @taichi_scope
-def make_tensor_element_expr(_var, _indices, shape, stride):
+def make_stride_expr(_var, _indices, shape, stride):
     return Expr(
-        _ti_core.make_tensor_element_expr(_var, make_expr_group(*_indices),
-                                          shape, stride))
+        _ti_core.make_stride_expr(_var, make_expr_group(*_indices), shape,
+                                  stride))
+
+
+@taichi_scope
+def make_index_expr(_var, _indices):
+    return Expr(_ti_core.make_index_expr(_var, make_expr_group(*_indices)))
 
 
 class SrcInfoGuard:
@@ -219,7 +224,6 @@ class PyTaichi:
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
-        self.compiled_grad_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
@@ -228,12 +232,13 @@ class PyTaichi:
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
+        self.fwd_mode_manager = None
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions) + len(self.compiled_grad_functions)
+        return len(self.compiled_functions)
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)
@@ -580,7 +585,7 @@ def ndarray(dtype, shape, layout=Layout.NULL):
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
-    if dtype in types:
+    if dtype in all_types:
         assert layout == Layout.NULL
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):

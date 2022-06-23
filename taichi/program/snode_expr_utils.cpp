@@ -52,20 +52,21 @@ void place_child(Expr *expr_arg,
     TI_ERROR_IF(glb_var_expr->snode != nullptr,
                 "This variable has been placed.");
     SNode *new_exp_snode = nullptr;
-    if (auto cft = glb_var_expr->dt->cast<CustomFloatType>()) {
-      auto exp = cft->get_exponent_type();
+    if (auto qflt = glb_var_expr->dt->cast<QuantFloatType>()) {
+      auto exp = qflt->get_exponent_type();
       // Non-empty exponent type. First create a place SNode for the
       // exponent value.
       if (parent->placing_shared_exp &&
           parent->currently_placing_exp_snode != nullptr) {
         // Reuse existing exponent
         TI_ASSERT_INFO(parent->currently_placing_exp_snode_dtype == exp,
-                       "CustomFloatTypes with shared exponents must have "
+                       "QuantFloatTypes with shared exponents must have "
                        "exactly the same exponent type.");
         new_exp_snode = parent->currently_placing_exp_snode;
       } else {
         auto &exp_node = parent->insert_children(SNodeType::place);
         exp_node.dt = exp;
+        exp_node.bit_offset = parent->bit_struct_type_builder->add_member(exp);
         exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
         new_exp_snode = &exp_node;
         if (parent->placing_shared_exp) {
@@ -92,6 +93,9 @@ void place_child(Expr *expr_arg,
       child.owns_shared_exponent = true;
     }
     child.dt = glb_var_expr->dt;
+    if (parent->bit_struct_type_builder) {
+      child.bit_offset = parent->bit_struct_type_builder->add_member(child.dt);
+    }
     if (new_exp_snode) {
       child.exp_snode = new_exp_snode;
       new_exp_snode->exponent_users.push_back(&child);

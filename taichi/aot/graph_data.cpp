@@ -24,19 +24,16 @@ void CompiledGraph::run(
       const aot::IValue &ival = found->second;
       if (ival.tag == aot::ArgKind::kNdarray) {
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
-        TI_ERROR_IF(ival.tag != aot::ArgKind::kNdarray,
-                    "Required a ndarray for argument {}", symbolic_arg.name);
         TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
         set_runtime_ctx_ndarray(&ctx, i, arr);
-      } else {
-        TI_ERROR_IF(ival.tag != aot::ArgKind::kScalar,
-                    "Required a scalar for argument {}", symbolic_arg.name);
+      } else if (ival.tag == aot::ArgKind::kScalar) {
         ctx.set_arg(i, ival.val);
+      } else {
+        TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
       }
     }
-
     dispatch.compiled_kernel->launch(&ctx);
   }
 }

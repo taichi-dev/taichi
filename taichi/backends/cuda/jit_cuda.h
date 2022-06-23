@@ -83,8 +83,10 @@ class JITSessionCUDA : public JITSession {
  public:
   llvm::DataLayout data_layout;
 
-  JITSessionCUDA(LlvmProgramImpl *llvm_prog, llvm::DataLayout data_layout)
-      : JITSession(llvm_prog), data_layout(data_layout) {
+  JITSessionCUDA(TaichiLLVMContext *tlctx,
+                 CompileConfig *config,
+                 llvm::DataLayout data_layout)
+      : JITSession(tlctx, config), data_layout(data_layout) {
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override;
@@ -100,7 +102,8 @@ class JITSessionCUDA : public JITSession {
 #endif
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
-    LlvmProgramImpl *llvm_prog,
+    TaichiLLVMContext *tlctx,
+    CompileConfig *config,
     Arch arch);
 
 TLANG_NAMESPACE_END

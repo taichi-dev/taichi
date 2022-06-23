@@ -3,21 +3,12 @@
 #include <cstddef>
 #include <memory>
 
-#include "taichi/llvm/llvm_device.h"
 #include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
-#include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
-#include "taichi/common/logging.h"
-#include "taichi/llvm/llvm_context.h"
-#include "taichi/llvm/launch_arg_info.h"
-#include "taichi/runtime/runtime.h"
-#include "taichi/system/threading.h"
-#include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
-#include "taichi/program/snode_expr_utils.h"
+#include "taichi/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
+
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -30,6 +21,7 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
+class Program;
 
 namespace cuda {
 class CudaDevice;
@@ -43,74 +35,20 @@ class LlvmProgramImpl : public ProgramImpl {
  public:
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
 
-  void initialize_host();
+  /* ------------------------------------ */
+  /* ---- JIT-Compilation Interfaces ---- */
+  /* ------------------------------------ */
 
-  /**
-   * Initializes Program#llvm_context_device, if this has not been done.
-   *
-   * Not thread safe.
-   */
-  void maybe_initialize_cuda_llvm_context();
-
-  TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch_is_cpu(arch)) {
-      return llvm_context_host_.get();
-    } else {
-      return llvm_context_device_.get();
-    }
-  }
-
-  LLVMRuntime *get_llvm_runtime() {
-    return static_cast<LLVMRuntime *>(llvm_runtime_);
-  }
-
+  // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
+  // For now, compile = codegen + convert
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
+  // TODO(zhanlue): refactor materialize_snode_tree()
+  // materialize_snode_tree = compile_snode_tree_types +
+  // initialize_llvm_runtime_snodes It's a 2-in-1 interface
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
-
-  template <typename T>
-  T fetch_result(int i, uint64 *result_buffer) {
-    return taichi_union_cast_with_different_sizes<T>(
-        fetch_result_uint64(i, result_buffer));
-  }
-
-  /**
-   * Initializes the runtime system for LLVM based backends.
-   */
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr) override;
-
-  std::size_t get_snode_num_dynamically_allocated(
-      SNode *snode,
-      uint64 *result_buffer) override;
-
-  void destroy_snode_tree(SNodeTree *snode_tree) override {
-    get_llvm_context(host_arch())
-        ->delete_functions_of_snode_tree(snode_tree->id());
-    snode_tree_buffer_manager_->destroy(snode_tree);
-  }
-
-  void print_memory_profiler_info(
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      uint64 *result_buffer);
-
-  void synchronize() override;
-
-  void check_runtime_error(uint64 *result_buffer);
-
-  void finalize();
-
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer) override;
-
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
-
-  void fill_ndarray(const DeviceAllocation &alloc,
-                    std::size_t size,
-                    uint32_t data);
 
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
@@ -128,17 +66,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return cache_data_.fields.at(snode_tree_id);
   }
 
-  Device *get_compute_device() override {
-    return device_.get();
-  }
-
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(
-      const LlvmOfflineCache::FieldCacheData &field_cache_data,
-      uint64 *result_buffer);
-
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       bool has_multiple_snode_trees,
@@ -147,54 +74,160 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer);
-
-  template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
-    TI_ASSERT(arch_uses_llvm(config->arch));
-
-    TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_context_device_) {
-      tlctx = llvm_context_device_.get();
-    } else {
-      tlctx = llvm_context_host_.get();
-    }
-
-    auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime_,
-                                   std::forward<Args>(args)...);
-    return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
-        taichi_result_buffer_runtime_query_id, result_buffer));
-  }
-
-  void print_list_manager_info(void *list_manager, uint64 *result_buffer);
-
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
-
-  DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 
   void dump_cache_data_to_disk() override;
 
+  /* -------------------------------- */
+  /* ---- JIT-Runtime Interfaces ---- */
+  /* -------------------------------- */
+  // ** Please implement new runtime interfaces in LlvmRuntimeExecutor **
+  //
+  // There are two major customer-level classes, namely Kernel and
+  // FieldsBuilder.
+  //
+  // For now, both Kernel and FieldsBuilder rely on Program/ProgramImpl to
+  // access compile time and runtime interfaces.
+  //
+  // We keep these runtime interfaces in ProgramImpl for now, so as to avoid
+  // changing the higher-level architecture, which is coupled with base classes
+  // and other backends.
+  //
+  // The runtime interfaces in ProgramImpl should be nothing but a simple
+  // wrapper. The one with actual implementation should go inside
+  // LlvmRuntimeExecutor class.
+
+ public:
+  /**
+   * Initializes the runtime system for LLVM based backends.
+   */
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer_ptr) override {
+    runtime_exec_->materialize_runtime(memory_pool, profiler,
+                                       result_buffer_ptr);
+  }
+
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    return runtime_exec_->destroy_snode_tree(snode_tree);
+  }
+
+  template <typename T>
+  T fetch_result(int i, uint64 *result_buffer) {
+    return runtime_exec_->fetch_result<T>(i, result_buffer);
+  }
+
+  void finalize() override {
+    runtime_exec_->finalize();
+  }
+
+  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override {
+    return runtime_exec_->get_ndarray_alloc_info_ptr(alloc);
+  }
+
+  void fill_ndarray(const DeviceAllocation &alloc,
+                    std::size_t size,
+                    uint32_t data) override {
+    return runtime_exec_->fill_ndarray(alloc, size, data);
+  }
+
+  void prepare_runtime_context(RuntimeContext *ctx) override {
+    runtime_exec_->prepare_runtime_context(ctx);
+  }
+
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) override {
+    return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
+  Device *get_compute_device() override {
+    return runtime_exec_->get_compute_device();
+  }
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(
+      const LlvmOfflineCache::FieldCacheData &field_cache_data,
+      uint64 *result_buffer) {
+    runtime_exec_->initialize_llvm_runtime_snodes(field_cache_data,
+                                                  result_buffer);
+  }
+
+  void initialize_host() {
+    runtime_exec_->initialize_host();
+  }
+
+  void maybe_initialize_cuda_llvm_context() {
+    runtime_exec_->maybe_initialize_cuda_llvm_context();
+  }
+
+  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
+    return runtime_exec_->fetch_result_uint64(i, result_buffer);
+  }
+
+  template <typename T, typename... Args>
+  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+    return runtime_exec_->runtime_query<T>(key, result_buffer,
+                                           std::forward<Args>(args)...);
+  }
+
+  void print_list_manager_info(void *list_manager, uint64 *result_buffer) {
+    runtime_exec_->print_list_manager_info(list_manager, result_buffer);
+  }
+
+  void print_memory_profiler_info(
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      uint64 *result_buffer) override {
+    runtime_exec_->print_memory_profiler_info(snode_trees_, result_buffer);
+  }
+
+  TaichiLLVMContext *get_llvm_context(Arch arch) {
+    return runtime_exec_->get_llvm_context(arch);
+  }
+
+  void synchronize() override {
+    runtime_exec_->synchronize();
+  }
+
+  LLVMRuntime *get_llvm_runtime() {
+    return runtime_exec_->get_llvm_runtime();
+  }
+
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override {
+    return runtime_exec_->get_snode_num_dynamically_allocated(snode,
+                                                              result_buffer);
+  }
+
+  void check_runtime_error(uint64 *result_buffer) override {
+    runtime_exec_->check_runtime_error(result_buffer);
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return runtime_exec_->get_snode_tree_device_ptr(tree_id);
+  }
+
+  cuda::CudaDevice *cuda_device() {
+    return runtime_exec_->cuda_device();
+  }
+
+  cpu::CpuDevice *cpu_device() {
+    return runtime_exec_->cpu_device();
+  }
+
+  LlvmDevice *llvm_device() {
+    return runtime_exec_->llvm_device();
+  }
+
  private:
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
-  std::unique_ptr<ThreadPool> thread_pool_{nullptr};
-  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   std::size_t num_snode_trees_processed_{0};
-  void *llvm_runtime_{nullptr};
-  void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
-
-  DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
-
-  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-
   LlvmOfflineCache cache_data_;
-
-  std::shared_ptr<Device> device_{nullptr};
-  cuda::CudaDevice *cuda_device();
-  cpu::CpuDevice *cpu_device();
-  LlvmDevice *llvm_device();
+  std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
 };
+
+LlvmProgramImpl *get_llvm_program(Program *prog);
+
 }  // namespace lang
 }  // namespace taichi

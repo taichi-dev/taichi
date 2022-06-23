@@ -4,7 +4,6 @@ from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._logging import *
 from taichi._snode import *
-from taichi.ad import clear_all_gradients
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
@@ -40,7 +39,8 @@ __deprecated_names__ = {
     'imwrite': 'tools.imwrite',
     'ext_arr': 'types.ndarray',
     'any_arr': 'types.ndarray',
-    'Tape': 'ad.Tape'
+    'Tape': 'ad.Tape',
+    'clear_all_gradients': 'ad.clear_all_gradients'
 }
 
 __customized_deprecations__ = {

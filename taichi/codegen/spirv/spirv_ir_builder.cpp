@@ -166,10 +166,28 @@ void IRBuilder::init_pre_defs() {
       .commit(&global_);
 
   // compute shader related types
+  t_v2_int_.id = id_counter_++;
+  ib_.begin(spv::OpTypeVector)
+      .add(t_v2_int_)
+      .add_seq(t_int32_, 2)
+      .commit(&global_);
+
   t_v3_uint_.id = id_counter_++;
   ib_.begin(spv::OpTypeVector)
       .add(t_v3_uint_)
       .add_seq(t_uint32_, 3)
+      .commit(&global_);
+
+  t_v4_fp32_.id = id_counter_++;
+  ib_.begin(spv::OpTypeVector)
+      .add(t_v4_fp32_)
+      .add_seq(t_fp32_, 4)
+      .commit(&global_);
+
+  t_v2_fp32_.id = id_counter_++;
+  ib_.begin(spv::OpTypeVector)
+      .add(t_v2_fp32_)
+      .add_seq(t_fp32_, 2)
       .commit(&global_);
 
   // pre-defined constants
@@ -338,6 +356,29 @@ SType IRBuilder::get_pointer_type(const SType &value_type,
       .commit(&global_);
   pointer_type_tbl_[key] = t;
   return t;
+}
+
+SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
+                                        int num_dimensions) {
+  auto key = std::make_pair(primitive_type.id, num_dimensions);
+  auto it = sampled_image_ptr_tbl_.find(key);
+  if (it != sampled_image_ptr_tbl_.end()) {
+    return it->second;
+  }
+  int img_id = id_counter_++;
+  ib_.begin(spv::OpTypeImage)
+      .add_seq(img_id, primitive_type, spv::Dim2D,
+               /*Depth=*/0, /*Arrayed=*/0, /*MS=*/0, /*Sampled=*/1,
+               spv::ImageFormatUnknown)
+      .commit(&global_);
+  SType sampled_t;
+  sampled_t.id = id_counter_++;
+  sampled_t.flag = TypeKind::kSampledImage;
+  ib_.begin(spv::OpTypeSampledImage)
+      .add_seq(sampled_t, img_id)
+      .commit(&global_);
+  sampled_image_ptr_tbl_[key] = sampled_t;
+  return sampled_t;
 }
 
 SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
@@ -573,6 +614,52 @@ Value IRBuilder::struct_array_access(const SType &res_type,
       .commit(&function_);
 
   return ret;
+}
+
+Value IRBuilder::texture_argument(int num_channels,
+                                  uint32_t descriptor_set,
+                                  uint32_t binding) {
+  auto texture_type = this->get_sampled_image_type(f32_type(), 2);
+  auto texture_ptr_type =
+      get_pointer_type(texture_type, spv::StorageClassUniformConstant);
+
+  Value val = new_value(texture_ptr_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(texture_ptr_type, val, spv::StorageClassUniformConstant)
+      .commit(&global_);
+
+  this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
+                 descriptor_set);
+  this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
+
+  this->debug(spv::OpName, val, "tex");
+
+  this->global_values.push_back(val);
+
+  return val;
+}
+
+Value IRBuilder::sample_texture(Value texture_var,
+                                Value u,
+                                Value v,
+                                Value lod) {
+  auto image = this->load_variable(texture_var,
+                                   this->get_sampled_image_type(f32_type(), 2));
+  auto uv_vec2 = make_value(spv::OpCompositeConstruct, t_v2_fp32_, u, v);
+  uint32_t lod_operand = 0x2;
+  auto res_vec4 = make_value(spv::OpImageSampleExplicitLod, t_v4_fp32_, image,
+                             uv_vec2, lod_operand, lod);
+  return res_vec4;
+}
+
+Value IRBuilder::fetch_texel(Value texture_var, Value x, Value y, Value lod) {
+  auto image = this->load_variable(texture_var,
+                                   this->get_sampled_image_type(f32_type(), 2));
+  auto index_ivec2 = make_value(spv::OpCompositeConstruct, t_v2_int_, x, y);
+  uint32_t lod_operand = 0x2;
+  auto res_vec4 = make_value(spv::OpImageFetch, t_v4_fp32_, image, index_ivec2,
+                             lod_operand, lod);
+  return res_vec4;
 }
 
 void IRBuilder::set_work_group_size(const std::array<int, 3> group_size) {
@@ -861,7 +948,16 @@ Value IRBuilder::load_variable(Value pointer, const SType &res_type) {
             pointer.flag == ValueKind::kStructArrayPtr ||
             pointer.flag == ValueKind::kPhysicalPtr);
   Value ret = new_value(res_type, ValueKind::kNormal);
-  ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer).commit(&function_);
+  if (pointer.flag == ValueKind::kPhysicalPtr) {
+    Value alignment =
+        uint_immediate_number(t_uint32_, get_primitive_type_size(res_type.dt));
+    ib_.begin(spv::OpLoad)
+        .add_seq(res_type, ret, pointer, spv::MemoryAccessAlignedMask,
+                 alignment)
+        .commit(&function_);
+  } else {
+    ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer).commit(&function_);
+  }
   return ret;
 }
 void IRBuilder::store_variable(Value pointer, Value value) {

@@ -105,9 +105,9 @@ class DemoteAtomics : public BasicStmtVisitor {
     }
 
     if (auto dest_pointer_type = stmt->dest->ret_type->cast<PointerType>()) {
-      if (dest_pointer_type->get_pointee_type()->is<CustomFloatType>()) {
+      if (dest_pointer_type->get_pointee_type()->is<QuantFloatType>()) {
         TI_WARN(
-            "AtomicOp on CustomFloatType is not supported. "
+            "AtomicOp on QuantFloatType is not supported. "
             "Demoting to non-atomic RMW.");
         demote = true;
       }

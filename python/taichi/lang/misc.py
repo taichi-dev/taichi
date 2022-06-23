@@ -586,13 +586,27 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(*, block_dim=None, serialize=False, parallelize=None):
+def _block_dim_adaptive(block_dim_adaptive):
+    """Enable/Disable backends set block_dim adaptively.
+    """
+    if get_runtime().prog.config.arch != cpu:
+        _logging.warn('Adaptive block_dim is supported on CPU backend only')
+    else:
+        get_runtime().prog.config.cpu_block_dim_adaptive = block_dim_adaptive
+
+
+def loop_config(*,
+                block_dim=None,
+                serialize=False,
+                parallelize=None,
+                block_dim_adaptive=True):
     """Sets directives for the next loop
 
     Args:
         block_dim (int): The number of threads in a block on GPU
         serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
         parallelize (int): The number of threads to use on CPU
+        block_dim_adaptive (bool): Whether to allow backends set block_dim adaptively, enabled by default
 
     Examples::
 
@@ -625,6 +639,9 @@ def loop_config(*, block_dim=None, serialize=False, parallelize=None):
         _parallelize(1)
     elif parallelize is not None:
         _parallelize(parallelize)
+
+    if not block_dim_adaptive:
+        _block_dim_adaptive(block_dim_adaptive)
 
 
 def global_thread_idx():

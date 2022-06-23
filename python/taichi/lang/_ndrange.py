@@ -19,12 +19,12 @@ class _Ndrange:
                 )
         for arg in args:
             for bound in arg:
-                if not isinstance(bound, int):
-                    if not (isinstance(bound, Expr)
-                            and is_integral(bound.ptr.get_ret_type())):
-                        raise TaichiTypeError(
-                            "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
-                        )
+                if not isinstance(bound, int) and not (
+                        isinstance(bound, Expr)
+                        and is_integral(bound.ptr.get_ret_type())):
+                    raise TaichiTypeError(
+                        "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
+                    )
         args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         self.bounds = args
 

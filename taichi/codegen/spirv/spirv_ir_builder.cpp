@@ -638,7 +638,8 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   return ret;
 }
 
-Value IRBuilder::texture_argument(int num_channels, int num_dimensions,
+Value IRBuilder::texture_argument(int num_channels,
+                                  int num_dimensions,
                                   uint32_t descriptor_set,
                                   uint32_t binding) {
   auto texture_type = this->get_sampled_image_type(f32_type(), num_dimensions);
@@ -664,15 +665,16 @@ Value IRBuilder::texture_argument(int num_channels, int num_dimensions,
 Value IRBuilder::sample_texture(Value texture_var,
                                 const std::vector<Value> &args,
                                 Value lod) {
-  auto image = this->load_variable(texture_var,
-                                   this->get_sampled_image_type(f32_type(), args.size()));
+  auto image = this->load_variable(
+      texture_var, this->get_sampled_image_type(f32_type(), args.size()));
   Value uv;
   if (args.size() == 1) {
     uv = args[0];
   } else if (args.size() == 2) {
     uv = make_value(spv::OpCompositeConstruct, t_v2_fp32_, args[0], args[1]);
   } else if (args.size() == 3) {
-    uv = make_value(spv::OpCompositeConstruct, t_v3_fp32_, args[0], args[1], args[2]);
+    uv = make_value(spv::OpCompositeConstruct, t_v3_fp32_, args[0], args[1],
+                    args[2]);
   } else {
     TI_ERROR("Unsupported number of texture coordinates");
   }
@@ -682,22 +684,25 @@ Value IRBuilder::sample_texture(Value texture_var,
   return res_vec4;
 }
 
-Value IRBuilder::fetch_texel(Value texture_var, const std::vector<Value> &args, Value lod) {
-  auto image = this->load_variable(texture_var,
-                                   this->get_sampled_image_type(f32_type(), args.size()));
+Value IRBuilder::fetch_texel(Value texture_var,
+                             const std::vector<Value> &args,
+                             Value lod) {
+  auto image = this->load_variable(
+      texture_var, this->get_sampled_image_type(f32_type(), args.size()));
   Value uv;
   if (args.size() == 1) {
     uv = args[0];
   } else if (args.size() == 2) {
     uv = make_value(spv::OpCompositeConstruct, t_v2_int_, args[0], args[1]);
   } else if (args.size() == 3) {
-    uv = make_value(spv::OpCompositeConstruct, t_v3_int_, args[0], args[1], args[2]);
+    uv = make_value(spv::OpCompositeConstruct, t_v3_int_, args[0], args[1],
+                    args[2]);
   } else {
     TI_ERROR("Unsupported number of texture coordinates");
   }
   uint32_t lod_operand = 0x2;
-  auto res_vec4 = make_value(spv::OpImageFetch, t_v4_fp32_, image, uv,
-                             lod_operand, lod);
+  auto res_vec4 =
+      make_value(spv::OpImageFetch, t_v4_fp32_, image, uv, lod_operand, lod);
   return res_vec4;
 }
 

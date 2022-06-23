@@ -1,7 +1,7 @@
 import collections.abc
 
 from taichi.lang import ops
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.matrix import _IntermediateMatrix
 
 
@@ -15,7 +15,11 @@ class _Ndrange:
                 raise TaichiSyntaxError(
                     "Every argument of ndrange should be a scalar or a tuple/list like (begin, end)"
                 )
-            args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
+        if any(not (isinstance(arg[0], int) and isinstance(arg[1], int)) for arg in args):
+            raise TaichiTypeError(
+                "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
+            )
+        args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         self.bounds = args
 
         self.dimensions = [None] * len(args)

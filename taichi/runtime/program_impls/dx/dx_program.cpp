@@ -1,6 +1,6 @@
 #ifdef TI_WITH_DX11
 
-#include "taichi/backends/dx/dx_program.h"
+#include "taichi/runtime/program_impls/dx/dx_program.h"
 
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"

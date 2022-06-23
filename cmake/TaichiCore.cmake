@@ -115,7 +115,6 @@ file(GLOB TAICHI_CORE_SOURCE
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 
-file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
@@ -170,16 +169,6 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-
-if (TI_WITH_VULKAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
-endif()
-
-
-if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_DX11_SOURCE})
-endif()
 
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
@@ -240,6 +229,19 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # By default, TI_WITH_METAL is ON for all platforms.
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
+
+if (TI_WITH_DX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+
+    add_subdirectory(taichi/runtime/program_impls/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
+
+    add_subdirectory(taichi/runtime/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_runtime)
+
+    add_subdirectory(taichi/backends/dx)
+endif()
+
 
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
@@ -393,6 +395,7 @@ target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 
 # Vulkan Device API
 if (TI_WITH_VULKAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)

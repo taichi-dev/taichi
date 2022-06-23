@@ -1,11 +1,11 @@
 #include "snode_tree_buffer_manager.h"
-#include "taichi/program/program.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/llvm/llvm_runtime_executor.h"
 
 TLANG_NAMESPACE_BEGIN
 
-SNodeTreeBufferManager::SNodeTreeBufferManager(ProgramImpl *prog)
-    : prog_(prog) {
+SNodeTreeBufferManager::SNodeTreeBufferManager(
+    LlvmRuntimeExecutor *runtime_exec)
+    : runtime_exec_(runtime_exec) {
   TI_TRACE("SNode tree buffer manager created.");
 }
 
@@ -46,8 +46,7 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
   if (set_it == size_set_.end()) {
     runtime_jit->call<void *, std::size_t, std::size_t>(
         "runtime_memory_allocate_aligned", runtime, size, alignment);
-    LlvmProgramImpl *llvm_prog = static_cast<LlvmProgramImpl *>(prog_);
-    auto ptr = llvm_prog->fetch_result<Ptr>(
+    auto ptr = runtime_exec_->fetch_result<Ptr>(
         taichi_result_buffer_runtime_query_id, result_buffer);
     roots_[snode_tree_id] = ptr;
     sizes_[snode_tree_id] = size;

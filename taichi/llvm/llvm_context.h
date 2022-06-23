@@ -38,7 +38,7 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
 
-  TaichiLLVMContext(LlvmProgramImpl *llvm_prog, Arch arch);
+  TaichiLLVMContext(CompileConfig *config, Arch arch);
 
   virtual ~TaichiLLVMContext();
 

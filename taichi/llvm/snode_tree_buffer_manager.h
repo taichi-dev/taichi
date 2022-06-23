@@ -10,11 +10,11 @@ using Ptr = uint8_t *;
 TLANG_NAMESPACE_BEGIN
 
 class JITModule;
-class ProgramImpl;
+class LlvmRuntimeExecutor;
 
 class SNodeTreeBufferManager {
  public:
-  SNodeTreeBufferManager(ProgramImpl *prog);
+  SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
 
   void merge_and_insert(Ptr ptr, std::size_t size);
 
@@ -30,7 +30,7 @@ class SNodeTreeBufferManager {
  private:
   std::set<std::pair<std::size_t, Ptr>> size_set_;
   std::map<Ptr, std::size_t> ptr_map_;
-  ProgramImpl *prog_;
+  LlvmRuntimeExecutor *runtime_exec_;
   Ptr roots_[kMaxNumSnodeTreesLlvm];
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };

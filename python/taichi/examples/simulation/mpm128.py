@@ -84,9 +84,12 @@ def substep():
                 dist / (0.01 + dist.norm()) * attractor_strength[None] * dt * 100
             if i < 3 and grid_v[i, j][0] < 0:
                 grid_v[i, j][0] = 0  # Boundary conditions
-            if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
-            if j < 3 and grid_v[i, j][1] < 0: grid_v[i, j][1] = 0
-            if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
+            if i > n_grid - 3 and grid_v[i, j][0] > 0:
+                grid_v[i, j][0] = 0
+            if j < 3 and grid_v[i, j][1] < 0:
+                grid_v[i, j][1] = 0
+            if j > n_grid - 3 and grid_v[i, j][1] > 0:
+                grid_v[i, j][1] = 0
     for p in x:  # grid to particle (G2P)
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - base.cast(float)
@@ -128,13 +131,20 @@ gravity[None] = [0, -1]
 
 for frame in range(20000):
     if gui.get_event(ti.GUI.PRESS):
-        if gui.event.key == 'r': reset()
-        elif gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: break
-    if gui.event is not None: gravity[None] = [0, 0]  # if had any event
-    if gui.is_pressed(ti.GUI.LEFT, 'a'): gravity[None][0] = -1
-    if gui.is_pressed(ti.GUI.RIGHT, 'd'): gravity[None][0] = 1
-    if gui.is_pressed(ti.GUI.UP, 'w'): gravity[None][1] = 1
-    if gui.is_pressed(ti.GUI.DOWN, 's'): gravity[None][1] = -1
+        if gui.event.key == 'r':
+            reset()
+        elif gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
+            break
+    if gui.event is not None:
+        gravity[None] = [0, 0]  # if had any event
+    if gui.is_pressed(ti.GUI.LEFT, 'a'):
+        gravity[None][0] = -1
+    if gui.is_pressed(ti.GUI.RIGHT, 'd'):
+        gravity[None][0] = 1
+    if gui.is_pressed(ti.GUI.UP, 'w'):
+        gravity[None][1] = 1
+    if gui.is_pressed(ti.GUI.DOWN, 's'):
+        gravity[None][1] = -1
     mouse = gui.get_cursor_pos()
     gui.circle((mouse[0], mouse[1]), color=0x336699, radius=15)
     attractor_pos[None] = [mouse[0], mouse[1]]

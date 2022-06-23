@@ -190,7 +190,8 @@ def cg():
         add(F_r0, F_r0, -alpha, q)
         r_2 = r_2_new
         r_2_new = dot(F_r0, F_r0)
-        if r_2_new <= r_2_init * epsilon**2: break
+        if r_2_new <= r_2_init * epsilon**2:
+            break
         beta = r_2_new / r_2
         add(d, F_r0, beta, d)
     F_f.fill(0)
@@ -238,8 +239,10 @@ def check(u):
     for i in ti.static(range(3)):
         k = rest % n_cube[2 - i]
         rest = rest // n_cube[2 - i]
-        if k == 0: ans |= (1 << (i * 2))
-        if k == n_cube[2 - i] - 1: ans |= (1 << (i * 2 + 1))
+        if k == 0:
+            ans |= (1 << (i * 2))
+        if k == n_cube[2 - i] - 1:
+            ans |= (1 << (i * 2 + 1))
     return ans
 
 
@@ -350,7 +353,8 @@ def main():
         while gui.running:
             substep()
             if gui.get_event(ti.GUI.PRESS):
-                if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: break
+                if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
+                    break
             if gui.is_pressed('r'):
                 init()
             gui.clear(0x000000)

@@ -152,13 +152,20 @@ def main():
 
     while window.running:
         if window.get_event(ti.ui.PRESS):
-            if window.event.key == 'r': reset()
-            elif window.event.key in [ti.ui.ESCAPE]: break
-        if window.event is not None: gravity[None] = [0, 0]  # if had any event
-        if window.is_pressed(ti.ui.LEFT, 'a'): gravity[None][0] = -1
-        if window.is_pressed(ti.ui.RIGHT, 'd'): gravity[None][0] = 1
-        if window.is_pressed(ti.ui.UP, 'w'): gravity[None][1] = 1
-        if window.is_pressed(ti.ui.DOWN, 's'): gravity[None][1] = -1
+            if window.event.key == 'r':
+                reset()
+            elif window.event.key in [ti.ui.ESCAPE]:
+                break
+        if window.event is not None:
+            gravity[None] = [0, 0]  # if had any event
+        if window.is_pressed(ti.ui.LEFT, 'a'):
+            gravity[None][0] = -1
+        if window.is_pressed(ti.ui.RIGHT, 'd'):
+            gravity[None][0] = 1
+        if window.is_pressed(ti.ui.UP, 'w'):
+            gravity[None][1] = 1
+        if window.is_pressed(ti.ui.DOWN, 's'):
+            gravity[None][1] = -1
         mouse = window.get_cursor_pos()
         mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
         canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.05)

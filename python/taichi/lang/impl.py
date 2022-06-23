@@ -23,7 +23,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
+from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
 
 
 @taichi_scope
@@ -585,7 +585,7 @@ def ndarray(dtype, shape, layout=Layout.NULL):
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
-    if dtype in types:
+    if dtype in all_types:
         assert layout == Layout.NULL
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):

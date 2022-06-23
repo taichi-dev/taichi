@@ -74,10 +74,14 @@ def march(level: float) -> int:
 
     for i, j in ti.ndrange(N - 1, N - 1):
         case_id = 0
-        if pixels[i, j] > level: case_id |= 1
-        if pixels[i + 1, j] > level: case_id |= 2
-        if pixels[i + 1, j + 1] > level: case_id |= 4
-        if pixels[i, j + 1] > level: case_id |= 8
+        if pixels[i, j] > level:
+            case_id |= 1
+        if pixels[i + 1, j] > level:
+            case_id |= 2
+        if pixels[i + 1, j + 1] > level:
+            case_id |= 4
+        if pixels[i, j + 1] > level:
+            case_id |= 8
 
         for k in range(2):
             if edge_table[case_id, k][0] == -1:

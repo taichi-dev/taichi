@@ -77,5 +77,8 @@ class Texture:
     def from_ndarray(self, ndarray):
         self.tex.from_ndarray(ndarray.arr)
 
+    def from_field(self, field):
+        self.tex.from_snode(field.snode.ptr)
+
     def device_allocation_ptr(self):
         return self.tex.device_allocation_ptr()

@@ -573,7 +573,8 @@ void export_lang(py::module &m) {
 
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
-      .def("from_ndarray", &Texture::from_ndarray);
+      .def("from_ndarray", &Texture::from_ndarray)
+      .def("from_snode", &Texture::from_snode);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)

@@ -28,13 +28,10 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
                                          LlvmProgramImpl *program)
       : ModuleToFunctionConverter(tlctx, program) {
   }
+  using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const override;
-
-  FunctionType convert(const Kernel *kernel,
                        std::unique_ptr<llvm::Module> mod,
                        std::vector<OffloadedTask> &&tasks) const override;
 };

@@ -210,8 +210,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
-  FunctionType gen() override {
-    TI_AUTO_PROF
+  CompiledData run_compilation() override {
     // lower kernel
     if (!kernel->lowered()) {
       kernel->lower();
@@ -231,23 +230,42 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
           }
           return func_name == offloaded_task_name;
         });
-    tlctx->add_module(std::move(module));
-    auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
-    return [=](RuntimeContext &context) {
-      TI_TRACE("Launching Taichi Kernel Function");
-      auto func = (int32(*)(void *))kernel_symbol;
-      func(&context);
-    };
+    CompiledData res;
+    res.offloaded_tasks.emplace_back(nullptr);
+    res.offloaded_tasks[0].name = offloaded_task_name;
+    res.llvm_module = std::move(this->module);
+    return res;
   }
+
+//  FunctionType gen() override {
+//    TI_AUTO_PROF
+//    auto res = run_compilation();
+//    tlctx->add_module(std::move(res.llvm_module));
+//    auto kernel_symbol = tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
+//    return [=](RuntimeContext &context) {
+//      TI_TRACE("Launching Taichi Kernel Function");
+//      auto func = (int32(*)(void *))kernel_symbol;
+//      func(&context);
+//    };
+//  }
 };
 
 FunctionType CodeGenWASM::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMWASM(kernel, ir).gen();
+  CodeGenLLVMWASM gen(kernel, ir);
+  auto res = gen.run_compilation();
+  gen.tlctx->add_module(std::move(res.llvm_module));
+  auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
+  return [=](RuntimeContext &context) {
+    TI_TRACE("Launching Taichi Kernel Function");
+    auto func = (int32(*)(void *))kernel_symbol;
+    func(&context);
+  };
 }
 
 std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
-    std::unique_ptr<llvm::Module> &&module) {
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
   std::vector<std::string> name_list;
 

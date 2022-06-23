@@ -3,7 +3,7 @@
 
 #include "taichi/llvm/llvm_offline_cache.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/codegen/codegen_llvm.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 
 namespace taichi {
 namespace lang {
@@ -34,7 +34,7 @@ class AotModuleImpl : public LlvmAotModule {
       offloaded_tasks.push_back(std::move(ot));
     }
 
-    ModuleToFunctionConverter converter{tlctx, program_};
+    CPUModuleToFunctionConverter converter{tlctx, program_};
     return converter.convert(name, loaded.args, std::move(loaded.owned_module),
                              std::move(offloaded_tasks));
   }

@@ -23,4 +23,19 @@ class CodeGenCPU : public KernelCodeGen {
   FunctionType codegen() override;
 };
 
+class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
+ public:
+  explicit CPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                         LlvmProgramImpl *program)
+      : ModuleToFunctionConverter(tlctx, program) {
+  }
+
+  using ModuleToFunctionConverter::convert;
+
+  FunctionType convert(const std::string &kernel_name,
+                       const std::vector<LlvmLaunchArgInfo> &args,
+                       std::unique_ptr<llvm::Module> mod,
+                       std::vector<OffloadedTask> &&tasks) const override;
+};
+
 TLANG_NAMESPACE_END

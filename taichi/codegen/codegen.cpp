@@ -52,4 +52,17 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 #endif
 }
 
+ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+                                                     LlvmProgramImpl *program)
+    : tlctx_(tlctx), program_(program) {
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
+                 std::move(tasks));
+}
+
 TLANG_NAMESPACE_END

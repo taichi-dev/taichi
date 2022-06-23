@@ -35,7 +35,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  auto module_info = CodeGenWASM(kernel, nullptr).modulegen(std::move(module_));
+  auto module_info =
+      CodeGenWASM(kernel, nullptr).modulegen(std::move(module_), nullptr);
   module_ = std::move(module_info->module);
 
   for (auto &name : module_info->name_list)

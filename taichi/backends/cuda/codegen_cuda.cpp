@@ -36,15 +36,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;
   }
 
-  FunctionType gen() override {
-    auto compiled_res = run_compilation();
-
-    auto *llvm_prog = get_llvm_program(kernel->program);
-    CUDAModuleToFunctionConverter converter{tlctx, llvm_prog};
-
-    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
-                             std::move(compiled_res.offloaded_tasks));
-  }
+//  FunctionType gen() override {
+//    auto compiled_res = run_compilation();
+//
+//    auto *llvm_prog = get_llvm_program(kernel->program);
+//    CUDAModuleToFunctionConverter converter{tlctx, llvm_prog};
+//
+//    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
+//                             std::move(compiled_res.offloaded_tasks));
+//  }
 
   llvm::Value *create_print(std::string tag,
                             DataType dt,
@@ -735,7 +735,14 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCUDA(kernel, ir).gen();
+  CodeGenLLVMCUDA gen(kernel, ir);
+  auto compiled_res = gen.run_compilation();
+
+  auto *llvm_prog = get_llvm_program(kernel->program);
+  CUDAModuleToFunctionConverter converter{gen.tlctx, llvm_prog};
+
+  return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
+                           std::move(compiled_res.offloaded_tasks));
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
@@ -847,12 +854,5 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 #endif  // TI_WITH_CUDA
 }
 
-FunctionType CUDAModuleToFunctionConverter::convert(
-    const Kernel *kernel,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
-  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
-                 std::move(tasks));
-}
 
 TLANG_NAMESPACE_END

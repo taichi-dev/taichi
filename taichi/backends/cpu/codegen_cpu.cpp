@@ -209,6 +209,14 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
+
+//  FunctionType gen() override {
+//    auto compiled_res = run_compilation();
+//
+//    CPUModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
+//    return converter.convert(kernel, std::move(compiled_res.llvm_module),
+//                             std::move(compiled_res.offloaded_tasks));
+//  }
 };
 
 }  // namespace
@@ -223,7 +231,52 @@ std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;
-  return CodeGenLLVMCPU(kernel, ir).gen();
+  CodeGenLLVMCPU gen(kernel, ir);
+  auto compiled_res = gen.run_compilation();
+
+  CPUModuleToFunctionConverter converter{gen.tlctx, get_llvm_program(prog)};
+  return converter.convert(kernel, std::move(compiled_res.llvm_module),
+                           std::move(compiled_res.offloaded_tasks));
+}
+
+FunctionType CPUModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<LlvmLaunchArgInfo> &args,
+    std::unique_ptr<llvm::Module> mod,
+    std::vector<OffloadedTask> &&tasks) const {
+  tlctx_->add_module(std::move(mod));
+
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs;
+  task_funcs.reserve(tasks.size());
+  for (auto &task : tasks) {
+    auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+    TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
+    task_funcs.push_back((TaskFunc)(func_ptr));
+  }
+  // Do NOT capture `this`...
+  return [program = this->program_, args, kernel_name,
+          task_funcs](RuntimeContext &context) {
+    TI_TRACE("Launching kernel {}", kernel_name);
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array &&
+          context.device_allocation_type[i] !=
+              RuntimeContext::DevAllocType::kNone &&
+          context.array_runtime_sizes[i] > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_array_device_allocation_type(
+            i, RuntimeContext::DevAllocType::kNone);
+      }
+    }
+    for (auto task : task_funcs) {
+      task(&context);
+    }
+  };
 }
 
 TLANG_NAMESPACE_END

@@ -132,10 +132,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * @return CompiledData
    */
-  CompiledData run_compilation();
+  virtual CompiledData run_compilation(); // FIXME: This function should not be inside class CodeGenLLVM.
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen();
+//  virtual FunctionType gen() = 0;
 
   virtual bool supports_offline_cache() const {
     return false;
@@ -415,26 +415,26 @@ class LlvmProgramImpl;
 
 // TODO: Make ModuleToFunctionConverter abstract,
 //       Move CPU implementation to "taichi/backend/cpu/"
-class ModuleToFunctionConverter {
- public:
-  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmProgramImpl *program);
-
-  virtual ~ModuleToFunctionConverter() = default;
-
-  virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<LlvmLaunchArgInfo> &args,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
-  virtual FunctionType convert(const Kernel *kernel,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
- protected:
-  TaichiLLVMContext *tlctx_{nullptr};
-  LlvmProgramImpl *program_{nullptr};
-};
+//class ModuleToFunctionConverter {
+// public:
+//  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
+//                                     LlvmProgramImpl *program);
+//
+//  virtual ~ModuleToFunctionConverter() = default;
+//
+//  virtual FunctionType convert(const std::string &kernel_name,
+//                               const std::vector<LlvmLaunchArgInfo> &args,
+//                               std::unique_ptr<llvm::Module> mod,
+//                               std::vector<OffloadedTask> &&tasks) const;
+//
+//  virtual FunctionType convert(const Kernel *kernel,
+//                               std::unique_ptr<llvm::Module> mod,
+//                               std::vector<OffloadedTask> &&tasks) const;
+//
+// protected:
+//  TaichiLLVMContext *tlctx_{nullptr};
+//  LlvmProgramImpl *program_{nullptr};
+//};
 
 }  // namespace lang
 }  // namespace taichi

@@ -30,6 +30,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/program/parallel_executor.h"
 
 namespace taichi {
 namespace lang {
@@ -102,6 +103,7 @@ class TI_DLL_EXPORT Program {
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
+  ParallelExecutor compilation_workers;  // parallel compilation
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 

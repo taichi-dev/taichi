@@ -94,10 +94,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
-    "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
-    "taichi/codegen/opengl/shaders/*" #CODEGEN
-    "taichi/codegen/metal/*.cpp" "taichi/codegen/metal/*.h" #CODEGEN
-    "taichi/codegen/metal/shaders/*" #CODEGEN
     "taichi/codegen/spirv/*" #CODEGEN
     "taichi/common/*"
     "taichi/ir/*"
@@ -118,10 +114,9 @@ file(GLOB TAICHI_CORE_SOURCE
 
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
-file(GLOB TAICHI_DX11_SOURCE "taichi/backends/dx/*.h" "taichi/backends/dx/*.cpp")
+
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-file(GLOB TAICHI_WASM_SOURCE "taichi/backends/wasm/*.cpp" "taichi/backends/wasm/*.h")
 
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
@@ -149,21 +144,9 @@ file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 
-# These are required, regardless of whether Vulkan is enabled or not
-# TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
-# guarded by TI_WITH_VULKAN macro at the source code level.
-file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
-  "taichi/backends/opengl/opengl_program.*"
-  "taichi/backends/opengl/opengl_api.*"
-  "taichi/backends/opengl/codegen_opengl.*"
-  "taichi/backends/opengl/struct_opengl.*"
-)
-
-
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
 else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
@@ -181,26 +164,11 @@ if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
 endif()
 
-
-
-
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
-
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-
-if (TI_WITH_VULKAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
-endif()
-
-
-if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_DX11_SOURCE})
-endif()
 
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
@@ -261,6 +229,19 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # By default, TI_WITH_METAL is ON for all platforms.
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
+
+if (TI_WITH_DX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+
+    add_subdirectory(taichi/runtime/program_impls/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
+
+    add_subdirectory(taichi/runtime/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_runtime)
+
+    add_subdirectory(taichi/backends/dx)
+endif()
+
 
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
@@ -335,6 +316,12 @@ if(TI_WITH_LLVM)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
         target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_ptx_libs})
     endif()
+
+    add_subdirectory(taichi/codegen/wasm)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_codegen)
+
+    add_subdirectory(taichi/runtime/wasm)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
 endif()
 
 if (TI_WITH_CUDA_TOOLKIT)
@@ -359,7 +346,9 @@ if (TI_WITH_METAL)
     add_subdirectory(taichi/backends/metal)
     add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
+    add_subdirectory(taichi/codegen/metal)
 
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
 endif()
@@ -371,13 +360,16 @@ if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
 
-    add_subdirectory(taichi/backends/opengl)
-    add_subdirectory(taichi/runtime/opengl)
     add_subdirectory(taichi/runtime/program_impls/opengl)
-
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
+
+    add_subdirectory(taichi/codegen/opengl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_codegen)
+
+    add_subdirectory(taichi/runtime/opengl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
+
+    add_subdirectory(taichi/backends/opengl)
 endif()
 
 if (TI_WITH_DX11)
@@ -403,6 +395,7 @@ target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 
 # Vulkan Device API
 if (TI_WITH_VULKAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     if (APPLE)
         find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
         configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)

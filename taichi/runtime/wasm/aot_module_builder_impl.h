@@ -7,7 +7,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/llvm/llvm_fwd.h"
 
-#include "taichi/backends/wasm/codegen_wasm.h"
+#include "taichi/codegen/wasm/codegen_wasm.h"
 
 namespace taichi {
 namespace lang {

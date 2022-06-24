@@ -200,8 +200,8 @@ Grid-based MGPCG solver for the possion equation.
         old_zTr = self.sum[None]
 
         # Conjugate gradients
-        iter = 0
-        while max_iters == -1 or iter < max_iters:
+        it = 0
+        while max_iters == -1 or it < max_iters:
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
@@ -219,7 +219,7 @@ Grid-based MGPCG solver for the possion equation.
             rTr = self.sum[None]
 
             if verbose:
-                print(f'iter {iter}, |residual|_2={math.sqrt(rTr)}')
+                print(f'iter {it}, |residual|_2={math.sqrt(rTr)}')
 
             if rTr < tol:
                 break
@@ -239,7 +239,7 @@ Grid-based MGPCG solver for the possion equation.
             self.update_p()
             old_zTr = new_zTr
 
-            iter += 1
+            it += 1
 
 
 class MGPCG_Example(MGPCG):

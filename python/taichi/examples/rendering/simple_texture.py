@@ -8,7 +8,7 @@ res = (512, 512)
 pixels = ti.Vector.field(3, dtype=float, shape=res)
 
 tex_format = ti.u8
-tex = ti.Texture(tex_format, 1, (128, 128))
+texture = ti.Texture(tex_format, 1, (128, 128))
 tex_ndarray = ti.ndarray(tex_format, shape=(128, 128))
 
 
@@ -21,11 +21,11 @@ def make_texture(arr: ti.types.ndarray()):
 
 
 make_texture(tex_ndarray)
-tex.from_ndarray(tex_ndarray)
+texture.from_ndarray(tex_ndarray)
 
 
 @ti.kernel
-def paint(t: ti.f32, tex: ti.types.texture()):
+def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2)):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
         warp_uv = uv + ti.Vector(
@@ -39,12 +39,18 @@ def paint(t: ti.f32, tex: ti.types.texture()):
         pixels[i, j] = [c.r, c.r, c.r]
 
 
-window = ti.ui.Window('UV', res)
-canvas = window.get_canvas()
+def main():
 
-t = 0.0
-while window.running:
-    paint(t, tex)
-    canvas.set_image(pixels)
-    window.show()
-    t += 0.03
+    window = ti.ui.Window('UV', res)
+    canvas = window.get_canvas()
+
+    t = 0.0
+    while window.running:
+        paint(t, texture)
+        canvas.set_image(pixels)
+        window.show()
+        t += 0.03
+
+
+if __name__ == '__main__':
+    main()

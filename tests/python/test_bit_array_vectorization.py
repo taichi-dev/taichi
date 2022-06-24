@@ -47,13 +47,13 @@ def test_vectorized_struct_for():
     verify()
 
 
-@test_utils.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_offset_load():
-    qi1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=qi1)
-    y = ti.field(dtype=qi1)
-    z = ti.field(dtype=qi1)
+    x = ti.field(dtype=qu1)
+    y = ti.field(dtype=qu1)
+    z = ti.field(dtype=qu1)
 
     N = 4096
     n_blocks = 4
@@ -109,11 +109,11 @@ def test_offset_load():
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    qi1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=qi1)
-    y = ti.field(dtype=qi1)
-    z = ti.field(dtype=qi1)
+    x = ti.field(dtype=qu1)
+    y = ti.field(dtype=qu1)
+    z = ti.field(dtype=qu1)
 
     N = 4096
     n_blocks = 4

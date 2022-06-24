@@ -37,7 +37,7 @@ particle_radius = 3.0
 particle_radius_in_world = particle_radius / screen_to_world_ratio
 
 # PBF params
-h = 1.1
+h_ = 1.1
 mass = 1.0
 rho0 = 1.0
 lambda_epsilon = 100.0
@@ -46,7 +46,7 @@ corr_deltaQ_coeff = 0.3
 corrK = 0.001
 # Need ti.pow()
 # corrN = 4.0
-neighbor_radius = h * 1.05
+neighbor_radius = h_ * 1.05
 
 poly6_factor = 315.0 / 64.0 / math.pi
 spiky_grad_factor = -45.0 / math.pi
@@ -97,7 +97,8 @@ def spiky_gradient(r, h):
 @ti.func
 def compute_scorr(pos_ji):
     # Eq (13)
-    x = poly6_value(pos_ji.norm(), h) / poly6_value(corr_deltaQ_coeff * h, h)
+    x = poly6_value(pos_ji.norm(), h_) / poly6_value(corr_deltaQ_coeff * h_,
+                                                     h_)
     # pow(x, 4)
     x = x * x
     x = x * x
@@ -202,11 +203,11 @@ def substep():
             if p_j < 0:
                 break
             pos_ji = pos_i - positions[p_j]
-            grad_j = spiky_gradient(pos_ji, h)
+            grad_j = spiky_gradient(pos_ji, h_)
             grad_i += grad_j
             sum_gradient_sqr += grad_j.dot(grad_j)
             # Eq(2)
-            density_constraint += poly6_value(pos_ji.norm(), h)
+            density_constraint += poly6_value(pos_ji.norm(), h_)
 
         # Eq(1)
         density_constraint = (mass * density_constraint / rho0) - 1.0
@@ -229,7 +230,7 @@ def substep():
             pos_ji = pos_i - positions[p_j]
             scorr_ij = compute_scorr(pos_ji)
             pos_delta_i += (lambda_i + lambda_j + scorr_ij) * \
-                spiky_gradient(pos_ji, h)
+                spiky_gradient(pos_ji, h_)
 
         pos_delta_i /= rho0
         position_deltas[p_i] = pos_delta_i
@@ -272,7 +273,7 @@ def render(gui):
 @ti.kernel
 def init_particles():
     for i in range(num_particles):
-        delta = h * 0.8
+        delta = h_ * 0.8
         offs = ti.Vector([(boundary[0] - delta * num_particles_x) * 0.5,
                           boundary[1] * 0.02])
         positions[i] = ti.Vector([i % num_particles_x, i // num_particles_x
@@ -285,11 +286,11 @@ def init_particles():
 def print_stats():
     print('PBF stats:')
     num = grid_num_particles.to_numpy()
-    avg, max = np.mean(num), np.max(num)
-    print(f'  #particles per cell: avg={avg:.2f} max={max}')
+    avg, max_ = np.mean(num), np.max(num)
+    print(f'  #particles per cell: avg={avg:.2f} max={max_}')
     num = particle_num_neighbors.to_numpy()
-    avg, max = np.mean(num), np.max(num)
-    print(f'  #neighbors per particle: avg={avg:.2f} max={max}')
+    avg, max_ = np.mean(num), np.max(num)
+    print(f'  #neighbors per particle: avg={avg:.2f} max={max_}')
 
 
 def main():

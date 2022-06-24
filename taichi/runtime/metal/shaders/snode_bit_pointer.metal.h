@@ -63,7 +63,7 @@ STR(
       bool ok = false;
       while (!ok) {
         P old_val = *(bp.base);
-        P new_val = (old_val & (~mask)) | (value << bp.offset);
+        P new_val = (old_val & (~mask)) | ((value << bp.offset) & mask);
         ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val,
                                                    metal::memory_order_relaxed,
                                                    metal::memory_order_relaxed);

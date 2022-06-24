@@ -9,7 +9,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-#include "taichi/codegen/opengl/opengl_data_types.h"
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"

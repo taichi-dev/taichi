@@ -94,8 +94,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
-    "taichi/codegen/opengl/*.cpp" "taichi/codegen/opengl/*.h" #CODEGEN
-    "taichi/codegen/opengl/shaders/*" #CODEGEN
     "taichi/codegen/metal/*.cpp" "taichi/codegen/metal/*.h" #CODEGEN
     "taichi/codegen/metal/shaders/*" #CODEGEN
     "taichi/codegen/spirv/*" #CODEGEN
@@ -148,18 +146,6 @@ endif()
 file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
-
-# These are required, regardless of whether Vulkan is enabled or not
-# TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
-# guarded by TI_WITH_VULKAN macro at the source code level.
-file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
-  "taichi/backends/opengl/opengl_program.*"
-  "taichi/backends/opengl/opengl_api.*"
-  "taichi/backends/opengl/codegen_opengl.*"
-  "taichi/backends/opengl/struct_opengl.*"
-)
-
-
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
@@ -180,11 +166,6 @@ endif()
 if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
 endif()
-
-
-
-
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
 
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
@@ -262,10 +243,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
 
-if (TI_WITH_OPENGL)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
-endif()
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
@@ -366,17 +344,11 @@ endif()
 
 if (TI_WITH_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-    set(SPIRV_CROSS_CLI false)
-    add_subdirectory(external/SPIRV-Cross)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
 
     add_subdirectory(taichi/backends/opengl)
-    add_subdirectory(taichi/runtime/opengl)
     add_subdirectory(taichi/runtime/program_impls/opengl)
 
 
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
 endif()
 
@@ -504,7 +476,6 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
       PRIVATE
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/external/spdlog/include
-        ${PROJECT_SOURCE_DIR}/external/glad/include
         ${PROJECT_SOURCE_DIR}/external/eigen
         ${PROJECT_SOURCE_DIR}/external/volk
         ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include

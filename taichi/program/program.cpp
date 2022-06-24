@@ -32,6 +32,10 @@
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
+#ifdef TI_WITH_OPENGL
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
+#include "taichi/backends/opengl/opengl_api.h"
+#endif
 #ifdef TI_WITH_DX11
 #include "taichi/backends/dx/dx_program.h"
 #include "taichi/backends/dx/dx_api.h"

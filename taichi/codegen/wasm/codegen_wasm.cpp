@@ -237,17 +237,18 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     return res;
   }
 
-//  FunctionType gen() override {
-//    TI_AUTO_PROF
-//    auto res = run_compilation();
-//    tlctx->add_module(std::move(res.llvm_module));
-//    auto kernel_symbol = tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
-//    return [=](RuntimeContext &context) {
-//      TI_TRACE("Launching Taichi Kernel Function");
-//      auto func = (int32(*)(void *))kernel_symbol;
-//      func(&context);
-//    };
-//  }
+  //  FunctionType gen() override {
+  //    TI_AUTO_PROF
+  //    auto res = run_compilation();
+  //    tlctx->add_module(std::move(res.llvm_module));
+  //    auto kernel_symbol =
+  //    tlctx->lookup_function_pointer(res.offloaded_tasks[0].name); return
+  //    [=](RuntimeContext &context) {
+  //      TI_TRACE("Launching Taichi Kernel Function");
+  //      auto func = (int32(*)(void *))kernel_symbol;
+  //      func(&context);
+  //    };
+  //  }
 };
 
 FunctionType CodeGenWASM::codegen() {
@@ -255,7 +256,8 @@ FunctionType CodeGenWASM::codegen() {
   CodeGenLLVMWASM gen(kernel, ir);
   auto res = gen.run_compilation();
   gen.tlctx->add_module(std::move(res.llvm_module));
-  auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
+  auto kernel_symbol =
+      gen.tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;

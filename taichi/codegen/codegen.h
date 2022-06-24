@@ -44,7 +44,9 @@ class KernelCodeGen {
 #ifdef TI_WITH_LLVM
   virtual std::unique_ptr<ModuleGenValue> modulegen(
       std::unique_ptr<llvm::Module> &&module = nullptr,
-      OffloadedStmt *stmt = nullptr) { TI_NOT_IMPLEMENTED }
+      OffloadedStmt *stmt = nullptr) {
+    TI_NOT_IMPLEMENTED
+  }
 #endif
 };
 

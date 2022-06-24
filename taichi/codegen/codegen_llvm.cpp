@@ -2357,13 +2357,13 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/true);
   }
-//  auto block = dynamic_cast<Block *>(kernel->ir.get());
-//  TI_ASSERT(block);
-//
-//  auto &offloads = block->statements;
-//  for (auto &offload : offloads) {
-//
-//  }
+  //  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  //  TI_ASSERT(block);
+  //
+  //  auto &offloads = block->statements;
+  //  for (auto &offload : offloads) {
+  //
+  //  }
   emit_to_module();
   eliminate_unused_functions();
   if (needs_cache) {

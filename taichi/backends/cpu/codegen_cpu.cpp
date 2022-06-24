@@ -210,13 +210,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     }
   }
 
-//  FunctionType gen() override {
-//    auto compiled_res = run_compilation();
-//
-//    CPUModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
-//    return converter.convert(kernel, std::move(compiled_res.llvm_module),
-//                             std::move(compiled_res.offloaded_tasks));
-//  }
+  //  FunctionType gen() override {
+  //    auto compiled_res = run_compilation();
+  //
+  //    CPUModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
+  //    return converter.convert(kernel, std::move(compiled_res.llvm_module),
+  //                             std::move(compiled_res.offloaded_tasks));
+  //  }
 };
 
 }  // namespace

@@ -132,10 +132,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * @return CompiledData
    */
-  virtual CompiledData run_compilation(); // FIXME: This function should not be inside class CodeGenLLVM.
+  virtual CompiledData run_compilation();  // FIXME: This function should not be
+                                           // inside class CodeGenLLVM.
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
-//  virtual FunctionType gen() = 0;
+  //  virtual FunctionType gen() = 0;
 
   virtual bool supports_offline_cache() const {
     return false;
@@ -415,7 +416,7 @@ class LlvmProgramImpl;
 
 // TODO: Make ModuleToFunctionConverter abstract,
 //       Move CPU implementation to "taichi/backend/cpu/"
-//class ModuleToFunctionConverter {
+// class ModuleToFunctionConverter {
 // public:
 //  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
 //                                     LlvmProgramImpl *program);

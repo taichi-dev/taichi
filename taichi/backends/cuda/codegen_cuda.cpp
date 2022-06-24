@@ -36,15 +36,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;
   }
 
-//  FunctionType gen() override {
-//    auto compiled_res = run_compilation();
-//
-//    auto *llvm_prog = get_llvm_program(kernel->program);
-//    CUDAModuleToFunctionConverter converter{tlctx, llvm_prog};
-//
-//    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
-//                             std::move(compiled_res.offloaded_tasks));
-//  }
+  //  FunctionType gen() override {
+  //    auto compiled_res = run_compilation();
+  //
+  //    auto *llvm_prog = get_llvm_program(kernel->program);
+  //    CUDAModuleToFunctionConverter converter{tlctx, llvm_prog};
+  //
+  //    return converter.convert(this->kernel,
+  //    std::move(compiled_res.llvm_module),
+  //                             std::move(compiled_res.offloaded_tasks));
+  //  }
 
   llvm::Value *create_print(std::string tag,
                             DataType dt,
@@ -853,6 +854,5 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   return nullptr;
 #endif  // TI_WITH_CUDA
 }
-
 
 TLANG_NAMESPACE_END

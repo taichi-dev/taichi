@@ -26,7 +26,7 @@ class CodeGenCPU : public KernelCodeGen {
 class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit CPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                         LlvmProgramImpl *program)
+                                        LlvmProgramImpl *program)
       : ModuleToFunctionConverter(tlctx, program) {
   }
 

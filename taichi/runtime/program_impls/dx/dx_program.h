@@ -2,7 +2,6 @@
 
 #ifdef TI_WITH_DX11
 
-#include "taichi/backends/dx/dx_device.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
@@ -62,7 +61,7 @@ class Dx11ProgramImpl : public ProgramImpl {
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
  private:
-  std::shared_ptr<directx11::Dx11Device> device_{nullptr};
+  std::shared_ptr<Device> device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;

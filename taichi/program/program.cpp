@@ -38,7 +38,7 @@
 #endif
 #ifdef TI_WITH_DX11
 #include "taichi/runtime/program_impls/dx/dx_program.h"
-#include "taichi/runtime/dx/dx_api.h"
+#include "taichi/backends/dx/dx_api.h"
 #endif
 
 #if defined(TI_ARCH_x64)

@@ -229,18 +229,6 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
 
-if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
-
-    add_subdirectory(taichi/runtime/program_impls/dx)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
-
-    add_subdirectory(taichi/runtime/dx)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_runtime)
-
-    add_subdirectory(taichi/backends/dx)
-endif()
-
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
@@ -357,9 +345,11 @@ if (TI_WITH_OPENGL)
 endif()
 
 if (TI_WITH_DX11)
-    set(SPIRV_CROSS_CLI false)
-    #target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-hlsl spirv-cross-core)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+
+    add_subdirectory(taichi/backends/dx)
+    add_subdirectory(taichi/runtime/program_impls/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
 endif()
 
 # SPIR-V codegen is always there, regardless of Vulkan

@@ -167,7 +167,9 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+  T runtime_query(const std::string &key,
+                  uint64 *result_buffer,
+                  Args &&...args) {
     return runtime_exec_->runtime_query<T>(key, result_buffer,
                                            std::forward<Args>(args)...);
   }

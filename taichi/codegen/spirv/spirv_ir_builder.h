@@ -352,12 +352,17 @@ class IRBuilder {
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
 
   Value texture_argument(int num_channels,
+                         int num_dimensions,
                          uint32_t descriptor_set,
                          uint32_t binding);
 
-  Value sample_texture(Value texture_var, Value u, Value v, Value lod);
+  Value sample_texture(Value texture_var,
+                       const std::vector<Value> &args,
+                       Value lod);
 
-  Value fetch_texel(Value texture_var, Value x, Value y, Value lod);
+  Value fetch_texel(Value texture_var,
+                    const std::vector<Value> &args,
+                    Value lod);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
@@ -549,8 +554,10 @@ class IRBuilder {
   SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v2_int_;
+  SType t_v3_int_;
   SType t_v3_uint_;
   SType t_v4_fp32_;
+  SType t_v3_fp32_;
   SType t_v2_fp32_;
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;

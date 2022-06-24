@@ -25,7 +25,7 @@ texture.from_ndarray(tex_ndarray)
 
 
 @ti.kernel
-def paint(t: ti.f32, tex: ti.types.texture()):
+def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2)):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
         warp_uv = uv + ti.Vector(

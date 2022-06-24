@@ -162,7 +162,8 @@ TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
 TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
                                                const char *name) {
   if (mod == nullptr) {
-    TI_WARN("ignored attempt to get compute graph from aot module of null handle");
+    TI_WARN(
+        "ignored attempt to get compute graph from aot module of null handle");
     return TI_NULL_HANDLE;
   }
   AotModule *aot_module = ((AotModule *)mod);
@@ -200,7 +201,9 @@ void ti_launch_kernel(TiRuntime runtime,
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.value.ndarray.memory);
         if (devalloc.alloc_id + 1 == 0) {
-          TI_WARN("ignored attempt to launch kernel with ndarray memory of null handle");
+          TI_WARN(
+              "ignored attempt to launch kernel with ndarray memory of null "
+              "handle");
           return;
         }
         const TiNdArray &ndarray = arg.value.ndarray;
@@ -231,7 +234,8 @@ void ti_launch_compute_graph(TiRuntime runtime,
                              uint32_t arg_count,
                              const TiNamedArgument *args) {
   if (runtime == nullptr) {
-    TI_WARN("ignored attempt to launch compute graph on runtime of null handle");
+    TI_WARN(
+        "ignored attempt to launch compute graph on runtime of null handle");
     return;
   }
   if (compute_graph == nullptr) {
@@ -262,7 +266,9 @@ void ti_launch_compute_graph(TiRuntime runtime,
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.argument.value.ndarray.memory);
         if (devalloc.alloc_id + 1 == 0) {
-          TI_WARN("ignored attempt to launch kernel with ndarray memory of null handle");
+          TI_WARN(
+              "ignored attempt to launch kernel with ndarray memory of null "
+              "handle");
           return;
         }
         const TiNdArray &ndarray = arg.argument.value.ndarray;

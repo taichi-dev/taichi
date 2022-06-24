@@ -27,7 +27,9 @@ VulkanRuntimeImported::Workaround::Workaround(
   vk_device.set_cap(taichi::lang::DeviceCapability::vk_api_version,
                     api_version);
   if (api_version > VK_API_VERSION_1_0) {
-    vk_device.set_cap(taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer, true);
+    vk_device.set_cap(
+        taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
+        true);
   }
 }
 VulkanRuntimeImported::VulkanRuntimeImported(
@@ -142,11 +144,15 @@ TiRuntime ti_import_vulkan_runtime(
     return TI_NULL_HANDLE;
   }
   if (interop_info->physical_device == nullptr) {
-    TI_WARN("ignored attempt to import vulkan runtime with vulkan physical device of null handle");
+    TI_WARN(
+        "ignored attempt to import vulkan runtime with vulkan physical device "
+        "of null handle");
     return TI_NULL_HANDLE;
   }
   if (interop_info->device == nullptr) {
-    TI_WARN("ignored attempt to import vulkan runtime with vulkan device of null handle");
+    TI_WARN(
+        "ignored attempt to import vulkan runtime with vulkan device of null "
+        "handle");
     return TI_NULL_HANDLE;
   }
   taichi::lang::vulkan::VulkanDevice::Params params{};
@@ -188,7 +194,8 @@ TiMemory ti_import_vulkan_memory(
     TiRuntime runtime,
     const TiVulkanMemoryInteropInfo *interop_info) {
   if (runtime == nullptr) {
-    TI_WARN("ignored attempt to import vulkan memory to runtime of null handle");
+    TI_WARN(
+        "ignored attempt to import vulkan memory to runtime of null handle");
     return TI_NULL_HANDLE;
   }
   Runtime *runtime2 = (Runtime *)runtime;
@@ -209,7 +216,8 @@ void ti_export_vulkan_memory(TiRuntime runtime,
                              TiMemory devmem,
                              TiVulkanMemoryInteropInfo *interop_info) {
   if (runtime == nullptr) {
-    TI_WARN("ignored attempt to export vulkan memory from runtime of null handle");
+    TI_WARN(
+        "ignored attempt to export vulkan memory from runtime of null handle");
     return;
   }
   if (devmem == nullptr) {

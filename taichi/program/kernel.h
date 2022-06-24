@@ -104,6 +104,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
    */
   void lower(bool to_executable = true);
 
+  void offload_to_executable(IRNode *stmt);
+
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();

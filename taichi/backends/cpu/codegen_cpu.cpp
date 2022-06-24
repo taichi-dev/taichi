@@ -231,6 +231,11 @@ std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;
+
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
+
   CodeGenLLVMCPU gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 

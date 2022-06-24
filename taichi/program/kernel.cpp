@@ -70,6 +70,21 @@ void Kernel::compile_to_aot_kernel() {
   compiled_aot_kernel_ = program->make_aot_kernel(*this);
 }
 
+void Kernel::offload_to_executable(IRNode *stmt) {
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+  irpass::offload_to_executable(
+      stmt, config, this, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
+      /*lower_global_access=*/true, /*make_block_local=*/config.make_thread_local,
+      /*make_block_local=*/is_extension_supported(config.arch, Extension::bls) &&
+                                                  config.make_block_local);
+}
+
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
   TI_ASSERT(supports_lowering(arch));

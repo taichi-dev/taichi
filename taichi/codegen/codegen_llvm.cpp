@@ -1,6 +1,7 @@
 #include "taichi/codegen/codegen_llvm.h"
 
 #include <algorithm>
+#include <taichi/system/timeline.h>
 
 #ifdef TI_WITH_LLVM
 
@@ -2340,35 +2341,30 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
-  bool needs_cache = false;
-  const auto &config = prog->config;
-  std::string kernel_key;
-  if (config.offline_cache && !config.async_mode &&
-      this->supports_offline_cache() && !kernel->is_evaluator) {
-    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
-    CompiledData res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
-    if (ok) {
-      return res;
-    }
-    needs_cache = true;
-  }
+//  bool needs_cache = false;
+//  const auto &config = prog->config;
+//  std::string kernel_key;
+//  if (config.offline_cache && !config.async_mode &&
+//      this->supports_offline_cache() && !kernel->is_evaluator) {
+//    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
+//    CompiledData res;
+//    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
+//    if (ok) {
+//      return res;
+//    }
+//    needs_cache = true;
+//  }
+  TI_TIMELINE(kernel_name);
+  // Final lowering
 
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/true);
-  }
-  //  auto block = dynamic_cast<Block *>(kernel->ir.get());
-  //  TI_ASSERT(block);
-  //
-  //  auto &offloads = block->statements;
-  //  for (auto &offload : offloads) {
-  //
-  //  }
+  auto config = kernel->program->config;
+  kernel->offload_to_executable(ir);
+
   emit_to_module();
   eliminate_unused_functions();
-  if (needs_cache) {
-    cache_module(kernel_key);
-  }
+//  if (needs_cache) {
+//    cache_module(kernel_key);
+//  }
   CompiledData res;
   res.offloaded_tasks = std::move(this->offloaded_tasks);
   res.llvm_module = std::move(this->module);

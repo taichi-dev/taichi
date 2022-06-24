@@ -101,6 +101,10 @@ endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 
+if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
+    set(TI_BUILD_EXAMPLES OFF)
+endif()
+
 if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
 endif()

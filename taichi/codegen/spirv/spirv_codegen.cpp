@@ -945,7 +945,8 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       int binding = binding_head_++;
-      val = ir_->texture_argument(4, 0, binding);
+      val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
+                                  /*set=*/0, binding);
       TextureBind bind;
       bind.arg_id = arg_id;
       bind.binding = binding;
@@ -958,14 +959,16 @@ class TaskCodegen : public IRVisitor {
 
   void visit(TextureOpStmt *stmt) override {
     spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
-    spirv::Value u = ir_->query_value(stmt->args[0]->raw_name());
-    spirv::Value v = ir_->query_value(stmt->args[1]->raw_name());
-    spirv::Value lod = ir_->query_value(stmt->args[2]->raw_name());
+    std::vector<spirv::Value> args;
+    for (int i = 0; i < stmt->args.size() - 1; i++) {
+      args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
+    }
+    spirv::Value lod = ir_->query_value(stmt->args.back()->raw_name());
     spirv::Value val;
     if (stmt->op == TextureOpType::sample_lod) {
-      val = ir_->sample_texture(tex, u, v, lod);
+      val = ir_->sample_texture(tex, args, lod);
     } else if (stmt->op == TextureOpType::fetch_texel) {
-      val = ir_->fetch_texel(tex, u, v, lod);
+      val = ir_->fetch_texel(tex, args, lod);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1314,7 +1317,6 @@ class TaskCodegen : public IRVisitor {
     spirv::Label body_label = ir_->new_label();
     spirv::Label continue_label = ir_->new_label();
     spirv::Label merge_label = ir_->new_label();
-    ir_->make_inst(spv::OpBranch, head_label);
 
     spirv::Value begin_ = ir_->query_value(for_stmt->begin->raw_name());
     spirv::Value end_ = ir_->query_value(for_stmt->end->raw_name());
@@ -1328,6 +1330,7 @@ class TaskCodegen : public IRVisitor {
       init_value = ir_->sub(end_, ir_->const_i32_one_);
       extent_value = begin_;
     }
+    ir_->make_inst(spv::OpBranch, head_label);
 
     // Loop head
     ir_->start_label(head_label);

@@ -31,3 +31,4 @@ jobs:
           ./run.sh
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_OPENGL:BOOL=ON

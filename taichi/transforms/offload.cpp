@@ -189,7 +189,8 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
-        if (snode_child->type == SNodeType::bit_array && for_stmt->bit_vectorize != 1) {
+        if (snode_child->type == SNodeType::bit_array &&
+            for_stmt->bit_vectorize != 1) {
           TI_ASSERT(i == path.size() - 1);
           continue;
         }

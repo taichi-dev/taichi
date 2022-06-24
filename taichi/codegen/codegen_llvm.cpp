@@ -1731,10 +1731,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   // For a bit-vectorized loop over a bit array, we generate struct for on its
   // parent node (must be "dense") instead of itself for higher performance.
   if (stmt->bit_vectorize != 1) {
-    if (leaf_block->type == SNodeType::bit_array && leaf_block->parent->type == SNodeType::dense) {
+    if (leaf_block->type == SNodeType::bit_array &&
+        leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {
-      TI_ERROR("A bit-vectorized struct-for must loop over a bit array with a dense parent");
+      TI_ERROR(
+          "A bit-vectorized struct-for must loop over a bit array with a dense "
+          "parent");
     }
   }
 
@@ -1870,8 +1873,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
     if (stmt->bit_vectorize != 1) {
-      refine = get_runtime_function(stmt->snode->refine_coordinates_func_name());
-      create_call(refine, {new_coordinates, new_coordinates, tlctx->get_constant(0)});
+      refine =
+          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      create_call(refine,
+                  {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }
 
     current_coordinates = new_coordinates;
@@ -1890,10 +1895,11 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                 leaf_block->extractors[j].num_elements_from_root)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
           exec_cond = builder->CreateAnd(
-              exec_cond, builder->CreateICmp(
-                             llvm::CmpInst::ICMP_SLT, coord,
-                             tlctx->get_constant(
-                                 leaf_block->extractors[j].num_elements_from_root)));
+              exec_cond,
+              builder->CreateICmp(
+                  llvm::CmpInst::ICMP_SLT, coord,
+                  tlctx->get_constant(
+                      leaf_block->extractors[j].num_elements_from_root)));
         }
       }
     }

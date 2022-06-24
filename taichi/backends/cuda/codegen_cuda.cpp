@@ -736,6 +736,10 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
+
   CodeGenLLVMCUDA gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 

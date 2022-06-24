@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/aot/module_builder.h"
-#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
 namespace taichi {

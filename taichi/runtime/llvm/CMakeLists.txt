@@ -1,0 +1,24 @@
+# ./taichi/runtime/llvm/CMakeLists.txt
+
+add_library(llvm_runtime)
+target_sources(llvm_runtime
+  PRIVATE
+    llvm_runtime_executor.cpp
+    llvm_offline_cache.cpp
+    llvm_context.cpp
+    llvm_aot_module_loader.cpp
+    llvm_aot_module_builder.cpp
+    launch_arg_info.cpp
+  )
+
+#TODO #4832, some path here should not be included as they are
+# dependencies of other targets.
+target_include_directories(llvm_runtime
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/external/eigen
+    ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
+  )
+
+target_link_libraries(llvm_runtime PRIVATE llvm_rhi)

@@ -1,6 +1,6 @@
 // A llvm backend helper
 
-#include "taichi/llvm/llvm_context.h"
+#include "taichi/runtime/llvm/llvm_context.h"
 
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/ADT/APFloat.h"
@@ -41,7 +41,7 @@
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...

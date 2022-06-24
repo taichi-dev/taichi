@@ -23,7 +23,8 @@ def _get_logging(name):
                 func(msg_formatted)
             else:
                 frame = inspect.currentframe().f_back
-                file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
+                file_name, lineno, func_name, _, _ = inspect.getframeinfo(
+                    frame)
                 file_name = os.path.basename(file_name)
                 msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
                 func(msg)

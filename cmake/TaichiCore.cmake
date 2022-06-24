@@ -95,6 +95,7 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
     "taichi/codegen/spirv/*" #CODEGEN
+    "taichi/codegen/llvm/*" #CODEGEN
     "taichi/common/*"
     "taichi/ir/*"
     "taichi/jit/*"
@@ -140,7 +141,7 @@ if(TI_WITH_GGUI)
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
-file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
+file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime_module/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 

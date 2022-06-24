@@ -21,9 +21,9 @@ namespace {
 
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/codegen/metal/shaders/ad_stack.metal.h"
-#include "taichi/codegen/metal/shaders/helpers.metal.h"
-#include "taichi/codegen/metal/shaders/init_randseeds.metal.h"
+#include "taichi/runtime/metal/shaders/ad_stack.metal.h"
+#include "taichi/runtime/metal/shaders/helpers.metal.h"
+#include "taichi/runtime/metal/shaders/init_randseeds.metal.h"
 #include "taichi/runtime/metal/shaders/print.metal.h"
 #include "taichi/runtime/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN

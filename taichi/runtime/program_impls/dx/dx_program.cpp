@@ -14,8 +14,9 @@ namespace directx11 {
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(gfx::run_codegen(kernel, runtime->get_ti_device(),
-                                 snode_tree_mgr->get_compiled_structs()));
+  auto handle = runtime->register_taichi_kernel(
+      gfx::run_codegen(kernel, runtime->get_ti_device(),
+                       snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };

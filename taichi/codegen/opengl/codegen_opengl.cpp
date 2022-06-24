@@ -30,12 +30,12 @@ namespace shaders {
   _(arr7)
 
 #define TI_INSIDE_OPENGL_CODEGEN
-#include "taichi/codegen/opengl/shaders/atomics_macro_f32.glsl.h"
+#include "taichi/runtime/opengl/shaders/atomics_macro_f32.glsl.h"
 #include "taichi/runtime/opengl/shaders/runtime.h"
-#include "taichi/codegen/opengl/shaders/random.glsl.h"
-#include "taichi/codegen/opengl/shaders/fast_pow.glsl.h"
-#include "taichi/codegen/opengl/shaders/print.glsl.h"
-#include "taichi/codegen/opengl/shaders/reduction.glsl.h"
+#include "taichi/runtime/opengl/shaders/random.glsl.h"
+#include "taichi/runtime/opengl/shaders/fast_pow.glsl.h"
+#include "taichi/runtime/opengl/shaders/print.glsl.h"
+#include "taichi/runtime/opengl/shaders/reduction.glsl.h"
 
 GENERATE_OPENGL_ATOMIC_F32(data);
 GENERATE_OPENGL_ATOMIC_F32(gtmp);

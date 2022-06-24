@@ -1,4 +1,4 @@
-#include "taichi/backends/wasm/codegen_wasm.h"
+#include "taichi/codegen/wasm/codegen_wasm.h"
 
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/common/core.h"

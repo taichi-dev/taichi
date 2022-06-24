@@ -573,7 +573,8 @@ void export_lang(py::module &m) {
 
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
-      .def("from_ndarray", &Texture::from_ndarray);
+      .def("from_ndarray", &Texture::from_ndarray)
+      .def("from_snode", &Texture::from_snode);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
@@ -863,7 +864,7 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

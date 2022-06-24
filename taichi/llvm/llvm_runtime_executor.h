@@ -80,7 +80,9 @@ class LlvmRuntimeExecutor {
   void prepare_runtime_context(RuntimeContext *ctx);
 
   template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+  T runtime_query(const std::string &key,
+                  uint64 *result_buffer,
+                  Args &&...args) {
     TI_ASSERT(arch_uses_llvm(config_->arch));
 
     TaichiLLVMContext *tlctx = nullptr;
@@ -91,8 +93,8 @@ class LlvmRuntimeExecutor {
     }
 
     auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime_,
-                                   std::forward<Args>(args)...);
+    runtime->call<void *>("runtime_" + key, llvm_runtime_,
+                          std::forward<Args>(args)...);
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
   }

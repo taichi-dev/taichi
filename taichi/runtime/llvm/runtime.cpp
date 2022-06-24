@@ -1821,7 +1821,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
   void set_mask_b##N(u##N *ptr, u64 mask, u##N value) {                       \
     u##N mask_N = (u##N)mask;                                                 \
-    *ptr = (*ptr & (~mask_N)) | value;                                        \
+    *ptr = (*ptr & (~mask_N)) | (value & mask);                               \
   }                                                                           \
                                                                               \
   void atomic_set_mask_b##N(u##N *ptr, u64 mask, u##N value) {                \
@@ -1830,7 +1830,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
       old_value = *ptr;                                                       \
-      new_value = (old_value & (~mask_N)) | value;                            \
+      new_value = (old_value & (~mask_N)) | (value & mask);                   \
     } while (                                                                 \
         !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
                                    std::memory_order::memory_order_seq_cst,   \

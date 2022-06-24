@@ -1,4 +1,4 @@
-#include "taichi/backends/dx/dx_api.h"
+#include "taichi/runtime/dx/dx_api.h"
 
 namespace taichi {
 namespace lang {

@@ -43,13 +43,18 @@ def paint():
         img[scatter(i), scatter(j)] = 1 - t / 4
 
 
-img.fill(0.05)
+def main():
+    img.fill(0.05)
 
-gui = ti.GUI('Sparse Grids', (res, res))
+    gui = ti.GUI('Sparse Grids', (res, res))
 
-for i in range(100000):
-    block1.deactivate_all()
-    activate(i * 0.05)
-    paint()
-    gui.set_image(img)
-    gui.show()
+    for i in range(100000):
+        block1.deactivate_all()
+        activate(i * 0.05)
+        paint()
+        gui.set_image(img)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

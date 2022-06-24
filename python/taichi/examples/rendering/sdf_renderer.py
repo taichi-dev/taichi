@@ -151,15 +151,20 @@ def render():
         color_buffer[u, v] += throughput * hit_light
 
 
-gui = ti.GUI('SDF Path Tracer', res)
-last_t = 0
-for i in range(50000):
-    render()
-    interval = 10
-    if i % interval == 0 and i > 0:
-        print("{:.2f} samples/s".format(interval / (time.time() - last_t)))
-        last_t = time.time()
-        img = color_buffer.to_numpy() * (1 / (i + 1))
-        img = img / img.mean() * 0.24
-        gui.set_image(np.sqrt(img))
-        gui.show()
+def main():
+    gui = ti.GUI('SDF Path Tracer', res)
+    last_t = 0
+    for i in range(50000):
+        render()
+        interval = 10
+        if i % interval == 0 and i > 0:
+            print(f"{interval / (time.time() - last_t):.2f} samples/s")
+            last_t = time.time()
+            img = color_buffer.to_numpy() * (1 / (i + 1))
+            img = img / img.mean() * 0.24
+            gui.set_image(np.sqrt(img))
+            gui.show()
+
+
+if __name__ == '__main__':
+    main()

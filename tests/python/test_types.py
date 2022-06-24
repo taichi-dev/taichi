@@ -137,6 +137,23 @@ def test_overflow64(dt, n):
     _test_overflow(dt, n)
 
 
+@test_utils.test(arch=ti.cpu, debug=True)
+def test_range_for_boundary_overflow():
+
+    x = ti.field(ti.i64, shape=(1))
+    m = 30000000000  # m > MAX_INT32
+
+    @ti.kernel
+    def calc():
+        for i in range(ti.i64(m)):
+            x[0] += 1
+
+    with pytest.raises(
+            ti.TaichiAssertionError,
+            match=r"Detected arithmatic overflow in range_for boundaries"):
+        calc()
+
+
 @pytest.mark.parametrize('dt,val', [
     (ti.u32, 0xffffffff),
     (ti.u64, 0xffffffffffffffff),

@@ -24,6 +24,16 @@ else:
     from ast import unparse
 
 
+def range_for_boundary_overflow_check(ctx, boundary_expr):
+    int32_max = int(0x7fffffff)
+    if boundary_expr.ptr.get_ret_type() == primitive_types.i64:
+        # Insert Overflow/Underflow Check
+        cond = ti_ops.cmp_le(boundary_expr,
+                             expr.Expr(int32_max))  # i64 <= MAX_INT32
+        msg = "Detected arithmatic overflow in range_for boundaries: %d > MAX_INT32"
+        ctx.ast_builder.create_assert_stmt(cond.ptr, msg, [boundary_expr.ptr])
+
+
 class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
@@ -796,18 +806,20 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
+
             if len(node.iter.args) == 2:
-                begin = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[1])),
-                    primitive_types.i32)
+                begin_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[1]))
+                range_for_boundary_overflow_check(ctx, begin_expr)
+                range_for_boundary_overflow_check(ctx, end_expr)
+                begin = ti_ops.cast(begin_expr, primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
             else:
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+                range_for_boundary_overflow_check(ctx, end_expr)
+
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             build_stmts(ctx, node.body)

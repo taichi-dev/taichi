@@ -27,6 +27,7 @@ jobs:
           rm -rf performance-monitoring
           git clone git@github.com:taichi-dev/performance-monitoring.git
           cd performance-monitoring
+          export CXX=clang
           export WORKFLOW_MODE=postsubmit
           ./run.sh
         env:

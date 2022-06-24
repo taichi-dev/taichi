@@ -34,7 +34,9 @@ std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
       new LlvmOfflineCacheFileReader(path, std::move(data), format));
 }
 
-bool LlvmOfflineCacheFileReader::load_meta_data(LlvmOfflineCache &data, const std::string &cache_file_path) {
+bool LlvmOfflineCacheFileReader::load_meta_data(
+    LlvmOfflineCache &data,
+    const std::string &cache_file_path) {
   std::stringstream tcb_ss;
   tcb_ss << cache_file_path << "/" << kMetadataFilename << ".tcb";
   const auto tcb_path = tcb_ss.str();

@@ -14,3 +14,5 @@ target_include_directories(opengl_codegen
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${LLVM_INCLUDE_DIRS}
   )
+
+target_link_libraries(opengl_codegen PRIVATE opengl_runtime)

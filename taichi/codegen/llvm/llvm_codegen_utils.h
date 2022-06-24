@@ -34,7 +34,7 @@
 #include <utility>
 #include <vector>
 
-#include "llvm_context.h"
+#include "taichi/runtime/llvm/llvm_context.h"
 
 namespace taichi {
 namespace lang {

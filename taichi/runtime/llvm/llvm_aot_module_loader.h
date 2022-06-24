@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/aot/module_loader.h"
-#include "taichi/runtime/program_imps/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi {
 namespace lang {

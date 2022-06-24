@@ -6,7 +6,6 @@ target_sources(llvm_codegen
     codegen_llvm.cpp
     codegen_llvm_quant.cpp
     llvm_codegen_utils.cpp
-    snode_tree_buffer_manager.cpp
     struct_llvm.cpp
   )
 

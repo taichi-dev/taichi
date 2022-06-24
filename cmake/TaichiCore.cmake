@@ -95,7 +95,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
     "taichi/codegen/spirv/*" #CODEGEN
-    "taichi/codegen/llvm/*" #CODEGEN
     "taichi/common/*"
     "taichi/ir/*"
     "taichi/jit/*"
@@ -304,16 +303,13 @@ if(TI_WITH_LLVM)
             ipo
             Analysis
             )
-    target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_libs})
 
     if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
         llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
-        target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_aarch64_libs})
     endif()
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
-        target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_ptx_libs})
     endif()
 
     add_subdirectory(taichi/backends/llvm)

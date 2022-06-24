@@ -9,6 +9,7 @@ target_sources(llvm_runtime
     llvm_aot_module_loader.cpp
     llvm_aot_module_builder.cpp
     launch_arg_info.cpp
+    snode_tree_buffer_manager.cpp
   )
 
 #TODO #4832, some path here should not be included as they are
@@ -22,3 +23,13 @@ target_include_directories(llvm_runtime
   )
 
 target_link_libraries(llvm_runtime PRIVATE llvm_rhi)
+target_link_libraries(llvm_runtime PRIVATE ${llvm_libs})
+
+
+if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
+    target_link_libraries(llvm_runtime PRIVATE ${llvm_aarch64_libs})
+endif()
+
+if (TI_WITH_CUDA)
+    target_link_libraries(llvm_runtime PRIVATE ${llvm_ptx_libs})
+endif()

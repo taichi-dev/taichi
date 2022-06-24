@@ -2,16 +2,6 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi/program/ndarray.h"
 
-namespace {
-
-taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
-                                               TiMemory devmem) {
-  return taichi::lang::DeviceAllocation{
-      &runtime.get(), (taichi::lang::DeviceAllocationId)((size_t)devmem)};
-}
-
-}  // namespace
-
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
 }
 Runtime::~Runtime() {
@@ -59,16 +49,26 @@ TiRuntime ti_create_runtime(TiArch arch) {
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
 #endif  // TI_WITH_VULKAN
     default:
-      TI_ASSERT(false);
+      TI_WARN("ignored attempt to create runtime on unknown arch");
+      return TI_NULL_HANDLE;
   }
-  return nullptr;
+  return TI_NULL_HANDLE;
 }
 void ti_destroy_runtime(TiRuntime runtime) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to destroy runtime of null handle");
+    return;
+  }
   delete (Runtime *)runtime;
 }
 
 TiMemory ti_allocate_memory(TiRuntime runtime,
                             const TiMemoryAllocateInfo *createInfo) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to allocate memory on runtime of null handle");
+    return TI_NULL_HANDLE;
+  }
+
   taichi::lang::AllocUsage usage{};
   if (createInfo->usage & TI_MEMORY_USAGE_STORAGE_BIT) {
     usage = usage | taichi::lang::AllocUsage::Storage;
@@ -89,35 +89,82 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.host_read = createInfo->host_read;
   params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
-  size_t alloc_id =
-      ((Runtime *)runtime)->get().allocate_memory(params).alloc_id;
-  return (TiMemory)alloc_id;
+  taichi::lang::DeviceAllocation devalloc =
+      ((Runtime *)runtime)->get().allocate_memory(params);
+  return devalloc2devmem(devalloc);
 }
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to free memory on runtime of null handle");
+    return;
+  }
+  if (devmem == nullptr) {
+    TI_WARN("ignored attempt to free memory of null handle");
+    return;
+  }
+
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().dealloc_memory(devmem2devalloc(*runtime2, devmem));
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to map memory on runtime of null handle");
+    return nullptr;
+  }
+  if (devmem == nullptr) {
+    TI_WARN("ignored attempt to map memory of null handle");
+    return nullptr;
+  }
   Runtime *runtime2 = (Runtime *)runtime;
   return runtime2->get().map(devmem2devalloc(*runtime2, devmem));
 }
 void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to unmap memory on runtime of null handle");
+    return;
+  }
+  if (devmem == nullptr) {
+    TI_WARN("ignored attempt to unmap memory of null handle");
+    return;
+  }
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
 TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to load aot module on runtime of null handle");
+    return TI_NULL_HANDLE;
+  }
+  if (module_path == nullptr) {
+    TI_WARN("ignored attempt to load aot module with null path");
+    return TI_NULL_HANDLE;
+  }
+
   return ((Runtime *)runtime)->load_aot_module(module_path);
 }
 void ti_destroy_aot_module(TiAotModule mod) {
+  if (mod == nullptr) {
+    TI_WARN("ignored attempt to destroy aot module of null handle");
+    return;
+  }
+
   delete (AotModule *)mod;
 }
 TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
+  if (mod == nullptr) {
+    TI_WARN("ignored attempt to get kernel from aot module of null handle");
+    return TI_NULL_HANDLE;
+  }
   return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
 }
 TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
                                                const char *name) {
+  if (mod == nullptr) {
+    TI_WARN("ignored attempt to get compute graph from aot module of null handle");
+    return TI_NULL_HANDLE;
+  }
   AotModule *aot_module = ((AotModule *)mod);
   return (TiComputeGraph)&aot_module->get_cgraph(name);
 }
@@ -126,6 +173,15 @@ void ti_launch_kernel(TiRuntime runtime,
                       TiKernel kernel,
                       uint32_t arg_count,
                       const TiArgument *args) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to launch kernel on runtime of null handle");
+    return;
+  }
+  if (kernel == nullptr) {
+    TI_WARN("ignored attempt to launch kernel of null handle");
+    return;
+  }
+
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
 
@@ -143,6 +199,10 @@ void ti_launch_kernel(TiRuntime runtime,
       case TI_ARGUMENT_TYPE_NDARRAY: {
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.value.ndarray.memory);
+        if (devalloc.alloc_id + 1 == 0) {
+          TI_WARN("ignored attempt to launch kernel with ndarray memory of null handle");
+          return;
+        }
         const TiNdArray &ndarray = arg.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,
@@ -170,6 +230,15 @@ void ti_launch_compute_graph(TiRuntime runtime,
                              TiComputeGraph compute_graph,
                              uint32_t arg_count,
                              const TiNamedArgument *args) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to launch compute graph on runtime of null handle");
+    return;
+  }
+  if (compute_graph == nullptr) {
+    TI_WARN("ignored attempt to launch compute graph of null handle");
+    return;
+  }
+
   Runtime &runtime2 = *((Runtime *)runtime);
   std::unordered_map<std::string, taichi::lang::aot::IValue> arg_map{};
   std::vector<taichi::lang::Ndarray> ndarrays{};
@@ -192,6 +261,10 @@ void ti_launch_compute_graph(TiRuntime runtime,
       case TI_ARGUMENT_TYPE_NDARRAY: {
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.argument.value.ndarray.memory);
+        if (devalloc.alloc_id + 1 == 0) {
+          TI_WARN("ignored attempt to launch kernel with ndarray memory of null handle");
+          return;
+        }
         const TiNdArray &ndarray = arg.argument.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,
@@ -210,8 +283,18 @@ void ti_launch_compute_graph(TiRuntime runtime,
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
 void ti_submit(TiRuntime runtime) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to submit to runtime of null handle");
+    return;
+  }
+
   ((Runtime *)runtime)->submit();
 }
 void ti_wait(TiRuntime runtime) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to wait on runtime of null handle");
+    return;
+  }
+
   ((Runtime *)runtime)->wait();
 }

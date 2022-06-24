@@ -143,7 +143,7 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
     LlvmOfflineCacheFileWriter writer{};
     writer.set_data(std::move(cache_data_));
     // Note: For offline-cache, new-metadata should be merged with old-metadata
-    writer.dump(config->offline_cache_file_path, true);
+    writer.dump(config->offline_cache_file_path, LlvmOfflineCache::LL, true);
   }
 }
 

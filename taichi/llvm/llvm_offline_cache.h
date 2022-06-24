@@ -139,8 +139,9 @@ class LlvmOfflineCacheFileWriter {
     data_.kernels[key] = std::move(kernel_cache);
   }
 
-  void dump(const std::string &path, bool merge_with_old = false,
-            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+  void dump(const std::string &path,
+            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL,
+            bool merge_with_old = false);
 
   void set_no_mangle() {
     mangled_ = true;

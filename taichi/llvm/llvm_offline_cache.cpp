@@ -117,8 +117,8 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
   return nullptr;
 }
 
-void LlvmOfflineCacheFileWriter::dump(const std::string &path, bool merge_with_old,
-                                      LlvmOfflineCache::Format format) {
+void LlvmOfflineCacheFileWriter::dump(const std::string &path,
+                                      LlvmOfflineCache::Format format, bool merge_with_old) {
   taichi::create_directories(path);
   for (auto &[k, v] : data_.kernels) {
     std::stringstream filename_ss;

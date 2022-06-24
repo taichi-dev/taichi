@@ -80,9 +80,11 @@ void Kernel::offload_to_executable(IRNode *stmt) {
   irpass::offload_to_executable(
       stmt, config, this, verbose,
       /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
-      /*lower_global_access=*/true, /*make_block_local=*/config.make_thread_local,
-      /*make_block_local=*/is_extension_supported(config.arch, Extension::bls) &&
-                                                  config.make_block_local);
+      /*lower_global_access=*/true,
+      /*make_block_local=*/config.make_thread_local,
+      /*make_block_local=*/
+          is_extension_supported(config.arch, Extension::bls) &&
+          config.make_block_local);
 }
 
 void Kernel::lower(bool to_executable) {

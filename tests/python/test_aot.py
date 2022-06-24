@@ -33,30 +33,6 @@ def test_record():
         with open(recorded_file, 'r') as f:
             assert 'compute_loss' in ''.join(f.readlines())
 
-
-@test_utils.test(arch=ti.opengl, max_block_dim=32)
-def test_opengl_max_block_dim():
-    density = ti.field(float, shape=(8, 8))
-
-    @ti.kernel
-    def init():
-        for i, j in density:
-            density[i, j] = 1
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
-        m.add_field('density', density)
-        m.add_kernel(init)
-        m.save(tmpdir, '')
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
-            res = json.load(json_file)
-            gl_file_path = res['aot_data']['kernels']['init']['tasks'][0][
-                'source_path']
-            with open(gl_file_path) as gl_file:
-                s = 'layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n'
-                assert s in gl_file.readlines()
-
-
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_field_range_hint():
     density = ti.field(float, shape=(8, 8))
@@ -102,47 +78,6 @@ def test_aot_bind_id():
                     assert buffer_bind['binding'] != -1
                 elif buffer_bind['buffer']['type'] == 2:  # Rets
                     assert buffer_bind['binding'] != -1
-
-
-@test_utils.test(arch=ti.opengl)
-def test_aot_ndarray_range_hint():
-    density = ti.ndarray(dtype=ti.f32, shape=(8, 8))
-
-    @ti.kernel
-    def init(density: ti.types.ndarray()):
-        for i, j in density:
-            density[i, j] = 1
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
-        m.add_kernel(init, template_args={'density': density})
-        m.save(tmpdir, '')
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
-            res = json.load(json_file)
-            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
-                'range_hint']
-            assert range_hint == 'arg 0'
-
-
-@test_utils.test(arch=ti.opengl)
-def test_element_size_alignment():
-    a = ti.field(ti.f32, shape=())
-    b = ti.Matrix.field(2, 3, ti.f32, shape=(2, 4))
-    c = ti.field(ti.i32, shape=())
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        s = ti.aot.Module(ti.lang.impl.current_cfg().arch)
-        s.add_field('a', a)
-        s.add_field('b', b)
-        s.add_field('c', c)
-        s.save(tmpdir, '')
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
-            res = json.load(json_file)
-            offsets = (res['aot_data']['fields'][0]['mem_offset_in_parent'],
-                       res['aot_data']['fields'][1]['mem_offset_in_parent'],
-                       res['aot_data']['fields'][2]['mem_offset_in_parent'])
-            assert 0 in offsets and 4 in offsets and 24 in offsets
-            assert res['aot_data']['root_buffer_size'] == 216
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

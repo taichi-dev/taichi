@@ -2018,17 +2018,17 @@ class TaskCodegen : public IRVisitor {
     // Now we only have one ret
     TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
+      // Use array size = 0 to generate a RuntimeArray
       if (auto tensor_type =
               PrimitiveType::get(ret.dtype)->cast<TensorType>()) {
         struct_components_.emplace_back(
             ir_->get_array_type(
-                ir_->get_primitive_type(tensor_type->get_element_type()),
-                tensor_type->get_num_elements()),
+                ir_->get_primitive_type(tensor_type->get_element_type()), 0),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
         struct_components_.emplace_back(
             ir_->get_array_type(
-                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 1),
+                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 0),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       }
     }

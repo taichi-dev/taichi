@@ -254,6 +254,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     spirv_cross::CompilerGLSL::Options options;
     options.es = is_gles();
     options.vulkan_semantics = false;
+    options.enable_420pack_extension = true;
     glsl.set_common_options(options);
     std::string source = glsl.compile();
     TI_TRACE("GLSL source: \n{}", source);
@@ -712,6 +713,7 @@ void GLCommandList::CmdBindPipeline::execute() {
 }
 
 void GLCommandList::CmdBindBufferToIndex::execute() {
+  check_opengl_error("before");
   glBindBufferBase(target, index, buffer);
   check_opengl_error("glBindBufferBase");
 }
@@ -740,6 +742,7 @@ void GLCommandList::CmdBufferFill::execute() {
   check_opengl_error("glBindBuffer");
   int buf_size = 0;
   glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
+  check_opengl_error("glGetBufferParameteriv");
   if (is_gles()) {
     TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
               "GLES only supports full clear");
@@ -751,7 +754,6 @@ void GLCommandList::CmdBufferFill::execute() {
                          GL_RED, GL_FLOAT, &data);
     check_opengl_error("glClearBufferSubData");
   }
-  check_opengl_error("glBufferData");
 }
 
 void GLCommandList::CmdDispatch::execute() {

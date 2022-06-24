@@ -497,7 +497,7 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   } else if (params.host_read && params.host_write) {
     target_hint = GL_COPY_READ_BUFFER;
   }
-  
+
   GLuint buffer;
   glGenBuffers(1, &buffer);
   check_opengl_error("glGenBuffers");

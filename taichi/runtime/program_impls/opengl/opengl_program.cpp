@@ -27,15 +27,15 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
 }
 
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
-                                      OffloadedStmt *offloaded) {
+                                        OffloadedStmt *offloaded) {
   spirv::lower(kernel);
   return opengl::compile_to_executable(kernel, runtime_.get(),
-                                          snode_tree_mgr_.get());
+                                       snode_tree_mgr_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                          KernelProfilerBase *profiler,
-                                          uint64 **result_buffer_ptr) {
+                                            KernelProfilerBase *profiler,
+                                            uint64 **result_buffer_ptr) {
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
@@ -59,7 +59,7 @@ void OpenglProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
 }
 
 void OpenglProgramImpl::materialize_snode_tree(SNodeTree *tree,
-                                             uint64 *result_buffer) {
+                                               uint64 *result_buffer) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 

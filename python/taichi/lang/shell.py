@@ -37,6 +37,8 @@ def _shell_pop_print(old_call):
         ret = old_call(*args, **kwargs)
         # print's in kernel won't take effect until ti.sync(), discussion:
         # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
+        # in jupyter environment calling print in kernel is redirected to terminal,
+        # calling info to print an empty string fixes this, I don't know exactly why :P
         info("", end="\r", msg_only=True)
         print(_ti_core.pop_python_print_buffer(), end='')
         return ret

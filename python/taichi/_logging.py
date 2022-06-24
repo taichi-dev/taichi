@@ -21,12 +21,12 @@ def _get_logging(name):
             func = getattr(ti_core, name)
             if kwargs.get('msg_only', False):
                 func(msg_formatted)
-            else:
-                frame = inspect.currentframe().f_back
-                file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
-                file_name = os.path.basename(file_name)
-                msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
-                func(msg)
+                return
+            frame = inspect.currentframe().f_back
+            file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
+            file_name = os.path.basename(file_name)
+            msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
+            func(msg)
 
     return logger
 

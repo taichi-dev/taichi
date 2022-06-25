@@ -83,6 +83,7 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
 
 Ndarray::~Ndarray() {
   if (prog_) {
+    prog_->flush();
     ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);
   }
 }

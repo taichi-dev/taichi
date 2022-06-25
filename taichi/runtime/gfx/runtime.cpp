@@ -450,7 +450,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
             if (host_read) {
               auto allocated = device_->allocate_memory_unique(
                   {ext_array_size[i], false, true,
-                   /*export_sharing=*/false, AllocUsage::Transfer});
+                   /*export_sharing=*/false, AllocUsage::None});
               any_array_shadows[i] = *allocated.get();
               allocated_buffers.push_back(std::move(allocated));
             }

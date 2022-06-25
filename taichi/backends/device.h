@@ -385,7 +385,7 @@ struct PipelineSourceDesc {
 
 // FIXME: this probably isn't backend-neutral enough
 enum class AllocUsage : int {
-  Transfer = 0,
+  None = 0,
   Storage = 1,
   Uniform = 2,
   Vertex = 4,

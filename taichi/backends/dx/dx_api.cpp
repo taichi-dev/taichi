@@ -14,7 +14,7 @@ bool is_dx_api_available() {
 }
 
 std::shared_ptr<Device> make_dx11_device() {
-  std::make_shared<directx11::Dx11Device>();
+  return std::make_shared<directx11::Dx11Device>();
 }
 
 }  // namespace directx11

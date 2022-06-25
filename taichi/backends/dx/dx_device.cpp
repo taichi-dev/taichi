@@ -514,7 +514,7 @@ Dx11Device::Dx11Device() {
   }
   set_cap(DeviceCapability::spirv_version, 0x10300);
 
-  stream_ = new Dx11Stream(this);
+  stream_ = std::make_unique<Dx11Stream>(this);
 }
 
 Dx11Device::~Dx11Device() {
@@ -761,7 +761,7 @@ void Dx11Device::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
 }
 
 Stream *Dx11Device::get_compute_stream() {
-  return stream_;
+  return stream_.get();
 }
 
 std::unique_ptr<Pipeline> Dx11Device::create_raster_pipeline(

@@ -79,10 +79,12 @@ class Dx11Pipeline : public Pipeline {
   }
 
  private:
-  Dx11Device *device_{};  // Can't use shared_ptr b/c this can cause device_ to
-                          // be deallocated pre-maturely
-  ID3D11ComputeShader *compute_shader_{};
-  Dx11ResourceBinder binder_{};
+  // Can't use shared_ptr b/c this can cause device_ to be deallocated
+  // pre-maturely
+  Dx11Device *device_{nullptr};  
+                          
+  ID3D11ComputeShader *compute_shader_{nullptr};
+  Dx11ResourceBinder binder_;
   std::string name_;
 };
 
@@ -101,7 +103,7 @@ class Dx11Stream : public Stream {
   void command_sync() override;
 
  private:
-  Dx11Device *device_;
+  Dx11Device *device_{nullptr};
 };
 
 class Dx11CommandList : public CommandList {
@@ -158,7 +160,7 @@ class Dx11CommandList : public CommandList {
 
   std::vector<ID3D11Buffer *> used_spv_workgroup_cb;
 
-  Dx11Device *device_;
+  Dx11Device *device_{nullptr};
   int cb_slot_watermark_{-1};
 };
 
@@ -232,9 +234,9 @@ class Dx11Device : public GraphicsDevice {
  private:
   void create_dx11_device();
   void destroy_dx11_device();
-  ID3D11Device *device_{};
-  ID3D11DeviceContext *context_{};
-  std::unique_ptr<Dx11InfoQueue> info_queue_{};
+  ID3D11Device *device_{nullptr};
+  ID3D11DeviceContext *context_{nullptr};
+  std::unique_ptr<Dx11InfoQueue> info_queue_{nullptr};
 
   struct BufferTuple {
     ID3D11Buffer *raw_buffer{nullptr};
@@ -287,11 +289,8 @@ class Dx11Device : public GraphicsDevice {
 
   std::unordered_map<uint32_t, BufferTuple>
       alloc_id_to_buffer_;
-  int alloc_serial_;
-  Dx11Stream *stream_;
-
-  // temporary debug use
-  std::unordered_map<uint32_t, void *> mapped_;
+  int alloc_serial_{0};
+  std::unique_ptr<Dx11Stream> stream_;
 };
 
 }  // namespace directx11

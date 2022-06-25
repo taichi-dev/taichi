@@ -81,8 +81,8 @@ class Dx11Pipeline : public Pipeline {
  private:
   // Can't use shared_ptr b/c this can cause device_ to be deallocated
   // pre-maturely
-  Dx11Device *device_{nullptr};  
-                          
+  Dx11Device *device_{nullptr};
+
   ID3D11ComputeShader *compute_shader_{nullptr};
   Dx11ResourceBinder binder_;
   std::string name_;
@@ -213,11 +213,11 @@ class Dx11Device : public GraphicsDevice {
   ID3D11Buffer *alloc_id_to_buffer(ID3D11DeviceContext *context,
                                    uint32_t alloc_id);
   ID3D11Buffer *alloc_id_to_staging_buffer(ID3D11DeviceContext *context,
-                                            uint32_t alloc_id);
+                                           uint32_t alloc_id);
   ID3D11UnorderedAccessView *alloc_id_to_uav(ID3D11DeviceContext *context,
                                              uint32_t alloc_id);
   ID3D11Buffer *alloc_id_to_cb_buffer(ID3D11DeviceContext *context,
-                                        uint32_t alloc_id);
+                                      uint32_t alloc_id);
 
   ID3D11Device *d3d11_device() {
     return device_;
@@ -265,7 +265,8 @@ class Dx11Device : public GraphicsDevice {
 
     void clear_derived();
 
-    ID3D11Buffer *get_raw_buffer(ID3D11DeviceContext *context, ID3D11Device *device);
+    ID3D11Buffer *get_raw_buffer(ID3D11DeviceContext *context,
+                                 ID3D11Device *device);
     ID3D11Buffer *get_dynamic_constants(ID3D11DeviceContext *context,
                                         ID3D11Device *device);
     ID3D11Buffer *get_staging(ID3D11DeviceContext *context,
@@ -287,8 +288,7 @@ class Dx11Device : public GraphicsDevice {
                                        ID3D11Device *device);
   };
 
-  std::unordered_map<uint32_t, BufferTuple>
-      alloc_id_to_buffer_;
+  std::unordered_map<uint32_t, BufferTuple> alloc_id_to_buffer_;
   int alloc_serial_{0};
   std::unique_ptr<Dx11Stream> stream_;
 };

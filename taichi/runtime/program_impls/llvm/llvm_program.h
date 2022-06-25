@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <memory>
 
-#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/program/compile_config.h"
-#include "taichi/llvm/llvm_runtime_executor.h"
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
 
@@ -167,7 +167,9 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+  T runtime_query(const std::string &key,
+                  uint64 *result_buffer,
+                  Args &&...args) {
     return runtime_exec_->runtime_query<T>(key, result_buffer,
                                            std::forward<Args>(args)...);
   }

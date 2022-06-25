@@ -98,7 +98,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/common/*"
     "taichi/ir/*"
     "taichi/jit/*"
-    "taichi/llvm/*"
     "taichi/math/*"
     "taichi/program/*"
     "taichi/struct/*"
@@ -114,7 +113,6 @@ file(GLOB TAICHI_CORE_SOURCE
 
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
-
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
@@ -140,7 +138,7 @@ if(TI_WITH_GGUI)
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
-file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
+file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime_module/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 if(TI_WITH_LLVM)
@@ -288,17 +286,24 @@ if(TI_WITH_LLVM)
             ipo
             Analysis
             )
-    target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_libs})
 
     if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
         llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
-        target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_aarch64_libs})
     endif()
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
-        target_link_libraries(${LIBRARY_NAME} PRIVATE ${llvm_ptx_libs})
     endif()
+
+    add_subdirectory(taichi/backends/llvm)
+    add_subdirectory(taichi/codegen/llvm)
+    add_subdirectory(taichi/runtime/llvm)
+    add_subdirectory(taichi/runtime/program_impls/llvm)
+
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_rhi)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
 
     add_subdirectory(taichi/codegen/wasm)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_codegen)

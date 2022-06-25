@@ -5,7 +5,7 @@
 #include "llvm/IR/Module.h"
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
-#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
 

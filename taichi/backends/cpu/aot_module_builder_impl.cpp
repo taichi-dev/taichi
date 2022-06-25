@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "taichi/backends/cpu/codegen_cpu.h"
-#include "taichi/llvm/launch_arg_info.h"
+#include "taichi/runtime/llvm/launch_arg_info.h"
 
 namespace taichi {
 namespace lang {

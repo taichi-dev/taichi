@@ -1,10 +1,10 @@
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 #include "llvm/IR/Module.h"
 
 #include "taichi/program/program.h"
-#include "taichi/llvm/struct_llvm.h"
-#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/backends/cpu/aot_module_builder_impl.h"
 

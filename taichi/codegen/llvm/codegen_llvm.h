@@ -7,8 +7,8 @@
 #ifdef TI_WITH_LLVM
 
 #include "taichi/ir/ir.h"
-#include "taichi/llvm/launch_arg_info.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/runtime/llvm/launch_arg_info.h"
+#include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/program/program.h"
 
 namespace taichi {

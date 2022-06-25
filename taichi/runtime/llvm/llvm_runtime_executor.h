@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <memory>
 
-#include "taichi/llvm/llvm_device.h"
-#include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/llvm/snode_tree_buffer_manager.h"
-#include "taichi/llvm/llvm_context.h"
+#include "taichi/backends/llvm/llvm_device.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/snode_tree_buffer_manager.h"
+#include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/compile_config.h"
 
@@ -80,7 +80,9 @@ class LlvmRuntimeExecutor {
   void prepare_runtime_context(RuntimeContext *ctx);
 
   template <typename T, typename... Args>
-  T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
+  T runtime_query(const std::string &key,
+                  uint64 *result_buffer,
+                  Args &&...args) {
     TI_ASSERT(arch_uses_llvm(config_->arch));
 
     TaichiLLVMContext *tlctx = nullptr;
@@ -91,8 +93,8 @@ class LlvmRuntimeExecutor {
     }
 
     auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime_,
-                                   std::forward<Args>(args)...);
+    runtime->call<void *>("runtime_" + key, llvm_runtime_,
+                          std::forward<Args>(args)...);
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
   }

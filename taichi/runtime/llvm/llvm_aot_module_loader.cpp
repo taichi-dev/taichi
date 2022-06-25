@@ -1,4 +1,4 @@
-#include "taichi/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 
 namespace taichi {
 namespace lang {

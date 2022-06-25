@@ -99,6 +99,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const ForLoopConfig &config)
     : begin(begin),
       end(end),
+      reversed(config.reversed),
       bit_vectorize(config.bit_vectorize),
       num_cpu_threads(config.num_cpu_threads),
       strictly_serialized(config.strictly_serialized),
@@ -961,7 +962,9 @@ void ASTBuilder::create_assert_stmt(const Expr &cond,
 
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
-                                          const Expr &e) {
+                                          const Expr &e,
+                                          bool reversed) {
+  for_loop_dec_.config.reversed = reversed;
   auto stmt_unique =
       std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
   auto stmt = stmt_unique.get();

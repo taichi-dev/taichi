@@ -766,8 +766,8 @@ class ConstStmt : public Stmt {
 class RangeForStmt : public Stmt {
  public:
   Stmt *begin, *end;
-  std::unique_ptr<Block> body;
   bool reversed;
+  std::unique_ptr<Block> body;
   int bit_vectorize;
   int num_cpu_threads;
   int block_dim;
@@ -776,6 +776,7 @@ class RangeForStmt : public Stmt {
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
+               bool reversed,
                std::unique_ptr<Block> &&body,
                int bit_vectorize,
                int num_cpu_threads,

@@ -85,12 +85,13 @@ IRBuilder::IfGuard::~IfGuard() {
 
 RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           Stmt *end,
+                                          bool reversed,
                                           int bit_vectorize,
                                           int num_cpu_threads,
                                           int block_dim,
                                           bool strictly_serialized) {
   return insert(Stmt::make_typed<RangeForStmt>(
-      begin, end, std::make_unique<Block>(), bit_vectorize, num_cpu_threads,
+      begin, end, reversed, std::make_unique<Block>(), bit_vectorize, num_cpu_threads,
       block_dim, strictly_serialized));
 }
 

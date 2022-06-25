@@ -20,6 +20,7 @@ struct ForLoopConfig {
   MemoryAccessOptions mem_access_opt;
   int block_dim{0};
   bool uniform{false};
+  bool reversed{false};
 };
 
 // Frontend Statements
@@ -159,6 +160,7 @@ class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;
   Expr global_var;
+  bool reversed;
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
   int bit_vectorize;
@@ -809,6 +811,7 @@ class ASTBuilder {
       config.mem_access_opt.clear();
       config.block_dim = 0;
       config.strictly_serialized = false;
+      config.reversed = false;
     }
   };
 
@@ -859,7 +862,7 @@ class ASTBuilder {
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);
-  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
+  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e, bool reversed);
   void begin_frontend_struct_for(const ExprGroup &loop_vars,
                                  const Expr &global);
   void begin_frontend_mesh_for(const Expr &i,

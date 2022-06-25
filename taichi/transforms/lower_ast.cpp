@@ -190,6 +190,7 @@ class LowerAST : public IRVisitor {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
+      auto reversed = stmt->reversed;
       flatten_rvalue(begin, &fctx);
       flatten_rvalue(end, &fctx);
       bool is_good_range_for = detected_fors_with_break_.find(stmt) ==
@@ -198,7 +199,7 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            begin->stmt, end->stmt, std::move(stmt->body), stmt->bit_vectorize,
+            begin->stmt, end->stmt, reversed, std::move(stmt->body), stmt->bit_vectorize,
             stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
@@ -319,12 +320,13 @@ class LowerAST : public IRVisitor {
       }
       Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
       Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
+      bool reversed = stmt->reversed;
       for (int i = 0; i < (int)shape.size(); i++) {
         end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
       }
       // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
-          begin, end, std::move(stmt->body), stmt->bit_vectorize,
+          begin, end, reversed, std::move(stmt->body), stmt->bit_vectorize,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
           /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
       VecStatement new_statements;

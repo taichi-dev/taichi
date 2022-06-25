@@ -247,6 +247,7 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
 
 RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
+                           bool reversed,
                            std::unique_ptr<Block> &&body,
                            int bit_vectorize,
                            int num_cpu_threads,
@@ -255,6 +256,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            std::string range_hint)
     : begin(begin),
       end(end),
+      reversed(reversed),
       body(std::move(body)),
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
@@ -268,9 +270,9 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), bit_vectorize, num_cpu_threads, block_dim,
+      begin, end, reversed, body->clone(), bit_vectorize, num_cpu_threads, block_dim,
       strictly_serialized);
-  new_stmt->reversed = reversed;
+  // new_stmt->reversed = reversed;
   return new_stmt;
 }
 

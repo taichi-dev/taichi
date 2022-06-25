@@ -91,8 +91,8 @@ RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           int block_dim,
                                           bool strictly_serialized) {
   return insert(Stmt::make_typed<RangeForStmt>(
-      begin, end, reversed, std::make_unique<Block>(), bit_vectorize, num_cpu_threads,
-      block_dim, strictly_serialized));
+      begin, end, reversed, std::make_unique<Block>(), bit_vectorize,
+      num_cpu_threads, block_dim, strictly_serialized));
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,

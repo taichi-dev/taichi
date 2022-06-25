@@ -862,7 +862,10 @@ class ASTBuilder {
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);
-  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e, bool reversed);
+  void begin_frontend_range_for(const Expr &i,
+                                const Expr &s,
+                                const Expr &e,
+                                bool reversed);
   void begin_frontend_struct_for(const ExprGroup &loop_vars,
                                  const Expr &global);
   void begin_frontend_mesh_for(const Expr &i,

@@ -1,4 +1,4 @@
-#include "taichi/llvm/struct_llvm.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IRBuilder.h"

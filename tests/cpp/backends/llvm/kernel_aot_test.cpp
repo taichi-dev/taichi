@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/backends/cpu/aot_module_loader_impl.h"
 #include "taichi/backends/cuda/aot_module_loader_impl.h"

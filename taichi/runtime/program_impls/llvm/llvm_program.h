@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <memory>
 
-#include "taichi/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/program/compile_config.h"
-#include "taichi/llvm/llvm_runtime_executor.h"
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
 

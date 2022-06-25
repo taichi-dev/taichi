@@ -11,7 +11,7 @@
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/llvm/llvm_context.h"
+#include "taichi/runtime/llvm/llvm_context.h"
 
 namespace taichi {
 namespace lang {

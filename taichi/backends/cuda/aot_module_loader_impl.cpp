@@ -1,8 +1,8 @@
 #include "taichi/backends/cuda/aot_module_loader_impl.h"
-#include "taichi/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 
-#include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
 
 namespace taichi {

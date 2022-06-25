@@ -1,8 +1,8 @@
-#include "taichi/llvm/llvm_aot_module_builder.h"
+#include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 
 #include <algorithm>
-#include "taichi/llvm/launch_arg_info.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/launch_arg_info.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi {
 namespace lang {

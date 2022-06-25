@@ -1,8 +1,8 @@
 #pragma once
 
 // Codegen for the hierarchical data structure (LLVM)
-#include "taichi/llvm/llvm_program.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/struct/struct.h"
 
 namespace taichi {

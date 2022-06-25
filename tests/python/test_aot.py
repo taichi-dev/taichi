@@ -33,6 +33,7 @@ def test_record():
         with open(recorded_file, 'r') as f:
             assert 'compute_loss' in ''.join(f.readlines())
 
+
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_field_range_hint():
     density = ti.field(float, shape=(8, 8))

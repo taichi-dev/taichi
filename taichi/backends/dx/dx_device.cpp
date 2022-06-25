@@ -151,8 +151,8 @@ void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   box.front = 0;
   box.back = 1;
 
-  d3d11_deferred_context_->CopySubresourceRegion(dst_buf, 0, dst.offset, 0, 0, src_buf, 0,
-                                                 &box);
+  d3d11_deferred_context_->CopySubresourceRegion(dst_buf, 0, dst.offset, 0, 0,
+                                                 src_buf, 0, &box);
 }
 
 void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
@@ -492,7 +492,8 @@ HRESULT create_constant_buffer_copy(ID3D11Device *device,
   D3D11_BUFFER_DESC desc;
   src_buf->GetDesc(&desc);
 
-  // https://docs.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-resources-buffers-constant-how-to
+  //
+https://docs.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-resources-buffers-constant-how-to
   D3D11_BUFFER_DESC desc1{};
   desc1.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
   const unsigned align = 16;
@@ -631,9 +632,8 @@ ID3D11Buffer *Dx11Device::BufferTuple::get_dynamic_constants(
   return dynamic_constants;
 }
 
-ID3D11Buffer *Dx11Device::BufferTuple::get_staging(
-    ID3D11DeviceContext *context,
-    ID3D11Device *device) {
+ID3D11Buffer *Dx11Device::BufferTuple::get_staging(ID3D11DeviceContext *context,
+                                                   ID3D11Device *device) {
   if (!staging) {
     D3D11_BUFFER_DESC desc = {};
     desc.BindFlags = 0;
@@ -669,7 +669,7 @@ void Dx11Device::BufferTuple::copy_back(ID3D11Buffer *buffer,
                                         ID3D11Device *device) {
   if (get_default_copy(device) == buffer)
     return;
-  
+
   context->CopyResource(get_default_copy(device), buffer);
 }
 
@@ -692,7 +692,7 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
     tuple.default_copy = 2;
   }
   alloc_id_to_buffer_[alloc.alloc_id] = std::move(tuple);
-  
+
   return alloc;
 }
 
@@ -733,7 +733,7 @@ void *Dx11Device::map(DeviceAllocation alloc) {
   D3D11_MAPPED_SUBRESOURCE mapped;
   HRESULT hr = context_->Map(buf, 0, map_type, 0, &mapped);
   check_dx_error(hr, "mapping memory");
-  
+
   buf_tuple.mapped = buf;
 
   return mapped.pData;
@@ -834,8 +834,9 @@ ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(
 }
 
 ID3D11Buffer *Dx11Device::alloc_id_to_cb_buffer(ID3D11DeviceContext *context,
-                                                  uint32_t alloc_id) {
-  return alloc_id_to_buffer_.at(alloc_id).get_dynamic_constants(context, device_);
+                                                uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_dynamic_constants(context,
+                                                                device_);
 }
 
 ID3D11Buffer *Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,

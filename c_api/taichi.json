@@ -116,6 +116,23 @@
                     ]
                 },
                 {
+                    "name": "memory_slice",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "offset",
+                            "type": "uint64_t"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
                     "name": "nd_shape",
                     "type": "structure",
                     "fields": [
@@ -270,6 +287,25 @@
                         },
                         {
                             "type": "handle.memory"
+                        }
+                    ]
+                },
+                {
+                    "name": "copy_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "dst_memory",
+                            "type": "structure.memory_slice",
+                            "by_ref": true
+                        },
+                        {
+                            "name": "src_memory",
+                            "type": "structure.memory_slice",
+                            "by_ref": true
                         }
                     ]
                 },

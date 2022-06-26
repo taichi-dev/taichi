@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
@@ -23,6 +22,7 @@
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/llvm/struct_llvm.h"
 #endif
 
 #if defined(TI_WITH_CC)

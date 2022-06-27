@@ -249,7 +249,8 @@ class TaichiMain:
         names = sorted(choices.keys())
         for k in range(nrows):
             table.add_row(
-                *[colormap(j,names[j]) for j in range(k, len(choices), nrows)])
+                *
+                [colormap(j, names[j]) for j in range(k, len(choices), nrows)])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
@@ -293,8 +294,8 @@ class TaichiMain:
             while index >= len(names):
                 index = int(input("Example not found, please try again: "))
             example_name = names[index]
-        target = str(
-            (examples_dir / choices[example_name] / f"{example_name}.py").resolve())
+        target = str((examples_dir / choices[example_name] /
+                      f"{example_name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str((examples_dir / choices[example_name]).resolve()))
 

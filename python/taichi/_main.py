@@ -249,7 +249,8 @@ class TaichiMain:
         names = sorted(choices.keys())
         for k in range(nrows):
             table.add_row(
-                *[colormap(j, names[j]) for j in range(k, len(choices), nrows)])
+                *
+                [colormap(j, names[j]) for j in range(k, len(choices), nrows)])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")

@@ -98,7 +98,7 @@ user_api[ti.Field] = [
 ]
 user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
-    'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
+    'dynamic', 'finalize', 'lazy_dual', 'lazy_grad', 'place', 'pointer'
 ]
 user_api[ti.math] = [
     'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
@@ -123,7 +123,7 @@ user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
 user_api[ti.Texture] = ['device_allocation_ptr', 'from_field', 'from_ndarray']
 user_api[ti.SNode] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
-    'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
+    'dynamic', 'lazy_dual', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
 ]
 user_api[ti.ScalarField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',

@@ -51,7 +51,7 @@ def test_ad_if_nested():
     x = ti.field(ti.f32, shape=n)
     y = ti.field(ti.f32, shape=n)
     z = ti.field(ti.f32, shape=n)
-    ti.root.lazy_grad()
+    ti.root.lazy_dual()
 
     @ti.kernel
     def func():

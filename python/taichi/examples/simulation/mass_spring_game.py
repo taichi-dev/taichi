@@ -163,10 +163,10 @@ def main():
 
         gui.text(
             content=
-            f'Left click: add mass point (with shift to fix); Right click: attract',
+            'Left click: add mass point (with shift to fix); Right click: attract',
             pos=(0, 0.99),
             color=0x0)
-        gui.text(content=f'C: clear all; Space: pause',
+        gui.text(content='C: clear all; Space: pause',
                  pos=(0, 0.95),
                  color=0x0)
         gui.text(content=f'Y: Spring Young\'s modulus {spring_Y[None]:.1f}',

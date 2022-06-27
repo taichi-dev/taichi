@@ -29,7 +29,7 @@
 #endif
 
 #ifdef TI_WITH_OPENGL
-#include "taichi/runtime/opengl/opengl_api.h"
+#include "taichi/backends/opengl/opengl_api.h"
 #endif
 
 #ifdef TI_WITH_CC

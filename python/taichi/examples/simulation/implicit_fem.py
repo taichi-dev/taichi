@@ -35,18 +35,18 @@ n_verts = np.product(n_cube)
 n_cells = 5 * np.product(n_cube - 1)
 dx = 1 / (n_cube.max() - 1)
 
-vertices = ti.Vector.field(4, dtype=ti.i32, shape=n_cells)
+F_vertices = ti.Vector.field(4, dtype=ti.i32, shape=n_cells)
 
-x = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
-ox = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
-v = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
-f = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
-mul_ans = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
-m = ti.field(dtype=ti.f32, shape=n_verts)
+F_x = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
+F_ox = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
+F_v = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
+F_f = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
+F_mul_ans = ti.Vector.field(args.dim, dtype=ti.f32, shape=n_verts)
+F_m = ti.field(dtype=ti.f32, shape=n_verts)
 
 n_cells = (n_cube - 1).prod() * 5
-B = ti.Matrix.field(args.dim, args.dim, dtype=ti.f32, shape=n_cells)
-W = ti.field(dtype=ti.f32, shape=n_cells)
+F_B = ti.Matrix.field(args.dim, args.dim, dtype=ti.f32, shape=n_cells)
+F_W = ti.field(dtype=ti.f32, shape=n_cells)
 
 
 @ti.func
@@ -57,7 +57,8 @@ def i2p(I):
 @ti.func
 def set_element(e, I, verts):
     for i in ti.static(range(args.dim + 1)):
-        vertices[e][i] = i2p(I + (([verts[i] >> k for k in range(3)] ^ I) & 1))
+        F_vertices[e][i] = i2p(I + (([verts[i] >> k
+                                      for k in range(3)] ^ I) & 1))
 
 
 @ti.kernel
@@ -72,12 +73,12 @@ def get_vertices():
             set_element(e + i, I, (j, j ^ 1, j ^ 2, j ^ 4))
         set_element(e + 4, I, (1, 2, 4, 7))
     for I in ti.grouped(ti.ndrange(*(n_cube))):
-        ox[i2p(I)] = I * dx
+        F_ox[i2p(I)] = I * dx
 
 
 @ti.func
 def Ds(verts):
-    return ti.Matrix.cols([x[verts[i]] - x[verts[3]] for i in range(3)])
+    return ti.Matrix.cols([F_x[verts[i]] - F_x[verts[3]] for i in range(3)])
 
 
 @ti.func
@@ -96,33 +97,33 @@ def ssvd(F):
 
 @ti.func
 def get_force_func(c, verts):
-    F = Ds(verts) @ B[c]
+    F = Ds(verts) @ F_B[c]
     P = ti.Matrix.zero(ti.f32, 3, 3)
     U, sig, V = ssvd(F)
     P = 2 * mu * (F - U @ V.transpose())
-    H = -W[c] * P @ B[c].transpose()
+    H = -F_W[c] * P @ F_B[c].transpose()
     for i in ti.static(range(3)):
         force = ti.Vector([H[j, i] for j in range(3)])
-        f[verts[i]] += force
-        f[verts[3]] -= force
+        F_f[verts[i]] += force
+        F_f[verts[3]] -= force
 
 
 @ti.kernel
 def get_force():
-    for c in vertices:
-        get_force_func(c, vertices[c])
-    for u in f:
-        f[u].y -= 9.8 * m[u]
+    for c in F_vertices:
+        get_force_func(c, F_vertices[c])
+    for u in F_f:
+        F_f[u].y -= 9.8 * F_m[u]
 
 
 @ti.kernel
 def matmul_cell(ret: ti.template(), vel: ti.template()):
     for i in ret:
-        ret[i] = vel[i] * m[i]
-    for c in vertices:
-        verts = vertices[c]
-        W_c = W[c]
-        B_c = B[c]
+        ret[i] = vel[i] * F_m[i]
+    for c in F_vertices:
+        verts = F_vertices[c]
+        W_c = F_W[c]
+        B_c = F_B[c]
         for u in range(4):
             for d in range(3):
                 dD = ti.Matrix.zero(ti.f32, 3, 3)
@@ -154,80 +155,81 @@ def dot(a: ti.template(), b: ti.template()) -> ti.f32:
     return ans
 
 
-b = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
-r0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
-p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
+F_b = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
+F_r0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
+F_p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 
 
 @ti.kernel
 def get_b():
-    for i in b:
-        b[i] = m[i] * v[i] + dt * f[i]
+    for i in F_b:
+        F_b[i] = F_m[i] * F_v[i] + dt * F_f[i]
 
 
 def cg():
     def mul(x):
-        matmul_cell(mul_ans, x)
-        return mul_ans
+        matmul_cell(F_mul_ans, x)
+        return F_mul_ans
 
     get_force()
     get_b()
-    mul(v)
-    add(r0, b, -1, mul(v))
+    mul(F_v)
+    add(F_r0, F_b, -1, mul(F_v))
 
-    d = p0
-    d.copy_from(r0)
-    r_2 = dot(r0, r0)
+    d = F_p0
+    d.copy_from(F_r0)
+    r_2 = dot(F_r0, F_r0)
     n_iter = 50
     epsilon = 1e-6
     r_2_init = r_2
     r_2_new = r_2
-    for iter in range(n_iter):
+    for _ in range(n_iter):
         q = mul(d)
         alpha = r_2_new / dot(d, q)
-        add(v, v, alpha, d)
-        add(r0, r0, -alpha, q)
+        add(F_v, F_v, alpha, d)
+        add(F_r0, F_r0, -alpha, q)
         r_2 = r_2_new
-        r_2_new = dot(r0, r0)
-        if r_2_new <= r_2_init * epsilon**2: break
+        r_2_new = dot(F_r0, F_r0)
+        if r_2_new <= r_2_init * epsilon**2:
+            break
         beta = r_2_new / r_2
-        add(d, r0, beta, d)
-    f.fill(0)
-    add(x, x, dt, v)
+        add(d, F_r0, beta, d)
+    F_f.fill(0)
+    add(F_x, F_x, dt, F_v)
 
 
 @ti.kernel
 def advect():
-    for p in x:
-        v[p] += dt * (f[p] / m[p])
-        x[p] += dt * v[p]
-        f[p] = ti.Vector([0, 0, 0])
+    for p in F_x:
+        F_v[p] += dt * (F_f[p] / F_m[p])
+        F_x[p] += dt * F_v[p]
+        F_f[p] = ti.Vector([0, 0, 0])
 
 
 @ti.kernel
 def init():
-    for u in x:
-        x[u] = ox[u]
-        v[u] = [0.0] * 3
-        f[u] = [0.0] * 3
-        m[u] = 0.0
-    for c in vertices:
-        F = Ds(vertices[c])
-        B[c] = F.inverse()
-        W[c] = ti.abs(F.determinant()) / 6
+    for u in F_x:
+        F_x[u] = F_ox[u]
+        F_v[u] = [0.0] * 3
+        F_f[u] = [0.0] * 3
+        F_m[u] = 0.0
+    for c in F_vertices:
+        F = Ds(F_vertices[c])
+        F_B[c] = F.inverse()
+        F_W[c] = ti.abs(F.determinant()) / 6
         for i in range(4):
-            m[vertices[c][i]] += W[c] / 4 * density
-    for u in x:
-        x[u].y += 1.0
+            F_m[F_vertices[c][i]] += F_W[c] / 4 * density
+    for u in F_x:
+        F_x[u].y += 1.0
 
 
 @ti.kernel
 def floor_bound():
-    for u in x:
-        if x[u].y < 0:
-            x[u].y = 0
-            if v[u].y < 0:
-                v[u].y = 0
+    for u in F_x:
+        if F_x[u].y < 0:
+            F_x[u].y = 0
+            if F_v[u].y < 0:
+                F_v[u].y = 0
 
 
 @ti.func
@@ -237,30 +239,36 @@ def check(u):
     for i in ti.static(range(3)):
         k = rest % n_cube[2 - i]
         rest = rest // n_cube[2 - i]
-        if k == 0: ans |= (1 << (i * 2))
-        if k == n_cube[2 - i] - 1: ans |= (1 << (i * 2 + 1))
+        if k == 0:
+            ans |= (1 << (i * 2))
+        if k == n_cube[2 - i] - 1:
+            ans |= (1 << (i * 2 + 1))
     return ans
 
 
-su = 0
-for i in range(3):
-    su += (n_cube[i] - 1) * (n_cube[(i + 1) % 3] - 1)
-indices = ti.field(ti.i32, shape=2 * su * 2 * 3)
+def gen_indices():
+    su = 0
+    for i in range(3):
+        su += (n_cube[i] - 1) * (n_cube[(i + 1) % 3] - 1)
+    return ti.field(ti.i32, shape=2 * su * 2 * 3)
+
+
+indices = gen_indices()
 
 
 @ti.kernel
 def get_indices():
     # calculate all the meshes on surface
     cnt = 0
-    for c in vertices:
+    for c in F_vertices:
         if c % 5 != 4:
             for i in ti.static([0, 2, 3]):
-                verts = [vertices[c][(i + j) % 4] for j in range(3)]
-                sum = check(verts[0]) & check(verts[1]) & check(verts[2])
-                if sum:
+                verts = [F_vertices[c][(i + j) % 4] for j in range(3)]
+                sum_ = check(verts[0]) & check(verts[1]) & check(verts[2])
+                if sum_:
                     m = ti.atomic_add(cnt, 1)
                     det = ti.Matrix.rows([
-                        x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)
+                        F_x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)
                     ]).determinant()
                     if det < 0:
                         tmp = verts[1]
@@ -282,7 +290,7 @@ def substep():
     floor_bound()
 
 
-if __name__ == '__main__':
+def main():
     get_vertices()
     init()
     get_indices()
@@ -310,7 +318,7 @@ if __name__ == '__main__':
             scene.point_light(pos=(0.5, 10.0, 0.5), color=(0.5, 0.5, 0.5))
             scene.point_light(pos=(10.0, 10.0, 10.0), color=(0.5, 0.5, 0.5))
 
-            scene.mesh(x, indices, color=(0.73, 0.33, 0.23))
+            scene.mesh(F_x, indices, color=(0.73, 0.33, 0.23))
 
             canvas.scene(scene)
 
@@ -345,9 +353,14 @@ if __name__ == '__main__':
         while gui.running:
             substep()
             if gui.get_event(ti.GUI.PRESS):
-                if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]: break
+                if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
+                    break
             if gui.is_pressed('r'):
                 init()
             gui.clear(0x000000)
-            gui.circles(T(x.to_numpy() / 3), radius=1.5, color=0xba543a)
+            gui.circles(T(F_x.to_numpy() / 3), radius=1.5, color=0xba543a)
             gui.show()
+
+
+if __name__ == '__main__':
+    main()

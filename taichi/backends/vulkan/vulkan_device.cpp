@@ -1250,6 +1250,25 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
 }
 
 VulkanDevice::~VulkanDevice() {
+  // Note: Ideally whoever allocated the buffer & image should be responsible
+  // for deallocation as well.
+  // These manual deallocations work as last resort for the case where we
+  // have GGUI window whose lifetime is controlled by Python but
+  // shares the same underlying VulkanDevice with Program. In an extreme
+  // edge case when Python shuts down and program gets destructed before
+  // GGUI Window, buffers and images allocated through GGUI window won't
+  // be properly deallocated before VulkanDevice destruction. This isn't
+  // the most proper fix but is less intrusive compared to other
+  // approaches.
+  for (auto &alloc : allocations_) {
+    alloc.second.buffer.reset();
+  }
+  for (auto &alloc : image_allocations_) {
+    alloc.second.image.reset();
+  }
+  allocations_.clear();
+  image_allocations_.clear();
+
   vkDeviceWaitIdle(device_);
 
   desc_pool_ = nullptr;
@@ -1310,7 +1329,6 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.usage & AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
-  buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
   uint32_t queue_family_indices[] = {compute_queue_family_index_,
                                      graphics_queue_family_index_};
@@ -1351,20 +1369,22 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if (params.host_read && params.host_write) {
 #endif  //__APPLE__
     // This should be the unified memory on integrated GPUs
-    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                                VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                               VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 #ifdef __APPLE__
     // weird behavior on apple: if coherent bit is not set, then the memory
     // writes between map() and unmap() cannot be seen by gpu
     alloc_info.preferredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 #endif  //__APPLE__
   } else if (params.host_read) {
-    alloc_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
   } else if (params.host_write) {
-    alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   } else {
-    alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
   if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {

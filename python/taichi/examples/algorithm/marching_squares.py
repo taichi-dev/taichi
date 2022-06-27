@@ -74,10 +74,14 @@ def march(level: float) -> int:
 
     for i, j in ti.ndrange(N - 1, N - 1):
         case_id = 0
-        if pixels[i, j] > level: case_id |= 1
-        if pixels[i + 1, j] > level: case_id |= 2
-        if pixels[i + 1, j + 1] > level: case_id |= 4
-        if pixels[i, j + 1] > level: case_id |= 8
+        if pixels[i, j] > level:
+            case_id |= 1
+        if pixels[i + 1, j] > level:
+            case_id |= 2
+        if pixels[i + 1, j + 1] > level:
+            case_id |= 4
+        if pixels[i, j + 1] > level:
+            case_id |= 8
 
         for k in range(2):
             if edge_table[case_id, k][0] == -1:
@@ -92,16 +96,21 @@ def march(level: float) -> int:
     return n_edges
 
 
-level = 0.2
+def main():
+    level = 0.2
 
-gui = ti.GUI('Marching squares')
-while gui.running and not gui.get_event(gui.ESCAPE):
-    touch(*gui.get_cursor_pos(), 0.05)
-    n_edges = march(level)
-    edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
-    gui.set_image(ti.tools.imresize(pixels, *gui.res) / level)
-    gui.lines(edge_coords_np[:, 0],
-              edge_coords_np[:, 1],
-              color=0xff66cc,
-              radius=1.5)
-    gui.show()
+    gui = ti.GUI('Marching squares')
+    while gui.running and not gui.get_event(gui.ESCAPE):
+        touch(*gui.get_cursor_pos(), 0.05)
+        n_edges = march(level)
+        edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
+        gui.set_image(ti.tools.imresize(pixels, *gui.res) / level)
+        gui.lines(edge_coords_np[:, 0],
+                  edge_coords_np[:, 1],
+                  color=0xff66cc,
+                  radius=1.5)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

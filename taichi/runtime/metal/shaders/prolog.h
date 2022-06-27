@@ -24,6 +24,6 @@
 
 using byte = char;
 
-#include "taichi/codegen/metal/shaders/atomic_stubs.h"
+#include "taichi/runtime/metal/shaders/atomic_stubs.h"
 
 #endif  // TI_INSIDE_METAL_CODEGEN

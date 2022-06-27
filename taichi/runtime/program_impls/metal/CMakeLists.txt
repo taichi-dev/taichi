@@ -14,4 +14,5 @@ target_include_directories(metal_program_impl
     ${LLVM_INCLUDE_DIRS}
   )
 
+target_link_libraries(metal_program_impl PRIVATE metal_codegen)
 target_link_libraries(metal_program_impl PRIVATE metal_runtime)

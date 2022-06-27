@@ -243,8 +243,7 @@ std::string SNode::get_node_type_name() const {
 
 std::string SNode::get_node_type_name_hinted() const {
   std::string suffix;
-  if (type == SNodeType::place || type == SNodeType::bit_struct ||
-      type == SNodeType::bit_array)
+  if (type == SNodeType::place || type == SNodeType::bit_struct)
     suffix = fmt::format("<{}>", dt->to_string());
   if (is_bit_level)
     suffix += "<bit>";

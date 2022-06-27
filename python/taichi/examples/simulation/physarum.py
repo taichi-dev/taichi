@@ -68,14 +68,19 @@ def step(phase: ti.i32):
         grid[1 - phase, i, j] = a
 
 
-print("[Hint] Press A/Z to change the simulation speed.")
-gui = ti.GUI('Physarum')
-init()
-i = 0
-step_per_frame = gui.slider('step_per_frame', 1, 100, 1)
-while gui.running and not gui.get_event(gui.ESCAPE):
-    for _ in range(int(step_per_frame.value)):
-        step(i % 2)
-        i += 1
-    gui.set_image(grid.to_numpy()[0])
-    gui.show()
+def main():
+    print("[Hint] Use slider to change simulation speed.")
+    gui = ti.GUI('Physarum')
+    init()
+    i = 0
+    step_per_frame = gui.slider('step_per_frame', 1, 100, 1)
+    while gui.running and not gui.get_event(gui.ESCAPE):
+        for _ in range(int(step_per_frame.value)):
+            step(i % 2)
+            i += 1
+        gui.set_image(grid.to_numpy()[0])
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

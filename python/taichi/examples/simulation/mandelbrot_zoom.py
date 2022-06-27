@@ -1,5 +1,5 @@
 import taichi as ti
-from taichi.math import *
+from taichi.math import cmul, dot, log2, vec2, vec3
 
 ti.init(arch=ti.gpu)
 
@@ -43,8 +43,13 @@ def render(time: ti.f32):
             pixels[i, j] = setcolor(z, count)
 
 
-gui = ti.GUI("Mandelbrot set zoom", res=(width, height))
-for i in range(100000):
-    render(i * 0.03)
-    gui.set_image(pixels)
-    gui.show()
+def main():
+    gui = ti.GUI("Mandelbrot set zoom", res=(width, height))
+    for i in range(100000):
+        render(i * 0.03)
+        gui.set_image(pixels)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

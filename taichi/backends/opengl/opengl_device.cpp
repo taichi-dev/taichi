@@ -1,5 +1,7 @@
 #include "opengl_device.h"
-#include "taichi/runtime/opengl/opengl_api.h"
+#include "opengl_api.h"
+
+#include "spirv_glsl.hpp"
 
 namespace taichi {
 namespace lang {
@@ -238,14 +240,32 @@ std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
 
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
-  TI_ASSERT(desc.type == PipelineSourceType::glsl_src);
-
   GLuint shader_id;
   shader_id = glCreateShader(GL_COMPUTE_SHADER);
 
-  const GLchar *source_cstr = (const GLchar *)desc.data;
-  int length = desc.size;
-  glShaderSource(shader_id, 1, &source_cstr, &length);
+  if (desc.type == PipelineSourceType::glsl_src) {
+    const GLchar *source_cstr = (const GLchar *)desc.data;
+    int length = desc.size;
+    glShaderSource(shader_id, 1, &source_cstr, &length);
+    check_opengl_error("glShaderSource");
+  } else if (desc.type == PipelineSourceType::spirv_binary) {
+    spirv_cross::CompilerGLSL glsl((uint32_t *)desc.data,
+                                   desc.size / sizeof(uint32_t));
+    spirv_cross::CompilerGLSL::Options options;
+    options.es = is_gles();
+    options.vulkan_semantics = false;
+    options.enable_420pack_extension = true;
+    glsl.set_common_options(options);
+    std::string source = glsl.compile();
+    TI_TRACE("GLSL source: \n{}", source);
+
+    const char *src = source.data();
+    GLint length = GLint(source.length());
+    glShaderSource(shader_id, 1, &src, &length);
+    check_opengl_error("glShaderSource");
+  } else {
+    TI_ERROR("Pipeline source type not supported");
+  }
 
   glCompileShader(shader_id);
   int status = GL_TRUE;
@@ -467,12 +487,25 @@ GLDevice::~GLDevice() {
 }
 
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
+  GLenum target_hint = GL_SHADER_STORAGE_BUFFER;
+
+  if (params.usage & AllocUsage::Storage) {
+    target_hint = GL_SHADER_STORAGE_BUFFER;
+  } else if (params.usage & AllocUsage::Uniform) {
+    target_hint = GL_UNIFORM_BUFFER;
+  } else if (params.host_write && params.host_read) {
+    target_hint = GL_SHADER_STORAGE_BUFFER;
+  } else if (params.host_read && params.host_write) {
+    target_hint = GL_COPY_READ_BUFFER;
+  }
+
   GLuint buffer;
   glGenBuffers(1, &buffer);
   check_opengl_error("glGenBuffers");
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+  glBindBuffer(target_hint, buffer);
   check_opengl_error("glBindBuffer");
-  glBufferData(GL_SHADER_STORAGE_BUFFER, params.size, nullptr, GL_DYNAMIC_READ);
+  glBufferData(target_hint, params.size, nullptr,
+               params.host_read ? GL_STATIC_COPY : GL_DYNAMIC_READ);
   check_opengl_error("glBufferData");
 
   DeviceAllocation alloc;
@@ -484,7 +517,7 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   } else if (params.host_read) {
     buffer_to_access_[buffer] = GL_MAP_READ_BIT;
   } else if (params.host_write) {
-    buffer_to_access_[buffer] = GL_MAP_WRITE_BIT;
+    buffer_to_access_[buffer] = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT;
   }
 
   return alloc;
@@ -518,17 +551,6 @@ void *GLDevice::map(DeviceAllocation alloc) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
   return map_range(alloc.get_ptr(0), size);
-  /*
-  TI_ASSERT_INFO(
-      buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
-      "Buffer not created with host_read or write");
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
-  check_opengl_error("glBindBuffer");
-  void *mapped = glMapBuffer(GL_SHADER_STORAGE_BUFFER,
-                             buffer_to_access_.at(alloc.alloc_id));
-  check_opengl_error("glMapBuffer");
-  return mapped;
-  */
 }
 
 void GLDevice::unmap(DevicePtr ptr) {
@@ -691,6 +713,7 @@ void GLCommandList::CmdBindPipeline::execute() {
 }
 
 void GLCommandList::CmdBindBufferToIndex::execute() {
+  check_opengl_error("before");
   glBindBufferBase(target, index, buffer);
   check_opengl_error("glBindBufferBase");
 }
@@ -703,25 +726,31 @@ void GLCommandList::CmdBufferBarrier::execute() {
 void GLCommandList::CmdBufferCopy::execute() {
   glBindBuffer(GL_COPY_READ_BUFFER, src);
   check_opengl_error("glBindBuffer");
+  int buf_size = 0;
+  glGetBufferParameteriv(GL_COPY_READ_BUFFER, GL_BUFFER_SIZE, &buf_size);
+  check_opengl_error("glGetBufferParameteriv");
   glBindBuffer(GL_COPY_WRITE_BUFFER, dst);
   check_opengl_error("glBindBuffer");
   glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset,
-                      dst_offset, size);
+                      dst_offset,
+                      (kBufferSizeEntireSize == size) ? buf_size : size);
   check_opengl_error("glCopyBufferSubData");
 }
 
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
+  int buf_size = 0;
+  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
+  check_opengl_error("glGetBufferParameteriv");
   if (is_gles()) {
-    int buf_size = 0;
-    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
     TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
               "GLES only supports full clear");
     glBufferData(GL_SHADER_STORAGE_BUFFER, buf_size, nullptr, GL_DYNAMIC_READ);
     check_opengl_error("glBufferData");
   } else {
-    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size,
+    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset,
+                         (kBufferSizeEntireSize == size) ? buf_size : size,
                          GL_RED, GL_FLOAT, &data);
     check_opengl_error("glClearBufferSubData");
   }

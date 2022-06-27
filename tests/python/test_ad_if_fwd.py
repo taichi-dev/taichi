@@ -9,6 +9,7 @@ from tests import test_utils
 def test_ad_if_simple_fwd():
     x = ti.field(ti.f32, shape=())
     y = ti.field(ti.f32, shape=())
+    ti.root.lazy_dual()
 
     @ti.kernel
     def func():
@@ -26,6 +27,7 @@ def test_ad_if_simple_fwd():
 def test_ad_if():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
+    ti.root.lazy_dual()
 
     @ti.kernel
     def func(i: ti.i32):
@@ -49,7 +51,6 @@ def test_ad_if_nested():
     x = ti.field(ti.f32, shape=n)
     y = ti.field(ti.f32, shape=n)
     z = ti.field(ti.f32, shape=n)
-
     ti.root.lazy_grad()
 
     @ti.kernel

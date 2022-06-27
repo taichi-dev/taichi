@@ -392,6 +392,7 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;
+  new_stmt->bit_vectorize = bit_vectorize;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->index_offsets = index_offsets;
 

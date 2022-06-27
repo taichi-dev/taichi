@@ -19,7 +19,6 @@ dye_decay = 1 - 1 / (maxfps * time_c)
 force_radius = res / 2.0
 gravity = True
 debug = False
-paused = False
 
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
 ti.init(arch=arch)
@@ -78,13 +77,13 @@ def bilerp(vf, p):
 
 # 3rd order Runge-Kutta
 @ti.func
-def backtrace(vf: ti.template(), p, dt: ti.template()):
+def backtrace(vf: ti.template(), p, dt_: ti.template()):
     v1 = bilerp(vf, p)
-    p1 = p - 0.5 * dt * v1
+    p1 = p - 0.5 * dt_ * v1
     v2 = bilerp(vf, p1)
-    p2 = p - 0.75 * dt * v2
+    p2 = p - 0.75 * dt_ * v2
     v3 = bilerp(vf, p2)
-    p -= dt * ((2 / 9) * v1 + (1 / 3) * v2 + (4 / 9) * v3)
+    p -= dt_ * ((2 / 9) * v1 + (1 / 3) * v2 + (4 / 9) * v3)
     return p
 
 
@@ -214,7 +213,7 @@ def step(mouse_data):
         print(f'divergence={div_s}')
 
 
-class MouseDataGen(object):
+class MouseDataGen:
     def __init__(self):
         self.prev_mouse = None
         self.prev_color = None
@@ -249,33 +248,41 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
-window = ti.ui.Window('Stable Fluid', (res, res), vsync=True)
-canvas = window.get_canvas()
-md_gen = MouseDataGen()
+def main():
+    global curl_strength, debug
 
-while window.running:
-    if window.get_event(ti.ui.PRESS):
-        e = window.event
-        if e.key == ti.ui.ESCAPE:
-            break
-        elif e.key == 'r':
-            paused = False
-            reset()
-        elif e.key == 's':
-            if curl_strength:
-                curl_strength = 0
-            else:
-                curl_strength = 7
-        elif e.key == 'p':
-            paused = not paused
-        elif e.key == 'd':
-            debug = not debug
+    paused = False
+    window = ti.ui.Window('Stable Fluid', (res, res), vsync=True)
+    canvas = window.get_canvas()
+    md_gen = MouseDataGen()
 
-    # Debug divergence:
-    # print(max((abs(velocity_divs.to_numpy().reshape(-1)))))
+    while window.running:
+        if window.get_event(ti.ui.PRESS):
+            e = window.event
+            if e.key == ti.ui.ESCAPE:
+                break
+            elif e.key == 'r':
+                paused = False
+                reset()
+            elif e.key == 's':
+                if curl_strength:
+                    curl_strength = 0
+                else:
+                    curl_strength = 7
+            elif e.key == 'p':
+                paused = not paused
+            elif e.key == 'd':
+                debug = not debug
 
-    if not paused:
-        mouse_data = md_gen(window)
-        step(mouse_data)
-    canvas.set_image(dyes_pair.cur)
-    window.show()
+        # Debug divergence:
+        # print(max((abs(velocity_divs.to_numpy().reshape(-1)))))
+
+        if not paused:
+            mouse_data = md_gen(window)
+            step(mouse_data)
+        canvas.set_image(dyes_pair.cur)
+        window.show()
+
+
+if __name__ == '__main__':
+    main()

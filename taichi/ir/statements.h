@@ -1172,6 +1172,7 @@ class OffloadedStmt : public Stmt {
   int grid_dim{1};
   int block_dim{1};
   bool reversed{false};
+  int bit_vectorize{1};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
   std::string range_hint = "";
@@ -1451,8 +1452,10 @@ class Texture;
 class TexturePtrStmt : public Stmt {
  public:
   Stmt *arg_load_stmt{nullptr};
+  int dimensions{2};
 
-  explicit TexturePtrStmt(Stmt *stmt) : arg_load_stmt(stmt) {
+  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
+      : arg_load_stmt(stmt), dimensions(dimensions) {
     TI_STMT_REG_FIELDS;
   }
 

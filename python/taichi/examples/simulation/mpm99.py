@@ -1,5 +1,3 @@
-import numpy as np
-
 import taichi as ti
 
 ti.init(arch=ti.gpu)  # Try to run on GPU
@@ -35,12 +33,10 @@ def substep():
         fx = x[p] * inv_dx - base.cast(float)
         # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        F[p] = (ti.Matrix.identity(float, 2) +
-                dt * C[p]) @ F[p]  # deformation gradient update
-        h = ti.exp(
-            10 *
-            (1.0 -
-             Jp[p]))  # Hardening coefficient: snow gets harder when compressed
+        # F[p]: deformation gradient update
+        F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p]
+        # h: Hardening coefficient: snow gets harder when compressed
+        h = ti.exp(10 * (1.0 - Jp[p]))
         if material[p] == 1:  # jelly, make it softer
             h = 0.3
         mu, la = mu_0 * h, lambda_0 * h
@@ -56,18 +52,18 @@ def substep():
             Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
-        if material[
-                p] == 0:  # Reset deformation gradient to avoid numerical instability
+        if material[p] == 0:
+            # Reset deformation gradient to avoid numerical instability
             F[p] = ti.Matrix.identity(float, 2) * ti.sqrt(J)
         elif material[p] == 2:
-            F[p] = U @ sig @ V.transpose(
-            )  # Reconstruct elastic deformation gradient after plasticity
+            # Reconstruct elastic deformation gradient after plasticity
+            F[p] = U @ sig @ V.transpose()
         stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose(
         ) + ti.Matrix.identity(float, 2) * la * J * (J - 1)
         stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
         affine = stress + p_mass * C[p]
-        for i, j in ti.static(ti.ndrange(
-                3, 3)):  # Loop over 3x3 grid node neighborhood
+        # Loop over 3x3 grid node neighborhood
+        for i, j in ti.static(ti.ndrange(3, 3)):
             offset = ti.Vector([i, j])
             dpos = (offset.cast(float) - fx) * dx
             weight = w[i][0] * w[j][1]
@@ -75,23 +71,25 @@ def substep():
             grid_m[base + offset] += weight * p_mass
     for i, j in grid_m:
         if grid_m[i, j] > 0:  # No need for epsilon here
-            grid_v[i,
-                   j] = (1 / grid_m[i, j]) * grid_v[i,
-                                                    j]  # Momentum to velocity
+            grid_v[i, j] = \
+                (1 / grid_m[i, j]) * grid_v[i, j]  # Momentum to velocity
             grid_v[i, j][1] -= dt * 50  # gravity
             if i < 3 and grid_v[i, j][0] < 0:
                 grid_v[i, j][0] = 0  # Boundary conditions
-            if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
-            if j < 3 and grid_v[i, j][1] < 0: grid_v[i, j][1] = 0
-            if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
+            if i > n_grid - 3 and grid_v[i, j][0] > 0:
+                grid_v[i, j][0] = 0
+            if j < 3 and grid_v[i, j][1] < 0:
+                grid_v[i, j][1] = 0
+            if j > n_grid - 3 and grid_v[i, j][1] > 0:
+                grid_v[i, j][1] = 0
     for p in x:  # grid to particle (G2P)
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - base.cast(float)
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
         new_v = ti.Vector.zero(float, 2)
         new_C = ti.Matrix.zero(float, 2, 2)
-        for i, j in ti.static(ti.ndrange(
-                3, 3)):  # loop over 3x3 grid node neighborhood
+        for i, j in ti.static(ti.ndrange(3, 3)):
+            # loop over 3x3 grid node neighborhood
             dpos = ti.Vector([i, j]).cast(float) - fx
             g_v = grid_v[base + ti.Vector([i, j])]
             weight = w[i][0] * w[j][1]
@@ -127,8 +125,8 @@ def main():
                     radius=1.5,
                     palette=[0x068587, 0xED553B, 0xEEEEF0],
                     palette_indices=material)
-        gui.show(
-        )  # Change to gui.show(f'{frame:06d}.png') to write images to disk
+        # Change to gui.show(f'{frame:06d}.png') to write images to disk
+        gui.show()
 
 
 if __name__ == '__main__':

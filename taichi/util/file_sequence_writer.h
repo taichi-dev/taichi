@@ -3,7 +3,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/transforms.h"
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_fwd.h"
+#include "taichi/runtime/llvm/llvm_fwd.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN

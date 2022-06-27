@@ -2,6 +2,22 @@ import taichi as ti
 from tests import test_utils
 
 
+@test_utils.test()
+def test_ad_nested_for():
+    N = 5
+
+    loss = ti.field(float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def nested_for():
+        for i in range(N):
+            for j in range(N):
+                pass
+
+    with ti.ad.Tape(loss=loss):
+        nested_for()
+
+
 @test_utils.test(require=ti.extension.adstack)
 def test_ad_sum():
     N = 10

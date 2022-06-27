@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "taichi/common/core.h"
-#include "taichi/llvm/llvm_device.h"
+#include "taichi/backends/llvm/llvm_device.h"
 #include "taichi/system/virtual_memory.h"
 
 namespace taichi {

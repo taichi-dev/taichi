@@ -2,7 +2,7 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
-from math import e, pi, inf, nan
+from math import e, inf, nan, pi
 
 from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
@@ -714,7 +714,8 @@ def isinf(x):
     """
     fx = ti.cast(x, ti.f64)
     y = ti.bit_cast(fx, ti.u64)
-    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
+    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(
+        y, ti.u32) == 0)
 
 
 @unary
@@ -740,7 +741,8 @@ def isnan(x):
     """
     fx = ti.cast(x, ti.f64)
     y = ti.bit_cast(fx, ti.u64)
-    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
+    return (ti.cast(y >> 32, ti.u32)
+            & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
 
 
 @ti.func
@@ -764,10 +766,11 @@ def vdir(ang):
 
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract", "inf",
-    "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
-    "mat3", "mat4", "max", "min", "mix", "mod", "nan", "normalize", "pi", "pow",
-    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
-    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
-    "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
+    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "nan",
+    "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
+    "rotate2d", "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt",
+    "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
+    "vec4"
 ]

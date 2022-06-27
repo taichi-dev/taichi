@@ -8,6 +8,7 @@ def test_ad_sum_fwd():
     a = ti.field(ti.f32, shape=N)
     b = ti.field(ti.i32, shape=N)
     p = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
 
     @ti.kernel
     def compute_sum():
@@ -40,7 +41,7 @@ def test_ad_fibonacci_fwd():
     b = ti.field(ti.f32, shape=N)
     c = ti.field(ti.i32, shape=N)
     f = ti.field(ti.f32, shape=N)
-    f_1 = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
 
     @ti.kernel
     def fib():

@@ -1172,6 +1172,7 @@ class OffloadedStmt : public Stmt {
   int grid_dim{1};
   int block_dim{1};
   bool reversed{false};
+  int bit_vectorize{1};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
   std::string range_hint = "";

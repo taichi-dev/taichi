@@ -241,6 +241,9 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     meta =
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
+  } else if (snode->type == SNodeType::bit_array) {
+    meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
+    emit_struct_meta_base("Dense", meta->ptr, snode);
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
@@ -1725,16 +1728,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
 
-  // When looping over bit_arrays, we always vectorize and generate struct for
-  // on their parent node (usually "dense") instead of itself for higher
-  // performance. Also, note that the loop must be bit_vectorized for
-  // bit_arrays, and their parent must be "dense".
-  if (leaf_block->type == SNodeType::bit_array) {
-    if (leaf_block->parent->type == SNodeType::dense) {
+  // For a bit-vectorized loop over a bit array, we generate struct for on its
+  // parent node (must be "dense") instead of itself for higher performance.
+  if (stmt->bit_vectorize != 1) {
+    if (leaf_block->type == SNodeType::bit_array &&
+        leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {
       TI_ERROR(
-          "Struct-for looping through bit array but its parent is not dense")
+          "A bit-vectorized struct-for must loop over a bit array with a dense "
+          "parent");
     }
   }
 
@@ -1866,20 +1869,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
-    // One more refine step is needed for bit_arrays to make final coordinates
-    // non-consecutive, since each thread will process multiple
-    // coordinates via vectorization
-    if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
-      if (stmt->snode->parent->type == SNodeType::dense) {
-        refine =
-            get_runtime_function(stmt->snode->refine_coordinates_func_name());
-
-        create_call(refine,
-                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
-      } else {
-        TI_ERROR(
-            "Struct-for looping through bit array but its parent is not dense");
-      }
+    // For a bit-vectorized loop over a bit array, one more refine step is
+    // needed to make final coordinates non-consecutive, since each thread will
+    // process multiple coordinates via vectorization
+    if (stmt->bit_vectorize != 1) {
+      refine =
+          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      create_call(refine,
+                  {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }
 
     current_coordinates = new_coordinates;
@@ -1889,37 +1886,28 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     //  - if leaf block is bitmasked, make sure we only loop over active
     //    voxels
     auto exec_cond = tlctx->get_constant(true);
-    auto snode = stmt->snode;
-    if (snode->type == SNodeType::bit_array && snode->parent) {
-      if (snode->parent->type == SNodeType::dense) {
-        snode = snode->parent;
-      } else {
-        TI_ERROR(
-            "Struct-for looping through bit array but its parent is not dense");
-      }
-    }
-
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
     if (!prog->config.packed) {
-      for (int i = 0; i < snode->num_active_indices; i++) {
-        auto j = snode->physical_index_position[i];
+      for (int i = 0; i < leaf_block->num_active_indices; i++) {
+        auto j = leaf_block->physical_index_position[i];
         if (!bit::is_power_of_two(
-                snode->extractors[j].num_elements_from_root)) {
+                leaf_block->extractors[j].num_elements_from_root)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
           exec_cond = builder->CreateAnd(
-              exec_cond, builder->CreateICmp(
-                             llvm::CmpInst::ICMP_SLT, coord,
-                             tlctx->get_constant(
-                                 snode->extractors[j].num_elements_from_root)));
+              exec_cond,
+              builder->CreateICmp(
+                  llvm::CmpInst::ICMP_SLT, coord,
+                  tlctx->get_constant(
+                      leaf_block->extractors[j].num_elements_from_root)));
         }
       }
     }
 
-    if (snode->type == SNodeType::bitmasked ||
-        snode->type == SNodeType::pointer) {
+    if (leaf_block->type == SNodeType::bitmasked ||
+        leaf_block->type == SNodeType::pointer) {
       // test whether the current voxel is active or not
-      auto is_active = call(snode, element.get("element"), "is_active",
+      auto is_active = call(leaf_block, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index)});
       is_active =
           builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));

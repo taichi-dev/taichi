@@ -67,3 +67,37 @@ def test_2D_bit_array():
 
     set_val()
     verify_val()
+
+
+@test_utils.test(require=ti.extension.quant, debug=True)
+def test_bit_array_struct_for():
+    block_size = 16
+    N = 64
+    cell = ti.root.pointer(ti.i, N // block_size)
+    qi7 = ti.types.quant.int(7)
+
+    x = ti.field(dtype=qi7)
+    cell.dense(ti.i, block_size // 4).bit_array(ti.i, 4, num_bits=32).place(x)
+
+    @ti.kernel
+    def activate():
+        for i in range(N):
+            if i // block_size % 2 == 0:
+                x[i] = i
+
+    @ti.kernel
+    def assign():
+        for i in x:
+            x[i] -= 1
+
+    @ti.kernel
+    def verify():
+        for i in range(N):
+            if i // block_size % 2 == 0:
+                assert x[i] == i - 1
+            else:
+                assert x[i] == 0
+
+    activate()
+    assign()
+    verify()

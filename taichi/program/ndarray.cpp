@@ -4,8 +4,8 @@
 #include "taichi/program/program.h"
 
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_context.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/llvm_context.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
 namespace taichi {
@@ -83,6 +83,7 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
 
 Ndarray::~Ndarray() {
   if (prog_) {
+    prog_->flush();
     ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);
   }
 }

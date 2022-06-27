@@ -14,7 +14,7 @@
 TLANG_NAMESPACE_BEGIN
 
 struct ForLoopConfig {
-  int bit_vectorize{0};
+  int bit_vectorize{1};
   int num_cpu_threads{0};
   bool strictly_serialized{false};
   MemoryAccessOptions mem_access_opt;
@@ -298,8 +298,10 @@ class Texture;
 class TexturePtrExpression : public Expression {
  public:
   int arg_id;
+  int num_dims;
 
-  TexturePtrExpression(int arg_id) : arg_id(arg_id) {
+  TexturePtrExpression(int arg_id, int num_dims = 2)
+      : arg_id(arg_id), num_dims(num_dims) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -801,7 +803,7 @@ class ASTBuilder {
     }
 
     void reset() {
-      config.bit_vectorize = -1;
+      config.bit_vectorize = 1;
       config.num_cpu_threads = 0;
       config.uniform = false;
       config.mem_access_opt.clear();

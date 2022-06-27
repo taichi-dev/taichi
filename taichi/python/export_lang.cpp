@@ -495,7 +495,6 @@ void export_lang(py::module &m) {
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
-      .def_readonly("depth", &SNode::depth)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &, bool))(&SNode::dense),
@@ -532,16 +531,12 @@ void export_lang(py::module &m) {
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
       .def("has_dual", &SNode::has_dual)
-      .def("activate_dual", &SNode::activate_dual)
-      .def("deactivate_dual", &SNode::deactivate_dual)
-      .def("is_dual_activated", &SNode::is_dual_activated)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("get_shape_along_axis", &SNode::shape_along_axis)
-      .def("get_snode_tree_id", &SNode::get_snode_tree_id)
       .def("get_physical_index_position",
            [](SNode *snode) {
              return std::vector<int>(
@@ -578,7 +573,8 @@ void export_lang(py::module &m) {
 
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
-      .def("from_ndarray", &Texture::from_ndarray);
+      .def("from_ndarray", &Texture::from_ndarray)
+      .def("from_snode", &Texture::from_snode);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
@@ -868,7 +864,7 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

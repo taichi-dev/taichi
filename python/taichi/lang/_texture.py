@@ -6,14 +6,21 @@ import taichi as ti
 
 
 class TextureSampler:
-    def __init__(self, ptr_expr) -> None:
+    def __init__(self, ptr_expr, num_dims) -> None:
         self.ptr_expr = ptr_expr
+        self.num_dims = num_dims
 
     @taichi_scope
     def sample_lod(self, uv, lod):
-        v = _ti_core.make_texture_op_expr(
-            _ti_core.TextureOpType.sample_lod, self.ptr_expr,
-            impl.make_expr_group(uv.x, uv.y, lod))
+        args_group = ()
+        if self.num_dims == 1:
+            args_group = (uv.x, lod)
+        elif self.num_dims == 2:
+            args_group = impl.make_expr_group(uv.x, uv.y, lod)
+        elif self.num_dims == 3:
+            args_group = impl.make_expr_group(uv.x, uv.y, uv.z, lod)
+        v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.sample_lod,
+                                          self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
                                v,
                                with_runtime_context=False)
@@ -30,9 +37,15 @@ class TextureSampler:
 
     @taichi_scope
     def fetch(self, index, lod):
-        v = _ti_core.make_texture_op_expr(
-            _ti_core.TextureOpType.fetch_texel, self.ptr_expr,
-            impl.make_expr_group(index.x, index.y, lod))
+        args_group = ()
+        if self.num_dims == 1:
+            args_group = impl.make_expr_group(index.x, lod)
+        elif self.num_dims == 2:
+            args_group = impl.make_expr_group(index.x, index.y, lod)
+        elif self.num_dims == 3:
+            args_group = impl.make_expr_group(index.x, index.y, index.z, lod)
+        v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.fetch_texel,
+                                          self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
                                v,
                                with_runtime_context=False)
@@ -62,6 +75,9 @@ class Texture:
 
     def from_ndarray(self, ndarray):
         self.tex.from_ndarray(ndarray.arr)
+
+    def from_field(self, field):
+        self.tex.from_snode(field.snode.ptr)
 
     def device_allocation_ptr(self):
         return self.tex.device_allocation_ptr()

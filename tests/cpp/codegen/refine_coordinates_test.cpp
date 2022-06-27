@@ -9,11 +9,11 @@
 
 #include "taichi/backends/arch.h"
 #include "taichi/ir/snode.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
-#include "taichi/llvm/llvm_program.h"
-#include "taichi/llvm/struct_llvm.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 
 namespace taichi {
 

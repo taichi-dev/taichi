@@ -13,8 +13,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/codegen/codegen_llvm.h"
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/util/action_recorder.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -539,11 +538,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
           if (auto qit = val_type->cast<QuantIntType>()) {
-            dtype = qit->get_physical_type();
-            auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
+            dtype = get_ch->input_snode->physical_type;
+            auto [data_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_quant_int(data, bit_offset, val_type);
+            llvm_val[stmt] = extract_quant_int(data, bit_offset, qit);
           } else {
             // TODO: support __ldg
             TI_ASSERT(val_type->is<QuantFixedType>() ||

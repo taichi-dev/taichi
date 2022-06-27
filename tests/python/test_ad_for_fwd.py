@@ -29,9 +29,8 @@ def test_ad_sum_fwd():
     with ti.ad.FwdMode(loss=p, parameters=a, seed=[1.0 for _ in range(N)]):
         compute_sum()
 
-    print(p, p.grad, b)
     for i in range(N):
-        assert p.grad[i] == b[i]
+        assert p.dual[i] == b[i]
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu])
@@ -63,11 +62,11 @@ def test_ad_fibonacci_fwd():
 
     for i in range(N):
         if i == 0:
-            assert f.grad[i] == 0
+            assert f.dual[i] == 0
         else:
-            assert f.grad[i] == f[i - 1]
+            assert f.dual[i] == f[i - 1]
 
     with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
         fib()
     for i in range(N):
-        assert f.grad[i] == f[i]
+        assert f.dual[i] == f[i]

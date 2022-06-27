@@ -591,12 +591,6 @@ class ASTTransformer(Builder):
     def build_BinOp(ctx, node):
         build_stmt(ctx, node.left)
         build_stmt(ctx, node.right)
-
-        def build_pow(lhs, rhs):
-            if isinstance(rhs, int) and rhs < 0:
-                return impl.ti_float(lhs)**rhs
-            return lhs**rhs
-
         op = {
             ast.Add: lambda l, r: l + r,
             ast.Sub: lambda l, r: l - r,
@@ -604,7 +598,7 @@ class ASTTransformer(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
-            ast.Pow: build_pow,
+            ast.Pow: lambda l, r: l**r,
             ast.LShift: lambda l, r: l << r,
             ast.RShift: lambda l, r: l >> r,
             ast.BitOr: lambda l, r: l | r,

@@ -21,10 +21,12 @@
 #include <algorithm>
 #include <type_traits>
 #include <cstring>
+#include <string>
 
 #include "taichi/inc/constants.h"
 #include "taichi/inc/cuda_kernel_utils.inc.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/common/exceptions.h"
 
 struct RuntimeContext;
 using assert_failed_type = void (*)(const char *);
@@ -298,27 +300,19 @@ f64 atan2_f64(f64 a, f64 b) {
 }
 
 i32 pow_i32(i32 x, i32 n) {
-  i32 tmp = x;
-  i32 ans = 1;
-  while (n) {
-    if (n & 1)
-      ans *= tmp;
-    tmp *= tmp;
-    n >>= 1;
+  if (n < 0) {
+    throw taichi::lang::TaichiRuntimeError(
+        std::string("exponent of integer power cannot be negative"));
   }
-  return ans;
+  return static_cast<i32>(std::pow(x, n));
 }
 
 i64 pow_i64(i64 x, i64 n) {
-  i64 tmp = x;
-  i64 ans = 1;
-  while (n) {
-    if (n & 1)
-      ans *= tmp;
-    tmp *= tmp;
-    n >>= 1;
+  if (n < 0) {
+    throw taichi::lang::TaichiRuntimeError(
+        std::string("exponent of integer power cannot be negative"));
   }
-  return ans;
+  return static_cast<i64>(std::pow(x, n));
 }
 
 f32 pow_f32(f32 a, f32 b) {

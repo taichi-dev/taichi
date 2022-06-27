@@ -712,9 +712,14 @@ def isinf(x):
     Returns:
         For each element i of the result, returns `True` if x[i] is posititve or negative floating point infinity and `False` otherwise.
     """
-    fx = ti.cast(x, ti.f64)
-    y = ti.bit_cast(fx, ti.u64)
-    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
+    ftype = impl.get_runtime().default_fp
+    fx = ti.cast(x, ftype)
+    if ti.static(ftype == ti.f64):
+        y = ti.bit_cast(fx, ti.u64)
+        return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
+    else:
+        y = ti.bit_cast(fx, ti.u32)
+        return (y & 0x7fffffff) == 0x7f800000
 
 
 @unary
@@ -738,9 +743,14 @@ def isnan(x):
     Returns:
         For each element i of the result, returns `True` if x[i] is posititve or negative floating point NaN (Not a Number) and `False` otherwise.
     """
-    fx = ti.cast(x, ti.f64)
-    y = ti.bit_cast(fx, ti.u64)
-    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
+    ftype = impl.get_runtime().default_fp
+    fx = ti.cast(x, ftype)
+    if ti.static(ftype == ti.f64):
+        y = ti.bit_cast(fx, ti.u64)
+        return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
+    else:
+        y = ti.bit_cast(fx, ti.u32)
+        return (y & 0x7fffffff) > 0x7f800000
 
 
 @ti.func

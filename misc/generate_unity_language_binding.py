@@ -1,6 +1,8 @@
-from taichi_json import EntryBase, BuiltInType, Alias, Handle, Definition, \
-    Handle, Enumeration, BitField, Field, Structure, Union, Function, Module
 import re
+
+from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
+                         Enumeration, Field, Function, Handle, Module,
+                         Structure, Union)
 
 
 def get_type_name(x: EntryBase):
@@ -104,14 +106,18 @@ def get_declr(x: EntryBase):
         out = ["public enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
             out += [f"  {name.screaming_snake_case} = {value},"]
-        out += [f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"]
+        out += [
+            f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"
+        ]
         out += ["}"]
         return '\n'.join(out)
 
     elif ty is BitField:
         out = ["[Flags]", "public enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
-            out += [f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"]
+            out += [
+                f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
+            ]
         out += ["};"]
         return '\n'.join(out)
 
@@ -143,17 +149,17 @@ def get_declr(x: EntryBase):
             "#if (UNITY_IOS || UNITY_TVOS || UNITY_WEBGL) && !UNITY_EDITOR",
             '    [DllImport ("__Internal")]',
             "#else",
-            '    [DllImport("taichi_unity")]' if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
+            '    [DllImport("taichi_unity")]'
+            if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
             "#endif",
             "private static extern " + return_value_type + " " +
             x.name.snake_case + "(",
             ',\n'.join(f"  {get_c_function_param(param)}"
                        for param in x.params),
             ");",
-            "public static " + return_value_type +
-            " " + x.name.upper_camel_case + "(",
-            ',\n'.join(f"  {get_function_param(param)}"
-                       for param in x.params),
+            "public static " + return_value_type + " " +
+            x.name.upper_camel_case + "(",
+            ',\n'.join(f"  {get_function_param(param)}" for param in x.params),
             ") {",
         ]
         for param in x.params:

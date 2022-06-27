@@ -14,7 +14,8 @@ class Name:
             subname = Name(subname)
         assert isinstance(subname, Name)
         assert len(subname._prefix) == 0 and len(subname._suffix) == 0
-        return Name('_'.join(self._segs + subname._segs), self._prefix, self._suffix)
+        return Name('_'.join(self._segs + subname._segs), self._prefix,
+                    self._suffix)
 
     @property
     def segs(self):

@@ -1,5 +1,6 @@
-from taichi_json import EntryBase, BuiltInType, Alias, Handle, Definition, \
-    Handle, Enumeration, BitField, Field, Structure, Union, Function, Module
+from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
+                         Enumeration, Field, Function, Handle, Module,
+                         Structure, Union)
 
 #from os import system
 
@@ -50,17 +51,20 @@ def get_declr(x: EntryBase):
         out = ["typedef enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
             out += [f"  {name.screaming_snake_case} = {value},"]
-        out += [f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"]
+        out += [
+            f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"
+        ]
         out += ["} " + get_type_name(x) + ";"]
         return '\n'.join(out)
 
     elif ty is BitField:
         out = ["typedef enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
-            out += [f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"]
+            out += [
+                f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
+            ]
         out += ["} " + get_type_name(x) + ";"]
-        out += [
-            f"typedef TiFlags {x.name.extend('flags').upper_camel_case};"]
+        out += [f"typedef TiFlags {x.name.extend('flags').upper_camel_case};"]
         return '\n'.join(out)
 
     elif ty is Structure:

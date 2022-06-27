@@ -1212,7 +1212,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
+    if (!snodes[0]->has_dual()) {
       // No dual SNode. Do nothing
       return;
     }

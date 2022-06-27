@@ -23,9 +23,14 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 
 
-gui = ti.GUI("Julia Set", res=(n * 2, n))
+def main():
+    gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-for i in range(1000000):
-    paint(i * 0.03)
-    gui.set_image(pixels)
-    gui.show()
+    for i in range(1000000):
+        paint(i * 0.03)
+        gui.set_image(pixels)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

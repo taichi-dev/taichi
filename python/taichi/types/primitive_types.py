@@ -157,8 +157,8 @@ real_type_ids = [id(t) for t in real_types]
 integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int]
 integer_type_ids = [id(t) for t in integer_types]
 
-types = real_types + integer_types
-type_ids = [id(t) for t in types]
+all_types = real_types + integer_types
+type_ids = [id(t) for t in all_types]
 
 __all__ = [
     'float32',

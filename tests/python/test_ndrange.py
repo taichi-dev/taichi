@@ -261,3 +261,33 @@ def test_ndrange_start_greater_than_end():
     assert ndrange_test(0, 10, 20, 0) == 0
     assert ndrange_test(10, 0, 0, 20) == 0
     assert ndrange_test(10, 0, 20, 0) == 0
+
+
+@test_utils.test()
+def test_ndrange_non_integer_arguments():
+    @ti.kernel
+    def example():
+        for i in ti.ndrange((1.1, 10.5)):
+            pass
+
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match=
+            r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)"
+    ):
+        example()
+
+
+@test_utils.test()
+def test_static_ndrange_non_integer_arguments():
+    @ti.kernel
+    def example():
+        for i in ti.static(ti.ndrange(0.1, 0.2, 0.3)):
+            pass
+
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match=
+            r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)"
+    ):
+        example()

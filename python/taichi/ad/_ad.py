@@ -5,7 +5,6 @@ gradient computation task.
 """
 from functools import reduce
 
-from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
@@ -241,41 +240,18 @@ class FwdMode:
         assert not self.entered, "Forward mode manager can be entered only once."
         self.entered = True
         impl.get_runtime().materialize()
+        if not isinstance(self.loss, list):
+            self.loss = [self.loss]
+        for ls in self.loss:
+            assert isinstance(ls, ScalarField)
 
-        # Currently we only support only one N-D field as a group of parameters or losses,
+        # Currently we only support only one N-D field as a group of parameters,
         # which is sufficient for computing Jacobian-vector product(Jvp).
         # For cases with multiple groups of parameters, it requires to run the forward ad multiple times,
         # which is out of scope of the current design for this interface.
 
         # TODO: support vector field and matrix field
         assert isinstance(self.parameters, ScalarField)
-        assert isinstance(self.loss, ScalarField)
-
-        # Allocate dual field for loss if haven't be allocated
-        if not self.loss.snode.ptr.has_dual():
-            dual_root = FieldsBuilder()
-            allocate_dual(self.loss, dual_root)
-            self.dual_snode_tree_id_of_loss = dual_root.finalize().id
-        else:
-            # Reactivate the dual snode
-            self.loss.snode.ptr.activate_dual()
-            # Get the root SNode of the SNode tree, because only the root SNode stores the tree id, other children SNodes only have a default value 0
-            depth = self.loss.dual.snode.ptr.depth
-            self.dual_snode_tree_id_of_loss = self.loss.dual.snode.parent(
-                depth).ptr.get_snode_tree_id()
-
-        # Allocate dual field for parameters if haven't be allocated
-        if not self.parameters.snode.ptr.has_dual():
-            dual_root = FieldsBuilder()
-            allocate_dual(self.parameters, dual_root)
-            self.dual_snode_tree_id_of_parameters = dual_root.finalize().id
-        else:
-            # Reactivate the dual snode
-            self.parameters.snode.ptr.activate_dual()
-            # Get the root SNode of the SNode tree, because only the root SNode stores the tree id, other children SNodes only have a default value 0
-            depth = self.parameters.dual.snode.ptr.depth
-            self.dual_snode_tree_id_of_parameters = self.parameters.dual.snode.parent(
-                depth).ptr.get_snode_tree_id()
 
         def shape_flatten(shape):
             return reduce((lambda x, y: x * y), list(shape))
@@ -302,7 +278,8 @@ class FwdMode:
 
         # Clear gradients
         if self.clear_gradients:
-            self.loss.dual.fill(0)
+            for ls in self.loss:
+                ls.dual.fill(0)
 
         # Attach the context manager to the runtime
         self.runtime.fwd_mode_manager = self
@@ -310,14 +287,10 @@ class FwdMode:
     def __exit__(self, _type, value, tb):
         self.runtime.fwd_mode_manager = None
         self.clear_seed()
-        self.deactivate_dual_snodes()
         self.recover_kernels()
 
     def insert(self, func, mode_original):
         self.calls.append((func, mode_original))
-
-    def gen_kernel_cache_key(self):
-        return self.dual_snode_tree_id_of_loss, self.dual_snode_tree_id_of_parameters
 
     def recover_kernels(self):
         assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
@@ -332,23 +305,6 @@ class FwdMode:
         else:
             for idx, s in enumerate(self.seed):
                 self.parameters.dual[idx] = 0.0
-
-    def deactivate_dual_snodes(self):
-        # Deactivate the dual SNodes so that they will not be captured by the autodiff pass when they don't appear in the `parameters` or 'loss'
-        self.loss.snode.ptr.deactivate_dual()
-        self.parameters.snode.ptr.deactivate_dual()
-
-
-def allocate_dual(x, dual_root):
-    """Allocate dual field for forward mode autodiff
-    """
-    dtype = x.dtype
-    shape = x.shape
-    dim = len(shape)
-    x_dual = impl.field(dtype)
-    x._get_field_members()[0].ptr.set_dual(x_dual._get_field_members()[0].ptr)
-    x._set_grad(x_dual, reverse_mode=False)
-    dual_root.dense(impl.index_nd(dim), shape).place(x_dual)
 
 
 __all__ = [

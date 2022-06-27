@@ -1,8 +1,10 @@
 import collections.abc
 
 from taichi.lang import ops
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.expr import Expr
 from taichi.lang.matrix import _IntermediateMatrix
+from taichi.types.utils import is_integral
 
 
 class _Ndrange:
@@ -16,6 +18,14 @@ class _Ndrange:
                     "Every argument of ndrange should be a scalar or a tuple/list like (begin, end)"
                 )
             args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
+        for arg in args:
+            for bound in arg:
+                if not isinstance(bound, int) and not (
+                        isinstance(bound, Expr)
+                        and is_integral(bound.ptr.get_ret_type())):
+                    raise TaichiTypeError(
+                        "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
+                    )
         self.bounds = args
 
         self.dimensions = [None] * len(args)

@@ -1,8 +1,8 @@
 class TextureType:
     """Type annotation for Textures.
     """
-    def __init__(self):
-        pass
+    def __init__(self, num_dimensions):
+        self.num_dimensions = num_dimensions
 
 
 texture = TextureType

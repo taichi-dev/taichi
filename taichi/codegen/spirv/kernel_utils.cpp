@@ -48,10 +48,12 @@ std::string TaskAttributes::BufferBind::debug_string() const {
                      TaskAttributes::buffers_name(buffer), binding);
 }
 
-KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
+KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
+                                                 Device *device)
     : args_bytes_(0),
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
+  arr_access.resize(kernel.args.size(), irpass::ExternalPtrAccess(0));
   arg_attribs_vec_.reserve(kernel.args.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.
@@ -90,12 +92,13 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ret_attribs_vec_.push_back(ra);
   }
 
-  auto arange_args = [](auto *vec, size_t offset, bool is_ret) -> size_t {
+  auto arange_args = [](auto *vec, size_t offset, bool is_ret,
+                        bool has_buffer_ptr) -> size_t {
     size_t bytes = offset;
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
       const size_t dt_bytes =
-          (attribs.is_array && !is_ret)
+          (attribs.is_array && !is_ret && has_buffer_ptr)
               ? sizeof(uint64_t)
               : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
@@ -111,12 +114,14 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   };
 
   TI_TRACE("args:");
-  args_bytes_ = arange_args(&arg_attribs_vec_, 0, false);
+  args_bytes_ = arange_args(
+      &arg_attribs_vec_, 0, false,
+      device->get_cap(DeviceCapability::spirv_has_physical_storage_buffer));
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
 
   TI_TRACE("rets:");
-  rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true);
+  rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true, false);
 
   TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

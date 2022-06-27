@@ -85,8 +85,8 @@ void Window::present_frame() {
 }
 
 Window::~Window() {
-  gui_->cleanup();
-  renderer_->cleanup();
+  gui_.reset();
+  renderer_.reset();
   if (config_.show_window) {
     glfwTerminate();
   }

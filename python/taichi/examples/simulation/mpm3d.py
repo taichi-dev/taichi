@@ -22,71 +22,72 @@ gravity = 9.8
 bound = 3
 E = 400
 
-x = ti.Vector.field(dim, float, n_particles)
-v = ti.Vector.field(dim, float, n_particles)
-C = ti.Matrix.field(dim, dim, float, n_particles)
-J = ti.field(float, n_particles)
+F_x = ti.Vector.field(dim, float, n_particles)
+F_v = ti.Vector.field(dim, float, n_particles)
+F_C = ti.Matrix.field(dim, dim, float, n_particles)
+F_J = ti.field(float, n_particles)
 
-grid_v = ti.Vector.field(dim, float, (n_grid, ) * dim)
-grid_m = ti.field(float, (n_grid, ) * dim)
+F_grid_v = ti.Vector.field(dim, float, (n_grid, ) * dim)
+F_grid_m = ti.field(float, (n_grid, ) * dim)
 
 neighbour = (3, ) * dim
 
 
 @ti.kernel
 def substep():
-    for I in ti.grouped(grid_m):
-        grid_v[I] = ti.zero(grid_v[I])
-        grid_m[I] = 0
+    for I in ti.grouped(F_grid_m):
+        F_grid_v[I] = ti.zero(F_grid_v[I])
+        F_grid_m[I] = 0
     ti.block_dim(n_grid)
-    for p in x:
-        Xp = x[p] / dx
+    for p in F_x:
+        Xp = F_x[p] / dx
         base = int(Xp - 0.5)
         fx = Xp - base
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        stress = -dt * 4 * E * p_vol * (J[p] - 1) / dx**2
-        affine = ti.Matrix.identity(float, dim) * stress + p_mass * C[p]
+        stress = -dt * 4 * E * p_vol * (F_J[p] - 1) / dx**2
+        affine = ti.Matrix.identity(float, dim) * stress + p_mass * F_C[p]
         for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
             dpos = (offset - fx) * dx
             weight = 1.0
             for i in ti.static(range(dim)):
                 weight *= w[offset[i]][i]
-            grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-            grid_m[base + offset] += weight * p_mass
-    for I in ti.grouped(grid_m):
-        if grid_m[I] > 0:
-            grid_v[I] /= grid_m[I]
-        grid_v[I][1] -= dt * gravity
-        cond = (I < bound) & (grid_v[I] < 0) | \
-               (I > n_grid - bound) & (grid_v[I] > 0)
-        grid_v[I] = 0 if cond else grid_v[I]
+            F_grid_v[base +
+                     offset] += weight * (p_mass * F_v[p] + affine @ dpos)
+            F_grid_m[base + offset] += weight * p_mass
+    for I in ti.grouped(F_grid_m):
+        if F_grid_m[I] > 0:
+            F_grid_v[I] /= F_grid_m[I]
+        F_grid_v[I][1] -= dt * gravity
+        cond = (I < bound) & (F_grid_v[I] < 0) | \
+               (I > n_grid - bound) & (F_grid_v[I] > 0)
+        F_grid_v[I] = 0 if cond else F_grid_v[I]
     ti.block_dim(n_grid)
-    for p in x:
-        Xp = x[p] / dx
+    for p in F_x:
+        Xp = F_x[p] / dx
         base = int(Xp - 0.5)
         fx = Xp - base
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        new_v = ti.zero(v[p])
-        new_C = ti.zero(C[p])
+        new_v = ti.zero(F_v[p])
+        new_C = ti.zero(F_C[p])
         for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
             dpos = (offset - fx) * dx
             weight = 1.0
             for i in ti.static(range(dim)):
                 weight *= w[offset[i]][i]
-            g_v = grid_v[base + offset]
+            g_v = F_grid_v[base + offset]
             new_v += weight * g_v
             new_C += 4 * weight * g_v.outer_product(dpos) / dx**2
-        v[p] = new_v
-        x[p] += dt * v[p]
-        J[p] *= 1 + dt * new_C.trace()
-        C[p] = new_C
+        F_v[p] = new_v
+        F_x[p] += dt * F_v[p]
+        F_J[p] *= 1 + dt * new_C.trace()
+        F_C[p] = new_C
 
 
 @ti.kernel
 def init():
     for i in range(n_particles):
-        x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.15
-        J[i] = 1
+        F_x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.15
+        F_J[i] = 1
 
 
 def T(a):
@@ -97,22 +98,27 @@ def T(a):
 
     a = a - 0.5
     x, y, z = a[:, 0], a[:, 1], a[:, 2]
-    c, s = np.cos(phi), np.sin(phi)
-    C, S = np.cos(theta), np.sin(theta)
-    x, z = x * c + z * s, z * c - x * s
-    u, v = x, y * C + z * S
+    cp, sp = np.cos(phi), np.sin(phi)
+    ct, st = np.cos(theta), np.sin(theta)
+    x, z = x * cp + z * sp, z * cp - x * sp
+    u, v = x, y * ct + z * st
     return np.array([u, v]).swapaxes(0, 1) + 0.5
 
 
-init()
-gui = ti.GUI('MPM3D', background_color=0x112F41)
-while gui.running and not gui.get_event(gui.ESCAPE):
-    for s in range(steps):
-        substep()
-    pos = x.to_numpy()
-    if export_file:
-        writer = ti.tools.PLYWriter(num_vertices=n_particles)
-        writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
-        writer.export_frame(gui.frame, export_file)
-    gui.circles(T(pos), radius=1.5, color=0x66ccff)
-    gui.show()
+def main():
+    init()
+    gui = ti.GUI('MPM3D', background_color=0x112F41)
+    while gui.running and not gui.get_event(gui.ESCAPE):
+        for s in range(steps):
+            substep()
+        pos = F_x.to_numpy()
+        if export_file:
+            writer = ti.tools.PLYWriter(num_vertices=n_particles)
+            writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
+            writer.export_frame(gui.frame, export_file)
+        gui.circles(T(pos), radius=1.5, color=0x66ccff)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

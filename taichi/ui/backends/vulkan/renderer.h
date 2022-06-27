@@ -44,6 +44,7 @@ namespace vulkan {
 class TI_DLL_EXPORT Renderer {
  public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
+  ~Renderer();
   void cleanup();
 
   void prepare_for_next_frame();

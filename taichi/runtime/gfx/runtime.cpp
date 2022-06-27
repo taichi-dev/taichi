@@ -591,7 +591,7 @@ void GfxRuntime::submit_current_cmdlist_if_timeout() {
     constexpr uint64_t max_pending_time = 2000;  // 2000us = 2ms
     auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
-      .count() > max_pending_time) {
+            .count() > max_pending_time) {
       flush();
     }
   }

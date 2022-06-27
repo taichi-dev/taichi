@@ -131,11 +131,9 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
-void ti_copy_memory(
-  TiRuntime runtime,
-  const TiMemorySlice *dst_memory,
-  const TiMemorySlice *src_memory
-) {
+void ti_copy_memory(TiRuntime runtime,
+                    const TiMemorySlice *dst_memory,
+                    const TiMemorySlice *src_memory) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to copy memory on runtime of null handle");
     return;
@@ -152,9 +150,11 @@ void ti_copy_memory(
     TI_WARN("ignored attempt to copy memory of mismatched size");
     return;
   }
-  Runtime* runtime2 = (Runtime*)runtime;
-  auto dst = devmem2devalloc(*runtime2, dst_memory->memory).get_ptr(dst_memory->offset);
-  auto src = devmem2devalloc(*runtime2, src_memory->memory).get_ptr(src_memory->offset);
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto dst = devmem2devalloc(*runtime2, dst_memory->memory)
+                 .get_ptr(dst_memory->offset);
+  auto src = devmem2devalloc(*runtime2, src_memory->memory)
+                 .get_ptr(src_memory->offset);
   runtime2->buffer_copy(dst, src, dst_memory->size);
 }
 

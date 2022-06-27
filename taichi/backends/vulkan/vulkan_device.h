@@ -180,7 +180,7 @@ class VulkanResourceBinder : public ResourceBinder {
             sizeof(VulkanResourceBinder::Binding) % sizeof(uint32_t) == 0,
             "sizeof(VulkanResourceBinder::Binding) is not a multiple of 4");
         size_t n = sizeof(VulkanResourceBinder::Binding) / sizeof(uint32_t);
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
           binding_hash = binding_hash ^ u32_ptr[i];
           binding_hash = (binding_hash << 7) | (binding_hash >> (64 - 7));
         }

@@ -1,7 +1,7 @@
 #include "taichi/aot/module_loader.h"
 
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
-#include "taichi/backends/metal/aot_module_loader_impl.h"
+#include "taichi/runtime/metal/aot_module_loader_impl.h"
 
 namespace taichi {
 namespace lang {

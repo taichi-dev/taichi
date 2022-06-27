@@ -162,6 +162,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::move_loop_invariant_outside_if)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
+      .def_readwrite("cpu_block_dim_adaptive",
+                     &CompileConfig::cpu_block_dim_adaptive)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("gpu_max_reg", &CompileConfig::gpu_max_reg)
@@ -571,11 +573,15 @@ void export_lang(py::module &m) {
 
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
-      .def("from_ndarray", &Texture::from_ndarray);
+      .def("from_ndarray", &Texture::from_ndarray)
+      .def("from_snode", &Texture::from_snode);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
+      // Using this MATRIX as Scalar alias, we can move to native matrix type
+      // when supported
+      .value("MATRIX", aot::ArgKind::kMatrix)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
@@ -603,7 +609,8 @@ void export_lang(py::module &m) {
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
       .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats) {
+                     const py::dict &arg_ints, const py::dict &arg_floats,
+                     const py::dict &arg_doubles) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : arg_ptrs) {
           auto &val = it.second.cast<Ndarray &>();
@@ -615,6 +622,10 @@ void export_lang(py::module &m) {
                        aot::IValue::create(py::cast<int>(it.second))});
         }
         for (auto it : arg_floats) {
+          args.insert({py::cast<std::string>(it.first),
+                       aot::IValue::create(py::cast<float32>(it.second))});
+        }
+        for (auto it : arg_doubles) {
           args.insert({py::cast<std::string>(it.first),
                        aot::IValue::create(py::cast<double>(it.second))});
         }
@@ -668,8 +679,6 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
-      .def("is_global_ptr",
-           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->is_primal;
@@ -855,10 +864,7 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_global_ptr_expr",
-        Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
-
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
@@ -908,8 +914,11 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("make_tensor_element_expr",
-        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+  m.def("make_index_expr",
+        Expr::make<IndexExpression, const Expr &, const ExprGroup &>);
+
+  m.def("make_stride_expr",
+        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
@@ -1036,13 +1045,15 @@ void export_lang(py::module &m) {
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
-      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::return_value_policy::reference)
+      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

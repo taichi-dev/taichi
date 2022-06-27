@@ -15,7 +15,8 @@ from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
-from taichi.types import annotations, ndarray_type, primitive_types
+from taichi.types import (annotations, ndarray_type, primitive_types,
+                          texture_type)
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -481,6 +482,12 @@ class ASTTransformer(Builder):
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
+                elif isinstance(ctx.func.arguments[i].annotation,
+                                texture_type.TextureType):
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_texture_arg(
+                            ctx.func.arguments[i].annotation.num_dimensions))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,

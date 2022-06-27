@@ -107,25 +107,30 @@ class TriangleRasterizer:
             pixels[i, j] = samples_sum / num_samples_per_pixel
 
 
-gui = ti.GUI("Rasterizer", res=(width, height))
+def main():
+    gui = ti.GUI("Rasterizer", res=(width, height))
 
-triangles = TriangleRasterizer(num_triangles)
+    triangles = TriangleRasterizer(num_triangles)
 
-i = 0
-while gui.running:
-    # Set a triangle to a new random triangle
-    triangles.set_triangle(i % num_triangles,
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(3)),
-                           ti.Vector(np.random.rand(3)),
-                           ti.Vector(np.random.rand(3)))
-    i = i + 1
+    i = 0
+    while gui.running:
+        # Set a triangle to a new random triangle
+        triangles.set_triangle(i % num_triangles,
+                               ti.Vector(np.random.rand(2) * [width, height]),
+                               ti.Vector(np.random.rand(2) * [width, height]),
+                               ti.Vector(np.random.rand(2) * [width, height]),
+                               ti.Vector(np.random.rand(3)),
+                               ti.Vector(np.random.rand(3)),
+                               ti.Vector(np.random.rand(3)))
+        i = i + 1
 
-    samples.fill(ti.Vector([1.0, 1.0, 1.0]))
-    pixels.fill(ti.Vector([1.0, 1.0, 1.0]))
-    triangles.tile_culling()
-    triangles.rasterize()
-    gui.set_image(pixels)
-    gui.show()
+        samples.fill(ti.Vector([1.0, 1.0, 1.0]))
+        pixels.fill(ti.Vector([1.0, 1.0, 1.0]))
+        triangles.tile_culling()
+        triangles.rasterize()
+        gui.set_image(pixels)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

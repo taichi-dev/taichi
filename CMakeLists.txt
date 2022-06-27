@@ -101,6 +101,10 @@ endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 
+if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
+    set(TI_BUILD_EXAMPLES OFF)
+endif()
+
 if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
 endif()
@@ -162,7 +166,7 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
 endif()
 
 if (TI_WITH_LLVM)
-  add_subdirectory(taichi/runtime/llvm)
+  add_subdirectory(taichi/runtime/llvm/runtime_module)
 endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
@@ -176,4 +180,10 @@ endif()
 
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)
+endif()
+
+option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+
+if (TI_WITH_C_API)
+  include(cmake/TaichiCAPI.cmake)
 endif()

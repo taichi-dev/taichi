@@ -9,10 +9,11 @@
 
 #include "taichi/backends/arch.h"
 #include "taichi/ir/snode.h"
-#include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
-#include "taichi/struct/struct_llvm.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 
 namespace taichi {
 
@@ -107,7 +108,8 @@ class RefineCoordinatesTest : public ::testing::Test {
     config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch_);
-    tlctx_ = prog_->get_llvm_program_impl()->get_llvm_context(arch_);
+    auto *llvm_prog_ = get_llvm_program(prog_.get());
+    tlctx_ = llvm_prog_->get_llvm_context(arch_);
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};

@@ -1,14 +1,12 @@
-import numpy as np
-
 import taichi as ti
 from tests import test_utils
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    cu1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=cu1)
+    x = ti.field(dtype=qu1)
 
     N = 32
 
@@ -29,10 +27,27 @@ def test_1D_bit_array():
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
-def test_2D_bit_array():
-    ci1 = ti.types.quant.int(1, False)
+def test_1D_bit_array_negative():
+    N = 4
+    qi7 = ti.types.quant.int(7)
+    x = ti.field(dtype=qi7)
+    ti.root.bit_array(ti.i, N, num_bits=32).place(x)
 
-    x = ti.field(dtype=ci1)
+    @ti.kernel
+    def assign():
+        for i in range(N):
+            assert x[i] == 0
+            x[i] = -i
+            assert x[i] == -i
+
+    assign()
+
+
+@test_utils.test(require=ti.extension.quant, debug=True)
+def test_2D_bit_array():
+    qu1 = ti.types.quant.int(1, False)
+
+    x = ti.field(dtype=qu1)
 
     M, N = 4, 8
 

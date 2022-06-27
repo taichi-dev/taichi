@@ -216,6 +216,9 @@ void Gui::cleanup() {
   ImGui::DestroyContext();
 }
 
+Gui::~Gui() {
+  cleanup();
+}
 bool Gui::is_empty() {
   return is_empty_;
 }

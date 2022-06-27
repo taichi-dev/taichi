@@ -14,8 +14,8 @@ class AotModuleBuilder;
 class Ndarray;
 struct RuntimeContext;
 namespace aot {
-// Currently only scalar and ndarray are supported.
-enum class ArgKind { kScalar, kNdarray, kUnknown };
+// Currently only scalar, matrix and ndarray are supported.
+enum class ArgKind { kScalar, kMatrix, kNdarray, kUnknown };
 
 /**
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.

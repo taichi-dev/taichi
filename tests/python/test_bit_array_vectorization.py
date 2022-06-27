@@ -8,10 +8,10 @@ from tests import test_utils
                  debug=True,
                  cfg_optimization=False)
 def test_vectorized_struct_for():
-    cu1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=cu1)
-    y = ti.field(dtype=cu1)
+    x = ti.field(dtype=qu1)
+    y = ti.field(dtype=qu1)
 
     N = 4096
     n_blocks = 4
@@ -47,13 +47,13 @@ def test_vectorized_struct_for():
     verify()
 
 
-@test_utils.test(require=ti.extension.quant)
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_offset_load():
-    ci1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
-    y = ti.field(dtype=ci1)
-    z = ti.field(dtype=ci1)
+    x = ti.field(dtype=qu1)
+    y = ti.field(dtype=qu1)
+    z = ti.field(dtype=qu1)
 
     N = 4096
     n_blocks = 4
@@ -109,11 +109,11 @@ def test_offset_load():
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    ci1 = ti.types.quant.int(1, False)
+    qu1 = ti.types.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
-    y = ti.field(dtype=ci1)
-    z = ti.field(dtype=ci1)
+    x = ti.field(dtype=qu1)
+    y = ti.field(dtype=qu1)
+    z = ti.field(dtype=qu1)
 
     N = 4096
     n_blocks = 4

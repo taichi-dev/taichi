@@ -9,7 +9,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-#include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"
@@ -35,6 +34,8 @@ using BufferType = TaskAttributes::BufferType;
 using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
+
+using TextureBind = TaskAttributes::TextureBind;
 
 std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
@@ -97,6 +98,7 @@ class TaskCodegen : public IRVisitor {
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
+    std::unordered_map<int, irpass::ExternalPtrAccess> arr_access;
   };
 
   Result run() {
@@ -127,6 +129,7 @@ class TaskCodegen : public IRVisitor {
     Result res;
     res.spirv_code = ir_->finalize();
     res.task_attribs = std::move(task_attribs_);
+    res.arr_access = irpass::detect_external_ptr_access_in_task(task_ir_);
 
     return res;
   }
@@ -934,8 +937,60 @@ class TaskCodegen : public IRVisitor {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
   }
 
+  void visit(TexturePtrStmt *stmt) override {
+    spirv::Value val;
+
+    int arg_id = stmt->arg_load_stmt->as<ArgLoadStmt>()->arg_id;
+    if (argid_to_tex_value_.find(arg_id) != argid_to_tex_value_.end()) {
+      val = argid_to_tex_value_.at(arg_id);
+    } else {
+      int binding = binding_head_++;
+      val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
+                                  /*set=*/0, binding);
+      TextureBind bind;
+      bind.arg_id = arg_id;
+      bind.binding = binding;
+      texture_binds_.push_back(bind);
+      argid_to_tex_value_[arg_id] = val;
+    }
+
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
+  void visit(TextureOpStmt *stmt) override {
+    spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
+    std::vector<spirv::Value> args;
+    for (int i = 0; i < stmt->args.size() - 1; i++) {
+      args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
+    }
+    spirv::Value lod = ir_->query_value(stmt->args.back()->raw_name());
+    spirv::Value val;
+    if (stmt->op == TextureOpType::sample_lod) {
+      val = ir_->sample_texture(tex, args, lod);
+    } else if (stmt->op == TextureOpType::fetch_texel) {
+      val = ir_->fetch_texel(tex, args, lod);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(InternalFuncStmt *stmt) override {
     spirv::Value val;
+
+    if (stmt->func_name == "composite_extract_0") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 0);
+    } else if (stmt->func_name == "composite_extract_1") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 1);
+    } else if (stmt->func_name == "composite_extract_2") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 2);
+    } else if (stmt->func_name == "composite_extract_3") {
+      val = ir_->make_value(spv::OpCompositeExtract, ir_->f32_type(),
+                            ir_->query_value(stmt->args[0]->raw_name()), 3);
+    }
 
     const std::unordered_set<std::string> reduction_ops{
         "subgroupAdd", "subgroupMul", "subgroupMin", "subgroupMax",
@@ -1262,7 +1317,6 @@ class TaskCodegen : public IRVisitor {
     spirv::Label body_label = ir_->new_label();
     spirv::Label continue_label = ir_->new_label();
     spirv::Label merge_label = ir_->new_label();
-    ir_->make_inst(spv::OpBranch, head_label);
 
     spirv::Value begin_ = ir_->query_value(for_stmt->begin->raw_name());
     spirv::Value end_ = ir_->query_value(for_stmt->end->raw_name());
@@ -1276,6 +1330,7 @@ class TaskCodegen : public IRVisitor {
       init_value = ir_->sub(end_, ir_->const_i32_one_);
       extent_value = begin_;
     }
+    ir_->make_inst(spv::OpBranch, head_label);
 
     // Loop head
     ir_->start_label(head_label);
@@ -1404,7 +1459,6 @@ class TaskCodegen : public IRVisitor {
   void generate_serial_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::serial;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 1;
 
@@ -1433,6 +1487,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void gen_array_range(Stmt *stmt) {
@@ -1447,7 +1502,6 @@ class TaskCodegen : public IRVisitor {
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::range_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
 
     task_attribs_.range_for_attribs = TaskAttributes::RangeForAttributes();
     auto &range_for_attribs = task_attribs_.range_for_attribs.value();
@@ -1588,12 +1642,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_listgen_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::listgen;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
     task_attribs_.advisory_num_threads_per_group = 32;
 
@@ -1740,12 +1794,12 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::struct_for;
-    // task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 65536;
     task_attribs_.advisory_num_threads_per_group = 128;
 
@@ -1807,6 +1861,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
 
     task_attribs_.buffer_binds = get_buffer_binds();
+    task_attribs_.texture_binds = get_texture_binds();
   }
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
@@ -1917,29 +1972,38 @@ class TaskCodegen : public IRVisitor {
     if (!ctx_attribs_->has_args())
       return;
 
-    std::vector<std::tuple<spirv::SType, std::string, size_t>>
-        struct_components_;
+    // Generate struct IR
+    tinyir::Block blk;
+    std::vector<const tinyir::Type *> element_types;
     for (auto &arg : ctx_attribs_->args()) {
+      const tinyir::Type *t;
       if (arg.is_array &&
           device_->get_cap(
               DeviceCapability::spirv_has_physical_storage_buffer)) {
-        struct_components_.emplace_back(ir_->u64_type(),
-                                        "arg_ptr" + std::to_string(arg.index),
-                                        arg.offset_in_mem);
+        t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
       } else {
-        struct_components_.emplace_back(
-            ir_->get_primitive_type(PrimitiveType::get(arg.dtype)),
-            "arg" + std::to_string(arg.index), arg.offset_in_mem);
+        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
       }
+      element_types.push_back(t);
     }
-    // A compromise for use in constants buffer
-    // where scalar arrays follow very weird packing rules
+    const tinyir::Type *i32_type =
+        blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);
     for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
-      struct_components_.emplace_back(
-          ir_->i32_type(), "extra_args" + std::to_string(i),
-          ctx_attribs_->extra_args_mem_offset() + i * 4);
+      element_types.push_back(i32_type);
     }
-    args_struct_type_ = ir_->create_struct_type(struct_components_);
+    const tinyir::Type *struct_type =
+        blk.emplace_back<StructType>(element_types);
+
+    // Reduce struct IR
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> old2new;
+    auto reduced_blk = ir_reduce_types(&blk, old2new);
+    struct_type = old2new[struct_type];
+
+    // Layout & translate to SPIR-V
+    STD140LayoutContext layout_ctx;
+    auto ir2spirv_map =
+        ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
+    args_struct_type_.id = ir2spirv_map[struct_type];
 
     args_buffer_value_ =
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
@@ -1954,17 +2018,17 @@ class TaskCodegen : public IRVisitor {
     // Now we only have one ret
     TI_ASSERT(ctx_attribs_->rets().size() == 1);
     for (auto &ret : ctx_attribs_->rets()) {
+      // Use array size = 0 to generate a RuntimeArray
       if (auto tensor_type =
               PrimitiveType::get(ret.dtype)->cast<TensorType>()) {
         struct_components_.emplace_back(
             ir_->get_array_type(
-                ir_->get_primitive_type(tensor_type->get_element_type()),
-                tensor_type->get_num_elements()),
+                ir_->get_primitive_type(tensor_type->get_element_type()), 0),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       } else {
         struct_components_.emplace_back(
             ir_->get_array_type(
-                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 1),
+                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 0),
             "ret" + std::to_string(ret.index), ret.offset_in_mem);
       }
     }
@@ -1980,6 +2044,10 @@ class TaskCodegen : public IRVisitor {
       result.push_back(BufferBind{key.first, int(val)});
     }
     return result;
+  }
+
+  std::vector<TextureBind> get_texture_binds() {
+    return texture_binds_;
   }
 
   void push_loop_control_labels(spirv::Label continue_label,
@@ -2028,6 +2096,7 @@ class TaskCodegen : public IRVisitor {
                      uint32_t,
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
+  std::vector<TextureBind> texture_binds_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
@@ -2053,6 +2122,7 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<int, GetRootStmt *>
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
+  std::unordered_map<int, Value> argid_to_tex_value_;
 };
 }  // namespace
 
@@ -2077,7 +2147,7 @@ static void spriv_message_consumer(spv_message_level_t level,
 }
 
 KernelCodegen::KernelCodegen(const Params &params)
-    : params_(params), ctx_attribs_(*params.kernel) {
+    : params_(params), ctx_attribs_(*params.kernel, params.device) {
   spv_target_env target_env = SPV_ENV_VULKAN_1_0;
   uint32_t spirv_version =
       params.device->get_cap(DeviceCapability::spirv_version);
@@ -2141,6 +2211,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     TaskCodegen cgen(tp);
     auto task_res = cgen.run();
+
+    for (auto &[id, access] : task_res.arr_access) {
+      ctx_attribs_.arr_access[id] = ctx_attribs_.arr_access[id] | access;
+    }
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 

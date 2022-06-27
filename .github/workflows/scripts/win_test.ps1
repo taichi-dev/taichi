@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 
+$env:PYTHONUNBUFFERED = 1
+
 . venv\Scripts\activate.ps1
 python -c "import taichi"
 ti diagnose
@@ -13,6 +15,11 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
     pip install "torch; python_version < '3.10'"
     pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 }
+
+# Run C++ tests
+python tests/run_tests.py --cpp
+if (-not $?) { exit 1 }
+
 # Fail fast, give priority to the error-prone tests
 python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu
 if (-not $?) { exit 1 }

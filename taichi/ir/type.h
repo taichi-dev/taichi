@@ -186,22 +186,11 @@ class TensorType : public Type {
   Type *element_{nullptr};
 };
 
-class CustomIntType : public Type {
+class QuantIntType : public Type {
  public:
-  CustomIntType(int num_bits,
-                bool is_signed,
-                Type *compute_type = nullptr,
-                Type *physical_type = nullptr);
+  QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
 
   std::string to_string() const override;
-
-  void set_physical_type(Type *physical_type) {
-    this->physical_type_ = physical_type;
-  }
-
-  Type *get_physical_type() {
-    return physical_type_;
-  }
 
   Type *get_compute_type() override {
     return compute_type_;
@@ -219,23 +208,41 @@ class CustomIntType : public Type {
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
   Type *compute_type_{nullptr};
-  Type *physical_type_{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
 };
 
-class CustomFloatType : public Type {
+class QuantFixedType : public Type {
  public:
-  CustomFloatType(Type *digits_type,
-                  Type *exponent_type,
-                  Type *compute_type,
-                  float64 scale);
+  QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
+
+  bool get_is_signed() const;
+
+  Type *get_digits_type() {
+    return digits_type_;
+  }
+
+  Type *get_compute_type() override {
+    return compute_type_;
+  }
 
   float64 get_scale() const {
     return scale_;
   }
+
+ private:
+  Type *digits_type_{nullptr};
+  Type *compute_type_{nullptr};
+  float64 scale_{1.0};
+};
+
+class QuantFloatType : public Type {
+ public:
+  QuantFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
+
+  std::string to_string() const override;
 
   Type *get_digits_type() {
     return digits_type_;
@@ -259,7 +266,6 @@ class CustomFloatType : public Type {
   Type *digits_type_{nullptr};
   Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
-  float64 scale_;
 };
 
 class BitStructType : public Type {
@@ -301,8 +307,8 @@ class BitArrayType : public Type {
         element_type_(element_type_),
         num_elements_(num_elements_) {
     // TODO: avoid assertion?
-    TI_ASSERT(element_type_->is<CustomIntType>());
-    element_num_bits_ = element_type_->as<CustomIntType>()->get_num_bits();
+    TI_ASSERT(element_type_->is<QuantIntType>());
+    element_num_bits_ = element_type_->as<QuantIntType>()->get_num_bits();
   }
 
   std::string to_string() const override;

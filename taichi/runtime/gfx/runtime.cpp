@@ -64,15 +64,22 @@ class HostDeviceContextBlitter {
                   RuntimeContext::DevAllocType::kNone &&
               ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
-            DeviceAllocation buffer = ext_arrays.at(i);
-            char *const device_arr_ptr =
-                reinterpret_cast<char *>(device_->map(buffer));
-            const void *host_ptr = host_ctx_->get_arg<void *>(i);
-            std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
-            device_->unmap(buffer);
+            uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
+            if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
+              DeviceAllocation buffer = ext_arrays.at(i);
+              char *const device_arr_ptr =
+                  reinterpret_cast<char *>(device_->map(buffer));
+              const void *host_ptr = host_ctx_->get_arg<void *>(i);
+              std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
+              device_->unmap(buffer);
+            }
           }
           // Substitue in the device address if supported
-          if (device_->get_cap(
+          if ((host_ctx_->device_allocation_type[i] ==
+                   RuntimeContext::DevAllocType::kNone ||
+               host_ctx_->device_allocation_type[i] ==
+                   RuntimeContext::DevAllocType::kNdarray) &&
+              device_->get_cap(
                   DeviceCapability::spirv_has_physical_storage_buffer)) {
             uint64_t addr =
                 device_->get_memory_physical_pointer(ext_arrays.at(i));
@@ -121,7 +128,7 @@ class HostDeviceContextBlitter {
 
   bool device_to_host(
       CommandList *cmdlist,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, DeviceAllocation> &ext_array_shadows,
       const std::unordered_map<int, size_t> &ext_arr_size,
       const std::vector<StreamSemaphore> &wait_semaphore) {
     if (ctx_attribs_->empty()) {
@@ -155,12 +162,15 @@ class HostDeviceContextBlitter {
                 RuntimeContext::DevAllocType::kNone &&
             ext_arr_size.at(i)) {
           // Only need to blit ext arrs (host array)
-          DeviceAllocation buffer = ext_arrays.at(i);
-          char *const device_arr_ptr =
-              reinterpret_cast<char *>(device_->map(buffer));
-          void *host_ptr = host_ctx_->get_arg<void *>(i);
-          std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
-          device_->unmap(buffer);
+          uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
+          if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
+            DeviceAllocation buffer = ext_array_shadows.at(i);
+            char *const device_arr_ptr =
+                reinterpret_cast<char *>(device_->map(buffer));
+            void *host_ptr = host_ctx_->get_arg<void *>(i);
+            std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
+            device_->unmap(buffer);
+          }
         }
       }
     }
@@ -311,52 +321,8 @@ size_t CompiledTaichiKernel::get_ret_buffer_size() const {
   return ret_buffer_size_;
 }
 
-void CompiledTaichiKernel::generate_command_list(
-    CommandList *cmdlist,
-    DeviceAllocationGuard *args_buffer,
-    DeviceAllocationGuard *ret_buffer,
-    const std::unordered_map<int, DeviceAllocation> &ext_arrs) const {
-  const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
-
-  for (int i = 0; i < task_attribs.size(); ++i) {
-    const auto &attribs = task_attribs[i];
-    auto vp = pipelines_[i].get();
-    const int group_x = (attribs.advisory_total_num_threads +
-                         attribs.advisory_num_threads_per_group - 1) /
-                        attribs.advisory_num_threads_per_group;
-    ResourceBinder *binder = vp->resource_binder();
-    for (auto &bind : attribs.buffer_binds) {
-      if (bind.buffer.type == BufferType::ExtArr) {
-        binder->rw_buffer(0, bind.binding, ext_arrs.at(bind.buffer.root_id));
-      } else if (args_buffer && bind.buffer.type == BufferType::Args) {
-        binder->buffer(0, bind.binding, *args_buffer);
-      } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
-        binder->rw_buffer(0, bind.binding, *ret_buffer);
-      } else {
-        DeviceAllocation *alloc = input_buffers_.at(bind.buffer);
-        if (alloc) {
-          binder->rw_buffer(0, bind.binding, *alloc);
-        }
-      }
-    }
-
-    if (attribs.task_type == OffloadedTaskType::listgen) {
-      for (auto &bind : attribs.buffer_binds) {
-        if (bind.buffer.type == BufferType::ListGen) {
-          // FIXME: properlly support multiple list
-          cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
-                               kBufferSizeEntireSize,
-                               /*data=*/0);
-          cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
-        }
-      }
-    }
-
-    cmdlist->bind_pipeline(vp);
-    cmdlist->bind_resources(binder);
-    cmdlist->dispatch(group_x);
-    cmdlist->memory_barrier();
-  }
+Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
+  return pipelines_[i].get();
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
@@ -373,6 +339,7 @@ GfxRuntime::~GfxRuntime() {
     tmp.swap(ti_kernels_);
   }
   global_tmps_buffer_.reset();
+  listgen_buffer_.reset();
 }
 
 GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
@@ -427,11 +394,14 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       host_result_buffer_, args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> allocated_buffers;
   std::unordered_map<int, DeviceAllocation> any_arrays;
+  std::unordered_map<int, DeviceAllocation> any_array_shadows;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
   std::unordered_map<int, size_t> ext_array_size;
+  std::unordered_map<int, DeviceAllocation> textures;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
@@ -444,20 +414,46 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       if (arg.is_array) {
         if (host_ctx->device_allocation_type[i] !=
             RuntimeContext::DevAllocType::kNone) {
-          // NDArray
+          DeviceAllocation devalloc = kDeviceNullAllocation;
+
+          // NDArray / Texture
           if (host_ctx->args[i]) {
-            any_arrays[i] = *(DeviceAllocation *)(host_ctx->args[i]);
+            devalloc = *(DeviceAllocation *)(host_ctx->args[i]);
+          }
+
+          if (host_ctx->device_allocation_type[i] ==
+              RuntimeContext::DevAllocType::kNdarray) {
+            any_arrays[i] = devalloc;
+          } else if (host_ctx->device_allocation_type[i] ==
+                     RuntimeContext::DevAllocType::kTexture) {
+            textures[i] = devalloc;
           } else {
-            any_arrays[i] = kDeviceNullAllocation;
+            TI_NOT_IMPLEMENTED;
           }
         } else {
           ext_array_size[i] = host_ctx->array_runtime_sizes[i];
+          uint32_t access = uint32_t(
+              ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
+
           // Alloc ext arr
           if (ext_array_size[i]) {
-            DeviceAllocation extarr_buf = device_->allocate_memory(
-                {ext_array_size[i], /*host_write=*/true, /*host_read=*/true,
+            bool host_write =
+                access & uint32_t(irpass::ExternalPtrAccess::READ);
+            auto allocated = device_->allocate_memory_unique(
+                {ext_array_size[i], host_write, false,
                  /*export_sharing=*/false, AllocUsage::Storage});
-            any_arrays[i] = extarr_buf;
+            any_arrays[i] = *allocated.get();
+            allocated_buffers.push_back(std::move(allocated));
+
+            bool host_read =
+                access & uint32_t(irpass::ExternalPtrAccess::WRITE);
+            if (host_read) {
+              auto allocated = device_->allocate_memory_unique(
+                  {ext_array_size[i], false, true,
+                   /*export_sharing=*/false, AllocUsage::Storage});
+              any_array_shadows[i] = *allocated.get();
+              allocated_buffers.push_back(std::move(allocated));
+            }
           } else {
             any_arrays[i] = kDeviceNullAllocation;
           }
@@ -477,8 +473,61 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // Record commands
-  ti_kernel->generate_command_list(current_cmdlist_.get(), args_buffer.get(),
-                                   ret_buffer.get(), any_arrays);
+  const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
+
+  for (int i = 0; i < task_attribs.size(); ++i) {
+    const auto &attribs = task_attribs[i];
+    auto vp = ti_kernel->get_pipeline(i);
+    const int group_x = (attribs.advisory_total_num_threads +
+                         attribs.advisory_num_threads_per_group - 1) /
+                        attribs.advisory_num_threads_per_group;
+    ResourceBinder *binder = vp->resource_binder();
+    for (auto &bind : attribs.buffer_binds) {
+      if (bind.buffer.type == BufferType::ExtArr) {
+        binder->rw_buffer(0, bind.binding, any_arrays.at(bind.buffer.root_id));
+      } else if (args_buffer && bind.buffer.type == BufferType::Args) {
+        binder->buffer(0, bind.binding, *args_buffer);
+      } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
+        binder->rw_buffer(0, bind.binding, *ret_buffer);
+      } else {
+        DeviceAllocation *alloc = ti_kernel->get_buffer_bind(bind.buffer);
+        if (alloc) {
+          binder->rw_buffer(0, bind.binding, *alloc);
+        }
+      }
+    }
+
+    for (auto &bind : attribs.texture_binds) {
+      DeviceAllocation texture = textures.at(bind.arg_id);
+      current_cmdlist_->image_transition(texture, ImageLayout::undefined,
+                                         ImageLayout::shader_read);
+      binder->image(0, bind.binding, texture, {});
+    }
+
+    if (attribs.task_type == OffloadedTaskType::listgen) {
+      for (auto &bind : attribs.buffer_binds) {
+        if (bind.buffer.type == BufferType::ListGen) {
+          // FIXME: properlly support multiple list
+          current_cmdlist_->buffer_fill(
+              ti_kernel->get_buffer_bind(bind.buffer)->get_ptr(0),
+              kBufferSizeEntireSize,
+              /*data=*/0);
+          current_cmdlist_->buffer_barrier(
+              *ti_kernel->get_buffer_bind(bind.buffer));
+        }
+      }
+    }
+
+    current_cmdlist_->bind_pipeline(vp);
+    current_cmdlist_->bind_resources(binder);
+    current_cmdlist_->dispatch(group_x);
+    current_cmdlist_->memory_barrier();
+  }
+
+  for (auto &[id, shadow] : any_array_shadows) {
+    current_cmdlist_->buffer_copy(
+        shadow.get_ptr(0), any_arrays.at(id).get_ptr(0), ext_array_size.at(id));
+  }
 
   // Keep context buffers used in this dispatch
   if (ti_kernel->get_args_buffer_size()) {
@@ -492,7 +541,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   std::vector<StreamSemaphore> wait_semaphore;
 
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_array_shadows,
                                     ext_array_size, wait_semaphore)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
@@ -508,16 +557,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
             .count() > max_pending_time) {
       flush();
-    }
-  }
-
-  // Dealloc external arrays
-  for (auto pair : any_arrays) {
-    if (pair.second != kDeviceNullAllocation) {
-      if (host_ctx->device_allocation_type[pair.first] ==
-          RuntimeContext::DevAllocType::kNone) {
-        device_->dealloc_memory(pair.second);
-      }
     }
   }
 }
@@ -564,6 +603,7 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
+
   stream->submit_synced(cmdlist.get());
 }
 

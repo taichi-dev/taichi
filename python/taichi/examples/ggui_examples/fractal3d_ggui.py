@@ -69,12 +69,12 @@ def compute_sdf(z, c):
     md2 = 1.0
     mz2 = dot(z, z)
 
-    for iter in range(iters):
+    for _ in range(iters):
         md2 *= max_norm * mz2
         z = quat_mul(z, z) + c
 
         mz2 = z.dot(z)
-        if (mz2 > max_norm):
+        if mz2 > max_norm:
             break
 
     return 0.25 * ti.sqrt(mz2 / md2) * ti.log(mz2)
@@ -129,6 +129,7 @@ class Julia:
 
     @ti.func
     def shade(self, pos, surface_color, normal, light_pos):
+        _ = self  # make pylint happy
         light_color = ti.Vector([1, 1, 1])
 
         light_dir = (light_pos - pos).normalized()
@@ -184,16 +185,21 @@ class Julia:
         return self.image
 
 
-julia = Julia()
+def main():
+    julia = Julia()
 
-window = ti.ui.Window("Fractal 3D", image_res, vsync=True)
-canvas = window.get_canvas()
+    window = ti.ui.Window("Fractal 3D", image_res, vsync=True)
+    canvas = window.get_canvas()
 
-frame_id = 0
+    frame_id = 0
 
-while window.running:
-    frame_id += 1
+    while window.running:
+        frame_id += 1
 
-    canvas.set_image(julia.get_image(frame_id / 60))
+        canvas.set_image(julia.get_image(frame_id / 60))
 
-    window.show()
+        window.show()
+
+
+if __name__ == '__main__':
+    main()

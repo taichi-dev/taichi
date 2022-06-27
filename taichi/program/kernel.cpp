@@ -13,7 +13,7 @@
 #include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -303,12 +303,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
-    ctx_->runtime = llvm_program_impl->get_llvm_runtime();
-  }
-#endif
-  ctx_->result_buffer = kernel_->program->result_buffer;
+  kernel_->program->prepare_runtime_context(ctx_);
   return *ctx_;
 }
 
@@ -415,11 +410,7 @@ void Kernel::init(Program &program,
   this->autodiff_mode = autodiff_mode;
   this->lowered_ = false;
   this->program = &program;
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-#endif
+
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;

@@ -81,19 +81,24 @@ def render():
         img[p] += color[i]
 
 
-inv_m[0] = 0
-x[0].x = +0.5
-x[0].y = -0.01
-v[0].x = +0.6
-v[0].y = +0.4
-color[0] = 1
+def main():
+    inv_m[0] = 0
+    x[0].x = +0.5
+    x[0].y = -0.01
+    v[0].x = +0.6
+    v[0].y = +0.4
+    color[0] = 1
 
-gui = ti.GUI('Comet', res)
-while gui.running:
-    gui.running = not gui.get_event(gui.ESCAPE)
-    generate()
-    for s in range(steps):
-        substep()
-    render()
-    gui.set_image(img)
-    gui.show()
+    gui = ti.GUI('Comet', res)
+    while gui.running:
+        gui.running = not gui.get_event(gui.ESCAPE)
+        generate()
+        for s in range(steps):
+            substep()
+        render()
+        gui.set_image(img)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

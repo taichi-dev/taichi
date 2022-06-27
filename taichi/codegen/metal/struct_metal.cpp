@@ -22,7 +22,7 @@ namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/runtime/metal/shaders/runtime_structs.metal.h"
 #include "taichi/runtime/metal/shaders/runtime_utils.metal.h"
-#include "taichi/codegen/metal/shaders/snode_bit_pointer.metal.h"
+#include "taichi/runtime/metal/shaders/snode_bit_pointer.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
 #include "taichi/runtime/metal/shaders/runtime_structs.metal.h"

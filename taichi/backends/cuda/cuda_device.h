@@ -6,7 +6,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_caching_allocator.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/llvm/llvm_device.h"
+#include "taichi/backends/llvm/llvm_device.h"
 
 namespace taichi {
 namespace lang {

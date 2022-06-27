@@ -33,4 +33,3 @@ repos:
       - id: pylint
         args: ['-rn', '-sn']
         files: ^python/taichi/
-        exclude: ^python/taichi/examples/.*.py

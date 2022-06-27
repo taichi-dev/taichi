@@ -75,18 +75,22 @@ def init_tracers():
         tracer[i] = [ti.random() - 0.5, ti.random() * 3 - 1.5]
 
 
-init_tracers()
+def main():
+    init_tracers()
+    gui = ti.GUI("Vortex Rings", (1024, 512), background_color=0xFFFFFF)
 
-gui = ti.GUI("Vortex Rings", (1024, 512), background_color=0xFFFFFF)
+    for T in range(1000):
+        for i in range(4):  # substeps
+            advect()
+            integrate_vortex()
 
-for T in range(1000):
-    for i in range(4):  # substeps
-        advect()
-        integrate_vortex()
+        gui.circles(tracer.to_numpy() * np.array([[0.05, 0.1]]) +
+                    np.array([[0.0, 0.5]]),
+                    radius=0.5,
+                    color=0x0)
 
-    gui.circles(tracer.to_numpy() * np.array([[0.05, 0.1]]) +
-                np.array([[0.0, 0.5]]),
-                radius=0.5,
-                color=0x0)
+        gui.show()
 
-    gui.show()
+
+if __name__ == '__main__':
+    main()

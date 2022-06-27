@@ -225,14 +225,14 @@ class TaichiMain:
     @register
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name (or name.py)"""
-        def colormap(name):
+        def colormap(index, name):
             from colorsys import hls_to_rgb  # pylint: disable=C0415
             x = (ord(name[0].upper()) - 64.0) / 26.0
             r, g, b = hls_to_rgb(x, 0.4, 1.0)
             r = hex(int(r * 255) % 16)[2:]
             g = hex(int(g * 255) % 16)[2:]
             b = hex(int(b * 255) % 16)[2:]
-            return f"[#{r}{r}{g}{g}{b}{b}]{name}"
+            return f"{index}: [#{r}{r}{g}{g}{b}{b}]{name}"
 
         console = Console()
         table = rich.table.Table(
@@ -249,7 +249,7 @@ class TaichiMain:
         names = sorted(choices.keys())
         for k in range(nrows):
             table.add_row(
-                *[colormap(names[j]) for j in range(k, len(choices), nrows)])
+                *[colormap(j,names[j]) for j in range(k, len(choices), nrows)])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
@@ -258,6 +258,8 @@ class TaichiMain:
                                 choices.keys()),
                             choices=sorted(choices.keys()),
                             help=console.print(table),
+                            nargs="?",
+                            default=None,
                             metavar="name")
         parser.add_argument(
             '-p',
@@ -285,17 +287,23 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
+        example_name = args.name
+        if example_name is None:
+            index = int(input("Please input the number of the example: "))
+            while index >= len(names):
+                index = int(input("Index out of bound, please try again: "))
+            example_name = names[index]
         target = str(
-            (examples_dir / choices[args.name] / f"{args.name}.py").resolve())
+            (examples_dir / choices[example_name] / f"{example_name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
-        sys.path.append(str((examples_dir / choices[args.name]).resolve()))
+        sys.path.append(str((examples_dir / choices[example_name]).resolve()))
 
         # Short circuit for testing
         if self.test_mode:
             return args
 
         if args.save:
-            print(f"Saving example {args.name} to current directory...")
+            print(f"Saving example {example_name} to current directory...")
             shutil.copy(target, '.')
             return 0
 
@@ -310,11 +318,9 @@ class TaichiMain:
                 print(f.read())
             return 0
 
-        print(f"Running example {args.name} ...")
+        print(f"Running example {example_name} ...")
 
         runpy.run_path(target, run_name='__main__')
-
-        return None
 
     @staticmethod
     @register

@@ -291,7 +291,7 @@ class TaichiMain:
         example_name = args.name
         if example_name is None:
             index = int(input("Please input the number of the example: "))
-            while index >= len(names):
+            while not 0 <= index < len(names):
                 index = int(input("Example not found, please try again: "))
             example_name = names[index]
         target = str((examples_dir / choices[example_name] /

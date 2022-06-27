@@ -189,9 +189,7 @@ class SNode:
             return None
 
         if p.type == _ti_core.SNodeType.root:
-            # The default root FieldsBuilder always has a SNode tree id equals to 0.
-            if p.get_snode_tree_id() == 0:
-                return impl.root
+            return impl.root
 
         return SNode(p)
 
@@ -203,7 +201,7 @@ class SNode:
         """
         p = self
         res = [p]
-        while p.ptr.type != _ti_core.SNodeType.root:
+        while p != impl.root:
             p = p.parent()
             res.append(p)
         res.reverse()

@@ -295,12 +295,6 @@ class SNode {
 
   bool has_dual() const;
 
-  bool is_dual_activated() const;
-
-  void deactivate_dual();
-
-  void activate_dual();
-
   SNode *get_dual() const;
 
   SNode *get_least_sparse_ancestor() const;

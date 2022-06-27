@@ -121,7 +121,8 @@ class LlvmOfflineCacheFileReader {
       const std::string &path,
       LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
 
-  static bool load_meta_data(LlvmOfflineCache &data, const std::string &path);
+  static bool load_meta_data(LlvmOfflineCache &data,
+                             const std::string &cache_file_path);
 
  private:
   LlvmOfflineCacheFileReader(const std::string &path,
@@ -163,7 +164,8 @@ class LlvmOfflineCacheFileWriter {
   }
 
   void dump(const std::string &path,
-            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+            LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL,
+            bool merge_with_old = false);
 
   void clean_cache(const std::string &path, CleanCachePolicy policy);
 
@@ -172,6 +174,8 @@ class LlvmOfflineCacheFileWriter {
   }
 
  private:
+  void add_data(LlvmOfflineCache &&data);
+
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
       llvm::Module *module,

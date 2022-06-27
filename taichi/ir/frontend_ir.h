@@ -14,7 +14,7 @@
 TLANG_NAMESPACE_BEGIN
 
 struct ForLoopConfig {
-  int bit_vectorize{0};
+  int bit_vectorize{1};
   int num_cpu_threads{0};
   bool strictly_serialized{false};
   MemoryAccessOptions mem_access_opt;
@@ -803,7 +803,7 @@ class ASTBuilder {
     }
 
     void reset() {
-      config.bit_vectorize = -1;
+      config.bit_vectorize = 1;
       config.num_cpu_threads = 0;
       config.uniform = false;
       config.mem_access_opt.clear();

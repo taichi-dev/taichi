@@ -189,9 +189,9 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
-        if ((snode_child->type == SNodeType::bit_array ||
-             snode_child->type == SNodeType::bit_struct) &&
-            i == path.size() - 1) {
+        if (snode_child->type == SNodeType::bit_array &&
+            for_stmt->bit_vectorize != 1) {
+          TI_ASSERT(i == path.size() - 1);
           continue;
         }
         auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
@@ -248,6 +248,7 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
+    offloaded_struct_for->bit_vectorize = for_stmt->bit_vectorize;
     offloaded_struct_for->num_cpu_threads =
         std::min(for_stmt->num_cpu_threads, config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;

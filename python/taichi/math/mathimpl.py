@@ -2,11 +2,11 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
-from math import e, pi
+from math import e, pi, inf, nan
 
 from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh)
+                             max, min, pow, round, sin, sqrt, tan, tanh, unary)
 
 import taichi as ti
 
@@ -691,12 +691,83 @@ def inverse(mat):  # pylint: disable=R1710
     return mat.inverse()
 
 
+@unary
+@ti.func
+def isinf(x):
+    """Determines whether the parameter is positive or negative infinity, element-wise.
+
+    Args:
+        x (:mod:`~taichi.types.primitive_types`, :class:`taichi.Matrix`): The input.
+
+    Example:
+
+       >>> @ti.kernel
+       >>> def test():
+       >>>     x = vec4(inf, -inf, nan, 1)
+       >>>     isinf(x)
+       >>>
+       >>> test()
+       [1, 1, 0, 0]
+
+    Returns:
+        For each element i of the result, returns `True` if x[i] is posititve or negative floating point infinity and `False` otherwise.
+    """
+    fx = ti.cast(x, ti.f64)
+    y = ti.bit_cast(fx, ti.u64)
+    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
+
+
+@unary
+@ti.func
+def isnan(x):
+    """Determines whether the parameter is a number, element-wise.
+
+    Args:
+        x (:mod:`~taichi.types.primitive_types`, :class:`taichi.Matrix`): The input.
+
+    Example:
+
+       >>> @ti.kernel
+       >>> def test():
+       >>>     x = vec4(nan, -nan, inf, 1)
+       >>>     isnan(x)
+       >>>
+       >>> test()
+       [1, 1, 0, 0]
+
+    Returns:
+        For each element i of the result, returns `True` if x[i] is posititve or negative floating point NaN (Not a Number) and `False` otherwise.
+    """
+    fx = ti.cast(x, ti.f64)
+    y = ti.bit_cast(fx, ti.u64)
+    return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
+
+
+@ti.func
+def vdir(ang):
+    """Returns the 2d unit vector with argument equals `ang`.
+
+    x (:mod:`~taichi.types.primitive_types`): The input angle in radians.
+
+    Example:
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = pi / 2
+        >>>     print(vdir(x))  # [0, 1]
+
+    Returns:
+        a 2d vector with argument equals `ang`.
+    """
+    return vec2(cos(ang), sin(ang))
+
+
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
-    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract", "inf",
+    "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
+    "mat3", "mat4", "max", "min", "mix", "mod", "nan", "normalize", "pi", "pow",
     "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
     "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
-    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
+    "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"
 ]

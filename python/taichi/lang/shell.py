@@ -26,7 +26,6 @@ _ti_core.toggle_python_print_buffer(pybuf_enabled)
 
 
 def _shell_pop_print(old_call):
-
     if not pybuf_enabled:
         # zero-overhead!
         return old_call

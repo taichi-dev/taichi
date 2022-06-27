@@ -717,9 +717,9 @@ def isinf(x):
     if ti.static(ftype == ti.f64):
         y = ti.bit_cast(fx, ti.u64)
         return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
-    else:
-        y = ti.bit_cast(fx, ti.u32)
-        return (y & 0x7fffffff) == 0x7f800000
+
+    y = ti.bit_cast(fx, ti.u32)
+    return (y & 0x7fffffff) == 0x7f800000
 
 
 @unary
@@ -748,9 +748,9 @@ def isnan(x):
     if ti.static(ftype == ti.f64):
         y = ti.bit_cast(fx, ti.u64)
         return (ti.cast(y >> 32, ti.u32) & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
-    else:
-        y = ti.bit_cast(fx, ti.u32)
-        return (y & 0x7fffffff) > 0x7f800000
+
+    y = ti.bit_cast(fx, ti.u32)
+    return (y & 0x7fffffff) > 0x7f800000
 
 
 @ti.func

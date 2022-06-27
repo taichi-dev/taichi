@@ -232,9 +232,6 @@ class FwdMode:
         self.parameters = parameters
         self.seed = seed
         self.clear_gradients = clear_gradients
-        # The dual snode tree id of `loss` and `parameters` are used to generate kernel cache key
-        self.dual_snode_tree_id_of_loss = None
-        self.dual_snode_tree_id_of_parameters = None
 
     def __enter__(self):
         assert not self.entered, "Forward mode manager can be entered only once."

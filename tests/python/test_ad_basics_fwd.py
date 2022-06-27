@@ -7,6 +7,7 @@ def test_ad_fwd_add():
     N = 5
     x = ti.field(ti.f32, shape=N)
     loss = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
 
     for i in range(N):
         x[i] = i
@@ -26,6 +27,7 @@ def test_ad_fwd_multiply():
     N = 5
     x = ti.field(ti.f32, shape=N)
     loss = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
 
     for i in range(N):
         x[i] = i
@@ -47,6 +49,7 @@ def test_multiple_calls():
     b = ti.field(float, shape=N)
     loss_1 = ti.field(float, shape=())
     loss_2 = ti.field(float, shape=())
+    ti.root.lazy_dual()
 
     for i in range(N):
         a[i] = i

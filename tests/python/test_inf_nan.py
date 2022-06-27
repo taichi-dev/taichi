@@ -1,6 +1,3 @@
-from email.policy import default
-import pytest
-
 import taichi as ti
 from taichi.math import nan, inf, isnan, isinf
 from tests import test_utils

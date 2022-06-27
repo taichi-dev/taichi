@@ -590,6 +590,161 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "taichi/taichi_unity.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "native_buffer",
+                    "vendor": "unity",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "import_native_runtime",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_native_memory_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.memory"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.native_buffer"
+                        }
+                    ]
+                },
+                {
+                    "name": "launch_kernel_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.kernel"
+                        },
+                        {
+                            "name": "arg_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "args",
+                            "type": "structure.argument",
+                            "count": "arg_count"
+                        }
+                    ]
+                },
+                {
+                    "name": "launch_compute_graph_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.compute_graph"
+                        },
+                        {
+                            "name": "arg_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "args",
+                            "type": "structure.named_argument",
+                            "count": "arg_count"
+                        }
+                    ]
+                },
+                {
+                    "name": "copy_memory_to_native_buffer_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "dst",
+                            "type": "handle.native_buffer"
+                        },
+                        {
+                            "name": "dst_offset",
+                            "type": "uint64_t"
+                        },
+                        {
+                            "name": "src",
+                            "type": "structure.memory_slice",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "copy_memory_device_to_host",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "dst",
+                            "type": "void*"
+                        },
+                        {
+                            "name": "dst_offset",
+                            "type": "uint64_t"
+                        },
+                        {
+                            "name": "src",
+                            "type": "structure.memory_slice",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "copy_memory_host_to_device",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "dst",
+                            "type": "structure.memory_slice",
+                            "by_ref": true
+                        },
+                        {
+                            "name": "src",
+                            "type": "const void*"
+                        },
+                        {
+                            "name": "src_offset",
+                            "type": "uint64_t"
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

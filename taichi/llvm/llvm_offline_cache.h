@@ -13,6 +13,8 @@ namespace taichi {
 namespace lang {
 
 struct LlvmOfflineCache {
+  using Version = uint16[3]; // {MAJOR, MINOR, PATCH}
+
   enum Format {
     LL = 0x01,
     BC = 0x10,
@@ -34,12 +36,17 @@ struct LlvmOfflineCache {
     std::unique_ptr<llvm::Module> owned_module{nullptr};
     llvm::Module *module{nullptr};
 
+    // For cache cleaning
+    std::size_t byte_size{0}; // B
+    std::time_t created_at{0}; // millsec
+    std::time_t last_used_at{0}; // millsec
+
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
-    TI_IO_DEF(kernel_key, args, offloaded_task_list);
+    TI_IO_DEF(kernel_key, args, offloaded_task_list, byte_size, created_at, last_used_at);
   };
 
   struct FieldCacheData {
@@ -86,6 +93,9 @@ struct LlvmOfflineCache {
     // other
   };
 
+  Version version{};
+  std::size_t byte_size{0}; 
+
   // TODO(zhanlue): we need a better identifier for each FieldCacheData
   // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
   // ask the users to remember each of the snode_tree_ids
@@ -95,7 +105,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
-  TI_IO_DEF(fields, kernels);
+  TI_IO_DEF(version, byte_size, fields, kernels);
 };
 
 class LlvmOfflineCacheFileReader {
@@ -110,6 +120,8 @@ class LlvmOfflineCacheFileReader {
   static std::unique_ptr<LlvmOfflineCacheFileReader> make(
       const std::string &path,
       LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
+  static bool load_meta_data(LlvmOfflineCache &data, const std::string &path);
 
  private:
   LlvmOfflineCacheFileReader(const std::string &path,
@@ -126,7 +138,20 @@ class LlvmOfflineCacheFileReader {
 };
 
 class LlvmOfflineCacheFileWriter {
+  enum CleanCacheFlags {
+    NotClean = 0b000,
+    CleanOldVersion = 0b001,
+    CleanOldUsed = 0b010,
+    ClaenOldCreated = 0b100
+  };
  public:
+  enum CleanCachePolicy {
+    Nerver = NotClean,
+    OnlyOldVersion = CleanOldVersion,
+    LRU = CleanOldVersion | CleanOldUsed,
+    FIFO = CleanOldVersion | ClaenOldCreated
+  };
+
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -139,6 +164,8 @@ class LlvmOfflineCacheFileWriter {
 
   void dump(const std::string &path,
             LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
+
+  void clean_cache(const std::string &path, CleanCachePolicy policy);
 
   void set_no_mangle() {
     mangled_ = true;

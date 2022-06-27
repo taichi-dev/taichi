@@ -149,7 +149,7 @@ dx11 = _ti_core.dx11
 """
 # ----------------------
 
-gpu = [cuda, metal, opengl, vulkan, dx11]
+gpu = [cuda, metal, vulkan, opengl, dx11]
 """A list of GPU backends supported on the current system.
 Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
 

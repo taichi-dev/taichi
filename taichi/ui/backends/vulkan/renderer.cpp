@@ -111,6 +111,10 @@ void Renderer::scene(Scene *scene) {
   scene->point_lights_.clear();
 }
 
+Renderer::~Renderer() {
+  cleanup();
+}
+
 void Renderer::cleanup() {
   render_complete_semaphore_ = nullptr;
   for (auto &renderable : renderables_) {

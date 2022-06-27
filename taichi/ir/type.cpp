@@ -103,14 +103,8 @@ std::string QuantIntType::to_string() const {
   return fmt::format("q{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-QuantIntType::QuantIntType(int num_bits,
-                           bool is_signed,
-                           Type *compute_type,
-                           Type *physical_type)
-    : compute_type_(compute_type),
-      physical_type_(physical_type),
-      num_bits_(num_bits),
-      is_signed_(is_signed) {
+QuantIntType::QuantIntType(int num_bits, bool is_signed, Type *compute_type)
+    : compute_type_(compute_type), num_bits_(num_bits), is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
     this->compute_type_ =

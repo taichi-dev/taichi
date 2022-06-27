@@ -6,6 +6,7 @@
 
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/type.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/backends/device.h"
 
 namespace taichi {
@@ -172,7 +173,7 @@ class KernelContextAttributes {
   struct RetAttributes : public AttribsBase {};
 
   KernelContextAttributes() = default;
-  explicit KernelContextAttributes(const Kernel &kernel);
+  explicit KernelContextAttributes(const Kernel &kernel, Device *device);
 
   /**
    * Whether this kernel has any argument
@@ -234,11 +235,14 @@ class KernelContextAttributes {
     return args_bytes();
   }
 
+  std::vector<irpass::ExternalPtrAccess> arr_access;
+
   TI_IO_DEF(arg_attribs_vec_,
             ret_attribs_vec_,
             args_bytes_,
             rets_bytes_,
-            extra_args_bytes_);
+            extra_args_bytes_,
+            arr_access);
 
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;

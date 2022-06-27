@@ -21,9 +21,9 @@ namespace {
 
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
-#include "taichi/codegen/metal/shaders/ad_stack.metal.h"
-#include "taichi/codegen/metal/shaders/helpers.metal.h"
-#include "taichi/codegen/metal/shaders/init_randseeds.metal.h"
+#include "taichi/runtime/metal/shaders/ad_stack.metal.h"
+#include "taichi/runtime/metal/shaders/helpers.metal.h"
+#include "taichi/runtime/metal/shaders/init_randseeds.metal.h"
 #include "taichi/runtime/metal/shaders/print.metal.h"
 #include "taichi/runtime/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
@@ -588,7 +588,7 @@ class KernelCodegenImpl : public IRVisitor {
     if (is_metal_binary_op_infix(op_type)) {
       if (is_comparison(op_type)) {
         // TODO(#577): Taichi uses -1 as true due to LLVM i1... See
-        // https://github.com/taichi-dev/taichi/blob/6989c0e21d437a9ffdc0151cee9d3aa2aaa2241d/taichi/codegen/codegen_llvm.cpp#L564
+        // https://github.com/taichi-dev/taichi/blob/6989c0e21d437a9ffdc0151cee9d3aa2aaa2241d/taichi/codegen/llvm/codegen_llvm.cpp#L564
         // This is a workaround to make Metal compatible with the behavior.
         emit("const {} {} = -({} {} {});", dt_name, bin_name, lhs_name, binop,
              rhs_name);

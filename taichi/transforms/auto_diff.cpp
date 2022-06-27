@@ -1166,7 +1166,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
+    if (!snodes[0]->has_dual()) {
       // no gradient (likely integer types)
       return;
     }
@@ -1180,7 +1180,7 @@ class MakeDual : public ADTransform {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual() || !snodes[0]->is_dual_activated()) {
+    if (!snodes[0]->has_dual()) {
       // no gradient (likely integer types)
       return;
     }

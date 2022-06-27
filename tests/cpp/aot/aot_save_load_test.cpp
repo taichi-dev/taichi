@@ -268,6 +268,7 @@ TEST(AotSaveLoad, VulkanNdarray) {
   const int size = 10;
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = true;
+  alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
   DeviceAllocation devalloc_arr_ =

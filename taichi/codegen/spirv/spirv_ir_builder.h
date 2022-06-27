@@ -352,12 +352,17 @@ class IRBuilder {
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
 
   Value texture_argument(int num_channels,
+                         int num_dimensions,
                          uint32_t descriptor_set,
                          uint32_t binding);
 
-  Value sample_texture(Value texture_var, Value u, Value v, Value lod);
+  Value sample_texture(Value texture_var,
+                       const std::vector<Value> &args,
+                       Value lod);
 
-  Value fetch_texel(Value texture_var, Value x, Value y, Value lod);
+  Value fetch_texel(Value texture_var,
+                    const std::vector<Value> &args,
+                    Value lod);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
@@ -454,6 +459,14 @@ class IRBuilder {
   Value query_value(std::string name) const;
   // Check whether a value has been evaluated
   bool check_value_existence(const std::string &name) const;
+  // Create a new SSA value
+  Value new_value(const SType &type, ValueKind flag) {
+    Value val;
+    val.id = id_counter_++;
+    val.stype = type;
+    val.flag = flag;
+    return val;
+  }
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -508,14 +521,6 @@ class IRBuilder {
   Value rand_i32(Value global_tmp_);
 
  private:
-  Value new_value(const SType &type, ValueKind flag) {
-    Value val;
-    val.id = id_counter_++;
-    val.stype = type;
-    val.flag = flag;
-    return val;
-  }
-
   Value get_const(const SType &dtype, const uint64_t *pvalue, bool cache);
   SType declare_primitive_type(DataType dt);
 
@@ -549,8 +554,10 @@ class IRBuilder {
   SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v2_int_;
+  SType t_v3_int_;
   SType t_v3_uint_;
   SType t_v4_fp32_;
+  SType t_v3_fp32_;
   SType t_v2_fp32_;
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;

@@ -19,7 +19,7 @@ def test_ad_if_simple_fwd():
     with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
         func()
 
-    assert y.grad[None] == 1
+    assert y.dual[None] == 1
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu])
@@ -39,8 +39,8 @@ def test_ad_if():
     with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
         func(0)
         func(1)
-    assert y.grad[0] == 2
-    assert y.grad[1] == 1
+    assert y.dual[0] == 2
+    assert y.dual[1] == 1
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu])
@@ -79,4 +79,4 @@ def test_ad_if_nested():
         func()
 
     for i in range(n):
-        assert y.grad[i] == i % 4
+        assert y.dual[i] == i % 4

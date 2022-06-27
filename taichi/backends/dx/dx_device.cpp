@@ -726,6 +726,8 @@ void *Dx11Device::map(DeviceAllocation alloc) {
   } else if (buf_tuple.cpu_write) {
     map_type = D3D11_MAP_WRITE_DISCARD;
     buf = buf_tuple.get_cpu_write_copy(context_, device_);
+  } else {
+    TI_ERROR("Buffer alloc does not have CPU access flags");
   }
 
   TI_ASSERT(buf);

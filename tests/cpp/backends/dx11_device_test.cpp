@@ -37,6 +37,8 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
 
   taichi::lang::Device::AllocParams params;
   params.size = 1048576;
+  params.cpu_read = true;
+  params.cpu_write = true;
   const taichi::lang::DeviceAllocation device_alloc =
       device->allocate_memory(params);
 

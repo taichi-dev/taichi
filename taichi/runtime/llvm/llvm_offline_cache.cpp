@@ -26,22 +26,29 @@ constexpr char kMetadataFilename[] = "metadata";
 std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
     const std::string &path,
     LlvmOfflineCache::Format format) {
+  LlvmOfflineCache data;
+  if (!load_meta_data(data, path)) {
+    return nullptr;
+  }
+  return std::unique_ptr<LlvmOfflineCacheFileReader>(
+      new LlvmOfflineCacheFileReader(path, std::move(data), format));
+}
+
+bool LlvmOfflineCacheFileReader::load_meta_data(LlvmOfflineCache &data, const std::string &cache_file_path) {
   std::stringstream tcb_ss;
-  tcb_ss << path << "/" << kMetadataFilename << ".tcb";
+  tcb_ss << cache_file_path << "/" << kMetadataFilename << ".tcb";
   const auto tcb_path = tcb_ss.str();
   {
     // No the best way to check for filepath existence, but whatever... See
     // https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exists-using-standard-c-c11-14-17-c
     std::ifstream fs(tcb_path, std::ios::in | std::ios::binary);
     if (!fs.good()) {
-      TI_DEBUG("LLVM cache {} does not exist", path);
-      return nullptr;
+      TI_DEBUG("LLVM cache {} does not exist", cache_file_path);
+      return false;
     }
   }
-  LlvmOfflineCache data;
   read_from_binary_file(data, tcb_path);
-  return std::unique_ptr<LlvmOfflineCacheFileReader>(
-      new LlvmOfflineCacheFileReader(path, std::move(data), format));
+  return true;
 }
 
 LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
@@ -111,7 +118,7 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
 }
 
 void LlvmOfflineCacheFileWriter::dump(const std::string &path,
-                                      LlvmOfflineCache::Format format) {
+                                      LlvmOfflineCache::Format format, bool merge_with_old) {
   taichi::create_directories(path);
   for (auto &[k, v] : data_.kernels) {
     std::stringstream filename_ss;
@@ -149,6 +156,14 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     }
   }
   {
+    // Merge with old metadata
+    if (merge_with_old) {
+      LlvmOfflineCache old_data;
+      if (LlvmOfflineCacheFileReader::load_meta_data(old_data, path)) {
+        add_data(std::move(old_data));
+      }
+    }
+    // Dump metadata
     std::stringstream prefix_ss;
     prefix_ss << path << "/" << kMetadataFilename;
     const std::string file_prefix = prefix_ss.str();
@@ -158,6 +173,23 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     ts.serialize_to_json("cache", data_);
     ts.write_to_file(file_prefix + ".json");
   }
+}
+
+void LlvmOfflineCacheFileWriter::add_data(LlvmOfflineCache &&data) {
+  // Note: merge this->data_ with data, new cover old
+  auto &new_kernels = data_.kernels;
+  auto &new_fields = data_.fields;
+  auto &old_kernels = data.kernels;
+  auto &old_fields = data.fields;
+
+  for (auto &[k, v] : new_fields) {
+    old_fields[k] = std::move(v);
+  }
+  for (auto &[k, v] : new_kernels) {
+    old_kernels[k] = std::move(v);
+  }
+
+  data_ = std::move(data);
 }
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(

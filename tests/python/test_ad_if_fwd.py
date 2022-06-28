@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_if_simple_fwd():
     x = ti.field(ti.f32, shape=())
     y = ti.field(ti.f32, shape=())
@@ -23,7 +23,7 @@ def test_ad_if_simple_fwd():
     assert y.dual[None] == 1
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_if():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
@@ -45,7 +45,7 @@ def test_ad_if():
     assert y.dual[1] == 1
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_if_nested():
     n = 20
     x = ti.field(ti.f32, shape=n)

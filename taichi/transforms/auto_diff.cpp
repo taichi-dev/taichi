@@ -1318,7 +1318,6 @@ void auto_diff(IRNode *root,
   } else if (autodiff_mode == AutodiffMode::kForward) {
     // Forward mode autodiff
     Block *block = root->as<Block>();
-    PromoteSSA2LocalVar::run(block);
     MakeDual::run(block);
   }
   type_check(root, config);

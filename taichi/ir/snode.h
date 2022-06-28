@@ -334,8 +334,8 @@ class SNode {
     place_child(&expr, offset, this, snode_to_glb_var_exprs_);
   }
 
-  void lazy_grad() {
-    make_lazy_grad(this, snode_to_glb_var_exprs_);
+  void lazy_grad(bool is_adjoint, bool is_dual) {
+    make_lazy_grad(this, snode_to_glb_var_exprs_, is_adjoint, is_dual);
   }
 
   int64 read_int(const std::vector<int> &i);

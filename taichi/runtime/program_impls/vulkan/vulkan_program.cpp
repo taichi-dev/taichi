@@ -143,6 +143,10 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #endif
 
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
+  if (config->spirv_version != 0) {
+    embedded_device_->device()->set_cap(DeviceCapability::spirv_version,
+                                        config->spirv_version);
+  }
 
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;
@@ -191,6 +195,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
   std::vector<gfx::CompiledSNodeStructs> compiled_structs;
   gfx::GfxRuntime::RegisterParams kparams =
       gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
+
   return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
                                            std::move(kparams));
 }

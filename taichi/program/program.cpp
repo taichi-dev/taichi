@@ -22,7 +22,7 @@
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/llvm/struct_llvm.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
 #if defined(TI_WITH_CC)

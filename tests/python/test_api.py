@@ -103,7 +103,7 @@ user_api[ti.FieldsBuilder] = [
 user_api[ti.math] = [
     'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
     'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'determinant',
-    'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inverse', 'ivec2',
+    'distance', 'dot', 'e', 'exp', 'eye', 'ifloor', 'floor', 'fract', 'inverse', 'ivec2',
     'ivec3', 'ivec4', 'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max',
     'min', 'mix', 'mod', 'normalize', 'pi', 'pow', 'radians', 'reflect',
     'refract', 'rot2', 'rot3', 'rotate2d', 'rotate3d', 'round', 'sign', 'sin',

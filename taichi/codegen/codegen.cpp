@@ -8,7 +8,7 @@
 #include "taichi/codegen/wasm/codegen_wasm.h"
 #endif
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"

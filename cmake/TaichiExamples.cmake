@@ -28,6 +28,14 @@ target_link_libraries(${EXAMPLES_NAME} PRIVATE
 	metal_codegen
 	)
 
+#if (TI_WITH_CUDA)
+#  target_link_libraries(${EXAMPLES_NAME} PRIVATE
+#	cuda_runtime
+#	cuda_codegen
+#	cuda_rhi
+#	)
+#endif()
+
 # TODO 4832: be specific on the header dependencis here, e.g., ir
 target_include_directories(${EXAMPLES_NAME}
   PRIVATE

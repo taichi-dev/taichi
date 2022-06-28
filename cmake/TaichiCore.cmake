@@ -112,7 +112,6 @@ file(GLOB TAICHI_CORE_SOURCE
 )
 
 file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
-file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
@@ -154,7 +153,6 @@ list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
 
 if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
 endif()
 
 if(NOT CUDA_VERSION)
@@ -293,6 +291,12 @@ if(TI_WITH_LLVM)
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
+        add_subdirectory(taichi/backends/cuda)
+        add_subdirectory(taichi/codegen/cuda)
+        add_subdirectory(taichi/runtime/cuda)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_codegen)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_runtime)
     endif()
 
     add_subdirectory(taichi/backends/llvm)

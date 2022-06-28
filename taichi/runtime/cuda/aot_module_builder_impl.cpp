@@ -1,8 +1,8 @@
-#include "taichi/backends/cuda/aot_module_builder_impl.h"
+#include "taichi/runtime/cuda/aot_module_builder_impl.h"
 
 #include <algorithm>
 
-#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/codegen/cuda/codegen_cuda.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 
 namespace taichi {

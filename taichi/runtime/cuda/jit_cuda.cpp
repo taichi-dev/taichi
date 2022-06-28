@@ -1,4 +1,4 @@
-#include "taichi/backends/cuda/jit_cuda.h"
+#include "taichi/runtime/cuda/jit_cuda.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
 TLANG_NAMESPACE_BEGIN

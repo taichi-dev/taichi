@@ -131,7 +131,7 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
-void ti_copy_memory(TiRuntime runtime,
+void ti_copy_memory_device_to_device(TiRuntime runtime,
                     const TiMemorySlice *dst_memory,
                     const TiMemorySlice *src_memory) {
   if (runtime == nullptr) {

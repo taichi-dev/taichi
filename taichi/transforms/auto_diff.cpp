@@ -1143,6 +1143,43 @@ class MakeDual : public ADTransform {
     }
   }
 
+  void visit(RangeForStmt *for_stmt) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : for_stmt->body->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
+    }
+  }
+
+  void visit(StructForStmt *for_stmt) override {
+    // alloca_block = for_stmt->body.get();
+    for_stmt->body->accept(this);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    // TI_ASSERT(!needs_grad(stmt->ret_type));
+    accumulate(stmt, dual(stmt->src.data[0].var));
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    // Clear the dual of the dest before local store,
+    // Because LocalStoreStmt overwrites the dest,
+    // If the alloca serves as the dest of multiple LocalStoreStmt, only the
+    // last LocalStoreStmt should be taken account of, i.e, its history should
+    // be cleared
+    if (needs_grad(stmt->dest->ret_type)) {
+      auto dtype = stmt->dest->ret_type;
+      auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+      insert<LocalStoreStmt>(dual(stmt->dest), zero);
+    }
+
+    accumulate(stmt->dest, dual(stmt->val));
+  }
+
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to dual
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();

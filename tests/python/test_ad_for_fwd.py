@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_sum_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -34,7 +34,7 @@ def test_ad_sum_fwd():
         assert p.dual[i] == b[i]
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_fibonacci_fwd():
     N = 15
     a = ti.field(ti.f32, shape=N)

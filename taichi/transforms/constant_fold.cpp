@@ -141,6 +141,16 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
+
+    if (stmt->op_type == BinaryOpType::pow) {
+      if (is_integral(rhs->ret_type)) {
+        auto rhs_val = rhs->val[0].val_int();
+        if (rhs_val < 0 && is_integral(stmt->ret_type)) {
+          TI_ERROR("negative exponent in integer pow is not allowed.");
+        }
+      }
+    }
+
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));

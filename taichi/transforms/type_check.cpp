@@ -315,6 +315,16 @@ class TypeCheck : public IRVisitor {
       }
     }
 
+    // Unify semantics of pow: make integer pow return default_fp
+    if (stmt->op_type == BinaryOpType::pow) {
+      if (is_integral(stmt->rhs->ret_type) &&
+          is_integral(stmt->lhs->ret_type)) {
+        stmt->ret_type = config_.default_fp;
+        cast(stmt->rhs, config_.default_fp);
+        cast(stmt->lhs, config_.default_fp);
+      }
+    }
+
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {

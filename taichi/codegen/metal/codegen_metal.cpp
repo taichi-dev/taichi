@@ -578,12 +578,6 @@ class KernelCodegenImpl : public IRVisitor {
       }
       return;
     }
-    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type)) {
-      // TODO(k-ye): Make sure the type is not i64?
-      emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
-           rhs_name);
-      return;
-    }
     const auto binop = metal_binary_op_type_symbol(op_type);
     if (is_metal_binary_op_infix(op_type)) {
       if (is_comparison(op_type)) {

@@ -9,4 +9,5 @@ def test_laplace():
     for i in range(10):
         assert y[i, i + 1] == (4.0 if i % 3 == 1 else 0.0)
 
+
 test_laplace()

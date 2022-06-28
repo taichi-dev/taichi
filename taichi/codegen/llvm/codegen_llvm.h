@@ -16,7 +16,7 @@ namespace lang {
 
 class CodeGenLLVM;
 
-class OffloadedTask { // TODO(Lin): Remove this
+class OffloadedTask {  // TODO(Lin): Remove this
  public:
   std::string name;
   CodeGenLLVM *codegen;
@@ -121,7 +121,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  struct CompiledData { // TODO(Lin): Merge CompiledData and ModuleGenValue
+  struct CompiledData {  // TODO(Lin): Merge CompiledData and ModuleGenValue
     std::vector<OffloadedTask> offloaded_tasks;
     std::unique_ptr<llvm::Module> llvm_module{nullptr};
   };

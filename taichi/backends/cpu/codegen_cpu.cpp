@@ -209,7 +209,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
-
 };
 
 }  // namespace
@@ -237,14 +236,16 @@ FunctionType CodeGenCPU::codegen() {
   std::vector<std::unique_ptr<ModuleGenValue>> modules(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
-  auto tlctx = get_llvm_program(kernel->program)->get_llvm_context(kernel->arch);
+  auto tlctx =
+      get_llvm_program(kernel->program)->get_llvm_context(kernel->arch);
   for (int i = 0; i < offloads.size(); i++) {
-    auto compile_func = [&, i]{
+    auto compile_func = [&, i] {
       modules[i] = this->modulegen(nullptr, offloads[i]->as<OffloadedStmt>());
       tlctx->add_module(std::move(modules[i]->module));
       TI_ASSERT(modules[i]->name_list.size() == 1);
       auto *func_ptr = tlctx->lookup_function_pointer(modules[i]->name_list[0]);
-      TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", modules[i]->name_list[0]);
+      TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found",
+                     modules[i]->name_list[0]);
       task_funcs[i] = ((TaskFunc)(func_ptr));
     };
     if (kernel->is_evaluator) {
@@ -256,7 +257,8 @@ FunctionType CodeGenCPU::codegen() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-  return [program = get_llvm_program(kernel->program), args = infer_launch_args(kernel), kernel_name = kernel->name,
+  return [program = get_llvm_program(kernel->program),
+          args = infer_launch_args(kernel), kernel_name = kernel->name,
           task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
@@ -289,7 +291,8 @@ std::unique_ptr<ModuleGenValue> CodeGenCPU::modulegen(
   for (auto &offload : compiled_res.offloaded_tasks) {
     namelist.push_back(offload.name);
   }
-  return std::make_unique<ModuleGenValue>(std::move(compiled_res.llvm_module), namelist);
+  return std::make_unique<ModuleGenValue>(std::move(compiled_res.llvm_module),
+                                          namelist);
 }
 
 FunctionType CPUModuleToFunctionConverter::convert(

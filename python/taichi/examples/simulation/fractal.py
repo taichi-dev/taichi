@@ -26,7 +26,7 @@ def paint(t: float):
 def main():
     gui = ti.GUI("Julia Set", res=(n * 2, n))
     t = 0.0
-    while gui.running:
+    while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
         paint(t)
         t += 0.03
         gui.set_image(pixels)

@@ -132,8 +132,8 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
 }
 
 void ti_copy_memory_device_to_device(TiRuntime runtime,
-                    const TiMemorySlice *dst_memory,
-                    const TiMemorySlice *src_memory) {
+                                     const TiMemorySlice *dst_memory,
+                                     const TiMemorySlice *src_memory) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to copy memory on runtime of null handle");
     return;

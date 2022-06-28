@@ -5,7 +5,7 @@
 
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/gfx/runtime.h"
-#include "taichi/runtime/dx/dx_api.h"
+#include "taichi/backends/dx/dx_api.h"
 #include "taichi/common/core.h"
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
@@ -29,7 +29,7 @@
 #endif
 
 #ifdef TI_WITH_OPENGL
-#include "taichi/runtime/opengl/opengl_api.h"
+#include "taichi/backends/opengl/opengl_api.h"
 #endif
 
 #ifdef TI_WITH_CC

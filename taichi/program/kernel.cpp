@@ -13,7 +13,7 @@
 #include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN

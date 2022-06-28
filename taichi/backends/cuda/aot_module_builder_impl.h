@@ -1,8 +1,8 @@
 #pragma once
 
 #include "taichi/aot/module_builder.h"
-#include "taichi/llvm/llvm_offline_cache.h"
-#include "taichi/llvm/llvm_aot_module_builder.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 
 namespace taichi {
 namespace lang {

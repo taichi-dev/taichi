@@ -1,6 +1,6 @@
 #include "taichi/codegen/wasm/codegen_wasm.h"
 
-#include "taichi/codegen/codegen_llvm.h"
+#include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/lang_util.h"

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "taichi/codegen/codegen.h"
-#include "taichi/codegen/codegen_llvm.h"
+#include "taichi/codegen/llvm/codegen_llvm.h"
 
 TLANG_NAMESPACE_BEGIN
 

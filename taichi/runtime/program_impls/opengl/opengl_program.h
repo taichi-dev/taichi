@@ -1,60 +1,68 @@
 #pragma once
 
-#include "taichi/codegen/opengl/struct_opengl.h"
-
-#include "taichi/runtime/opengl/opengl_kernel_launcher.h"
-#include "taichi/runtime/opengl/opengl_api.h"
-#include "taichi/codegen/opengl/codegen_opengl.h"
-
-#include "taichi/system/memory_pool.h"
-#include "taichi/common/logging.h"
-#include "taichi/struct/snode_tree.h"
-#include "taichi/program/snode_expr_utils.h"
+#include "taichi/runtime/gfx/runtime.h"
+#include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
-
-#include <optional>
 
 namespace taichi {
 namespace lang {
 
 class OpenglProgramImpl : public ProgramImpl {
  public:
-  OpenglProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-  }
+  OpenglProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
       uint64 *result_buffer) override {
-    return 0;  // TODO: support dynamic snode alloc in vulkan
+    return 0;  // TODO: support sparse
   }
+
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void compile_snode_tree_types(SNodeTree *tree) override;
-
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
+    runtime_->synchronize();
+  }
+
+  StreamSemaphore flush() override {
+    return runtime_->flush();
+  }
+
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    TI_ASSERT(snode_tree_mgr_ != nullptr);
+    snode_tree_mgr_->destroy_snode_tree(snode_tree);
   }
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
-
-  void destroy_snode_tree(SNodeTree *snode_tree) override {
-    TI_NOT_IMPLEMENTED
+  Device *get_compute_device() override {
+    return device_.get();
   }
 
-  ~OpenglProgramImpl() override {
+  Device *get_graphics_device() override {
+    return device_.get();
   }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
+  }
+
+  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
  private:
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
+  std::shared_ptr<Device> device_{nullptr};
+  std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};
+  std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
+  std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
 };
 
 }  // namespace lang

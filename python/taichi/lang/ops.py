@@ -7,6 +7,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
+from taichi.types.annotations import template
 
 unary_ops = []
 
@@ -373,7 +374,11 @@ def round(x):  # pylint: disable=redefined-builtin
 
 
 @unary
-def floor(x):
+def _floor(x):
+    return _unary_operation(_ti_core.expr_floor, math.floor, x)
+
+
+def floor(x, dtype: template()=float):
     """Return the floor of the input, element-wise.
 
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
@@ -382,18 +387,20 @@ def floor(x):
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
+        dtype: (:mod:`~taichi.types.primitive_types`): the returned type, default to `float` (current `default_fp`).
+
     Returns:
-        The floor of each element in `x`, with float type.
+        The floor of each element in `x`, with specified data type.
 
     Example::
 
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([3.14, -1.5])
-        >>>     y = ti.floor(x)
-        >>>     print(y)  # [3.0, -2.0]
+        >>>     x = ti.Matrix([-1.1, 2.2, 3.])
+        >>>     y = ti.floor(x, ti.f64)
+        >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
     """
-    return _unary_operation(_ti_core.expr_floor, math.floor, x)
+    return cast(_floor(x), dtype)
 
 
 @unary

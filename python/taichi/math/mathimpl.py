@@ -691,33 +691,10 @@ def inverse(mat):  # pylint: disable=R1710
     return mat.inverse()
 
 
-@ti.func
-def ifloor(x, dt: ti.template() = int):
-    """Return the floor of the input, element-wise.
-
-    This is similar to the `floor` function, but the returned value has integer type.
-
-    Args:
-        x (:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`): the input.
-        dt (int, ti.i8, ti.i16, ti.i32, ti.i64): the returned integer type, \
-            default to `int` (current `default_ip`).
-
-    Example:
-
-        >>> @ti.kernel:
-        >>> def test():
-        >>>     x = vec3(-1.1, 1.1, 3.0)
-        >>>     y = ifloor(x)  # [-2, 1, 3]
-
-    Returns: The floor of each element in x, with integer type.
-    """
-    return ti.cast(ti.floor(x), dt)
-
-
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "ifloor", "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2",
+    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2",
     "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi",
     "pow", "radians", "reflect", "refract", "rot2", "rot3", "rotate2d",
     "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",

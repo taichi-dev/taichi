@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_fwd_add():
     N = 5
     x = ti.field(ti.f32, shape=N)
@@ -22,7 +22,7 @@ def test_ad_fwd_add():
     assert loss.dual[1] == 2
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_ad_fwd_multiply():
     N = 5
     x = ti.field(ti.f32, shape=N)
@@ -42,7 +42,7 @@ def test_ad_fwd_multiply():
     assert loss.dual[1] == 7
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test()
 def test_multiple_calls():
     N = 5
     a = ti.field(float, shape=N)

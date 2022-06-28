@@ -400,7 +400,10 @@ def floor(x, dtype: template()=float):
         >>>     y = ti.floor(x, ti.f64)
         >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
     """
-    return cast(_floor(x), dtype)
+    result = _floor(x)
+    if dtype != float:
+        result = cast(result, dtype)
+    return result
 
 
 @unary

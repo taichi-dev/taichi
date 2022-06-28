@@ -692,7 +692,7 @@ def inverse(mat):  # pylint: disable=R1710
 
 
 @ti.func
-def ifloor(x, dt: ti.template()=int):
+def ifloor(x, dt: ti.template() = int):
     """Return the floor of the input, element-wise.
 
     This is similar to the `floor` function, but the returned value has integer type.
@@ -716,10 +716,10 @@ def ifloor(x, dt: ti.template()=int):
 
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract", "ifloor",
-    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
-    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
-    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
-    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
-    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
+    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
+    "ifloor", "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2",
+    "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi",
+    "pow", "radians", "reflect", "refract", "rot2", "rot3", "rotate2d",
+    "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
+    "tanh", "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

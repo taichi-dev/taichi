@@ -140,10 +140,11 @@ TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
                                                TiMemory memory);
 
-// function.copy_memory
-TI_DLL_EXPORT void TI_API_CALL ti_copy_memory(TiRuntime runtime,
-                                              const TiMemorySlice *dst_memory,
-                                              const TiMemorySlice *src_memory);
+// function.copy_memory_device_to_device
+TI_DLL_EXPORT void TI_API_CALL
+ti_copy_memory_device_to_device(TiRuntime runtime,
+                                const TiMemorySlice *dst_memory,
+                                const TiMemorySlice *src_memory);
 
 // function.launch_kernel
 TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,

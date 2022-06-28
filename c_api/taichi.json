@@ -291,7 +291,7 @@
                     ]
                 },
                 {
-                    "name": "copy_memory",
+                    "name": "copy_memory_device_to_device",
                     "type": "function",
                     "parameters": [
                         {

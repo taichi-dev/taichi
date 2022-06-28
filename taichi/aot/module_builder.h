@@ -42,7 +42,7 @@ class AotModuleBuilder {
 
  protected:
   /**
-   * Intended to be overriden by each backend's implementation.
+   * Intended to be overridden by each backend's implementation.
    */
   virtual void add_per_backend(const std::string &identifier,
                                Kernel *kernel) = 0;

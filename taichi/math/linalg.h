@@ -138,7 +138,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
       this->d[i] = f;
   }
 
-  // Function intialization
+  // Function initialization
   template <
       typename F,
       std::enable_if_t<std::is_convertible<F, std::function<T(int)>>::value,
@@ -679,7 +679,7 @@ struct MatrixND {
     this->d[3] = v3;
   }
 
-  // Function intialization
+  // Function initialization
   template <
       typename F,
       std::enable_if_t<std::is_convertible<

@@ -301,7 +301,7 @@ class TypeCheck : public IRVisitor {
     }
 
     // Some backends such as vulkan doesn't support fp64
-    // Always promote to fp32 unless neccessary
+    // Always promote to fp32 unless necessary
     if (stmt->op_type == BinaryOpType::atan2) {
       if (stmt->rhs->ret_type == PrimitiveType::f64 ||
           stmt->lhs->ret_type == PrimitiveType::f64) {

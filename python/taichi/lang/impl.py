@@ -422,7 +422,7 @@ class _UninitializedRootFieldsBuilder:
 # gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
 # writing to it is would result in less for maintenance cost.
 #
-# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+# `_root_fb` will be overridden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
@@ -614,7 +614,7 @@ def ti_format_list_to_content_entries(raw):
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
-        yield '['  # distinguishing tuple & list will increase maintainance cost
+        yield '['  # distinguishing tuple & list will increase maintenance cost
         for i, v in enumerate(_var):
             if i:
                 yield ', '

@@ -363,7 +363,7 @@ class Matrix(TaichiOperations):
     """The matrix class.
 
     A matrix is a 2-D rectangular array with scalar entries, it's row-majored, and is
-    aligned continously. We recommend only use matrix with no more than 32 elements for
+    aligned continuously. We recommend only use matrix with no more than 32 elements for
     efficiency considerations.
 
     Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
@@ -582,7 +582,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def _subscript(self, *indices):
         if isinstance(self._impl, _PyScopeMatrixImpl):
-            # This can happpen in these cases:
+            # This can happen in these cases:
             # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
             # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
             return self._impl.subscript_scope_ignored(indices)

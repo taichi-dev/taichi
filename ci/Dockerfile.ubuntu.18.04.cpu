@@ -27,7 +27,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5
     rm cmake-3.20.5-linux-x86_64.tar.gz
 ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
 
-# Intall LLVM 10
+# Install LLVM 10
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
 RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip && \

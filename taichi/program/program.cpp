@@ -460,7 +460,7 @@ void Program::finalize() {
   synchronize();
   if (async_engine)
     async_engine = nullptr;  // Finalize the async engine threads before
-                             // anything else gets destoried.
+                             // anything else gets destroyed.
 
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {

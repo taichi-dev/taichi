@@ -60,7 +60,7 @@ The `dynamic` SNode supports variable-length fields. It acts similarly to `std::
 An alternative solution is to allocate a large enough `dense` field, with a corresponding 0-D field
 `field_len[None]` tracking its length. In practice, programs allocating memory using `dynamic`
 SNodes may be less efficient than using `dense` SNodes, due to dynamic data structure
-maintainance overheads.
+maintenance overheads.
 :::
 
 ### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?

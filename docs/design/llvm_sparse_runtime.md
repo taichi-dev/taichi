@@ -199,7 +199,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 2. `chunk_strat` tracks the starting index of a given chunk, and always starts at `0` . `p_chunk_ptr` is initialized to the pointer to the first chunk.
 3. Inside the `while` loop, checks if the given chunk slot is empty first, and allocates a new chunk if so.
 4. Compares if the determined index `i` falls within the current chunk.
-   1. If so, stores `data` into the corresponding slot in this chunk. Note that the first `sizeof(Ptr)` bytes are skiped: they are reserved to store the address of the next chunk.
+   1. If so, stores `data` into the corresponding slot in this chunk. Note that the first `sizeof(Ptr)` bytes are skipped: they are reserved to store the address of the next chunk.
    2. Otherwise, jumps to the next chunk.
 
 # Runtime
@@ -290,7 +290,7 @@ i32 reserve_new_element() {
 }
 ```
 
-It increments `num_elements` to get the index of this new elment, and calculates the belonging chunk ID. Then it ensures that the chunk is actually allocated using [`touch_chunk()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1570-L1584):
+It increments `num_elements` to get the index of this new element, and calculates the belonging chunk ID. Then it ensures that the chunk is actually allocated using [`touch_chunk()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1570-L1584):
 
 ```cpp
 void ListManager::touch_chunk(int chunk_id) {

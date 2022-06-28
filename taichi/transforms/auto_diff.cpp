@@ -736,7 +736,7 @@ class MakeAdjoint : public ADTransform {
       // GlobalLoadStmt is not inside a range-for
       // Code sample:
       // a and b require grad
-      // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
+      // Case 1 (GlobalLoadStmt is outside the for-loop, compute 5 times and
       // accumulate once, alloca history value is needed):
       // for i in range(5):
       //     p = a[i]

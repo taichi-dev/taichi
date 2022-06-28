@@ -315,7 +315,7 @@ def thinc(wl, wc, wr, beta):
 
 @ti.kernel
 def compute_F_thinc():
-    # reconstruct primitve variables on interior faces of each cell using
+    # reconstruct primitive variables on interior faces of each cell using
     #    multiple candidate thinc reconstructions
     for i, j in Q:
         if is_interior_cell(i, j):

@@ -51,7 +51,7 @@ IVkDescriptorSetLayout create_descriptor_set_layout(
 // VkDescriptorPool
 struct DeviceObjVkDescriptorPool : public DeviceObj {
   VkDescriptorPool pool{VK_NULL_HANDLE};
-  // Can recyling of this actually be trivial?
+  // Can recycling of this actually be trivial?
   // std::unordered_multimap<VkDescriptorSetLayout, VkDescriptorSet> free_list;
   ~DeviceObjVkDescriptorPool() override;
 };

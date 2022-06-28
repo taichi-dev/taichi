@@ -6,7 +6,7 @@
 #include "taichi/backends/cuda/cuda_types.h"
 
 #if (0)
-// Turn on to check for comptability
+// Turn on to check for compatibility
 namespace taichi {
 static_assert(sizeof(CUresult) == sizeof(uint32));
 static_assert(sizeof(CUmem_advise) == sizeof(uint32));

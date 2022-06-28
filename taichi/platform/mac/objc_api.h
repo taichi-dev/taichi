@@ -64,7 +64,7 @@ nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
   // we want to *own* a reference to it, we must call [retain] to increment the
   // reference counting.
   //
-  // In pratice, we find that each pthread (non main-thread) creates its own
+  // In practice, we find that each pthread (non main-thread) creates its own
   // autoreleasepool. Without retaining the object, it has caused double-free
   // on thread exit:
   // 1. nsobj_unique_ptr calls [release] in its destructor.

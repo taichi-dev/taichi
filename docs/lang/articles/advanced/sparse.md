@@ -32,7 +32,7 @@ we will significantly save storage and computing power.
 The key to leveraging spatial sparsity is replacing *dense* grids with *sparse* grids.
 :::
 
-The traditional sparse spatial data stuctures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
+The traditional sparse spatial data structures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
 [Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, compared to quadtrees and octrees, it is more performance-friendly to use shallower trees with larger branching factors.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
 In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi sparse spatial data structures include

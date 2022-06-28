@@ -164,7 +164,7 @@ y = ti.field(ti.f32)
 ti.root.dense(ti.i, M).place(x, y)
 ```
 
-The memroy layout then becomes
+The memory layout then becomes
 
 ```
 #  address: low .............................. high
@@ -175,7 +175,7 @@ Here, `place` interleaves the elements of Taichi fields `x` and `y`.
 
 As previously introduced, the access methods to `x` and `y` remain the same for both  AoS and SoA. Therefore, the data layout can be changed flexibly without revising the application logic.
 
-<!-- haidong: I hope this part is 1) revised to a runnable and complete example 2) provides performane constrast-->
+<!-- haidong: I hope this part is 1) revised to a runnable and complete example 2) provides performance constrast-->
 For better illustration, let's see an example of an 1D wave equation solver:
 
 ```python
@@ -336,7 +336,7 @@ Actually, the above demonstrated `ti.root` statements are implemented with `Fiel
 
 By default, Taichi implicitly fits a field in a larger buffer with power-of-two dimensions. We take the power-of-two padding convention because it is widely adopted in computer graphics. The design enables fast indexing with bitwise arithmetic and better memory address alignment, while trading off memory occupations.
 
-For example, a `(18, 65)` field is materialized with a `(32, 128)` buffer, which is acceptable. As field size grows, the padding strategy can be exaggeratedly unbearable: `(129, 6553600)` will be expanded to `(256, 6335600)`, which allocates considerable unsed blank memory. Therefore, Taichi provides the optional packed mode to allocate buffer that tightly fits the requested field shape. It is especially useful when memory usage is a major concern.
+For example, a `(18, 65)` field is materialized with a `(32, 128)` buffer, which is acceptable. As field size grows, the padding strategy can be exaggeratedly unbearable: `(129, 6553600)` will be expanded to `(256, 6335600)`, which allocates considerable unused blank memory. Therefore, Taichi provides the optional packed mode to allocate buffer that tightly fits the requested field shape. It is especially useful when memory usage is a major concern.
 
 To leverage the packed mode, spcifify `packed` in `ti.init()` argument:
 
@@ -350,4 +350,4 @@ ti.init(packed=True)
 a = ti.field(ti.i32, shape=(18, 65))  # no padding
 ```
 
-You might observe mild performance regression with the packed mode due to more complex adressing and memory alignment. Therefore, the packed mode should be specified only when memory capacity is a major concern.
+You might observe mild performance regression with the packed mode due to more complex addressing and memory alignment. Therefore, the packed mode should be specified only when memory capacity is a major concern.

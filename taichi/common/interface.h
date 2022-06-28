@@ -176,7 +176,7 @@ class InterfaceHolder {
     }                                                                        \
     void remove(const std::string &alias) override {                         \
       TI_ASSERT_INFO(has(alias),                                             \
-                     std::string("Implemetation ") + alias + " not found!"); \
+                     std::string("Implementation ") + alias + " not found!"); \
       implementation_factories.erase(alias);                                 \
     }                                                                        \
     void update(const std::string &alias, const FactoryMethod &f) {          \

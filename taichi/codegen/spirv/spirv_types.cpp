@@ -98,7 +98,7 @@ size_t SmallVectorType::memory_alignment_size(
 
   if (ctx.is<STD430LayoutContext>() || ctx.is<STD140LayoutContext>()) {
     // For STD140 / STD430, small vectors are Power-of-Two aligned
-    // In C or "Scalar block layout", blocks are aligned to its compoment
+    // In C or "Scalar block layout", blocks are aligned to its component
     // alignment
     if (num_elements_ == 2) {
       align *= 2;

@@ -76,7 +76,7 @@ def produce_injected_args(kernel, symbolic_args=None):
             if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
                 raise RuntimeError(
                     f'Matrix dimension mismatch, expected ({anno.n}, {anno.m}) '
-                    f'but dispathed shape ({symbolic_mat_n}, {symbolic_mat_m}).'
+                    f'but dispatched shape ({symbolic_mat_n}, {symbolic_mat_m}).'
                 )
             injected_args.append(Matrix([0] * anno.n * anno.m, dt=anno.dtype))
         else:

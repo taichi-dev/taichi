@@ -148,14 +148,14 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
-  // The closure that, if invoked, lauches the backend kernel (shader)
+  // The closure that, if invoked, launches the backend kernel (shader)
   FunctionType compiled_{nullptr};
   // TODO[#5114]: It's kinda redundant to keep both compiled_ (used for JIT
   // execution) as well as compiled_aot_kernel_. In fact we'd better unify
   // everything around compiled_aot_kernel and rename it.
   std::unique_ptr<aot::Kernel> compiled_aot_kernel_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
-  // lower inital AST all the way down to a bunch of
+  // lower initial AST all the way down to a bunch of
   // OffloadedStmt for async execution
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};

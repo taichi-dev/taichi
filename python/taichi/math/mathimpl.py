@@ -694,9 +694,9 @@ def inverse(mat):  # pylint: disable=R1710
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2",
-    "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi",
-    "pow", "radians", "reflect", "refract", "rot2", "rot3", "rotate2d",
-    "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
-    "tanh", "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
+    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
+    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
+    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
+    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
+    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

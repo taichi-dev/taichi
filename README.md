@@ -173,6 +173,7 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 - [Taichi Lang examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi Lang examples](https://github.com/taichi-dev/advanced_examples)
+- [Awesome Taichi](https://github.com/taichi-dev/awesome-taichi)
 - [DiffTaichi](https://github.com/taichi-dev/difftaichi)
 - [Taichi elements](https://github.com/taichi-dev/taichi_elements)
 - [Taichi Houdini](https://github.com/taichi-dev/taichi_houdini)

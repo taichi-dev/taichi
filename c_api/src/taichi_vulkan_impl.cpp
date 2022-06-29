@@ -103,6 +103,11 @@ TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
   params.runtime->add_root_buffer(root_size);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
 }
+void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
+                                const taichi::lang::DevicePtr &src,
+                                size_t size) {
+  get_gfx_runtime().buffer_copy(dst, src, size);
+}
 void VulkanRuntime::submit() {
   get_gfx_runtime().flush();
 }

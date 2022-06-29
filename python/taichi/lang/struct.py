@@ -356,7 +356,10 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
-        return StructField(field_dict, methods, name=name)
+        return StructField(field_dict,
+                           methods,
+                           name=name,
+                           needs_grad=needs_grad)
 
 
 class _IntermediateStruct(Struct):
@@ -387,11 +390,16 @@ class StructField(Field):
             to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, struct_methods, name=None):
+    def __init__(self,
+                 field_dict,
+                 struct_methods,
+                 name=None,
+                 needs_grad=False):
         # will not call Field initializer
         self.field_dict = field_dict
         self.struct_methods = struct_methods
         self.name = name
+        self.needs_grad = needs_grad
         self._register_fields()
 
     @property

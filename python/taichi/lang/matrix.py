@@ -1113,6 +1113,9 @@ class Matrix(TaichiOperations):
                                         m), MatrixField(entries_grad, n, m)
         entries._set_grad(entries_grad)
         entries._set_dual(entries_dual)
+
+        entries._needs_grad(needs_grad)
+
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:

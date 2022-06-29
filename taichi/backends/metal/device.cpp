@@ -355,7 +355,10 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
+    Stream *stream = get_compute_stream();
+    std::unique_ptr<CommandList> cmd = stream->new_command_list();
+    cmd->buffer_copy(dst, src, size);
+    stream->submit_synced(cmd.get());
   }
 
   Stream *get_compute_stream() override {

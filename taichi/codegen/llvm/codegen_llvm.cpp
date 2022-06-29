@@ -2328,18 +2328,17 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
-  bool needs_cache = false;
   const auto &config = prog->config;
-  std::string kernel_key;
+  std::string kernel_key =
+      get_hashed_offline_cache_key(&kernel->program->config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
-    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
     CompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
     }
-    needs_cache = true;
   }
 
   if (!kernel->lowered()) {
@@ -2347,9 +2346,14 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   }
   emit_to_module();
   eliminate_unused_functions();
-  if (needs_cache) {
+
+  // Updates LlvmProgramImpl->cache_data_
+  // to save the compiled kernel information for
+  // accessive uses in AOT or CGraph.
+  if (!kernel->is_evaluator) {
     cache_module(kernel_key);
   }
+
   CompiledData res;
   res.offloaded_tasks = std::move(this->offloaded_tasks);
   res.llvm_module = std::move(this->module);

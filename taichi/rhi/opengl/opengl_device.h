@@ -61,9 +61,14 @@ class GLResourceBinder : public ResourceBinder {
     return ubo_binding_map_;
   }
 
+  const std::unordered_map<uint32_t, GLuint> &texture_binding_map() {
+    return texture_binding_map_;
+  }
+
  private:
   std::unordered_map<uint32_t, GLuint> ssbo_binding_map_;
   std::unordered_map<uint32_t, GLuint> ubo_binding_map_;
+  std::unordered_map<uint32_t, GLuint> texture_binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -84,6 +89,8 @@ class GLPipeline : public Pipeline {
 
 class GLCommandList : public CommandList {
  public:
+  GLCommandList(GLDevice *device) : device_(device) {
+  }
   ~GLCommandList() override;
 
   void bind_pipeline(Pipeline *p) override;
@@ -150,6 +157,13 @@ class GLCommandList : public CommandList {
     void execute() override;
   };
 
+  struct CmdBindTextureToIndex : public Cmd {
+    GLuint texture{0};
+    GLuint index{0};
+    GLenum target{GL_TEXTURE_2D};
+    void execute() override;
+  };
+
   struct CmdBufferBarrier : public Cmd {
     void execute() override;
   };
@@ -197,10 +211,13 @@ class GLCommandList : public CommandList {
   };
 
   std::vector<std::unique_ptr<Cmd>> recorded_commands_;
+  GLDevice *device_{nullptr};
 };
 
 class GLStream : public Stream {
  public:
+  GLStream(GLDevice *device) : device_(device) {
+  }
   ~GLStream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
@@ -212,10 +229,14 @@ class GLStream : public Stream {
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
 
   void command_sync() override;
+
+ private:
+  GLDevice *device_{nullptr};
 };
 
 class GLDevice : public GraphicsDevice {
  public:
+  GLDevice();
   ~GLDevice() override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
@@ -269,7 +290,7 @@ class GLDevice : public GraphicsDevice {
     return image_to_dims_.at(image);
   }
 
-  GLuint get_image_gl_int_dims(GLuint image) const {
+  GLuint get_image_gl_internal_format(GLuint image) const {
     return image_to_int_format_.at(image);
   }
 

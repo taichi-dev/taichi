@@ -222,7 +222,9 @@ void GLResourceBinder::image(uint32_t set,
                              uint32_t binding,
                              DeviceAllocation alloc,
                              ImageSamplerConfig sampler_config) {
-  TI_NOT_IMPLEMENTED;
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
+  texture_binding_map_[binding] = alloc.alloc_id;
 }
 
 void GLResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
@@ -330,6 +332,13 @@ void GLCommandList::bind_resources(ResourceBinder *_binder) {
     cmd->target = GL_UNIFORM_BUFFER;
     recorded_commands_.push_back(std::move(cmd));
   }
+  for (auto &[binding, texture] : binder->texture_binding_map()) {
+    auto cmd = std::make_unique<CmdBindTextureToIndex>();
+    cmd->texture = texture;
+    cmd->index = binding;
+    cmd->target = device_->get_image_gl_dims(texture);
+    recorded_commands_.push_back(std::move(cmd));
+  }
 }
 
 void GLCommandList::bind_resources(ResourceBinder *binder,
@@ -432,6 +441,7 @@ void GLCommandList::buffer_to_image(DeviceAllocation dst_img,
   cmd->image = dst_img.alloc_id;
   cmd->buffer = src_buf.alloc_id;
   cmd->offset = src_buf.offset;
+  cmd->device = device_;
   recorded_commands_.push_back(std::move(cmd));
 }
 
@@ -444,6 +454,7 @@ void GLCommandList::image_to_buffer(DevicePtr dst_buf,
   cmd->image = src_img.alloc_id;
   cmd->buffer = dst_buf.alloc_id;
   cmd->offset = dst_buf.offset;
+  cmd->device = device_;
   recorded_commands_.push_back(std::move(cmd));
 }
 
@@ -457,7 +468,7 @@ GLStream::~GLStream() {
 }
 
 std::unique_ptr<CommandList> GLStream::new_command_list() {
-  return std::make_unique<GLCommandList>();
+  return std::make_unique<GLCommandList>(device_);
 }
 
 StreamSemaphore GLStream::submit(
@@ -481,6 +492,9 @@ StreamSemaphore GLStream::submit_synced(
 }
 void GLStream::command_sync() {
   glFinish();
+}
+
+GLDevice::GLDevice() : stream_(this) {
 }
 
 GLDevice::~GLDevice() {
@@ -718,6 +732,13 @@ void GLCommandList::CmdBindBufferToIndex::execute() {
   check_opengl_error("glBindBufferBase");
 }
 
+void GLCommandList::CmdBindTextureToIndex::execute() {
+  glActiveTexture(GL_TEXTURE0 + index);
+  check_opengl_error("glActiveTexture");
+  glBindTexture(GL_TEXTURE_2D, texture);
+  check_opengl_error("glBindTexture");
+}
+
 void GLCommandList::CmdBufferBarrier::execute() {
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   check_opengl_error("glMemoryBarrier");
@@ -767,9 +788,10 @@ void GLCommandList::CmdImageTransition::execute() {
 }
 
 void GLCommandList::CmdBufferToImage::execute() {
-  auto image_dims = device->get_image_gl_dims(image);
-  auto image_format = device->get_image_gl_int_dims(image);
-  auto gl_type = gl_internal_format_to_type.at(image_format);
+  GLuint image_dims = device->get_image_gl_dims(image);
+  GLuint image_internal_format = device->get_image_gl_internal_format(image);
+  GLuint image_format = gl_internal_format_to_format.at(image_internal_format);
+  GLuint gl_type = gl_internal_format_to_type.at(image_internal_format);
 
   glBindTexture(image_dims, image);
   check_opengl_error("glBindTexture");
@@ -777,16 +799,16 @@ void GLCommandList::CmdBufferToImage::execute() {
   check_opengl_error("glBindBuffer");
   if (image_dims == GL_TEXTURE_1D) {
     glTexSubImage1D(image_dims, /*level=*/0, params.image_offset.x,
-                    params.image_extent.x, image_format, gl_type,
-                    (void *)offset);
-  } else if (image_dims == GL_TEXTURE_2D) {
-    glTexSubImage2D(image_dims, /*level=*/0, params.image_offset.x,
-                    params.image_offset.y, params.image_extent.x,
                     params.image_extent.y, image_format, gl_type,
                     (void *)offset);
+  } else if (image_dims == GL_TEXTURE_2D) {
+    glTexSubImage2D(image_dims, /*level=*/0, /*xoffset=*/params.image_offset.x,
+                    /*yoffset=*/params.image_offset.y,
+                    /*width=*/params.image_extent.x,
+                    /*height=*/params.image_extent.y, image_format, gl_type,
+                    (void *)offset);
   } else {
-    glTexSubImage3D(
-        image_dims, /*level=*/0, params.image_offset.x, params.image_offset.y,
+    glTexSubImage3D(image_dims, /*level=*/0, /*xoffset=*/params.image_offset.x, params.image_offset.y,
         params.image_offset.z, params.image_extent.x, params.image_extent.y,
         params.image_extent.z, image_format, gl_type, (void *)offset);
   }
@@ -797,7 +819,7 @@ void GLCommandList::CmdBufferToImage::execute() {
 
 void GLCommandList::CmdImageToBuffer::execute() {
   auto image_dims = device->get_image_gl_dims(image);
-  auto image_format = device->get_image_gl_int_dims(image);
+  auto image_format = device->get_image_gl_internal_format(image);
   auto gl_type = gl_internal_format_to_type.at(image_format);
   auto unsized_format = gl_internal_format_to_format.at(image_format);
 

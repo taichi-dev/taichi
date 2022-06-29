@@ -40,6 +40,17 @@ std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
   return std::make_unique<llvm_aot::FieldImpl>(std::move(loaded));
 }
 
+std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
+  TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
+  std::vector<aot::CompiledDispatch> dispatches;
+  for (auto &dispatch : graphs_[name].dispatches) {
+    dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
+                          get_kernel(dispatch.kernel_name)});
+  }
+  aot::CompiledGraph graph{dispatches};
+  return std::make_unique<aot::CompiledGraph>(std::move(graph));
+}
+
 void finalize_aot_field(aot::Module *aot_module,
                         aot::Field *aot_field,
                         uint64 *result_buffer) {

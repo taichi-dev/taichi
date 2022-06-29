@@ -19,8 +19,8 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
-#include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"

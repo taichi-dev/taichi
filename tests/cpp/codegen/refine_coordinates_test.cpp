@@ -7,7 +7,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/BasicBlock.h"
 
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/ir/snode.h"
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/program/compile_config.h"

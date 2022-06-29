@@ -108,7 +108,7 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
     "taichi/lang_util.h" "taichi/lang_util.cpp"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
-    "taichi/backends/*.h" "taichi/backends/*.cpp"
+    "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
@@ -287,25 +287,25 @@ if(TI_WITH_LLVM)
 
     add_subdirectory(taichi/codegen/cpu)
     add_subdirectory(taichi/runtime/cpu)
-    add_subdirectory(taichi/backends/cpu)
+    add_subdirectory(taichi/rhi/cpu)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
 
-    add_subdirectory(taichi/backends/interop)
+    add_subdirectory(taichi/rhi/interop)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
         add_subdirectory(taichi/codegen/cuda)
         add_subdirectory(taichi/runtime/cuda)
-	      add_subdirectory(taichi/backends/cuda)
+	      add_subdirectory(taichi/rhi/cuda)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_codegen)
 	      target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_runtime)
 	      target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
     endif()
 
-    add_subdirectory(taichi/backends/llvm)
+    add_subdirectory(taichi/rhi/llvm)
     add_subdirectory(taichi/codegen/llvm)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
@@ -341,7 +341,7 @@ endif()
 if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
 
-    add_subdirectory(taichi/backends/metal)
+    add_subdirectory(taichi/rhi/metal)
     add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
     add_subdirectory(taichi/codegen/metal)
@@ -354,7 +354,7 @@ endif()
 if (TI_WITH_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
 
-    add_subdirectory(taichi/backends/opengl)
+    add_subdirectory(taichi/rhi/opengl)
     add_subdirectory(taichi/runtime/program_impls/opengl)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
 endif()
@@ -362,7 +362,7 @@ endif()
 if (TI_WITH_DX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
 
-    add_subdirectory(taichi/backends/dx)
+    add_subdirectory(taichi/rhi/dx)
     add_subdirectory(taichi/runtime/program_impls/dx)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
 endif()
@@ -393,7 +393,7 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
-    add_subdirectory(taichi/backends/vulkan)
+    add_subdirectory(taichi/rhi/vulkan)
 
     # TODO: this dependency is here because program.cpp includes vulkan_program.h
     # Should be removed

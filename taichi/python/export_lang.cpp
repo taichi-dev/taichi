@@ -34,7 +34,7 @@
 #include "taichi/program/kernel_profiler.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
 TI_NAMESPACE_BEGIN

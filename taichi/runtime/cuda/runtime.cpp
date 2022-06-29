@@ -1,5 +1,5 @@
 #include "taichi/runtime/runtime.h"
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 
 TLANG_NAMESPACE_BEGIN
 

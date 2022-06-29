@@ -1,6 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
 
 #ifdef TI_WITH_VULKAN

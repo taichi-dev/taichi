@@ -2,7 +2,7 @@
 
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 
-#include "taichi/backends/dx/dx_api.h"
+#include "taichi/rhi/dx/dx_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"

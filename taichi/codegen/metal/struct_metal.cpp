@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/metal/constants.h"
+#include "taichi/rhi/metal/constants.h"
 #include "taichi/runtime/metal/data_types.h"
 #include "taichi/runtime/metal/features.h"
 #include "taichi/runtime/metal/kernel_utils.h"

@@ -4,7 +4,7 @@
 #include <vector>
 #include <chrono>
 
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"

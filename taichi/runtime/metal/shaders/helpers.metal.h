@@ -38,19 +38,11 @@ STR(
                   : intm);
     }
 
+    inline bool is_integral(float x) { return fabs(x - round(x)) <= 1e-9f; }
+
     float pow_helper(float x, float n) {
-      if (round(x) == x && round(n) == n && n > 0) {
-        int32_t exp_int = (int32_t)(n);
-        int32_t result = 1;
-        int32_t tmp = (int32_t)(x);
-        while (exp_int) {
-          if (exp_int & 1) {
-            result *= tmp;
-          }
-          tmp *= tmp;
-          exp_int >>= 1;
-        }
-        return static_cast<float>(result);
+      if (is_integral(x) && is_integral(n) && n > 0) {
+        return round(pow(x, n));
       } else {
         return pow(x, n);
       }

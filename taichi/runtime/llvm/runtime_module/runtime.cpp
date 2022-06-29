@@ -81,6 +81,8 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
     runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
   }
 
+#define IS_INTEGRAL(x) (fabs((x)-round(x)) <= 1e-8f)
+
 using int8 = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;
@@ -298,10 +300,16 @@ f64 atan2_f64(f64 a, f64 b) {
 }
 
 f32 pow_f32(f32 a, f32 b) {
+  if (IS_INTEGRAL(a) && IS_INTEGRAL(b) && b > 0) {
+    return round(std::pow(a, b));
+  }
   return std::pow(a, b);
 }
 
 f64 pow_f64(f64 a, f64 b) {
+  if (IS_INTEGRAL(a) && IS_INTEGRAL(b) && b > 0) {
+    return round(std::pow(a, b));
+  }
   return std::pow(a, b);
 }
 

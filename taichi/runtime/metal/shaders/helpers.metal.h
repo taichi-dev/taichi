@@ -42,7 +42,17 @@ STR(
 
     float pow_helper(float x, float n) {
       if (is_integral(x) && is_integral(n) && n > 0) {
-        return round(pow(x, n));
+        int32_t exp_int = (int32_t)(n);
+        int32_t result = 1;
+        int32_t tmp = (int32_t)(x);
+        while (exp_int) {
+          if (exp_int & 1) {
+            result *= tmp;
+          }
+          tmp *= tmp;
+          exp_int >>= 1;
+        }
+        return static_cast<float>(result);
       } else {
         return pow(x, n);
       }

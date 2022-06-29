@@ -201,6 +201,22 @@ DEFINE_UNARY_REAL_FUNC(asin)
 DEFINE_UNARY_REAL_FUNC(cos)
 DEFINE_UNARY_REAL_FUNC(sin)
 
+#define DEFINE_FAST_POW(T)   \
+  T fast_pow_##T(T x, T n) { \
+    T ans = 1;               \
+    T tmp = x;               \
+    while (n) {              \
+      if (n & 1)             \
+        ans *= tmp;          \
+      tmp *= tmp;            \
+      n >>= 1;               \
+    }                        \
+    return ans;              \
+  }
+
+DEFINE_FAST_POW(i32)
+DEFINE_FAST_POW(i64)
+
 int abs_i32(int a) {
   if (a > 0) {
     return a;
@@ -301,14 +317,16 @@ f64 atan2_f64(f64 a, f64 b) {
 
 f32 pow_f32(f32 a, f32 b) {
   if (IS_INTEGRAL(a) && IS_INTEGRAL(b) && b > 0) {
-    return round(std::pow(a, b));
+    return static_cast<f32>(
+        fast_pow_i32(static_cast<i32>(a), static_cast<i32>(b)));
   }
   return std::pow(a, b);
 }
 
 f64 pow_f64(f64 a, f64 b) {
   if (IS_INTEGRAL(a) && IS_INTEGRAL(b) && b > 0) {
-    return round(std::pow(a, b));
+    return static_cast<f64>(
+        fast_pow_i64(static_cast<i64>(a), static_cast<i64>(b)));
   }
   return std::pow(a, b);
 }

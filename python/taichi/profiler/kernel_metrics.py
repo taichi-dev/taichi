@@ -234,7 +234,7 @@ def get_predefined_cupti_metrics(name=''):
 
 # Default metrics list
 default_cupti_metrics = [dram_bytes_sum]
-"""The metrics list, each is an instace of the :class:`~taichi.profiler.CuptiMetric`.
+"""The metrics list, each is an instance of the :class:`~taichi.profiler.CuptiMetric`.
 Default to `dram_bytes_sum`.
 """
 

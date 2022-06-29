@@ -28,7 +28,7 @@ target_link_libraries(${EXAMPLES_NAME} PRIVATE
 	metal_codegen
 	)
 
-# TODO 4832: be specific on the header dependencis here, e.g., ir
+# TODO 4832: be specific on the header dependencies here, e.g., ir
 target_include_directories(${EXAMPLES_NAME}
   PRIVATE
     ${PROJECT_SOURCE_DIR}

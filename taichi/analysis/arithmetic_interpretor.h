@@ -47,7 +47,7 @@ class ArithmeticInterpretor {
     }
 
     /**
-     * Tells the interpretor to ignore statement @param s.
+     * Tells the interpreter to ignore statement @param s.
      *
      * This is effective only for statements that are not supported by
      * ArithmeticInterpretor.
@@ -73,7 +73,7 @@ class ArithmeticInterpretor {
   };
 
   /**
-   * Defines the region of CHI statments to be evaluated.
+   * Defines the region of CHI statements to be evaluated.
    */
   struct CodeRegion {
     // Defines the sequence of CHI statements.

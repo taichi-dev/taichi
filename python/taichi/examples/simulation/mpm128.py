@@ -123,7 +123,7 @@ def reset():
 
 
 print(
-    "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
+    "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
 )
 gui = ti.GUI("Taichi MLS-MPM-128", res=512, background_color=0x112F41)
 reset()

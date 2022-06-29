@@ -13,7 +13,7 @@ def make_camera():
     """Return an instance of :class:`~taichi.ui.Camera`. This is the
     recommended way to create a camera in ggui.
 
-    You should also mannually set the camera parameters like `camera.position`,
+    You should also manually set the camera parameters like `camera.position`,
     `camera.lookat`, `camera.up`, etc. The default settings may not work for
     your scene.
 

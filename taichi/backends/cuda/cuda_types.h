@@ -20,7 +20,7 @@ using CUarray = void *;
  * Resource types
  */
 typedef enum CUresourcetype_enum {
-  CU_RESOURCE_TYPE_ARRAY = 0x00,           /**< Array resoure */
+  CU_RESOURCE_TYPE_ARRAY = 0x00,           /**< Array resource */
   CU_RESOURCE_TYPE_MIPMAPPED_ARRAY = 0x01, /**< Mipmapped array resource */
   CU_RESOURCE_TYPE_LINEAR = 0x02,          /**< Linear resource */
   CU_RESOURCE_TYPE_PITCH2D = 0x03          /**< Pitch 2D resource */

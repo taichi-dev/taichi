@@ -279,7 +279,7 @@ Now, Taichi supports the following extensions:
 | async_mode    | Asynchronous execution mode                                   |
 | quant_basic   | Basic operations in quantization                              |
 | quant         | Full quantization functionalities                             |
-| data64        | 64-bit data and arithmetics                                   |
+| data64        | 64-bit data and arithmetic                                   |
 | adstack       | For keeping the history of mutable local variables in autodiff|
 | bls           | Block-local storage                                           |
 | assertion     | Run-time asserts in Taichi kernels                            |

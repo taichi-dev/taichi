@@ -72,7 +72,7 @@ endif()
 
 if (WIN32)
   # For `Debug` configs MSVC links to a debuggable runtime by default which has
-  # symbol conflicts with the prebuilt LLVM in `Release`. We shoule be providing
+  # symbol conflicts with the prebuilt LLVM in `Release`. We should be providing
   # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
   # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost

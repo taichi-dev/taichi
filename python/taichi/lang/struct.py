@@ -509,6 +509,15 @@ class StructField(Field):
         """
         return self.field_dict[key]
 
+    def has_grad(self):
+        has_grad = True
+        for _, item in self.field_dict.items():
+            if not item.has_grad():
+                return False
+        if len(self.field_dict) == 0:
+            has_grad = False
+        return has_grad
+
     @python_scope
     def from_numpy(self, array_dict):
         """Copies the data from a set of `numpy.array` into this field.

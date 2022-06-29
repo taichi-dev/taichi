@@ -94,7 +94,7 @@ user_api[ti.ad] = [
 ]
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
-    'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
+    'has_grad', 'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.FieldsBuilder] = [
     'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
@@ -113,8 +113,8 @@ user_api[ti.math] = [
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
-    'get_scalar_field', 'parent', 'shape', 'snode', 'to_numpy', 'to_paddle',
-    'to_torch'
+    'get_scalar_field', 'has_grad', 'parent', 'shape', 'snode', 'to_numpy',
+    'to_paddle', 'to_torch'
 ]
 user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
@@ -127,7 +127,7 @@ user_api[ti.SNode] = [
 ]
 user_api[ti.ScalarField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
-    'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
+    'has_grad', 'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.ScalarNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
@@ -135,8 +135,8 @@ user_api[ti.ScalarNdarray] = [
 user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
-    'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',
-    'to_paddle', 'to_torch'
+    'get_member_field', 'has_grad', 'keys', 'parent', 'shape', 'snode',
+    'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.VectorNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'

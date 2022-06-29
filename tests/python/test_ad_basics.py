@@ -356,6 +356,7 @@ def test_ad_frac():
 @test_utils.test()
 def test_ad_has_grad():
 
+    # Test for scalar field
     x = ti.field(float, shape=(), needs_grad=True)
     assert x.has_grad()
 
@@ -368,6 +369,7 @@ def test_ad_has_grad():
     x = ti.field(float)
     assert not x.has_grad()
 
+    # Test for Vector and Matrix field
     x = ti.Vector.field(3, float, shape=(), needs_grad=True)
     assert x.has_grad()
 
@@ -391,3 +393,43 @@ def test_ad_has_grad():
 
     x = ti.Matrix.field(3, 2, float)
     assert not x.has_grad()
+
+    # Test for Struct field
+    particle_field = ti.Struct.field(
+        {
+            "pos": ti.types.vector(3, float),
+            "vel": ti.types.vector(3, float),
+            "acc": ti.types.vector(3, float),
+            "mass": ti.f32,
+        },
+        shape=(5, ),
+        needs_grad=True)
+    assert particle_field.has_grad()
+
+    particle_field = ti.Struct.field(
+        {
+            "pos": ti.types.vector(3, float),
+            "vel": ti.types.vector(3, float),
+            "acc": ti.types.vector(3, float),
+            "mass": ti.f32,
+        },
+        shape=(5, ))
+    assert not particle_field.has_grad()
+
+    particle_field = ti.Struct.field(
+        {
+            "pos": ti.types.vector(3, float),
+            "vel": ti.types.vector(3, float),
+            "acc": ti.types.vector(3, float),
+            "mass": ti.f32,
+        },
+        needs_grad=True)
+    assert not particle_field.has_grad()
+
+    particle_field = ti.Struct.field({
+        "pos": ti.types.vector(3, float),
+        "vel": ti.types.vector(3, float),
+        "acc": ti.types.vector(3, float),
+        "mass": ti.f32,
+    })
+    assert not particle_field.has_grad()

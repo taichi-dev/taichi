@@ -38,6 +38,24 @@ STR(
                   : intm);
     }
 
+    float pow_helper(float x, float n) {
+      if (round(x) == x && round(n) == n && n > 0) {
+        int32_t exp_int = (int32_t)(n);
+        int32_t result = 1;
+        int32_t tmp = (int32_t)(x);
+        while (exp_int) {
+          if (exp_int & 1) {
+            result *= tmp;
+          }
+          tmp *= tmp;
+          exp_int >>= 1;
+        }
+        return static_cast<float>(result);
+      } else {
+        return pow(x, n);
+      }
+    }
+
     float fatomic_fetch_add(device float *dest, const float operand) {
       // A huge hack! Metal does not support atomic floating point numbers
       // natively.

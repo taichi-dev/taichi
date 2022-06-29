@@ -222,6 +222,11 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     return;
   }
 
+  if (type == BinaryOpType::pow) {
+    ret_type = config->default_fp;
+    return;
+  }
+
   if (type == BinaryOpType::truediv) {
     auto default_fp = config->default_fp;
     if (!is_real(lhs_type)) {

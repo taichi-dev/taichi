@@ -578,6 +578,11 @@ class KernelCodegenImpl : public IRVisitor {
       }
       return;
     }
+    if (op_type == BinaryOpType::pow) {
+      emit("const {} {} = pow_helper({}, {});", dt_name, bin_name, lhs_name,
+           rhs_name);
+      return;
+    }
     const auto binop = metal_binary_op_type_symbol(op_type);
     if (is_metal_binary_op_infix(op_type)) {
       if (is_comparison(op_type)) {

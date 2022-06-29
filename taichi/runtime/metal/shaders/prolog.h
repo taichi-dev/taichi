@@ -14,6 +14,7 @@
 #else
 
 #include <cstdint>
+#include <cmath>
 
 #define STR(...) __VA_ARGS__
 

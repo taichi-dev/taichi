@@ -74,8 +74,10 @@ void LlvmAotModuleBuilder::add_compiled_kernel(aot::Kernel *kernel) {
   auto *kernel_impl = dynamic_cast<llvm_aot::KernelImpl *>(kernel);
   TI_ASSERT(kernel_impl);
 
-  cache_.kernels[kernel_impl->kernel_name_] =
-      std::move(kernel_impl->kernel_data_);
+  const std::string &kernel_name = kernel_impl->kernel_name_;
+  if (cache_.kernels.find(kernel_name) == cache_.kernels.end()) {
+    cache_.kernels[kernel_name] = std::move(kernel_impl->kernel_data_);
+  }
 }
 
 }  // namespace lang

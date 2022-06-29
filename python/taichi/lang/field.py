@@ -100,6 +100,15 @@ class Field:
         """
         self.grad = grad
 
+    def has_grad(self):
+        """Check whether the field has a grad field (reverse mode).
+        Args:
+            bool: True has a grad field otherwise False.
+        """
+        if self._snode.ptr is None:
+            return False
+        return self._snode.ptr.has_adjoint() and self.grad is not None
+
     def _set_dual(self, dual):
         """Sets corresponding dual field (forward mode).
 

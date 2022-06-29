@@ -351,3 +351,43 @@ def test_ad_frac():
     expected = np.modf(randoms)[0] * 2
     for i in range(n):
         assert grads[i] == test_utils.approx(expected[i], rel=1e-4)
+
+
+@test_utils.test()
+def test_ad_has_grad():
+
+    x = ti.field(float, shape=(), needs_grad=True)
+    assert x.has_grad()
+
+    x = ti.field(float, shape=())
+    assert not x.has_grad()
+
+    x = ti.field(float, needs_grad=True)
+    assert not x.has_grad()
+
+    x = ti.field(float)
+    assert not x.has_grad()
+
+    x = ti.Vector.field(3, float, shape=(), needs_grad=True)
+    assert x.has_grad()
+
+    x = ti.Vector.field(3, float, shape=())
+    assert not x.has_grad()
+
+    x = ti.Vector.field(3, float, needs_grad=True)
+    assert not x.has_grad()
+
+    x = ti.Vector.field(3, float)
+    assert not x.has_grad()
+
+    x = ti.Matrix.field(3, 2, float, shape=(), needs_grad=True)
+    assert x.has_grad()
+
+    x = ti.Matrix.field(3, 2, float, shape=())
+    assert not x.has_grad()
+
+    x = ti.Matrix.field(3, 2, float, needs_grad=True)
+    assert not x.has_grad()
+
+    x = ti.Matrix.field(3, 2, float)
+    assert not x.has_grad()

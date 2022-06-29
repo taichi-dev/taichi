@@ -124,7 +124,6 @@ file(GLOB TAICHI_GGUI_GLFW_SOURCE
 
 
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
 
 if(TI_WITH_GGUI)
@@ -148,9 +147,6 @@ else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
 endif()
-
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
-
 
 if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
@@ -300,6 +296,8 @@ if(TI_WITH_LLVM)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
 
+    add_subdirectory(taichi/backends/interop)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)

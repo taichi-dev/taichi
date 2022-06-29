@@ -21,4 +21,4 @@ target_include_directories(${CUDA_RHI}
     ${LLVM_INCLUDE_DIRS}
   )
 
-# depends on cuda
+target_link_libraries(${CUDA_RHI} PRIVATE interop_rhi)

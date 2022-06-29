@@ -245,6 +245,9 @@ if(DEFINED ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
 
+add_subdirectory(taichi/rhi/interop)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
+
 if(TI_WITH_LLVM)
     # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
     find_package(LLVM REQUIRED CONFIG)
@@ -292,8 +295,6 @@ if(TI_WITH_LLVM)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
 
-    add_subdirectory(taichi/rhi/interop)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)

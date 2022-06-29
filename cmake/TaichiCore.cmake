@@ -120,12 +120,6 @@ file(GLOB TAICHI_GGUI_GLFW_SOURCE
   "taichi/ui/backends/vulkan/window.cpp"
 )
 
-
-
-
-file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-
-
 if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
 
@@ -158,8 +152,10 @@ if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
 endif()
 
+## TODO: Remove CC backend
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
+  file(GLOB TAICHI_CC_SOURCE "taichi/codegen/cc/*.h" "taichi/codegen/cc/*.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 

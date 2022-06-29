@@ -11,7 +11,7 @@
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -26,7 +26,7 @@
 #endif
 
 #if defined(TI_WITH_CC)
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"

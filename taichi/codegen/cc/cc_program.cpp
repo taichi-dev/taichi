@@ -1,4 +1,4 @@
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 
 using namespace taichi::lang::cccp;
 

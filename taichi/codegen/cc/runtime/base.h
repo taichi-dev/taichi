@@ -131,5 +131,5 @@ static inline void Ti_ad_stack_push(Ti_AdStackPtr stack, Ti_u32 element_size) {
 )
 
 #define _CC_INSIDE_KERNEL
-#include "taichi/backends/cc/context.h"
+#include "taichi/codegen/cc/context.h"
 #undef _CC_INSIDE_KERNEL

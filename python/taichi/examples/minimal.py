@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda)
+ti.init()
 
 
 @ti.kernel

@@ -1,4 +1,4 @@
-#include "taichi/backends/cpu/aot_module_loader_impl.h"
+#include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"

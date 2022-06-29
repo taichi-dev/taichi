@@ -4,7 +4,7 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/metal/api.h"

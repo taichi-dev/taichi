@@ -4,7 +4,7 @@
 
 #include "taichi/program/kernel.h"
 #include "taichi/system/timeline.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/util/testing.h"
 #include "taichi/util/statistics.h"
 #include "taichi/ir/analysis.h"

@@ -1,8 +1,8 @@
-#include "taichi/backends/cpu/aot_module_builder_impl.h"
+#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #include <algorithm>
 
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 
 namespace taichi {

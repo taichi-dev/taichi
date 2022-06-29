@@ -110,11 +110,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/backends/*.h" "taichi/backends/*.cpp"
 )
-
-file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
-file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
     "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp" "taichi/ui/*.h"
@@ -124,6 +119,13 @@ file(GLOB TAICHI_GGUI_GLFW_SOURCE
   "taichi/ui/common/window_base.cpp"
   "taichi/ui/backends/vulkan/window.cpp"
 )
+
+
+
+
+file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
+file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
+
 
 if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
@@ -142,7 +144,6 @@ list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
 else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
@@ -290,6 +291,15 @@ if(TI_WITH_LLVM)
     if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
         llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
     endif()
+
+
+    add_subdirectory(taichi/codegen/cpu)
+    add_subdirectory(taichi/runtime/cpu)
+    add_subdirectory(taichi/backends/cpu)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_codegen)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
+
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)

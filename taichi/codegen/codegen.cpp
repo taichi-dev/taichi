@@ -4,7 +4,7 @@
 
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_LLVM)
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/codegen/wasm/codegen_wasm.h"
 #endif
 #if defined(TI_WITH_CUDA)

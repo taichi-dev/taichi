@@ -1,4 +1,4 @@
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/common/core.h"

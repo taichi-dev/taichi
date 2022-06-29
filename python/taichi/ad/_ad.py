@@ -5,7 +5,6 @@ gradient computation task.
 """
 from functools import reduce
 
-from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang import impl
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
@@ -237,10 +236,11 @@ class FwdMode:
     def __enter__(self):
         assert not self.entered, "Forward mode manager can be entered only once."
         self.entered = True
-
         impl.get_runtime().materialize()
         if not isinstance(self.loss, list):
             self.loss = [self.loss]
+        for ls in self.loss:
+            assert isinstance(ls, ScalarField)
 
         # Currently we only support only one N-D field as a group of parameters,
         # which is sufficient for computing Jacobian-vector product(Jvp).
@@ -250,26 +250,13 @@ class FwdMode:
         # TODO: support vector field and matrix field
         assert isinstance(self.parameters, ScalarField)
 
-        all_fields = [*self.loss, self.parameters]
-        fields_without_dual = []
-
-        for x in all_fields:
-            if not x.snode.ptr.has_dual():
-                fields_without_dual.append(x)
-
-        if len(fields_without_dual) > 0:
-            dual_root = FieldsBuilder()
-            for x in fields_without_dual:
-                allocate_dual(x, dual_root)
-            dual_root.finalize()
-
         def shape_flatten(shape):
             return reduce((lambda x, y: x * y), list(shape))
 
-        parameters_shape_flatten = shape_flatten(self.parameters.shape)
-
         # Handle 0-D field
-        if parameters_shape_flatten == 0:
+        if self.parameters.shape:
+            parameters_shape_flatten = shape_flatten(self.parameters.shape)
+        else:
             parameters_shape_flatten = 1
 
         if not self.seed:
@@ -296,6 +283,7 @@ class FwdMode:
 
     def __exit__(self, _type, value, tb):
         self.runtime.fwd_mode_manager = None
+        self.clear_seed()
         self.recover_kernels()
 
     def insert(self, func, mode_original):
@@ -307,17 +295,13 @@ class FwdMode:
             f.autodiff_mode = mode_original
         self.kernels_recovered = True
 
-
-def allocate_dual(x, dual_root):
-    """Allocate dual field for forward mode autodiff
-    """
-    dtype = x.dtype
-    shape = x.shape
-    dim = len(shape)
-    x_dual = impl.field(dtype)
-    x._set_grad(x_dual, reverse_mode=False)
-    x._get_field_members()[0].ptr.set_dual(x_dual._get_field_members()[0].ptr)
-    dual_root.dense(impl.index_nd(dim), shape).place(x_dual)
+    def clear_seed(self):
+        # clear seed values
+        if len(self.seed) == 1:
+            self.parameters.dual[None] = 0.0
+        else:
+            for idx, s in enumerate(self.seed):
+                self.parameters.dual[idx] = 0.0
 
 
 __all__ = [

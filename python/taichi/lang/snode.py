@@ -146,6 +146,9 @@ class SNode:
             if isinstance(arg, Field):
                 for var in arg._get_field_members():
                     self.ptr.place(var.ptr, offset)
+                if arg.needs_grad:
+                    for var in arg.grad._get_field_members():
+                        self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
                     self.place(x, offset=offset)

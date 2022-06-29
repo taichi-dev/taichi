@@ -567,6 +567,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     x._set_grad(x_grad)
     x._set_dual(x_dual)
 
+    x._needs_grad(needs_grad)
+
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)

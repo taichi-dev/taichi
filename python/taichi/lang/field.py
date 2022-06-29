@@ -20,6 +20,7 @@ class Field:
         self.host_accessors = None
         self.grad = None
         self.dual = None
+        self.needs_grad = False
 
     @property
     def snode(self):
@@ -92,6 +93,13 @@ class Field:
             taichi_core.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
+
+    def _needs_grad(self, needs_grad):
+        """Sets whether the field needs grad.
+        Args:
+            needs_grad (bool): Whether needs grad.
+        """
+        self.needs_grad = needs_grad
 
     def _set_grad(self, grad):
         """Sets corresponding grad field (reverse mode).

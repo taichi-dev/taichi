@@ -265,8 +265,8 @@ class FwdMode:
                 self.seed = [1.0]
             else:
                 raise RuntimeError(
-                    'Seed is not set for non 0-D field, please specify.'
-                    ' Seed is a list to specify which parameters the computed derivatives respect to.'
+                    '`seed` is not set for non 0-D field, please specify.'
+                    ' `seed` is a list to specify which parameters the computed derivatives respect to. The length of the `seed` should be same to that of the `parameters`'
                     ' E.g. Given a loss `loss = ti.field(float, shape=3)`, parameter `x = ti.field(float, shape=3)`'
                     '      seed = [0, 0, 1] indicates compute derivative respect to the third element of `x`.'
                     '      seed = [1, 1, 1] indicates compute the sum of derivatives respect to all three element of `x`, i.e., Jacobian-vector product(Jvp) for each element in `loss`'

@@ -327,7 +327,7 @@ The following examples can be found in [cmake/TaichiCXXFlags.cmake](https://gith
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness ")
 
 # [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
-# However, some of these "constexpr" specifiers are debug flags and will be manually enabled upon debuging.
+# However, some of these "constexpr" specifiers are debug flags and will be manually enabled upon debugging.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 ```
 

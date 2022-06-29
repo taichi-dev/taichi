@@ -206,7 +206,7 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
  * Result of the value_diff_ptr_index pass.
  */
 struct DiffPtrResult {
-  // Whether the difference of the checkd statements is certain.
+  // Whether the difference of the checked statements is certain.
   bool is_diff_certain{false};
   // The difference of the value of two statements (i.e. val1 - val2). This is
   // meaningful only when |is_diff_certain| is true.

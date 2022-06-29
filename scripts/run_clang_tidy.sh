@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This script is to be exected from the taichi repo folder i.e. `./scripts/run_clang_tidy.sh`
+# This script is to be executed from the taichi repo folder i.e. `./scripts/run_clang_tidy.sh`
 rm -rf build_clang_tidy
 mkdir -p build_clang_tidy/
 cd build_clang_tidy

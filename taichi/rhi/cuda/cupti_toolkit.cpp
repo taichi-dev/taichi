@@ -14,7 +14,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Make sure these metrics can be captured in one pass (no kernal replay)
+// Make sure these metrics can be captured in one pass (no kernel replay)
 // Metrics for calculating the kernel elapsed time are collected by default.
 enum class CuptiMetricsDefault : uint {
   CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS = 0,

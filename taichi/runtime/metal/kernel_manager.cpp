@@ -897,7 +897,7 @@ class KernelManager::Impl {
 
     // Initialize the memory allocator
     dev_mem_alloc_mirror_ = reinterpret_cast<MemoryAllocator *>(addr);
-    // Make sure the retured memory address is always greater than 1.
+    // Make sure the returned memory address is always greater than 1.
     dev_mem_alloc_mirror_->next = shaders::MemoryAllocator::kInitOffset;
     TI_DEBUG("Memory allocator, begin={} next={}", (addr - addr_begin),
              dev_mem_alloc_mirror_->next);
@@ -1169,7 +1169,7 @@ class KernelManager::Impl {
         } else if (dt == MsgType::Str) {
           py_cout << print_strtable_.get(x);
         } else {
-          TI_ERROR("Unexecpted data type={}", dt);
+          TI_ERROR("Unexpected data type={}", dt);
         }
       }
       buf += shaders::mtl_compute_print_msg_bytes(num_entries);

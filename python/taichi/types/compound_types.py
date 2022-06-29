@@ -53,7 +53,7 @@ def struct(**kwargs):
     """Creates a struct type with given members.
 
     Args:
-        kwargs (dict): a dictionay contains the names and types of the
+        kwargs (dict): a dictionary contains the names and types of the
             struct members.
 
     Returns:

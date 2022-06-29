@@ -2430,7 +2430,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
 
   /*
   if (config_.window_handle) {
-    // TODO: check if blit is suppoted, and use copy_image if not
+    // TODO: check if blit is supported, and use copy_image if not
     cmd_list = stream->new_command_list();
     cmd_list->blit_image(screenshot_image_, img_alloc,
                          ImageLayout::transfer_dst, ImageLayout::transfer_src,

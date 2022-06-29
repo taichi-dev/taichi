@@ -74,7 +74,7 @@ class HostDeviceContextBlitter {
               device_->unmap(buffer);
             }
           }
-          // Substitue in the device address if supported
+          // Substitute in the device address if supported
           if ((host_ctx_->device_allocation_type[i] ==
                    RuntimeContext::DevAllocType::kNone ||
                host_ctx_->device_allocation_type[i] ==
@@ -274,7 +274,7 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
   input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
 
   // Compiled_structs can be empty if loading a kernel from an AOT module as
-  // the SNode are not re-compiled/structured. In thise case, we assume a
+  // the SNode are not re-compiled/structured. In this case, we assume a
   // single root buffer size configured from the AOT module.
   for (int root = 0; root < ti_params.num_snode_trees; ++root) {
     BufferInfo buffer = {BufferType::Root, root};

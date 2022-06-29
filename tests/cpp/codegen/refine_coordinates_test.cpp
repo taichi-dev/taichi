@@ -24,7 +24,7 @@ constexpr char kFuncName[] = "run_refine_coords";
 
 class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
  public:
-  // 1st arg: Value of the first parent physical coordiantes
+  // 1st arg: Value of the first parent physical coordinates
   // 2nd arg: The child index
   // ret    : Value of the first child physical coordinates
   using FuncType = int (*)(int, int);

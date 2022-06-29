@@ -22,7 +22,7 @@ class FieldsBuilder:
         fb.dense(ti.ij, 8).place(x)
         fb.pointer(ti.ij, 8).dense(ti.ij, 4).place(y)
 
-        # Afer this line, `x` and `y` are placed. No more fields can be placed
+        # After this line, `x` and `y` are placed. No more fields can be placed
         # into `fb`.
         #
         # The tree looks like the following:

@@ -707,7 +707,7 @@ void export_lang(py::module &m) {
         // The reason that there are both get_raw_address() and
         // get_underlying_ptr_address() is that Expr itself is mostly wrapper
         // around its underlying |expr| (of type Expression). Expr |e| can be
-        // temporary, while the underlying |expr| is mostly persistant.
+        // temporary, while the underlying |expr| is mostly persistent.
         //
         // Same get_raw_address() implies that get_underlying_ptr_address() are
         // also the same. The reverse is not true.

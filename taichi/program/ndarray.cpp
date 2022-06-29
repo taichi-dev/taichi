@@ -65,7 +65,7 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                                     std::end(element_shape),
                                     1,
                                     std::multiplies<>())) {
-  // When element_shape is specfied but layout is not, default layout is AOS.
+  // When element_shape is specified but layout is not, default layout is AOS.
   if (!element_shape.empty() && layout == ExternalArrayLayout::kNull) {
     layout = ExternalArrayLayout::kAOS;
   }

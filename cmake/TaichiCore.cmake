@@ -482,7 +482,7 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
 
-    # TODO 4832: move some header dependencis to other targets, e.g., gui
+    # TODO 4832: move some header dependencies to other targets, e.g., gui
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
       PRIVATE
         ${PROJECT_SOURCE_DIR}

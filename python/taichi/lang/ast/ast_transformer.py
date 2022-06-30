@@ -810,12 +810,13 @@ class ASTTransformer(Builder):
                 end = ti_ops.cast(
                     expr.Expr(build_stmt(ctx, node.iter.args[0])),
                     primitive_types.i32)
-            reversed = False
+            # reversed is conflict with the built-in function in python
+            is_reversed = False
             if begin > end:
                 begin, end = end, begin
-                reversed = True
+                is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
-                                                     end.ptr, reversed)
+                                                     end.ptr, is_reversed)
             # import pdb; pdb.set_trace()
             build_stmts(ctx, node.body)
             ctx.ast_builder.end_frontend_range_for()

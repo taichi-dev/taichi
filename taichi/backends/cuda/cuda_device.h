@@ -98,6 +98,7 @@ class CudaDevice : public LlvmDevice {
      * */
     bool use_preallocated{true};
     bool use_cached{false};
+    void *mapped{nullptr};
   };
 
   AllocInfo get_alloc_info(const DeviceAllocation handle);
@@ -116,13 +117,12 @@ class CudaDevice : public LlvmDevice {
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
-  void *map(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
+  void *map(DeviceAllocation alloc) override;
 
   void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) override;
 
-  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
-      TI_NOT_IMPLEMENTED};
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 

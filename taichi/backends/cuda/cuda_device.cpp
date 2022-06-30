@@ -79,6 +79,31 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   }
 }
 
+void *CudaDevice::map(DeviceAllocation alloc) {
+  AllocInfo &info = allocations_[alloc.alloc_id];
+  size_t size = info.size;
+  info.mapped = new char[size];
+  // FIXME: there should be a better way to do this...
+  CUDADriver::get_instance().memcpy_device_to_host(info.mapped, info.ptr, size);
+  return info.mapped;
+}
+
+void CudaDevice::unmap(DeviceAllocation alloc) {
+  AllocInfo &info = allocations_[alloc.alloc_id];
+  CUDADriver::get_instance().memcpy_host_to_device(info.ptr, info.mapped,
+                                                   info.size);
+  delete[] static_cast<char *>(info.mapped);
+  return;
+}
+
+void CudaDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
+  void *dst_ptr =
+      static_cast<char *>(allocations_[dst.alloc_id].ptr) + dst.offset;
+  void *src_ptr =
+      static_cast<char *>(allocations_[src.alloc_id].ptr) + src.offset;
+  CUDADriver::get_instance().memcpy_device_to_device(dst_ptr, src_ptr, size);
+}
+
 DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
   AllocInfo info;
   info.ptr = ptr;

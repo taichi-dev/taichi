@@ -3,7 +3,7 @@
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 
 namespace taichi {
 namespace lang {

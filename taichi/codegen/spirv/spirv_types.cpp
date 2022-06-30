@@ -406,9 +406,6 @@ class Translate2Spirv : public TypeVisitor {
         vt = spir_builder_->u64_type();
       }
     }
-    // vt = spir_builder_->get_null_type();
-    // spir_builder_->declare_global(spv::OpTypeInt, vt, type->num_bits(),
-    //                               type->is_signed() ? 1 : 0);
     ir_node_2_spv_value[type] = vt.id;
   }
 
@@ -421,8 +418,6 @@ class Translate2Spirv : public TypeVisitor {
     } else if (type->num_bits() == 64) {
       vt = spir_builder_->f64_type();
     }
-    // vt = spir_builder_->get_null_type();
-    // spir_builder_->declare_global(spv::OpTypeFloat, vt, type->num_bits());
     ir_node_2_spv_value[type] = vt.id;
   }
 

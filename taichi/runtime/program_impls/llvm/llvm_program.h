@@ -265,6 +265,7 @@ class LlvmProgramImpl : public ProgramImpl {
     // 2. Destructs runtime_exec_
     runtime_exec_.reset();
   }
+
  private:
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;

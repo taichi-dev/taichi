@@ -2347,7 +2347,6 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   auto config = kernel->program->config;
   kernel->offload_to_executable(ir);
 
-
   emit_to_module();
   eliminate_unused_functions();
 

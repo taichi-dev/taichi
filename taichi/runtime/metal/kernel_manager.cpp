@@ -655,7 +655,7 @@ class KernelManager::Impl {
       ComputeDeviceParams rhi_params;
       rhi_params.device = device_.get();
       rhi_params.mem_pool = mem_pool_;
-      rhi_params.only_for_dev_allocation = true;
+      rhi_params.only_for_dev_allocation = false;
       auto make_res = make_compute_device(rhi_params);
       rhi_device_ = std::move(make_res.device);
       TI_ASSERT(rhi_device_ != nullptr);

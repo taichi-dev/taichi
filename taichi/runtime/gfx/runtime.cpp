@@ -450,7 +450,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
             if (host_read) {
               auto allocated = device_->allocate_memory_unique(
                   {ext_array_size[i], false, true,
-                   /*export_sharing=*/false, AllocUsage::Storage});
+                   /*export_sharing=*/false, AllocUsage::None});
               any_array_shadows[i] = *allocated.get();
               allocated_buffers.push_back(std::move(allocated));
             }
@@ -465,12 +465,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     ctx_blitter->host_to_device(any_arrays, ext_array_size);
   }
 
-  // Create new command list if current one is nullptr
-  if (!current_cmdlist_) {
-    ctx_buffers_.clear();
-    current_cmdlist_pending_since_ = high_res_clock::now();
-    current_cmdlist_ = device_->get_compute_stream()->new_command_list();
-  }
+  ensure_current_cmdlist();
 
   // Record commands
   const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
@@ -548,17 +543,13 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
   }
 
-  // If we have accumulated some work but does not require sync
-  // and if the accumulated cmdlist has been pending for some time
-  // launch the cmdlist to start processing.
-  if (current_cmdlist_) {
-    constexpr uint64_t max_pending_time = 2000;  // 2000us = 2ms
-    auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
-    if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
-            .count() > max_pending_time) {
-      flush();
-    }
-  }
+  submit_current_cmdlist_if_timeout();
+}
+
+void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+  ensure_current_cmdlist();
+  current_cmdlist_->buffer_copy(dst, src, size);
+  submit_current_cmdlist_if_timeout();
 }
 
 void GfxRuntime::synchronize() {
@@ -582,6 +573,28 @@ StreamSemaphore GfxRuntime::flush() {
 
 Device *GfxRuntime::get_ti_device() const {
   return device_;
+}
+
+void GfxRuntime::ensure_current_cmdlist() {
+  // Create new command list if current one is nullptr
+  if (!current_cmdlist_) {
+    ctx_buffers_.clear();
+    current_cmdlist_pending_since_ = high_res_clock::now();
+    current_cmdlist_ = device_->get_compute_stream()->new_command_list();
+  }
+}
+void GfxRuntime::submit_current_cmdlist_if_timeout() {
+  // If we have accumulated some work but does not require sync
+  // and if the accumulated cmdlist has been pending for some time
+  // launch the cmdlist to start processing.
+  if (current_cmdlist_) {
+    constexpr uint64_t max_pending_time = 2000;  // 2000us = 2ms
+    auto duration = high_res_clock::now() - current_cmdlist_pending_since_;
+    if (std::chrono::duration_cast<std::chrono::microseconds>(duration)
+            .count() > max_pending_time) {
+      flush();
+    }
+  }
 }
 
 void GfxRuntime::init_nonroot_buffers() {

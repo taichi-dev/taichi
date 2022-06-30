@@ -105,27 +105,17 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
 
   // UAV
   for (auto &[binding, alloc_id] : binder->uav_binding_to_alloc_id()) {
-    ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(alloc_id);
+    ID3D11UnorderedAccessView *uav =
+        device_->alloc_id_to_uav(d3d11_deferred_context_, alloc_id);
     d3d11_deferred_context_->CSSetUnorderedAccessViews(binding, 1, &uav,
                                                        nullptr);
   }
 
   // CBV
   for (auto &[binding, alloc_id] : binder->cb_binding_to_alloc_id()) {
-    auto cb_buffer = device_->create_or_get_cb_buffer(alloc_id);
-    auto buffer = device_->alloc_id_to_buffer(alloc_id);
+    auto cb_buffer =
+        device_->alloc_id_to_cb_buffer(d3d11_deferred_context_, alloc_id);
 
-    D3D11_BUFFER_DESC desc;
-    buffer->GetDesc(&desc);
-    D3D11_BOX box{};
-    box.left = 0;
-    box.right = desc.ByteWidth;
-    box.top = 0;
-    box.bottom = 1;  // 1 past the end!
-    box.front = 0;
-    box.back = 1;
-    d3d11_deferred_context_->CopySubresourceRegion(cb_buffer, 0, 0, 0, 0,
-                                                   buffer, 0, &box);
     d3d11_deferred_context_->CSSetConstantBuffers(binding, 1, &cb_buffer);
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
@@ -150,15 +140,31 @@ void Dx11CommandList::memory_barrier() {
 }
 
 void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
-  TI_NOT_IMPLEMENTED;
+  ID3D11Buffer *src_buf = device_->alloc_id_to_default_copy(src.alloc_id);
+  ID3D11Buffer *dst_buf = device_->alloc_id_to_default_copy(dst.alloc_id);
+
+  D3D11_BOX box{};
+  box.left = src.offset;
+  box.right = size;
+  box.top = 0;
+  box.bottom = 1;  // 1 past the end!
+  box.front = 0;
+  box.back = 1;
+
+  d3d11_deferred_context_->CopySubresourceRegion(dst_buf, 0, dst.offset, 0, 0,
+                                                 src_buf, 0, &box);
 }
 
 void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
-  ID3D11Buffer *buf = device_->alloc_id_to_buffer(ptr.alloc_id);
-  ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(ptr.alloc_id);
+  ID3D11UnorderedAccessView *uav =
+      device_->alloc_id_to_uav(d3d11_deferred_context_, ptr.alloc_id);
+
+  TI_ASSERT_INFO(ptr.offset == 0, "DX11 only support full resource clear");
 
   const UINT values[4] = {data, data, data, data};
   d3d11_deferred_context_->ClearUnorderedAccessViewUint(uav, values);
+
+  // FIXME: what if the default is not a raw buffer?
 }
 
 void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
@@ -394,6 +400,7 @@ HRESULT create_compute_device(ID3D11Device **out_device,
   return hr;
 }
 
+/*
 HRESULT create_raw_buffer(ID3D11Device *device,
                           UINT size,
                           void *init_data,
@@ -411,6 +418,7 @@ HRESULT create_raw_buffer(ID3D11Device *device,
     return device->CreateBuffer(&desc, nullptr, out_buf);
   }
 }
+*/
 
 HRESULT create_buffer_uav(ID3D11Device *device,
                           ID3D11Buffer *buffer,
@@ -462,6 +470,7 @@ HRESULT compile_compute_shader_from_string(const std::string &source,
   return hr;
 }
 
+/*
 HRESULT create_cpu_accessible_buffer_copy(ID3D11Device *device,
                                           ID3D11Buffer *src_buf,
                                           ID3D11Buffer **out_buf) {
@@ -483,7 +492,8 @@ HRESULT create_constant_buffer_copy(ID3D11Device *device,
   D3D11_BUFFER_DESC desc;
   src_buf->GetDesc(&desc);
 
-  // https://docs.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-resources-buffers-constant-how-to
+  //
+https://docs.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-resources-buffers-constant-how-to
   D3D11_BUFFER_DESC desc1{};
   desc1.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
   const unsigned align = 16;
@@ -494,25 +504,9 @@ HRESULT create_constant_buffer_copy(ID3D11Device *device,
   HRESULT hr = device->CreateBuffer(&desc1, nullptr, out_buf);
   return hr;
 }
+*/
 
 }  // namespace
-
-void dump_buffer(ID3D11Device *device,
-                 ID3D11DeviceContext *ctx,
-                 ID3D11Buffer *buf,
-                 int nchars) {
-  ID3D11Buffer *tmp;
-  create_cpu_accessible_buffer_copy(device, buf, &tmp);
-  D3D11_MAPPED_SUBRESOURCE mapped;
-  ctx->Map(tmp, 0, D3D11_MAP_READ, 0, &mapped);
-  char *ch = reinterpret_cast<char *>(mapped.pData);
-  std::stringstream ss;
-  for (int i = 0; i < nchars; i++) {
-    ss << fmt::format("%02X ", ch[i]);
-  }
-  tmp->Release();
-  TI_TRACE(ss.str());
-}
 
 Dx11Device::Dx11Device() {
   create_dx11_device();
@@ -521,7 +515,7 @@ Dx11Device::Dx11Device() {
   }
   set_cap(DeviceCapability::spirv_version, 0x10300);
 
-  stream_ = new Dx11Stream(this);
+  stream_ = std::make_unique<Dx11Stream>(this);
 }
 
 Dx11Device::~Dx11Device() {
@@ -559,56 +553,152 @@ int Dx11Device::live_dx11_object_count() {
   return info_queue_->live_object_count();
 }
 
+Dx11Device::BufferTuple::~BufferTuple() {
+  if (raw_buffer) {
+    raw_buffer->Release();
+    raw_buffer = nullptr;
+  }
+  if (dynamic_constants) {
+    dynamic_constants->Release();
+    dynamic_constants = nullptr;
+  }
+  if (staging) {
+    staging->Release();
+    staging = nullptr;
+  }
+  if (raw_uav) {
+    raw_uav->Release();
+    raw_uav = nullptr;
+  }
+}
+
+void Dx11Device::BufferTuple::clear_derived() {
+  if (raw_buffer && default_copy != 0) {
+    raw_buffer->Release();
+    raw_buffer = nullptr;
+  }
+  if (dynamic_constants && default_copy != 1) {
+    dynamic_constants->Release();
+    dynamic_constants = nullptr;
+  }
+  if (staging && default_copy != 2) {
+    staging->Release();
+    staging = nullptr;
+  }
+  if (raw_uav && default_copy != 0) {
+    raw_uav->Release();
+    raw_uav = nullptr;
+  }
+}
+
+ID3D11Buffer *Dx11Device::BufferTuple::get_raw_buffer(
+    ID3D11DeviceContext *context,
+    ID3D11Device *device) {
+  if (!raw_buffer) {
+    D3D11_BUFFER_DESC desc = {};
+    desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+    desc.ByteWidth = size;
+    desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+    HRESULT ret = device->CreateBuffer(&desc, nullptr, &raw_buffer);
+    check_dx_error(ret, "Create raw buffer");
+  }
+
+  if (default_copy != 0) {
+    context->CopyResource(raw_buffer, get_default_copy(device));
+  }
+
+  return raw_buffer;
+}
+
+ID3D11Buffer *Dx11Device::BufferTuple::get_dynamic_constants(
+    ID3D11DeviceContext *context,
+    ID3D11Device *device) {
+  if (!dynamic_constants) {
+    D3D11_BUFFER_DESC desc = {};
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    const unsigned align = 16;
+    desc.ByteWidth = ((size - 1) / align + 1) * align;
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    desc.MiscFlags = 0;
+    HRESULT ret = device->CreateBuffer(&desc, nullptr, &dynamic_constants);
+    check_dx_error(ret, "Create dynamic CB");
+  }
+
+  if (default_copy != 1) {
+    context->CopyResource(dynamic_constants, get_default_copy(device));
+  }
+
+  return dynamic_constants;
+}
+
+ID3D11Buffer *Dx11Device::BufferTuple::get_staging(ID3D11DeviceContext *context,
+                                                   ID3D11Device *device) {
+  if (!staging) {
+    D3D11_BUFFER_DESC desc = {};
+    desc.BindFlags = 0;
+    desc.ByteWidth = size;
+    desc.Usage = D3D11_USAGE_STAGING;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
+    desc.MiscFlags = 0;
+    HRESULT ret = device->CreateBuffer(&desc, nullptr, &staging);
+    check_dx_error(ret, "Create staging buffer");
+  }
+
+  if (default_copy != 2) {
+    context->CopyResource(staging, get_default_copy(device));
+  }
+
+  return staging;
+}
+
+ID3D11UnorderedAccessView *Dx11Device::BufferTuple::get_uav(
+    ID3D11DeviceContext *context,
+    ID3D11Device *device) {
+  if (raw_uav)
+    return raw_uav;
+
+  ID3D11Buffer *src_buf = get_raw_buffer(context, device);
+  create_buffer_uav(device, src_buf, &raw_uav);
+
+  return raw_uav;
+}
+
+void Dx11Device::BufferTuple::copy_back(ID3D11Buffer *buffer,
+                                        ID3D11DeviceContext *context,
+                                        ID3D11Device *device) {
+  if (get_default_copy(device) == buffer)
+    return;
+
+  context->CopyResource(get_default_copy(device), buffer);
+}
+
 DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
-  ID3D11Buffer *buf;
-  HRESULT hr;
-  hr = create_raw_buffer(device_, params.size, nullptr, &buf);
-  check_dx_error(hr, "create raw buffer");
-  alloc_id_to_buffer_[alloc_serial_] = buf;
-
-  ID3D11UnorderedAccessView *uav;
-  hr = create_buffer_uav(device_, buf, &uav);
-  check_dx_error(hr, "create UAV for buffer");
-  alloc_id_to_uav_[alloc_serial_] = uav;
-
-  // Set debug names
-  std::string buf_name = "buffer alloc#" + std::to_string(alloc_serial_) +
-                         " size=" + std::to_string(params.size) + '\0';
-  hr = buf->SetPrivateData(WKPDID_D3DDebugObjectName, buf_name.size(),
-                           buf_name.c_str());
-  check_dx_error(hr, "set name for buffer");
-
-  std::string uav_name = "UAV of " + buf_name;
-  hr = uav->SetPrivateData(WKPDID_D3DDebugObjectName, uav_name.size(),
-                           uav_name.c_str());
-  check_dx_error(hr, "set name for UAV");
-
   DeviceAllocation alloc;
   alloc.device = this;
-  alloc.alloc_id = alloc_serial_;
-  ++alloc_serial_;
+  alloc.alloc_id = alloc_serial_++;
+
+  BufferTuple tuple;
+  tuple.cpu_read = params.host_read;
+  tuple.cpu_write = params.host_write;
+  tuple.size = params.size;
+  // TODO: pick better default copy
+  // FIXME: Fix index / vertex
+  if (params.usage & AllocUsage::Storage) {
+    tuple.default_copy = 0;
+  } else if (params.usage & AllocUsage::Uniform) {
+    tuple.default_copy = 1;
+  } else {
+    tuple.default_copy = 2;
+  }
+  alloc_id_to_buffer_[alloc.alloc_id] = std::move(tuple);
 
   return alloc;
 }
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   uint32_t alloc_id = handle.alloc_id;
-  if (alloc_id_to_buffer_.find(alloc_id) == alloc_id_to_buffer_.end())
-    TI_ERROR("Invalid handle, possible double free?");
-  ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
-  buf->Release();
   alloc_id_to_buffer_.erase(alloc_id);
-  ID3D11UnorderedAccessView *uav = alloc_id_to_uav_[alloc_id];
-  uav->Release();
-  if (alloc_id_to_cpucopy_.find(alloc_id) != alloc_id_to_cpucopy_.end()) {
-    alloc_id_to_cpucopy_[alloc_id]->Release();
-    alloc_id_to_cpucopy_.erase(alloc_id);
-  }
-  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
-    alloc_id_to_cb_copy_[alloc_id]->Release();
-    alloc_id_to_cb_copy_.erase(alloc_id);
-  }
-  alloc_id_to_uav_.erase(alloc_id);
 }
 
 std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
@@ -618,44 +708,54 @@ std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
 }
 
 void *Dx11Device::map_range(DevicePtr ptr, uint64_t size) {
-  TI_NOT_IMPLEMENTED;
+  return static_cast<uint8_t *>(map(DeviceAllocation(ptr))) + ptr.offset;
 }
 
 void *Dx11Device::map(DeviceAllocation alloc) {
   uint32_t alloc_id = alloc.alloc_id;
-  ID3D11Buffer *buf = alloc_id_to_buffer(alloc_id);
-  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(alloc_id);
-  D3D11_BUFFER_DESC desc;
-  buf->GetDesc(&desc);
+  BufferTuple &buf_tuple = alloc_id_to_buffer_[alloc_id];
+  ID3D11Buffer *buf = nullptr;
 
-  if (cpucopy == nullptr) {
-    create_cpu_accessible_buffer_copy(device_, buf, &cpucopy);
-    const std::string name = "CPU copy of alloc #" + std::to_string(alloc_id);
-    cpucopy->SetPrivateData(WKPDID_D3DDebugObjectName, name.size(),
-                            name.c_str());
-    alloc_id_to_cpucopy_[alloc_id] = cpucopy;
+  D3D11_MAP map_type;
+  if (buf_tuple.cpu_read && buf_tuple.cpu_write) {
+    map_type = D3D11_MAP_READ_WRITE;
+    buf = buf_tuple.get_staging(context_, device_);
+  } else if (buf_tuple.cpu_read) {
+    map_type = D3D11_MAP_READ;
+    buf = buf_tuple.get_staging(context_, device_);
+  } else if (buf_tuple.cpu_write) {
+    map_type = D3D11_MAP_WRITE_DISCARD;
+    buf = buf_tuple.get_cpu_write_copy(context_, device_);
+  } else {
+    TI_ERROR("Buffer alloc does not have CPU access flags");
   }
 
-  context_->CopyResource(cpucopy, buf);
+  TI_ASSERT(buf);
+
   D3D11_MAPPED_SUBRESOURCE mapped;
-  HRESULT hr = context_->Map(cpucopy, 0, D3D11_MAP_READ_WRITE, 0, &mapped);
+  HRESULT hr = context_->Map(buf, 0, map_type, 0, &mapped);
   check_dx_error(hr, "mapping memory");
+
+  buf_tuple.mapped = buf;
 
   return mapped.pData;
 }
 
 void Dx11Device::unmap(DevicePtr ptr) {
-  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(ptr.alloc_id);
-  ID3D11Buffer *buf = alloc_id_to_buffer(ptr.alloc_id);
-  context_->Unmap(cpucopy, 0);
-  context_->CopyResource(buf, cpucopy);
+  unmap(DeviceAllocation(ptr));
 }
 
 void Dx11Device::unmap(DeviceAllocation alloc) {
-  ID3D11Buffer *cpucopy = alloc_id_to_buffer_cpu_copy(alloc.alloc_id);
-  ID3D11Buffer *buf = alloc_id_to_buffer(alloc.alloc_id);
-  context_->Unmap(cpucopy, 0);
-  context_->CopyResource(buf, cpucopy);
+  uint32_t alloc_id = alloc.alloc_id;
+  BufferTuple &buf_tuple = alloc_id_to_buffer_[alloc_id];
+  ID3D11Buffer *buf = nullptr;
+
+  context_->Unmap(buf_tuple.mapped, 0);
+  if (buf_tuple.cpu_write) {
+    buf_tuple.copy_back(buf_tuple.mapped, context_, device_);
+  }
+
+  buf_tuple.mapped = nullptr;
 }
 
 void Dx11Device::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
@@ -663,7 +763,7 @@ void Dx11Device::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
 }
 
 Stream *Dx11Device::get_compute_stream() {
-  return stream_;
+  return stream_.get();
 }
 
 std::unique_ptr<Pipeline> Dx11Device::create_raster_pipeline(
@@ -714,59 +814,56 @@ void Dx11Device::image_to_buffer(DevicePtr dst_buf,
 void Dx11Device::wait_idle() {
 }
 
-ID3D11Buffer *Dx11Device::alloc_id_to_buffer(uint32_t alloc_id) {
-  return alloc_id_to_buffer_.at(alloc_id);
+ID3D11Buffer *Dx11Device::alloc_id_to_default_copy(uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_default_copy(device_);
 }
 
-ID3D11Buffer *Dx11Device::alloc_id_to_buffer_cpu_copy(uint32_t alloc_id) {
-  if (alloc_id_to_cpucopy_.find(alloc_id) == alloc_id_to_cpucopy_.end())
-    return nullptr;
-  return alloc_id_to_cpucopy_.at(alloc_id);
+ID3D11Buffer *Dx11Device::alloc_id_to_buffer(ID3D11DeviceContext *context,
+                                             uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_raw_buffer(context, device_);
 }
 
-ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(uint32_t alloc_id) {
-  return alloc_id_to_uav_.at(alloc_id);
+ID3D11Buffer *Dx11Device::alloc_id_to_staging_buffer(
+    ID3D11DeviceContext *context,
+    uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_staging(context, device_);
 }
 
-ID3D11Buffer *Dx11Device::create_or_get_cb_buffer(uint32_t alloc_id) {
-  if (alloc_id_to_cb_copy_.find(alloc_id) != alloc_id_to_cb_copy_.end()) {
-    return alloc_id_to_cb_copy_[alloc_id];
-  }
-  ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
-  ID3D11Buffer *cb_buf;
-  HRESULT hr = create_constant_buffer_copy(device_, buf, &cb_buf);
-  check_dx_error(hr, "create_or_get_cb_buffer");
-  alloc_id_to_cb_copy_[alloc_id] = cb_buf;
-  return cb_buf;
+ID3D11UnorderedAccessView *Dx11Device::alloc_id_to_uav(
+    ID3D11DeviceContext *context,
+    uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_uav(context, device_);
+}
+
+ID3D11Buffer *Dx11Device::alloc_id_to_cb_buffer(ID3D11DeviceContext *context,
+                                                uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id).get_dynamic_constants(context,
+                                                                device_);
 }
 
 ID3D11Buffer *Dx11Device::set_spirv_cross_numworkgroups(uint32_t x,
                                                         uint32_t y,
                                                         uint32_t z,
                                                         int cb_slot) {
-  ID3D11Buffer *spirv_cross_numworkgroups;
-  ID3D11Buffer *temp;
-  create_raw_buffer(device_, 16, nullptr, &temp);
-  create_cpu_accessible_buffer_copy(device_, temp, &spirv_cross_numworkgroups);
-  temp->Release();
+  D3D11_BUFFER_DESC cb_desc;
+  cb_desc.ByteWidth = 16;
+  cb_desc.Usage = D3D11_USAGE_DYNAMIC;
+  cb_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+  cb_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+  cb_desc.MiscFlags = 0;
+  cb_desc.StructureByteStride = 0;
+
+  uint32_t dispatch_xyz[3] = {x, y, z};
+
+  D3D11_SUBRESOURCE_DATA init_data;
+  init_data.pSysMem = &dispatch_xyz;
+  init_data.SysMemPitch = 0;
+  init_data.SysMemSlicePitch = 0;
 
   ID3D11Buffer *spirv_cross_numworkgroups_cb;
-  create_constant_buffer_copy(device_, spirv_cross_numworkgroups,
-                              &spirv_cross_numworkgroups_cb);
-
-  D3D11_MAPPED_SUBRESOURCE mapped;
-  d3d11_context()->Map(spirv_cross_numworkgroups, 0, D3D11_MAP_WRITE, 0,
-                       &mapped);
-  uint32_t *u = reinterpret_cast<uint32_t *>(mapped.pData);
-  u[0] = x;
-  u[1] = y;
-  u[2] = z;
-  d3d11_context()->Unmap(spirv_cross_numworkgroups, 0);
-
-  d3d11_context()->CopyResource(spirv_cross_numworkgroups_cb,
-                                spirv_cross_numworkgroups);
-
-  spirv_cross_numworkgroups->Release();
+  HRESULT hr = device_->CreateBuffer(&cb_desc, &init_data,
+                                     &spirv_cross_numworkgroups_cb);
+  check_dx_error(hr, "Create CB for spirv num_workgroups");
 
   return spirv_cross_numworkgroups_cb;
 }

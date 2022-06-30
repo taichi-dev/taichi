@@ -8,6 +8,8 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -229,7 +231,7 @@ FunctionType CodeGenCPU::codegen() {
   }
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
-  auto &worker = kernel->program->compilation_workers;
+  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
@@ -240,7 +242,9 @@ FunctionType CodeGenCPU::codegen() {
       get_llvm_program(kernel->program)->get_llvm_context(kernel->arch);
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
-      modules[i] = this->modulegen(nullptr, offloads[i]->as<OffloadedStmt>());
+      auto offload = irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      irpass::re_id(offload.get());
+      modules[i] = this->modulegen(nullptr, offload->as<OffloadedStmt>());
       tlctx->add_module(std::move(modules[i]->module));
       TI_ASSERT(modules[i]->name_list.size() == 1);
       auto *func_ptr = tlctx->lookup_function_pointer(modules[i]->name_list[0]);

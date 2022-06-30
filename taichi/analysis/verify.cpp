@@ -91,9 +91,6 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    if (current_block_ == nullptr) {
-      current_block_ = stmt->parent;
-    }
     basic_verify(stmt);
     if (stmt->has_body() && !stmt->body) {
       TI_ERROR("offloaded {} ({})->body is nullptr",

@@ -51,7 +51,7 @@ namespace lang {
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch)
-    : compilation_workers("compile", 4 /*TODO(Lin): make this configurable*/),
+    :
       snode_rw_accessors_bank_(this),
       ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");

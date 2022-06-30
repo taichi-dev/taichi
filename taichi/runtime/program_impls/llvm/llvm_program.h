@@ -8,6 +8,7 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
+#include "taichi/program/parallel_executor.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -223,6 +224,7 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->llvm_device();
   }
 
+  ParallelExecutor compilation_workers;  // parallel compilation
  private:
   std::size_t num_snode_trees_processed_{0};
   LlvmOfflineCache cache_data_;

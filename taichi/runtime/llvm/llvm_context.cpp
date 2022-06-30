@@ -10,6 +10,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IRReader/IRReader.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 #include "llvm/IR/Module.h"
@@ -42,6 +43,7 @@
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/util/file_sequence_writer.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -499,14 +501,29 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
-  auto data = get_this_thread_data();
+  auto this_thread_data = get_this_thread_data();
   TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  data->struct_module = llvm::CloneModule(*module);
+  this_thread_data->struct_module = llvm::CloneModule(*module);
+  for (auto &[id, data]: per_thread_data_) {
+    if (id == std::this_thread::get_id()) {
+      continue;
+    }
+    auto ctx = std::make_unique<llvm::LLVMContext>();
+    data->struct_module = nullptr;
+    data->llvm_context = ctx.get();
+    data->thread_safe_llvm_context =
+        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
+    data->struct_module = clone_module_to_context(this_thread_data->struct_module.get(), data->llvm_context);
+//    static FileSequenceWriter writer(
+//        "taichi_kernel_cpu_llvm_{:04d}.ll",
+//        "optimized LLVM IR (CPU)");
+//    writer.write(data->struct_module.get());
+  }
 }
 
 template <typename T>

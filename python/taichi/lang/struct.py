@@ -272,7 +272,6 @@ class Struct(TaichiOperations):
               name="<Struct>",
               offset=None,
               needs_grad=False,
-              needs_dual=False,
               layout=Layout.AOS):
         """Creates a :class:`~taichi.StructField` with each element
         has this struct as its type.
@@ -287,7 +286,6 @@ class Struct(TaichiOperations):
                 For example if `offset=(-10, -10)` the indices of the field
                 will start at `(-10, -10)`, not `(0, 0)`.
             needs_grad (bool): enabling grad field (reverse mode autodiff) or not.
-            needs_dual (bool): enabling dual field (forward mode autodiff) or not.
             layout: AOS or SOA.
 
         Example:
@@ -323,15 +321,13 @@ class Struct(TaichiOperations):
                 field_dict[key] = dtype.field(shape=None,
                                               name=field_name,
                                               offset=offset,
-                                              needs_grad=needs_grad,
-                                              needs_dual=needs_dual)
+                                              needs_grad=needs_grad)
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,
                                              name=field_name,
                                              offset=offset,
-                                             needs_grad=needs_grad,
-                                             needs_dual=needs_dual)
+                                             needs_grad=needs_grad)
 
         if shape is not None:
             if isinstance(shape, numbers.Number):
@@ -352,10 +348,6 @@ class Struct(TaichiOperations):
                     for e in field_dict.values():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(e.grad, offset=offset)
-                if needs_dual:
-                    for e in field_dict.values():
-                        impl.root.dense(impl.index_nd(dim),
-                                        shape).place(e.dual, offset=offset)
             else:
                 impl.root.dense(impl.index_nd(dim),
                                 shape).place(*tuple(field_dict.values()),
@@ -364,11 +356,6 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
-
-                if needs_dual:
-                    duals = tuple(e.dual for e in field_dict.values())
-                    impl.root.dense(impl.index_nd(dim),
-                                    shape).place(*duals, offset=offset)
 
         return StructField(field_dict, methods, name=name)
 

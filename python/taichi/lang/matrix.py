@@ -1067,7 +1067,6 @@ class Matrix(TaichiOperations):
               name="",
               offset=None,
               needs_grad=False,
-              needs_dual=False,
               layout=Layout.AOS):
         """Construct a data container to hold all elements of the Matrix.
 
@@ -1080,7 +1079,6 @@ class Matrix(TaichiOperations):
             offset (Union[int, tuple of int], optional): The coordinate offset
                 of all elements in a field.
             needs_grad (bool, optional): Whether the Matrix need grad field (reverse mode autodiff).
-            needs_dual (bool, optional): Whether the Matrix need dual field (forward mode autodiff).
             layout (Layout, optional): The field layout, either Array Of
                 Structure (AOS) or Structure Of Array (SOA).
 
@@ -1115,8 +1113,6 @@ class Matrix(TaichiOperations):
                                         m), MatrixField(entries_grad, n, m)
         if needs_grad:
             impl.get_runtime().grad_fields.append(entries_grad)
-        if needs_dual:
-            impl.get_runtime().dual_fields.append(entries_dual)
 
         entries._set_grad(entries_grad)
         entries._set_dual(entries_dual)
@@ -1147,20 +1143,12 @@ class Matrix(TaichiOperations):
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
-                if needs_dual:
-                    for e in entries_dual._get_field_members():
-                        impl.root.dense(impl.index_nd(dim),
-                                        shape).place(ScalarField(e),
-                                                     offset=offset)
             else:
                 impl.root.dense(impl.index_nd(dim), shape).place(entries,
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(entries_grad, offset=offset)
-                if needs_dual:
-                    impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_dual, offset=offset)
         return entries
 
     @classmethod

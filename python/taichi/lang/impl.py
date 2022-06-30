@@ -229,7 +229,6 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.grad_fields = []
-        self.dual_fields = []
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
@@ -313,17 +312,6 @@ class PyTaichi:
             raise RuntimeError(f'These field(s) are not placed:\n{bar}' +
                                f'{bar}'.join(not_placed))
 
-    def _check_dual_field_not_placed(self):
-        not_placed = []
-        for _var in self.dual_fields:
-            if _var.ptr.snode() is None:
-                not_placed.append(self._get_tb(_var))
-
-        if len(not_placed):
-            bar = '=' * 44 + '\n'
-            raise RuntimeError(f'These field(s) are not placed:\n{bar}' +
-                               f'{bar}'.join(not_placed))
-
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -346,7 +334,6 @@ class PyTaichi:
 
         self._check_field_not_placed()
         self._check_grad_field_not_placed()
-        self._check_dual_field_not_placed()
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
@@ -546,12 +533,7 @@ def create_field_member(dtype, name):
 
 
 @python_scope
-def field(dtype,
-          shape=None,
-          name="",
-          offset=None,
-          needs_grad=False,
-          needs_dual=False):
+def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     """Defines a Taichi field.
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
@@ -568,8 +550,6 @@ def field(dtype,
         offset (Union[int, tuple[int]], optional): offset of the field domain.
         needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
             and thus needs an adjoint field to store the gradients.
-        needs_dual (bool, optional): whether this field participates in autodiff (forward mode)
-            and thus needs an dual field to store the gradients.
 
     Example::
 
@@ -602,8 +582,6 @@ def field(dtype,
 
     if needs_grad:
         pytaichi.grad_fields.append(x_grad)
-    if needs_dual:
-        pytaichi.dual_fields.append(x_dual)
 
     x._set_grad(x_grad)
     x._set_dual(x_dual)
@@ -613,8 +591,6 @@ def field(dtype,
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x_grad)
-        if needs_dual:
-            root.dense(index_nd(dim), shape).place(x_dual)
     return x
 
 

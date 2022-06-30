@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "taichi/aot/module_data.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/snode.h"
 #include "taichi/aot/module_data.h"
 #include "taichi/aot/graph_data.h"

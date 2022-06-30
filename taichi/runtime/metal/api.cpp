@@ -1,6 +1,6 @@
 #include "taichi/runtime/metal/api.h"
 
-#include "taichi/backends/metal/constants.h"
+#include "taichi/rhi/metal/constants.h"
 #include "taichi/util/environ_config.h"
 
 namespace taichi {

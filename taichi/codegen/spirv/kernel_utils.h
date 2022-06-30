@@ -7,7 +7,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/type.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 
 namespace taichi {
 namespace lang {

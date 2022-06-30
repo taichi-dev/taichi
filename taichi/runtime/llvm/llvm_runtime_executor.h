@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <memory>
 
-#include "taichi/backends/llvm/llvm_device.h"
+#include "taichi/rhi/llvm/llvm_device.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/snode_tree_buffer_manager.h"
 #include "taichi/runtime/llvm/llvm_context.h"

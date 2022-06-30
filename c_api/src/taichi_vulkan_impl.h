@@ -4,8 +4,8 @@
 #define VK_NO_PROTOTYPES
 #include "taichi/taichi_vulkan.h"
 #include "taichi/runtime/gfx/runtime.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 #include "taichi_core_impl.h"
 

@@ -1,7 +1,7 @@
 #include "taichi/platform/cuda/detect_cuda.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #endif
 
 namespace taichi {

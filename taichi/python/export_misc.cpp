@@ -5,7 +5,7 @@
 
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/gfx/runtime.h"
-#include "taichi/backends/dx/dx_api.h"
+#include "taichi/rhi/dx/dx_api.h"
 #include "taichi/common/core.h"
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
@@ -21,15 +21,15 @@
 #include "taichi/system/profiler.h"
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #endif
 
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
 #ifdef TI_WITH_OPENGL
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/rhi/opengl/opengl_api.h"
 #endif
 
 #ifdef TI_WITH_CC

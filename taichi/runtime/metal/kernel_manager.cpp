@@ -8,8 +8,8 @@
 #include <random>
 #include <string_view>
 
-#include "taichi/backends/metal/constants.h"
-#include "taichi/backends/metal/device.h"
+#include "taichi/rhi/metal/constants.h"
+#include "taichi/rhi/metal/device.h"
 #include "taichi/runtime/metal/features.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
@@ -245,7 +245,7 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     // args[0] = parent_snode_id
     // args[1] = child_snode_id
     // Note that this args buffer has nothing to do with the one passed to
-    // Taichi kernel. See taichi/backends/metal/shaders/runtime_kernels.metal.h
+    // Taichi kernel. See taichi/rhi/metal/shaders/runtime_kernels.metal.h
     const int parent_snode_id = params.snode()->parent->id;
     const int child_snode_id = params.snode()->id;
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());

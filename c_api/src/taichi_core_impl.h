@@ -1,7 +1,7 @@
 #pragma once
 #include "taichi/taichi_core.h"
 #include "taichi/aot/module_loader.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"

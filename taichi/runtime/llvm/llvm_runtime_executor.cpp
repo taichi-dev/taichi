@@ -2,13 +2,13 @@
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
-#include "taichi/backends/cpu/cpu_device.h"
-#include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
 namespace taichi {

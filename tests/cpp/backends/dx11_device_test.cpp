@@ -3,8 +3,8 @@
 #ifdef TI_WITH_DX11
 
 #include "taichi/ir/ir_builder.h"
-#include "taichi/backends/dx/dx_device.h"
-#include "taichi/backends/dx/dx_info_queue.h"
+#include "taichi/rhi/dx/dx_device.h"
+#include "taichi/rhi/dx/dx_info_queue.h"
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 #include "taichi/system/memory_pool.h"
 #include "tests/cpp/program/test_program.h"

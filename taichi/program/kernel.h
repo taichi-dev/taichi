@@ -140,6 +140,14 @@ class TI_DLL_EXPORT Kernel : public Callable {
    */
   static bool supports_lowering(Arch arch);
 
+  void set_kernel_key_for_cache(const std::string &kernel_key) {
+    kernel_key_ = kernel_key;
+  }
+
+  const std::string &get_cached_kernel_key() {
+    return kernel_key_;
+  }
+
  private:
   void init(Program &program,
             const std::function<void()> &func,

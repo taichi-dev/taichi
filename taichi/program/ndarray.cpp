@@ -45,8 +45,7 @@ Ndarray::Ndarray(Program *prog,
                                     std::end(element_shape),
                                     1,
                                     std::multiplies<>())),
-      prog_(prog),
-      rw_accessors_bank_(&prog->get_ndarray_rw_accessors_bank()) {
+      prog_(prog) {
   // Now that we have two shapes which may be concatenated differently
   // depending on layout, total_shape_ comes handy.
   total_shape_ = shape;

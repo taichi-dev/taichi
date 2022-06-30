@@ -70,8 +70,6 @@ class TI_DLL_EXPORT Ndarray {
   std::vector<int> total_shape_;
 
   Program *prog_{nullptr};
-  // TODO: maybe remove these?
-  NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
 
 // TODO: move this as a method inside RuntimeContext once Ndarray is decoupled

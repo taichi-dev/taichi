@@ -104,15 +104,14 @@ class CpuDevice : public LlvmDevice {
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
-  void *map(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
+  void *map(DeviceAllocation alloc) override;
 
   void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) override;
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 
-  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
-      TI_NOT_IMPLEMENTED};
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 

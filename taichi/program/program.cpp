@@ -50,8 +50,7 @@ namespace taichi {
 namespace lang {
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch)
-    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of QuantFloatType
@@ -233,7 +232,7 @@ void Program::synchronize() {
       async_engine->synchronize();
     }
     if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-        config.arch == Arch::vulkan) {
+        config.arch == Arch::vulkan || config.arch == Arch::opengl) {
       program_impl_->synchronize();
     }
     sync = true;
@@ -397,58 +396,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
   ker.insert_arg(snode->dt, false);
-  return ker;
-}
-
-Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_reader_{}", ndarray_reader_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(Expr::make<ExternalTensorExpression>(
-            keys.dtype, keys.num_active_indices,
-            /*arg_id=*/keys.num_active_indices, 0))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++) {
-    ker.insert_arg(PrimitiveType::i32, /*is_array=*/false);
-  }
-  ker.insert_arg(keys.dtype, /*is_array=*/true);
-  ker.insert_ret(keys.dtype);
-  return ker;
-}
-
-Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_writer_{}", ndarray_writer_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto expr = Expr(Expr::make<ExternalTensorExpression>(
-        keys.dtype, keys.num_active_indices,
-        /*arg_id=*/keys.num_active_indices + 1, 0))[indices];
-    this->current_ast_builder()->insert_assignment(
-        expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
-                                            keys.dtype->get_compute_type()));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(keys.dtype, false);
-  ker.insert_arg(keys.dtype, true);
   return ker;
 }
 

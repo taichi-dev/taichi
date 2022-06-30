@@ -49,6 +49,10 @@ class TI_DLL_EXPORT Ndarray {
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
+  template <typename T>
+  T read(const std::vector<int> &I) const;
+  template <typename T>
+  void write(const std::vector<int> &I, T val) const;
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);
   float64 read_float(const std::vector<int> &i);
@@ -66,8 +70,6 @@ class TI_DLL_EXPORT Ndarray {
   std::vector<int> total_shape_;
 
   Program *prog_{nullptr};
-  // TODO: maybe remove these?
-  NdarrayRwAccessorsBank *rw_accessors_bank_{nullptr};
 };
 
 // TODO: move this as a method inside RuntimeContext once Ndarray is decoupled

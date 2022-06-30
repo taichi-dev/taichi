@@ -51,9 +51,7 @@ namespace lang {
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch)
-    :
-      snode_rw_accessors_bank_(this),
-      ndarray_rw_accessors_bank_(this) {
+    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of QuantFloatType

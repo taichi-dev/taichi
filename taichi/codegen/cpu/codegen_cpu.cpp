@@ -242,7 +242,8 @@ FunctionType CodeGenCPU::codegen() {
       get_llvm_program(kernel->program)->get_llvm_context(kernel->arch);
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
-      auto offload = irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      auto offload =
+          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       modules[i] = this->modulegen(nullptr, offload->as<OffloadedStmt>());
       tlctx->add_module(std::move(modules[i]->module));

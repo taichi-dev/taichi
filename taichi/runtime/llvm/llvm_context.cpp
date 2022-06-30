@@ -509,7 +509,7 @@ void TaichiLLVMContext::set_struct_module(
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
   this_thread_data->struct_module = llvm::CloneModule(*module);
-  for (auto &[id, data]: per_thread_data_) {
+  for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
       continue;
     }
@@ -518,11 +518,12 @@ void TaichiLLVMContext::set_struct_module(
     data->llvm_context = ctx.get();
     data->thread_safe_llvm_context =
         std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
-    data->struct_module = clone_module_to_context(this_thread_data->struct_module.get(), data->llvm_context);
-//    static FileSequenceWriter writer(
-//        "taichi_kernel_cpu_llvm_{:04d}.ll",
-//        "optimized LLVM IR (CPU)");
-//    writer.write(data->struct_module.get());
+    data->struct_module = clone_module_to_context(
+        this_thread_data->struct_module.get(), data->llvm_context);
+    //    static FileSequenceWriter writer(
+    //        "taichi_kernel_cpu_llvm_{:04d}.ll",
+    //        "optimized LLVM IR (CPU)");
+    //    writer.write(data->struct_module.get());
   }
 }
 

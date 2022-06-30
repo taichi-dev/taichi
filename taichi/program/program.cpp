@@ -233,7 +233,7 @@ void Program::synchronize() {
       async_engine->synchronize();
     }
     if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-        config.arch == Arch::vulkan) {
+        config.arch == Arch::vulkan || config.arch == Arch::opengl) {
       program_impl_->synchronize();
     }
     sync = true;

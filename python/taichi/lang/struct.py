@@ -388,11 +388,20 @@ class StructField(Field):
             to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, struct_methods, name=None):
+    def __init__(self, field_dict, struct_methods, name=None, is_primal=True):
         # will not call Field initializer
         self.field_dict = field_dict
         self.struct_methods = struct_methods
         self.name = name
+        self.grad = None
+        if is_primal:
+            grad_field_dict = {}
+            for k, v in self.field_dict.items():
+                grad_field_dict[k] = v.grad
+            self.grad = StructField(grad_field_dict,
+                                    struct_methods,
+                                    name + ".grad",
+                                    is_primal=False)
         self._register_fields()
 
     @property

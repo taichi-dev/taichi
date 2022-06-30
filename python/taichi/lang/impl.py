@@ -228,7 +228,7 @@ class PyTaichi:
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
-        self.grad_fields = []
+        self.grad_vars = []
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
@@ -302,15 +302,20 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
     def _check_grad_field_not_placed(self):
-        not_placed = []
-        for _var in self.grad_fields:
+        not_placed = set()
+        for _var in self.grad_vars:
             if _var.ptr.snode() is None:
-                not_placed.append(self._get_tb(_var))
+                not_placed.add(self._get_tb(_var))
 
         if len(not_placed):
             bar = '=' * 44 + '\n'
-            raise RuntimeError(f'These field(s) are not placed:\n{bar}' +
-                               f'{bar}'.join(not_placed))
+            raise RuntimeError(
+                f'These field(s) requrie `needs_grad=True`, however their grad field(s) are not placed:\n{bar}'
+                + f'{bar}'.join(not_placed) +
+                f'{bar}Please consider place the grad field(s). E.g.,' +
+                '\n\n  ti.root.dense(ti.i, 1).place(x.grad)' +
+                '\n\n Or specify a shape for the field(s). E.g.,' +
+                '\n\n  x = ti.field(float, shape=(2, 3), needs_grad=True)')
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
@@ -337,8 +342,7 @@ class PyTaichi:
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
-        self.grad_fields = []
-        self.dual_fields = []
+        self.grad_vars = []
         self.matrix_fields = []
 
     def _register_signal_handlers(self):
@@ -517,6 +521,7 @@ def create_field_member(dtype, name):
     if _ti_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad.declaration_tb = get_traceback(stacklevel=4)
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
@@ -524,6 +529,7 @@ def create_field_member(dtype, name):
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual.declaration_tb = get_traceback(stacklevel=4)
         x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_is_primal(False)
@@ -577,11 +583,15 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             is not None), 'The shape cannot be None when offset is being set'
 
     x, x_grad, x_dual = create_field_member(dtype, name)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
-        x_dual)
 
     if needs_grad:
-        pytaichi.grad_fields.append(x_grad)
+        if x_grad is None:
+            raise TaichiRuntimeError(
+                f'{dtype} is not supported for field with `needs_grad=True`.')
+        pytaichi.grad_vars.append(x_grad)
+
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
 
     x._set_grad(x_grad)
     x._set_dual(x_dual)

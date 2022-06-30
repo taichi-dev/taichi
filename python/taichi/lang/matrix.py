@@ -1108,11 +1108,18 @@ class Matrix(TaichiOperations):
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
         entries, entries_grad, entries_dual = zip(*entries)
+
+        if needs_grad:
+            for e in entries_grad:
+                if e is None:
+                    raise RuntimeError(
+                        f'{dtype} is not supported for field with `needs_grad=True`.'
+                    )
+                impl.get_runtime().grad_vars.append(e)
+
         entries, entries_grad, entries_dual = MatrixField(
             entries, n, m), MatrixField(entries_grad, n,
                                         m), MatrixField(entries_grad, n, m)
-        if needs_grad:
-            impl.get_runtime().grad_fields.append(entries_grad)
 
         entries._set_grad(entries_grad)
         entries._set_dual(entries_dual)

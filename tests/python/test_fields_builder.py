@@ -209,7 +209,7 @@ def test_field_builder_place_grad():
 
     arr = ti.field(ti.f32, needs_grad=True)
     fb0 = ti.FieldsBuilder()
-    fb0.dense(ti.i, 10).place(arr)
+    fb0.dense(ti.i, 10).place(arr, arr.grad)
     snode0 = fb0.finalize()
     out = ti.field(ti.f32)
     fb1 = ti.FieldsBuilder()

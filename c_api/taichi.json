@@ -743,6 +743,16 @@
                             "type": "uint64_t"
                         }
                     ]
+                },
+                {
+                    "name": "submit_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        }
+                    ]
                 }
             ]
         }

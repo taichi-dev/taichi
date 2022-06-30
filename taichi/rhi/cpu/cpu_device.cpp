@@ -55,6 +55,23 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   }
 }
 
+void *CpuDevice::map(DeviceAllocation alloc) {
+  AllocInfo &info = allocations_[alloc.alloc_id];
+  return info.ptr;
+}
+
+void CpuDevice::unmap(DeviceAllocation alloc) {
+  return;
+}
+
+void CpuDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
+  void *dst_ptr =
+      static_cast<char *>(allocations_[dst.alloc_id].ptr) + dst.offset;
+  void *src_ptr =
+      static_cast<char *>(allocations_[src.alloc_id].ptr) + src.offset;
+  std::memcpy(dst_ptr, src_ptr, size);
+}
+
 DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
   AllocInfo info;
   info.ptr = ptr;

@@ -172,42 +172,22 @@ void Ndarray::write(const std::vector<int> &I, T val) const {
 }
 
 int64 Ndarray::read_int(const std::vector<int> &i) {
-  // TODO: remove
-  if (prog_ && arch_uses_llvm(prog_->config.arch)) {
-    return rw_accessors_bank_->get(this).read_int(i);
-  }
   return read<int>(i);
 }
 
 uint64 Ndarray::read_uint(const std::vector<int> &i) {
-  // TODO: remove
-  if (prog_ && arch_uses_llvm(prog_->config.arch)) {
-    return rw_accessors_bank_->get(this).read_uint(i);
-  }
   return read<uint>(i);
 }
 
 float64 Ndarray::read_float(const std::vector<int> &i) {
-  // TODO: remove
-  if (prog_ && arch_uses_llvm(prog_->config.arch)) {
-    return rw_accessors_bank_->get(this).read_float(i);
-  }
   return read<float>(i);
 }
 
 void Ndarray::write_int(const std::vector<int> &i, int64 val) {
-  // TODO: remove
-  if (prog_ && arch_uses_llvm(prog_->config.arch)) {
-    return rw_accessors_bank_->get(this).write_int(i, val);
-  }
   write<int>(i, val);
 }
 
 void Ndarray::write_float(const std::vector<int> &i, float64 val) {
-  // TODO: remove
-  if (prog_ && arch_uses_llvm(prog_->config.arch)) {
-    return rw_accessors_bank_->get(this).write_float(i, val);
-  }
   write<float>(i, val);
 }
 

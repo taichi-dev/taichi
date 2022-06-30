@@ -808,9 +808,11 @@ void GLCommandList::CmdBufferToImage::execute() {
                     /*height=*/params.image_extent.y, image_format, gl_type,
                     (void *)offset);
   } else {
-    glTexSubImage3D(image_dims, /*level=*/0, /*xoffset=*/params.image_offset.x, params.image_offset.y,
-        params.image_offset.z, params.image_extent.x, params.image_extent.y,
-        params.image_extent.z, image_format, gl_type, (void *)offset);
+    glTexSubImage3D(image_dims, /*level=*/0, /*xoffset=*/params.image_offset.x,
+                    params.image_offset.y, params.image_offset.z,
+                    params.image_extent.x, params.image_extent.y,
+                    params.image_extent.z, image_format, gl_type,
+                    (void *)offset);
   }
   check_opengl_error("glTexSubImage");
   glBindTexture(image_dims, /*target=*/0);

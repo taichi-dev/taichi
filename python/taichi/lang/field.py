@@ -19,7 +19,6 @@ class Field:
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
-        self.adjoint = None
         self.dual = None
 
     @property
@@ -94,27 +93,12 @@ class Field:
         """
         return self.vars[0].ptr
 
-    def _set_grad(self, grad, reverse_mode=True):
-        """Binds corresponding gradient field to adjoint or dual.
-
+    def _set_grad(self, grad):
+        """Sets corresponding grad field (reverse mode).
         Args:
-            grad (Field): Corresponding gradient field.
-            reverse_mode (Bool): set for reverse or forward mode
+            grad (Field): Corresponding grad field.
         """
-        if reverse_mode:
-            self._set_adjoint(grad)
-            self.grad = self.adjoint
-        else:
-            self._set_dual(grad)
-            self.grad = self.dual
-
-    def _set_adjoint(self, adjoint):
-        """Sets corresponding adjoint field (reverse mode).
-
-        Args:
-            adjoint (Field): Corresponding adjoint field.
-        """
-        self.adjoint = adjoint
+        self.grad = grad
 
     def _set_dual(self, dual):
         """Sets corresponding dual field (forward mode).

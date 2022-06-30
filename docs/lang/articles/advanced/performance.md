@@ -109,7 +109,7 @@ see the [Fields (advanced)](layout.md) section.
 
 Taichi comes with a few optimizations that leverage the *fast memory* (e.g. CUDA
 shared memory, L1 cache) for performance optimization. The idea is straightforward:
-Wherever possible, Taichi substitutes the access to the global memroy (slow) with
+Wherever possible, Taichi substitutes the access to the global memory (slow) with
 that to the local one (fast), and writes the data in the local memory (e.g., CUDA
 shared memory) back to the global memory in the end. Such transformations preserve
 the semantics of the original program (will be explained later).

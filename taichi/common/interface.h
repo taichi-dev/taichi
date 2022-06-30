@@ -112,127 +112,127 @@ class InterfaceHolder {
   }
 };
 
-#define TI_INTERFACE(T)                                                      \
-  extern void *get_implementation_holder_instance_##T();                     \
-  class TI_IMPLEMENTATION_HOLDER_NAME(T) final                               \
-      : public ImplementationHolderBase {                                    \
-   public:                                                                   \
-    TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {              \
-      this->name = name;                                                     \
-    }                                                                        \
-    using FactoryMethod = std::function<std::shared_ptr<T>()>;               \
-    using FactoryUniqueMethod = std::function<std::unique_ptr<T>()>;         \
-    using FactoryUniqueCtorMethod =                                          \
-        std::function<std::unique_ptr<T>(const Dict &config)>;               \
-    using FactoryRawMethod = std::function<T *()>;                           \
-    using FactoryPlacementMethod = std::function<T *(void *)>;               \
-    std::map<std::string, FactoryMethod> implementation_factories;           \
-    std::map<std::string, FactoryUniqueMethod>                               \
-        implementation_unique_factories;                                     \
-    std::map<std::string, FactoryUniqueCtorMethod>                           \
-        implementation_unique_ctor_factories;                                \
-    std::map<std::string, FactoryRawMethod> implementation_raw_factories;    \
-    std::map<std::string, FactoryPlacementMethod>                            \
-        implementation_placement_factories;                                  \
-    std::vector<std::string> get_implementation_names() const override {     \
-      std::vector<std::string> names;                                        \
-      for (auto &kv : implementation_factories) {                            \
-        names.push_back(kv.first);                                           \
-      }                                                                      \
-      return names;                                                          \
-    }                                                                        \
-    template <typename G>                                                    \
-    void insert(const std::string &alias) {                                  \
-      implementation_factories.insert(                                       \
-          std::make_pair(alias, [&]() { return std::make_shared<G>(); }));   \
-      implementation_unique_factories.insert(                                \
-          std::make_pair(alias, [&]() { return std::make_unique<G>(); }));   \
-      implementation_raw_factories.insert(                                   \
-          std::make_pair(alias, [&]() { return new G(); }));                 \
-      implementation_placement_factories.insert(std::make_pair(              \
-          alias, [&](void *place) { return new (place) G(); }));             \
-    }                                                                        \
-    template <typename G>                                                    \
-    void insert_new(const std::string &alias) {                              \
-      /*with ctor*/                                                          \
-      implementation_factories.insert(                                       \
-          std::make_pair(alias, [&]() { return std::make_shared<G>(); }));   \
-      implementation_unique_factories.insert(                                \
-          std::make_pair(alias, [&]() { return std::make_unique<G>(); }));   \
-      implementation_unique_ctor_factories.insert(std::make_pair(            \
-          alias,                                                             \
-          [&](const Dict &config) { return std::make_unique<G>(config); })); \
-      implementation_raw_factories.insert(                                   \
-          std::make_pair(alias, [&]() { return new G(); }));                 \
-      implementation_placement_factories.insert(std::make_pair(              \
-          alias, [&](void *place) { return new (place) G(); }));             \
-    }                                                                        \
-    void insert(const std::string &alias, const FactoryMethod &f) {          \
-      implementation_factories.insert(std::make_pair(alias, f));             \
-    }                                                                        \
-    bool has(const std::string &alias) const override {                      \
-      return implementation_factories.find(alias) !=                         \
-             implementation_factories.end();                                 \
-    }                                                                        \
-    void remove(const std::string &alias) override {                         \
-      TI_ASSERT_INFO(has(alias),                                             \
-                     std::string("Implemetation ") + alias + " not found!"); \
-      implementation_factories.erase(alias);                                 \
-    }                                                                        \
-    void update(const std::string &alias, const FactoryMethod &f) {          \
-      if (has(alias)) {                                                      \
-        remove(alias);                                                       \
-      }                                                                      \
-      insert(alias, f);                                                      \
-    }                                                                        \
-    template <typename G>                                                    \
-    void update(const std::string &alias) {                                  \
-      if (has(alias)) {                                                      \
-        remove(alias);                                                       \
-      }                                                                      \
-      insert<G>(alias);                                                      \
-    }                                                                        \
-    std::shared_ptr<T> create(const std::string &alias) {                    \
-      auto factory = implementation_factories.find(alias);                   \
-      TI_ASSERT_INFO(                                                        \
-          factory != implementation_factories.end(),                         \
-          "Implementation [" + name + "::" + alias + "] not found!");        \
-      return (factory->second)();                                            \
-    }                                                                        \
-    std::unique_ptr<T> create_unique(const std::string &alias) {             \
-      auto factory = implementation_unique_factories.find(alias);            \
-      TI_ASSERT_INFO(                                                        \
-          factory != implementation_unique_factories.end(),                  \
-          "Implementation [" + name + "::" + alias + "] not found!");        \
-      return (factory->second)();                                            \
-    }                                                                        \
-    std::unique_ptr<T> create_unique_ctor(const std::string &alias,          \
-                                          const Dict &config) {              \
-      auto factory = implementation_unique_ctor_factories.find(alias);       \
-      TI_ASSERT_INFO(                                                        \
-          factory != implementation_unique_ctor_factories.end(),             \
-          "Implementation [" + name + "::" + alias + "] not found!");        \
-      return (factory->second)(config);                                      \
-    }                                                                        \
-    T *create_raw(const std::string &alias) {                                \
-      auto factory = implementation_raw_factories.find(alias);               \
-      TI_ASSERT_INFO(                                                        \
-          factory != implementation_raw_factories.end(),                     \
-          "Implementation [" + name + "::" + alias + "] not found!");        \
-      return (factory->second)();                                            \
-    }                                                                        \
-    T *create_placement(const std::string &alias, void *place) {             \
-      auto factory = implementation_placement_factories.find(alias);         \
-      TI_ASSERT_INFO(                                                        \
-          factory != implementation_placement_factories.end(),               \
-          "Implementation [" + name + "::" + alias + "] not found!");        \
-      return (factory->second)(place);                                       \
-    }                                                                        \
-    static TI_IMPLEMENTATION_HOLDER_NAME(T) * get_instance() {               \
-      return static_cast<TI_IMPLEMENTATION_HOLDER_NAME(T) *>(                \
-          get_implementation_holder_instance_##T());                         \
-    }                                                                        \
-  };                                                                         \
+#define TI_INTERFACE(T)                                                       \
+  extern void *get_implementation_holder_instance_##T();                      \
+  class TI_IMPLEMENTATION_HOLDER_NAME(T) final                                \
+      : public ImplementationHolderBase {                                     \
+   public:                                                                    \
+    TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
+      this->name = name;                                                      \
+    }                                                                         \
+    using FactoryMethod = std::function<std::shared_ptr<T>()>;                \
+    using FactoryUniqueMethod = std::function<std::unique_ptr<T>()>;          \
+    using FactoryUniqueCtorMethod =                                           \
+        std::function<std::unique_ptr<T>(const Dict &config)>;                \
+    using FactoryRawMethod = std::function<T *()>;                            \
+    using FactoryPlacementMethod = std::function<T *(void *)>;                \
+    std::map<std::string, FactoryMethod> implementation_factories;            \
+    std::map<std::string, FactoryUniqueMethod>                                \
+        implementation_unique_factories;                                      \
+    std::map<std::string, FactoryUniqueCtorMethod>                            \
+        implementation_unique_ctor_factories;                                 \
+    std::map<std::string, FactoryRawMethod> implementation_raw_factories;     \
+    std::map<std::string, FactoryPlacementMethod>                             \
+        implementation_placement_factories;                                   \
+    std::vector<std::string> get_implementation_names() const override {      \
+      std::vector<std::string> names;                                         \
+      for (auto &kv : implementation_factories) {                             \
+        names.push_back(kv.first);                                            \
+      }                                                                       \
+      return names;                                                           \
+    }                                                                         \
+    template <typename G>                                                     \
+    void insert(const std::string &alias) {                                   \
+      implementation_factories.insert(                                        \
+          std::make_pair(alias, [&]() { return std::make_shared<G>(); }));    \
+      implementation_unique_factories.insert(                                 \
+          std::make_pair(alias, [&]() { return std::make_unique<G>(); }));    \
+      implementation_raw_factories.insert(                                    \
+          std::make_pair(alias, [&]() { return new G(); }));                  \
+      implementation_placement_factories.insert(std::make_pair(               \
+          alias, [&](void *place) { return new (place) G(); }));              \
+    }                                                                         \
+    template <typename G>                                                     \
+    void insert_new(const std::string &alias) {                               \
+      /*with ctor*/                                                           \
+      implementation_factories.insert(                                        \
+          std::make_pair(alias, [&]() { return std::make_shared<G>(); }));    \
+      implementation_unique_factories.insert(                                 \
+          std::make_pair(alias, [&]() { return std::make_unique<G>(); }));    \
+      implementation_unique_ctor_factories.insert(std::make_pair(             \
+          alias,                                                              \
+          [&](const Dict &config) { return std::make_unique<G>(config); }));  \
+      implementation_raw_factories.insert(                                    \
+          std::make_pair(alias, [&]() { return new G(); }));                  \
+      implementation_placement_factories.insert(std::make_pair(               \
+          alias, [&](void *place) { return new (place) G(); }));              \
+    }                                                                         \
+    void insert(const std::string &alias, const FactoryMethod &f) {           \
+      implementation_factories.insert(std::make_pair(alias, f));              \
+    }                                                                         \
+    bool has(const std::string &alias) const override {                       \
+      return implementation_factories.find(alias) !=                          \
+             implementation_factories.end();                                  \
+    }                                                                         \
+    void remove(const std::string &alias) override {                          \
+      TI_ASSERT_INFO(has(alias),                                              \
+                     std::string("Implementation ") + alias + " not found!"); \
+      implementation_factories.erase(alias);                                  \
+    }                                                                         \
+    void update(const std::string &alias, const FactoryMethod &f) {           \
+      if (has(alias)) {                                                       \
+        remove(alias);                                                        \
+      }                                                                       \
+      insert(alias, f);                                                       \
+    }                                                                         \
+    template <typename G>                                                     \
+    void update(const std::string &alias) {                                   \
+      if (has(alias)) {                                                       \
+        remove(alias);                                                        \
+      }                                                                       \
+      insert<G>(alias);                                                       \
+    }                                                                         \
+    std::shared_ptr<T> create(const std::string &alias) {                     \
+      auto factory = implementation_factories.find(alias);                    \
+      TI_ASSERT_INFO(                                                         \
+          factory != implementation_factories.end(),                          \
+          "Implementation [" + name + "::" + alias + "] not found!");         \
+      return (factory->second)();                                             \
+    }                                                                         \
+    std::unique_ptr<T> create_unique(const std::string &alias) {              \
+      auto factory = implementation_unique_factories.find(alias);             \
+      TI_ASSERT_INFO(                                                         \
+          factory != implementation_unique_factories.end(),                   \
+          "Implementation [" + name + "::" + alias + "] not found!");         \
+      return (factory->second)();                                             \
+    }                                                                         \
+    std::unique_ptr<T> create_unique_ctor(const std::string &alias,           \
+                                          const Dict &config) {               \
+      auto factory = implementation_unique_ctor_factories.find(alias);        \
+      TI_ASSERT_INFO(                                                         \
+          factory != implementation_unique_ctor_factories.end(),              \
+          "Implementation [" + name + "::" + alias + "] not found!");         \
+      return (factory->second)(config);                                       \
+    }                                                                         \
+    T *create_raw(const std::string &alias) {                                 \
+      auto factory = implementation_raw_factories.find(alias);                \
+      TI_ASSERT_INFO(                                                         \
+          factory != implementation_raw_factories.end(),                      \
+          "Implementation [" + name + "::" + alias + "] not found!");         \
+      return (factory->second)();                                             \
+    }                                                                         \
+    T *create_placement(const std::string &alias, void *place) {              \
+      auto factory = implementation_placement_factories.find(alias);          \
+      TI_ASSERT_INFO(                                                         \
+          factory != implementation_placement_factories.end(),                \
+          "Implementation [" + name + "::" + alias + "] not found!");         \
+      return (factory->second)(place);                                        \
+    }                                                                         \
+    static TI_IMPLEMENTATION_HOLDER_NAME(T) * get_instance() {                \
+      return static_cast<TI_IMPLEMENTATION_HOLDER_NAME(T) *>(                 \
+          get_implementation_holder_instance_##T());                          \
+    }                                                                         \
+  };                                                                          \
   extern TI_IMPLEMENTATION_HOLDER_NAME(T) * TI_IMPLEMENTATION_HOLDER_PTR(T);
 
 #define TI_INTERFACE_DEF(class_name, base_alias)                               \

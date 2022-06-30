@@ -422,7 +422,7 @@ class _UninitializedRootFieldsBuilder:
 # gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
 # writing to it is would result in less for maintenance cost.
 #
-# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+# `_root_fb` will be overridden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
@@ -497,16 +497,24 @@ def create_field_member(dtype, name):
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    x_adjoint = None
+    x_grad = None
+    x_dual = None
     if _ti_core.needs_grad(dtype):
         # adjoint
-        x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
-        x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
-        x_adjoint.ptr.set_name(name + ".grad")
-        x_adjoint.ptr.set_is_primal(False)
-        x.ptr.set_adjoint(x_adjoint.ptr)
+        x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_adjoint(x_grad.ptr)
 
-    return x, x_adjoint
+        # dual
+        x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr.set_name(name + ".dual")
+        x_dual.ptr.set_is_primal(False)
+        x.ptr.set_dual(x_dual.ptr)
+
+    return x, x_grad, x_dual
 
 
 @python_scope
@@ -553,15 +561,17 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_adjoint = create_field_member(dtype, name)
-    x, x_adjoint = ScalarField(x), ScalarField(x_adjoint)
-    x._set_grad(x_adjoint, reverse_mode=True)
+    x, x_grad, x_dual = create_field_member(dtype, name)
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
+    x._set_grad(x_grad)
+    x._set_dual(x_dual)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_adjoint)
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 
@@ -604,7 +614,7 @@ def ti_format_list_to_content_entries(raw):
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
-        yield '['  # distinguishing tuple & list will increase maintainance cost
+        yield '['  # distinguishing tuple & list will increase maintenance cost
         for i, v in enumerate(_var):
             if i:
                 yield ', '

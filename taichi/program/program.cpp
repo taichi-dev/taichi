@@ -4,14 +4,13 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -23,22 +22,23 @@
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
 #if defined(TI_WITH_CC)
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 #ifdef TI_WITH_OPENGL
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/rhi/opengl/opengl_api.h"
 #endif
 #ifdef TI_WITH_DX11
 #include "taichi/runtime/program_impls/dx/dx_program.h"
-#include "taichi/backends/dx/dx_api.h"
+#include "taichi/rhi/dx/dx_api.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -462,7 +462,7 @@ void Program::finalize() {
   synchronize();
   if (async_engine)
     async_engine = nullptr;  // Finalize the async engine threads before
-                             // anything else gets destoried.
+                             // anything else gets destroyed.
 
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {

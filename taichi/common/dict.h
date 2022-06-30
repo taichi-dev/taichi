@@ -347,7 +347,8 @@ inline bool Dict::get<bool>(std::string key) const {
       {"true", true},   {"True", true},   {"t", true},  {"1", true},
       {"false", false}, {"False", false}, {"f", false}, {"0", false},
   };
-  TI_ASSERT_INFO(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
+  TI_ASSERT_INFO(dict.find(s) != dict.end(),
+                 "Unknown identifier for bool: " + s);
   return dict[s];
 }
 

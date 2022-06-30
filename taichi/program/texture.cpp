@@ -1,7 +1,7 @@
 #include "taichi/program/texture.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/snode.h"
 
 namespace taichi {

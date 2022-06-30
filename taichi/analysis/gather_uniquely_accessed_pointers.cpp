@@ -252,7 +252,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
           /**
            * We know stmt->base_ptr and the previously recorded pointers
            * are loop-unique. We need to figure out whether their loop-unique
-           * indicies are the same while ignoring the others.
+           * indices are the same while ignoring the others.
            * e.g. a[i, j, 1] and a[i, j, 2] are both uniquely accessed
            *      a[i, j, 1] and a[j, i, 2] are not uniquely accessed
            *      a[i, j + 1, 1] and a[i, j, 2] are not uniquely accessed

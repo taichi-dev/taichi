@@ -1,6 +1,6 @@
 #include "opengl_program.h"
 
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/rhi/opengl/opengl_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 

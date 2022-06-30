@@ -308,11 +308,11 @@ writer.add_faces(indices)
 - Add optional channels
 
 ```python
-# Add custome vertex channel, the input should include a key, a supported datatype and, the data np.array
+# Add custom vertex channel, the input should include a key, a supported datatype and, the data np.array
 vdata = np.random.rand(20)
 writer.add_vertex_channel("vdata1", "double", vdata)
 
-# Add custome face channel
+# Add custom face channel
 foo_data = np.zeros(12)
 writer.add_face_channel("foo_key", "foo_data_type", foo_data)
 # error! because "foo_data_type" is not a supported datatype. Supported ones are

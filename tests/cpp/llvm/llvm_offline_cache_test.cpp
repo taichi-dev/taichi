@@ -21,7 +21,7 @@ error "Missing the <filesystem> header."
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/lang_util.h"
 
 namespace taichi {

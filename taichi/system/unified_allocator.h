@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 
-#include "taichi/backends/arch.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/arch.h"
+#include "taichi/rhi/device.h"
 
 namespace taichi {
 class VirtualMemoryAllocator;

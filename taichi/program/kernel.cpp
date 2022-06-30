@@ -1,6 +1,6 @@
 #include "taichi/program/kernel.h"
 
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/common/logging.h"
 #include "taichi/common/task.h"

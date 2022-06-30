@@ -48,10 +48,7 @@ TEST(GraphTest, SimpleGraphRun) {
   args.insert({"x", aot::IValue::create<int>(2)});
 
   g->run(args);
-  // TODO: this should be synchronize() indeed but it currently has a shortcut
-  // `sync=True` to return which is pretty error-prone. We should change this to
-  // synchronize() after getting rid of the shortcut.
-  test_prog.prog()->flush();
+  test_prog.prog()->synchronize();
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 2);
   EXPECT_EQ(array.read_int({2}), 42);

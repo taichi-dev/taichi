@@ -13,7 +13,7 @@ namespace taichi {
 namespace lang {
 
 struct LlvmOfflineCache {
-  using Version = uint16[3]; // {MAJOR, MINOR, PATCH}
+  using Version = uint16[3];  // {MAJOR, MINOR, PATCH}
 
   enum Format {
     LL = 0x01,
@@ -37,16 +37,21 @@ struct LlvmOfflineCache {
     llvm::Module *module{nullptr};
 
     // For cache cleaning
-    std::size_t size{0}; // byte
-    std::time_t created_at{0}; // millsec
-    std::time_t last_used_at{0}; // millsec
+    std::size_t size{0};          // byte
+    std::time_t created_at{0};    // millsec
+    std::time_t last_used_at{0};  // millsec
 
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
-    TI_IO_DEF(kernel_key, args, offloaded_task_list, size, created_at, last_used_at);
+    TI_IO_DEF(kernel_key,
+              args,
+              offloaded_task_list,
+              size,
+              created_at,
+              last_used_at);
   };
 
   struct FieldCacheData {
@@ -94,7 +99,7 @@ struct LlvmOfflineCache {
   };
 
   Version version{};
-  std::size_t size{0}; // byte
+  std::size_t size{0};  // byte
 
   // TODO(zhanlue): we need a better identifier for each FieldCacheData
   // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
@@ -145,6 +150,7 @@ class LlvmOfflineCacheFileWriter {
     CleanOldUsed = 0b010,
     ClaenOldCreated = 0b100
   };
+
  public:
   enum CleanCachePolicy {
     Nerver = NotClean,
@@ -171,7 +177,10 @@ class LlvmOfflineCacheFileWriter {
     mangled_ = true;
   }
 
-  static void clean_cache(const std::string &path, CleanCachePolicy policy, int max_bytes, double cleaning_factor);
+  static void clean_cache(const std::string &path,
+                          CleanCachePolicy policy,
+                          int max_bytes,
+                          double cleaning_factor);
 
   static CleanCachePolicy string_to_clean_cache_policy(const std::string &str);
 

@@ -148,6 +148,13 @@ class ResourceBinder {
     TI_NOT_IMPLEMENTED
   }
 
+  virtual void rw_image(uint32_t set,
+                        uint32_t binding,
+                        DeviceAllocation alloc,
+                        int lod) {
+    TI_NOT_IMPLEMENTED
+  }
+
   // Set vertex buffer (not implemented in compute only device)
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
     TI_NOT_IMPLEMENTED

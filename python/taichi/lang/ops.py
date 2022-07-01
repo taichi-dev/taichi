@@ -7,7 +7,6 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
-from taichi.types.annotations import template
 
 unary_ops = []
 

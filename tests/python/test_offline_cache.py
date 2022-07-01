@@ -15,18 +15,21 @@ supported_archs_offline_cache = [
     if v in test_utils.expected_archs()
 ]
 
+
 def is_offline_cache_file(filename):
     suffixes = ('.ll', '.bc')
     return filename.endswith(suffixes)
 
+
 def get_cache_files_size(path):
-    dir_path = tmp_offline_cache_file_path();
+    dir_path = tmp_offline_cache_file_path()
     files = listdir(path)
     result = 0
     for file in files:
         if is_offline_cache_file(file):
             result += stat(dir_path + "/" + file).st_size
     return result
+
 
 def get_expected_num_cache_files(num_kernels: int) -> int:
     if num_kernels == 0:
@@ -434,39 +437,43 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 @_test_offline_cache_dec
 def test_offline_cache_cleaning(curr_arch, factor, policy):
     def only_init(max_size):
-        ti.init(arch=curr_arch,
+        ti.init(
+            arch=curr_arch,
             enable_fallback=False,
             offline_cache_cleaning_policy=policy,
-            offline_cache_max_size_of_files=max_size, # bytes
+            offline_cache_max_size_of_files=max_size,  # bytes
             offline_cache_cleaning_factor=factor,
             **current_thread_ext_options())
+
     def run_simple_kernels(max_size):
         only_init(max_size)
         for kernel, args, get_res in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
 
     kernel_count = len(simple_kernels_to_test)
-    rem_factor = 1 if policy in ['never', 'version'] else (kernel_count - int(factor * kernel_count)) / kernel_count
+    rem_factor = 1 if policy in [
+        'never', 'version'
+    ] else (kernel_count - int(factor * kernel_count)) / kernel_count
     count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
 
     assert len(listdir(tmp_offline_cache_file_path())
-            ) - count_of_cache_file == get_expected_num_cache_files(0)
+               ) - count_of_cache_file == get_expected_num_cache_files(0)
 
-    run_simple_kernels(1024 ** 3) # 1GB
-    ti.reset() # Dumping cache data
+    run_simple_kernels(1024**3)  # 1GB
+    ti.reset()  # Dumping cache data
     size_of_cache_files = get_cache_files_size(tmp_offline_cache_file_path())
     assert len(listdir(tmp_offline_cache_file_path())
-        ) - count_of_cache_file == get_expected_num_cache_files(len(simple_kernels_to_test))
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   len(simple_kernels_to_test))
 
     only_init(size_of_cache_files * 2)
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
-        ) - count_of_cache_file == get_expected_num_cache_files(len(simple_kernels_to_test))
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   len(simple_kernels_to_test))
 
     only_init(size_of_cache_files)
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
-        ) - count_of_cache_file == get_expected_num_cache_files(int(len(simple_kernels_to_test) * rem_factor))
-
-
-
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   int(len(simple_kernels_to_test) * rem_factor))

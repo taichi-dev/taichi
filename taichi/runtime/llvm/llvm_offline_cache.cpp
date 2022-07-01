@@ -31,27 +31,28 @@ constexpr char kMetadataFilename[] = "metadata";
 
 static bool check_llvm_cache_verison(const LlvmOfflineCache::Version &ver) {
   // TODO(PGZXB): Do more detailed checking
-  return ver[0] == TI_VERSION_MAJOR &&
-         ver[1] == TI_VERSION_MINOR &&
+  return ver[0] == TI_VERSION_MAJOR && ver[1] == TI_VERSION_MINOR &&
          ver[2] == TI_VERSION_PATCH;
 }
 
 static std::string get_llvm_cache_metadata_file_path(const std::string &dir) {
   std::stringstream tcb_ss;
   tcb_ss << dir << "/" << kMetadataFilename << ".tcb";
-  return  tcb_ss.str();
+  return tcb_ss.str();
 }
 
-static std::string get_llvm_cache_metadata_json_file_path(const std::string &dir) {
+static std::string get_llvm_cache_metadata_json_file_path(
+    const std::string &dir) {
   std::stringstream tcb_ss;
   tcb_ss << dir << "/" << kMetadataFilename << ".json";
-  return  tcb_ss.str();
+  return tcb_ss.str();
 }
 
-static std::vector<std::string> get_possible_llvm_cache_filename_by_key(const std::string &key) {
+static std::vector<std::string> get_possible_llvm_cache_filename_by_key(
+    const std::string &key) {
   return {
-    key + ".ll",
-    key + ".bc",
+      key + ".ll",
+      key + ".bc",
   };
 }
 
@@ -157,10 +158,10 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       bool merge_with_old) {
   taichi::create_directories(path);
   std::time_t now = std::time(nullptr);
-  std::size_t new_kernels_size = 0; // bytes
+  std::size_t new_kernels_size = 0;  // bytes
 
   for (auto &[k, v] : data_.kernels) {
-    std::size_t size = 0; // bytes
+    std::size_t size = 0;  // bytes
     std::stringstream filename_ss;
     filename_ss << path << "/" << k;
     std::string filename_prefix = filename_ss.str();
@@ -261,7 +262,10 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
   }
 }
 
-void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path, CleanCachePolicy policy, int max_bytes, double cleaning_factor) {
+void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
+                                             CleanCachePolicy policy,
+                                             int max_bytes,
+                                             double cleaning_factor) {
   namespace fs = std::filesystem;
 
   if (policy == (std::size_t)NotClean) {
@@ -271,12 +275,13 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path, CleanCache
   LlvmOfflineCache cache_data;
   LlvmOfflineCacheFileReader::load_meta_data(cache_data, path);
 
-  if ((policy & CleanOldVersion) && !check_llvm_cache_verison(cache_data.version)) {
+  if ((policy & CleanOldVersion) &&
+      !check_llvm_cache_verison(cache_data.version)) {
     if (bool ok = fs::remove(get_llvm_cache_metadata_file_path(path)); ok) {
       auto root_path = fs::path(path);
       for (const auto &[k, v] : cache_data.kernels) {
         const auto files = get_possible_llvm_cache_filename_by_key(k);
-        for (const auto &f: files) {
+        for (const auto &f : files) {
           fs::remove(root_path / f);
         }
       }
@@ -284,21 +289,24 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path, CleanCache
     return;
   }
 
-  if (cache_data.size < max_bytes || static_cast<std::size_t>(cleaning_factor * cache_data.kernels.size()) == 0) {
+  if (cache_data.size < max_bytes ||
+      static_cast<std::size_t>(cleaning_factor * cache_data.kernels.size()) ==
+          0) {
     return;
   }
 
   // LRU or FIFO
   using KerData = LlvmOfflineCache::KernelCacheData;
   using Comparator = std::function<bool(const KerData &, const KerData &)>;
-  using PriQueue = std::priority_queue<KerData, std::vector<KerData>, Comparator>;
+  using PriQueue =
+      std::priority_queue<KerData, std::vector<KerData>, Comparator>;
 
   Comparator cmp{nullptr};
-  if (policy & CleanOldUsed) { // LRU
+  if (policy & CleanOldUsed) {  // LRU
     cmp = [](const KerData &a, const KerData &b) -> bool {
       return a.last_used_at < b.last_used_at;
     };
-  } else if (policy & ClaenOldCreated) { // FIFO
+  } else if (policy & ClaenOldCreated) {  // FIFO
     cmp = [](const KerData &a, const KerData &b) -> bool {
       return a.created_at < b.created_at;
     };
@@ -308,32 +316,41 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path, CleanCache
     std::size_t cnt = cleaning_factor * cache_data.kernels.size();
     TI_ASSERT(cnt != 0);
     for (auto &[k, v] : cache_data.kernels) {
-      if (q.size() == cnt && cmp(v, q.top())) q.pop();
-      if (q.size() < cnt) q.push(std::move(v));
+      if (q.size() == cnt && cmp(v, q.top()))
+        q.pop();
+      if (q.size() < cnt)
+        q.push(std::move(v));
     }
     TI_ASSERT(q.size() <= cnt);
     auto root_path = fs::path(path);
     while (!q.empty()) {
-      for (const auto &f : get_possible_llvm_cache_filename_by_key(q.top().kernel_key)) {
+      for (const auto &f :
+           get_possible_llvm_cache_filename_by_key(q.top().kernel_key)) {
         fs::remove(root_path / f);
       }
       q.pop();
     }
-    if (cnt == cache_data.kernels.size()) { // Removed all
+    if (cnt == cache_data.kernels.size()) {  // Removed all
       fs::remove(get_llvm_cache_metadata_file_path(path));
       fs::remove(get_llvm_cache_metadata_json_file_path(path));
     }
   }
 }
 
-LlvmOfflineCacheFileWriter::CleanCachePolicy LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(const std::string &str) {
+LlvmOfflineCacheFileWriter::CleanCachePolicy
+LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
+    const std::string &str) {
   using Policy = LlvmOfflineCacheFileWriter::CleanCachePolicy;
 
-  if (str == "never") return Policy::Nerver;
-  if (str == "version") return Policy::OnlyOldVersion;
-  if (str == "lru") return Policy::LRU;
-  if (str == "fifo") return Policy::FIFO;
-  
+  if (str == "never")
+    return Policy::Nerver;
+  if (str == "version")
+    return Policy::OnlyOldVersion;
+  if (str == "lru")
+    return Policy::LRU;
+  if (str == "fifo")
+    return Policy::FIFO;
+
   TI_WARN("Invalid CleanCachePolicy");
   return Policy::Nerver;
 }

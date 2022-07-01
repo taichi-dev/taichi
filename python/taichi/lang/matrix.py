@@ -1095,7 +1095,9 @@ class Matrix(TaichiOperations):
                 ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
                 for i in range(n):
                     entries.append(
-                        impl.create_field_member(dtype[i], name=name))
+                        impl.create_field_member(dtype[i],
+                                                 name=name,
+                                                 needs_grad=needs_grad))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
@@ -1103,19 +1105,16 @@ class Matrix(TaichiOperations):
                 for i in range(n):
                     for j in range(m):
                         entries.append(
-                            impl.create_field_member(dtype[i][j], name=name))
+                            impl.create_field_member(dtype[i][j],
+                                                     name=name,
+                                                     needs_grad=needs_grad))
         else:
             for _ in range(n * m):
-                entries.append(impl.create_field_member(dtype, name=name))
+                entries.append(
+                    impl.create_field_member(dtype,
+                                             name=name,
+                                             needs_grad=needs_grad))
         entries, entries_grad, entries_dual = zip(*entries)
-
-        if needs_grad:
-            for e in entries_grad:
-                if e is None:
-                    raise RuntimeError(
-                        f'{dtype} is not supported for field with `needs_grad=True`.'
-                    )
-                impl.get_runtime().grad_vars.append(e)
 
         entries, entries_grad, entries_dual = MatrixField(
             entries, n, m), MatrixField(entries_grad, n,

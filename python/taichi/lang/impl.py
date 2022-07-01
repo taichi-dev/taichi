@@ -505,7 +505,7 @@ Example::
 
 
 @python_scope
-def create_field_member(dtype, name):
+def create_field_member(dtype, name, needs_grad):
     dtype = cook_dtype(dtype)
 
     # primal
@@ -518,6 +518,7 @@ def create_field_member(dtype, name):
 
     x_grad = None
     x_dual = None
+    # TODO: replace the name of `_ti_core.needs_grad`, it only checks whether the dtype can be accepted to compute derivatives
     if _ti_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -526,14 +527,18 @@ def create_field_member(dtype, name):
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
         x.ptr.set_adjoint(x_grad.ptr)
+        if needs_grad:
+            pytaichi.grad_vars.append(x_grad)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
-        x_dual.declaration_tb = get_traceback(stacklevel=4)
         x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_is_primal(False)
         x.ptr.set_dual(x_dual.ptr)
+    elif needs_grad:
+        raise TaichiRuntimeError(
+            f'{dtype} is not supported for field with `needs_grad=True`.')
 
     return x, x_grad, x_dual
 
@@ -582,14 +587,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_grad, x_dual = create_field_member(dtype, name)
-
-    if needs_grad:
-        if x_grad is None:
-            raise TaichiRuntimeError(
-                f'{dtype} is not supported for field with `needs_grad=True`.')
-        pytaichi.grad_vars.append(x_grad)
-
+    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad)
     x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
         x_dual)
 

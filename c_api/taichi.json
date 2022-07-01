@@ -615,23 +615,6 @@
                     ]
                 },
                 {
-                    "name": "import_native_memory_async",
-                    "vendor": "unity",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.memory"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.native_buffer"
-                        }
-                    ]
-                },
-                {
                     "name": "launch_kernel_async",
                     "vendor": "unity",
                     "type": "function",

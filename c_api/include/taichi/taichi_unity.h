@@ -11,11 +11,6 @@ typedef struct TixNativeBufferUnity_t *TixNativeBufferUnity;
 // function.import_native_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL tix_import_native_runtime_unity();
 
-// function.import_native_memory_async
-TI_DLL_EXPORT TiMemory TI_API_CALL
-tix_import_native_memory_async_unity(TiRuntime runtime,
-                                     TixNativeBufferUnity native_buffer);
-
 // function.launch_kernel_async
 TI_DLL_EXPORT void TI_API_CALL
 tix_launch_kernel_async_unity(TiRuntime runtime,

@@ -7,7 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 

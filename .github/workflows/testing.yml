@@ -442,7 +442,7 @@ jobs:
         run: |
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         id: test

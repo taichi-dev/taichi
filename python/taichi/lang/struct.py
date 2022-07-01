@@ -18,7 +18,7 @@ class Struct(TaichiOperations):
 
     A struct is a dictionary-like data structure that stores members as
     (key, value) pairs. Valid data members of a struct can be scalars,
-    matrices or other dictionary-like stuctures.
+    matrices or other dictionary-like structures.
 
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
@@ -378,7 +378,7 @@ class _IntermediateStruct(Struct):
 class StructField(Field):
     """Taichi struct field with SNode implementation.
 
-       Instead of directly contraining Expr entries, the StructField object
+       Instead of directly constraining Expr entries, the StructField object
        directly hosts members as `Field` instances to support nested structs.
 
     Args:
@@ -700,7 +700,7 @@ def struct_class(cls):
         A taichi struct with the annotations as fields
             and methods from the class attached.
     """
-    # save the annotaion fields for the struct
+    # save the annotation fields for the struct
     fields = cls.__annotations__
     # get the class methods to be attached to the struct types
     fields['__struct_methods'] = {

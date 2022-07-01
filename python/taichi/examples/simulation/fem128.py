@@ -111,7 +111,7 @@ def main():
 
     gui = ti.GUI('FEM128')
     print(
-        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
+        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
     )
     while gui.running:
         for e in gui.get_events(gui.PRESS):

@@ -30,7 +30,7 @@ def write_temp_image(window):
         pass
 
 
-def verify_image(window, image_name, tolerence=0.1):
+def verify_image(window, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         window.write_image(ground_truth_name)
@@ -46,7 +46,7 @@ def verify_image(window, image_name, tolerence=0.1):
             assert ground_truth_np.shape[i] == actual_np.shape[i]
         diff = ground_truth_np - actual_np
         mse = np.mean(diff * diff)
-        assert mse <= tolerence  # the pixel values are 0~255
+        assert mse <= tolerance  # the pixel values are 0~255
         os.remove(actual_name)
 
 
@@ -144,7 +144,7 @@ def test_geometry_2d():
         write_temp_image(window)
     render()
     if (platform.system() == 'Darwin'):
-        # FIXME: Use lower tolerence when macOS ggui supports wide lines
+        # FIXME: Use lower tolerance when macOS ggui supports wide lines
         verify_image(window, 'test_geometry_2d', 1.0)
     else:
         verify_image(window, 'test_geometry_2d')

@@ -910,7 +910,7 @@ static unsigned char stbiw__paeth(int a, int b, int c)
    return STBIW_UCHAR(c);
 }
 
-// @OPTIMIZE: provide an option that always forces left-predict or paeth predict
+// @OPTIMIZE: provide an option that always forces left-predict or path predict
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len)
 {
    int ctype[5] = { -1, 0, 4, 2, 6 };

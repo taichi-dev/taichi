@@ -37,7 +37,7 @@ light_max_pos = ti.Vector([
 light_color = ti.Vector(list(np.array([0.9, 0.85, 0.7])))
 light_normal = ti.Vector([0.0, -1.0, 0.0])
 
-# No absorbtion, integrates over a unit hemisphere
+# No absorption, integrates over a unit hemisphere
 lambertian_brdf = 1.0 / np.pi
 # diamond!
 refr_idx = 2.4

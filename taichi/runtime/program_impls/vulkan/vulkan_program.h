@@ -47,7 +47,9 @@ class VulkanProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
-    vulkan_runtime_->synchronize();
+    if (vulkan_runtime_) {
+      vulkan_runtime_->synchronize();
+    }
   }
 
   StreamSemaphore flush() override {

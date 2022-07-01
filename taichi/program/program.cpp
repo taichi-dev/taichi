@@ -227,15 +227,14 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  if (!sync) {
-    if (config.async_mode) {
-      async_engine->synchronize();
-    }
-    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-        config.arch == Arch::vulkan || config.arch == Arch::opengl) {
-      program_impl_->synchronize();
-    }
+  if (config.async_mode && !sync) {
+    async_engine->synchronize();
     sync = true;
+  }
+  // Normal mode shouldn't be affected by `sync` flag.
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+    program_impl_->synchronize();
   }
 }
 

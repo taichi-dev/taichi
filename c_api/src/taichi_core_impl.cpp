@@ -228,8 +228,8 @@ void ti_launch_kernel(TiRuntime runtime,
         // Don't allocate it on stack. `DeviceAllocation` is referred to by
         // `GfxRuntime::launch_kernel`.
         std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
-          std::make_unique<taichi::lang::DeviceAllocation>(
-            devmem2devalloc(runtime2, arg.value.ndarray.memory));
+            std::make_unique<taichi::lang::DeviceAllocation>(
+                devmem2devalloc(runtime2, arg.value.ndarray.memory));
         if (devalloc->alloc_id + 1 == 0) {
           TI_WARN(
               "ignored attempt to launch kernel with ndarray memory of null "

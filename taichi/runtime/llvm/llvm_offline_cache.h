@@ -37,7 +37,7 @@ struct LlvmOfflineCache {
     llvm::Module *module{nullptr};
 
     // For cache cleaning
-    std::size_t byte_size{0}; // B
+    std::size_t size{0}; // byte
     std::time_t created_at{0}; // millsec
     std::time_t last_used_at{0}; // millsec
 
@@ -46,7 +46,7 @@ struct LlvmOfflineCache {
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
-    TI_IO_DEF(kernel_key, args, offloaded_task_list, byte_size, created_at, last_used_at);
+    TI_IO_DEF(kernel_key, args, offloaded_task_list, size, created_at, last_used_at);
   };
 
   struct FieldCacheData {
@@ -94,7 +94,7 @@ struct LlvmOfflineCache {
   };
 
   Version version{};
-  std::size_t byte_size{0}; 
+  std::size_t size{0}; // byte
 
   // TODO(zhanlue): we need a better identifier for each FieldCacheData
   // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
@@ -105,7 +105,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
-  TI_IO_DEF(version, byte_size, fields, kernels);
+  TI_IO_DEF(version, size, fields, kernels);
 };
 
 class LlvmOfflineCacheFileReader {
@@ -167,14 +167,16 @@ class LlvmOfflineCacheFileWriter {
             LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL,
             bool merge_with_old = false);
 
-  void clean_cache(const std::string &path, CleanCachePolicy policy);
-
   void set_no_mangle() {
     mangled_ = true;
   }
 
+  static void clean_cache(const std::string &path, CleanCachePolicy policy, int max_bytes, double cleaning_factor);
+
+  static CleanCachePolicy string_to_clean_cache_policy(const std::string &str);
+
  private:
-  void add_data(LlvmOfflineCache &&data);
+  void merge_with(LlvmOfflineCache &&data);
 
   void mangle_offloaded_task_name(
       const std::string &kernel_key,

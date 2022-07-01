@@ -374,36 +374,22 @@ def round(x):  # pylint: disable=redefined-builtin
 
 
 @unary
-def _floor(x):
-    return _unary_operation(_ti_core.expr_floor, math.floor, x)
-
-
-def floor(x, dtype: template() = float):
+def floor(x):
     """Return the floor of the input, element-wise.
-
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
-
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
-
-        dtype: (:mod:`~taichi.types.primitive_types`): the returned type, default to `float` (current `default_fp`).
-
     Returns:
-        The floor of each element in `x`, with specified data type.
-
+        The floor of each element in `x`, with float type.
     Example::
-
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([-1.1, 2.2, 3.])
-        >>>     y = ti.floor(x, ti.f64)
-        >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
+        >>>     x = ti.Matrix([3.14, -1.5])
+        >>>     y = ti.floor(x)
+        >>>     print(y)  # [3.0, -2.0]
     """
-    result = _floor(x)
-    if dtype != float:
-        result = cast(result, dtype)
-    return result
+    return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
 
 @unary

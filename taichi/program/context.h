@@ -2,7 +2,6 @@
 
 // Use relative path here for runtime compilation
 #include "taichi/inc/constants.h"
-#include "taichi/rhi/device.h"
 
 #if defined(TI_RUNTIME_HOST)
 namespace taichi {
@@ -10,6 +9,7 @@ namespace lang {
 #endif
 
 struct LLVMRuntime;
+struct DeviceAllocation;
 // "RuntimeContext" holds necessary data for kernel body execution, such as a
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
@@ -79,14 +79,14 @@ struct RuntimeContext {
   }
 
   void set_arg_texture(int arg_id, DeviceAllocation &alloc) {
-    args[arg_id] = (uint64_t)alloc.alloc_id;
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
   }
 
   void set_arg_devalloc(int arg_id,
                         DeviceAllocation &alloc,
                         const std::vector<int> &shape) {
-    args[arg_id] = (uint64_t)alloc.alloc_id;
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {
@@ -98,7 +98,7 @@ struct RuntimeContext {
                         DeviceAllocation &alloc,
                         const std::vector<int> &shape,
                         const std::vector<int> &element_shape) {
-    args[arg_id] = (uint64_t)alloc.alloc_id;
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
     set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() + element_shape.size() <= taichi_max_num_indices);
     for (int i = 0; i < shape.size(); i++) {

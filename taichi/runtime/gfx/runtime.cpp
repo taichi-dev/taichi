@@ -418,8 +418,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
           // NDArray / Texture
           if (host_ctx->args[i]) {
-            devalloc.alloc_id = (uint32_t)host_ctx->args[i];
-            devalloc.device = device_;
+            devalloc = *(DeviceAllocation *)(host_ctx->args[i]);
           }
 
           if (host_ctx->device_allocation_type[i] ==

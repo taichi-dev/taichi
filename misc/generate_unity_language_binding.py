@@ -152,10 +152,20 @@ def get_declr(x: EntryBase):
         c_function_param_perm = []
         function_param_perm = []
         for param in x.params:
-            if isinstance(param.type, BuiltInType) and (param.type.id == "const void*" or param.type.id == "void*"):
-                perm = ["byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "IntPtr", "float", "double"]
-                c_function_param_perm += [[f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {param.name}" for x in perm]]
-                function_param_perm += [[f"  {x}[] {param.name}" for x in perm]]
+            if isinstance(param.type,
+                          BuiltInType) and (param.type.id == "const void*"
+                                            or param.type.id == "void*"):
+                perm = [
+                    "byte", "sbyte", "short", "ushort", "int", "uint", "long",
+                    "ulong", "IntPtr", "float", "double"
+                ]
+                c_function_param_perm += [[
+                    f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {param.name}"
+                    for x in perm
+                ]]
+                function_param_perm += [[
+                    f"  {x}[] {param.name}" for x in perm
+                ]]
                 n *= len(perm)
             else:
                 c_function_param_perm += [[f"  {get_c_function_param(param)}"]]

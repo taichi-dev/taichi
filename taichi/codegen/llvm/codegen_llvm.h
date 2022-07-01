@@ -16,19 +16,14 @@ namespace lang {
 
 class CodeGenLLVM;
 
-class OffloadedTask {  // TODO(Lin): Remove this
+class OffloadedTask {
  public:
   std::string name;
-  CodeGenLLVM *codegen;
 
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(CodeGenLLVM *codegen);
-
-  void begin(const std::string &name);
-
-  void end();
+  OffloadedTask(const std::string &name);
 };
 
 class FunctionCreationGuard {
@@ -42,6 +37,13 @@ class FunctionCreationGuard {
   FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
+};
+
+struct LLVMCompiledData {  // TODO(Lin): Merge LLVMCompiledData and ModuleGenValue
+  std::vector<OffloadedTask> tasks; // TODO(Lin): Make this a single OffloadedTask in the future
+  std::unique_ptr<llvm::Module> module{nullptr};
+  LLVMCompiledData(std::vector<OffloadedTask> tasks, std::unique_ptr<llvm::Module> module) : tasks(std::move(tasks)),
+        module(std::move(module)) {}
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
@@ -121,23 +123,15 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  struct CompiledData {  // TODO(Lin): Merge CompiledData and ModuleGenValue
-    std::vector<OffloadedTask> offloaded_tasks;
-    std::unique_ptr<llvm::Module> llvm_module{nullptr};
-  };
+
   /**
    * @brief Runs the codegen and produces the compiled result.
    *
-   * After this call, `module` and `offloaded_tasks` will be moved.
+   * After this call, `module` and `tasks` will be moved.
    *
-   * @return CompiledData
+   * @return LLVMCompiledData
    */
-  virtual CompiledData run_compilation();  // FIXME: This function should not be
-                                           // inside class CodeGenLLVM.
-
-  virtual bool supports_offline_cache() const {
-    return false;
-  }
+  virtual LLVMCompiledData run_compilation();
 
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
@@ -403,8 +397,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~CodeGenLLVM() override = default;
 
  private:
-  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
-                                         CompiledData *data);
 
   void cache_module(const std::string &kernel_key);
 };

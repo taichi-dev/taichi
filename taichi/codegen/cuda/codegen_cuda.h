@@ -20,6 +20,9 @@ class CodeGenCUDA : public KernelCodeGen {
 #endif  // TI_WITH_LLVM
 
   FunctionType codegen() override;
+  bool supports_offline_cache() const override {
+    return true;
+  }
 };
 
 class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
@@ -32,8 +35,7 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const override;
+                       std::vector<LLVMCompiledData> &&data) const override;
 };
 
 TLANG_NAMESPACE_END

@@ -29,10 +29,9 @@ struct LlvmOfflineCache {
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    std::vector<OffloadedTaskCacheData> offloaded_task_list;
+    std::vector<LLVMCompiledData> offloaded_task_list;
 
-    std::unique_ptr<llvm::Module> owned_module{nullptr};
-    llvm::Module *module{nullptr};
+    std::vector<std::unique_ptr<llvm::Module>> owned_modules{nullptr};
 
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;

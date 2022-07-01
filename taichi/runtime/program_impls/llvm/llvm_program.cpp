@@ -98,7 +98,7 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
-    llvm::Module *module,
+    const std::vector<LLVMCompiledData> &modules,
     std::vector<LlvmLaunchArgInfo> &&args,
     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
         &&offloaded_task_list) {
@@ -107,7 +107,11 @@ void LlvmProgramImpl::cache_kernel(
   }
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
-  kernel_cache.owned_module = llvm::CloneModule(*module);
+  std::vector<std::unique_ptr<llvm::Module>> mods;
+  for (auto *mod : modules) {
+    mods.push_back(llvm::CloneModule(*mod));
+  }
+  kernel_cache.owned_modules = std::move(mods);
   kernel_cache.args = std::move(args);
   kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }

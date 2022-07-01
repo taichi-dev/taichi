@@ -210,7 +210,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
-  CompiledData run_compilation() override {
+  LLVMCompiledData run_compilation() override {
     // lower kernel
     if (!kernel->lowered()) {
       kernel->lower();
@@ -230,10 +230,10 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
           }
           return func_name == offloaded_task_name;
         });
-    CompiledData res;
-    res.offloaded_tasks.emplace_back(nullptr);
-    res.offloaded_tasks[0].name = offloaded_task_name;
-    res.llvm_module = std::move(this->module);
+    LLVMCompiledData res;
+    res.tasks.emplace_back(nullptr);
+    res.tasks[0].name = offloaded_task_name;
+    res.module = std::move(this->module);
     return res;
   }
 };
@@ -242,9 +242,9 @@ FunctionType CodeGenWASM::codegen() {
   TI_AUTO_PROF
   CodeGenLLVMWASM gen(kernel, ir);
   auto res = gen.run_compilation();
-  gen.tlctx->add_module(std::move(res.llvm_module));
+  gen.tlctx->add_module(std::move(res.module));
   auto kernel_symbol =
-      gen.tlctx->lookup_function_pointer(res.offloaded_tasks[0].name);
+      gen.tlctx->lookup_function_pointer(res.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
@@ -252,15 +252,15 @@ FunctionType CodeGenWASM::codegen() {
   };
 }
 
-std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
+LLVMCompiledData CodeGenWASM::modulegen(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
-  std::vector<std::string> name_list;
+  std::vector<OffloadedTask> name_list;
 
   auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir, std::move(module));
 
-  name_list.push_back(gen->init_taichi_kernel_function());
+  name_list.emplace_back(gen->init_taichi_kernel_function());
   gen->emit_to_module();
   gen->finalize_taichi_kernel_function();
 
@@ -273,7 +273,7 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return std::make_unique<ModuleGenValue>(std::move(gen->module), name_list);
+  return LLVMCompiledData(name_list, std::move(gen->module));
 }
 
 }  // namespace lang

@@ -38,8 +38,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto module_info = CodeGenWASM(kernel, nullptr).modulegen(std::move(module_));
   module_ = std::move(module_info->module);
 
-  for (auto &name : module_info->name_list)
-    name_list_.push_back(name);
+  for (auto &task : module_info->tasks)
+    name_list_.push_back(task.name);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,

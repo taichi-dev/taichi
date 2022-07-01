@@ -18,12 +18,15 @@ class CodeGenCPU : public KernelCodeGen {
 #ifdef TI_WITH_LLVM
   static std::unique_ptr<CodeGenLLVM> make_codegen_llvm(Kernel *kernel,
                                                         IRNode *ir);
-  std::unique_ptr<ModuleGenValue> modulegen(
+  LLVMCompiledData modulegen(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
 
   FunctionType codegen() override;
+  bool supports_offline_cache() const override {
+    return true;
+  }
 };
 
 class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
@@ -37,8 +40,7 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const override;
+                       std::vector<LLVMCompiledData> &&data) const override;
 };
 
 TLANG_NAMESPACE_END

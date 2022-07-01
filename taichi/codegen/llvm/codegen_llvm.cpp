@@ -8,7 +8,6 @@
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Linker/Linker.h"
-#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
@@ -22,15 +21,7 @@ TLANG_NAMESPACE_BEGIN
 
 // OffloadedTask
 
-OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-}
-
-void OffloadedTask::begin(const std::string &name) {
-  this->name = name;
-}
-
-void OffloadedTask::end() {
-  codegen->offloaded_tasks.push_back(*this);
+OffloadedTask::OffloadedTask(const std::string &name) : name(name) {
 }
 
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
@@ -1653,8 +1644,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
 
-  current_task = std::make_unique<OffloadedTask>(this);
-  current_task->begin(task_kernel_name);
+  current_task = std::make_unique<OffloadedTask>(task_kernel_name);
 
   for (auto &arg : func->args()) {
     kernel_args.push_back(&arg);
@@ -2328,14 +2318,14 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
+LLVMCompiledData CodeGenLLVM::run_compilation() {
   // const auto &config = prog->config;
   // std::string kernel_key =
   //     get_hashed_offline_cache_key(&kernel->program->config, kernel);
   // kernel->set_kernel_key_for_cache(kernel_key);
   // if (config.offline_cache && !config.async_mode &&
   //     this->supports_offline_cache() && !kernel->is_evaluator) {
-  //   CompiledData res;
+  //   LLVMCompiledData res;
   //   const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
   //   if (ok) {
   //     return res;
@@ -2356,41 +2346,9 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   //   cache_module(kernel_key);
   // }
 
-  CompiledData res;
-  res.offloaded_tasks = std::move(this->offloaded_tasks);
-  res.llvm_module = std::move(this->module);
-  return res;
+  return {std::move(this->offloaded_tasks), std::move(this->module)};
 }
 
-bool CodeGenLLVM::maybe_read_compilation_from_cache(
-    const std::string &kernel_key,
-    CompiledData *data) {
-  const auto &config = prog->config;
-  auto reader =
-      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
-  if (!reader) {
-    return false;
-  }
-
-  LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
-  auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return false;
-  }
-  this->module = std::move(cache_data.owned_module);
-  for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(this);
-    t.name = std::move(task.name);
-    t.block_dim = task.block_dim;
-    t.grid_dim = task.grid_dim;
-  }
-  kernel->set_from_offline_cache();
-  data->offloaded_tasks = std::move(this->offloaded_tasks);
-  data->llvm_module = std::move(this->module);
-  return true;
-}
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;

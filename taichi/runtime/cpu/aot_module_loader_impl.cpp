@@ -35,8 +35,7 @@ class AotModuleImpl : public LlvmAotModule {
     }
 
     CPUModuleToFunctionConverter converter{tlctx, program_};
-    return converter.convert(name, loaded.args, std::move(loaded.owned_module),
-                             std::move(offloaded_tasks));
+    return converter.convert(name, std::move(offloaded_tasks));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

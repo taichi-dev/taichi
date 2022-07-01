@@ -41,12 +41,19 @@ class KernelCodeGen {
                                                Stmt *stmt = nullptr);
 
   virtual FunctionType codegen() = 0;
+  virtual bool supports_offline_cache() const {
+    return false;
+  }
+
 #ifdef TI_WITH_LLVM
-  virtual std::unique_ptr<ModuleGenValue> modulegen(
+  virtual LLVMCompiledData modulegen(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) {
     TI_NOT_IMPLEMENTED
   }
+  bool maybe_read_compilation_from_cache(
+      const std::string &kernel_key,
+                                         std::vector<LLVMCompiledData> &data);
 #endif
 };
 
@@ -59,12 +66,10 @@ class ModuleToFunctionConverter {
 
   virtual FunctionType convert(const std::string &kernel_name,
                                const std::vector<LlvmLaunchArgInfo> &args,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const = 0;
+                               std::vector<LLVMCompiledData> &&data) const = 0;
 
   virtual FunctionType convert(const Kernel *kernel,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
+                               std::vector<LLVMCompiledData> &&data) const;
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};

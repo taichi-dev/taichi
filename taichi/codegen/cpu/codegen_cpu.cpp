@@ -10,6 +10,7 @@
 #include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -24,9 +25,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     TI_AUTO_PROF
   }
 
-  bool supports_offline_cache() const override {
-    return true;
-  }
+
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
@@ -197,7 +196,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
-    current_task->end();
+    offloaded_tasks.push_back(*current_task);
     current_task = nullptr;
     current_offload = nullptr;
   }
@@ -225,7 +224,21 @@ std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;
-
+  auto *llvm_prog = get_llvm_program(prog);
+  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  auto &config = prog->config;
+  std::string kernel_key =
+     get_hashed_offline_cache_key(&config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
+  if (config.offline_cache && !config.async_mode &&
+     this->supports_offline_cache() && !kernel->is_evaluator) {
+    std::vector<LLVMCompiledData> res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
+    if (ok) {
+      CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+      return converter.convert(kernel, std::move(res));
+    }
+  }
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }
@@ -235,23 +248,15 @@ FunctionType CodeGenCPU::codegen() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<std::unique_ptr<ModuleGenValue>> modules(offloads.size());
+  std::vector<LLVMCompiledData> modules(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
-  auto tlctx =
-      get_llvm_program(kernel->program)->get_llvm_context(kernel->arch);
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       modules[i] = this->modulegen(nullptr, offload->as<OffloadedStmt>());
-      tlctx->add_module(std::move(modules[i]->module));
-      TI_ASSERT(modules[i]->name_list.size() == 1);
-      auto *func_ptr = tlctx->lookup_function_pointer(modules[i]->name_list[0]);
-      TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found",
-                     modules[i]->name_list[0]);
-      task_funcs[i] = ((TaskFunc)(func_ptr));
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -262,57 +267,32 @@ FunctionType CodeGenCPU::codegen() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-  return [program = get_llvm_program(kernel->program),
-          args = infer_launch_args(kernel), kernel_name = kernel->name,
-          task_funcs](RuntimeContext &context) {
-    TI_TRACE("Launching kernel {}", kernel_name);
-    // For taichi ndarrays, context.args saves pointer to its
-    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array &&
-          context.device_allocation_type[i] !=
-              RuntimeContext::DevAllocType::kNone &&
-          context.array_runtime_sizes[i] > 0) {
-        DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
-        context.set_arg(i, host_ptr);
-        context.set_array_device_allocation_type(
-            i, RuntimeContext::DevAllocType::kNone);
-      }
-    }
-    for (auto task : task_funcs) {
-      task(&context);
-    }
-  };
+  CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+  return converter.convert(kernel, std::move(modules));
 }
 
-std::unique_ptr<ModuleGenValue> CodeGenCPU::modulegen(
+LLVMCompiledData CodeGenCPU::modulegen(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   CodeGenLLVMCPU gen(kernel, stmt);
-  auto compiled_res = gen.run_compilation();
-  std::vector<std::string> namelist;
-  for (auto &offload : compiled_res.offloaded_tasks) {
-    namelist.push_back(offload.name);
-  }
-  return std::make_unique<ModuleGenValue>(std::move(compiled_res.llvm_module),
-                                          namelist);
+  return gen.run_compilation();
 }
 
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
-  tlctx_->add_module(std::move(mod));
+    std::vector<LLVMCompiledData> &&data) const {
+  for (auto &datum : data) {
+    tlctx_->add_module(std::move(datum.module));
+  }
 
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
-  task_funcs.reserve(tasks.size());
-  for (auto &task : tasks) {
-    auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
-    TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
+  task_funcs.reserve(data.size());
+  for (auto &datum : data) {
+    auto *func_ptr = tlctx_->lookup_function_pointer(datum.tasks[0].name);
+    TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
+                   datum.tasks[0].name);
     task_funcs.push_back((TaskFunc)(func_ptr));
   }
   // Do NOT capture `this`...

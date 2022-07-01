@@ -52,7 +52,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void cache_kernel(const std::string &kernel_key,
-                    llvm::Module *module,
+                    const std::vector<LLVMCompiledData> &modules,
                     std::vector<LlvmLaunchArgInfo> &&args,
                     std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
                         &&offloaded_task_list);
@@ -255,7 +255,7 @@ class LlvmProgramImpl : public ProgramImpl {
   //
   // Make sure the above mentioned objects are destructed in order.
   ~LlvmProgramImpl() {
-    // Explicitly enforce "LlvmOfflineCache::CachedKernelData::owned_module"
+    // Explicitly enforce "LlvmOfflineCache::CachedKernelData::owned_modules"
     // destructs before
     // "LlvmRuntimeExecutor::TaichiLLVMContext::ThreadSafeContext"
 

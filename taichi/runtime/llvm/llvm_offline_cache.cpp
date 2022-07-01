@@ -85,18 +85,16 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   }
 
   auto &kernel_data = itr->second;
-  if (kernel_data.owned_module == nullptr) {
+  if (kernel_data.owned_modules == nullptr) {
     const std::string filename_prefix = path_ + "/" + key;
-    kernel_data.owned_module = load_module(filename_prefix, key, llvm_ctx);
-    TI_ASSERT(kernel_data.owned_module != nullptr);
-    kernel_data.module = kernel_data.owned_module.get();
+    kernel_data.owned_modules = load_module(filename_prefix, key, llvm_ctx);
+    TI_ASSERT(kernel_data.owned_modules != nullptr);
   }
 
   res.kernel_key = key;
   res.args = kernel_data.args;
   res.offloaded_task_list = kernel_data.offloaded_task_list;
-  res.owned_module = llvm::CloneModule(*kernel_data.module);
-  res.module = res.owned_module.get();
+  res.owned_modules = llvm::CloneModule(*kernel_data.owned_modules);
   return true;
 }
 
@@ -139,10 +137,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           writer(llvm_os);
         };
     {
-      auto *mod = v.module;
-      if (!mod) {
-        mod = v.owned_module.get();
-      }
+      auto *mod = v.owned_modules.get();
       TI_ASSERT(mod != nullptr);
 
       mangle_offloaded_task_name(k, mod, v.offloaded_task_list);

@@ -472,7 +472,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -481,7 +481,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = 1;
       current_task->block_dim = 1;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -490,7 +490,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
   }
@@ -614,7 +614,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->block_dim = stmt->block_dim;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     current_offload = nullptr;
@@ -734,15 +734,15 @@ FunctionType CodeGenCUDA::codegen() {
   auto *llvm_prog = get_llvm_program(kernel->program);
   CUDAModuleToFunctionConverter converter{gen.tlctx, llvm_prog};
 
-  return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
-                           std::move(compiled_res.offloaded_tasks));
+  return converter.convert(this->kernel, {std::move(compiled_res)});
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
+    std::vector<LLVMCompiledData> &&data) const {
+  auto &mod = data[0].module;
+  auto &tasks = data[0].tasks;
 #ifdef TI_WITH_CUDA
   for (const auto &task : tasks) {
     llvm::Function *func = mod->getFunction(task.name);

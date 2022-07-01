@@ -20,7 +20,7 @@ class CodeGenWASM : public KernelCodeGen {
   FunctionType codegen() override;
 
 #ifdef TI_WITH_LLVM
-  std::unique_ptr<ModuleGenValue> modulegen(
+  LLVMCompiledData modulegen(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 #endif

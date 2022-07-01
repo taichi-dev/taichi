@@ -750,6 +750,10 @@
                     "type": "function",
                     "parameters": [
                         {
+                            "name": "@return",
+                            "type": "void*"
+                        },
+                        {
                             "type": "handle.runtime"
                         }
                     ]

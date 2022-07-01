@@ -52,7 +52,7 @@ tix_copy_memory_host_to_device_unity(TiRuntime runtime,
                                      uint64_t src_offset);
 
 // function.submit_async
-TI_DLL_EXPORT void TI_API_CALL tix_submit_async_unity(TiRuntime runtime);
+TI_DLL_EXPORT void *TI_API_CALL tix_submit_async_unity(TiRuntime runtime);
 
 #ifdef __cplusplus
 }  // extern "C"

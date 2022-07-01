@@ -15,6 +15,7 @@
   "vulkan"          : "Vulkan backend",
   "dx11"            : "DirectX 11 backend",
   "spirv"           : "SPIR-V common codegen",
+  "gfx"             : "Common graphics runtime",
   "wasm"            : "WebAssembly backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",

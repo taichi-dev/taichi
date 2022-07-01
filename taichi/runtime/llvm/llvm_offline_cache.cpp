@@ -4,8 +4,10 @@
 
 #if __has_include(<filesystem>)
 #include <filesystem>
+namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
 #include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 #else
 error "Missing the <filesystem> header."
 #endif  //  __has_include(<filesystem>)
@@ -266,8 +268,6 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
                                              CleanCachePolicy policy,
                                              int max_bytes,
                                              double cleaning_factor) {
-  namespace fs = std::filesystem;
-
   if (policy == (std::size_t)NotClean) {
     return;
   }

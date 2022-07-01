@@ -1,7 +1,14 @@
 #include "llvm_offline_cache.h"
 
 #include <queue>
+
+#if __has_include(<filesystem>)
 #include <filesystem>
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+#else
+error "Missing the <filesystem> header."
+#endif  //  __has_include(<filesystem>)
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"

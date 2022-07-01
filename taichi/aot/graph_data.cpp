@@ -7,13 +7,18 @@
 namespace taichi {
 namespace lang {
 namespace aot {
-void CompiledGraph::run(
-    const std::unordered_map<std::string, IValue> &args) const {
+void CompiledGraph::run(const std::unordered_map<std::string, IValue> &args,
+                        LLVMRuntime *llvm_runtime) const {
   RuntimeContext ctx;
   for (const auto &dispatch : dispatches) {
     memset(&ctx, 0, sizeof(RuntimeContext));
 
+    if (llvm_runtime) {
+      ctx.runtime = llvm_runtime;
+    }
+
     TI_ASSERT(dispatch.compiled_kernel);
+
     // Populate args metadata into RuntimeContext
     const auto &symbolic_args_ = dispatch.symbolic_args;
     for (int i = 0; i < symbolic_args_.size(); ++i) {
@@ -27,7 +32,15 @@ void CompiledGraph::run(
         TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
+
+        int total_array_size = 1;
+        for (const auto &dim : arr->total_shape()) {
+          total_array_size *= dim;
+        }
+        total_array_size *= data_type_size(arr->dtype);
+
         set_runtime_ctx_ndarray(&ctx, i, arr);
+        ctx.set_array_runtime_size(i, total_array_size);
       } else if (ival.tag == aot::ArgKind::kScalar) {
         ctx.set_arg(i, ival.val);
       } else {

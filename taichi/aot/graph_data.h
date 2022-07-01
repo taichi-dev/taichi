@@ -13,6 +13,9 @@ namespace lang {
 class AotModuleBuilder;
 class Ndarray;
 struct RuntimeContext;
+
+struct LLVMRuntime;
+
 namespace aot {
 // Currently only scalar, matrix and ndarray are supported.
 enum class ArgKind { kScalar, kMatrix, kNdarray, kUnknown };
@@ -113,7 +116,8 @@ struct CompiledDispatch {
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
 
-  void run(const std::unordered_map<std::string, IValue> &args) const;
+  void run(const std::unordered_map<std::string, IValue> &args,
+           LLVMRuntime *llvm_runtime = nullptr) const;
 
   TI_IO_DEF(dispatches);
 };

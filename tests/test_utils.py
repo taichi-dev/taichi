@@ -13,16 +13,18 @@ from taichi.lang.misc import is_arch_supported
 import taichi as ti
 
 __aot_test_cases = {
-    "LlvmAotTest.CpuKernel":
-    os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cpu.py'),
-    "LlvmAotTest.CudaKernel":
-    os.path.join('cpp', 'backends', 'llvm', 'kernel_aot_cuda.py'),
-    "LlvmAotTest.CpuField":
-    os.path.join('cpp', 'backends', 'llvm', 'field_aot_cpu.py'),
-    "LlvmAotTest.CudaField":
-    os.path.join('cpp', 'backends', 'llvm', 'field_aot_cuda.py'),
-    "AotLoadGraph.Mpm88":
-    os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'),
+    #"LlvmAotTest.CpuKernel":
+    #os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_cpu.py'),
+    #"LlvmAotTest.CudaKernel":
+    #os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_cuda.py'),
+    #"LlvmAotTest.CpuField":
+    #os.path.join('cpp', 'aot', 'llvm', 'field_aot_cpu.py'),
+    #"LlvmAotTest.CudaField":
+    #os.path.join('cpp', 'aot', 'llvm', 'field_aot_cuda.py'),
+    #"AotLoadGraph.Mpm88":
+    #os.path.join('cpp', 'aot', 'vulkan', 'mpm88_graph_aot_vulkan.py'),
+    "LlvmAotGraph.CpuTest":
+    os.path.join('cpp', 'aot', 'temp', 'mpm88_graph_aot_test.py'),
 }
 
 

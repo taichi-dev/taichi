@@ -3,9 +3,9 @@ import os
 import taichi as ti
 
 
-def compile_mpm88_graph():
-    ti.init(ti.vulkan)
-    if ti.lang.impl.current_cfg().arch != ti.vulkan:
+def compile_mpm88_graph(arch):
+    ti.init(arch)
+    if ti.lang.impl.current_cfg().arch != arch:
         return
     n_particles = 8192
     n_grid = 128
@@ -160,10 +160,7 @@ def compile_mpm88_graph():
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
-    mod = ti.aot.Module(ti.vulkan)
+    mod = ti.aot.Module(arch)
     mod.add_graph('init', g_init)
     mod.add_graph('update', g_update)
     mod.save(tmpdir, '')
-
-
-compile_mpm88_graph()

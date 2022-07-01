@@ -490,13 +490,12 @@ def create_field_member(dtype, name):
     dtype = cook_dtype(dtype)
 
     # primal
-    try:
-        x = Expr(get_runtime().prog.make_id_expr(""))
-    except:
+    prog = get_runtime().prog
+    if prog is None:
         raise TaichiRuntimeError(
-            "Cannont create field, maybe you forgot to call `ti.init()` first?"
-        )
+            "Cannont create field, maybe you forgot to call `ti.init()` first?")
 
+    x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)

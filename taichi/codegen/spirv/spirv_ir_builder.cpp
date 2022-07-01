@@ -1,5 +1,5 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
-#include "taichi/backends/dx/dx_device.h"
+#include "taichi/rhi/dx/dx_device.h"
 
 namespace taichi {
 namespace lang {

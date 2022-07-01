@@ -2347,9 +2347,8 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
-  // Updates LlvmProgramImpl->cache_data_
-  // to save the compiled kernel information for
-  // accessive uses in AOT or CGraph.
+  // Updates LlvmProgramImpl->cache_data_ to save the compiled kernel
+  // information for successive uses in AOT or CGraph.
   if (!kernel->is_evaluator) {
     cache_module(kernel_key);
   }

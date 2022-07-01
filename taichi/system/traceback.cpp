@@ -205,7 +205,7 @@ void print_traceback() {
   // TODO: print line number instead of offset
   // (https://stackoverflow.com/questions/8278691/how-to-fix-backtrace-line-number-error-in-c)
 
-  // record stack trace upto 128 frames
+  // record stack trace up to 128 frames
   void *callstack[128] = {};
   // collect stack frames
   int frames = backtrace((void **)callstack, 128);

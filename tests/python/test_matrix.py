@@ -163,7 +163,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_non_constant_index_numpy():
     @ti.kernel
     def func1(a: ti.types.ndarray(element_dim=2)):

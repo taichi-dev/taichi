@@ -314,7 +314,7 @@ index does the i-th virtual index** correspond to?
 
 Each `SNode` can have a different virtual-to-physical mapping.
 `physical_index_position[i] == -1` means the `i`-th virtual index does
-not corrspond to any physical index in this `SNode`.
+not correspond to any physical index in this `SNode`.
 
 `SNode` s in handy dense fields (i.e.,
 `a = ti.field(ti.i32, shape=(128, 256, 512))`) have **trivial**

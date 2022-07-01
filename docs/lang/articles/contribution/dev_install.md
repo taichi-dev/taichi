@@ -211,7 +211,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 <TabItem value="windows">
 
-Add an environment variable `LLVM_DIR` with value `<Path to the extrated LLVM binary>`
+Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM binary>`
 
 </TabItem>
 
@@ -275,7 +275,7 @@ cmake --build . --target=INSTALL --config=Release
 ```
 
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
-2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
+2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folder **CMakePredefinedTargets** in the Solution Explorer window).
 3. If you use MSVC 2019+, ensure that you use **C++17** for the `INSTALL` project.
 4. When the build completes, add an environment variable `LLVM_DIR` with value `<PATH_TO_BUILD>/build/installed/lib/cmake/llvm`.
 

@@ -124,7 +124,7 @@ struct KernelAttributes {
   OffloadedTaskType task_type;
 
   struct RangeForAttributes {
-    // |begin| has differen meanings depending on |const_begin|:
+    // |begin| has different meanings depending on |const_begin|:
     // * true : It is the left boundary of the loop known at compile time.
     // * false: It is the offset of the begin in the global tmps buffer.
     //

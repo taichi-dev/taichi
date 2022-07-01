@@ -422,7 +422,7 @@ class _UninitializedRootFieldsBuilder:
 # gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
 # writing to it is would result in less for maintenance cost.
 #
-# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+# `_root_fb` will be overridden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
@@ -490,7 +490,13 @@ def create_field_member(dtype, name):
     dtype = cook_dtype(dtype)
 
     # primal
-    x = Expr(get_runtime().prog.make_id_expr(""))
+    prog = get_runtime().prog
+    if prog is None:
+        raise TaichiRuntimeError(
+            "Cannont create field, maybe you forgot to call `ti.init()` first?"
+        )
+
+    x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
@@ -614,7 +620,7 @@ def ti_format_list_to_content_entries(raw):
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
-        yield '['  # distinguishing tuple & list will increase maintainance cost
+        yield '['  # distinguishing tuple & list will increase maintenance cost
         for i, v in enumerate(_var):
             if i:
                 yield ', '

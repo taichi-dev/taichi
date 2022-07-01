@@ -6,11 +6,11 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/gfx/runtime.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/device.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
-#include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/rhi/device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device_creator.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_utils.h"
 #endif
 
 using namespace taichi;

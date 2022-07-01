@@ -1,7 +1,7 @@
 #include "memory_pool.h"
 #include "taichi/system/timer.h"
-#include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_device.h"
 
 namespace taichi {
 namespace lang {

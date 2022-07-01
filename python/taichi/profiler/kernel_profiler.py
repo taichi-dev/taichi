@@ -422,7 +422,7 @@ def query_kernel_profiler_info(name):
         >>> for i in range(100):
         >>>     fill()
         >>> query_result = ti.profiler.query_kernel_profiler_info(fill.__name__) #[2]
-        >>> print("kernel excuted times =",query_result.counter)
+        >>> print("kernel executed times =",query_result.counter)
         >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
         >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
         >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
@@ -510,7 +510,7 @@ def set_kernel_profiler_metrics(metric_list=default_cupti_metrics):
         >>>     for i in x:
         >>>         y[None] += x[i]
 
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
+        >>> # In the case of not parameter, Taichi will print its pre-defined metrics list
         >>> ti.profiler.get_predefined_cupti_metrics()
         >>> # get Taichi pre-defined metrics
         >>> profiling_metrics = ti.profiler.get_predefined_cupti_metrics('shared_access')
@@ -558,7 +558,7 @@ def collect_kernel_profiler_metrics(metric_list=default_cupti_metrics):
         >>>     for i in x:
         >>>         y[None] += x[i]
 
-        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
+        >>> # In the case of not parameter, Taichi will print its pre-defined metrics list
         >>> ti.profiler.get_predefined_cupti_metrics()
         >>> # get Taichi pre-defined metrics
         >>> profiling_metrics = ti.profiler.get_predefined_cupti_metrics('device_utilization')

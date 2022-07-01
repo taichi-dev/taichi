@@ -2,7 +2,7 @@
 
 #include <string>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi {
 namespace ui {

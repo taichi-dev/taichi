@@ -7,12 +7,11 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/codegen.h"
-#include "taichi/backends/cpu/aot_module_builder_impl.h"
-#include "taichi/analysis/offline_cache_util.h"
+#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/aot_module_builder_impl.h"
-#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/runtime/cuda/aot_module_builder_impl.h"
+#include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 
 namespace taichi {

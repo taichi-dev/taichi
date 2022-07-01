@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/backends/device.h>
+#include <taichi/rhi/device.h>
 
 TI_UI_NAMESPACE_BEGIN
 namespace vulkan {

@@ -213,7 +213,7 @@ def test_decorated_primal_missing_decorator():
         for i in range(n):
             ti.atomic_add(total[None], x[i] * mul)
 
-    def foward(mul):
+    def forward(mul):
         func(mul)
         func(mul)
 

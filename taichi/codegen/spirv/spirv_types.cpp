@@ -98,7 +98,7 @@ size_t SmallVectorType::memory_alignment_size(
 
   if (ctx.is<STD430LayoutContext>() || ctx.is<STD140LayoutContext>()) {
     // For STD140 / STD430, small vectors are Power-of-Two aligned
-    // In C or "Scalar block layout", blocks are aligned to its compoment
+    // In C or "Scalar block layout", blocks are aligned to its component
     // alignment
     if (num_elements_ == 2) {
       align *= 2;
@@ -384,15 +384,40 @@ class Translate2Spirv : public TypeVisitor {
   }
 
   void visit_int_type(const IntType *type) override {
-    SType vt = spir_builder_->get_null_type();
-    spir_builder_->declare_global(spv::OpTypeInt, vt, type->num_bits(),
-                                  type->is_signed() ? 1 : 0);
+    SType vt;
+    if (type->is_signed()) {
+      if (type->num_bits() == 8) {
+        vt = spir_builder_->i8_type();
+      } else if (type->num_bits() == 16) {
+        vt = spir_builder_->i16_type();
+      } else if (type->num_bits() == 32) {
+        vt = spir_builder_->i32_type();
+      } else if (type->num_bits() == 64) {
+        vt = spir_builder_->i64_type();
+      }
+    } else {
+      if (type->num_bits() == 8) {
+        vt = spir_builder_->u8_type();
+      } else if (type->num_bits() == 16) {
+        vt = spir_builder_->u16_type();
+      } else if (type->num_bits() == 32) {
+        vt = spir_builder_->u32_type();
+      } else if (type->num_bits() == 64) {
+        vt = spir_builder_->u64_type();
+      }
+    }
     ir_node_2_spv_value[type] = vt.id;
   }
 
   void visit_float_type(const FloatType *type) override {
-    SType vt = spir_builder_->get_null_type();
-    spir_builder_->declare_global(spv::OpTypeFloat, vt, type->num_bits());
+    SType vt;
+    if (type->num_bits() == 16) {
+      vt = spir_builder_->f16_type();
+    } else if (type->num_bits() == 32) {
+      vt = spir_builder_->f32_type();
+    } else if (type->num_bits() == 64) {
+      vt = spir_builder_->f64_type();
+    }
     ir_node_2_spv_value[type] = vt.id;
   }
 

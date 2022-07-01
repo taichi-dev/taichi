@@ -46,7 +46,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_annotated(ctx, target, value, is_static_assign,
                                annotation):
-        """Build an annotated assginment like this: target: annotation = value.
+        """Build an annotated assignment like this: target: annotation = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
@@ -129,7 +129,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_assign_basic(ctx, target, value, is_static_assign):
-        """Build basic assginment like this: target = value.
+        """Build basic assignment like this: target = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.

@@ -736,7 +736,7 @@ class MakeAdjoint : public ADTransform {
       // GlobalLoadStmt is not inside a range-for
       // Code sample:
       // a and b require grad
-      // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
+      // Case 1 (GlobalLoadStmt is outside the for-loop, compute 5 times and
       // accumulate once, alloca history value is needed):
       // for i in range(5):
       //     p = a[i]
@@ -1041,12 +1041,12 @@ class MakeDual : public ADTransform {
   using ADTransform::visit;
   Stmt *current_stmt;
   Block *current_block;
-  // Block *alloca_block;
+  Block *alloca_block;
   std::map<Stmt *, Stmt *> dual_stmt;
 
   MakeDual(Block *block) {
     current_stmt = nullptr;
-    // alloca_block = block;
+    alloca_block = block;
     current_block = block;
   }
 
@@ -1100,9 +1100,8 @@ class MakeDual : public ADTransform {
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       dual_stmt[stmt] = alloca.get();
 
-      // TODO: check whether this is correct when in for-loop
-      // check whether each stmt has a parent...
-      current_stmt->parent->insert(std::move(alloca), 0);
+      // TODO: check whether there are any edge cases for the alloca_block
+      alloca_block->insert(std::move(alloca), 0);
     }
     return dual_stmt[stmt];
   }
@@ -1137,6 +1136,12 @@ class MakeDual : public ADTransform {
       // d (x * y) = y * dx + x * dy
       accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
       accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    } else if (bin->op_type == BinaryOpType::mod) {
+      // Do nothing
+    } else if (bin->op_type == BinaryOpType::div) {
+      accumulate(bin, div(dual(bin->lhs), bin->rhs));
+      accumulate(bin, negate(div(mul(dual(bin->rhs), bin->lhs),
+                                 mul(bin->rhs, bin->rhs))));
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
@@ -1176,14 +1181,17 @@ class MakeDual : public ADTransform {
     for (auto &stmt : for_stmt->body->statements) {
       statements.push_back(stmt.get());
     }
+    auto previous_alloca_block = alloca_block;
+    alloca_block = for_stmt->body.get();
     for (auto stmt : statements) {
       current_stmt = stmt;
       stmt->accept(this);
     }
+    alloca_block = previous_alloca_block;
   }
 
   void visit(StructForStmt *for_stmt) override {
-    // alloca_block = for_stmt->body.get();
+    alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
   }
 

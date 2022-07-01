@@ -47,7 +47,9 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
     dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
                           get_kernel(dispatch.kernel_name)});
   }
-  aot::CompiledGraph graph{dispatches};
+
+  aot::CompiledGraph graph = aot::CompiledGraph({dispatches});
+  program_->prepare_runtime_context(&graph.ctx_);
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 

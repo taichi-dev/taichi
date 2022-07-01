@@ -1,21 +1,14 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/program/ndarray.h"
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 namespace taichi {
 namespace lang {
 namespace aot {
-void CompiledGraph::run(const std::unordered_map<std::string, IValue> &args,
-                        LLVMRuntime *llvm_runtime) const {
-  RuntimeContext ctx;
-  for (const auto &dispatch : dispatches) {
-    memset(&ctx, 0, sizeof(RuntimeContext));
 
-    if (llvm_runtime) {
-      ctx.runtime = llvm_runtime;
-    }
+void CompiledGraph::run(
+    const std::unordered_map<std::string, IValue> &args) const {
+  for (const auto &dispatch : dispatches) {
+    RuntimeContext ctx = ctx_;
 
     TI_ASSERT(dispatch.compiled_kernel);
 
@@ -33,14 +26,7 @@ void CompiledGraph::run(const std::unordered_map<std::string, IValue> &args,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
 
-        int total_array_size = 1;
-        for (const auto &dim : arr->total_shape()) {
-          total_array_size *= dim;
-        }
-        total_array_size *= data_type_size(arr->dtype);
-
         set_runtime_ctx_ndarray(&ctx, i, arr);
-        ctx.set_array_runtime_size(i, total_array_size);
       } else if (ival.tag == aot::ArgKind::kScalar) {
         ctx.set_arg(i, ival.val);
       } else {

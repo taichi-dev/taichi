@@ -3,11 +3,11 @@
 #include "llvm/IR/Module.h"
 
 #include "taichi/program/program.h"
-#include "taichi/runtime/llvm/aot_graph_data.h"
-#include "taichi/codegen/llvm/struct_llvm.h"
-#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/codegen.h"
-#include "taichi/backends/cpu/aot_module_builder_impl.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
+#include "taichi/runtime/llvm/aot_graph_data.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/runtime/cuda/aot_module_builder_impl.h"

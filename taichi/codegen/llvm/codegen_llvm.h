@@ -39,11 +39,15 @@ class FunctionCreationGuard {
   ~FunctionCreationGuard();
 };
 
-struct LLVMCompiledData {  // TODO(Lin): Merge LLVMCompiledData and ModuleGenValue
-  std::vector<OffloadedTask> tasks; // TODO(Lin): Make this a single OffloadedTask in the future
+struct LLVMCompiledData {  // TODO(Lin): Merge LLVMCompiledData and
+                           // ModuleGenValue
+  std::vector<OffloadedTask>
+      tasks;  // TODO(Lin): Make this a single OffloadedTask in the future
   std::unique_ptr<llvm::Module> module{nullptr};
-  LLVMCompiledData(std::vector<OffloadedTask> tasks, std::unique_ptr<llvm::Module> module) : tasks(std::move(tasks)),
-        module(std::move(module)) {}
+  LLVMCompiledData(std::vector<OffloadedTask> tasks,
+                   std::unique_ptr<llvm::Module> module)
+      : tasks(std::move(tasks)), module(std::move(module)) {
+  }
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
@@ -122,7 +126,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual void emit_to_module();
 
   void eliminate_unused_functions();
-
 
   /**
    * @brief Runs the codegen and produces the compiled result.
@@ -397,7 +400,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~CodeGenLLVM() override = default;
 
  private:
-
   void cache_module(const std::string &kernel_key);
 };
 

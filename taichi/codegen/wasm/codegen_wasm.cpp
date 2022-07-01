@@ -243,8 +243,7 @@ FunctionType CodeGenWASM::codegen() {
   CodeGenLLVMWASM gen(kernel, ir);
   auto res = gen.run_compilation();
   gen.tlctx->add_module(std::move(res.module));
-  auto kernel_symbol =
-      gen.tlctx->lookup_function_pointer(res.tasks[0].name);
+  auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
@@ -252,9 +251,8 @@ FunctionType CodeGenWASM::codegen() {
   };
 }
 
-LLVMCompiledData CodeGenWASM::modulegen(
-    std::unique_ptr<llvm::Module> &&module,
-    OffloadedStmt *stmt) {
+LLVMCompiledData CodeGenWASM::modulegen(std::unique_ptr<llvm::Module> &&module,
+                                        OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
 

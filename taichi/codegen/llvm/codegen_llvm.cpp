@@ -2349,7 +2349,6 @@ LLVMCompiledData CodeGenLLVM::run_compilation() {
   return {std::move(this->offloaded_tasks), std::move(this->module)};
 }
 
-
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 

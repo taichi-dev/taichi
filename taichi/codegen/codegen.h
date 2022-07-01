@@ -51,8 +51,7 @@ class KernelCodeGen {
       OffloadedStmt *stmt = nullptr) {
     TI_NOT_IMPLEMENTED
   }
-  bool maybe_read_compilation_from_cache(
-      const std::string &kernel_key,
+  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
                                          std::vector<LLVMCompiledData> &data);
 #endif
 };

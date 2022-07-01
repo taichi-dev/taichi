@@ -25,8 +25,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     TI_AUTO_PROF
   }
 
-
-
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
 
@@ -227,11 +225,10 @@ FunctionType CodeGenCPU::codegen() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
-  std::string kernel_key =
-     get_hashed_offline_cache_key(&config, kernel);
+  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
-     this->supports_offline_cache() && !kernel->is_evaluator) {
+      this->supports_offline_cache() && !kernel->is_evaluator) {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
@@ -271,9 +268,8 @@ FunctionType CodeGenCPU::codegen() {
   return converter.convert(kernel, std::move(modules));
 }
 
-LLVMCompiledData CodeGenCPU::modulegen(
-    std::unique_ptr<llvm::Module> &&module,
-    OffloadedStmt *stmt) {
+LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
+                                       OffloadedStmt *stmt) {
   CodeGenLLVMCPU gen(kernel, stmt);
   return gen.run_compilation();
 }

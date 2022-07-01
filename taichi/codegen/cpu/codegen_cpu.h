@@ -18,9 +18,8 @@ class CodeGenCPU : public KernelCodeGen {
 #ifdef TI_WITH_LLVM
   static std::unique_ptr<CodeGenLLVM> make_codegen_llvm(Kernel *kernel,
                                                         IRNode *ir);
-  LLVMCompiledData modulegen(
-      std::unique_ptr<llvm::Module> &&module = nullptr,
-      OffloadedStmt *stmt = nullptr) override;
+  LLVMCompiledData modulegen(std::unique_ptr<llvm::Module> &&module = nullptr,
+                             OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
 
   FunctionType codegen() override;

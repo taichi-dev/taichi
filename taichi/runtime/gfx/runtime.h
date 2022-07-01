@@ -4,7 +4,7 @@
 #include <vector>
 #include <chrono>
 
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
@@ -100,6 +100,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
 
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
+
   void synchronize();
 
   StreamSemaphore flush();
@@ -114,6 +116,9 @@ class TI_DLL_EXPORT GfxRuntime {
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;
+
+  void ensure_current_cmdlist();
+  void submit_current_cmdlist_if_timeout();
 
   void init_nonroot_buffers();
 

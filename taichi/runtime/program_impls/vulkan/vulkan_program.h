@@ -3,12 +3,12 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
-#include "taichi/backends/vulkan/vulkan_utils.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_device_creator.h"
+#include "taichi/rhi/vulkan/vulkan_utils.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
 #include "taichi/system/memory_pool.h"
@@ -47,7 +47,9 @@ class VulkanProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void synchronize() override {
-    vulkan_runtime_->synchronize();
+    if (vulkan_runtime_) {
+      vulkan_runtime_->synchronize();
+    }
   }
 
   StreamSemaphore flush() override {

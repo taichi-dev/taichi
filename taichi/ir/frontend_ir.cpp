@@ -212,7 +212,7 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   }
 
   // Some backends such as vulkan doesn't support fp64
-  // Try not promoting to fp64 unless neccessary
+  // Try not promoting to fp64 unless necessary
   if (type == BinaryOpType::atan2) {
     if (lhs_type == PrimitiveType::f64 || rhs_type == PrimitiveType::f64) {
       ret_type = PrimitiveType::f64;

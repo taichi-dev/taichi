@@ -66,7 +66,7 @@ are specified, then the one in the environment variable will
 
 :::note
 
-If `ti.init` is called twice, then the configuation in first invocation
+If `ti.init` is called twice, then the configuration in first invocation
 will be completely discarded, e.g.:
 
 ```python {1,3}

@@ -302,7 +302,7 @@ AssertionError:
 ```
 The error message can be verbose and scary. However, many stack frames reveal
 Taichi compiler implementation details, which are too noisy for debugging.
-In current verison, you could choose to supress the level of traceback messages by setting `sys.tracebacklimit`,
+In current version, you could choose to suppress the level of traceback messages by setting `sys.tracebacklimit`,
 which makes the stack traceback from Taichi-scope more intuitive:
 
 ```python {2}

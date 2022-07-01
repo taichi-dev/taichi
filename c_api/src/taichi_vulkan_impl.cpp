@@ -1,6 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
 
 #ifdef TI_WITH_VULKAN
@@ -102,6 +102,11 @@ TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
   size_t root_size = aot_module->get_root_size();
   params.runtime->add_root_buffer(root_size);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
+}
+void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
+                                const taichi::lang::DevicePtr &src,
+                                size_t size) {
+  get_gfx_runtime().buffer_copy(dst, src, size);
 }
 void VulkanRuntime::submit() {
   get_gfx_runtime().flush();

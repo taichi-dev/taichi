@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/struct/snode_tree.h"
 

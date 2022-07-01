@@ -379,7 +379,6 @@ def _floor(x):
 
 def floor(x, dtype=float):
     """Return the floor of the input, element-wise.
-
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
 
     Args:
@@ -392,7 +391,6 @@ def floor(x, dtype=float):
         The floor of each element in `x`, with specified data type.
 
     Example::
-
         >>> @ti.kernel
         >>> def test():
         >>>     x = ti.Matrix([-1.1, 2.2, 3.])

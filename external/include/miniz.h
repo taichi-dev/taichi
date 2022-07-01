@@ -1296,7 +1296,7 @@ mz_bool mz_zip_writer_add_from_zip_reader(mz_zip_archive *pZip, mz_zip_archive *
 /* An archive must be manually finalized by calling this function for it to be valid. */
 mz_bool mz_zip_writer_finalize_archive(mz_zip_archive *pZip);
 
-/* Finalizes a heap archive, returning a poiner to the heap block and its size. */
+/* Finalizes a heap archive, returning a pointer to the heap block and its size. */
 /* The heap block will be allocated using the mz_zip_archive's alloc/realloc callbacks. */
 mz_bool mz_zip_writer_finalize_heap_archive(mz_zip_archive *pZip, void **ppBuf, size_t *pSize);
 

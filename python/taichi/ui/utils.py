@@ -102,7 +102,7 @@ def check_ggui_availability():
         return
 
     try:
-        # Try identifing the reason
+        # Try identifying the reason
         import taichi  # pylint: disable=import-outside-toplevel
         wheel_tag = try_get_wheel_tag(taichi)
         if platform.system(

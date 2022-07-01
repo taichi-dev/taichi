@@ -165,7 +165,7 @@ i32 test_active_mask(RuntimeContext *context) {
   auto remaining = active_mask;
   while (remaining) {
     auto leader = cttz_i32(remaining);
-    taichi_printf(rt, "currnet leader %d bid %d tid %d\n", leader, block_idx(),
+    taichi_printf(rt, "current leader %d bid %d tid %d\n", leader, block_idx(),
                   thread_idx());
     warp_barrier(active_mask);
     remaining &= ~(1u << leader);

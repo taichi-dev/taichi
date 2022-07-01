@@ -313,42 +313,6 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-@pytest.mark.parametrize('layout', [ti.Layout.SOA, ti.Layout.AOS])
-@_test_offline_cache_dec
-def test_ndarray_reader_and_writer_with_offline_cache(curr_arch, layout):
-    count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
-
-    def helper():
-        a = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
-        for i in range(5):
-            for j in range(4):
-                a[i][j * j] = j * j
-        assert a[0][9] == 9
-        assert a[1][0] == 0
-        assert a[2][1] == 1
-        assert a[3][4] == 4
-        assert a[4][9] == 9
-
-    assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(0)
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
-    helper()
-
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
-    assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(2)
-    helper()
-
-    ti.reset()
-    assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(2)
-
-
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_calling_many_kernels(curr_arch):
     count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))

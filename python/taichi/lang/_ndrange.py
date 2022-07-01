@@ -63,7 +63,7 @@ def ndrange(*args):
     range(x1, y1) x range(x2, y2) x ... x range(xn, yn)
 
     The k-th argument corresponds to the k-th `range()` factor in the above product, and each
-    argument must be an integer or a pair of two integers. An integer argument n will be intepreted
+    argument must be an integer or a pair of two integers. An integer argument n will be interpreted
     as `range(0, n)`, and a pair of two integers (start, end) will be interpreted as `range(start, end)`.
 
     You can loop over these multi-dimensonal indices in different ways, see the examples below.

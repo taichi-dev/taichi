@@ -193,3 +193,37 @@ def test_field_initialize_zero():
     fb1.dense(ti.i, 1).place(b)
     d = fb1.finalize()
     assert b[0] == 0
+
+
+@test_utils.test(exclude=[ti.opengl, ti.cc])
+def test_field_builder_place_grad():
+    @ti.kernel
+    def mul(arr: ti.template(), out: ti.template()):
+        for i in arr:
+            out[i] = arr[i] * 2.0
+
+    @ti.kernel
+    def calc_loss(arr: ti.template(), loss: ti.template()):
+        for i in arr:
+            loss[None] += arr[i]
+
+    arr = ti.field(ti.f32, needs_grad=True)
+    fb0 = ti.FieldsBuilder()
+    fb0.dense(ti.i, 10).place(arr, arr.grad)
+    snode0 = fb0.finalize()
+    out = ti.field(ti.f32)
+    fb1 = ti.FieldsBuilder()
+    fb1.dense(ti.i, 10).place(out, out.grad)
+    snode1 = fb1.finalize()
+    loss = ti.field(ti.f32)
+    fb2 = ti.FieldsBuilder()
+    fb2.place(loss, loss.grad)
+    snode2 = fb2.finalize()
+    arr.fill(1.0)
+    mul(arr, out)
+    calc_loss(out, loss)
+    loss.grad[None] = 1.0
+    calc_loss.grad(out, loss)
+    mul.grad(arr, out)
+    for i in range(10):
+        assert arr.grad[i] == 2.0

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 8
 ---
 
 # Taichi Technical Documentation Style Guide

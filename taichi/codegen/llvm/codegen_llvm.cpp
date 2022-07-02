@@ -1565,13 +1565,13 @@ llvm::Value *CodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
 #endif
                     bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   // 4. store `bit_offset
-  builder->CreateStore(bit_offset,
-                       builder->CreateGEP(
+  builder->CreateStore(
+      bit_offset,
+      builder->CreateGEP(
 #ifdef TI_LLVM_15
-                         struct_type,
+          struct_type,
 #endif
-                         bit_ptr, {tlctx->get_constant(0),
-                                                    tlctx->get_constant(1)}));
+          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
   return bit_ptr;
 }
 
@@ -1588,20 +1588,20 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
 #ifdef TI_LLVM_15
       builder->getInt8PtrTy(),
 #endif
-    builder->CreateGEP(
+      builder->CreateGEP(
 #ifdef TI_LLVM_15
-      ptr_ty,
+          ptr_ty,
 #endif
-      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   auto bit_offset = builder->CreateLoad(
 #ifdef TI_LLVM_15
       builder->getInt32Ty(),
 #endif
-    builder->CreateGEP(
+      builder->CreateGEP(
 #ifdef TI_LLVM_15
-      ptr_ty,
+          ptr_ty,
 #endif
-      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
   return std::make_tuple(byte_ptr, bit_offset);
 }
 
@@ -2051,9 +2051,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       auto is_active = call(leaf_block, element.get("element"), "is_active",
                             {builder->CreateLoad(
 #ifdef TI_LLVM_15
-                              loop_index_ty,
+                                loop_index_ty,
 #endif
-                              loop_index)});
+                                loop_index)});
       is_active =
           builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
       exec_cond = builder->CreateAnd(exec_cond, is_active);

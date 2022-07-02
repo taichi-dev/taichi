@@ -470,7 +470,7 @@ llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr,
 #ifdef TI_LLVM_15
       llvm_type(physical_type),
 #endif
-    byte_ptr);
+      byte_ptr);
   return extract_quant_int(physical_value, bit_offset, qit);
 }
 
@@ -644,8 +644,7 @@ llvm::Value *CodeGenLLVM::load_quant_fixed_or_quant_float(Stmt *ptr_stmt) {
     auto exponent_bit_ptr = offset_bit_ptr(
         digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
     return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt,
-                            physical_type,
-                            digits_snode->owns_shared_exponent);
+                            physical_type, digits_snode->owns_shared_exponent);
   } else {
     auto qfxt = load_type->as<QuantFixedType>();
     auto digits = load_quant_int(llvm_val[ptr],

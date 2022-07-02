@@ -1,11 +1,11 @@
 ---
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 # Sparse spatial data structures
 
 :::note
-Prerequisite: please read the [Fields](../basic/field.md), [Fields (advanced)](layout.md), and [SNodes](../misc/internal.md#data-structure-organization) first.
+Prerequisite: please read the [Fields](../basic/field.md), [Fields (advanced)](layout.md), and [SNodes](../internals/internal.md#data-structure-organization) first.
 :::
 
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)

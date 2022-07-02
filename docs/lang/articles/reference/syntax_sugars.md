@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 1
 ---
 
 # Syntax sugars
@@ -62,7 +62,7 @@ def compute_laplacian(self):
   branching) and
 - `for` (compile-time unrolling)
 
-See [Metaprogramming](./meta.md) for more details.
+See [Metaprogramming](../advanced/meta.md) for more details.
 
 Here, we are using it for _compile-time const values_, i.e. the
 **field/function handles** are constants at compile time.

@@ -560,6 +560,6 @@ conda init
 
 ## Still have issues?
 
-- See [Installation Troubleshooting](../misc/install.md) for issues that may share with the end-user installation.
+- See [Installation Troubleshooting](../faqs/install.md) for issues that may share with the end-user installation.
 
 - If you encounter any issue that is not covered here, feel free to report it by [opening an issue on GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md) and including the details. We are always there to help!

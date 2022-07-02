@@ -1,13 +1,20 @@
+---
+sidebar_position: 5
+---
+
 # Sparse Matrix
+
 Sparse matrices are frequently used when solving linear systems in science and engineering. Taichi provides programmers with useful APIs for sparse matrices.
 
 To use the sparse matrix in taichi programs, you should follow these three steps:
+
 1. Create a `builder` using `ti.linalg.SparseMatrixBuilder()`.
 2. Fill the `builder` with your matrices' data.
 3. Create sparse matrices from the `builder`.
 
 :::caution WARNING
 The sparse matrix is still under implementation. There are some limitations:
+
 - Only the CPU backend is supported.
 - The data type of sparse matrix is float32.
 - The storage format is column-major

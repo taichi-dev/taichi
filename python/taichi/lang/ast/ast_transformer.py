@@ -831,9 +831,14 @@ class ASTTransformer(Builder):
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            is_reversed = False
+            if begin > end:
+                begin, end = end, begin
+                is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
-                                                     ndrange_end.ptr)
+                                                     ndrange_end.ptr,
+                                                     reversed)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             for i, target in enumerate(targets):
@@ -862,9 +867,14 @@ class ASTTransformer(Builder):
                 expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
                 primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
+            is_reversed = False
+            if begin > end:
+                begin, end = end, begin
+                is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
-                                                     ndrange_end.ptr)
+                                                     ndrange_end.ptr,
+                                                     reversed)
 
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
@@ -972,8 +982,12 @@ class ASTTransformer(Builder):
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
             end = node.iter.ptr.size
+            is_reversed = False
+            if begin > end:
+                begin, end = end, begin
+                is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
-                                                     end.ptr)
+                                                     end.ptr, reversed)
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)

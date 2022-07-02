@@ -340,7 +340,6 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 LlvmOfflineCacheFileWriter::CleanCachePolicy
 LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
     const std::string &str) {
-
   if (str == "never")
     return Nerver;
   if (str == "version")

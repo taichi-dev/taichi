@@ -429,8 +429,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-@pytest.mark.parametrize('factor', [0.25])
-@pytest.mark.parametrize('policy', ['lru'])
+@pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
+@pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec
 def test_offline_cache_cleaning(curr_arch, factor, policy):
     def only_init(max_size):

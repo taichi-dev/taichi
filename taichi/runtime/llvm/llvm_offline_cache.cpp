@@ -207,6 +207,9 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     new_kernels_size += v.size;
   }
 
+  data_.version[0] = TI_VERSION_MAJOR;
+  data_.version[1] = TI_VERSION_MINOR;
+  data_.version[2] = TI_VERSION_PATCH;
   data_.size = new_kernels_size;
   // Merge with old metadata
   if (merge_with_old) {
@@ -277,7 +280,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
   if ((policy & CleanOldVersion) &&
       !check_llvm_cache_verison(cache_data.version)) {
-    if (bool ok = fs::remove(get_llvm_cache_metadata_file_path(path)); ok) {
+    if (bool ok = fs::remove(get_llvm_cache_metadata_file_path(path)) && fs::remove(get_llvm_cache_metadata_json_file_path(path)); ok) {
       auto root_path = fs::path(path);
       for (const auto &[k, v] : cache_data.kernels) {
         const auto files = get_possible_llvm_cache_filename_by_key(k);

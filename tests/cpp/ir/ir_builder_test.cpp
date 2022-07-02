@@ -47,7 +47,7 @@ TEST(IRBuilder, RangeFor) {
   IRBuilder builder;
   auto *zero = builder.get_int32(0);
   auto *ten = builder.get_int32(10);
-  auto *loop = builder.create_range_for(zero, ten);
+  auto *loop = builder.create_range_for(zero, ten, false);
   Stmt *index;
   {
     auto _ = builder.get_loop_guard(loop);
@@ -65,7 +65,7 @@ TEST(IRBuilder, LoopGuard) {
   IRBuilder builder;
   auto *zero = builder.get_int32(0);
   auto *ten = builder.get_int32(10);
-  auto *loop = builder.create_range_for(zero, ten);
+  auto *loop = builder.create_range_for(zero, ten, false);
   Stmt *two;
   Stmt *one;
   Stmt *sum;

@@ -22,7 +22,7 @@ class ExtractConstantTest : public ::testing::Test {
 TEST_F(ExtractConstantTest, ExtractConstant) {
   IRBuilder builder;
   auto *for_stmt =
-      builder.create_range_for(builder.get_int32(0), builder.get_int32(10));
+      builder.create_range_for(builder.get_int32(0), builder.get_int32(10), false);
   builder.set_insertion_point_to_loop_begin(for_stmt);
   auto *x = builder.create_local_var(get_data_type<int>());
   auto *x_v = builder.create_local_load(x);

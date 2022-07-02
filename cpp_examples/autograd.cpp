@@ -97,7 +97,7 @@ void autograd() {
     auto *zero = builder.get_int32(0);
     auto *one = builder.get_int32(1);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 0, 4);
+    auto *loop = builder.create_range_for(zero, n_stmt, false, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);

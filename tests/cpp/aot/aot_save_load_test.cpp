@@ -63,7 +63,7 @@ using namespace lang;
     IRBuilder builder;
     auto *zero = builder.get_int32(0);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);
+    auto *loop = builder.create_range_for(zero, n_stmt, false, 1, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);

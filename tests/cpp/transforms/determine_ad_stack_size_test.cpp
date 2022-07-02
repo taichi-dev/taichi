@@ -58,7 +58,8 @@ TEST_F(DetermineAdStackSizeTest, Loop) {
   auto *stack =
       builder.create_ad_stack(get_data_type<int>(), 0 /*adaptive size*/);
   auto *loop = builder.create_range_for(/*begin=*/builder.get_int32(0),
-                                        /*end=*/builder.get_int32(10));
+                                        /*end=*/builder.get_int32(10), 
+                                        /*reversed=*/false);
   {
     auto _ = builder.get_loop_guard(loop);
     builder.ad_stack_push(stack, builder.get_int32(1));
@@ -80,7 +81,8 @@ TEST_F(DetermineAdStackSizeTest, LoopInfeasible) {
   auto *stack =
       builder.create_ad_stack(get_data_type<int>(), 0 /*adaptive size*/);
   auto *loop = builder.create_range_for(/*begin=*/builder.get_int32(0),
-                                        /*end=*/builder.get_int32(100));
+                                        /*end=*/builder.get_int32(100),
+                                        /*reversed=*/false);
   {
     auto _ = builder.get_loop_guard(loop);
     builder.ad_stack_push(stack, builder.get_int32(1));

@@ -340,19 +340,18 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 LlvmOfflineCacheFileWriter::CleanCachePolicy
 LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
     const std::string &str) {
-  using Policy = LlvmOfflineCacheFileWriter::CleanCachePolicy;
 
   if (str == "never")
-    return Policy::Nerver;
+    return Nerver;
   if (str == "version")
-    return Policy::OnlyOldVersion;
+    return OnlyOldVersion;
   if (str == "lru")
-    return Policy::LRU;
+    return LRU;
   if (str == "fifo")
-    return Policy::FIFO;
+    return FIFO;
 
   TI_WARN("Invalid CleanCachePolicy");
-  return Policy::Nerver;
+  return Nerver;
 }
 
 }  // namespace lang

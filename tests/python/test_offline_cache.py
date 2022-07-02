@@ -1,13 +1,18 @@
+import atexit
 import functools
 import math
 import threading
-from os import listdir, path, remove, rmdir, stat
+from os import listdir, remove, rmdir, stat
+from os.path import join
+from tempfile import mkdtemp
 
 import pytest
-from genericpath import exists
 
 import taichi as ti
 from tests import test_utils
+
+OFFLINE_CACHE_TEMP_DIR = mkdtemp()
+atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
 supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
@@ -27,7 +32,7 @@ def get_cache_files_size(path):
     result = 0
     for file in files:
         if is_offline_cache_file(file):
-            result += stat(dir_path + "/" + file).st_size
+            result += stat(join(dir_path, file)).st_size
     return result
 
 
@@ -40,7 +45,7 @@ def get_expected_num_cache_files(num_kernels: int) -> int:
 
 
 def tmp_offline_cache_file_path():
-    return path.join('./__temp_ticache', str(threading.currentThread().ident))
+    return join(OFFLINE_CACHE_TEMP_DIR, str(threading.currentThread().ident))
 
 
 def current_thread_ext_options():
@@ -105,13 +110,7 @@ simple_kernels_to_test = [
 def _test_offline_cache_dec(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        file_path_exists = True
-        old_file_list = []
-        if not exists(tmp_offline_cache_file_path()):
-            file_path_exists = False
-            test_utils.mkdir_p(tmp_offline_cache_file_path())
-        else:
-            old_file_list = listdir(tmp_offline_cache_file_path())
+        test_utils.mkdir_p(tmp_offline_cache_file_path())
         ret = None
         try:
             ret = func(*args, **kwargs)
@@ -120,10 +119,8 @@ def _test_offline_cache_dec(func):
         finally:
             ti.reset()
             for f in listdir(tmp_offline_cache_file_path()):
-                if f not in old_file_list:
-                    remove(path.join(tmp_offline_cache_file_path(), f))
-            if not file_path_exists:
-                rmdir(tmp_offline_cache_file_path())
+                remove(join(tmp_offline_cache_file_path(), f))
+            rmdir(tmp_offline_cache_file_path())
         return ret
 
     return wrapped

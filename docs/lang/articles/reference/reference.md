@@ -324,7 +324,7 @@ a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
+[implicit type casting in binary operations](../basic/type.md#implicit-type-casting-in-binary-operations),
 and [arithmetic operators](./operator.md#arithmetic-operators). Note that
 the `@` operator is for matrix multiplication and only operates on matrix type
 arguments.

@@ -837,8 +837,7 @@ class ASTTransformer(Builder):
                 is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
-                                                     ndrange_end.ptr,
-                                                     reversed)
+                                                     ndrange_end.ptr, reversed)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             for i, target in enumerate(targets):
@@ -873,8 +872,7 @@ class ASTTransformer(Builder):
                 is_reversed = True
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
-                                                     ndrange_end.ptr,
-                                                     reversed)
+                                                     ndrange_end.ptr, reversed)
 
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:

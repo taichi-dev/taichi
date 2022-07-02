@@ -295,7 +295,11 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
   auto snode = stmt->get_bit_struct_snode();
   auto bit_struct_physical_type =
       snode->dt->as<BitStructType>()->get_physical_type();
-  auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
+  auto local_bit_struct = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      llvm_type(bit_struct_physical_type),
+#endif
+      llvm_val[stmt->ptr]);
   // fuse all stores into a masked store
   llvm::Value *masked_val = nullptr;
   uint64 mask = 0;
@@ -460,7 +464,11 @@ llvm::Value *CodeGenLLVM::extract_quant_float(llvm::Value *local_bit_struct,
 
 llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr, QuantIntType *qit) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-  auto physical_value = builder->CreateLoad(byte_ptr);
+  auto physical_value = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      llvm_type(qit->get_physical_type()),
+#endif
+    byte_ptr);
   return extract_quant_int(physical_value, bit_offset, qit);
 }
 

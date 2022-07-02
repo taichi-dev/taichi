@@ -107,8 +107,14 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
+#ifdef TI_LLVM_15
+        auto *loop_index_load =
+            builder->CreateLoad(builder->getInt32Ty(), loop_index);
+#else
+        auto *loop_index_load = builder->CreateLoad(loop_index);
+#endif
         auto cond = builder->CreateICmp(
-            llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+            llvm::CmpInst::Predicate::ICMP_SLT, loop_index_load,
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -121,9 +127,15 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(loop_index),
-                                                tlctx->get_constant(1)),
-                             loop_index);
+#ifdef TI_LLVM_15
+        auto *loop_index_load =
+            builder->CreateLoad(builder->getInt32Ty(), loop_index);
+#else
+        auto *loop_index_load = builder->CreateLoad(loop_index);
+#endif
+        builder->CreateStore(
+            builder->CreateAdd(loop_index_load, tlctx->get_constant(1)),
+            loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }

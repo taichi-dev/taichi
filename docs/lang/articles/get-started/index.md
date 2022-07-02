@@ -72,13 +72,13 @@ There are a few of extra requirements depend on which operating system you are u
   </TabItem>
 </Tabs>
 
-See the [Installation Troubleshooting](../misc/install.md) if you run into any issues when installing Taichi.
+See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
 
 ## Hello, world!
 
 We introduce the Taichi programming language through a very basic _fractal_ example.
 
-Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` _(you can find more information about the Taichi CLI in the [Command line utilities](../misc/cli_utilities.md) section)_ will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
+Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` _(you can find more information about the Taichi CLI in the [Command line utilities](../utilities/cli_utilities.md) section)_ will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
 
 <center>
 
@@ -301,7 +301,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a CPU-based [GUI system](../gui/gui_system.md) for you to render your results on the screen.
+Taichi provides a CPU-based [GUI system](../utilities/gui_system.md) for you to render your results on the screen.
 
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))

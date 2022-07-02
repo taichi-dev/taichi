@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 1
 ---
 
 # Internal designs
@@ -50,7 +50,7 @@ Use `ti.init(print_ir=True)` to print IR of all instantiated kernels.
 :::
 
 :::note
-See [Life of a Taichi kernel](../contribution/compilation.md) for more details about
+See [Life of a Taichi kernel](./compilation.md) for more details about
 the JIT compilation system of Taichi.
 :::
 

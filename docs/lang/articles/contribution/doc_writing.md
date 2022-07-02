@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 7
 ---
 
 # Documentation writing guide
@@ -234,10 +234,10 @@ This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of thi
 Inserting images is as straight-forward as using the ordinary Markdown syntax:
 
 ```md
-![kernel](./life_of_kernel_lowres.jpg)
+![kernel](../internals/life_of_kernel_lowres.jpg)
 ```
 
-![kernel](./life_of_kernel_lowres.jpg)
+![kernel](../internals/life_of_kernel_lowres.jpg)
 
 ## 10. In-line Table of Contents (ToC)
 

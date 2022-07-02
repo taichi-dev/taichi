@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 8
 ---
 
 # Performance tuning
@@ -48,7 +48,7 @@ def fill():
 ```
 
 :::note
-For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../misc/profiler.md).
+For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../utilities/profiler.md).
 :::
 
 ### Background: Thread hierarchy of GPUs
@@ -57,7 +57,7 @@ To better understand how the mentioned for-loop is parallelized, we briefly
 introduce the **thread hierarchy** on modern GPU architectures.
 
 From a fine-grained to a coarse-grained level, the computation units can be
-defined as: **iteration** \< **thread** \< **block** \< **grid**.
+defined as: **iteration** &lt; **thread** &lt; **block** &lt; **grid**.
 
 - **iteration**: An iteration is the **body of a for-loop**. Each
   iteration corresponding to a specific `i` value in for-loop.

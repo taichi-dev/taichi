@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 4
 ---
 
 # Command line utilities
@@ -53,7 +53,7 @@ Sometimes it's convenient to convert a series of `png` files into a
 single video when showing your result to others.
 
 For example, suppose you have `000000.png`, `000001.png`, \... generated
-according to [Export your results](./export_results.md) in the
+according to [Export your results](../advanced/export_results.md) in the
 **current working directory**.
 
 Then you could run `ti video` to create a file `video.mp4` containing

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9998
+sidebar_position: 0
 ---
 
 # Language Reference
@@ -21,7 +21,7 @@ article. You can clearly determine a certain behavior is *correct*, *buggy*, or
 ## Introduction
 
 Taichi is a domain-specific language embedded in Python.
-[Kernels and functions](basic/syntax.md) clearly defines the boundary between
+[Kernels and functions](../basic/syntax.md) clearly defines the boundary between
 the Taichi language and the Python language - code in the Taichi scope is
 treated as the former, while code in the Python scope is treated as the latter.
 It should be emphasized that this article is about *the Taichi language*.
@@ -44,7 +44,7 @@ listed here.
 
 Like many other programming languages, each expression in Taichi will be
 evaluated to a value, and each value has a type. Because Taichi provides easy
-interaction with Python and [meta-programming](advanced/meta.md) support, there
+interaction with Python and [meta-programming](../advanced/meta.md) support, there
 are actually two kinds of evaluation: *compile-time evaluation* and *runtime
 evaluation*. There are also two kinds of values: *Python values* and *Taichi
 values*.
@@ -71,12 +71,12 @@ A Python value only exists at compile time. After compile-time evaluation, all
 the remaining expressions will be evaluated to Taichi values at runtime.
 
 A Taichi value has a Taichi type, which is one of the following:
-- A primitive type, as described in [Type system](basic/type.md)
-- A compound type, as described in [Type system](basic/type.md)
+- A primitive type, as described in [Type system](../basic/type.md)
+- A compound type, as described in [Type system](../basic/type.md)
 - An ndarray type, as introduced in [Run a Taichi Program using Ndarray on
-Android](tutorials/ndarray_android.md)
+Android](../advanced/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
-Matrix](advanced/sparse_matrix.md)
+Matrix](../advanced/sparse_matrix.md)
 
 :::note
 An informal quick summary of evaluation rules:
@@ -114,7 +114,7 @@ Following the [Values and types](#values-and-types) section, if both operands
 of a binary operation are Python values, compile-time evaluation is triggered
 and a result Python value is produced. If only one operand is a Python value,
 it is first turned into a Taichi value with
-[default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+[default type](../basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
 Now the only remaining case is that both operands are Taichi values.
 
 Binary operations can happen between Taichi values of either primitive type or
@@ -234,8 +234,8 @@ attributeref ::= primary "." identifier
 Attribute references are evaluated at compile time. The `primary` must be
 evaluated to a Python value with an attribute named `identifier`. Common use
 cases in Taichi include metadata queries of
-[field](advanced/meta.md#field-metadata) and
-[matrices](advanced/meta.md#matrix--vector-metadata).
+[field](../advanced/meta.md#field-metadata) and
+[matrices](../advanced/meta.md#matrix--vector-metadata).
 
 #### Subscriptions
 
@@ -284,8 +284,8 @@ positional_item      ::= assignment_expression | "*" expression
 ```
 
 The `primary` must be evaluated to one of:
-- A [Taichi function](basic/syntax.md#taichi-function).
-- A [Taichi builtin function](basic/operator.md#other-arithmetic-functions).
+- A [Taichi function](../basic/syntax.md#taichi-function).
+- A [Taichi builtin function](./operator.md#other-arithmetic-functions).
 - A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
 - A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
 
@@ -312,8 +312,8 @@ type.
 - If the operand is a compound type value, the operator is conducted
 element-wise, resulting in a compound type value with same shape.
 
-See [arithmetic operators](basic/operator.md#arithmetic-operators) and
-[bitwise operators](basic/operator.md#bitwise-operators) for operator details.
+See [arithmetic operators](./operator.md#arithmetic-operators) and
+[bitwise operators](./operator.md#bitwise-operators) for operator details.
 Note that `~` can only be used with integer type values.
 
 ### Binary arithmetic operations
@@ -325,7 +325,7 @@ a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
 [implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [arithmetic operators](basic/operator.md#arithmetic-operators). Note that
+and [arithmetic operators](./operator.md#arithmetic-operators). Note that
 the `@` operator is for matrix multiplication and only operates on matrix type
 arguments.
 ### Shifting operations
@@ -335,8 +335,8 @@ shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+[implicit type casting in binary operations](../basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](./operator.md#bitwise-operators). Note that both operands
 are required to have integer types.
 
 ### Binary bitwise operations
@@ -348,8 +348,8 @@ or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [bitwise operators](basic/operator.md#bitwise-operators). Note that both operands
+[implicit type casting in binary operations](../basic/type.md#implicit-type-casting-in-binary-operations),
+and [bitwise operators](./operator.md#bitwise-operators). Note that both operands
 are required to have integer types.
 
 ### Comparisons
@@ -364,8 +364,8 @@ Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x 
 #### Value comparisons
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](basic/type.md#implicit-type-casting-in-binary-operations),
-and [comparison operators](basic/operator.md#comparison-operators).
+[implicit type casting in binary operations](../basic/type.md#implicit-type-casting-in-binary-operations),
+and [comparison operators](./operator.md#comparison-operators).
 
 #### Membership test operations
 
@@ -439,9 +439,9 @@ The `positional_arguments` is evaluated at compile time, and the items inside mu
 - When multiple arguments are passed in, it returns a tuple containing all the arguments in the same order as they are passed.
 
 The static expressions work as a mechanism to trigger many metaprogramming functions in Taichi,
-such as [compile-time loop unrolling and compile-time branching](advanced/meta.md#compile-time-evaluations).
+such as [compile-time loop unrolling and compile-time branching](../advanced/meta.md#compile-time-evaluations).
 
-The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](advanced/syntax_sugars.md#aliases).
+The static expressions can also be used to [create aliases for Taichi fields and Taichi functions](./syntax_sugars.md#aliases).
 
 ### Expression lists
 
@@ -501,7 +501,7 @@ with the following points to notice:
 target is an identifier appearing for the first time, a variable is defined
 with that name and inferred type from the corresponding right-hand side
 expression. If the expression is evaluated to a Python value, it will be turned
-into a Taichi value with [default type](basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+into a Taichi value with [default type](../basic/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
 - If a target is an existing identifier, the corresponding right-hand side
 expression must be evaluated to a Taichi value with the type of the
 corresponding variable of that identifier. Otherwise, an implicit cast will
@@ -516,7 +516,7 @@ augop                     ::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" |
                               "**="| ">>=" | "<<=" | "&=" | "^=" | "|="
 ```
 
-Different from [Python](https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements), some augmented assignments (e.g., `x[i] += 1`) are [automatically atomic](basic/operator.md#supported-atomic-operations) in Taichi.
+Different from [Python](https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements), some augmented assignments (e.g., `x[i] += 1`) are [automatically atomic](./operator.md#supported-atomic-operations) in Taichi.
 
 #### Annotated assignment statements
 
@@ -727,7 +727,7 @@ The `iter_expression` of ndrange `for` statement must be a call to `ti.ndrange()
 - If the `iter_expression` is a call to `ti.range()`, it is a normal ndrange `for`.
 - If the `iter_expression` is a call to `ti.grouped(ti.range())`, it is a grouped ndrange `for`.
 
-You can use grouped `for` loops to write [dimensionality-independent programs](advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
+You can use grouped `for` loops to write [dimensionality-independent programs](../advanced/meta.md#dimensionality-independent-programming-using-grouped-indices).
 
 `ti.ndrange` receives arbitrary numbers of arguments.
 The k-th argument represents the iteration range of the k-th dimension,

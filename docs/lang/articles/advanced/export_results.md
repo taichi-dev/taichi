@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 1
 ---
 
 # Export your results
@@ -53,7 +53,7 @@ for i in range(iterations):
 - After running the code above, you will get a series of images in the
   current folder.
 - To compose these images into a single `mp4` or `gif` file, see
-  [Converting PNGs to video](./cli_utilities.md#converting-pngs-to-video).
+  [Converting PNGs to video](../utilities/cli_utilities.md#converting-pngs-to-video).
 
 ### Export images using `ti.tools.imwrite`
 
@@ -94,13 +94,13 @@ print(f'The image has been saved to {filename}')
 :::note
 All Taichi fields have their own data types, such as `ti.u8` and
 `ti.f32`. Different data types can lead to different behaviors of
-`ti.tools.imwrite`. Please check out [GUI system](../gui/gui_system.md) for
+`ti.tools.imwrite`. Please check out [GUI system](../utilities/gui_system.md) for
 more details.
 :::
 
 - Taichi offers other helper functions that read and show images in
   addition to `ti.tools.imwrite`. They are also demonstrated in
-  [GUI system](../gui/gui_system.md).
+  [GUI system](../utilities/gui_system.md).
 
 ## Export videos
 

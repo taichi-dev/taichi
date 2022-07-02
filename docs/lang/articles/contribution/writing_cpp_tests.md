@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 4
 ---
 
 # Workflow for writing a C++ test

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 # Development tips
@@ -9,7 +9,7 @@ Please make sure you have gone through [developer installation](./dev_install).
 
 ## Workflow of the Taichi compiler
 
-[Life of a Taichi kernel](./compilation.md) is a good place to get started,
+[Life of a Taichi kernel](../internals/compilation.md) is a good place to get started,
 which explains the whole compilation process step by step.
 
 ## Folder structure

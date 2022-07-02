@@ -1434,7 +1434,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     if (auto qit = val_type->cast<QuantIntType>()) {
-      llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], qit);
+      llvm_val[stmt] = load_quant_int(
+          llvm_val[stmt->src], qit,
+          stmt->src->as<GetChStmt>()->input_snode->physical_type);
     } else {
       TI_ASSERT(val_type->is<QuantFixedType>() ||
                 val_type->is<QuantFloatType>());

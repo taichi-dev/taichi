@@ -395,12 +395,84 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
       .commit(&global_);
   SType sampled_t;
   sampled_t.id = id_counter_++;
-  sampled_t.flag = TypeKind::kSampledImage;
+  sampled_t.flag = TypeKind::kImage;
   ib_.begin(spv::OpTypeSampledImage)
       .add_seq(sampled_t, img_id)
       .commit(&global_);
   sampled_image_ptr_tbl_[key] = sampled_t;
   return sampled_t;
+}
+
+SType IRBuilder::get_storage_image_type(BufferFormat format, int num_dimensions) {
+  auto key = std::make_pair(format, num_dimensions);
+  auto it = storage_image_ptr_tbl_.find(key);
+  if (it != storage_image_ptr_tbl_.end()) {
+    return it->second;
+  }
+  int img_id = id_counter_++;
+
+  spv::Dim dim;
+  if (num_dimensions == 1) {
+    dim = spv::Dim1D;
+  } else if (num_dimensions == 2) {
+    dim = spv::Dim2D;
+  } else if (num_dimensions == 3) {
+    dim = spv::Dim3D;
+  } else {
+    TI_ERROR("Unsupported number of dimensions: {}", num_dimensions);
+  }
+
+  const std::unordered_map<BufferFormat, spv::ImageFormat> format2spv = {
+      {BufferFormat::r8, spv::ImageFormatR8},
+      {BufferFormat::rg8, spv::ImageFormatRg8},
+      {BufferFormat::rgba8, spv::ImageFormatRgba8},
+      {BufferFormat::rgba8srgb, spv::ImageFormatRgba8},
+      {BufferFormat::r8u, spv::ImageFormatR8ui},
+      {BufferFormat::rg8u, spv::ImageFormatRg8ui},
+      {BufferFormat::rgba8u, spv::ImageFormatRgba8ui},
+      {BufferFormat::r8i, spv::ImageFormatR8i},
+      {BufferFormat::rg8i, spv::ImageFormatRg8i},
+      {BufferFormat::rgba8i, spv::ImageFormatRgba8i},
+      {BufferFormat::r16, spv::ImageFormatR16},
+      {BufferFormat::rg16, spv::ImageFormatRg16},
+      {BufferFormat::rgba16, spv::ImageFormatRgba16},
+      {BufferFormat::r16u, spv::ImageFormatR16ui},
+      {BufferFormat::rg16u, spv::ImageFormatRg16ui},
+      {BufferFormat::rgba16u, spv::ImageFormatRgba16ui},
+      {BufferFormat::r16i, spv::ImageFormatR16i},
+      {BufferFormat::rg16i, spv::ImageFormatRg16i},
+      {BufferFormat::rgba16i, spv::ImageFormatRgba16i},
+      {BufferFormat::r16f, spv::ImageFormatR16f},
+      {BufferFormat::rg16f, spv::ImageFormatRg16f},
+      {BufferFormat::rgba16f, spv::ImageFormatRgba16f},
+      {BufferFormat::r32u, spv::ImageFormatR32ui},
+      {BufferFormat::rg32u, spv::ImageFormatRg32ui},
+      {BufferFormat::rgba32u, spv::ImageFormatRgba32ui},
+      {BufferFormat::r32i, spv::ImageFormatR32i},
+      {BufferFormat::rg32i, spv::ImageFormatRg32i},
+      {BufferFormat::rgba32i, spv::ImageFormatRgba32i},
+      {BufferFormat::r32f, spv::ImageFormatR32f},
+      {BufferFormat::rg32f, spv::ImageFormatRg32f},
+      {BufferFormat::rgba32f, spv::ImageFormatRgba32f},
+      {BufferFormat::depth16, spv::ImageFormatR16},
+      {BufferFormat::depth32f, spv::ImageFormatR32f}
+  };
+  
+  if (format2spv.find(format) == format2spv.end()) {
+    TI_ERROR("Unsupported image format", num_dimensions);
+  }
+  spv::ImageFormat spv_format = format2spv.at(format);
+  
+  // TODO: Add integer type support
+  ib_.begin(spv::OpTypeImage)
+      .add_seq(img_id, f32_type(), dim,
+               /*Depth=*/0, /*Arrayed=*/0, /*MS=*/0, /*Sampled=*/2, spv_format)
+      .commit(&global_);
+  SType img_t;
+  img_t.id = img_id;
+  img_t.flag = TypeKind::kImage;
+  storage_image_ptr_tbl_[key] = img_t;
+  return img_t;
 }
 
 SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
@@ -662,6 +734,31 @@ Value IRBuilder::texture_argument(int num_channels,
   return val;
 }
 
+Value IRBuilder::storage_image_argument(int num_channels,
+                                        int num_dimensions,
+                                        uint32_t descriptor_set,
+                                        uint32_t binding,
+                                        BufferFormat format) {
+  auto texture_type = this->get_storage_image_type(format, num_dimensions);
+  auto texture_ptr_type =
+      get_pointer_type(texture_type, spv::StorageClassUniformConstant);
+
+  Value val = new_value(texture_ptr_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(texture_ptr_type, val, spv::StorageClassUniformConstant)
+      .commit(&global_);
+
+  this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
+                 descriptor_set);
+  this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
+
+  this->debug(spv::OpName, val, "tex");
+
+  this->global_values.push_back(val);
+
+  return val;
+}
+
 Value IRBuilder::sample_texture(Value texture_var,
                                 const std::vector<Value> &args,
                                 Value lod) {
@@ -704,6 +801,45 @@ Value IRBuilder::fetch_texel(Value texture_var,
   auto res_vec4 =
       make_value(spv::OpImageFetch, t_v4_fp32_, image, uv, lod_operand, lod);
   return res_vec4;
+}
+
+Value IRBuilder::image_load(Value image_var,
+                             const std::vector<Value> &args) {
+  auto image = this->load_variable(
+      image_var, image_var.stype);
+  Value uv;
+  if (args.size() == 1) {
+    uv = args[0];
+  } else if (args.size() == 2) {
+    uv = make_value(spv::OpCompositeConstruct, t_v2_int_, args[0], args[1]);
+  } else if (args.size() == 3) {
+    uv = make_value(spv::OpCompositeConstruct, t_v3_int_, args[0], args[1],
+                    args[2]);
+  } else {
+    TI_ERROR("Unsupported number of texture coordinates");
+  }
+  auto res_vec4 =
+      make_value(spv::OpImageRead, t_v4_fp32_, image, uv);
+  return res_vec4;
+}
+
+void IRBuilder::image_store(Value image_var, const std::vector<Value> &args) {
+  auto image = this->load_variable(image_var, image_var.stype);
+  Value uv;
+  if (args.size() == 1 + 4) {
+    uv = args[0];
+  } else if (args.size() == 2 + 4) {
+    uv = make_value(spv::OpCompositeConstruct, t_v2_int_, args[0], args[1]);
+  } else if (args.size() == 3 + 4) {
+    uv = make_value(spv::OpCompositeConstruct, t_v3_int_, args[0], args[1],
+                    args[2]);
+  } else {
+    TI_ERROR("Unsupported number of image coordinates");
+  }
+  int base = args.size() - 4;
+  Value data = make_value(spv::OpCompositeConstruct, t_v4_fp32_, args[base],
+                          args[base + 1], args[base + 2], args[base + 3]);
+  make_inst(spv::OpImageWrite, image, uv, data);
 }
 
 void IRBuilder::set_work_group_size(const std::array<int, 3> group_size) {

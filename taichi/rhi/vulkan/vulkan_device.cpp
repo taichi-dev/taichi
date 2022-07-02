@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <array>
 #include <set>
@@ -657,6 +658,24 @@ void VulkanResourceBinder::image(uint32_t set,
   }
 }
 
+void VulkanResourceBinder::rw_image(uint32_t set,
+                                    uint32_t binding,
+                                    DeviceAllocation alloc,
+                                    int lod) {
+  CHECK_SET_BINDINGS
+  if (layout_locked_) {
+    TI_ASSERT(bindings.at(binding).type ==
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  } else {
+    if (bindings.find(binding) != bindings.end()) {
+      TI_WARN("Overriding last binding");
+    }
+  }
+  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                       alloc.get_ptr(0), VK_WHOLE_SIZE};
+}
+
+
 #undef CHECK_SET_BINDINGS
 
 void VulkanResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
@@ -705,9 +724,10 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
         is_image.push_back(true);
         set->ref_binding_objs[binding] = view;
       } else if (pair.second.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        auto view = std::get<1>(device.get_vk_image(pair.second.ptr));
+        auto view =
+            device.get_vk_lod_imageview(pair.second.ptr, pair.second.image_lod);
         image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        image_info.imageView = view->views[pair.second.image_lod];
+        image_info.imageView = view->view;
         is_image.push_back(true);
         set->ref_binding_objs[binding] = view;
       } else {
@@ -1755,6 +1775,11 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
 vkapi::IVkImageView VulkanDevice::get_vk_imageview(
     const DeviceAllocation &alloc) const {
   return std::get<1>(get_vk_image(alloc));
+}
+
+vkapi::IVkImageView VulkanDevice::get_vk_lod_imageview(
+    const DeviceAllocation &alloc, int lod) const {
+  return image_allocations_.at(alloc.alloc_id).view_lods[lod];
 }
 
 DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {

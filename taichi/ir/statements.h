@@ -1453,13 +1453,35 @@ class TexturePtrStmt : public Stmt {
  public:
   Stmt *arg_load_stmt{nullptr};
   int dimensions{2};
+  bool is_storage{false};
 
-  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
-      : arg_load_stmt(stmt), dimensions(dimensions) {
+  // Optional, for storage textures
+  int num_channels{0};
+  DataType channel_format{PrimitiveType::f32};
+  int lod{0};
+
+  explicit TexturePtrStmt(Stmt *stmt,
+                          int dimensions,
+                          bool is_storage,
+                          int num_channels,
+                          DataType channel_format,
+                          int lod)
+      : arg_load_stmt(stmt),
+        dimensions(dimensions),
+        is_storage(is_storage),
+        num_channels(num_channels),
+        channel_format(channel_format),
+        lod(lod) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt);
+  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
+      : arg_load_stmt(stmt), dimensions(dimensions), is_storage(false) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(arg_load_stmt, dimensions, is_storage, num_channels,
+                     channel_format, lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1474,6 +1496,16 @@ class TextureOpStmt : public Stmt {
                          const std::vector<Stmt *> &args)
       : op(op), texture_ptr(texture_ptr), args(args) {
     TI_STMT_REG_FIELDS;
+  }
+
+  /*
+  bool has_global_side_effect() const override {
+    return op == TextureOpType::store;
+  }
+  */
+
+  bool common_statement_eliminable() const override {
+    return op != TextureOpType::store;
   }
 
   TI_STMT_DEF_FIELDS(op, texture_ptr, args);

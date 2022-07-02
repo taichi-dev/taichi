@@ -3,7 +3,7 @@ import inspect
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops
-from taichi.lang._texture import TextureSampler
+from taichi.lang._texture import TextureSampler, RWTextureAccessor
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
@@ -88,7 +88,11 @@ def decl_texture_arg(num_dimensions):
     arg_id = impl.get_runtime().prog.decl_arg(f32, True)
     return TextureSampler(
         _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
-
+  
+def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
+    arg_id = impl.get_runtime().prog.decl_arg(f32, True)
+    return RWTextureAccessor(
+        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, num_channels, channel_format, lod), num_dimensions)
 
 def decl_ret(dtype):
     if isinstance(dtype, MatrixType):

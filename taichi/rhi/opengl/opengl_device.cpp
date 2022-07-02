@@ -227,10 +227,10 @@ void GLResourceBinder::image(uint32_t set,
   texture_binding_map_[binding] = alloc.alloc_id;
 }
 
-void Dx11ResourceBinder::rw_image(uint32_t set,
-                                  uint32_t binding,
-                                  DeviceAllocation alloc,
-                                  int lod) {
+void GLResourceBinder::rw_image(uint32_t set,
+                                uint32_t binding,
+                                DeviceAllocation alloc,
+                                int lod) {
   TI_NOT_IMPLEMENTED;
 }
 

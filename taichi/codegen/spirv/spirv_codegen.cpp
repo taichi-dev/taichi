@@ -944,14 +944,66 @@ class TaskCodegen : public IRVisitor {
     if (argid_to_tex_value_.find(arg_id) != argid_to_tex_value_.end()) {
       val = argid_to_tex_value_.at(arg_id);
     } else {
-      int binding = binding_head_++;
-      val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
-                                  /*set=*/0, binding);
-      TextureBind bind;
-      bind.arg_id = arg_id;
-      bind.binding = binding;
-      texture_binds_.push_back(bind);
-      argid_to_tex_value_[arg_id] = val;
+      if (stmt->is_storage) {
+        BufferFormat format;
+
+        if (stmt->num_channels == 1) {
+          if (stmt->channel_format == PrimitiveType::u8 ||
+              stmt->channel_format == PrimitiveType::i8) {
+            format = BufferFormat::r8;
+          } else if (stmt->channel_format == PrimitiveType::u16 ||
+                     stmt->channel_format == PrimitiveType::i16) {
+            format = BufferFormat::r16;
+          } else if (stmt->channel_format == PrimitiveType::f16) {
+            format = BufferFormat::r16f;
+          } else if (stmt->channel_format == PrimitiveType::f32) {
+            format = BufferFormat::r32f;
+          }
+        } else if (stmt->num_channels == 2) {
+          if (stmt->channel_format == PrimitiveType::u8 ||
+              stmt->channel_format == PrimitiveType::i8) {
+            format = BufferFormat::rg8;
+          } else if (stmt->channel_format == PrimitiveType::u16 ||
+                      stmt->channel_format == PrimitiveType::i16) {
+            format = BufferFormat::rg16;
+          } else if (stmt->channel_format == PrimitiveType::f16) {
+            format = BufferFormat::rg16f;
+          } else if (stmt->channel_format == PrimitiveType::f32) {
+            format = BufferFormat::rg32f;
+          }
+        } else if (stmt->num_channels == 4) {
+          if (stmt->channel_format == PrimitiveType::u8 ||
+              stmt->channel_format == PrimitiveType::i8) {
+            format = BufferFormat::rgba8;
+          } else if (stmt->channel_format == PrimitiveType::u16 ||
+                     stmt->channel_format == PrimitiveType::i16) {
+            format = BufferFormat::rgba16;
+          } else if (stmt->channel_format == PrimitiveType::f16) {
+            format = BufferFormat::rgba16f;
+          } else if (stmt->channel_format == PrimitiveType::f32) {
+            format = BufferFormat::rgba32f;
+          }
+        }
+        
+        int binding = binding_head_++;
+        val = ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
+                                    /*set=*/0, binding, format);
+        TextureBind bind;
+        bind.arg_id = arg_id;
+        bind.binding = binding;
+        bind.is_storage = true;
+        texture_binds_.push_back(bind);
+        argid_to_tex_value_[arg_id] = val;        
+      } else {
+        int binding = binding_head_++;
+        val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
+                                    /*set=*/0, binding);
+        TextureBind bind;
+        bind.arg_id = arg_id;
+        bind.binding = binding;
+        texture_binds_.push_back(bind);
+        argid_to_tex_value_[arg_id] = val;
+      }
     }
 
     ir_->register_value(stmt->raw_name(), val);
@@ -959,20 +1011,41 @@ class TaskCodegen : public IRVisitor {
 
   void visit(TextureOpStmt *stmt) override {
     spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
-    std::vector<spirv::Value> args;
-    for (int i = 0; i < stmt->args.size() - 1; i++) {
-      args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
-    }
-    spirv::Value lod = ir_->query_value(stmt->args.back()->raw_name());
     spirv::Value val;
-    if (stmt->op == TextureOpType::sample_lod) {
-      val = ir_->sample_texture(tex, args, lod);
-    } else if (stmt->op == TextureOpType::fetch_texel) {
-      val = ir_->fetch_texel(tex, args, lod);
+    if (stmt->op == TextureOpType::sample_lod ||
+        stmt->op == TextureOpType::fetch_texel) {
+      // Texture Ops
+      std::vector<spirv::Value> args;
+      for (int i = 0; i < stmt->args.size() - 1; i++) {
+        args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
+      }
+      spirv::Value lod = ir_->query_value(stmt->args.back()->raw_name());
+      if (stmt->op == TextureOpType::sample_lod) {
+        // Sample
+        val = ir_->sample_texture(tex, args, lod);
+      } else if (stmt->op == TextureOpType::fetch_texel) {
+        // Texel fetch
+        val = ir_->fetch_texel(tex, args, lod);
+      }
+      ir_->register_value(stmt->raw_name(), val);
+    } else if (stmt->op == TextureOpType::load ||
+               stmt->op == TextureOpType::store) {
+      // Image Ops
+      std::vector<spirv::Value> args;
+      for (int i = 0; i < stmt->args.size(); i++) {
+        args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
+      }
+      if (stmt->op == TextureOpType::load) {
+        // Image Load
+        val = ir_->image_load(tex, args);
+        ir_->register_value(stmt->raw_name(), val);
+      } else if (stmt->op == TextureOpType::store) {
+        // Image Store
+        ir_->image_store(tex, args);
+      }
     } else {
       TI_NOT_IMPLEMENTED;
     }
-    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(InternalFuncStmt *stmt) override {
@@ -2234,7 +2307,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = tp.ti_kernel_name;

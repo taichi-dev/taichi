@@ -154,6 +154,8 @@ std::string texture_op_type_name(TextureOpType type) {
 
     REGISTER_TYPE(sample_lod);
     REGISTER_TYPE(fetch_texel);
+    REGISTER_TYPE(load);
+    REGISTER_TYPE(store);
     REGISTER_TYPE(undefined);
 
 #undef REGISTER_TYPE

@@ -467,7 +467,7 @@ class Kernel:
                         'Taichi kernels parameters must be type annotated')
             else:
                 if isinstance(annotation, (template, ndarray_type.NdarrayType,
-                                           texture_type.TextureType)):
+                                           texture_type.TextureType, texture_type.RWTextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -665,6 +665,12 @@ class Kernel:
                     has_external_arrays = True
                     v = v.tex
                     launch_ctx.set_arg_texture(actual_argument_slot, v)
+                elif isinstance(needed,
+                                texture_type.RWTextureType) and isinstance(
+                                    v, taichi.lang._texture.Texture):
+                    has_external_arrays = True
+                    v = v.tex
+                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):

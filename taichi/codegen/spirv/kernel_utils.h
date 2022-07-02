@@ -71,6 +71,7 @@ struct TaskAttributes {
   struct TextureBind {
     int arg_id{0};
     int binding{0};
+    bool is_storage{false};
   };
 
   std::string name;

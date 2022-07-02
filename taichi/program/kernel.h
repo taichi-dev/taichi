@@ -52,6 +52,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
     void set_arg_ndarray(int arg_id, const Ndarray &arr);
 
     void set_arg_texture(int arg_id, const Texture &tex);
+    void set_arg_rw_texture(int arg_id, const Texture &tex);
 
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.

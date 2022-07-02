@@ -624,6 +624,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   vkapi::IVkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 
+  vkapi::IVkImageView get_vk_lod_imageview(const DeviceAllocation &alloc, int lod) const;
+
   vkapi::IVkRenderPass get_renderpass(const VulkanRenderPassDesc &desc);
 
   vkapi::IVkFramebuffer get_framebuffer(const VulkanFramebufferDesc &desc);

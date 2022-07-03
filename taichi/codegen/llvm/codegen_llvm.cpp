@@ -1583,10 +1583,11 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
   if (auto *AI = llvm::dyn_cast<llvm::AllocaInst>(bit_ptr))
     ptr_ty = AI->getAllocatedType();
   TI_ASSERT(ptr_ty);
+  auto *struct_ty = llvm::cast<llvm::StructType>(ptr_ty);
 #endif
   auto byte_ptr = builder->CreateLoad(
 #ifdef TI_LLVM_15
-      builder->getInt8PtrTy(),
+      struct_ty->getElementType(0),
 #endif
       builder->CreateGEP(
 #ifdef TI_LLVM_15
@@ -1595,7 +1596,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
           bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   auto bit_offset = builder->CreateLoad(
 #ifdef TI_LLVM_15
-      builder->getInt32Ty(),
+      struct_ty->getElementType(1),
 #endif
       builder->CreateGEP(
 #ifdef TI_LLVM_15

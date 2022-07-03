@@ -11,7 +11,9 @@ from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.types.annotations import template
+
 import taichi
+
 
 class KernelTemplate:
     def __init__(self, kernel_fn, aot_module):
@@ -226,7 +228,8 @@ class Module:
         # Package all artifacts into a zip archive and attach contend data.
         with ZipFile(tcm_path, "w") as zip:
             zip.writestr("__content__", '\n'.join(self._content))
-            zip.writestr("__version__", '.'.join(str(x) for x in taichi.__version__))
+            zip.writestr("__version__",
+                         '.'.join(str(x) for x in taichi.__version__))
             for path in glob(f"{temp_dir}/*", recursive=True):
                 zip.write(path, Path.relative_to(Path(path), temp_dir))
 

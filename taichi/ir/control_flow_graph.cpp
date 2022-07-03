@@ -275,7 +275,19 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_load->src, i);
+        if (auto global_ptr = global_load->src->cast<GlobalPtrStmt>()) {
+          TI_ASSERT(global_ptr->width() == 1);
+          auto snodes = global_ptr->snodes;
+          if (!snodes[0]->has_adjoint()) {
+            // No adjoint SNode. Do the store forwarding
+            // otherwise skipping the store forwarding to keep the global load
+            // chain so that the grad of intermidiate variable can be computed
+            // by GlobalLoadStmt
+            result = get_store_forwarding_data(global_load->src, i);
+          }
+        } else {
+          result = get_store_forwarding_data(global_load->src, i);
+        }
       }
     }
     if (result) {

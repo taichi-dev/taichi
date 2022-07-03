@@ -351,3 +351,22 @@ def test_ad_frac():
     expected = np.modf(randoms)[0] * 2
     for i in range(n):
         assert grads[i] == test_utils.approx(expected[i], rel=1e-4)
+
+
+@test_utils.test()
+def test_ad_global_store_forwarding():
+    x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    a = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def func():
+        a[None] = 2 * x[None]
+        b[None] = a[None] + 1
+
+    x[None] = 1
+
+    with ti.ad.Tape(loss=b):
+        func()
+    assert a.grad[None] == 1.0
+    assert x.grad[None] == 2.0

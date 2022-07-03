@@ -165,7 +165,7 @@ class JITSessionCPU : public JITSession {
     global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut_);
 #ifdef TI_LLVM_15
-    auto &dylib_expect = es_.createJITDylib(fmt::format("{}", module_counter_));
+    auto dylib_expect = es_.createJITDylib(fmt::format("{}", module_counter_));
     TI_ASSERT(dylib_expect);
     auto &dylib = dylib_expect.get();
 #else

@@ -364,6 +364,7 @@ class TypeCheck : public IRVisitor {
         stmt->ret_type = ret_type;
         cast(stmt->rhs, ret_type);
         cast(stmt->lhs, ret_type);
+        return;
       }
     }
     if (is_comparison(stmt->op_type)) {

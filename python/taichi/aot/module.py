@@ -1,5 +1,9 @@
 from contextlib import contextmanager
+from glob import glob
 from pathlib import Path, PurePosixPath
+from random import randint
+from shutil import rmtree
+from zipfile import ZipFile
 
 from taichi.aot.utils import (produce_injected_args,
                               produce_injected_args_from_template)
@@ -88,6 +92,7 @@ class Module:
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
         self._aot_builder = rtm.prog.make_aot_module_builder(arch)
+        self._content = []
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.
@@ -147,8 +152,11 @@ class Module:
         # kernel AOT
         self._kernels.append(kernel)
 
+        self._content += ["kernel:" + kernel_name]
+
     def add_graph(self, name, graph):
         self._aot_builder.add_graph(name, graph._compiled_graph)
+        self._content += ["cgraph:" + name]
 
     @contextmanager
     def add_kernel_template(self, kernel_fn):
@@ -193,3 +201,33 @@ class Module:
         """
         filepath = str(PurePosixPath(Path(filepath)))
         self._aot_builder.dump(filepath, filename)
+
+    def archive(self, filepath: str):
+        """
+        Args:
+          filepath (str): path to the stored archive of aot artifacts, MUST
+            end with `.tcm`.
+        """
+        assert filepath.endswith(".tcm"), \
+            "AOT module artifact archive must ends with .tcm"
+        tcm_path = Path(filepath).absolute()
+        assert tcm_path.parent.exists(), "Output directory doesn't exist"
+
+        temp_dir = None
+        while temp_dir == None:
+            temp_dir = Path(f"{tcm_path.parent}/_{randint(10000, 100000)}")
+            if temp_dir.exists():
+                temp_dir = None
+
+        Path.mkdir(temp_dir)
+        # Save first as usual.
+        self.save(temp_dir, "")
+
+        # Package all artifacts into a zip archive and attach contend data.
+        with ZipFile(tcm_path, "w") as zip:
+            zip.writestr("__content__", '\n'.join(self._content))
+            for path in glob(f"{temp_dir}/*", recursive=True):
+                zip.write(path, Path.relative_to(Path(path), temp_dir))
+
+        # Remove cached files
+        rmtree(temp_dir)

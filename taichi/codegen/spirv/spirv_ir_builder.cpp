@@ -403,7 +403,8 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
   return sampled_t;
 }
 
-SType IRBuilder::get_storage_image_type(BufferFormat format, int num_dimensions) {
+SType IRBuilder::get_storage_image_type(BufferFormat format,
+                                        int num_dimensions) {
   auto key = std::make_pair(format, num_dimensions);
   auto it = storage_image_ptr_tbl_.find(key);
   if (it != storage_image_ptr_tbl_.end()) {
@@ -455,14 +456,13 @@ SType IRBuilder::get_storage_image_type(BufferFormat format, int num_dimensions)
       {BufferFormat::rg32f, spv::ImageFormatRg32f},
       {BufferFormat::rgba32f, spv::ImageFormatRgba32f},
       {BufferFormat::depth16, spv::ImageFormatR16},
-      {BufferFormat::depth32f, spv::ImageFormatR32f}
-  };
-  
+      {BufferFormat::depth32f, spv::ImageFormatR32f}};
+
   if (format2spv.find(format) == format2spv.end()) {
     TI_ERROR("Unsupported image format", num_dimensions);
   }
   spv::ImageFormat spv_format = format2spv.at(format);
-  
+
   // TODO: Add integer type support
   ib_.begin(spv::OpTypeImage)
       .add_seq(img_id, f32_type(), dim,
@@ -803,10 +803,8 @@ Value IRBuilder::fetch_texel(Value texture_var,
   return res_vec4;
 }
 
-Value IRBuilder::image_load(Value image_var,
-                             const std::vector<Value> &args) {
-  auto image = this->load_variable(
-      image_var, image_var.stype);
+Value IRBuilder::image_load(Value image_var, const std::vector<Value> &args) {
+  auto image = this->load_variable(image_var, image_var.stype);
   Value uv;
   if (args.size() == 1) {
     uv = args[0];
@@ -818,8 +816,7 @@ Value IRBuilder::image_load(Value image_var,
   } else {
     TI_ERROR("Unsupported number of texture coordinates");
   }
-  auto res_vec4 =
-      make_value(spv::OpImageRead, t_v4_fp32_, image, uv);
+  auto res_vec4 = make_value(spv::OpImageRead, t_v4_fp32_, image, uv);
   return res_vec4;
 }
 

@@ -60,6 +60,7 @@ class TextureSampler:
                                with_runtime_context=False)
         return ti.Vector([r, g, b, a])
 
+
 class RWTextureAccessor:
     def __init__(self, ptr_expr, num_dims) -> None:
         self.ptr_expr = ptr_expr
@@ -94,13 +95,18 @@ class RWTextureAccessor:
     def store(self, index, value):
         args_group = ()
         if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x, value.r, value.g, value.b, value.a)
+            args_group = impl.make_expr_group(index.x, value.r, value.g,
+                                              value.b, value.a)
         elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y, value.r, value.g, value.b, value.a)
+            args_group = impl.make_expr_group(index.x, index.y, value.r,
+                                              value.g, value.b, value.a)
         elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z, value.r, value.g, value.b, value.a)
-        impl.get_runtime().prog.current_ast_builder().insert_texture_op_expr(_ti_core.TextureOpType.store,
-                                          self.ptr_expr, args_group)
+            args_group = impl.make_expr_group(index.x, index.y, index.z,
+                                              value.r, value.g, value.b,
+                                              value.a)
+        impl.get_runtime().prog.current_ast_builder().insert_texture_op_expr(
+            _ti_core.TextureOpType.store, self.ptr_expr, args_group)
+
 
 class Texture:
     """Taichi Texture class.

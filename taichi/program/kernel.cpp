@@ -289,7 +289,7 @@ void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
 }
 
 void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
-                                                   const Texture &tex) {
+                                                      const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_device_allocation_type(

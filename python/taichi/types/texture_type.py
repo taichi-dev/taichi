@@ -4,6 +4,7 @@ class TextureType:
     def __init__(self, num_dimensions):
         self.num_dimensions = num_dimensions
 
+
 class RWTextureType:
     """Type annotation for RW Textures (image load store).
     """
@@ -12,6 +13,7 @@ class RWTextureType:
         self.num_channels = num_channels
         self.channel_format = channel_format
         self.lod = lod
+
 
 texture = TextureType
 rw_texture = RWTextureType

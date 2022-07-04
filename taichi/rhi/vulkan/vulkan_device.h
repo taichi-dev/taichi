@@ -103,7 +103,7 @@ class VulkanResourceBinder : public ResourceBinder {
     VkDeviceSize size;
     union {
       VkSampler sampler{VK_NULL_HANDLE};  // used only for images
-      int image_lod;   
+      int image_lod;
     };
 
     bool operator==(const Binding &other) const {
@@ -624,7 +624,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   vkapi::IVkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 
-  vkapi::IVkImageView get_vk_lod_imageview(const DeviceAllocation &alloc, int lod) const;
+  vkapi::IVkImageView get_vk_lod_imageview(const DeviceAllocation &alloc,
+                                           int lod) const;
 
   vkapi::IVkRenderPass get_renderpass(const VulkanRenderPassDesc &desc);
 

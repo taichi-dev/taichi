@@ -1480,8 +1480,12 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt, dimensions, is_storage, num_channels,
-                     channel_format, lod);
+  TI_STMT_DEF_FIELDS(arg_load_stmt,
+                     dimensions,
+                     is_storage,
+                     num_channels,
+                     channel_format,
+                     lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

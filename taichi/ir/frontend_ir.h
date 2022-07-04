@@ -275,8 +275,8 @@ class FrontendTextureOpStmt : public Stmt {
   Expr expr;
 
   explicit FrontendTextureOpStmt(TextureOpType op,
-                               Expr texture_ptr,
-                               const ExprGroup &args)
+                                 Expr texture_ptr,
+                                 const ExprGroup &args)
       : expr(Expr::make<TextureOpExpression>(op, texture_ptr, args)) {
   }
 
@@ -323,10 +323,17 @@ class TexturePtrExpression : public Expression {
       : arg_id(arg_id), num_dims(num_dims) {
   }
 
-  TexturePtrExpression(int arg_id, int num_dims, int num_channels,
-                       DataType channel_format, int lod)
-      : arg_id(arg_id), num_dims(num_dims), is_storage(true), num_channels(num_channels),
-        channel_format(channel_format), lod(lod) {
+  TexturePtrExpression(int arg_id,
+                       int num_dims,
+                       int num_channels,
+                       DataType channel_format,
+                       int lod)
+      : arg_id(arg_id),
+        num_dims(num_dims),
+        is_storage(true),
+        num_channels(num_channels),
+        channel_format(channel_format),
+        lod(lod) {
   }
 
   void type_check(CompileConfig *config) override;

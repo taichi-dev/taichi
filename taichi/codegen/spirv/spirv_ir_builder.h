@@ -371,8 +371,7 @@ class IRBuilder {
                     const std::vector<Value> &args,
                     Value lod);
 
-  Value image_load(Value image_var,
-                   const std::vector<Value> &args);
+  Value image_load(Value image_var, const std::vector<Value> &args);
 
   void image_store(Value image_var, const std::vector<Value> &args);
 

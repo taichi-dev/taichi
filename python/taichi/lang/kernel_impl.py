@@ -466,8 +466,10 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, ndarray_type.NdarrayType,
-                                           texture_type.TextureType, texture_type.RWTextureType)):
+                if isinstance(
+                        annotation,
+                    (template, ndarray_type.NdarrayType,
+                     texture_type.TextureType, texture_type.RWTextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass

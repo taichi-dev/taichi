@@ -964,7 +964,7 @@ class TaskCodegen : public IRVisitor {
               stmt->channel_format == PrimitiveType::i8) {
             format = BufferFormat::rg8;
           } else if (stmt->channel_format == PrimitiveType::u16 ||
-                      stmt->channel_format == PrimitiveType::i16) {
+                     stmt->channel_format == PrimitiveType::i16) {
             format = BufferFormat::rg16;
           } else if (stmt->channel_format == PrimitiveType::f16) {
             format = BufferFormat::rg16f;
@@ -984,16 +984,16 @@ class TaskCodegen : public IRVisitor {
             format = BufferFormat::rgba32f;
           }
         }
-        
+
         int binding = binding_head_++;
         val = ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
-                                    /*set=*/0, binding, format);
+                                          /*set=*/0, binding, format);
         TextureBind bind;
         bind.arg_id = arg_id;
         bind.binding = binding;
         bind.is_storage = true;
         texture_binds_.push_back(bind);
-        argid_to_tex_value_[arg_id] = val;        
+        argid_to_tex_value_[arg_id] = val;
       } else {
         int binding = binding_head_++;
         val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,

@@ -243,7 +243,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
           resource_binder_.rw_image(set, desc_binding->binding,
-                                 kDeviceNullAllocation, {});
+                                    kDeviceNullAllocation, {});
         } else {
           TI_WARN("unrecognized binding");
         }
@@ -664,17 +664,15 @@ void VulkanResourceBinder::rw_image(uint32_t set,
                                     int lod) {
   CHECK_SET_BINDINGS
   if (layout_locked_) {
-    TI_ASSERT(bindings.at(binding).type ==
-              VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
   } else {
     if (bindings.find(binding) != bindings.end()) {
       TI_WARN("Overriding last binding");
     }
   }
-  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                       alloc.get_ptr(0), VK_WHOLE_SIZE};
+  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, alloc.get_ptr(0),
+                       VK_WHOLE_SIZE};
 }
-
 
 #undef CHECK_SET_BINDINGS
 
@@ -716,7 +714,8 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
         buffer_info.range = pair.second.size;
         is_image.push_back(false);
         set->ref_binding_objs[binding] = buffer;
-      } else if (pair.second.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+      } else if (pair.second.type ==
+                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         auto view = std::get<1>(device.get_vk_image(pair.second.ptr));
         image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         image_info.imageView = view->view;
@@ -1778,7 +1777,8 @@ vkapi::IVkImageView VulkanDevice::get_vk_imageview(
 }
 
 vkapi::IVkImageView VulkanDevice::get_vk_lod_imageview(
-    const DeviceAllocation &alloc, int lod) const {
+    const DeviceAllocation &alloc,
+    int lod) const {
   return image_allocations_.at(alloc.alloc_id).view_lods[lod];
 }
 
@@ -1814,10 +1814,9 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                     VK_IMAGE_USAGE_STORAGE_BIT;
+  image_info.usage =
+      VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   if (is_depth) {
     image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   } else {

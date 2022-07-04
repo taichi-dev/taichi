@@ -311,7 +311,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     cmp = [](const KerData &a, const KerData &b) -> bool {
       return a.last_used_at < b.last_used_at;
     };
-  } else if (policy & ClaenOldCreated) {  // FIFO
+  } else if (policy & CleanOldCreated) {  // FIFO
     cmp = [](const KerData &a, const KerData &b) -> bool {
       return a.created_at < b.created_at;
     };
@@ -346,7 +346,7 @@ LlvmOfflineCacheFileWriter::CleanCachePolicy
 LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
     const std::string &str) {
   if (str == "never")
-    return Nerver;
+    return Never;
   if (str == "version")
     return OnlyOldVersion;
   if (str == "lru")
@@ -355,7 +355,7 @@ LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
     return FIFO;
 
   TI_WARN("Invalid CleanCachePolicy");
-  return Nerver;
+  return Never;
 }
 
 }  // namespace lang

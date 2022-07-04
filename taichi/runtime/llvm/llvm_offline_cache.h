@@ -148,15 +148,15 @@ class LlvmOfflineCacheFileWriter {
     NotClean = 0b000,
     CleanOldVersion = 0b001,
     CleanOldUsed = 0b010,
-    ClaenOldCreated = 0b100
+    CleanOldCreated = 0b100
   };
 
  public:
   enum CleanCachePolicy {
-    Nerver = NotClean,
+    Never = NotClean,
     OnlyOldVersion = CleanOldVersion,
     LRU = CleanOldVersion | CleanOldUsed,
-    FIFO = CleanOldVersion | ClaenOldCreated
+    FIFO = CleanOldVersion | CleanOldCreated
   };
 
   void set_data(LlvmOfflineCache &&data) {

@@ -1,41 +1,8 @@
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/llvm/aot_graph_data.h"
 
 namespace taichi {
 namespace lang {
-namespace {
-
-class KernelImpl : public aot::Kernel {
- public:
-  explicit KernelImpl(FunctionType fn) : fn_(fn) {
-  }
-
-  void launch(RuntimeContext *ctx) override {
-    fn_(*ctx);
-  }
-
- private:
-  FunctionType fn_;
-};
-
-class FieldImpl : public aot::Field {
- public:
-  explicit FieldImpl(const LlvmOfflineCache::FieldCacheData &field)
-      : field_(field) {
-  }
-
-  explicit FieldImpl(LlvmOfflineCache::FieldCacheData &&field)
-      : field_(std::move(field)) {
-  }
-
-  LlvmOfflineCache::FieldCacheData get_field() const {
-    return field_;
-  }
-
- private:
-  LlvmOfflineCache::FieldCacheData field_;
-};
-
-}  // namespace
 
 LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
@@ -50,9 +17,9 @@ LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
 
 std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
-  auto loaded = load_kernel_from_cache(name);
-  auto fn = convert_module_to_function(name, std::move(loaded));
-  return std::make_unique<KernelImpl>(fn);
+  auto fn = convert_module_to_function(name, load_kernel_from_cache(name));
+  return std::make_unique<llvm_aot::KernelImpl>(fn, name,
+                                                load_kernel_from_cache(name));
 }
 
 std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
@@ -70,14 +37,25 @@ std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
   auto ok = cache_reader_->get_field_cache(loaded, snode_tree_id);
   TI_ERROR_IF(!ok, "Failed to load field with id={}", snode_tree_id);
 
-  return std::make_unique<FieldImpl>(std::move(loaded));
+  return std::make_unique<llvm_aot::FieldImpl>(std::move(loaded));
+}
+
+std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
+  TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
+  std::vector<aot::CompiledDispatch> dispatches;
+  for (auto &dispatch : graphs_[name].dispatches) {
+    dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
+                          get_kernel(dispatch.kernel_name)});
+  }
+  aot::CompiledGraph graph{dispatches};
+  return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 
 void finalize_aot_field(aot::Module *aot_module,
                         aot::Field *aot_field,
                         uint64 *result_buffer) {
   auto *llvm_aot_module = dynamic_cast<LlvmAotModule *>(aot_module);
-  auto *aot_field_impl = dynamic_cast<FieldImpl *>(aot_field);
+  auto *aot_field_impl = dynamic_cast<llvm_aot::FieldImpl *>(aot_field);
 
   TI_ASSERT(llvm_aot_module != nullptr);
   TI_ASSERT(aot_field_impl != nullptr);

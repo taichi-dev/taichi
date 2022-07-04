@@ -3,6 +3,7 @@
 #include "llvm/IR/Module.h"
 
 #include "taichi/program/program.h"
+#include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/codegen.h"
@@ -93,6 +94,25 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 
   TI_NOT_IMPLEMENTED;
   return nullptr;
+}
+
+std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
+  auto compiled_fn =
+      this->compile(&kernel, nullptr);  // Offloaded used in async mode only
+
+  const std::string &kernel_key = kernel.get_cached_kernel_key();
+  TI_ASSERT(cache_data_.kernels.count(kernel_key));
+  const LlvmOfflineCache::KernelCacheData &kernel_data =
+      cache_data_.kernels[kernel_key];
+
+  LlvmOfflineCache::KernelCacheData compiled_kernel;
+  compiled_kernel.kernel_key = kernel.get_name();
+  compiled_kernel.owned_module =
+      llvm::CloneModule(*kernel_data.owned_module.get());
+  compiled_kernel.args = kernel_data.args;
+  compiled_kernel.offloaded_task_list = kernel_data.offloaded_task_list;
+  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn, kernel.get_name(),
+                                                std::move(compiled_kernel));
 }
 
 void LlvmProgramImpl::cache_kernel(

@@ -1689,6 +1689,15 @@ void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       ptr_ty = alloc->getAllocatedType();
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
       ptr_ty = gv->getValueType();
+    else if (stmt->origin->is<GlobalTemporaryStmt>()) {
+      auto *tmpo_stmt = stmt->origin->cast<GlobalTemporaryStmt>();
+      if (tmpo_stmt->ret_type->is<TensorType>()) {
+        ptr_ty = tlctx->get_data_type(
+            tmpo_stmt->ret_type->cast<TensorType>()->get_element_type());
+      } else {
+        ptr_ty = tlctx->get_data_type(tmpo_stmt->ret_type.ptr_removed());
+      }
+    }
     TI_ASSERT(ptr_ty);
 #endif
     llvm_val[stmt] = builder->CreateGEP(

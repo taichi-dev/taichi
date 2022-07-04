@@ -12,7 +12,12 @@ std::string type_name(llvm::Type *type) {
 
 void check_func_call_signature(llvm::Value *func,
                                std::vector<llvm::Value *> arglist) {
-  auto func_type = func->getType()->getPointerElementType();
+  llvm::FunctionType *func_type = nullptr;
+  if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(func)) {
+    func_type = fn->getFunctionType();
+  } else if (auto *call = llvm::dyn_cast<llvm::CallInst>(func)) {
+    func_type = llvm::cast_or_null<llvm::FunctionType>(func->getType()->getPointerElementType()); 
+  }
   int num_params = func_type->getFunctionNumParams();
   if (func_type->isFunctionVarArg()) {
     TI_ASSERT(num_params <= arglist.size());

@@ -358,15 +358,24 @@ def test_ad_global_store_forwarding():
     x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     a = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    c = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    d = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    e = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
     @ti.kernel
     def func():
-        a[None] = 2 * x[None]
-        b[None] = a[None] + 1
+        a[None] = x[None]
+        b[None] = a[None] * 2
+        c[None] = b[None] * 3
+        d[None] = c[None] * 4
+        e[None] = d[None] * 5
 
     x[None] = 1
 
-    with ti.ad.Tape(loss=b):
+    with ti.ad.Tape(loss=e):
         func()
-    assert a.grad[None] == 1.0
-    assert x.grad[None] == 2.0
+    assert x.grad[None] == 120.0
+    assert a.grad[None] == 120.0
+    assert b.grad[None] == 60.0
+    assert c.grad[None] == 20.0
+    assert d.grad[None] == 5.0

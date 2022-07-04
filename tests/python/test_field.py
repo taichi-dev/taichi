@@ -118,6 +118,34 @@ def test_field_needs_grad():
     func()
 
 
+@test_utils.test()
+def test_field_needs_grad_dtype():
+    with pytest.raises(
+            RuntimeError,
+            match=r".* is not supported for field with `needs_grad=True`."):
+        a = ti.field(int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=r".* is not supported for field with `needs_grad=True`."):
+        b = ti.Vector.field(3, int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=r".* is not supported for field with `needs_grad=True`."):
+        c = ti.Matrix.field(2, 3, int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=r".* is not supported for field with `needs_grad=True`."):
+        d = ti.Struct.field(
+            {
+                "pos": ti.types.vector(3, int),
+                "vel": ti.types.vector(3, float),
+                "acc": ti.types.vector(3, float),
+                "mass": ti.f32,
+            },
+            shape=1,
+            needs_grad=True)
+
+
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
 def test_default_fp(dtype):
     ti.init(default_fp=dtype)

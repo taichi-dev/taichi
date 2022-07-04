@@ -238,7 +238,13 @@ void export_lang(py::module &m) {
                      &CompileConfig::auto_mesh_local_default_occupacy)
       .def_readwrite("offline_cache", &CompileConfig::offline_cache)
       .def_readwrite("offline_cache_file_path",
-                     &CompileConfig::offline_cache_file_path);
+                     &CompileConfig::offline_cache_file_path)
+      .def_readwrite("offline_cache_cleaning_policy",
+                     &CompileConfig::offline_cache_cleaning_policy)
+      .def_readwrite("offline_cache_max_size_of_files",
+                     &CompileConfig::offline_cache_max_size_of_files)
+      .def_readwrite("offline_cache_cleaning_factor",
+                     &CompileConfig::offline_cache_cleaning_factor);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

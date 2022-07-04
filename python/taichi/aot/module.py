@@ -1,8 +1,8 @@
 from contextlib import contextmanager
 from glob import glob
 from pathlib import Path, PurePosixPath
-from random import randint
 from shutil import rmtree
+from tempfile import mkdtemp
 from zipfile import ZipFile
 
 from taichi.aot.utils import (produce_injected_args,
@@ -215,13 +215,7 @@ class Module:
         tcm_path = Path(filepath).absolute()
         assert tcm_path.parent.exists(), "Output directory doesn't exist"
 
-        temp_dir = None
-        while temp_dir is None:
-            temp_dir = Path(f"{tcm_path.parent}/_{randint(10000, 100000)}")
-            if temp_dir.exists():
-                temp_dir = None
-
-        Path.mkdir(temp_dir)
+        temp_dir = mkdtemp(prefix="tcm_")
         # Save first as usual.
         self.save(temp_dir, "")
 

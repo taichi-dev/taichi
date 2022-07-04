@@ -826,9 +826,6 @@ class ASTTransformer(Builder):
                         Warning)
 
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
                 end = ti_ops.cast(end_expr, primitive_types.i32)
 
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,

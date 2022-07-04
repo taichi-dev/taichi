@@ -557,6 +557,7 @@ def test_aot_ndarray_template_mixed():
             args_count = res['aot_data']['kernels']['run']['args_count']
             assert args_count == 2, res  # `arr` and `val1`
 
+
 @test_utils.test(arch=[ti.vulkan])
 def test_archive():
     density = ti.field(float, shape=(4, 4))
@@ -574,4 +575,5 @@ def test_archive():
         tcm_path = f"{tmpdir}/x.tcm"
         m.archive(tcm_path)
         with zipfile.ZipFile(tcm_path, 'r') as z:
-            assert z.read("__version__") == bytes('.'.join(str(x) for x in ti.__version__), 'utf-8')
+            assert z.read("__version__") == bytes(
+                '.'.join(str(x) for x in ti.__version__), 'utf-8')

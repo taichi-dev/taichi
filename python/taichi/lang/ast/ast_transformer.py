@@ -799,17 +799,38 @@ class ASTTransformer(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[1])),
-                    primitive_types.i32)
+                begin_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[1]))
+
+                # Warning for implicit dtype conversion
+                if begin_expr.ptr.get_ret_type() == primitive_types.i64:
+                    warnings.warn(
+                        "Casting range_for \"begin\" value from i64 to i32, which may cause numerical issues",
+                        Warning)
+
+                if end_expr.ptr.get_ret_type() == primitive_types.i64:
+                    warnings.warn(
+                        "Casting range_for \"end\" value from i64 to i32, which may cause numerical issues",
+                        Warning)
+
+                begin = ti_ops.cast(begin_expr, primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             else:
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+
+                # Warning for implicit dtype conversion
+                if end_expr.ptr.get_ret_type() == primitive_types.i64:
+                    warnings.warn(
+                        "Casting range_for \"end\" value from i64 to i32, which may cause numerical issues",
+                        Warning)
+
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
                 end = ti_ops.cast(
                     expr.Expr(build_stmt(ctx, node.iter.args[0])),
                     primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             build_stmts(ctx, node.body)

@@ -31,7 +31,8 @@ namespace {
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
 
-static bool is_current_llvm_cache_version(const LlvmOfflineCache::Version &ver) {
+static bool is_current_llvm_cache_version(
+    const LlvmOfflineCache::Version &ver) {
   // TODO(PGZXB): Do more detailed checking
   return ver[0] == TI_VERSION_MAJOR && ver[1] == TI_VERSION_MINOR &&
          ver[2] == TI_VERSION_PATCH;

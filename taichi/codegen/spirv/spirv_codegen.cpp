@@ -945,7 +945,7 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       if (stmt->is_storage) {
-        BufferFormat format;
+        BufferFormat format = BufferFormat::unknown;
 
         if (stmt->num_channels == 1) {
           if (stmt->channel_format == PrimitiveType::u8 ||

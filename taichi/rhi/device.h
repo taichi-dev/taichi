@@ -242,7 +242,8 @@ enum class BufferFormat : uint32_t {
   rgba32f,
   depth16,
   depth24stencil8,
-  depth32f
+  depth32f,
+  unknown
 };
 
 class Pipeline {

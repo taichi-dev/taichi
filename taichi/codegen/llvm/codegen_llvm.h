@@ -26,7 +26,6 @@ class OffloadedTask {
 
   OffloadedTask(const std::string &name);
   TI_IO_DEF(name, block_dim, grid_dim);
-
 };
 
 class FunctionCreationGuard {

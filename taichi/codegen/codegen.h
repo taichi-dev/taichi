@@ -13,7 +13,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-
 class KernelCodeGen {
  protected:
   Program *prog;

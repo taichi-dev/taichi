@@ -266,9 +266,9 @@ FunctionType CodeGenCPU::codegen() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-   if (!kernel->is_evaluator) {
-     cache_module(kernel_key, data);
-   }
+  if (!kernel->is_evaluator) {
+    cache_module(kernel_key, data);
+  }
 
   CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
   return converter.convert(kernel, std::move(data));

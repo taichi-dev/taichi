@@ -2420,7 +2420,6 @@ LLVMCompiledData LLVMCompiledData::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 
-
 TLANG_NAMESPACE_END
 
 #endif  // #ifdef TI_WITH_LLVM

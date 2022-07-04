@@ -92,7 +92,8 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       data.module = load_module(filename_prefix, key, llvm_ctx);
       TI_ASSERT(data.module);
     }
-    res.compiled_data_list.emplace_back(data.tasks, llvm::CloneModule(*data.module));
+    res.compiled_data_list.emplace_back(data.tasks,
+                                        llvm::CloneModule(*data.module));
   }
 
   res.kernel_key = key;
@@ -156,7 +157,6 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           });
         }
       }
-
     }
   }
   {
@@ -214,9 +214,10 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
   }
 }
 
-LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone() const {
+LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
+    const {
   std::vector<LLVMCompiledData> new_data_list;
-  for (const auto &data: compiled_data_list) {
+  for (const auto &data : compiled_data_list) {
     new_data_list.push_back(data.clone());
   }
   return {kernel_key, args, std::move(new_data_list)};

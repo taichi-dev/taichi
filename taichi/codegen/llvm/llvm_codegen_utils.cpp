@@ -16,7 +16,8 @@ void check_func_call_signature(llvm::Value *func,
   if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(func)) {
     func_type = fn->getFunctionType();
   } else if (auto *call = llvm::dyn_cast<llvm::CallInst>(func)) {
-    func_type = llvm::cast_or_null<llvm::FunctionType>(func->getType()->getPointerElementType()); 
+    func_type = llvm::cast_or_null<llvm::FunctionType>(
+        func->getType()->getPointerElementType());
   }
   int num_params = func_type->getFunctionNumParams();
   if (func_type->isFunctionVarArg()) {

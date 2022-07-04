@@ -216,7 +216,7 @@ class Module:
         assert tcm_path.parent.exists(), "Output directory doesn't exist"
 
         temp_dir = None
-        while temp_dir == None:
+        while temp_dir is None:
             temp_dir = Path(f"{tcm_path.parent}/_{randint(10000, 100000)}")
             if temp_dir.exists():
                 temp_dir = None
@@ -226,12 +226,12 @@ class Module:
         self.save(temp_dir, "")
 
         # Package all artifacts into a zip archive and attach contend data.
-        with ZipFile(tcm_path, "w") as zip:
-            zip.writestr("__content__", '\n'.join(self._content))
-            zip.writestr("__version__",
-                         '.'.join(str(x) for x in taichi.__version__))
+        with ZipFile(tcm_path, "w") as z:
+            z.writestr("__content__", '\n'.join(self._content))
+            z.writestr("__version__",
+                       '.'.join(str(x) for x in taichi.__version__))
             for path in glob(f"{temp_dir}/*", recursive=True):
-                zip.write(path, Path.relative_to(Path(path), temp_dir))
+                z.write(path, Path.relative_to(Path(path), temp_dir))
 
         # Remove cached files
         rmtree(temp_dir)

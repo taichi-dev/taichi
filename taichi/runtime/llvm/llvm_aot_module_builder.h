@@ -27,6 +27,12 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
                              int row_num,
                              int column_num) override;
 
+  void add_compiled_kernel(aot::Kernel *kernel) override;
+
+  const LlvmOfflineCache &get_cache() {
+    return cache_;
+  }
+
  private:
   mutable LlvmOfflineCache cache_;
   LlvmProgramImpl *prog_ = nullptr;

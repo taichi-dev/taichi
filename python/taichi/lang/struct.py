@@ -285,7 +285,7 @@ class Struct(TaichiOperations):
             offset (Tuple[int]): offset of the indices of the created field.
                 For example if `offset=(-10, -10)` the indices of the field
                 will start at `(-10, -10)`, not `(0, 0)`.
-            needs_grad (bool): enabling gradient field or not.
+            needs_grad (bool): enabling grad field (reverse mode autodiff) or not.
             layout: AOS or SOA.
 
         Example:
@@ -356,6 +356,7 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
+
         return StructField(field_dict, methods, name=name)
 
 
@@ -387,11 +388,20 @@ class StructField(Field):
             to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, struct_methods, name=None):
+    def __init__(self, field_dict, struct_methods, name=None, is_primal=True):
         # will not call Field initializer
         self.field_dict = field_dict
         self.struct_methods = struct_methods
         self.name = name
+        self.grad = None
+        if is_primal:
+            grad_field_dict = {}
+            for k, v in self.field_dict.items():
+                grad_field_dict[k] = v.grad
+            self.grad = StructField(grad_field_dict,
+                                    struct_methods,
+                                    name + ".grad",
+                                    is_primal=False)
         self._register_fields()
 
     @property

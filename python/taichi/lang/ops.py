@@ -375,18 +375,13 @@ def round(x):  # pylint: disable=redefined-builtin
 @unary
 def floor(x):
     """Return the floor of the input, element-wise.
-
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
-
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
-
     Returns:
         The floor of each element in `x`, with float type.
-
     Example::
-
         >>> @ti.kernel
         >>> def test():
         >>>     x = ti.Matrix([3.14, -1.5])

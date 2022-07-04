@@ -142,55 +142,91 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is Function:
+
+        out = []
+
         return_value_type = "void" if x.return_value_type == None else get_type_name(
             x.return_value_type)
-        out = [
-            "static partial class Ffi {",
-            "#if (UNITY_IOS || UNITY_TVOS || UNITY_WEBGL) && !UNITY_EDITOR",
-            '    [DllImport ("__Internal")]',
-            "#else",
-            '    [DllImport("taichi_unity")]'
-            if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
-            "#endif",
-            "private static extern " + return_value_type + " " +
-            x.name.snake_case + "(",
-            ',\n'.join(f"  {get_c_function_param(param)}"
-                       for param in x.params),
-            ");",
-            "public static " + return_value_type + " " +
-            x.name.upper_camel_case + "(",
-            ',\n'.join(f"  {get_function_param(param)}" for param in x.params),
-            ") {",
-        ]
+
+        n = 1
+        c_function_param_perm = []
+        function_param_perm = []
         for param in x.params:
-            if (isinstance(param.type, Structure)
-                    or isinstance(param.type, Union)) and not param.count:
-                out += [
-                    f"  IntPtr hglobal_{param.name} = Marshal.AllocHGlobal(Marshal.SizeOf(typeof({get_type_name(param.type)})));",
-                    f"  Marshal.StructureToPtr({param.name}, hglobal_{param.name}, false);"
+            if isinstance(param.type,
+                          BuiltInType) and (param.type.id == "const void*"
+                                            or param.type.id == "void*"):
+                perm = [
+                    "byte", "sbyte", "short", "ushort", "int", "uint", "long",
+                    "ulong", "IntPtr", "float", "double"
                 ]
-        if x.return_value_type:
-            out += [f"  var rv = {x.name.snake_case}("]
-        else:
-            out += [f"  {x.name.snake_case}("]
-        for i, param in enumerate(x.params):
-            if (isinstance(param.type, Structure)
-                    or isinstance(param.type, Union)) and not param.count:
-                out += [
-                    f"    hglobal_{param.name}{','if i + 1 != len(x.params) else ''}"
-                ]
+                c_function_param_perm += [[
+                    f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {param.name}"
+                    for x in perm
+                ]]
+                function_param_perm += [[
+                    f"  {x}[] {param.name}" for x in perm
+                ]]
+                n *= len(perm)
             else:
-                out += [
-                    f"    {param.name}{','if i + 1 != len(x.params) else ''}"
-                ]
-        out += ["  );"]
-        for param in x.params:
-            if (isinstance(param.type, Structure)
-                    or isinstance(param.type, Union)) and not param.count:
-                out += [f"  Marshal.FreeHGlobal(hglobal_{param.name});"]
-        if x.return_value_type:
-            out += [f"  return rv;"]
-        out += ["}", "}"]
+                c_function_param_perm += [[f"  {get_c_function_param(param)}"]]
+                function_param_perm += [[f"  {get_function_param(param)}"]]
+
+        for i in range(n):
+            c_function_params = []
+            function_params = []
+
+            for (a, b) in zip(c_function_param_perm, function_param_perm):
+                local_idx = i % len(a)
+                i //= len(a)
+                c_function_params += [a[local_idx]]
+                function_params += [b[local_idx]]
+
+            out += [
+                "static partial class Ffi {",
+                "#if (UNITY_IOS || UNITY_TVOS || UNITY_WEBGL) && !UNITY_EDITOR",
+                '    [DllImport ("__Internal")]',
+                "#else",
+                '    [DllImport("taichi_unity")]'
+                if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
+                "#endif",
+                "private static extern " + return_value_type + " " +
+                x.name.snake_case + "(",
+                ',\n'.join(c_function_params),
+                ");",
+                "public static " + return_value_type + " " +
+                x.name.upper_camel_case + "(",
+                ',\n'.join(function_params),
+                ") {",
+            ]
+            for param in x.params:
+                if (isinstance(param.type, Structure)
+                        or isinstance(param.type, Union)) and not param.count:
+                    out += [
+                        f"  IntPtr hglobal_{param.name} = Marshal.AllocHGlobal(Marshal.SizeOf(typeof({get_type_name(param.type)})));",
+                        f"  Marshal.StructureToPtr({param.name}, hglobal_{param.name}, false);"
+                    ]
+            if x.return_value_type:
+                out += [f"  var rv = {x.name.snake_case}("]
+            else:
+                out += [f"  {x.name.snake_case}("]
+            for i, param in enumerate(x.params):
+                if (isinstance(param.type, Structure)
+                        or isinstance(param.type, Union)) and not param.count:
+                    out += [
+                        f"    hglobal_{param.name}{','if i + 1 != len(x.params) else ''}"
+                    ]
+                else:
+                    out += [
+                        f"    {param.name}{','if i + 1 != len(x.params) else ''}"
+                    ]
+            out += ["  );"]
+            for param in x.params:
+                if (isinstance(param.type, Structure)
+                        or isinstance(param.type, Union)) and not param.count:
+                    out += [f"  Marshal.FreeHGlobal(hglobal_{param.name});"]
+            if x.return_value_type:
+                out += [f"  return rv;"]
+            out += ["}", "}"]
         return '\n'.join(out)
 
     else:

@@ -17,6 +17,9 @@ class LlvmAotModule : public aot::Module {
       : program_(program),
         cache_reader_(LlvmOfflineCacheFileReader::make(module_path)) {
     TI_ASSERT(program_ != nullptr);
+
+    const std::string graph_path = fmt::format("{}/graphs.tcb", module_path);
+    read_from_binary_file(graphs_, graph_path);
   }
 
   Arch arch() const override {
@@ -42,6 +45,8 @@ class LlvmAotModule : public aot::Module {
   bool is_snode_tree_initialized(int snode_tree_id) {
     return initialized_snode_tree_ids.count(snode_tree_id);
   }
+
+  std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) override;
 
  protected:
   virtual FunctionType convert_module_to_function(

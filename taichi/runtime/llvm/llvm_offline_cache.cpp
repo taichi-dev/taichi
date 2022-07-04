@@ -31,7 +31,7 @@ namespace {
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
 
-static bool check_llvm_cache_verison(const LlvmOfflineCache::Version &ver) {
+static bool is_current_llvm_cache_version(const LlvmOfflineCache::Version &ver) {
   // TODO(PGZXB): Do more detailed checking
   return ver[0] == TI_VERSION_MAJOR && ver[1] == TI_VERSION_MINOR &&
          ver[2] == TI_VERSION_PATCH;
@@ -279,7 +279,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
   LlvmOfflineCacheFileReader::load_meta_data(cache_data, path);
 
   if ((policy & CleanOldVersion) &&
-      !check_llvm_cache_verison(cache_data.version)) {
+      !is_current_llvm_cache_version(cache_data.version)) {
     if (bool ok = fs::remove(get_llvm_cache_metadata_file_path(path)) &&
                   fs::remove(get_llvm_cache_metadata_json_file_path(path));
         ok) {

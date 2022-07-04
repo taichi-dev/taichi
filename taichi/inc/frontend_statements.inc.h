@@ -13,3 +13,4 @@ PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendFuncDefStmt)
 PER_STATEMENT(FrontendReturnStmt)
+PER_STATEMENT(FrontendTextureOpStmt)

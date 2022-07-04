@@ -99,7 +99,7 @@ class RWTextureAccessor:
             args_group = impl.make_expr_group(index.x, index.y, value.r, value.g, value.b, value.a)
         elif self.num_dims == 3:
             args_group = impl.make_expr_group(index.x, index.y, index.z, value.r, value.g, value.b, value.a)
-        return _ti_core.make_texture_op_expr(_ti_core.TextureOpType.store,
+        impl.get_runtime().prog.current_ast_builder().insert_texture_op_expr(_ti_core.TextureOpType.store,
                                           self.ptr_expr, args_group)
 
 class Texture:

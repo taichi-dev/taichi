@@ -905,6 +905,12 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   return Expr::make<MeshPatchIndexExpression>();
 }
 
+void ASTBuilder::insert_texture_op_expr(const TextureOpType &op_type,
+                                        const Expr &ptr,
+                                        const ExprGroup &args) {
+  this->insert(Stmt::make<FrontendTextureOpStmt>(op_type, ptr, args));
+}
+
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
   this->insert(Stmt::make<FrontendReturnStmt>(group));
 }

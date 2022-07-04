@@ -743,7 +743,7 @@ Value IRBuilder::storage_image_argument(int num_channels,
   auto texture_ptr_type =
       get_pointer_type(texture_type, spv::StorageClassUniformConstant);
 
-  Value val = new_value(texture_ptr_type, ValueKind::kVariablePtr);
+  Value val = new_value(texture_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
       .add_seq(texture_ptr_type, val, spv::StorageClassUniformConstant)
       .commit(&global_);

@@ -439,6 +439,11 @@ class IRPrinter : public IRVisitor {
           expr_group_to_string(stmt->values));
   }
 
+  void visit(FrontendTextureOpStmt *stmt) override {
+    TextureOpExpression *expr = stmt->expr.cast<TextureOpExpression>().get();
+    print(expr_to_string(expr));
+  }
+
   void visit(ReturnStmt *stmt) override {
     print("{}{} : return {}", stmt->type_hint(), stmt->name(),
           stmt->values_raw_names());

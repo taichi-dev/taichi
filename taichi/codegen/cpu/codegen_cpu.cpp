@@ -245,7 +245,7 @@ FunctionType CodeGenCPU::codegen() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<LLVMCompiledData> modules(offloads.size());
+  std::vector<LLVMCompiledData> data(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
@@ -253,7 +253,9 @@ FunctionType CodeGenCPU::codegen() {
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
-      modules[i] = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      data[i].tasks = std::move(new_data.tasks);
+      data[i].module = std::move(new_data.module);
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -264,8 +266,12 @@ FunctionType CodeGenCPU::codegen() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
+   if (!kernel->is_evaluator) {
+     cache_module(kernel_key, data);
+   }
+
   CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
-  return converter.convert(kernel, std::move(modules));
+  return converter.convert(kernel, std::move(data));
 }
 
 LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,

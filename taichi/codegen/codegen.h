@@ -13,17 +13,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#ifdef TI_WITH_LLVM
-class ModuleGenValue {
- public:
-  ModuleGenValue(std::unique_ptr<llvm::Module> module,
-                 const std::vector<std::string> &name_list)
-      : module(std::move(module)), name_list(name_list) {
-  }
-  std::unique_ptr<llvm::Module> module;
-  std::vector<std::string> name_list;
-};
-#endif
 
 class KernelCodeGen {
  protected:
@@ -53,6 +42,8 @@ class KernelCodeGen {
   }
   bool maybe_read_compilation_from_cache(const std::string &kernel_key,
                                          std::vector<LLVMCompiledData> &data);
+  void cache_module(const std::string &kernel_key,
+                    const std::vector<LLVMCompiledData> &data);
 #endif
 };
 

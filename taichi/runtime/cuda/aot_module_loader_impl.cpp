@@ -23,19 +23,8 @@ class AotModuleImpl : public LlvmAotModule {
     TI_ASSERT(arch == Arch::cuda);
     auto *tlctx = program_->get_llvm_context(arch);
 
-    const auto &tasks = loaded.offloaded_task_list;
-    std::vector<OffloadedTask> offloaded_tasks;
-    offloaded_tasks.reserve(tasks.size());
-    for (const auto &t : tasks) {
-      OffloadedTask ot{/*codegen=*/nullptr};
-      ot.name = t.name;
-      ot.block_dim = t.block_dim;
-      ot.grid_dim = t.grid_dim;
-      offloaded_tasks.push_back(std::move(ot));
-    }
-
     CUDAModuleToFunctionConverter converter{tlctx, program_};
-    return converter.convert(name, std::move(offloaded_tasks));
+    return converter.convert(name, loaded.args, std::move(loaded.compiled_data_list));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

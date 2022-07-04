@@ -106,34 +106,25 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
   const LlvmOfflineCache::KernelCacheData &kernel_data =
       cache_data_.kernels[kernel_key];
 
-  LlvmOfflineCache::KernelCacheData compiled_kernel;
+  LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
   compiled_kernel.kernel_key = kernel.get_name();
-  compiled_kernel.owned_module =
-      llvm::CloneModule(*kernel_data.owned_module.get());
-  compiled_kernel.args = kernel_data.args;
-  compiled_kernel.offloaded_task_list = kernel_data.offloaded_task_list;
   return std::make_unique<llvm_aot::KernelImpl>(compiled_fn, kernel.get_name(),
                                                 std::move(compiled_kernel));
 }
 
-void LlvmProgramImpl::cache_kernel(
-    const std::string &kernel_key,
-    const std::vector<LLVMCompiledData> &modules,
-    std::vector<LlvmLaunchArgInfo> &&args,
-    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-        &&offloaded_task_list) {
+void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
+                                   const std::vector<LLVMCompiledData> &data,
+                                   std::vector<LlvmLaunchArgInfo> &&args) {
   if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
     return;
   }
   auto &kernel_cache = cache_data_.kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
-  std::vector<std::unique_ptr<llvm::Module>> mods;
-  for (auto *mod : modules) {
-    mods.push_back(llvm::CloneModule(*mod));
+  for (const auto &datum : data) {
+    kernel_cache.compiled_data_list.emplace_back(
+        datum.tasks, llvm::CloneModule(*datum.module));
   }
-  kernel_cache.owned_modules = std::move(mods);
   kernel_cache.args = std::move(args);
-  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
 }
 
 void LlvmProgramImpl::cache_field(int snode_tree_id,

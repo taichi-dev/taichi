@@ -73,10 +73,17 @@ bool KernelCodeGen::maybe_read_compilation_from_cache(
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
     return false;
   }
-  data.swap(cache_data.offloaded_task_list);
+  data.swap(cache_data.compiled_data_list);
   kernel->set_from_offline_cache();
   return true;
 }
+
+void KernelCodeGen::cache_module(const std::string &kernel_key,
+                                 const std::vector<LLVMCompiledData> &data) {
+  get_llvm_program(prog)->cache_kernel(kernel_key, data,
+                                       infer_launch_args(kernel));
+}
+
 #endif
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,

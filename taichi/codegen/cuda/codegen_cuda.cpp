@@ -15,6 +15,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -724,6 +725,21 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
+  // TODO: move the offline cache part to the base class
+  auto *llvm_prog = get_llvm_program(prog);
+  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  auto &config = prog->config;
+  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
+    std::vector<LLVMCompiledData> res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
+    if (ok) {
+      CUDAModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+      return converter.convert(kernel, std::move(res));
+    }
+  }
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }
@@ -731,10 +747,14 @@ FunctionType CodeGenCUDA::codegen() {
   CodeGenLLVMCUDA gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 
-  auto *llvm_prog = get_llvm_program(kernel->program);
   CUDAModuleToFunctionConverter converter{gen.tlctx, llvm_prog};
+  std::vector<LLVMCompiledData> data_list;
+  data_list.push_back(std::move(compiled_res));
+  if (!kernel->is_evaluator) {
+    cache_module(kernel_key, data_list);
+  }
 
-  return converter.convert(this->kernel, {std::move(compiled_res)});
+  return converter.convert(this->kernel, std::move(data_list));
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(

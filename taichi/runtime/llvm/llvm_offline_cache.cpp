@@ -85,16 +85,18 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   }
 
   auto &kernel_data = itr->second;
-  if (kernel_data.owned_modules == nullptr) {
-    const std::string filename_prefix = path_ + "/" + key;
-    kernel_data.owned_modules = load_module(filename_prefix, key, llvm_ctx);
-    TI_ASSERT(kernel_data.owned_modules != nullptr);
+  for (int i = 0; i < kernel_data.compiled_data_list.size(); i++) {
+    auto &data = kernel_data.compiled_data_list[i];
+    if (!data.module) {
+      std::string filename_prefix = path_ + "/" + key + "." + std::to_string(i);
+      data.module = load_module(filename_prefix, key, llvm_ctx);
+      TI_ASSERT(data.module);
+    }
+    res.compiled_data_list.emplace_back(data.tasks, llvm::CloneModule(*data.module));
   }
 
   res.kernel_key = key;
   res.args = kernel_data.args;
-  res.offloaded_task_list = kernel_data.offloaded_task_list;
-  res.owned_modules = llvm::CloneModule(*kernel_data.owned_modules);
   return true;
 }
 
@@ -137,20 +139,24 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           writer(llvm_os);
         };
     {
-      auto *mod = v.owned_modules.get();
-      TI_ASSERT(mod != nullptr);
+      mangle_offloaded_task_name(k, v.compiled_data_list);
+      for (int i = 0; i < v.compiled_data_list.size(); i++) {
+        auto &data = v.compiled_data_list[i];
+        auto *mod = data.module.get();
+        TI_ASSERT(mod != nullptr);
+        std::string suffix = "." + std::to_string(i);
+        if (format & Format::LL) {
+          write_llvm_module(suffix + ".ll", [mod](llvm::raw_os_ostream &os) {
+            mod->print(os, /*AAW=*/nullptr);
+          });
+        }
+        if (format & Format::BC) {
+          write_llvm_module(suffix + ".bc", [mod](llvm::raw_os_ostream &os) {
+            llvm::WriteBitcodeToFile(*mod, os);
+          });
+        }
+      }
 
-      mangle_offloaded_task_name(k, mod, v.offloaded_task_list);
-      if (format & Format::LL) {
-        write_llvm_module(".ll", [mod](llvm::raw_os_ostream &os) {
-          mod->print(os, /*AAW=*/nullptr);
-        });
-      }
-      if (format & Format::BC) {
-        write_llvm_module(".bc", [mod](llvm::raw_os_ostream &os) {
-          llvm::WriteBitcodeToFile(*mod, os);
-        });
-      }
     }
   }
   {
@@ -192,20 +198,28 @@ void LlvmOfflineCacheFileWriter::add_data(LlvmOfflineCache &&data) {
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
-    llvm::Module *module,
-    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-        &offloaded_task_list) {
+    std::vector<LLVMCompiledData> &compiled_data_list) {
   if (!mangled_) {
     std::size_t cnt = 0;
-    for (auto &e : offloaded_task_list) {
-      std::string mangled_name = kernel_key + std::to_string(cnt++);
-      auto func = module->getFunction(e.name);
-      TI_ASSERT(func != nullptr);
-      func->setName(mangled_name);
-      e.name = mangled_name;
+    for (auto &e : compiled_data_list) {
+      for (auto &offload : e.tasks) {
+        std::string mangled_name = kernel_key + std::to_string(cnt++);
+
+        auto func = e.module->getFunction(offload.name);
+        TI_ASSERT(func != nullptr);
+        func->setName(mangled_name);
+        offload.name = mangled_name;
+      }
     }
   }
 }
 
+LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone() const {
+  std::vector<LLVMCompiledData> new_data_list;
+  for (const auto &data: compiled_data_list) {
+    new_data_list.push_back(data.clone());
+  }
+  return {kernel_key, args, std::move(new_data_list)};
+}
 }  // namespace lang
 }  // namespace taichi

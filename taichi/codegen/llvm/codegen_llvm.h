@@ -22,8 +22,11 @@ class OffloadedTask {
 
   int block_dim{0};
   int grid_dim{0};
+  OffloadedTask() = default;
 
   OffloadedTask(const std::string &name);
+  TI_IO_DEF(name, block_dim, grid_dim);
+
 };
 
 class FunctionCreationGuard {
@@ -44,10 +47,14 @@ struct LLVMCompiledData {  // TODO(Lin): Merge LLVMCompiledData and
   std::vector<OffloadedTask>
       tasks;  // TODO(Lin): Make this a single OffloadedTask in the future
   std::unique_ptr<llvm::Module> module{nullptr};
+  LLVMCompiledData() = default;
+  LLVMCompiledData(LLVMCompiledData &&) = default;
   LLVMCompiledData(std::vector<OffloadedTask> tasks,
                    std::unique_ptr<llvm::Module> module)
       : tasks(std::move(tasks)), module(std::move(module)) {
   }
+  LLVMCompiledData clone() const;
+  TI_IO_DEF(tasks);
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
@@ -126,7 +133,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual void emit_to_module();
 
   void eliminate_unused_functions();
-
+  virtual bool supports_offline_cache() const {
+    return false;
+  }
   /**
    * @brief Runs the codegen and produces the compiled result.
    *

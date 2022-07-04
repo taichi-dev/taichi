@@ -22,18 +22,8 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   auto compiled = compile_kernel(kernel);
   LlvmOfflineCache::KernelCacheData kcache;
   kcache.kernel_key = identifier;
-  kcache.owned_modules = std::move(compiled.module);
-  const auto &tasks = compiled.tasks;
+  kcache.compiled_data_list.push_back(std::move(compiled));
   kcache.args = infer_launch_args(kernel);
-  kcache.offloaded_task_list.resize(tasks.size());
-  std::transform(tasks.begin(), tasks.end(), kcache.offloaded_task_list.begin(),
-                 [](const auto &t) -> LlvmOfflineCache::OffloadedTaskCacheData {
-                   LlvmOfflineCache::OffloadedTaskCacheData res;
-                   res.name = t.name;
-                   res.block_dim = t.block_dim;
-                   res.grid_dim = t.grid_dim;
-                   return res;
-                 });
   cache_.kernels[identifier] = std::move(kcache);
 }
 

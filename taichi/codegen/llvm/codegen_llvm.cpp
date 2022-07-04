@@ -2416,19 +2416,10 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
-  std::vector<OffloadedTaskCache> offloaded_task_list;
-  for (auto &task : offloaded_tasks) {
-    auto &task_cache = offloaded_task_list.emplace_back();
-    task_cache.name = task.name;
-    task_cache.block_dim = task.block_dim;
-    task_cache.grid_dim = task.grid_dim;
-  }
-  get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
-                                       infer_launch_args(kernel),
-                                       std::move(offloaded_task_list));
+LLVMCompiledData LLVMCompiledData::clone() const {
+  return {tasks, llvm::CloneModule(*module)};
 }
+
 
 TLANG_NAMESPACE_END
 

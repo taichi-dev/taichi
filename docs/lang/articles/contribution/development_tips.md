@@ -95,5 +95,5 @@ of `y`.
 
 ## Benchmarking
 
-See [Benchmarking and regression tests](./utilities#benchmarking-and-regression-tests) if your work involves
+See [Benchmarking and regression tests](../reference/developer_utilities.md#benchmarking-and-regression-tests) if your work involves
 IR optimization.

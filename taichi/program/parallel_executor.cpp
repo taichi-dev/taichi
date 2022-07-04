@@ -83,7 +83,6 @@ void ParallelExecutor::worker_loop() {
       if (!task_queue_.empty()) {
         auto task = task_queue_.front();
         running_threads_++;
-        printf("new task, %d threads running\n", running_threads_);
         task_queue_.pop_front();
         lock.unlock();
 
@@ -92,7 +91,6 @@ void ParallelExecutor::worker_loop() {
 
         lock.lock();
         running_threads_--;
-        printf("task complete, %d threads running\n", running_threads_);
       }
       notify_flush_cv = flush_cv_cond();
       if (status_ == ExecutorStatus::finalized && task_queue_.empty()) {

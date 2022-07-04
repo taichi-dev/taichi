@@ -2,13 +2,13 @@ import functools
 import math
 import threading
 from os import listdir, path, remove, rmdir
+from typing import List
 
 import pytest
 from genericpath import exists
 
 import taichi as ti
 from tests import test_utils
-from typing import List
 
 supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
@@ -83,7 +83,8 @@ simple_kernels_to_test = [
     (kernel0, (), python_kernel0, 1),
     (kernel1, (100, 200, 10.2), python_kernel1, 1),
     (kernel2, (1024, ), python_kernel2, 3),
-    (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]], ti.i32)), python_kernel3, 1),
+    (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]],
+                             ti.i32)), python_kernel3, 1),
 ]
 
 
@@ -120,7 +121,8 @@ def _test_offline_cache_dec(func):
 
 
 @_test_offline_cache_dec
-def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result, num_offloads):
+def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result,
+                                     num_offloads):
     count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
     print("now offloads: ", num_offloads)
 
@@ -134,15 +136,15 @@ def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result, num_offloa
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files([num_offloads])
+    assert len(listdir(tmp_offline_cache_file_path(
+    ))) - count_of_cache_file == get_expected_num_cache_files([num_offloads])
     res2 = kernel(*args)
     assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
         res2)
 
     ti.reset()
-    assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files([num_offloads])
+    assert len(listdir(tmp_offline_cache_file_path(
+    ))) - count_of_cache_file == get_expected_num_cache_files([num_offloads])
 
 
 @_test_offline_cache_dec
@@ -183,11 +185,12 @@ def test_closing_offline_cache(curr_arch):
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 def test_offline_cache_per_kernel(curr_arch):
     for kernel, args, get_res, num_offloads in simple_kernels_to_test:
-        _test_offline_cache_for_a_kernel(curr_arch=curr_arch,
-                                         kernel=kernel,
-                                         args=args,
-                                         result=get_res(*args),
-                                         num_offloads=num_offloads if curr_arch is ti.cpu else 1)
+        _test_offline_cache_for_a_kernel(
+            curr_arch=curr_arch,
+            kernel=kernel,
+            args=args,
+            result=get_res(*args),
+            num_offloads=num_offloads if curr_arch is ti.cpu else 1)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -334,13 +337,17 @@ def test_calling_many_kernels(curr_arch):
             enable_fallback=False,
             **current_thread_ext_options())
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(
-                   [kern[3] if curr_arch is ti.cpu else 1 for kern in simple_kernels_to_test])
+               ) - count_of_cache_file == get_expected_num_cache_files([
+                   kern[3] if curr_arch is ti.cpu else 1
+                   for kern in simple_kernels_to_test
+               ])
     helper()
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(
-        [kern[3] if curr_arch is ti.cpu else 1 for kern in simple_kernels_to_test])
+               ) - count_of_cache_file == get_expected_num_cache_files([
+                   kern[3] if curr_arch is ti.cpu else 1
+                   for kern in simple_kernels_to_test
+               ])
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -369,12 +376,14 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
             default_fp=ti.f64,
             **current_thread_ext_options())
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files([2] if curr_arch is ti.cpu else [1])
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   [2] if curr_arch is ti.cpu else [1])
     helper()
 
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files([2, 2] if curr_arch is ti.cpu else [1, 1])
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   [2, 2] if curr_arch is ti.cpu else [1, 1])
     ti.init(arch=curr_arch,
             enable_fallback=False,
             default_fp=ti.f32,
@@ -384,4 +393,5 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files([2, 2] if curr_arch is ti.cpu else [1, 1])
+               ) - count_of_cache_file == get_expected_num_cache_files(
+                   [2, 2] if curr_arch is ti.cpu else [1, 1])

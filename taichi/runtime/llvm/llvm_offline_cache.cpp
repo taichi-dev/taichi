@@ -120,7 +120,6 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     TI_DEBUG("Cannot find kernel={}", key);
     return false;
   }
-  printf("getting kernel %s\n", key.c_str());
 
   auto &kernel_data = itr->second;
   for (int i = 0; i < kernel_data.compiled_data_list.size(); i++) {
@@ -133,9 +132,12 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     res.compiled_data_list.emplace_back(data.tasks,
                                         llvm::CloneModule(*data.module));
   }
+  kernel_data.last_used_at = std::time(nullptr);
 
   res.kernel_key = key;
   res.args = kernel_data.args;
+  res.created_at = kernel_data.created_at;
+  res.last_used_at = kernel_data.last_used_at;
   return true;
 }
 
@@ -162,7 +164,6 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       LlvmOfflineCache::Format format,
                                       bool merge_with_old) {
   taichi::create_directories(path);
-  std::time_t now = std::time(nullptr);
   std::size_t new_kernels_size = 0;  // bytes
 
   for (auto &[k, v] : data_.kernels) {
@@ -203,8 +204,8 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     }
 
     // Set meta info
-    v.created_at = now;
-    v.last_used_at = now;
+    TI_ASSERT(v.created_at);
+    TI_ASSERT(v.last_used_at);
     v.size = size;
     TI_ASSERT(v.size > 0);
     new_kernels_size += v.size;
@@ -342,10 +343,13 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     TI_ASSERT(q.size() <= cnt);
     auto root_path = fs::path(path);
     while (!q.empty()) {
-      for (const auto &f :
-           get_possible_llvm_cache_filename_by_key(q.top().kernel_key)) {
-        fs::remove(root_path / f);
+      for (int i = 0; i < q.top().compiled_data_list.size(); i++) {
+        for (const auto &f :
+             get_possible_llvm_cache_filename_by_key(q.top().kernel_key + "." + std::to_string(i))) {
+          fs::remove(root_path / f);
+        }
       }
+
       q.pop();
     }
     if (cnt == cache_data.kernels.size()) {  // Removed all

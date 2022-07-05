@@ -44,7 +44,6 @@ def _test_cpp_aot():
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
-        temp_folderpath = "/home/lin/llvm_aot/"
 
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         python_file_path = os.path.join(curr_dir, python_rpath)

@@ -6,6 +6,7 @@ from os import listdir, remove, rmdir, stat
 from os.path import join
 from tempfile import mkdtemp
 from typing import List
+from time import sleep
 
 import pytest
 
@@ -420,8 +421,9 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
     def run_simple_kernels(max_size):
         only_init(max_size)
-        for kernel, args, get_res in simple_kernels_to_test:
+        for kernel, args, get_res, num_offloads in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
+            sleep(1)  # make sure the kernels are not used in the same second
 
     kernel_count = len(simple_kernels_to_test)
     rem_factor = 1 if policy in [
@@ -430,23 +432,41 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
 
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(0)
+               ) - count_of_cache_file == get_expected_num_cache_files()
 
     run_simple_kernels(1024**3)  # 1GB
     ti.reset()  # Dumping cache data
     size_of_cache_files = get_cache_files_size(tmp_offline_cache_file_path())
     assert len(listdir(tmp_offline_cache_file_path())
                ) - count_of_cache_file == get_expected_num_cache_files(
-                   len(simple_kernels_to_test))
+        [
+            kern[3] if curr_arch is ti.cpu else 1
+            for kern in simple_kernels_to_test
+        ])
 
     only_init(size_of_cache_files * 2)
     ti.reset()
     assert len(listdir(tmp_offline_cache_file_path())
                ) - count_of_cache_file == get_expected_num_cache_files(
-                   len(simple_kernels_to_test))
+        [
+            kern[3] if curr_arch is ti.cpu else 1
+            for kern in simple_kernels_to_test
+        ])
 
     only_init(size_of_cache_files)
     ti.reset()
+    rem = 0
+    if policy in [
+        'never', 'version'
+    ]:
+        rem = sum([
+            kern[3] if curr_arch is ti.cpu else 1
+            for kern in simple_kernels_to_test
+        ])
+    else:
+        for i in range(min(kernel_count - int(factor * kernel_count), kernel_count)):
+            rem += simple_kernels_to_test[kernel_count - i - 1][3] if curr_arch is ti.cpu else 1
+    if rem > 0:
+        rem += 2
     assert len(listdir(tmp_offline_cache_file_path())
-               ) - count_of_cache_file == get_expected_num_cache_files(
-                   int(len(simple_kernels_to_test) * rem_factor))
+               ) - count_of_cache_file == rem

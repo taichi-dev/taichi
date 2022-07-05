@@ -125,6 +125,8 @@ void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
         datum.tasks, llvm::CloneModule(*datum.module));
   }
   kernel_cache.args = std::move(args);
+  kernel_cache.created_at = std::time(nullptr);
+  kernel_cache.last_used_at = std::time(nullptr);
 }
 
 void LlvmProgramImpl::cache_field(int snode_tree_id,

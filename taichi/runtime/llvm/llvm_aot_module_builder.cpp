@@ -24,6 +24,8 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   kcache.kernel_key = identifier;
   kcache.compiled_data_list.push_back(std::move(compiled));
   kcache.args = infer_launch_args(kernel);
+  kcache.last_used_at = std::time(nullptr);
+  kcache.created_at = std::time(nullptr);
   cache_.kernels[identifier] = std::move(kcache);
 }
 
@@ -65,6 +67,8 @@ void LlvmAotModuleBuilder::add_compiled_kernel(aot::Kernel *kernel) {
 
   const std::string &kernel_name = kernel_impl->kernel_name_;
   if (cache_.kernels.find(kernel_name) == cache_.kernels.end()) {
+    kernel_impl->kernel_data_.last_used_at = std::time(nullptr);
+    kernel_impl->kernel_data_.created_at = std::time(nullptr);
     cache_.kernels[kernel_name] = std::move(kernel_impl->kernel_data_);
   }
 }

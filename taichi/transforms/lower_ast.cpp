@@ -198,8 +198,9 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            begin->stmt, end->stmt, std::move(stmt->body), stmt->is_bit_vectorized,
-            stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized);
+            begin->stmt, end->stmt, std::move(stmt->body),
+            stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim,
+            stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =

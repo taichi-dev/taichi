@@ -355,9 +355,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) {}{}{{",
-          for_stmt->name(), for_stmt->reversed ? "reversed " : "",
-          for_stmt->begin->name(), for_stmt->end->name(),
+    print("{} : {}for in range({}, {}) {}{}{{", for_stmt->name(),
+          for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
+          for_stmt->end->name(),
           for_stmt->is_bit_vectorized ? "(bit_vectorized) " : "",
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);

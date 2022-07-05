@@ -30,12 +30,13 @@ inline void create_directories(const std::string &dir) {
 #endif
 }
 
-template<typename First, typename ...Path>
+template <typename First, typename... Path>
 inline std::string join_path(First &&path, Path &&...others) {
   if constexpr (sizeof...(others) == 0) {
     return std::string(path);
   } else {
-    return std::string(path) + "/" + taichi::join_path(std::forward<Path>(others)...);
+    return std::string(path) + "/" +
+           taichi::join_path(std::forward<Path>(others)...);
   }
   return "";
 }

@@ -105,6 +105,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     tasks.push_back(task);
     kcache.compiled_data_list.emplace_back(tasks, make_module(*llvm_ctx));
     kcache.args = arg_infos;
+    kcache.created_at = 1;
+    kcache.last_used_at = 1;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();
     writer.dump(tmp_dir_str, llvm_fmt);
@@ -114,8 +116,6 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   auto reader = LlvmOfflineCacheFileReader::make(tmp_dir_str, llvm_fmt);
   {
     LlvmOfflineCache::KernelCacheData kcache;
-    kcache.created_at = 1;
-    kcache.last_used_at = 1;
     const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
     EXPECT_EQ(kcache.kernel_key, kKernelName);

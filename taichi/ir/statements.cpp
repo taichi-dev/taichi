@@ -248,7 +248,7 @@ std::unique_ptr<ConstStmt> ConstStmt::copy() {
 RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
-                           int bit_vectorize,
+                           bool is_bit_vectorized,
                            int num_cpu_threads,
                            int block_dim,
                            bool strictly_serialized,
@@ -256,7 +256,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
     : begin(begin),
       end(end),
       body(std::move(body)),
-      bit_vectorize(bit_vectorize),
+      is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
       strictly_serialized(strictly_serialized),
@@ -268,7 +268,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), bit_vectorize, num_cpu_threads, block_dim,
+      begin, end, body->clone(), is_bit_vectorized, num_cpu_threads, block_dim,
       strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
@@ -276,12 +276,12 @@ std::unique_ptr<Stmt> RangeForStmt::clone() const {
 
 StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
-                             int bit_vectorize,
+                             bool is_bit_vectorized,
                              int num_cpu_threads,
                              int block_dim)
     : snode(snode),
       body(std::move(body)),
-      bit_vectorize(bit_vectorize),
+      is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
@@ -290,7 +290,7 @@ StructForStmt::StructForStmt(SNode *snode,
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), bit_vectorize, num_cpu_threads, block_dim);
+      snode, body->clone(), is_bit_vectorized, num_cpu_threads, block_dim);
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
@@ -298,12 +298,12 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
 MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
                          mesh::MeshElementType element_type,
                          std::unique_ptr<Block> &&body,
-                         int bit_vectorize,
+                         bool is_bit_vectorized,
                          int num_cpu_threads,
                          int block_dim)
     : mesh(mesh),
       body(std::move(body)),
-      bit_vectorize(bit_vectorize),
+      is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
       major_from_type(element_type) {
@@ -313,8 +313,7 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
 
 std::unique_ptr<Stmt> MeshForStmt::clone() const {
   auto new_stmt =
-      std::make_unique<MeshForStmt>(mesh, major_from_type, body->clone(),
-                                    bit_vectorize, num_cpu_threads, block_dim);
+      std::make_unique<MeshForStmt>(mesh, major_from_type, body->clone(), is_bit_vectorized, num_cpu_threads, block_dim);
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
   new_stmt->mem_access_opt = mem_access_opt;
@@ -392,7 +391,7 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;
-  new_stmt->bit_vectorize = bit_vectorize;
+  new_stmt->is_bit_vectorized = is_bit_vectorized;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->index_offsets = index_offsets;
 

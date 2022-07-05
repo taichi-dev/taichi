@@ -2,7 +2,7 @@
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
-#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
 
 namespace taichi {
@@ -12,16 +12,16 @@ namespace {
 class AotModuleImpl : public LlvmAotModule {
  public:
   explicit AotModuleImpl(const cuda::AotModuleParams &params)
-      : LlvmAotModule(params.module_path, params.program) {
+      : LlvmAotModule(params.module_path, params.executor_) {
   }
 
  private:
   FunctionType convert_module_to_function(
       const std::string &name,
       LlvmOfflineCache::KernelCacheData &&loaded) override {
-    Arch arch = program_->config->arch;
+    Arch arch = executor_->get_config()->arch;
     TI_ASSERT(arch == Arch::cuda);
-    auto *tlctx = program_->get_llvm_context(arch);
+    auto *tlctx = executor_->get_llvm_context(arch);
 
     const auto &tasks = loaded.offloaded_task_list;
     std::vector<OffloadedTask> offloaded_tasks;
@@ -34,8 +34,7 @@ class AotModuleImpl : public LlvmAotModule {
       offloaded_tasks.push_back(std::move(ot));
     }
 
-    CUDAModuleToFunctionConverter converter{tlctx,
-                                            program_->get_runtime_executor()};
+    CUDAModuleToFunctionConverter converter{tlctx, executor_};
     return converter.convert(name, loaded.args, std::move(loaded.owned_module),
                              std::move(offloaded_tasks));
   }

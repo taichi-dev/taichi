@@ -446,7 +446,7 @@ def ceil(x, dtype=None):
     if dtype is not None:
         result = cast(result, dtype)
     return result
-    
+
 
 @unary
 def tan(x):

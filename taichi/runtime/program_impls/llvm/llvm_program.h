@@ -225,6 +225,10 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->llvm_device();
   }
 
+  LlvmRuntimeExecutor *get_runtime_executor() {
+    return runtime_exec_.get();
+  }
+
   // TODO(zhanlue): Rearrange llvm::Context's ownership
   //
   // In LLVM backend, most of the compiled information are stored in

@@ -14,6 +14,8 @@ namespace taichi {
 namespace lang {
 
 struct LlvmOfflineCache {
+  using Version = uint16[3];  // {MAJOR, MINOR, PATCH}
+
   enum Format {
     LL = 0x01,
     BC = 0x10,
@@ -24,6 +26,11 @@ struct LlvmOfflineCache {
     std::vector<LlvmLaunchArgInfo> args;
     std::vector<LLVMCompiledData> compiled_data_list;
 
+    // For cache cleaning
+    std::size_t size{0};          // byte
+    std::time_t created_at{0};    // millsec
+    std::time_t last_used_at{0};  // millsec
+
     KernelCacheData() = default;
     KernelCacheData(KernelCacheData &&) = default;
     KernelCacheData &operator=(KernelCacheData &&) = default;
@@ -31,7 +38,12 @@ struct LlvmOfflineCache {
 
     KernelCacheData clone() const;
 
-    TI_IO_DEF(kernel_key, args, compiled_data_list);
+    TI_IO_DEF(kernel_key,
+              compiled_data_list,
+              size,
+              created_at,
+              last_used_at);
+
   };
 
   struct FieldCacheData {
@@ -78,6 +90,9 @@ struct LlvmOfflineCache {
     // other
   };
 
+  Version version{};
+  std::size_t size{0};  // byte
+
   // TODO(zhanlue): we need a better identifier for each FieldCacheData
   // (SNodeTree) Given that snode_tree_id is not continuous, it is ridiculous to
   // ask the users to remember each of the snode_tree_ids
@@ -87,7 +102,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
-  TI_IO_DEF(fields, kernels);
+  TI_IO_DEF(version, size, fields, kernels);
 };
 
 class LlvmOfflineCacheFileReader {
@@ -121,7 +136,21 @@ class LlvmOfflineCacheFileReader {
 };
 
 class LlvmOfflineCacheFileWriter {
+  enum CleanCacheFlags {
+    NotClean = 0b000,
+    CleanOldVersion = 0b001,
+    CleanOldUsed = 0b010,
+    CleanOldCreated = 0b100
+  };
+
  public:
+  enum CleanCachePolicy {
+    Never = NotClean,
+    OnlyOldVersion = CleanOldVersion,
+    LRU = CleanOldVersion | CleanOldUsed,
+    FIFO = CleanOldVersion | CleanOldCreated
+  };
+
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
     this->data_ = std::move(data);
@@ -140,8 +169,15 @@ class LlvmOfflineCacheFileWriter {
     mangled_ = true;
   }
 
+  static void clean_cache(const std::string &path,
+                          CleanCachePolicy policy,
+                          int max_bytes,
+                          double cleaning_factor);
+
+  static CleanCachePolicy string_to_clean_cache_policy(const std::string &str);
+
  private:
-  void add_data(LlvmOfflineCache &&data);
+  void merge_with(LlvmOfflineCache &&data);
 
   void mangle_offloaded_task_name(
       const std::string &kernel_key,

@@ -1,7 +1,16 @@
 #include "llvm_offline_cache.h"
 
-#include <fstream>
-#include <sstream>
+#include <queue>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+error "Missing the <filesystem> header."
+#endif  //  __has_include(<filesystem>)
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"
@@ -10,7 +19,9 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "taichi/common/version.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/program/kernel.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
 namespace taichi {
@@ -19,6 +30,34 @@ namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
+
+static bool is_current_llvm_cache_version(
+    const LlvmOfflineCache::Version &ver) {
+  // TODO(PGZXB): Do more detailed checking
+  return ver[0] == TI_VERSION_MAJOR && ver[1] == TI_VERSION_MINOR &&
+         ver[2] == TI_VERSION_PATCH;
+}
+
+static std::string get_llvm_cache_metadata_file_path(const std::string &dir) {
+  std::stringstream tcb_ss;
+  tcb_ss << dir << "/" << kMetadataFilename << ".tcb";
+  return tcb_ss.str();
+}
+
+static std::string get_llvm_cache_metadata_json_file_path(
+    const std::string &dir) {
+  std::stringstream tcb_ss;
+  tcb_ss << dir << "/" << kMetadataFilename << ".json";
+  return tcb_ss.str();
+}
+
+static std::vector<std::string> get_possible_llvm_cache_filename_by_key(
+    const std::string &key) {
+  return {
+      key + ".ll",
+      key + ".bc",
+  };
+}
 
 }  // namespace
 
@@ -37,9 +76,7 @@ std::unique_ptr<LlvmOfflineCacheFileReader> LlvmOfflineCacheFileReader::make(
 bool LlvmOfflineCacheFileReader::load_meta_data(
     LlvmOfflineCache &data,
     const std::string &cache_file_path) {
-  std::stringstream tcb_ss;
-  tcb_ss << cache_file_path << "/" << kMetadataFilename << ".tcb";
-  const auto tcb_path = tcb_ss.str();
+  const auto tcb_path = get_llvm_cache_metadata_file_path(cache_file_path);
   {
     // No the best way to check for filepath existence, but whatever... See
     // https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exists-using-standard-c-c11-14-17-c
@@ -125,7 +162,11 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       LlvmOfflineCache::Format format,
                                       bool merge_with_old) {
   taichi::create_directories(path);
+  std::time_t now = std::time(nullptr);
+  std::size_t new_kernels_size = 0;  // bytes
+
   for (auto &[k, v] : data_.kernels) {
+    std::size_t size = 0;  // bytes
     std::stringstream filename_ss;
     filename_ss << path << "/" << k;
     std::string filename_prefix = filename_ss.str();
@@ -139,6 +180,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
           llvm::raw_os_ostream llvm_os{os};
           writer(llvm_os);
+          return llvm_os.tell();
         };
     {
       mangle_offloaded_task_name(k, v.compiled_data_list);
@@ -148,39 +190,46 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         TI_ASSERT(mod != nullptr);
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
-          write_llvm_module(suffix + ".ll", [mod](llvm::raw_os_ostream &os) {
+          size += write_llvm_module(suffix + ".ll", [mod](llvm::raw_os_ostream &os) {
             mod->print(os, /*AAW=*/nullptr);
           });
         }
         if (format & Format::BC) {
-          write_llvm_module(suffix + ".bc", [mod](llvm::raw_os_ostream &os) {
+          size += write_llvm_module(suffix + ".bc", [mod](llvm::raw_os_ostream &os) {
             llvm::WriteBitcodeToFile(*mod, os);
           });
         }
       }
     }
+
+    // Set meta info
+    v.created_at = now;
+    v.last_used_at = now;
+    v.size = size;
+    TI_ASSERT(v.size > 0);
+    new_kernels_size += v.size;
   }
-  {
-    // Merge with old metadata
-    if (merge_with_old) {
-      LlvmOfflineCache old_data;
-      if (LlvmOfflineCacheFileReader::load_meta_data(old_data, path)) {
-        add_data(std::move(old_data));
-      }
+
+  data_.version[0] = TI_VERSION_MAJOR;
+  data_.version[1] = TI_VERSION_MINOR;
+  data_.version[2] = TI_VERSION_PATCH;
+  data_.size = new_kernels_size;
+  // Merge with old metadata
+  if (merge_with_old) {
+    LlvmOfflineCache old_data;
+    if (LlvmOfflineCacheFileReader::load_meta_data(old_data, path)) {
+      merge_with(std::move(old_data));
     }
-    // Dump metadata
-    std::stringstream prefix_ss;
-    prefix_ss << path << "/" << kMetadataFilename;
-    const std::string file_prefix = prefix_ss.str();
-    write_to_binary_file(data_, file_prefix + ".tcb");
-    // For debugging
-    TextSerializer ts;
-    ts.serialize_to_json("cache", data_);
-    ts.write_to_file(file_prefix + ".json");
   }
+  // Dump metadata
+  write_to_binary_file(data_, get_llvm_cache_metadata_file_path(path));
+  // For debugging
+  TextSerializer ts;
+  ts.serialize_to_json("cache", data_);
+  ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
 }
 
-void LlvmOfflineCacheFileWriter::add_data(LlvmOfflineCache &&data) {
+void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {
   // Note: merge this->data_ with data, new cover old
   auto &new_kernels = data_.kernels;
   auto &new_fields = data_.fields;
@@ -191,7 +240,14 @@ void LlvmOfflineCacheFileWriter::add_data(LlvmOfflineCache &&data) {
     old_fields[k] = std::move(v);
   }
   for (auto &[k, v] : new_kernels) {
-    old_kernels[k] = std::move(v);
+    auto iter = old_kernels.find(k);
+    if (iter == old_kernels.end()) {
+      data.size += v.size;
+      old_kernels[k] = std::move(v);
+    } else {
+      data.size += v.size - iter->second.size;
+      iter->second = std::move(v);
+    }
   }
 
   data_ = std::move(data);
@@ -223,5 +279,97 @@ LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
   }
   return {kernel_key, args, std::move(new_data_list)};
 }
+
+void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
+                                             CleanCachePolicy policy,
+                                             int max_bytes,
+                                             double cleaning_factor) {
+  if (policy == (std::size_t)NotClean) {
+    return;
+  }
+
+  LlvmOfflineCache cache_data;
+  LlvmOfflineCacheFileReader::load_meta_data(cache_data, path);
+
+  if ((policy & CleanOldVersion) &&
+      !is_current_llvm_cache_version(cache_data.version)) {
+    if (bool ok = fs::remove(get_llvm_cache_metadata_file_path(path)) &&
+                  fs::remove(get_llvm_cache_metadata_json_file_path(path));
+        ok) {
+      auto root_path = fs::path(path);
+      for (const auto &[k, v] : cache_data.kernels) {
+        const auto files = get_possible_llvm_cache_filename_by_key(k);
+        for (const auto &f : files) {
+          fs::remove(root_path / f);
+        }
+      }
+    }
+    return;
+  }
+
+  if (cache_data.size < max_bytes ||
+      static_cast<std::size_t>(cleaning_factor * cache_data.kernels.size()) ==
+          0) {
+    return;
+  }
+
+  // LRU or FIFO
+  using KerData = LlvmOfflineCache::KernelCacheData;
+  using Comparator = std::function<bool(const KerData &, const KerData &)>;
+  using PriQueue =
+      std::priority_queue<KerData, std::vector<KerData>, Comparator>;
+
+  Comparator cmp{nullptr};
+  if (policy & CleanOldUsed) {  // LRU
+    cmp = [](const KerData &a, const KerData &b) -> bool {
+      return a.last_used_at < b.last_used_at;
+    };
+  } else if (policy & CleanOldCreated) {  // FIFO
+    cmp = [](const KerData &a, const KerData &b) -> bool {
+      return a.created_at < b.created_at;
+    };
+  }
+  if (cmp) {
+    PriQueue q(cmp);
+    std::size_t cnt = cleaning_factor * cache_data.kernels.size();
+    TI_ASSERT(cnt != 0);
+    for (auto &[k, v] : cache_data.kernels) {
+      if (q.size() == cnt && cmp(v, q.top()))
+        q.pop();
+      if (q.size() < cnt)
+        q.push(std::move(v));
+    }
+    TI_ASSERT(q.size() <= cnt);
+    auto root_path = fs::path(path);
+    while (!q.empty()) {
+      for (const auto &f :
+           get_possible_llvm_cache_filename_by_key(q.top().kernel_key)) {
+        fs::remove(root_path / f);
+      }
+      q.pop();
+    }
+    if (cnt == cache_data.kernels.size()) {  // Removed all
+      fs::remove(get_llvm_cache_metadata_file_path(path));
+      fs::remove(get_llvm_cache_metadata_json_file_path(path));
+    }
+  }
+}
+
+LlvmOfflineCacheFileWriter::CleanCachePolicy
+LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
+    const std::string &str) {
+  if (str == "never")
+    return Never;
+  if (str == "version")
+    return OnlyOldVersion;
+  if (str == "lru")
+    return LRU;
+  if (str == "fifo")
+    return FIFO;
+
+  TI_WARN("Invalid CleanCachePolicy");
+  return Never;
+}
+
 }  // namespace lang
 }  // namespace taichi

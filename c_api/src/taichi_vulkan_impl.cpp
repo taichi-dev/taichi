@@ -2,6 +2,10 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
+#ifdef ANDROID
+#define VK_KHR_android_surface 1
+#include "vulkan/vulkan_android.h"
+#endif
 
 #ifdef TI_WITH_VULKAN
 

@@ -734,7 +734,7 @@ class ConstStmt : public Stmt {
   explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
     TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
     ret_type = val[0].dt;
-    for (int i = 0; i < val.size(); i++) {
+    for (std::size_t i = 0; i < val.size(); i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
     TI_STMT_REG_FIELDS;

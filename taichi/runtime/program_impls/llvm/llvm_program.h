@@ -60,9 +60,9 @@ class LlvmProgramImpl : public ProgramImpl {
                    const StructCompiler &struct_compiler);
 
   LlvmOfflineCache::FieldCacheData get_cached_field(int snode_tree_id) const {
-    TI_ASSERT(cache_data_.fields.find(snode_tree_id) !=
-              cache_data_.fields.end());
-    return cache_data_.fields.at(snode_tree_id);
+    TI_ASSERT(cache_data_->fields.find(snode_tree_id) !=
+              cache_data_->fields.end());
+    return cache_data_->fields.at(snode_tree_id);
   }
 
  private:
@@ -260,7 +260,7 @@ class LlvmProgramImpl : public ProgramImpl {
     // "LlvmRuntimeExecutor::TaichiLLVMContext::ThreadSafeContext"
 
     // 1. Destructs cahce_data_
-    cache_data_ = LlvmOfflineCache();
+    cache_data_.reset();
 
     // 2. Destructs runtime_exec_
     runtime_exec_.reset();
@@ -269,7 +269,7 @@ class LlvmProgramImpl : public ProgramImpl {
  private:
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
-  LlvmOfflineCache cache_data_;
+  std::unique_ptr<LlvmOfflineCache> cache_data_;
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

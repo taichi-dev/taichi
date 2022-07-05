@@ -375,7 +375,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
         emit(stmt->global_var);
       }
     }
-    emit(stmt->bit_vectorize);
+    emit(stmt->is_bit_vectorized);
     emit(stmt->num_cpu_threads);
     emit(stmt->strictly_serialized);
     emit(stmt->mem_access_opt);

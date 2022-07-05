@@ -151,6 +151,10 @@ class LlvmOfflineCacheFileWriter {
     this->data_ = std::move(data);
   }
 
+  void set_data(std::unique_ptr<LlvmOfflineCache> &&data_ptr) {
+    set_data(std::move(*data_ptr.get()));
+  }
+
   void add_kernel_cache(const std::string &key,
                         LlvmOfflineCache::KernelCacheData &&kernel_cache) {
     data_.kernels[key] = std::move(kernel_cache);

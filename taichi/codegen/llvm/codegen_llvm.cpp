@@ -1721,7 +1721,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
   // For a bit-vectorized loop over a bit array, we generate struct for on its
   // parent node (must be "dense") instead of itself for higher performance.
-  if (stmt->bit_vectorize != 1) {
+  if (stmt->is_bit_vectorized) {
     if (leaf_block->type == SNodeType::bit_array &&
         leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
@@ -1863,7 +1863,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     // For a bit-vectorized loop over a bit array, one more refine step is
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
-    if (stmt->bit_vectorize != 1) {
+    if (stmt->is_bit_vectorized) {
       refine =
           get_runtime_function(stmt->snode->refine_coordinates_func_name());
       create_call(refine,

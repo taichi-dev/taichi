@@ -22,6 +22,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     : ProgramImpl(config_),
       compilation_workers("compile", 4 /*TODO(Lin): make this configurable*/) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
+  cache_data_ = std::make_unique<LlvmOfflineCache>();
 }
 
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
@@ -77,8 +78,9 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
   compile_snode_tree_types(tree);
   int snode_tree_id = tree->id();
 
-  TI_ASSERT(cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end());
-  initialize_llvm_runtime_snodes(cache_data_.fields.at(snode_tree_id),
+  TI_ASSERT(cache_data_->fields.find(snode_tree_id) !=
+            cache_data_->fields.end());
+  initialize_llvm_runtime_snodes(cache_data_->fields.at(snode_tree_id),
                                  result_buffer);
 }
 
@@ -102,9 +104,9 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
       this->compile(&kernel, nullptr);  // Offloaded used in async mode only
 
   const std::string &kernel_key = kernel.get_cached_kernel_key();
-  TI_ASSERT(cache_data_.kernels.count(kernel_key));
+  TI_ASSERT(cache_data_->kernels.count(kernel_key));
   const LlvmOfflineCache::KernelCacheData &kernel_data =
-      cache_data_.kernels[kernel_key];
+      cache_data_->kernels[kernel_key];
 
   LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
   compiled_kernel.kernel_key = kernel.get_name();
@@ -115,10 +117,10 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
 void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
                                    const std::vector<LLVMCompiledData> &data,
                                    std::vector<LlvmLaunchArgInfo> &&args) {
-  if (cache_data_.kernels.find(kernel_key) != cache_data_.kernels.end()) {
+  if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;
   }
-  auto &kernel_cache = cache_data_.kernels[kernel_key];
+  auto &kernel_cache = cache_data_->kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   for (const auto &datum : data) {
     kernel_cache.compiled_data_list.emplace_back(
@@ -132,7 +134,7 @@ void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
 void LlvmProgramImpl::cache_field(int snode_tree_id,
                                   int root_id,
                                   const StructCompiler &struct_compiler) {
-  if (cache_data_.fields.find(snode_tree_id) != cache_data_.fields.end()) {
+  if (cache_data_->fields.find(snode_tree_id) != cache_data_->fields.end()) {
     // [TODO] check and update the Cache, instead of simply return.
     return;
   }
@@ -153,7 +155,7 @@ void LlvmProgramImpl::cache_field(int snode_tree_id,
     ret.snode_metas.emplace_back(std::move(snode_cache_data));
   }
 
-  cache_data_.fields[snode_tree_id] = std::move(ret);
+  cache_data_->fields[snode_tree_id] = std::move(ret);
 }
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
@@ -164,9 +166,10 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
         config->offline_cache_file_path, policy,
         config->offline_cache_max_size_of_files,
         config->offline_cache_cleaning_factor);
-    if (!cache_data_.kernels.empty()) {
+    if (!cache_data_->kernels.empty()) {
       LlvmOfflineCacheFileWriter writer{};
       writer.set_data(std::move(cache_data_));
+
       // Note: For offline-cache, new-metadata should be merged with
       // old-metadata
       writer.dump(config->offline_cache_file_path, LlvmOfflineCache::LL, true);

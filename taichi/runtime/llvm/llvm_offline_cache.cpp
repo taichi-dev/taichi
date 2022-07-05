@@ -191,14 +191,16 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         TI_ASSERT(mod != nullptr);
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
-          size += write_llvm_module(suffix + ".ll", [mod](llvm::raw_os_ostream &os) {
-            mod->print(os, /*AAW=*/nullptr);
-          });
+          size += write_llvm_module(suffix + ".ll",
+                                    [mod](llvm::raw_os_ostream &os) {
+                                      mod->print(os, /*AAW=*/nullptr);
+                                    });
         }
         if (format & Format::BC) {
-          size += write_llvm_module(suffix + ".bc", [mod](llvm::raw_os_ostream &os) {
-            llvm::WriteBitcodeToFile(*mod, os);
-          });
+          size += write_llvm_module(suffix + ".bc",
+                                    [mod](llvm::raw_os_ostream &os) {
+                                      llvm::WriteBitcodeToFile(*mod, os);
+                                    });
         }
       }
     }
@@ -344,8 +346,8 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     auto root_path = fs::path(path);
     while (!q.empty()) {
       for (int i = 0; i < q.top().compiled_data_list.size(); i++) {
-        for (const auto &f :
-             get_possible_llvm_cache_filename_by_key(q.top().kernel_key + "." + std::to_string(i))) {
+        for (const auto &f : get_possible_llvm_cache_filename_by_key(
+                 q.top().kernel_key + "." + std::to_string(i))) {
           fs::remove(root_path / f);
         }
       }

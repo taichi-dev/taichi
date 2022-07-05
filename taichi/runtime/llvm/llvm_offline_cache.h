@@ -38,12 +38,7 @@ struct LlvmOfflineCache {
 
     KernelCacheData clone() const;
 
-    TI_IO_DEF(kernel_key,
-              compiled_data_list,
-              size,
-              created_at,
-              last_used_at);
-
+    TI_IO_DEF(kernel_key, compiled_data_list, size, created_at, last_used_at);
   };
 
   struct FieldCacheData {

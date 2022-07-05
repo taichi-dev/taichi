@@ -30,6 +30,20 @@ inline void create_directories(const std::string &dir) {
 #endif
 }
 
+template<typename First, typename ...Path>
+inline std::string join_path(First &&path, Path &&...others) {
+  if constexpr (sizeof...(others) == 0) {
+    return std::string(path);
+  } else {
+    return std::string(path) + "/" + taichi::join_path(std::forward<Path>(others)...);
+  }
+  return "";
+}
+
+inline bool remove(const std::string &path) {
+  return std::remove(path.c_str()) == 0;
+}
+
 template <typename T>
 void write_to_disk(const T &dat, std::string fn) {
   FILE *f = fopen(fn.c_str(), "wb");

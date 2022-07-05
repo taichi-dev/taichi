@@ -2392,7 +2392,8 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
 FunctionType CodeGenLLVM::gen() {
   auto compiled_res = run_compilation();
 
-  ModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
+  ModuleToFunctionConverter converter{
+      tlctx, get_llvm_program(prog)->get_runtime_executor()};
   return converter.convert(kernel, std::move(compiled_res.llvm_module),
                            std::move(compiled_res.offloaded_tasks));
 }
@@ -2478,9 +2479,10 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
                                        std::move(offloaded_task_list));
 }
 
-ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                                     LlvmProgramImpl *program)
-    : tlctx_(tlctx), program_(program) {
+ModuleToFunctionConverter::ModuleToFunctionConverter(
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
 }
 
 FunctionType ModuleToFunctionConverter::convert(
@@ -2499,7 +2501,7 @@ FunctionType ModuleToFunctionConverter::convert(
     task_funcs.push_back((TaskFunc)(func_ptr));
   }
   // Do NOT capture `this`...
-  return [program = this->program_, args, kernel_name,
+  return [executor = this->executor_, args, kernel_name,
           task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
@@ -2511,7 +2513,7 @@ FunctionType ModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);

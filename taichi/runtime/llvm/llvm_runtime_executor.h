@@ -51,6 +51,12 @@ class LlvmRuntimeExecutor {
 
   void check_runtime_error(uint64 *result_buffer);
 
+  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
+
+  CompileConfig *get_config() {
+    return config_;
+  }
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -66,8 +72,6 @@ class LlvmRuntimeExecutor {
   void fill_ndarray(const DeviceAllocation &alloc,
                     std::size_t size,
                     uint32_t data);
-
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
 
   /* ------------------------- */
   /* ---- Runtime Helpers ---- */

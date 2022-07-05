@@ -25,8 +25,8 @@ class CodeGenCUDA : public KernelCodeGen {
 class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit CUDAModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                         LlvmProgramImpl *program)
-      : ModuleToFunctionConverter(tlctx, program) {
+                                         LlvmRuntimeExecutor *executor)
+      : ModuleToFunctionConverter(tlctx, executor) {
   }
 
   FunctionType convert(const std::string &kernel_name,

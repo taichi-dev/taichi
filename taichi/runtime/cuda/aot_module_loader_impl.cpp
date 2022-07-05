@@ -34,7 +34,8 @@ class AotModuleImpl : public LlvmAotModule {
       offloaded_tasks.push_back(std::move(ot));
     }
 
-    CUDAModuleToFunctionConverter converter{tlctx, program_};
+    CUDAModuleToFunctionConverter converter{tlctx,
+                                            program_->get_runtime_executor()};
     return converter.convert(name, loaded.args, std::move(loaded.owned_module),
                              std::move(offloaded_tasks));
   }

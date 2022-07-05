@@ -377,7 +377,7 @@ def _floor(x):
     return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
 
-def floor(x, dtype=float):
+def floor(x, dtype=None):
     """Return the floor of the input, element-wise.
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
 

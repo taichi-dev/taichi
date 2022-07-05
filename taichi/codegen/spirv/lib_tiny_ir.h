@@ -60,7 +60,7 @@ class Polymorphic {
     return typeid(*this) == typeid(other) && is_equal(other);
   }
 
-  const bool equals(const Polymorphic *other) const {
+  bool equals(const Polymorphic *other) const {
     return (*this) == (*other);
   }
 

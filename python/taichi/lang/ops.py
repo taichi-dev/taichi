@@ -398,7 +398,7 @@ def floor(x, dtype=None):
         >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
     """
     result = _floor(x)
-    if dtype != float:
+    if dtype != None:
         result = cast(result, dtype)
     return result
 

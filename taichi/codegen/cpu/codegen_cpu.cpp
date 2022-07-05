@@ -292,10 +292,12 @@ FunctionType CPUModuleToFunctionConverter::convert(
   std::vector<TaskFunc> task_funcs;
   task_funcs.reserve(data.size());
   for (auto &datum : data) {
-    auto *func_ptr = tlctx_->lookup_function_pointer(datum.tasks[0].name);
-    TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
-                   datum.tasks[0].name);
-    task_funcs.push_back((TaskFunc)(func_ptr));
+    for (auto &task : datum.tasks) {
+      auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+      TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
+                     task.name);
+      task_funcs.push_back((TaskFunc)(func_ptr));
+    }
   }
   // Do NOT capture `this`...
   return [program = this->program_, args, kernel_name,

@@ -106,7 +106,7 @@ def compile_field_aot(arch):
 
 
 def compile_kernel_aot(arch):
-    ti.init(arch=arch)
+    ti.init(arch=arch, print_ir=True)
 
     @ti.kernel
     def run(base: int, arr: ti.types.ndarray()):

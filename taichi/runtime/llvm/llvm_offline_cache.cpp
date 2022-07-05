@@ -83,6 +83,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     TI_DEBUG("Cannot find kernel={}", key);
     return false;
   }
+  printf("getting kernel %s\n", key.c_str());
 
   auto &kernel_data = itr->second;
   for (int i = 0; i < kernel_data.compiled_data_list.size(); i++) {

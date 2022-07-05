@@ -32,7 +32,7 @@ def test_vectorized_struct_for():
 
     @ti.kernel
     def assign_vectorized():
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize()
         for i, j in x:
             y[i, j] = x[i, j]
 
@@ -77,7 +77,7 @@ def test_offset_load():
 
     @ti.kernel
     def assign_vectorized(dx: ti.template(), dy: ti.template()):
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize()
         for i, j in x:
             y[i, j] = x[i + dx, j + dy]
             z[i, j] = x[i + dx, j + dy]
@@ -137,7 +137,7 @@ def test_evolve():
 
     @ti.kernel
     def evolve_vectorized(x: ti.template(), y: ti.template()):
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        get_runtime().prog.current_ast_builder().bit_vectorize()
         for i, j in x:
             num_active_neighbors = 0
             num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)

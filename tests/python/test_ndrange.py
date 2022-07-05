@@ -279,6 +279,18 @@ def test_ndrange_non_integer_arguments():
 
 
 @test_utils.test()
+def test_ndrange_should_accept_numpy_integer():
+    a, b = np.int64(0), np.int32(10)
+
+    @ti.kernel
+    def example():
+        for i in ti.ndrange((a, b)):
+            pass
+
+    example()
+
+
+@test_utils.test()
 def test_static_ndrange_non_integer_arguments():
     @ti.kernel
     def example():
@@ -291,3 +303,15 @@ def test_static_ndrange_non_integer_arguments():
             r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)"
     ):
         example()
+
+
+@test_utils.test()
+def test_static_ndrange_should_accept_numpy_integer():
+    a, b = np.int64(0), np.int32(10)
+
+    @ti.kernel
+    def example():
+        for i in ti.static(ti.ndrange((a, b))):
+            pass
+
+    example()

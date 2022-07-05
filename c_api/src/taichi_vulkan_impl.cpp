@@ -22,8 +22,6 @@ VulkanRuntimeImported::Workaround::Workaround(
   }
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
-  vk_device.init_vulkan_structs(
-      const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
   vk_device.set_cap(taichi::lang::DeviceCapability::vk_api_version,
                     api_version);
   if (api_version > VK_API_VERSION_1_0) {
@@ -31,6 +29,8 @@ VulkanRuntimeImported::Workaround::Workaround(
         taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
         true);
   }
+  vk_device.init_vulkan_structs(
+      const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
 }
 VulkanRuntimeImported::VulkanRuntimeImported(
     uint32_t api_version,

@@ -280,9 +280,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
           TI_ASSERT(global_ptr->width() == 1);
           auto &snodes = global_ptr->snodes;
           if (snodes[0]->has_adjoint()) {
-            // No adjoint SNode. Do the store forwarding
-            // otherwise skipping the store forwarding to keep the global
-            // load chain,
+            // Has adjoint SNode. Skip the store forwarding
+            // to keep the global load chain,
             // so that the grad of intermidiate variable can be computed
             // by GlobalLoadStmt
             store_forwarding = false;

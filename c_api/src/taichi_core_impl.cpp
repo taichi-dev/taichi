@@ -305,13 +305,14 @@ void ti_launch_compute_graph(TiRuntime runtime,
           return;
         }
         const TiNdArray &ndarray = arg.argument.value.ndarray;
-        
+
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        std::vector<int> elem_shape(ndarray.elem_shape.dims,
-                                    ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
-        
+        std::vector<int> elem_shape(
+            ndarray.elem_shape.dims,
+            ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
+
         ndarrays.emplace_back(taichi::lang::Ndarray(
             devalloc, taichi::lang::PrimitiveType::f32, shape, elem_shape));
         arg_map.emplace(std::make_pair(

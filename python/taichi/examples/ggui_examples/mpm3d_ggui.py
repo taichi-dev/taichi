@@ -243,7 +243,7 @@ def init():
 
 init()
 
-res = (1920, 1080)
+res = (1080, 720)
 window = ti.ui.Window("Real MPM 3D", res, vsync=True)
 
 canvas = window.get_canvas()

@@ -27,8 +27,11 @@ else:
 
 def boundary_type_cast_warning(expression):
     expr_dtype = expression.ptr.get_ret_type()
-    assert is_integral(expr_dtype)
-    if expr_dtype == primitive_types.i64:
+    if not is_integral(expr_dtype):
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32",
+            Warning)
+    elif expr_dtype == primitive_types.i64:
         warnings.warn(
             f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
             Warning)

@@ -296,3 +296,20 @@ def test_imgui():
 @test_utils.test(arch=supported_archs)
 def test_exit_without_showing():
     window = ti.ui.Window("Taichi", (256, 256), show_window=False)
+
+@test_utils.test(arch=supported_archs)
+def test_get_camera_view_and_projection_matrix():
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 0, 3)
+    camera.lookat(0, 0 ,0)
+
+    scene.set_camera(camera)
+    
+    view_matrix = camera.get_view_matrix()
+    projection_matrix = camera.get_projection_matrix(1080/720)
+
+    for i in range(4):
+        assert(abs(view_matrix[i, j] - 1) <= 1e-5)
+    assert(abs(view_matrix[3, 2] + 3) <= 1e-5)
+    

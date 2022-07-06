@@ -3,14 +3,14 @@ from tests import test_utils
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
-def test_1D_bit_array():
+def test_1D_quant_array():
     qu1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=qu1)
 
     N = 32
 
-    ti.root.bit_array(ti.i, N, num_bits=32).place(x)
+    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
 
     @ti.kernel
     def set_val():
@@ -27,11 +27,11 @@ def test_1D_bit_array():
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
-def test_1D_bit_array_negative():
+def test_1D_quant_array_negative():
     N = 4
     qi7 = ti.types.quant.int(7)
     x = ti.field(dtype=qi7)
-    ti.root.bit_array(ti.i, N, num_bits=32).place(x)
+    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
 
     @ti.kernel
     def assign():
@@ -44,14 +44,14 @@ def test_1D_bit_array_negative():
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
-def test_2D_bit_array():
+def test_2D_quant_array():
     qu1 = ti.types.quant.int(1, False)
 
     x = ti.field(dtype=qu1)
 
     M, N = 4, 8
 
-    ti.root.bit_array(ti.ij, (M, N), num_bits=32).place(x)
+    ti.root.quant_array(ti.ij, (M, N), num_bits=32).place(x)
 
     @ti.kernel
     def set_val():
@@ -70,14 +70,15 @@ def test_2D_bit_array():
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
-def test_bit_array_struct_for():
+def test_quant_array_struct_for():
     block_size = 16
     N = 64
     cell = ti.root.pointer(ti.i, N // block_size)
     qi7 = ti.types.quant.int(7)
 
     x = ti.field(dtype=qi7)
-    cell.dense(ti.i, block_size // 4).bit_array(ti.i, 4, num_bits=32).place(x)
+    cell.dense(ti.i, block_size // 4).quant_array(ti.i, 4,
+                                                  num_bits=32).place(x)
 
     @ti.kernel
     def activate():

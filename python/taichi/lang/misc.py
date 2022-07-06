@@ -596,7 +596,7 @@ def _block_dim_adaptive(block_dim_adaptive):
 
 
 def _bit_vectorize():
-    """Enable bit vectorization of struct fors on bit_arrays.
+    """Enable bit vectorization of struct fors on quant_arrays.
     """
     get_runtime().prog.current_ast_builder().bit_vectorize()
 
@@ -614,7 +614,7 @@ def loop_config(*,
         serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
         parallelize (int): The number of threads to use on CPU
         block_dim_adaptive (bool): Whether to allow backends set block_dim adaptively, enabled by default
-        bit_vectorize (bool): Whether to enable bit vectorization of struct fors on bit_arrays.
+        bit_vectorize (bool): Whether to enable bit vectorization of struct fors on quant_arrays.
 
     Examples::
 
@@ -644,8 +644,8 @@ def loop_config(*,
         x = ti.field(dtype=u1)
         y = ti.field(dtype=u1)
         cell = ti.root.dense(ti.ij, (128, 4))
-        cell.bit_array(ti.j, 32).place(x)
-        cell.bit_array(ti.j, 32).place(y)
+        cell.quant_array(ti.j, 32).place(x)
+        cell.quant_array(ti.j, 32).place(y)
         @ti.kernel
         def copy():
             ti.loop_config(bit_vectorize=True)

@@ -174,7 +174,7 @@ class Camera:
             >>> camera.left(1000.0)
         """
         self.ptr.z_far(z_far)
-    
+
     def get_view_mat(self):
         """Get the view matrix of the camera.
 

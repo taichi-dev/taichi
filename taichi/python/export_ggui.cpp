@@ -36,9 +36,9 @@ pybind11::tuple vec3_to_tuple(glm::vec3 v) {
 }
 
 struct custom_deleter {
-    glm::mat4 operator()(glm::mat4* m) {
-        return *m;
-    }
+  glm::mat4 operator()(glm::mat4 *m) {
+    return *m;
+  }
 };
 
 // convert 2d-array to numpy array using pybind
@@ -47,12 +47,12 @@ struct custom_deleter {
 py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
   // must explicitly pass args using py::detail::any_container<ssize_t>
   // ref:https://stackoverflow.com/questions/54055530/error-no-matching-function-for-call-to-pybind11buffer-infobuffer-info
-  return py::array_t<float> (
-      py::detail::any_container<ssize_t>({ 4, 4 }),                              // shape (rows, cols)
-      py::detail::any_container<ssize_t>({ sizeof(float) * 4, sizeof(float) }),  // strides in bytes
-      glm::value_ptr(mat),                                                       // buffer pointer
-      nullptr
-    );
+  return py::array_t<float>(
+      py::detail::any_container<ssize_t>({4, 4}),  // shape (rows, cols)
+      py::detail::any_container<ssize_t>(
+          {sizeof(float) * 4, sizeof(float)}),  // strides in bytes
+      glm::value_ptr(mat),                      // buffer pointer
+      nullptr);
 }
 
 struct PyGui {

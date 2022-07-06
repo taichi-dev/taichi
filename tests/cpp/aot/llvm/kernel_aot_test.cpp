@@ -38,7 +38,7 @@ TEST(LlvmAotTest, CpuKernel) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
-  aot_params.program = &prog;
+  aot_params.executor_ = prog.get_runtime_executor();
   auto mod = cpu::make_aot_module(aot_params);
   auto *k_run = mod->get_kernel("run");
 
@@ -79,7 +79,7 @@ TEST(LlvmAotTest, CudaKernel) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
-    aot_params.program = &prog;
+    aot_params.executor_ = prog.get_runtime_executor();
     auto mod = cuda::make_aot_module(aot_params);
     auto *k_run = mod->get_kernel("run");
     RuntimeContext ctx;

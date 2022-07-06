@@ -48,7 +48,7 @@ TEST(LlvmCGraph, Mpm88Cpu) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
-  aot_params.program = &prog;
+  aot_params.executor_ = prog.get_runtime_executor();
   auto mod = cpu::make_aot_module(aot_params);
 
   // Prepare & Run "init" Graph
@@ -131,7 +131,7 @@ TEST(LlvmCGraph, Mpm88Cuda) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
-    aot_params.program = &prog;
+    aot_params.executor_ = prog.get_runtime_executor();
     auto mod = cuda::make_aot_module(aot_params);
 
     // Prepare & Run "init" Graph

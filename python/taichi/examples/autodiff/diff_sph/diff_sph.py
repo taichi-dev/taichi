@@ -26,7 +26,7 @@ TRAIN_VISUAL_SHOW = False
 INFER_OUTPUT_IMG = False
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
 ti.init(arch=arch, device_memory_fraction=0.5, random_seed=5)
-screen_res = (1000, 1000)
+screen_res = (800, 800)
 
 dtype_f_np = np.float32
 real = ti.f32

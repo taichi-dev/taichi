@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/aot/module_loader.h"
-#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
 namespace taichi {
 namespace lang {
@@ -13,17 +13,17 @@ TI_DLL_EXPORT void finalize_aot_field(aot::Module *aot_module,
 class LlvmAotModule : public aot::Module {
  public:
   explicit LlvmAotModule(const std::string &module_path,
-                         LlvmProgramImpl *program)
-      : program_(program),
+                         LlvmRuntimeExecutor *executor)
+      : executor_(executor),
         cache_reader_(LlvmOfflineCacheFileReader::make(module_path)) {
-    TI_ASSERT(program_ != nullptr);
+    TI_ASSERT(executor_ != nullptr);
 
     const std::string graph_path = fmt::format("{}/graphs.tcb", module_path);
     read_from_binary_file(graphs_, graph_path);
   }
 
   Arch arch() const override {
-    return program_->config->arch;
+    return executor_->get_config()->arch;
   }
 
   uint64_t version() const override {
@@ -34,8 +34,8 @@ class LlvmAotModule : public aot::Module {
     return 0;
   }
 
-  LlvmProgramImpl *const get_program() {
-    return program_;
+  LlvmRuntimeExecutor *const get_runtime_executor() {
+    return executor_;
   }
 
   void set_initialized_snode_tree(int snode_tree_id) {
@@ -61,7 +61,7 @@ class LlvmAotModule : public aot::Module {
 
   std::unique_ptr<aot::Field> make_new_field(const std::string &name) override;
 
-  LlvmProgramImpl *const program_{nullptr};
+  LlvmRuntimeExecutor *const executor_{nullptr};
   std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_{nullptr};
 
   // To prevent repeated SNodeTree initialization

@@ -1,6 +1,11 @@
+import argparse
 import os
 
 import taichi as ti
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--arch", type=str)
+args = parser.parse_args()
 
 
 def compile_mpm88_graph(arch):
@@ -164,3 +169,14 @@ def compile_mpm88_graph(arch):
     mod.add_graph('init', g_init)
     mod.add_graph('update', g_update)
     mod.save(tmpdir, '')
+
+
+if __name__ == "__main__":
+    if args.arch == "cpu":
+        compile_mpm88_graph(arch=ti.cpu)
+    elif args.arch == "cuda":
+        compile_mpm88_graph(arch=ti.cuda)
+    elif args.arch == "vulkan":
+        compile_mpm88_graph(arch=ti.vulkan)
+    else:
+        assert False

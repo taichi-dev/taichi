@@ -5,13 +5,13 @@
 namespace taichi {
 namespace lang {
 
-class LlvmProgramImpl;
+class LlvmRuntimeExecutor;
 
 namespace cpu {
 
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
-  LlvmProgramImpl *program{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);

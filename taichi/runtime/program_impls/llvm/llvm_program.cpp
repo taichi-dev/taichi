@@ -123,8 +123,9 @@ void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
   auto &kernel_cache = cache_data_->kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   for (const auto &datum : data) {
+    auto new_mod = llvm::CloneModule(*datum.module);
     kernel_cache.compiled_data_list.emplace_back(
-        datum.tasks, llvm::CloneModule(*datum.module));
+        datum.tasks, std::move(new_mod));
   }
   kernel_cache.args = std::move(args);
   kernel_cache.created_at = std::time(nullptr);

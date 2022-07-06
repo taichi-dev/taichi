@@ -260,8 +260,11 @@ class LlvmProgramImpl : public ProgramImpl {
     // "LlvmRuntimeExecutor::TaichiLLVMContext::ThreadSafeContext"
 
     // 1. Destructs cahce_data_
+    printf("before destruction\n");
+    runtime_exec_->get_llvm_context(config->arch)->check_context();
     cache_data_.reset();
-
+    printf("after destruction\n");
+    runtime_exec_->get_llvm_context(config->arch)->check_context();
     // 2. Destructs runtime_exec_
     runtime_exec_.reset();
   }

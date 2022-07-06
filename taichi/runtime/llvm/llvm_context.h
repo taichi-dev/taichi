@@ -31,6 +31,7 @@ class TaichiLLVMContext {
         nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
     std::unique_ptr<llvm::Module> struct_module{nullptr};
+    ~ThreadLocalData();
   };
 
  public:
@@ -45,6 +46,7 @@ class TaichiLLVMContext {
   llvm::LLVMContext *get_this_thread_context();
 
   llvm::orc::ThreadSafeContext *get_this_thread_thread_safe_context();
+  void check_context();
 
   /**
    * Initializes TaichiLLVMContext#runtime_jit_module.
@@ -160,6 +162,8 @@ class TaichiLLVMContext {
   ThreadLocalData *main_thread_data_{nullptr};
   std::mutex mut_;
   std::mutex thread_map_mut_;
+  std::vector<std::unique_ptr<llvm::orc::ThreadSafeContext>>
+      old_contexts_;  // Contains old contexts that have modules stored inside the offline cache.
 
   std::unordered_map<int, std::vector<std::string>> snode_tree_funcs_;
 };

@@ -500,6 +500,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
+  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto this_thread_data = get_this_thread_data();
   TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
@@ -512,18 +513,16 @@ void TaichiLLVMContext::set_struct_module(
     if (id == std::this_thread::get_id()) {
       continue;
     }
-    auto ctx = std::make_unique<llvm::LLVMContext>();
-    data->struct_module = nullptr;
-    data->llvm_context = ctx.get();
+    TI_ASSERT(!data->runtime_module);
+    data->struct_module.reset();
+    old_contexts_.push_back(std::move(data->thread_safe_llvm_context));
     data->thread_safe_llvm_context =
-        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
+        std::make_unique<llvm::orc::ThreadSafeContext>(std::make_unique<llvm::LLVMContext>());
+    data->llvm_context = data->thread_safe_llvm_context->getContext();
     data->struct_module = clone_module_to_context(
         this_thread_data->struct_module.get(), data->llvm_context);
-    //    static FileSequenceWriter writer(
-    //        "taichi_kernel_cpu_llvm_{:04d}.ll",
-    //        "optimized LLVM IR (CPU)");
-    //    writer.write(data->struct_module.get());
   }
+  check_context();
 }
 
 template <typename T>
@@ -722,10 +721,10 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
 llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
   ThreadLocalData *data = get_this_thread_data();
   if (!data->llvm_context) {
-    auto ctx = std::make_unique<llvm::LLVMContext>();
-    data->llvm_context = ctx.get();
     data->thread_safe_llvm_context =
-        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
+        std::make_unique<llvm::orc::ThreadSafeContext>(std::make_unique<llvm::LLVMContext>());
+    data->llvm_context = data->thread_safe_llvm_context->getContext();
+    printf("creating context %zu\n", (size_t)data->llvm_context);
   }
   return data->llvm_context;
 }
@@ -742,7 +741,9 @@ llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   if (!data->struct_module) {
     data->struct_module = clone_module_to_this_thread_context(
         main_thread_data_->struct_module.get());
+    printf("cloning: %zu %zu\n", (size_t)&data->struct_module->getContext(), (size_t)data->thread_safe_llvm_context->getContext());
   }
+  printf("reading: %zu %zu\n", (size_t)&data->struct_module->getContext(), (size_t)data->thread_safe_llvm_context->getContext());
   return data->struct_module.get();
 }
 
@@ -819,8 +820,25 @@ void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
 void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
   snode_tree_funcs_[id].push_back(func);
 }
+void TaichiLLVMContext::check_context() {
+//  printf("Checking context: this thread id: %zu\n", std::hash<std::thread::id>{}(std::this_thread::get_id()));
+//  for (auto &[id, data] : per_thread_data_) {
+//    printf("\t%zu: %zu, %zu\n", std::hash<std::thread::id>{}(id), (size_t)&data->struct_module->getContext(), (size_t)data->llvm_context);
+//    TI_ASSERT(!llvm::verifyModule(*data->struct_module));
+//  }
+  for (auto &[id, data] : per_thread_data_) {
+    TI_ASSERT(&data->struct_module->getContext() == data->llvm_context)
+  }
+}
 
 TI_REGISTER_TASK(make_slim_libdevice);
 
+TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
+//  printf("removing: %zu %zu\n", (size_t)&struct_module->getContext(), (size_t)thread_safe_llvm_context->getContext());
+  TI_ASSERT(&struct_module->getContext() == thread_safe_llvm_context->getContext());
+  runtime_module.reset();
+  struct_module.reset();
+  thread_safe_llvm_context.reset();
+}
 }  // namespace lang
 }  // namespace taichi

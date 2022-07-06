@@ -8,6 +8,9 @@ ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
       num_threads_(num_threads),
       status_(ExecutorStatus::uninitialized),
       running_threads_(0) {
+  if (num_threads <= 0) {
+    return;
+  }
   {
     auto _ = std::lock_guard<std::mutex>(mut_);
 
@@ -23,6 +26,9 @@ ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
 ParallelExecutor::~ParallelExecutor() {
   // TODO: We should have a new ExecutorStatus, e.g. shutting_down, to prevent
   // new tasks from being enqueued during shut down.
+  if (num_threads_ <= 0) {
+    return;
+  }
   flush();
   {
     auto _ = std::lock_guard<std::mutex>(mut_);
@@ -36,6 +42,10 @@ ParallelExecutor::~ParallelExecutor() {
 }
 
 void ParallelExecutor::enqueue(const TaskType &func) {
+  if (num_threads_ <= 0) {
+    func();
+    return;
+  }
   {
     std::lock_guard<std::mutex> _(mut_);
     task_queue_.push_back(func);
@@ -44,6 +54,9 @@ void ParallelExecutor::enqueue(const TaskType &func) {
 }
 
 void ParallelExecutor::flush() {
+  if (num_threads_ <= 0) {
+    return;
+  }
   std::unique_lock<std::mutex> lock(mut_);
   while (!flush_cv_cond()) {
     flush_cv_.wait(lock);

@@ -204,7 +204,7 @@ def test_struct_type():
         assert x[i].line.length == 5.0
 
 
-@test_utils.test(exclude=ti.cc)
+@test_utils.test(arch=ti.cpu)
 def test_struct_class():
     # example struct class type
     vec3f = ti.types.vector(3, float)
@@ -243,7 +243,8 @@ def test_struct_class():
         return struct_field[3].area()
 
     assert np.isclose(get_area_field(), 4.0 * 3.14 * 4.0)
-
+ti.init()
+test_struct_class()
 
 @test_utils.test()
 def test_struct_assign():

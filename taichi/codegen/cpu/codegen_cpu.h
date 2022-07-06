@@ -31,8 +31,8 @@ class CodeGenCPU : public KernelCodeGen {
 class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit CPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                        LlvmProgramImpl *program)
-      : ModuleToFunctionConverter(tlctx, program) {
+                                        LlvmRuntimeExecutor *executor)
+      : ModuleToFunctionConverter(tlctx, executor) {
   }
 
   using ModuleToFunctionConverter::convert;

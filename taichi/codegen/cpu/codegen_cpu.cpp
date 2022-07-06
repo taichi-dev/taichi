@@ -232,7 +232,7 @@ FunctionType CodeGenCPU::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
-      CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+      CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
     }
   }
@@ -275,7 +275,7 @@ FunctionType CodeGenCPU::codegen() {
     tlctx->check_context();
   }
 
-  CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+  CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog)->get_runtime_executor());
   return converter.convert(kernel, std::move(data));
 }
 
@@ -305,7 +305,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
     }
   }
   // Do NOT capture `this`...
-  return [program = this->program_, args, kernel_name,
+  return [executor = this->executor_, args, kernel_name,
           task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
@@ -317,7 +317,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);

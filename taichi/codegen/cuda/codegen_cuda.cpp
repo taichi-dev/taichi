@@ -736,7 +736,7 @@ FunctionType CodeGenCUDA::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
-      CUDAModuleToFunctionConverter converter(tlctx, get_llvm_program(prog));
+      CUDAModuleToFunctionConverter converter(tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
     }
   }
@@ -747,7 +747,7 @@ FunctionType CodeGenCUDA::codegen() {
   CodeGenLLVMCUDA gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 
-  CUDAModuleToFunctionConverter converter{gen.tlctx, llvm_prog};
+  CUDAModuleToFunctionConverter converter{gen.tlctx, llvm_prog->get_runtime_executor()};
   std::vector<LLVMCompiledData> data_list;
   data_list.push_back(std::move(compiled_res));
   if (!kernel->is_evaluator) {

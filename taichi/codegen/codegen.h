@@ -45,11 +45,11 @@ class KernelCodeGen {
                     const std::vector<LLVMCompiledData> &data);
 #endif
 };
-
+class LlvmRuntimeExecutor;
 class ModuleToFunctionConverter {
  public:
   explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmProgramImpl *program);
+                                     LlvmRuntimeExecutor *program);
 
   virtual ~ModuleToFunctionConverter() = default;
 
@@ -62,7 +62,7 @@ class ModuleToFunctionConverter {
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};
-  LlvmProgramImpl *program_{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 TLANG_NAMESPACE_END

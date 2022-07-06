@@ -87,8 +87,8 @@ void KernelCodeGen::cache_module(const std::string &kernel_key,
 #endif
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                                     LlvmProgramImpl *program)
-    : tlctx_(tlctx), program_(program) {
+                                                     LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
 }
 
 FunctionType ModuleToFunctionConverter::convert(

@@ -174,6 +174,28 @@ class Camera:
             >>> camera.left(1000.0)
         """
         self.ptr.z_far(z_far)
+    
+    def get_view_mat(self):
+        """Get the view matrix of the camera.
+
+        Example::
+
+            >>> np.asarray(camera.view())
+        """
+        return self.ptr.get_view_mat()
+
+    def get_proj_mat(self, aspect):
+        """Get the projection matrix of the camera.
+
+        Args:
+            aspect (:mod:`taichi.types.primitive_types`): \
+                aspect ratio of the camera
+
+        Example::
+
+            >>> np.asarray(camera.proj(1080/720))
+        """
+        return self.ptr.get_proj_mat(aspect)
 
     def track_user_inputs(self,
                           window,

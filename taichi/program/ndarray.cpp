@@ -195,7 +195,7 @@ void set_runtime_ctx_ndarray(RuntimeContext *ctx,
                              Ndarray *ndarray) {
   ctx->set_arg_devalloc(arg_id, ndarray->ndarray_alloc_, ndarray->shape);
 
-  int total_array_size = 1;
+  uint64_t total_array_size = 1;
   for (const auto &dim : ndarray->total_shape()) {
     total_array_size *= dim;
   }

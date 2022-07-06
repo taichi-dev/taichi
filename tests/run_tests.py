@@ -48,7 +48,11 @@ def _test_cpp_aot():
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         python_file_path = os.path.join(curr_dir, python_rpath)
 
-        extra_env = {"TAICHI_AOT_FOLDER_PATH": temp_folderpath}
+        extra_env = {
+            "TAICHI_AOT_FOLDER_PATH": temp_folderpath,
+            "PYTHONPATH": os.path.join(curr_dir, "cpp", "aot")
+        }
+
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 

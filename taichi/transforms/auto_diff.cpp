@@ -1115,10 +1115,32 @@ class MakeDual : public ADTransform {
       accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      TI_NOT_IMPLEMENTED
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(stmt, mul(div(constant(1),
+                               sqrt(sub(constant(1), sqr(stmt->operand)))),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt,
+                 mul(negate(div(constant(1),
+                                sqrt(sub(constant(1), sqr(stmt->operand))))),
+                     dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt, mul(stmt, dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt, div(dual(stmt->operand), stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
+                           dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));
       }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
       TI_NOT_IMPLEMENTED

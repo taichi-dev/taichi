@@ -521,7 +521,8 @@ void export_lang(py::module &m) {
                                bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
-      .def("quant_array", &SNode::quant_array, py::return_value_policy::reference)
+      .def("quant_array", &SNode::quant_array,
+           py::return_value_policy::reference)
       .def("place", &SNode::place)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("name", [](SNode *snode) { return snode->name; })

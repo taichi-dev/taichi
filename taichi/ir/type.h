@@ -301,8 +301,8 @@ class BitStructType : public Type {
 class QuantArrayType : public Type {
  public:
   QuantArrayType(PrimitiveType *physical_type,
-               Type *element_type_,
-               int num_elements_)
+                 Type *element_type_,
+                 int num_elements_)
       : physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {

@@ -146,9 +146,9 @@ SNode &SNode::bit_struct(int num_bits, bool packed) {
 }
 
 SNode &SNode::quant_array(const std::vector<Axis> &axes,
-                        const std::vector<int> &sizes,
-                        int bits,
-                        bool packed) {
+                          const std::vector<int> &sizes,
+                          int bits,
+                          bool packed) {
   auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);

@@ -86,12 +86,12 @@ Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
   return bit_struct_types_.back().get();
 }
 
-Type *TypeFactory::get_bit_array_type(PrimitiveType *physical_type,
+Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
                                       Type *element_type,
                                       int num_elements) {
-  bit_array_types_.push_back(std::make_unique<BitArrayType>(
+  quant_array_types_.push_back(std::make_unique<QuantArrayType>(
       physical_type, element_type, num_elements));
-  return bit_array_types_.back().get();
+  return quant_array_types_.back().get();
 }
 
 PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {

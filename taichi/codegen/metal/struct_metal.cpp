@@ -67,7 +67,7 @@ class StructCompiler {
         if (ty == SNodeType::place) {
           // do nothing
         }
-        CHECK_UNSUPPORTED_TYPE(bit_array)
+        CHECK_UNSUPPORTED_TYPE(quant_array)
         CHECK_UNSUPPORTED_TYPE(hash)
         else {
           max_snodes_ = std::max(max_snodes_, sn->id);

@@ -298,9 +298,9 @@ class BitStructType : public Type {
   std::vector<int> member_bit_offsets_;
 };
 
-class BitArrayType : public Type {
+class QuantArrayType : public Type {
  public:
-  BitArrayType(PrimitiveType *physical_type,
+  QuantArrayType(PrimitiveType *physical_type,
                Type *element_type_,
                int num_elements_)
       : physical_type_(physical_type),

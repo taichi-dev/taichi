@@ -107,8 +107,8 @@ class SNode:
         """
         return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
 
-    def bit_array(self, axes, dimensions, num_bits):
-        """Adds a bit_array SNode as a child component of `self`.
+    def quant_array(self, axes, dimensions, num_bits):
+        """Adds a quant_array SNode as a child component of `self`.
 
         Args:
             axes (List[Axis]): Axes to activate.
@@ -121,8 +121,8 @@ class SNode:
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.bit_array(axes, dimensions, num_bits,
-                               impl.current_cfg().packed))
+            self.ptr.quant_array(axes, dimensions, num_bits,
+                                 impl.current_cfg().packed))
 
     def place(self, *args, offset=None, shared_exponent=False):
         """Places a list of Taichi fields under the `self` container.

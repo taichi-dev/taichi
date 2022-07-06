@@ -35,7 +35,7 @@ pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
 }
 
-// convert 2d-array to numpy array using pybind
+// Here we convert the 2d-array to numpy array using pybind. Refs:
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=array_t#vectorizing-functions
 // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
 py::array_t<float> mat4_to_nparray(glm::mat4 mat) {

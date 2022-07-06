@@ -726,7 +726,6 @@ llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
         std::make_unique<llvm::orc::ThreadSafeContext>(
             std::make_unique<llvm::LLVMContext>());
     data->llvm_context = data->thread_safe_llvm_context->getContext();
-    printf("creating context %zu\n", (size_t)data->llvm_context);
   }
   return data->llvm_context;
 }
@@ -743,11 +742,7 @@ llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   if (!data->struct_module) {
     data->struct_module = clone_module_to_this_thread_context(
         main_thread_data_->struct_module.get());
-    printf("cloning: %zu %zu\n", (size_t)&data->struct_module->getContext(),
-           (size_t)data->thread_safe_llvm_context->getContext());
   }
-  printf("reading: %zu %zu\n", (size_t)&data->struct_module->getContext(),
-         (size_t)data->thread_safe_llvm_context->getContext());
   return data->struct_module.get();
 }
 
@@ -833,6 +828,9 @@ void TaichiLLVMContext::check_context() {
   //    TI_ASSERT(!llvm::verifyModule(*data->struct_module));
   //  }
   for (auto &[id, data] : per_thread_data_) {
+    if (!data->struct_module) {
+      continue;
+    }
     TI_ASSERT(&data->struct_module->getContext() == data->llvm_context)
   }
 }
@@ -842,8 +840,10 @@ TI_REGISTER_TASK(make_slim_libdevice);
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   //  printf("removing: %zu %zu\n", (size_t)&struct_module->getContext(),
   //  (size_t)thread_safe_llvm_context->getContext());
-  TI_ASSERT(&struct_module->getContext() ==
-            thread_safe_llvm_context->getContext());
+  if (struct_module) {
+    TI_ASSERT(&struct_module->getContext() ==
+              thread_safe_llvm_context->getContext());
+  }
   runtime_module.reset();
   struct_module.reset();
   thread_safe_llvm_context.reset();

@@ -269,10 +269,8 @@ FunctionType CodeGenCPU::codegen() {
   }
 
   if (!kernel->is_evaluator) {
-    printf("after compilation\n");
     tlctx->check_context();
     cache_module(kernel_key, data);
-    printf("after cache\n");
     tlctx->check_context();
   }
 

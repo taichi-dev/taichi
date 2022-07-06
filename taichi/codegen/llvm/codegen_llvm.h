@@ -41,8 +41,7 @@ class FunctionCreationGuard {
   ~FunctionCreationGuard();
 };
 
-struct LLVMCompiledData {  // TODO(Lin): Merge LLVMCompiledData and
-                           // ModuleGenValue
+struct LLVMCompiledData {
   std::vector<OffloadedTask>
       tasks;  // TODO(Lin): Make this a single OffloadedTask in the future
   std::unique_ptr<llvm::Module> module{nullptr};

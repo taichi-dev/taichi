@@ -259,15 +259,13 @@ class LlvmProgramImpl : public ProgramImpl {
   //
   // Make sure the above mentioned objects are destructed in order.
   ~LlvmProgramImpl() {
-    // Explicitly enforce "LlvmOfflineCache::CachedKernelData::owned_modules"
-    // destructs before
+    // Explicitly enforce modules in "LlvmOfflineCache"
+    // destroy before
     // "LlvmRuntimeExecutor::TaichiLLVMContext::ThreadSafeContext"
 
     // 1. Destructs cahce_data_
-    printf("before destruction\n");
     runtime_exec_->get_llvm_context(config->arch)->check_context();
     cache_data_.reset();
-    printf("after destruction\n");
     runtime_exec_->get_llvm_context(config->arch)->check_context();
     // 2. Destructs runtime_exec_
     runtime_exec_.reset();

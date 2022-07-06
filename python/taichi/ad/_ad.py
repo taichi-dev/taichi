@@ -276,7 +276,12 @@ class FwdMode:
 
         # Set seed for each variable
         if len(self.seed) == 1:
-            self.parameters.dual[None] = 1.0 * self.seed[0]
+            if not self.parameters.shape:
+                # e.g., x= ti.field(float, shape = ())
+                self.parameters.dual[None] = 1.0 * self.seed[0]
+            else:
+                # e.g., ti.root.dense(ti.i, 1).place(x.dual)
+                self.parameters.dual[0] = 1.0 * self.seed[0]
         else:
             for idx, s in enumerate(self.seed):
                 self.parameters.dual[idx] = 1.0 * s
@@ -306,7 +311,12 @@ class FwdMode:
     def clear_seed(self):
         # clear seed values
         if len(self.seed) == 1:
-            self.parameters.dual[None] = 0.0
+            if not self.parameters.shape:
+                # e.g., x= ti.field(float, shape = ())
+                self.parameters.dual[None] = 0.0
+            else:
+                # e.g., ti.root.dense(ti.i, 1).place(x.dual)
+                self.parameters.dual[0] = 0.0
         else:
             for idx, s in enumerate(self.seed):
                 self.parameters.dual[idx] = 0.0

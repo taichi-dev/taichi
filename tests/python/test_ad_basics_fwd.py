@@ -79,3 +79,31 @@ def test_multiple_calls():
                        seed=[1.0 for _ in range(N)]):
         multiple_calls()
     assert loss_2.dual[None] == 48
+
+
+@test_utils.test()
+def test_handle_zero_shape():
+    a = ti.field(float)
+    b = ti.field(float)
+    ti.root.dense(ti.i, 1).place(a, b, a.dual, b.dual)
+
+    @ti.kernel
+    def func():
+        pass
+
+    with ti.ad.FwdMode(loss=b, parameters=a):
+        func()
+
+
+@test_utils.test()
+def test_handle_none_shape():
+    c = ti.field(float, shape=())
+    d = ti.field(float, shape=())
+    ti.root.lazy_dual()
+
+    @ti.kernel
+    def func():
+        pass
+
+    with ti.ad.FwdMode(loss=d, parameters=c):
+        func()

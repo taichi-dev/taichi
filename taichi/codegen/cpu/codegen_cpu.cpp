@@ -232,7 +232,8 @@ FunctionType CodeGenCPU::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
-      CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog)->get_runtime_executor());
+      CPUModuleToFunctionConverter converter(
+          tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
     }
   }
@@ -275,7 +276,8 @@ FunctionType CodeGenCPU::codegen() {
     tlctx->check_context();
   }
 
-  CPUModuleToFunctionConverter converter(tlctx, get_llvm_program(prog)->get_runtime_executor());
+  CPUModuleToFunctionConverter converter(
+      tlctx, get_llvm_program(prog)->get_runtime_executor());
   return converter.convert(kernel, std::move(data));
 }
 

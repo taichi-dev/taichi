@@ -243,8 +243,11 @@ def test_struct_class():
         return struct_field[3].area()
 
     assert np.isclose(get_area_field(), 4.0 * 3.14 * 4.0)
+
+
 ti.init()
 test_struct_class()
+
 
 @test_utils.test()
 def test_struct_assign():

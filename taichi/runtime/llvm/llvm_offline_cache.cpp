@@ -111,7 +111,8 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   for (int i = 0; i < kernel_data.compiled_data_list.size(); i++) {
     auto &data = kernel_data.compiled_data_list[i];
     if (!data.module) {
-      std::string filename_prefix = taichi::join_path(path_, key + "." + std::to_string(i));
+      std::string filename_prefix =
+          taichi::join_path(path_, key + "." + std::to_string(i));
       data.module = load_module(filename_prefix, key, llvm_ctx);
       TI_ASSERT(data.module);
     }

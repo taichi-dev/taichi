@@ -163,7 +163,8 @@ class TaichiLLVMContext {
   std::mutex mut_;
   std::mutex thread_map_mut_;
   std::vector<std::unique_ptr<llvm::orc::ThreadSafeContext>>
-      old_contexts_;  // Contains old contexts that have modules stored inside the offline cache.
+      old_contexts_;  // Contains old contexts that have modules stored inside
+                      // the offline cache.
 
   std::unordered_map<int, std::vector<std::string>> snode_tree_funcs_;
 };

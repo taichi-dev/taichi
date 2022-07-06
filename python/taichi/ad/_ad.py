@@ -276,7 +276,7 @@ class FwdMode:
 
         # Set seed for each variable
         if len(self.seed) == 1:
-            if not self.parameters.shape:
+            if len(self.parameters.shape) == 0:
                 # e.g., x= ti.field(float, shape = ())
                 self.parameters.dual[None] = 1.0 * self.seed[0]
             else:
@@ -311,7 +311,7 @@ class FwdMode:
     def clear_seed(self):
         # clear seed values
         if len(self.seed) == 1:
-            if not self.parameters.shape:
+            if len(self.parameters.shape) == 0:
                 # e.g., x= ti.field(float, shape = ())
                 self.parameters.dual[None] = 0.0
             else:

@@ -24,9 +24,9 @@ TEST(Type, BitTypes) {
   EXPECT_EQ(bs->to_string(), "bs(qi5@0, qu11@5)");
 
   auto qi1 = TypeFactory::get_instance().get_quant_int_type(1, true, i32);
-  auto ba = TypeFactory::get_instance().get_quant_array_type(i32, qi1, 32);
+  auto qa = TypeFactory::get_instance().get_quant_array_type(i32, qi1, 32);
 
-  EXPECT_EQ(ba->to_string(), "qa(qi1x32)");
+  EXPECT_EQ(qa->to_string(), "qa(qi1x32)");
 }
 
 }  // namespace lang

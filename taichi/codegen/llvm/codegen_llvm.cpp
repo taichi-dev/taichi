@@ -1737,8 +1737,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     } else {
       TI_ERROR(
           "A bit-vectorized struct-for must loop over a quant array with a "
-          "dense "
-          "parent");
+          "dense parent");
     }
   }
 

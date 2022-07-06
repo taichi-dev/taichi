@@ -35,12 +35,6 @@ pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
 }
 
-struct custom_deleter {
-  glm::mat4 operator()(glm::mat4 *m) {
-    return *m;
-  }
-};
-
 // convert 2d-array to numpy array using pybind
 // ref:https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=array_t#vectorizing-functions
 // ref:https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11

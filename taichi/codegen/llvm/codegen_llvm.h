@@ -411,14 +411,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void cache_module(const std::string &kernel_key);
 };
 
-class LlvmProgramImpl;
+class LlvmRuntimeExecutor;
 
 // TODO: Make ModuleToFunctionConverter abstract,
 //       Move CPU implementation to "taichi/backend/cpu/"
 class ModuleToFunctionConverter {
  public:
   explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmProgramImpl *program);
+                                     LlvmRuntimeExecutor *executor);
 
   virtual ~ModuleToFunctionConverter() = default;
 
@@ -433,7 +433,7 @@ class ModuleToFunctionConverter {
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};
-  LlvmProgramImpl *program_{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 }  // namespace lang

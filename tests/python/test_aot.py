@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tempfile
+import zipfile
 
 import numpy as np
 import pytest
@@ -555,3 +556,24 @@ def test_aot_ndarray_template_mixed():
             res = json.load(json_file)
             args_count = res['aot_data']['kernels']['run']['args_count']
             assert args_count == 2, res  # `arr` and `val1`
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_archive():
+    density = ti.field(float, shape=(4, 4))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        tcm_path = f"{tmpdir}/x.tcm"
+        m.archive(tcm_path)
+        with zipfile.ZipFile(tcm_path, 'r') as z:
+            assert z.read("__version__") == bytes(
+                '.'.join(str(x) for x in ti.__version__), 'utf-8')

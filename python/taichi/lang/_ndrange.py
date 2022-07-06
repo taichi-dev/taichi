@@ -1,5 +1,6 @@
 import collections.abc
 
+import numpy as np
 from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
@@ -20,7 +21,7 @@ class _Ndrange:
             args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         for arg in args:
             for bound in arg:
-                if not isinstance(bound, int) and not (
+                if not isinstance(bound, (int, np.integer)) and not (
                         isinstance(bound, Expr)
                         and is_integral(bound.ptr.get_ret_type())):
                     raise TaichiTypeError(

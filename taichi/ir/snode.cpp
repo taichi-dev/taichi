@@ -302,7 +302,7 @@ void SNode::end_shared_exp_placement() {
 }
 
 bool SNode::is_primal() const {
-  return grad_info->is_primal();
+  return grad_info && grad_info->is_primal();
 }
 
 bool SNode::has_adjoint() const {

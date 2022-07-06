@@ -411,7 +411,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void cache_module(const std::string &kernel_key);
 };
 
-class LlvmProgramImpl;
+class LlvmRuntimeExecutor;
 
 }  // namespace lang
 }  // namespace taichi

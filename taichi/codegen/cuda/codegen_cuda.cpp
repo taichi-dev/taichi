@@ -772,10 +772,10 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
   auto jit = tlctx_->jit.get();
   auto cuda_module =
-      jit->add_module(std::move(mod), program_->config->gpu_max_reg);
+      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
 
   return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
-          program = this->program_](RuntimeContext &context) {
+          executor = this->executor_](RuntimeContext &context) {
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
@@ -824,7 +824,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           // it's shared by cpu and cuda.
           DeviceAllocation *ptr =
               static_cast<DeviceAllocation *>(arg_buffers[i]);
-          device_buffers[i] = program->get_ndarray_alloc_info_ptr(*ptr);
+          device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
           // We compare arg_buffers[i] and device_buffers[i] later to check
           // if transfer happened.
           // TODO: this logic can be improved but I'll leave it to a followup

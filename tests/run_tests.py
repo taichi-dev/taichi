@@ -40,7 +40,7 @@ def _run_cpp_test(gtest_option="", extra_env=None):
 
 def _test_cpp_aot():
     tests_visited = []
-    for cpp_test_name, python_rpath in __aot_test_cases.items():
+    for cpp_test_name, (python_rpath, args) in __aot_test_cases.items():
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
@@ -50,13 +50,13 @@ def _test_cpp_aot():
 
         extra_env = {
             "TAICHI_AOT_FOLDER_PATH": temp_folderpath,
-            "PYTHONPATH": os.path.join(curr_dir, "cpp", "aot")
         }
 
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 
-        subprocess.check_call([sys.executable, python_file_path], env=env_copy)
+        subprocess.check_call([sys.executable, python_file_path, args],
+                              env=env_copy)
 
         # Run AOT C++ codes
         _run_cpp_test(f"--gtest_filter={cpp_test_name}", extra_env)

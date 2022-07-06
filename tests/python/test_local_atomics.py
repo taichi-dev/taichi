@@ -101,7 +101,7 @@ def test_explicit_local_atomic_and():
     def func():
         a = 1023
         for i in range(10):
-            ti.atomic_and(a, max_int - int(2**i))
+            ti.atomic_and(a, max_int - 2**i)
         A[None] = a
 
     func()
@@ -117,7 +117,7 @@ def test_implicit_local_atomic_and():
     def func():
         a = 1023
         for i in range(10):
-            a &= max_int - int(2**i)
+            a &= max_int - 2**i
         A[None] = a
 
     func()

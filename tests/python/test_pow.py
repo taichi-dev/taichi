@@ -46,37 +46,3 @@ def test_pow_i32():
 @test_utils.test(require=ti.extension.data64)
 def test_pow_i64():
     _test_pow_i(ti.i64)
-
-
-def _test_negative_exp(dt):
-    z = ti.field(ti.lang.impl.get_runtime().default_fp, shape=())
-
-    @ti.kernel
-    def workload(x: dt, y: ti.template()):
-        z[None] = x**y
-
-    for x in range(-5, 5):
-        for y in range(-5, -1):
-            if x != 0:
-                workload(x, y)
-                assert test_utils.approx(z[None]) == (x**y)
-
-
-@test_utils.test(default_fp=ti.f32)
-def test_negative_exp_i32_f32():
-    _test_negative_exp(ti.i32)
-
-
-@test_utils.test(default_fp=ti.f64, exclude=[ti.metal])
-def test_negative_exp_i32_f64():
-    _test_negative_exp(ti.i32)
-
-
-@test_utils.test(default_fp=ti.f32, require=ti.extension.data64)
-def test_negative_exp_f64_f32():
-    _test_negative_exp(ti.i64)
-
-
-@test_utils.test(default_fp=ti.f64, require=ti.extension.data64)
-def test_negative_exp_i64_f64():
-    _test_negative_exp(ti.i64)

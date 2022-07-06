@@ -578,8 +578,9 @@ class KernelCodegenImpl : public IRVisitor {
       }
       return;
     }
-    if (op_type == BinaryOpType::pow) {
-      emit("const {} {} = pow_helper({}, {});", dt_name, bin_name, lhs_name,
+    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type)) {
+      // TODO(k-ye): Make sure the type is not i64?
+      emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
            rhs_name);
       return;
     }

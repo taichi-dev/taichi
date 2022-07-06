@@ -38,14 +38,16 @@ STR(
                   : intm);
     }
 
-    inline bool is_integral(float x) { return fabs(x - round(x)) <= 1e-9f; }
-
-    float pow_helper(float x, float n) {
-      if (is_integral(x) && is_integral(n) && n > 0) {
-        return static_cast<float>(static_cast<int32_t>(pow(x, n) + 0.5f));
-      } else {
-        return pow(x, n);
+    int32_t pow_i32(int32_t x, int32_t n) {
+      int32_t tmp = x;
+      int32_t ans = 1;
+      while (n > (int32_t)(0)) {
+        if (n & 1)
+          ans *= tmp;
+        tmp *= tmp;
+        n >>= 1;
       }
+      return ans;
     }
 
     float fatomic_fetch_add(device float *dest, const float operand) {

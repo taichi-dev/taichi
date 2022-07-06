@@ -127,20 +127,6 @@ inline DataType to_unsigned(DataType dt) {
     return PrimitiveType::unknown;
 }
 
-inline DataType to_real(DataType dt) {
-  TI_ASSERT(is_integral(dt));
-  if (dt->is_primitive(PrimitiveTypeID::i8) ||
-      dt->is_primitive(PrimitiveTypeID::i16) ||
-      dt->is_primitive(PrimitiveTypeID::i32) ||
-      dt->is_primitive(PrimitiveTypeID::u8) ||
-      dt->is_primitive(PrimitiveTypeID::u16) ||
-      dt->is_primitive(PrimitiveTypeID::u32)) {
-    return PrimitiveType::f32;
-  } else {
-    return PrimitiveType::f64;
-  }
-}
-
 inline bool needs_grad(DataType dt) {
   return is_real(dt);
 }

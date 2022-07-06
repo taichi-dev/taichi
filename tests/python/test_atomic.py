@@ -333,7 +333,7 @@ def test_atomic_and_expr_evaled():
         c[None] = 1023
         for i in range(10):
             # this is an expr with side effect, make sure it's not optimized out.
-            ti.atomic_and(c[None], max_int - int(2**i))
+            ti.atomic_and(c[None], max_int - 2**i)
 
     func()
 

@@ -120,10 +120,10 @@ struct PyCamera {
   void z_far(float z_far_) {
     camera.z_far = z_far_;
   }
-  py::array_t<float> get_view_mat() {
+  py::array_t<float> get_view_matrix() {
     return mat4_to_nparray(camera.get_view_matrix());
   }
-  py::array_t<float> get_proj_mat(float aspect_ratio) {
+  py::array_t<float> get_projection_matrix(float aspect_ratio) {
     return mat4_to_nparray(camera.get_projection_matrix(aspect_ratio));
   }
 };
@@ -396,8 +396,8 @@ void export_ggui(py::module &m) {
       .def("bottom", &PyCamera::bottom)
       .def("z_near", &PyCamera::z_near)
       .def("z_far", &PyCamera::z_far)
-      .def("get_view_mat", &PyCamera::get_view_mat)
-      .def("get_proj_mat", &PyCamera::get_proj_mat);
+      .def("get_view_matrix", &PyCamera::get_view_matrix)
+      .def("get_projection_matrix", &PyCamera::get_projection_matrix);
 
   py::class_<Event>(m, "Event")
       .def_property("key", &Event::get_key, &Event::set_key);

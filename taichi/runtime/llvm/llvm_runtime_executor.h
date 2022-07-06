@@ -57,6 +57,10 @@ class LlvmRuntimeExecutor {
     return config_;
   }
 
+  TaichiLLVMContext *get_llvm_context(Arch arch);
+
+  LLVMRuntime *get_llvm_runtime();
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -112,9 +116,6 @@ class LlvmRuntimeExecutor {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
   Device *get_compute_device();
-
-  TaichiLLVMContext *get_llvm_context(Arch arch);
-  LLVMRuntime *get_llvm_runtime();
 
   void initialize_host();
 

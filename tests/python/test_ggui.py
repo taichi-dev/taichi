@@ -319,4 +319,3 @@ def test_get_camera_view_and_projection_matrix():
     assert (abs(projection_matrix[2, 2] - 1.0001000e-4) <= 1e-5)
     assert (abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5)
     assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)
-    

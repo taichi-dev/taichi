@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
-error "Missing the <filesystem> header."
+#error "Missing the <filesystem> header."
 #endif  //  __has_include(<filesystem>)
 
 #include "llvm/IR/IRBuilder.h"

@@ -1151,12 +1151,10 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
     ptr_ty = llvm_type(stmt->src[0].var->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src[0].var]);
+#else
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
 #endif
-  llvm_val[stmt] = builder->CreateLoad(
-#ifdef TI_LLVM_15
-      ptr_ty,
-#endif
-      llvm_val[stmt->src[0].var]);
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
@@ -1584,25 +1582,21 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
     ptr_ty = AI->getAllocatedType();
   TI_ASSERT(ptr_ty);
   auto *struct_ty = llvm::cast<llvm::StructType>(ptr_ty);
-#endif
   auto byte_ptr = builder->CreateLoad(
-#ifdef TI_LLVM_15
       struct_ty->getElementType(0),
-#endif
-      builder->CreateGEP(
-#ifdef TI_LLVM_15
-          ptr_ty,
-#endif
-          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+      builder->CreateGEP(ptr_ty, bit_ptr,
+                         {tlctx->get_constant(0), tlctx->get_constant(0)}));
   auto bit_offset = builder->CreateLoad(
-#ifdef TI_LLVM_15
       struct_ty->getElementType(1),
+      builder->CreateGEP(ptr_ty, bit_ptr,
+                         {tlctx->get_constant(0), tlctx->get_constant(1)}));
+#else
+  auto byte_ptr = builder->CreateLoad(builder->CreateGEP(
+      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+  auto bit_offset = builder->CreateLoad(builder->CreateGEP(
+      bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
 #endif
-      builder->CreateGEP(
-#ifdef TI_LLVM_15
-          ptr_ty,
-#endif
-          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+
   return std::make_tuple(byte_ptr, bit_offset);
 }
 
@@ -1628,12 +1622,11 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
       if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_type))
         parent_type = ptr_ty->getPointerElementType();
     }
+    llvm_val[stmt] =
+        builder->CreateGEP(parent_type, parent, llvm_val[stmt->input_index]);
+#else
+    llvm_val[stmt] = builder->CreateGEP(parent, llvm_val[stmt->input_index]);
 #endif
-    llvm_val[stmt] = builder->CreateGEP(
-#ifdef TI_LLVM_15
-        parent_type,
-#endif
-        parent, llvm_val[stmt->input_index]);
   } else if (snode->type == SNodeType::dense ||
              snode->type == SNodeType::pointer ||
              snode->type == SNodeType::dynamic ||
@@ -1699,12 +1692,13 @@ void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       }
     }
     TI_ASSERT(ptr_ty);
+
+    llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
+                                        llvm_val[stmt->offset]);
+#else
+    llvm_val[stmt] =
+        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
 #endif
-    llvm_val[stmt] = builder->CreateGEP(
-#ifdef TI_LLVM_15
-        ptr_ty,
-#endif
-        llvm_val[stmt->origin], llvm_val[stmt->offset]);
   } else {
     auto origin_address = builder->CreatePtrToInt(
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
@@ -2232,18 +2226,17 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
     auto val_ty = physical_coordinate_ty_as_struct->getElementType(0);
     TI_ASSERT(val_ty->isArrayTy());
     auto val_ty_as_array = llvm::cast<llvm::ArrayType>(val_ty);
-#endif
     llvm_val[stmt] = builder->CreateLoad(
-#ifdef TI_LLVM_15
         val_ty_as_array->getElementType(),
+        builder->CreateGEP(physical_coordinate_ty, block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
+#else
+    llvm_val[stmt] = builder->CreateLoad(
+        builder->CreateGEP(block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
 #endif
-        builder->CreateGEP(
-#ifdef TI_LLVM_15
-            physical_coordinate_ty,
-#endif
-            block_corner_coordinates,
-            {tlctx->get_constant(0), tlctx->get_constant(0),
-             tlctx->get_constant(stmt->index)}));
   } else {
     TI_NOT_IMPLEMENTED;
   }

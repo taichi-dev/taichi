@@ -13,9 +13,6 @@
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
-#ifndef TI_LLVM_15
-#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
-#endif
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
@@ -26,15 +23,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
-#ifdef TI_LLVM_15
-#include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Support/DynamicLibrary.h"
-#ifdef TI_LLVM_15
-#include "llvm/Support/Host.h"
-#endif
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Target/TargetMachine.h"
@@ -43,6 +32,15 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
+
+#ifdef TI_LLVM_15
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/Host.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#endif
+
 #endif
 
 #include "taichi/lang_util.h"
@@ -111,17 +109,14 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
-  JITSessionCPU(TaichiLLVMContext *tlctx,
 #ifdef TI_LLVM_15
+  JITSessionCPU(TaichiLLVMContext *tlctx,
                 std::unique_ptr<ExecutorProcessControl> EPC,
-#endif
                 CompileConfig *config,
                 JITTargetMachineBuilder JTMB,
                 DataLayout DL)
       : JITSession(tlctx, config),
-#ifdef TI_LLVM_15
         es_(std::move(EPC)),
-#endif
         object_layer_(es_,
                       [&]() {
                         auto smgr = std::make_unique<SectionMemoryManager>();
@@ -140,6 +135,31 @@ class JITSessionCPU : public JITSession {
       object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
     }
   }
+#else
+  JITSessionCPU(TaichiLLVMContext *tlctx,
+                CompileConfig *config,
+                JITTargetMachineBuilder JTMB,
+                DataLayout DL)
+      : JITSession(tlctx, config),
+        object_layer_(es_,
+                      [&]() {
+                        auto smgr = std::make_unique<SectionMemoryManager>();
+                        memory_manager_ = smgr.get();
+                        return smgr;
+                      }),
+        compile_layer_(es_,
+                       object_layer_,
+                       std::make_unique<ConcurrentIRCompiler>(JTMB)),
+        dl_(DL),
+        mangle_(es_, this->dl_),
+        module_counter_(0),
+        memory_manager_(nullptr) {
+    if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
+      object_layer_.setOverrideObjectFlagsWithResponsibilityFlags(true);
+      object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
+    }
+  }
+#endif
 
   ~JITSessionCPU() override {
     std::lock_guard<std::mutex> _(mut_);
@@ -320,13 +340,12 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
 #ifdef TI_LLVM_15
   auto EPC = SelfExecutorProcessControl::Create();
   TI_ASSERT(EPC);
-#endif
-  return std::make_unique<JITSessionCPU>(tlctx,
-#ifdef TI_LLVM_15
-                                         std::move(*EPC),
-#endif
-                                         config, target_info.first,
+  return std::make_unique<JITSessionCPU>(tlctx, std::move(*EPC), config,
+                                         target_info.first, target_info.second);
+#else
+  return std::make_unique<JITSessionCPU>(tlctx, config, target_info.first,
                                          target_info.second);
+#endif
 }
 
 TLANG_NAMESPACE_END

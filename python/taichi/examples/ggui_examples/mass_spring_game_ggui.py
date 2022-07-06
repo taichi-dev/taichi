@@ -120,7 +120,7 @@ def render():
 
 
 def main():
-    window = ti.ui.Window('Explicit Mass Spring System', (1024, 1024),
+    window = ti.ui.Window('Explicit Mass Spring System', (768, 768),
                           vsync=True)
     canvas = window.get_canvas()
 

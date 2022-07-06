@@ -79,7 +79,7 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::full_simplify(
       ir, config,
-      {false, /*with_autodiff_after*/ autodiff_mode != AutodiffMode::kForward,
+      {false, /*with_autodiff_after*/ autodiff_mode == AutodiffMode::kForward,
        kernel->program});
   print("Simplified I");
   irpass::analysis::verify(ir);
@@ -94,7 +94,7 @@ void compile_to_offloads(IRNode *ir,
 
     irpass::full_simplify(
         ir, config,
-        {false, /*with_autodiff_after*/ autodiff_mode != AutodiffMode::kForward,
+        {false, /*with_autodiff_after*/ autodiff_mode == AutodiffMode::kForward,
          kernel->program});
     irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
     // TODO: Be carefull with the full_simplify when do high-order autodiff

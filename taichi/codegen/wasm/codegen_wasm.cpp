@@ -231,8 +231,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
           return func_name == offloaded_task_name;
         });
     LLVMCompiledData res;
-    res.tasks.emplace_back(nullptr);
-    res.tasks[0].name = offloaded_task_name;
+    res.tasks.emplace_back(offloaded_task_name);
     res.module = std::move(this->module);
     return res;
   }

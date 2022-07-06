@@ -406,8 +406,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   ~CodeGenLLVM() override = default;
 
- private:
-  void cache_module(const std::string &kernel_key);
 };
 
 class LlvmRuntimeExecutor;

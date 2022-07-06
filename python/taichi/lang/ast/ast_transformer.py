@@ -17,11 +17,29 @@ from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
+from taichi.types.utils import is_integral
 
 if version_info < (3, 9):
     from astunparse import unparse
 else:
     from ast import unparse
+
+
+def boundary_type_cast_warning(expression):
+    expr_dtype = expression.ptr.get_ret_type()
+    assert is_integral(expr_dtype)
+    if expr_dtype == primitive_types.i64:
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
+            Warning)
+    elif expr_dtype == primitive_types.u64:
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
+            Warning)
+    elif expr_dtype == primitive_types.u32:
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
+            Warning)
 
 
 class ASTTransformer(Builder):
@@ -803,15 +821,8 @@ class ASTTransformer(Builder):
                 end_expr = expr.Expr(build_stmt(ctx, node.iter.args[1]))
 
                 # Warning for implicit dtype conversion
-                if begin_expr.ptr.get_ret_type() == primitive_types.i64:
-                    warnings.warn(
-                        "Casting range_for \"begin\" value from i64 to i32, which may cause numerical issues",
-                        Warning)
-
-                if end_expr.ptr.get_ret_type() == primitive_types.i64:
-                    warnings.warn(
-                        "Casting range_for \"end\" value from i64 to i32, which may cause numerical issues",
-                        Warning)
+                boundary_type_cast_warning(begin_expr)
+                boundary_type_cast_warning(end_expr)
 
                 begin = ti_ops.cast(begin_expr, primitive_types.i32)
                 end = ti_ops.cast(end_expr, primitive_types.i32)
@@ -820,10 +831,7 @@ class ASTTransformer(Builder):
                 end_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
 
                 # Warning for implicit dtype conversion
-                if end_expr.ptr.get_ret_type() == primitive_types.i64:
-                    warnings.warn(
-                        "Casting range_for \"end\" value from i64 to i32, which may cause numerical issues",
-                        Warning)
+                boundary_type_cast_warning(end_expr)
 
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
                 end = ti_ops.cast(end_expr, primitive_types.i32)

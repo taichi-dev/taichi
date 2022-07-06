@@ -61,6 +61,8 @@ class LlvmRuntimeExecutor {
 
   LLVMRuntime *get_llvm_runtime();
 
+  void prepare_runtime_context(RuntimeContext *ctx);
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -84,8 +86,6 @@ class LlvmRuntimeExecutor {
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
-
-  void prepare_runtime_context(RuntimeContext *ctx);
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key,

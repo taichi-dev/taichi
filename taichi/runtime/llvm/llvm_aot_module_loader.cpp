@@ -18,8 +18,8 @@ LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
 std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
   auto fn = convert_module_to_function(name, load_kernel_from_cache(name));
-  return std::make_unique<llvm_aot::KernelImpl>(fn, name,
-                                                load_kernel_from_cache(name));
+  return std::make_unique<llvm_aot::KernelImpl>(
+      fn, name, LlvmOfflineCache::KernelCacheData());
 }
 
 std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
@@ -47,7 +47,10 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
     dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
                           get_kernel(dispatch.kernel_name)});
   }
-  aot::CompiledGraph graph{dispatches};
+
+  aot::CompiledGraph graph = aot::CompiledGraph({dispatches});
+  executor_->prepare_runtime_context(&graph.ctx_);
+
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 

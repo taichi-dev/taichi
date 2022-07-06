@@ -82,7 +82,7 @@ def test_multiple_calls():
 
 
 @test_utils.test()
-def test_handle_zero_shape():
+def test_handle_shape_accessed_by_zero():
     a = ti.field(float)
     b = ti.field(float)
     ti.root.dense(ti.i, 1).place(a, b, a.dual, b.dual)
@@ -96,7 +96,7 @@ def test_handle_zero_shape():
 
 
 @test_utils.test()
-def test_handle_none_shape():
+def test_handle_shape_accessed_by_none():
     c = ti.field(float, shape=())
     d = ti.field(float, shape=())
     ti.root.lazy_dual()

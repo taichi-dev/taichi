@@ -42,7 +42,6 @@
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/util/file_sequence_writer.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -820,13 +819,6 @@ void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
   snode_tree_funcs_[id].push_back(func);
 }
 void TaichiLLVMContext::check_context() {
-  //  printf("Checking context: this thread id: %zu\n",
-  //  std::hash<std::thread::id>{}(std::this_thread::get_id())); for (auto &[id,
-  //  data] : per_thread_data_) {
-  //    printf("\t%zu: %zu, %zu\n", std::hash<std::thread::id>{}(id),
-  //    (size_t)&data->struct_module->getContext(), (size_t)data->llvm_context);
-  //    TI_ASSERT(!llvm::verifyModule(*data->struct_module));
-  //  }
   for (auto &[id, data] : per_thread_data_) {
     if (!data->struct_module) {
       continue;
@@ -838,8 +830,6 @@ void TaichiLLVMContext::check_context() {
 TI_REGISTER_TASK(make_slim_libdevice);
 
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
-  //  printf("removing: %zu %zu\n", (size_t)&struct_module->getContext(),
-  //  (size_t)thread_safe_llvm_context->getContext());
   if (struct_module) {
     TI_ASSERT(&struct_module->getContext() ==
               thread_safe_llvm_context->getContext());

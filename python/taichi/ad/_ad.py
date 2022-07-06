@@ -254,7 +254,7 @@ class FwdMode:
             return reduce((lambda x, y: x * y), list(shape))
 
         # Handle 0-D field
-        if len(self.parameters.shape) == 0:
+        if len(self.parameters.shape) != 0:
             parameters_shape_flatten = shape_flatten(self.parameters.shape)
         else:
             parameters_shape_flatten = 1

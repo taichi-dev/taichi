@@ -37,7 +37,7 @@ pybind11::tuple vec3_to_tuple(glm::vec3 v) {
 
 // convert 2d-array to numpy array using pybind
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=array_t#vectorizing-functions
-// ref:https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+// https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
 py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
   // must explicitly pass args using py::detail::any_container<ssize_t>
   // ref:https://stackoverflow.com/questions/54055530/error-no-matching-function-for-call-to-pybind11buffer-infobuffer-info

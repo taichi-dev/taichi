@@ -405,7 +405,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~CodeGenLLVM() override = default;
-
 };
 
 class LlvmRuntimeExecutor;

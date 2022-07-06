@@ -114,7 +114,8 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   }
 
   irpass::full_simplify(task_a, kernel->program->config,
-                        {/*after_lower_access=*/false, kernel->program});
+                        {/*after_lower_access=*/false,
+                         /*with_autodiff_after*/ false, kernel->program});
   // For now, re_id is necessary for the hash to be correct.
   irpass::re_id(task_a);
 
@@ -208,8 +209,9 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
   }
   ControlFlowGraph::LiveVarAnalysisConfig lva_config;
   lva_config.eliminable_snodes = {snodes.begin(), snodes.end()};
-  const bool modified = irpass::cfg_optimization(
-      new_ir.get(), /*after_lower_access=*/false, lva_config);
+  const bool modified =
+      irpass::cfg_optimization(new_ir.get(), /*after_lower_access=*/false,
+                               /*with_autodiff_after*/ false, lva_config);
   if (verbose) {
     TI_INFO("  DSE: after CFG, modified={}", modified);
     std::cout << std::flush;

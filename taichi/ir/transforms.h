@@ -34,6 +34,7 @@ bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
+    bool with_autodiff_after,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root, const CompileConfig &config);

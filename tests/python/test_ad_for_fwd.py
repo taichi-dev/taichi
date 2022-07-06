@@ -144,7 +144,7 @@ def test_ad_fibonacci_fwd():
 
 
 @test_utils.test()
-def test_ad_fibonacci_index():
+def test_ad_fibonacci_index_fwd():
     N = 5
     M = 10
     a = ti.field(ti.f32, shape=M)
@@ -173,3 +173,42 @@ def test_ad_fibonacci_index():
         is_fib = int(i in [1, 2, 3, 5, 8])
         assert f.dual[i] == is_fib * N
         assert b[i] == is_fib * N
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_double_for_loops():
+    N = 5
+    a = ti.field(ti.f32, shape=N)
+    b = ti.field(ti.f32, shape=N)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
+
+    @ti.kernel
+    def double_for():
+        for i in range(N):
+            weight = 1.0
+            for j in range(c[i]):
+                weight *= a[i]
+            s = 0.0
+            for j in range(c[i] * 2):
+                s += weight + b[i]
+            f[i] = s
+
+    a.fill(2)
+    b.fill(1)
+
+    for i in range(N):
+        c[i] = i
+
+    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+        double_for()
+
+    for i in range(N):
+        assert f.dual[i] == 2 * i * i * 2**(i - 1)
+
+    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
+        double_for()
+
+    for i in range(N):
+        assert f.dual[i] == 2 * i

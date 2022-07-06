@@ -45,7 +45,7 @@ TEST(LlvmCGraph, RunGraphCpu) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
-  aot_params.program = &prog;
+  aot_params.executor_ = prog.get_runtime_executor();
   auto mod = cpu::make_aot_module(aot_params);
 
   constexpr int ArrLength = 100;
@@ -99,7 +99,7 @@ TEST(LlvmCGraph, RunGraphCuda) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
-    aot_params.program = &prog;
+    aot_params.executor_ = prog.get_runtime_executor();
     auto mod = cuda::make_aot_module(aot_params);
 
     constexpr int ArrLength = 100;

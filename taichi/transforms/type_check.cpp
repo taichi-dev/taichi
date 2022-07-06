@@ -273,27 +273,24 @@ class TypeCheck : public IRVisitor {
 
   bool is_assertion_for_pow(AssertStmt *stmt, BinaryOpStmt *cond) {
     /* returns true if stmt is asserting cond for pow */
-    if (stmt->cond->is<BinaryOpStmt>()) {
-      auto lhs_cond = stmt->cond->cast<BinaryOpStmt>();
-      if (lhs_cond->lhs != cond->lhs)
-        return false;
-      auto stmt_val = lhs_cond->rhs;
-      if (stmt_val->is<ConstStmt>()) {
-        auto val = stmt_val->cast<ConstStmt>();
-        auto cond_val = cond->rhs->cast<ConstStmt>();
-        if (val->val.data.size() == cond_val->val.data.size()) {
-          for (size_t i = 0; i < val->val.data.size(); ++i) {
-            if (!val->val[i].equal_type_and_value(cond_val->val[i])) {
-              return false;
-            }
-          }
-          return true;
-        }
+    if (!stmt->cond->is<BinaryOpStmt>())
+      return false;
+    auto lhs_cond = stmt->cond->cast<BinaryOpStmt>();
+    if (lhs_cond->lhs != cond->lhs)
+      return false;
+    auto stmt_val = lhs_cond->rhs;
+    if (!stmt_val->is<ConstStmt>())
+      return false;
+    auto val = stmt_val->cast<ConstStmt>();
+    auto cond_val = cond->rhs->cast<ConstStmt>();
+    if (val->val.data.size() != cond_val->val.data.size())
+      return false;
+    for (size_t i = 0; i < val->val.data.size(); ++i) {
+      if (!val->val[i].equal_type_and_value(cond_val->val[i])) {
         return false;
       }
-      return false;
     }
-    return false;
+    return true;
   }
 
   void visit(BinaryOpStmt *stmt) override {

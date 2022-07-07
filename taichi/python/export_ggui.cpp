@@ -279,13 +279,13 @@ struct PyWindow {
 
   py::array_t<float> get_image_buffer() {
     uint32_t w, h;
-    auto& img_buffer = window->get_image_buffer(w, h);
+    auto &img_buffer = window->get_image_buffer(w, h);
 
-    float* image = new float[w * h * 4];
+    float *image = new float[w * h * 4];
     // Here we must match the numpy 3d array memory layout. Refs:
     // https://numpy.org/doc/stable/reference/arrays.ndarray.html
     for (int i = 0; i < w; i++) {
-      for (int j = 0; j < h; j++) {  
+      for (int j = 0; j < h; j++) {
         auto pixel = img_buffer[j * w + i];
         for (int k = 0; k < 4; k++) {
           // must flip up-down to match the numpy array memory layout
@@ -294,7 +294,8 @@ struct PyWindow {
         }
       }
     }
-    // Here we must pass a deconstructor to free the memory in python scope. Refs:
+    // Here we must pass a deconstructor to free the memory in python scope.
+    // Refs:
     // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
     py::capsule free_imgae(image, [](void *tmp) {
       float *image = reinterpret_cast<float *>(tmp);
@@ -302,11 +303,10 @@ struct PyWindow {
     });
 
     return py::array_t<float>(
-      py::detail::any_container<ssize_t>({w, h, 4}),
-      py::detail::any_container<ssize_t>(
-          {sizeof(float) * h * 4, sizeof(float) * 4, sizeof(float)}),
-      image,
-      free_imgae);
+        py::detail::any_container<ssize_t>({w, h, 4}),
+        py::detail::any_container<ssize_t>(
+            {sizeof(float) * h * 4, sizeof(float) * 4, sizeof(float)}),
+        image, free_imgae);
   }
 
   void show() {

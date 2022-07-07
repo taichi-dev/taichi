@@ -16,7 +16,7 @@ class TI_DLL_EXPORT SwapChain {
 
   void resize(uint32_t width, uint32_t height);
 
-  std::vector<uint32_t>& dump_image_buffer();
+  std::vector<uint32_t> &dump_image_buffer();
 
   void write_image(const std::string &filename);
 

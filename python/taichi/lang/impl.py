@@ -524,8 +524,7 @@ def create_field_member(dtype, name, needs_grad):
 
     x_grad = None
     x_dual = None
-    # TODO: replace the name of `_ti_core.needs_grad`, it only checks whether the dtype can be accepted to compute derivatives
-    if _ti_core.needs_grad(dtype):
+    if _ti_core.is_grad_applicable_dtype(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)

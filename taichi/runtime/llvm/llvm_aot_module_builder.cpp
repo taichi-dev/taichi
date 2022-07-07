@@ -22,10 +22,10 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   auto compiled = compile_kernel(kernel);
   LlvmOfflineCache::KernelCacheData kcache;
   kcache.kernel_key = identifier;
-  kcache.module = compiled.llvm_module.get();
-  kcache.owned_module = std::move(compiled.llvm_module);
+  kcache.module = compiled.module.get();
+  kcache.owned_module = std::move(compiled.module);
   kcache.args = infer_launch_args(kernel);
-  kcache.offloaded_task_list = std::move(compiled.offloaded_tasks);
+  kcache.offloaded_task_list = std::move(compiled.tasks);
   cache_.kernels[identifier] = std::move(kcache);
 }
 

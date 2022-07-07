@@ -246,28 +246,28 @@ FunctionType CodeGenWASM::codegen() {
   return CodeGenLLVMWASM(kernel, ir).gen();
 }
 
-std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
-    std::unique_ptr<llvm::Module> &&module) {
+LLVMCompiledData CodeGenWASM::modulegen(std::unique_ptr<llvm::Module> &&module,
+                                        OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
-  std::vector<std::string> name_list;
-
+  std::vector<OffloadedTask> name_list;
   auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir, std::move(module));
 
-  name_list.push_back(gen->init_taichi_kernel_function());
+  name_list.emplace_back(nullptr);
+  name_list[0].name = gen->init_taichi_kernel_function();
   gen->emit_to_module();
   gen->finalize_taichi_kernel_function();
 
   // TODO: move the following functions to dump process in AOT.
   if (init_flag) {
     for (auto &name : kPreloadedFuncNames) {
-      name_list.emplace_back(name);
+      name_list.emplace_back(nullptr);
+      name_list.back().name = name;
     }
   }
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return std::make_unique<ModuleGenValue>(std::move(gen->module), name_list);
+  return {name_list, std::move(gen->module)};
 }
-
 }  // namespace lang
 }  // namespace taichi

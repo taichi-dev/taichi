@@ -42,6 +42,11 @@ class FunctionCreationGuard {
   ~FunctionCreationGuard();
 };
 
+struct LLVMCompiledData {
+  std::vector<OffloadedTask> tasks;
+  std::unique_ptr<llvm::Module> module{nullptr};
+};
+
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   Kernel *kernel;
@@ -119,18 +124,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  struct CompiledData {
-    std::vector<OffloadedTask> offloaded_tasks;
-    std::unique_ptr<llvm::Module> llvm_module{nullptr};
-  };
   /**
    * @brief Runs the codegen and produces the compiled result.
    *
-   * After this call, `module` and `offloaded_tasks` will be moved.
+   * After this call, `module` and `tasks` will be moved.
    *
-   * @return CompiledData
+   * @return LLVMCompiledData
    */
-  CompiledData run_compilation();
+  LLVMCompiledData run_compilation();
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
   virtual FunctionType gen();
@@ -404,7 +405,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
  private:
   bool maybe_read_compilation_from_cache(const std::string &kernel_key,
-                                         CompiledData *data);
+                                         LLVMCompiledData *data);
 
   void cache_module(const std::string &kernel_key);
 };

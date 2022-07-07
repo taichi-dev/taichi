@@ -72,11 +72,11 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   DeviceAllocation img_buffer = surface_->get_image_data();
   unsigned char *ptr = (unsigned char *)app_context_->device().map(img_buffer);
   auto format = surface_->image_format();
+  uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {
     TI_TRACE(
         "Converting BGRA8 to RGBA8 for converting image format to a standard "
         "format");
-    uint32_t *u32ptr = (uint32_t *)ptr;
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
         auto pixel = u32ptr[j * w + i];
@@ -88,7 +88,7 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   } else {
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
-        image_buffer_data_[j * w + i] = ptr[j * w + i];
+        image_buffer_data_[j * w + i] = u32ptr[j * w + i];
       }
     }
   }

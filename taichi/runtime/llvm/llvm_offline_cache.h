@@ -186,8 +186,7 @@ class LlvmOfflineCacheFileWriter {
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
       llvm::Module *module,
-      std::vector<OffloadedTask>
-          &offloaded_task_list);
+      std::vector<OffloadedTask> &offloaded_task_list);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

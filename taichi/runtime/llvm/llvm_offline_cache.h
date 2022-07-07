@@ -8,7 +8,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
-
+#include "taichi/codegen/llvm/codegen_llvm.h"
 namespace taichi {
 namespace lang {
 
@@ -20,18 +20,10 @@ struct LlvmOfflineCache {
     BC = 0x10,
   };
 
-  struct OffloadedTaskCacheData {
-    std::string name;
-    int block_dim{0};
-    int grid_dim{0};
-
-    TI_IO_DEF(name, block_dim, grid_dim);
-  };
-
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    std::vector<OffloadedTaskCacheData> offloaded_task_list;
+    std::vector<OffloadedTask> offloaded_task_list;
 
     std::unique_ptr<llvm::Module> owned_module{nullptr};
     llvm::Module *module{nullptr};
@@ -194,8 +186,7 @@ class LlvmOfflineCacheFileWriter {
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
       llvm::Module *module,
-      std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-          &offloaded_task_list);
+      std::vector<OffloadedTask> &offloaded_task_list);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

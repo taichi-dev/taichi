@@ -99,9 +99,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.kernel_key = kKernelName;
     kcache.owned_module = make_module(*llvm_ctx);
     kcache.module = kcache.owned_module.get();
-    kcache.offloaded_task_list.push_back(
-        LlvmOfflineCache::OffloadedTaskCacheData{kTaskName, kBlockDim,
-                                                 kGridDim});
+    kcache.offloaded_task_list.emplace_back(kTaskName, kBlockDim, kGridDim);
     kcache.args = arg_infos;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();

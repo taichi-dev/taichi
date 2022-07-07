@@ -626,17 +626,43 @@ void export_lang(py::module &m) {
           args.insert(
               {py::cast<std::string>(it.first), aot::IValue::create(val)});
         }
-        for (auto it : arg_ints) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<int>(it.second))});
+        for (auto &it : arg_ints) {
+          std::string arg_name = py::cast<std::string>(it.first);
+          auto expected_dtype = self->args[arg_name].dtype();
+          if (expected_dtype == PrimitiveType::i32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int>(it.second))});
+          } else if (expected_dtype == PrimitiveType::i64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
+          } else if (expected_dtype == PrimitiveType::i16) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u16) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         }
-        for (auto it : arg_floats) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<float32>(it.second))});
-        }
-        for (auto it : arg_doubles) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<double>(it.second))});
+        for (auto &it : arg_floats) {
+          std::string arg_name = py::cast<std::string>(it.first);
+          auto expected_dtype = self->args[arg_name].dtype();
+          if (expected_dtype == PrimitiveType::f32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<float>(it.second))});
+          } else if (expected_dtype == PrimitiveType::f64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<double>(it.second))});
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         }
         self->run(args);
       });

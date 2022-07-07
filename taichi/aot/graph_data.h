@@ -95,6 +95,7 @@ struct TI_DLL_EXPORT IValue {
   template <typename T,
             typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
   static IValue create(T v) {
+    std::cout << v << std::endl;
     return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
                   ArgKind::kScalar);
   }
@@ -134,6 +135,7 @@ struct CompiledDispatch {
 
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
+  std::unordered_map<std::string, aot::Arg> args;
   RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;

@@ -56,7 +56,7 @@ Sequential *GraphBuilder::new_sequential_node() {
 std::unique_ptr<aot::CompiledGraph> GraphBuilder::compile() {
   std::vector<aot::CompiledDispatch> dispatches;
   seq()->compile(dispatches);
-  aot::CompiledGraph graph{dispatches};
+  aot::CompiledGraph graph{dispatches, all_args_};
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 

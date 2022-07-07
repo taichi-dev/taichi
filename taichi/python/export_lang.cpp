@@ -970,7 +970,7 @@ void export_lang(py::module &m) {
   });
 
   m.def("test_throw", [] { throw IRModified(); });
-  m.def("needs_grad", needs_grad);
+  m.def("is_grad_applicable_dtype", is_grad_applicable_dtype);
 
 #if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);

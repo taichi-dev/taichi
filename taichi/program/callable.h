@@ -70,9 +70,11 @@ class TI_DLL_EXPORT Callable {
 
     ~CurrentCallableGuard();
   };
-protected:
+
+ protected:
   void serialize_ast();
-private:
+
+ private:
   std::optional<std::string> ast_serialization_data_{std::nullopt};
 };
 

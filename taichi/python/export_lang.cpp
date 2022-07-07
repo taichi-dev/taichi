@@ -43,10 +43,6 @@ bool test_threading();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
-void async_print_sfg();
-
-std::string async_dump_dot(std::optional<std::string> rankdir,
-                           int embed_states_threshold);
 
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
@@ -244,7 +240,8 @@ void export_lang(py::module &m) {
       .def_readwrite("offline_cache_max_size_of_files",
                      &CompileConfig::offline_cache_max_size_of_files)
       .def_readwrite("offline_cache_cleaning_factor",
-                     &CompileConfig::offline_cache_cleaning_factor);
+                     &CompileConfig::offline_cache_cleaning_factor)
+      .def_readwrite("compile_thread_num", &CompileConfig::compile_thread_num);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

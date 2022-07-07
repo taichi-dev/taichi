@@ -63,29 +63,43 @@ uint32_t SwapChain::height() {
 taichi::lang::Surface &SwapChain::surface() {
   return *(surface_.get());
 }
-
-void SwapChain::write_image(const std::string &filename) {
+std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   auto [w, h] = surface_->get_size();
+  curr_width_ = w;
+  curr_height_ = h;
+  image_buffer_data_.clear();
+  image_buffer_data_.resize(w * h);
   DeviceAllocation img_buffer = surface_->get_image_data();
   unsigned char *ptr = (unsigned char *)app_context_->device().map(img_buffer);
   auto format = surface_->image_format();
+  uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {
-    TI_TRACE("Converting BGRA8 to RGBA for file output");
-    std::vector<uint32_t> converted(w * h);
-    uint32_t *u32ptr = (uint32_t *)ptr;
+    TI_TRACE(
+        "Converting BGRA8 to RGBA8 for converting image format to a standard "
+        "format");
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
         auto pixel = u32ptr[j * w + i];
-        converted[j * w + i] = ((pixel << 16) & 0xFF0000) |
-                               (pixel & 0x0000FF00) | ((pixel >> 16) & 0xFF) |
-                               (pixel & 0xFF000000);
+        image_buffer_data_[j * w + i] =
+            ((pixel << 16) & 0xFF0000) | (pixel & 0x0000FF00) |
+            ((pixel >> 16) & 0xFF) | (pixel & 0xFF000000);
       }
     }
-    imwrite(filename, (size_t)converted.data(), w, h, 4);
   } else {
-    imwrite(filename, (size_t)ptr, w, h, 4);
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        image_buffer_data_[j * w + i] = u32ptr[j * w + i];
+      }
+    }
   }
   app_context_->device().unmap(img_buffer);
+  return image_buffer_data_;
+}
+
+void SwapChain::write_image(const std::string &filename) {
+  dump_image_buffer();
+  imwrite(filename, (size_t)image_buffer_data_.data(), curr_width_,
+          curr_height_, 4);
 }
 
 }  // namespace vulkan

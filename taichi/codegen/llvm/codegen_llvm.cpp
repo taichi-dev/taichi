@@ -2327,14 +2327,14 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
+LLVMCompiledData CodeGenLLVM::run_compilation() {
   const auto &config = prog->config;
   std::string kernel_key =
       get_hashed_offline_cache_key(&kernel->program->config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
-    CompiledData res;
+    LLVMCompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
@@ -2353,15 +2353,15 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
     cache_module(kernel_key);
   }
 
-  CompiledData res;
-  res.offloaded_tasks = std::move(this->offloaded_tasks);
-  res.llvm_module = std::move(this->module);
+  LLVMCompiledData res;
+  res.tasks = std::move(this->offloaded_tasks);
+  res.module = std::move(this->module);
   return res;
 }
 
 bool CodeGenLLVM::maybe_read_compilation_from_cache(
     const std::string &kernel_key,
-    CompiledData *data) {
+    LLVMCompiledData *data) {
   const auto &config = prog->config;
   auto reader =
       LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
@@ -2384,8 +2384,8 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
     t.grid_dim = task.grid_dim;
   }
   kernel->set_from_offline_cache();
-  data->offloaded_tasks = std::move(this->offloaded_tasks);
-  data->llvm_module = std::move(this->module);
+  data->tasks = std::move(this->offloaded_tasks);
+  data->module = std::move(this->module);
   return true;
 }
 
@@ -2394,8 +2394,8 @@ FunctionType CodeGenLLVM::gen() {
 
   ModuleToFunctionConverter converter{
       tlctx, get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(kernel, std::move(compiled_res.llvm_module),
-                           std::move(compiled_res.offloaded_tasks));
+  return converter.convert(kernel, std::move(compiled_res.module),
+                           std::move(compiled_res.tasks));
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {

@@ -42,8 +42,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     CUDAModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};
 
-    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
-                             std::move(compiled_res.offloaded_tasks));
+    return converter.convert(this->kernel, std::move(compiled_res.module),
+                             std::move(compiled_res.tasks));
   }
 
   llvm::Value *create_print(std::string tag,

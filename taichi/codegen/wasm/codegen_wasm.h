@@ -11,18 +11,6 @@
 namespace taichi {
 namespace lang {
 
-#ifdef TI_WITH_LLVM
-class ModuleGenValue {
- public:
-  ModuleGenValue(std::unique_ptr<llvm::Module> module,
-                 const std::vector<std::string> &name_list)
-      : module(std::move(module)), name_list(name_list) {
-  }
-  std::unique_ptr<llvm::Module> module;
-  std::vector<std::string> name_list;
-};
-#endif
-
 class CodeGenWASM : public KernelCodeGen {
  public:
   CodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
@@ -32,8 +20,9 @@ class CodeGenWASM : public KernelCodeGen {
   FunctionType codegen() override;
 
 #ifdef TI_WITH_LLVM
-  std::unique_ptr<ModuleGenValue> modulegen(
-      std::unique_ptr<llvm::Module> &&module);  // AOT Module Gen
+  LLVMCompiledData modulegen(
+      std::unique_ptr<llvm::Module> &&module = nullptr,
+      OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 #endif
 };
 

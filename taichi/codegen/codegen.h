@@ -27,11 +27,13 @@ class KernelCodeGen {
                                                Stmt *stmt = nullptr);
 
   virtual FunctionType codegen() = 0;
+#ifdef TI_WITH_LLVM
   virtual LLVMCompiledData modulegen(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) {
     TI_NOT_IMPLEMENTED
   }
+#endif
 };
 
 TLANG_NAMESPACE_END

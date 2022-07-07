@@ -11,7 +11,7 @@ def test_ndarray_int():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(dtype=ti.i32, field_dim=1)):
         for i in range(n):
             pos[i] = 1
 
@@ -114,10 +114,65 @@ def test_repeated_arg_name():
         builder.dispatch(test2, sym_pos1)
 
 
+@test_utils.test(arch=ti.vulkan)
+def test_arg_mismatched_scalar_dtype():
+    n = 4
+
+    @ti.kernel
+    def test(pos: ti.types.ndarray(field_dim=1), val: ti.f32):
+        for i in range(n):
+            pos[i] = val
+
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32, 1)
+    sym_val = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'val', ti.i32)
+    g_init = ti.graph.GraphBuilder()
+    with pytest.raises(TaichiCompilationError,
+                       match="doesn't match kernel's annotated dtype"):
+        g_init.dispatch(test, sym_pos, sym_val)
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_arg_mismatched_ndarray_dtype():
+    n = 4
+
+    @ti.kernel
+    def test(pos: ti.types.ndarray(field_dim=1)):
+        for i in range(n):
+            pos[i] = 2.5
+
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.i32, 1)
+    g_init = ti.graph.GraphBuilder()
+    with pytest.raises(TaichiCompilationError,
+                       match="doesn't match kernel's annotated dtype"):
+        g_init.dispatch(test, sym_pos)
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_ndarray_dtype_mismatch_runtime():
+    n = 4
+
+    @ti.kernel
+    def test(pos: ti.types.ndarray(field_dim=1)):
+        for i in range(n):
+            pos[i] = 2.5
+
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                           'pos',
+                           ti.f32,
+                           field_dim=1)
+    g_init = ti.graph.GraphBuilder()
+    g_init.dispatch(test, sym_pos)
+    g = g_init.compile()
+
+    a = ti.ndarray(ti.i32, shape=(n, ))
+    with pytest.raises(RuntimeError, match="but got an ndarray with dtype="):
+        g.run({'pos': a})
+
+
 def build_graph_vector(N, dtype):
     @ti.kernel
     def vector_sum(mat: ti.types.vector(N, dtype),
-                   res: ti.types.ndarray(field_dim=1)):
+                   res: ti.types.ndarray(dtype=dtype, field_dim=1)):
         res[0] = mat.sum() + mat[2]
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
@@ -132,7 +187,7 @@ def build_graph_vector(N, dtype):
 def build_graph_matrix(N, dtype):
     @ti.kernel
     def matrix_sum(mat: ti.types.matrix(N, 2, dtype),
-                   res: ti.types.ndarray(field_dim=1)):
+                   res: ti.types.ndarray(dtype=dtype, field_dim=1)):
         res[0] = mat.sum()
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',

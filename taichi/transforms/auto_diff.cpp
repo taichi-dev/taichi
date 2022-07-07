@@ -424,7 +424,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
     if (is_stack_needed) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
-      auto stack_alloca_ptr = stack_alloca.get();
+      // auto stack_alloca_ptr = stack_alloca.get();
 
       alloc->replace_with(std::move(stack_alloca));
 

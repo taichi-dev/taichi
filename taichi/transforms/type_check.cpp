@@ -272,16 +272,30 @@ class TypeCheck : public IRVisitor {
   }
 
   bool is_assertion_for_pow(AssertStmt *stmt, BinaryOpStmt *cond) {
-    /* returns true if stmt is asserting cond for pow */
+    /*
+     * returns true if stmt is asserting cond for pow
+     * TODO(AD1024): maybe consider a structural comparator?
+     * */
     if (!stmt->cond->is<BinaryOpStmt>())
       return false;
     auto lhs_cond = stmt->cond->cast<BinaryOpStmt>();
+    // check whether both are asserting on the same lhs stmt
     if (lhs_cond->lhs != cond->lhs)
       return false;
     auto stmt_val = lhs_cond->rhs;
-    if (!stmt_val->is<ConstStmt>())
+    auto rhs_stmt = stmt_val;
+    if (!stmt_val->is<ConstStmt>()) {
+      // Handle cast case (e.g. i32 -> i64) added by type check
+      auto cast_stmt = stmt_val->cast<UnaryOpStmt>();
+      if (!cast_stmt) {
+        return false;
+      }
+      rhs_stmt = cast_stmt->operand;
+    }
+    auto val = rhs_stmt->cast<ConstStmt>();
+    if (!val) {
       return false;
-    auto val = stmt_val->cast<ConstStmt>();
+    }
     auto cond_val = cond->rhs->cast<ConstStmt>();
     if (val->val.data.size() != cond_val->val.data.size())
       return false;
@@ -377,8 +391,7 @@ class TypeCheck : public IRVisitor {
     if (!matching) {
       error();
     }
-    // Unify semantics of pow: make integer pow return
-    // an appropriate fp type
+    // Insert assertions if debug is on
     if (stmt->op_type == BinaryOpType::pow) {
       if (is_integral(stmt->rhs->ret_type) &&
           is_integral(stmt->lhs->ret_type)) {

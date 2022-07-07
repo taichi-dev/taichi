@@ -40,6 +40,8 @@ class WindowBase {
   virtual void show();
 
   virtual void write_image(const std::string &filename) = 0;
+  
+  virtual std::vector<uint32_t>& get_image_buffer(uint32_t& w, uint32_t& h) = 0;
 
   virtual GuiBase *GUI();
 

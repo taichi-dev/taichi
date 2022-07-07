@@ -99,11 +99,60 @@ def python_kernel3(a, mat):
     return a * mat
 
 
+@ti.func
+def sum(lo: ti.i32, hi: ti.i32) -> ti.i32:
+    res = 0
+    for i in range(lo, hi):
+        res += i
+    return res
+
+
+@ti.func
+def mul(lo: ti.i32, hi: ti.i32) -> ti.i32:
+    res = 1
+    for i in range(lo, hi):
+        res *= i
+    return res
+
+
+@ti.kernel
+def kernel4(lo: ti.i32, hi: ti.i32, n: ti.i32) -> ti.i32:
+    res = 0
+    for i in range(n):
+        res += sum(lo, hi)
+    return res
+
+
+def python_kernel4(lo: ti.i32, hi: ti.i32, n: ti.i32):
+    res = 0
+    for i in range(n):
+        for j in range(lo, hi):
+            res += j
+    return res
+
+
+@ti.kernel
+def kernel5(lo: ti.i32, hi: ti.i32, n: ti.i32) -> ti.i32:
+    res = 1
+    for i in range(n):
+        res *= mul(lo, hi)
+    return res
+
+
+def python_kernel5(lo: ti.i32, hi: ti.i32, n: ti.i32):
+    res = 1
+    for i in range(n):
+        for j in range(lo, hi):
+            res *= j
+    return res
+
 simple_kernels_to_test = [
     (kernel0, (), python_kernel0),
     (kernel1, (100, 200, 10.2), python_kernel1),
     (kernel2, (1024, ), python_kernel2),
     (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]], ti.i32)), python_kernel3),
+    (kernel4, (1, 10, 2), python_kernel4),
+    (kernel5, (1, 2, 2), python_kernel5)
 ]
 
 

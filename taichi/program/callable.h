@@ -57,6 +57,10 @@ class TI_DLL_EXPORT Callable {
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 
+  const std::optional<std::string> &get_ast_serialization_data() const {
+    return ast_serialization_data_;
+  }
+
   class CurrentCallableGuard {
     Callable *old_callable_;
     Program *program_;
@@ -66,6 +70,10 @@ class TI_DLL_EXPORT Callable {
 
     ~CurrentCallableGuard();
   };
+protected:
+  void serialize_ast();
+private:
+  std::optional<std::string> ast_serialization_data_{std::nullopt};
 };
 
 }  // namespace lang

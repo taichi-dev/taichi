@@ -18,6 +18,9 @@ void Function::set_function_body(const std::function<void()> &func) {
     CurrentCallableGuard _(program, this);
     func();
   }
+
+  this->serialize_ast();
+
   irpass::compile_function(ir.get(), program->config, this,
                            /*autodiff_mode=*/AutodiffMode::kNone,
                            /*verbose=*/program->config.print_ir,

@@ -437,6 +437,8 @@ void Kernel::init(Program &program,
     ir->as<Block>()->kernel = this;
   }
 
+  this->serialize_ast();
+
   if (!program.config.lazy_compilation)
     compile();
 }

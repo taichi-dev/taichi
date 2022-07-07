@@ -410,30 +410,23 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   static void run(Program *prog, IRNode *ast, std::ostream *os) {
     ASTSerializer serializer(prog, os);
     ast->accept(&serializer);
-    serializer.emit_dependencies();
+    serializer.emit_dependencies(ast);
   }
 
  private:
-  void emit_dependencies() {
+  void emit_dependencies(IRNode *self_ast) {
     // Serialize dependent real-func recursively
-    std::ostringstream temp_oss;
-    auto *curr_os = this->get_ostream();
-    this->set_ostream(&temp_oss);
-    std::size_t last_size{0};
-    do {
-      last_size = real_funcs_.size();
-      for (auto &[func, v] : real_funcs_) {
-        auto &[id, visited] = v;
-        if (!visited) {
-          visited = true;
-          func->ir->accept(this);  // Maybe add new func
-        }
-      }
-    } while (real_funcs_.size() > last_size);
-    this->set_ostream(curr_os);
+    // Note: The result is not parsable now
     emit(static_cast<std::size_t>(real_funcs_.size()));
-    auto real_funcs_ast_string = temp_oss.str();
-    emit_bytes(real_funcs_ast_string.data(), real_funcs_ast_string.size());
+    for (auto &[func, id] : real_funcs_) {
+      emit(static_cast<std::size_t>(id));
+      if (self_ast != func->ir.get()) {
+        const auto &ast_string_opt = func->get_ast_serialization_data();
+        TI_ASSERT(ast_string_opt.has_value());
+        const auto &ast_string = ast_string_opt.value();
+        emit_bytes(ast_string.data(), ast_string.size());
+      }
+    }
 
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
@@ -505,13 +498,13 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void emit(Function *func) {
     TI_ASSERT(func);
     auto iter = real_funcs_.find(func);
-    if (iter != real_funcs_.end()) {
-      emit(iter->second.first);
-    } else {
-      auto [iter, ok] = real_funcs_.insert({func, {real_funcs_.size(), false}});
+    if (iter == real_funcs_.end()) {
+      bool ok = false;
+      std::tie(iter, ok) = real_funcs_.insert({func, real_funcs_.size()});
       TI_ASSERT(ok);
-      emit(iter->second.first);
     }
+    TI_ASSERT(iter != real_funcs_.end());
+    emit(iter->second);
   }
 
   void emit(const TypedConstant &val) {
@@ -633,13 +626,13 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   Program *prog_{nullptr};
   std::ostream *os_{nullptr};
   std::unordered_set<SNode *> snode_tree_roots_;
-  std::unordered_map<Function *, std::pair<std::size_t, bool>> real_funcs_;
+  std::unordered_map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;
 };
 
 }  // namespace
 
-void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os) {
+void serialize_ast(Program *prog, IRNode *ast, std::ostream *os) {
   ASTSerializer::run(prog, ast, os);
 }
 

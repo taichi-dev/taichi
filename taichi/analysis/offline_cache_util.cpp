@@ -165,9 +165,9 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
                                          Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
-    std::ostringstream oss;
-    gen_offline_cache_key(kernel->program, kernel->ir.get(), &oss);
-    kernel_ast_string = oss.str();
+    const auto &ast_str_opt = kernel->get_ast_serialization_data();
+    TI_ASSERT(ast_str_opt.has_value());
+    kernel_ast_string = ast_str_opt.value();
   }
 
   std::vector<std::uint8_t> compile_config_key;

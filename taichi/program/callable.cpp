@@ -1,4 +1,5 @@
 #include "taichi/program/callable.h"
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/program/program.h"
 
 namespace taichi {
@@ -23,6 +24,12 @@ int Callable::insert_arr_arg(const DataType &dt,
   args.emplace_back(dt->get_compute_type(), /*is_array=*/true, /*size=*/0,
                     total_dim, element_shape);
   return (int)args.size() - 1;
+}
+
+void Callable::serialize_ast() {
+  std::ostringstream oss;
+  lang::serialize_ast(program, ir.get(), &oss);
+  ast_serialization_data_ = oss.str();
 }
 
 Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,

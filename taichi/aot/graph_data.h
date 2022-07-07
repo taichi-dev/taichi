@@ -28,6 +28,7 @@ struct Arg {
   std::string name;
   // TODO: real element dtype = dtype + element_shape
   PrimitiveTypeID dtype_id;
+  size_t field_dim;
   std::vector<int> element_shape;
 
   // For serialization & deserialization
@@ -35,22 +36,34 @@ struct Arg {
       : tag(ArgKind::kUnknown),
         name(""),
         dtype_id(PrimitiveTypeID::unknown),
+        field_dim(0),
         element_shape({}) {
   }
 
   explicit Arg(ArgKind tag,
                const std::string &name,
+
                PrimitiveTypeID dtype_id,
+               size_t field_dim,
                const std::vector<int> &element_shape)
-      : tag(tag), name(name), dtype_id(dtype_id), element_shape(element_shape) {
+      : tag(tag),
+        name(name),
+        dtype_id(dtype_id),
+        field_dim(field_dim),
+        element_shape(element_shape) {
   }
 
   // Python/C++ interface that's user facing.
   explicit Arg(ArgKind tag,
                const std::string &name,
+
                const DataType &dtype,
+               size_t field_dim = 0,
                const std::vector<int> &element_shape = {})
-      : tag(tag), name(name), element_shape(element_shape) {
+      : tag(tag),
+        name(name),
+        field_dim(field_dim),
+        element_shape(element_shape) {
     dtype_id = dtype->as<PrimitiveType>()->type;
   }
 
@@ -60,10 +73,11 @@ struct Arg {
 
   bool operator==(const Arg &other) const {
     return tag == other.tag && name == other.name &&
-           dtype_id == other.dtype_id && element_shape == other.element_shape;
+           field_dim == other.field_dim && dtype_id == other.dtype_id &&
+           element_shape == other.element_shape;
   }
 
-  TI_IO_DEF(name, dtype_id, tag, element_shape);
+  TI_IO_DEF(name, dtype_id, field_dim, tag, element_shape);
 };
 
 /**

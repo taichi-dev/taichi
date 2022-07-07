@@ -70,7 +70,7 @@ user_api[ti] = [
     'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add', 'atomic_and',
     'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor',
     'axes', 'bit_cast', 'bit_shr', 'block_local', 'cache_read_only', 'cast',
-    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'dataclass', 'data_oriented',
+    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'dataclass',
     'deactivate', 'deactivate_all_snodes', 'dx11', 'eig', 'exp',
     'experimental', 'extension', 'f16', 'f32', 'f64', 'field', 'float16',
     'float32', 'float64', 'floor', 'func', 'get_addr', 'global_thread_idx',

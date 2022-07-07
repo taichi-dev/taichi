@@ -238,7 +238,7 @@ void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
     llvm::Module *module,
-    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
+    std::vector<OffloadedTask>
         &offloaded_task_list) {
   if (!mangled_) {
     std::size_t cnt = 0;

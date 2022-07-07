@@ -19,16 +19,11 @@ class CodeGenLLVM;
 class OffloadedTask {
  public:
   std::string name;
-  CodeGenLLVM *codegen;
-
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(CodeGenLLVM *codegen);
-
-  void begin(const std::string &name);
-
-  void end();
+  OffloadedTask(const std::string &name = "", int block_dim = 0, int grid_dim = 0):name(name), block_dim(block_dim), grid_dim(grid_dim){};
+  TI_IO_DEF(name, block_dim, grid_dim);
 };
 
 class FunctionCreationGuard {

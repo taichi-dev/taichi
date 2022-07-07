@@ -19,19 +19,6 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
 
-// OffloadedTask
-
-OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-}
-
-void OffloadedTask::begin(const std::string &name) {
-  this->name = name;
-}
-
-void OffloadedTask::end() {
-  codegen->offloaded_tasks.push_back(*this);
-}
-
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     CodeGenLLVM *mb,
@@ -1652,8 +1639,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
 
-  current_task = std::make_unique<OffloadedTask>(this);
-  current_task->begin(task_kernel_name);
+  current_task = std::make_unique<OffloadedTask>(task_kernel_name);
 
   for (auto &arg : func->args()) {
     kernel_args.push_back(&arg);
@@ -2378,8 +2364,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   }
   this->module = std::move(cache_data.owned_module);
   for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(this);
-    t.name = std::move(task.name);
+    auto &t = this->offloaded_tasks.emplace_back(task.name);
     t.block_dim = task.block_dim;
     t.grid_dim = task.grid_dim;
   }
@@ -2466,14 +2451,7 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
-  std::vector<OffloadedTaskCache> offloaded_task_list;
-  for (auto &task : offloaded_tasks) {
-    auto &task_cache = offloaded_task_list.emplace_back();
-    task_cache.name = task.name;
-    task_cache.block_dim = task.block_dim;
-    task_cache.grid_dim = task.grid_dim;
-  }
+  std::vector<OffloadedTask> offloaded_task_list = offloaded_tasks;
   get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
                                        infer_launch_args(kernel),
                                        std::move(offloaded_task_list));

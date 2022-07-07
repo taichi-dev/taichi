@@ -126,7 +126,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-
   /**
    * @brief Runs the codegen and produces the compiled result.
    *

@@ -127,7 +127,7 @@ inline DataType to_unsigned(DataType dt) {
     return PrimitiveType::unknown;
 }
 
-inline bool needs_grad(DataType dt) {
+inline bool is_grad_applicable_dtype(DataType dt) {
   return is_real(dt);
 }
 

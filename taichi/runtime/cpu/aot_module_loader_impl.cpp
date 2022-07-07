@@ -23,21 +23,10 @@ class AotModuleImpl : public LlvmAotModule {
     TI_ASSERT(arch == Arch::x64 || arch == Arch::arm64);
     auto *tlctx = executor_->get_llvm_context(arch);
 
-    const auto &tasks = loaded.offloaded_task_list;
-    std::vector<OffloadedTask> offloaded_tasks;
-    offloaded_tasks.reserve(tasks.size());
-    for (const auto &t : tasks) {
-      OffloadedTask ot{/*codegen=*/nullptr};
-      ot.name = t.name;
-      ot.block_dim = t.block_dim;
-      ot.grid_dim = t.grid_dim;
-      offloaded_tasks.push_back(std::move(ot));
-    }
-
     ModuleToFunctionConverter converter{tlctx, executor_};
 
     return converter.convert(name, loaded.args, std::move(loaded.owned_module),
-                             std::move(offloaded_tasks));
+                             std::move(loaded.offloaded_task_list));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

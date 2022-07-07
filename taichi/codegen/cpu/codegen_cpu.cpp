@@ -195,7 +195,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
-    current_task->end();
+    offloaded_tasks.push_back(*current_task);
     current_task = nullptr;
     current_offload = nullptr;
   }

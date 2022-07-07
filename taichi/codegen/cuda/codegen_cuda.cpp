@@ -483,7 +483,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -492,7 +492,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = 1;
       current_task->block_dim = 1;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -501,7 +501,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
   }
@@ -625,7 +625,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->block_dim = stmt->block_dim;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     current_offload = nullptr;

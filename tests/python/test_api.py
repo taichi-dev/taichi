@@ -70,7 +70,7 @@ user_api[ti] = [
     'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add', 'atomic_and',
     'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor',
     'axes', 'bit_cast', 'bit_shr', 'block_local', 'cache_read_only', 'cast',
-    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'deactivate',
+    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'dataclass', 'data_oriented', 'deactivate',
     'deactivate_all_snodes', 'dx11', 'eig', 'exp', 'experimental', 'extension',
     'f16', 'f32', 'f64', 'field', 'float16', 'float32', 'float64', 'floor',
     'func', 'get_addr', 'global_thread_idx', 'gpu', 'graph', 'grouped',
@@ -83,7 +83,7 @@ user_api[ti] = [
     'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'struct_class', 'svd',
+    'static_assert', 'static_print', 'stop_grad', 'svd',
     'swizzle_generator', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
     'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
     'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'

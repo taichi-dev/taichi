@@ -2,16 +2,13 @@
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/inc/constants.h"
-#include "taichi/program/program.h"
 #include "tests/cpp/ir/ndarray_kernel.h"
-#include "tests/cpp/program/test_program.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/program/graph_builder.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/rhi/device.h"
 
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
@@ -30,13 +27,12 @@ TEST(LlvmCGraph, RunGraphCpu) {
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
   constexpr KernelProfilerBase *kNoProfiler = nullptr;
-  LlvmProgramImpl prog{cfg, kNoProfiler};
-  auto *compute_device = prog.get_compute_device();
+  LlvmRuntimeExecutor exec{cfg, kNoProfiler};
+  auto *compute_device = exec.get_compute_device();
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
-  prog.initialize_host();
   uint64 *result_buffer{nullptr};
-  prog.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
 
   /* AOTLoader */
   cpu::AotModuleParams aot_params;
@@ -45,13 +41,13 @@ TEST(LlvmCGraph, RunGraphCpu) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
-  aot_params.executor_ = prog.get_runtime_executor();
+  aot_params.executor_ = &exec;
   auto mod = cpu::make_aot_module(aot_params);
 
   constexpr int ArrLength = 100;
   constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
   auto devalloc_arr =
-      prog.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+      exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
 
   /* Test with Graph */
   // Prepare & Run "init" Graph
@@ -70,10 +66,10 @@ TEST(LlvmCGraph, RunGraphCpu) {
   args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
 
   run_graph->run(args);
-  prog.synchronize();
+  exec.synchronize();
 
   auto *data = reinterpret_cast<int32_t *>(
-      prog.get_ndarray_alloc_info_ptr(devalloc_arr));
+      exec.get_ndarray_alloc_info_ptr(devalloc_arr));
   for (int i = 0; i < ArrLength; i++) {
     EXPECT_EQ(data[i], 3 * i + base0 + base1 + base2);
   }
@@ -85,12 +81,11 @@ TEST(LlvmCGraph, RunGraphCuda) {
     cfg.arch = Arch::cuda;
     cfg.kernel_profiler = false;
     constexpr KernelProfilerBase *kNoProfiler = nullptr;
-    LlvmProgramImpl prog{cfg, kNoProfiler};
+    LlvmRuntimeExecutor exec{cfg, kNoProfiler};
 
     // Must have handled all the arch fallback logic by this point.
-    prog.initialize_host();
     uint64 *result_buffer{nullptr};
-    prog.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
 
     /* AOTLoader */
     cuda::AotModuleParams aot_params;
@@ -99,13 +94,13 @@ TEST(LlvmCGraph, RunGraphCuda) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
-    aot_params.executor_ = prog.get_runtime_executor();
+    aot_params.executor_ = &exec;
     auto mod = cuda::make_aot_module(aot_params);
 
     constexpr int ArrLength = 100;
     constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
     auto devalloc_arr =
-        prog.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+        exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
 
     /* Test with Graph */
     // Prepare & Run "init" Graph
@@ -124,10 +119,10 @@ TEST(LlvmCGraph, RunGraphCuda) {
     args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
 
     run_graph->run(args);
-    prog.synchronize();
+    exec.synchronize();
 
     auto *data = reinterpret_cast<int32_t *>(
-        prog.get_ndarray_alloc_info_ptr(devalloc_arr));
+        exec.get_ndarray_alloc_info_ptr(devalloc_arr));
 
     std::vector<int32_t> cpu_data(ArrLength);
     CUDADriver::get_instance().memcpy_device_to_host(

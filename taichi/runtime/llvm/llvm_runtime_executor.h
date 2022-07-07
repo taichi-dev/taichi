@@ -63,6 +63,10 @@ class LlvmRuntimeExecutor {
 
   void prepare_runtime_context(RuntimeContext *ctx);
 
+  void synchronize();
+
+  Device *get_compute_device();
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -107,15 +111,12 @@ class LlvmRuntimeExecutor {
         taichi_result_buffer_runtime_query_id, result_buffer));
   }
 
-  void synchronize();
-
   /* -------------------------- */
   /* ------ Member Access ----- */
   /* -------------------------- */
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
-  Device *get_compute_device();
 
   void initialize_host();
 

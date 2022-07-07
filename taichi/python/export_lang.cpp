@@ -43,6 +43,10 @@ bool test_threading();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
+void async_print_sfg();
+
+std::string async_dump_dot(std::optional<std::string> rankdir,
+                           int embed_states_threshold);
 
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];

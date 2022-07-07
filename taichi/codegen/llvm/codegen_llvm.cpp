@@ -1616,14 +1616,14 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   if (snode->type == SNodeType::root) {
 #ifdef TI_LLVM_15
     // FIXME: get parent_type from taichi instead of llvm.
-    llvm::Type *parent_type = builder->getInt8Ty();
+    llvm::Type *parent_ty = builder->getInt8Ty();
     if (auto bit_cast = llvm::dyn_cast<llvm::BitCastInst>(parent)) {
-      parent_type = bit_cast->getDestTy();
-      if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_type))
-        parent_type = ptr_ty->getPointerElementType();
+      parent_ty = bit_cast->getDestTy();
+      if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_ty))
+        parent_ty = ptr_ty->getPointerElementType();
     }
     llvm_val[stmt] =
-        builder->CreateGEP(parent_type, parent, llvm_val[stmt->input_index]);
+        builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
 #else
     llvm_val[stmt] = builder->CreateGEP(parent, llvm_val[stmt->input_index]);
 #endif

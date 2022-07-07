@@ -3,10 +3,10 @@
 #include "llvm/IR/Module.h"
 
 #include "taichi/program/program.h"
-#include "taichi/runtime/llvm/aot_graph_data.h"
-#include "taichi/codegen/llvm/struct_llvm.h"
-#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/codegen.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
+#include "taichi/runtime/llvm/aot_graph_data.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
@@ -121,8 +121,7 @@ void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
     llvm::Module *module,
     std::vector<LlvmLaunchArgInfo> &&args,
-    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-        &&offloaded_task_list) {
+    std::vector<OffloadedTask> &&offloaded_task_list) {
   if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;
   }

@@ -17,11 +17,22 @@ from taichi.lang.matrix import MatrixType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
+from taichi.types.utils import is_integral
 
 if version_info < (3, 9):
     from astunparse import unparse
 else:
     from ast import unparse
+
+
+def boundary_type_cast_warning(expression):
+    expr_dtype = expression.ptr.get_ret_type()
+    if not is_integral(expr_dtype) or expr_dtype in [
+            primitive_types.i64, primitive_types.u64, primitive_types.u32
+    ]:
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
+            Warning)
 
 
 class ASTTransformer(Builder):
@@ -799,17 +810,25 @@ class ASTTransformer(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[1])),
-                    primitive_types.i32)
+                begin_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[1]))
+
+                # Warning for implicit dtype conversion
+                boundary_type_cast_warning(begin_expr)
+                boundary_type_cast_warning(end_expr)
+
+                begin = ti_ops.cast(begin_expr, primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             else:
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+
+                # Warning for implicit dtype conversion
+                boundary_type_cast_warning(end_expr)
+
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             build_stmts(ctx, node.body)

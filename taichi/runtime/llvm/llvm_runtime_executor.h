@@ -57,6 +57,12 @@ class LlvmRuntimeExecutor {
     return config_;
   }
 
+  TaichiLLVMContext *get_llvm_context(Arch arch);
+
+  LLVMRuntime *get_llvm_runtime();
+
+  void prepare_runtime_context(RuntimeContext *ctx);
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -80,8 +86,6 @@ class LlvmRuntimeExecutor {
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
-
-  void prepare_runtime_context(RuntimeContext *ctx);
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key,
@@ -112,9 +116,6 @@ class LlvmRuntimeExecutor {
   cpu::CpuDevice *cpu_device();
   LlvmDevice *llvm_device();
   Device *get_compute_device();
-
-  TaichiLLVMContext *get_llvm_context(Arch arch);
-  LLVMRuntime *get_llvm_runtime();
 
   void initialize_host();
 

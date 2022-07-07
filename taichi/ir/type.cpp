@@ -203,8 +203,8 @@ std::string BitStructType::to_string() const {
   return str + ")";
 }
 
-std::string BitArrayType::to_string() const {
-  return fmt::format("ba({}x{})", element_type_->to_string(), num_elements_);
+std::string QuantArrayType::to_string() const {
+  return fmt::format("qa({}x{})", element_type_->to_string(), num_elements_);
 }
 
 std::string TypedConstant::stringify() const {

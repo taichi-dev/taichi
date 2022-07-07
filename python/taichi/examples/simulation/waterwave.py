@@ -55,6 +55,8 @@ def update():
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         acceleration = gravity * laplacian(i, j) - damping * velocity[i, j]
         velocity[i, j] = velocity[i, j] + acceleration * dt
+
+    for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         height[i, j] = height[i, j] + velocity[i, j] * dt
 
 

@@ -65,7 +65,7 @@ void ScalarPointerLowerer::run() {
   for (int i = 0; i < path_length_; i++) {
     auto *snode = snodes_[i];
     // TODO: Explain this condition
-    if (is_bit_vectorized_ && (snode->type == SNodeType::bit_array) &&
+    if (is_bit_vectorized_ && (snode->type == SNodeType::quant_array) &&
         (i == path_length_ - 1) && (snodes_[i - 1]->type == SNodeType::dense)) {
       continue;
     }

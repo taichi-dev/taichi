@@ -446,10 +446,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    if (stmt->snode->type == SNodeType::bit_array) {
-      auto bit_array_type = stmt->snode->dt;
+    if (stmt->snode->type == SNodeType::quant_array) {
+      auto quant_array_type = stmt->snode->dt;
       auto element_type =
-          bit_array_type->cast<BitArrayType>()->get_element_type();
+          quant_array_type->cast<QuantArrayType>()->get_element_type();
       auto pointer_type =
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;

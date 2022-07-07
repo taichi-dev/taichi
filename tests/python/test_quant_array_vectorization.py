@@ -1,5 +1,3 @@
-from taichi.lang.impl import get_runtime
-
 import taichi as ti
 from tests import test_utils
 
@@ -19,9 +17,9 @@ def test_vectorized_struct_for():
     boundary_offset = 1024
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
 
     @ti.kernel
@@ -62,11 +60,11 @@ def test_offset_load():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel
@@ -122,11 +120,11 @@ def test_evolve():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel

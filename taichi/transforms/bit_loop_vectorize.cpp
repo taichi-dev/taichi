@@ -15,7 +15,7 @@ class BitLoopVectorize : public IRVisitor {
   bool is_bit_vectorized;
   bool in_struct_for_loop;
   StructForStmt *loop_stmt;
-  PrimitiveType *bit_array_physical_type;
+  PrimitiveType *quant_array_physical_type;
   std::unordered_map<Stmt *, std::vector<Stmt *>> transformed_atomics;
 
   BitLoopVectorize() {
@@ -24,7 +24,7 @@ class BitLoopVectorize : public IRVisitor {
     is_bit_vectorized = false;
     in_struct_for_loop = false;
     loop_stmt = nullptr;
-    bit_array_physical_type = nullptr;
+    quant_array_physical_type = nullptr;
   }
 
   void visit(Block *stmt_list) override {
@@ -45,7 +45,7 @@ class BitLoopVectorize : public IRVisitor {
         // *phy_type
         auto ptr = stmt->src->cast<GlobalPtrStmt>();
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
-            bit_array_physical_type, false);
+            quant_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
         ptr->is_bit_vectorized = true;
@@ -65,7 +65,7 @@ class BitLoopVectorize : public IRVisitor {
             base_ptr->ret_type = new_ret_type;
             base_ptr->is_bit_vectorized = true;
             // load x[i, j](base)
-            DataType load_data_type(bit_array_physical_type);
+            DataType load_data_type(quant_array_physical_type);
             auto load_base = std::make_unique<GlobalLoadStmt>(base_ptr.get());
             load_base->ret_type = load_data_type;
             // load x[i, j + 1](offsetted)
@@ -133,7 +133,7 @@ class BitLoopVectorize : public IRVisitor {
         // *phy_type
         auto ptr = stmt->dest->cast<GlobalPtrStmt>();
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
-            bit_array_physical_type, false);
+            quant_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
         ptr->is_bit_vectorized = true;
@@ -142,19 +142,19 @@ class BitLoopVectorize : public IRVisitor {
   }
 
   void visit(StructForStmt *stmt) override {
-    if (stmt->snode->type != SNodeType::bit_array) {
+    if (stmt->snode->type != SNodeType::quant_array) {
       return;
     }
     bool old_is_bit_vectorized = is_bit_vectorized;
     is_bit_vectorized = stmt->is_bit_vectorized;
     in_struct_for_loop = true;
     loop_stmt = stmt;
-    bit_array_physical_type = stmt->snode->physical_type;
+    quant_array_physical_type = stmt->snode->physical_type;
     stmt->body->accept(this);
     is_bit_vectorized = old_is_bit_vectorized;
     in_struct_for_loop = false;
     loop_stmt = nullptr;
-    bit_array_physical_type = nullptr;
+    quant_array_physical_type = nullptr;
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -174,7 +174,7 @@ class BitLoopVectorize : public IRVisitor {
         }
       } else if (stmt->op_type == BinaryOpType::cmp_eq) {
         if (auto lhs = stmt->lhs->cast<GlobalLoadStmt>()) {
-          // case 0: lhs is a vectorized global load from the bit array
+          // case 0: lhs is a vectorized global load from the quant array
           if (auto ptr = lhs->src->cast<GlobalPtrStmt>();
               ptr && ptr->is_bit_vectorized) {
             int32 rhs_val = get_constant_value(stmt->rhs);
@@ -242,7 +242,7 @@ class BitLoopVectorize : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    DataType dt(bit_array_physical_type);
+    DataType dt(quant_array_physical_type);
     if (in_struct_for_loop && is_bit_vectorized &&
         stmt->op_type == AtomicOpType::add) {
       auto it = transformed_atomics.find(stmt->dest);
@@ -276,9 +276,9 @@ class BitLoopVectorize : public IRVisitor {
   void transform_atomic_add(const std::vector<Stmt *> &buffer_vec,
                             AtomicOpStmt *stmt,
                             DataType &dt) {
-    // To transform an atomic add on a vectorized subarray of a bit array,
+    // To transform an atomic add on a vectorized subarray of a quant array,
     // we use a local adder with three buffers(*a*,*b*,*c*) of the same physical
-    // type of the original bit array. Each bit in *a* represents the highest
+    // type of the original quant array. Each bit in *a* represents the highest
     // bit of the result, while *b* for the second bit and *c* for the lowest
     // bit To add *d* to the subarray, we do bit_xor and bit_and to compute the
     // sum and the carry

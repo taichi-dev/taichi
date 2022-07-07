@@ -626,7 +626,7 @@ void export_lang(py::module &m) {
           args.insert(
               {py::cast<std::string>(it.first), aot::IValue::create(val)});
         }
-        for (auto &it : arg_ints) {
+        for (auto it : arg_ints) {
           std::string arg_name = py::cast<std::string>(it.first);
           auto expected_dtype = self->args[arg_name].dtype();
           if (expected_dtype == PrimitiveType::i32) {
@@ -651,7 +651,7 @@ void export_lang(py::module &m) {
             TI_NOT_IMPLEMENTED;
           }
         }
-        for (auto &it : arg_floats) {
+        for (auto it : arg_floats) {
           std::string arg_name = py::cast<std::string>(it.first);
           auto expected_dtype = self->args[arg_name].dtype();
           if (expected_dtype == PrimitiveType::f32) {

@@ -79,7 +79,7 @@ def main():
     init_tracers()
     gui = ti.GUI("Vortex Rings", (1024, 512), background_color=0xFFFFFF)
 
-    for T in range(1000):
+    while gui.running:
         for i in range(4):  # substeps
             advect()
             integrate_vortex()

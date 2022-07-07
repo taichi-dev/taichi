@@ -7,7 +7,7 @@ namespace lang {
 LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
   TI_ASSERT(cache_reader_ != nullptr);
-  auto *tlctx = program_->get_llvm_context(program_->config->arch);
+  auto *tlctx = executor_->get_llvm_context(executor_->get_config()->arch);
   LlvmOfflineCache::KernelCacheData loaded;
   auto ok = cache_reader_->get_kernel_cache(loaded, name,
                                             *tlctx->get_this_thread_context());
@@ -18,8 +18,8 @@ LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
 std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
   auto fn = convert_module_to_function(name, load_kernel_from_cache(name));
-  return std::make_unique<llvm_aot::KernelImpl>(fn, name,
-                                                load_kernel_from_cache(name));
+  return std::make_unique<llvm_aot::KernelImpl>(
+      fn, name, LlvmOfflineCache::KernelCacheData());
 }
 
 std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
@@ -47,7 +47,10 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
     dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
                           get_kernel(dispatch.kernel_name)});
   }
-  aot::CompiledGraph graph{dispatches};
+
+  aot::CompiledGraph graph = aot::CompiledGraph({dispatches});
+  executor_->prepare_runtime_context(&graph.ctx_);
+
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 
@@ -60,12 +63,13 @@ void finalize_aot_field(aot::Module *aot_module,
   TI_ASSERT(llvm_aot_module != nullptr);
   TI_ASSERT(aot_field_impl != nullptr);
 
-  auto *llvm_prog = llvm_aot_module->get_program();
+  auto *runtime_executor = llvm_aot_module->get_runtime_executor();
   const auto &field_cache = aot_field_impl->get_field();
 
   int snode_tree_id = field_cache.tree_id;
   if (!llvm_aot_module->is_snode_tree_initialized(snode_tree_id)) {
-    llvm_prog->initialize_llvm_runtime_snodes(field_cache, result_buffer);
+    runtime_executor->initialize_llvm_runtime_snodes(field_cache,
+                                                     result_buffer);
     llvm_aot_module->set_initialized_snode_tree(snode_tree_id);
   }
 }

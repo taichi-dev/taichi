@@ -48,7 +48,7 @@ def test_quant_int_atomics_b64():
 
     x = ti.field(dtype=qi13)
 
-    ti.root.bit_array(ti.i, 4, num_bits=64).place(x)
+    ti.root.quant_array(ti.i, 4, num_bits=64).place(x)
 
     x[0] = 100
     x[1] = 200

@@ -25,7 +25,7 @@ SNode &SNode::insert_children(SNodeType t) {
   std::memcpy(new_ch->physical_index_position, physical_index_position,
               sizeof(physical_index_position));
   new_ch->num_active_indices = num_active_indices;
-  if (type == SNodeType::bit_struct || type == SNodeType::bit_array) {
+  if (type == SNodeType::bit_struct || type == SNodeType::quant_array) {
     new_ch->is_bit_level = true;
   } else {
     new_ch->is_bit_level = is_bit_level;
@@ -145,11 +145,11 @@ SNode &SNode::bit_struct(int num_bits, bool packed) {
   return snode;
 }
 
-SNode &SNode::bit_array(const std::vector<Axis> &axes,
-                        const std::vector<int> &sizes,
-                        int bits,
-                        bool packed) {
-  auto &snode = create_node(axes, sizes, SNodeType::bit_array, packed);
+SNode &SNode::quant_array(const std::vector<Axis> &axes,
+                          const std::vector<int> &sizes,
+                          int bits,
+                          bool packed) {
+  auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;
@@ -302,7 +302,7 @@ void SNode::end_shared_exp_placement() {
 }
 
 bool SNode::is_primal() const {
-  return grad_info->is_primal();
+  return grad_info && grad_info->is_primal();
 }
 
 bool SNode::has_adjoint() const {

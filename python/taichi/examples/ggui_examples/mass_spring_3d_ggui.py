@@ -121,7 +121,7 @@ def update_vertices():
 
 
 def main():
-    window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
+    window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (768, 768),
                           vsync=True)
     canvas = window.get_canvas()
     canvas.set_background_color((1, 1, 1))

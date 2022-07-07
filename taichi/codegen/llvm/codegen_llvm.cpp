@@ -241,7 +241,7 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     meta =
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
-  } else if (snode->type == SNodeType::bit_array) {
+  } else if (snode->type == SNodeType::quant_array) {
     meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
     emit_struct_meta_base("Dense", meta->ptr, snode);
   } else {
@@ -1351,7 +1351,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             "handled by BitStructStoreStmt.",
             pointee_type->to_string());
       } else {
-        TI_ERROR("Bit array only supports quant int type.");
+        TI_ERROR("Quant array only supports quant int type.");
       }
     }
     store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(),
@@ -1414,8 +1414,8 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
     return "Bitmasked";
   } else if (snode->type == SNodeType::bit_struct) {
     return "BitStruct";
-  } else if (snode->type == SNodeType::bit_array) {
-    return "BitArray";
+  } else if (snode->type == SNodeType::quant_array) {
+    return "QuantArray";
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1536,9 +1536,9 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
                           {llvm_val[stmt->input_index]});
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
-  } else if (snode->type == SNodeType::bit_array) {
+  } else if (snode->type == SNodeType::quant_array) {
     auto element_num_bits =
-        snode->dt->as<BitArrayType>()->get_element_num_bits();
+        snode->dt->as<QuantArrayType>()->get_element_num_bits();
     auto offset = tlctx->get_constant(element_num_bits);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_snode], offset);
@@ -1549,7 +1549,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->input_snode->type == SNodeType::bit_array) {
+  if (stmt->input_snode->type == SNodeType::quant_array) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     auto bit_struct = stmt->input_snode->dt->cast<BitStructType>();
@@ -1728,16 +1728,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
 
-  // For a bit-vectorized loop over a bit array, we generate struct for on its
+  // For a bit-vectorized loop over a quant array, we generate struct for on its
   // parent node (must be "dense") instead of itself for higher performance.
-  if (stmt->bit_vectorize != 1) {
-    if (leaf_block->type == SNodeType::bit_array &&
+  if (stmt->is_bit_vectorized) {
+    if (leaf_block->type == SNodeType::quant_array &&
         leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {
       TI_ERROR(
-          "A bit-vectorized struct-for must loop over a bit array with a dense "
-          "parent");
+          "A bit-vectorized struct-for must loop over a quant array with a "
+          "dense parent");
     }
   }
 
@@ -1869,10 +1869,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
-    // For a bit-vectorized loop over a bit array, one more refine step is
+    // For a bit-vectorized loop over a quant array, one more refine step is
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
-    if (stmt->bit_vectorize != 1) {
+    if (stmt->is_bit_vectorized) {
       refine =
           get_runtime_function(stmt->snode->refine_coordinates_func_name());
       create_call(refine,
@@ -2392,7 +2392,8 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
 FunctionType CodeGenLLVM::gen() {
   auto compiled_res = run_compilation();
 
-  ModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
+  ModuleToFunctionConverter converter{
+      tlctx, get_llvm_program(prog)->get_runtime_executor()};
   return converter.convert(kernel, std::move(compiled_res.llvm_module),
                            std::move(compiled_res.offloaded_tasks));
 }
@@ -2478,9 +2479,10 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
                                        std::move(offloaded_task_list));
 }
 
-ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                                     LlvmProgramImpl *program)
-    : tlctx_(tlctx), program_(program) {
+ModuleToFunctionConverter::ModuleToFunctionConverter(
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
 }
 
 FunctionType ModuleToFunctionConverter::convert(
@@ -2499,7 +2501,7 @@ FunctionType ModuleToFunctionConverter::convert(
     task_funcs.push_back((TaskFunc)(func_ptr));
   }
   // Do NOT capture `this`...
-  return [program = this->program_, args, kernel_name,
+  return [executor = this->executor_, args, kernel_name,
           task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
@@ -2511,7 +2513,7 @@ FunctionType ModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);

@@ -1,5 +1,3 @@
-from taichi.lang.impl import get_runtime
-
 import taichi as ti
 from tests import test_utils
 
@@ -19,9 +17,9 @@ def test_vectorized_struct_for():
     boundary_offset = 1024
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
 
     @ti.kernel
@@ -32,7 +30,7 @@ def test_vectorized_struct_for():
 
     @ti.kernel
     def assign_vectorized():
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        ti.loop_config(bit_vectorize=True)
         for i, j in x:
             y[i, j] = x[i, j]
 
@@ -62,11 +60,11 @@ def test_offset_load():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel
@@ -77,7 +75,7 @@ def test_offset_load():
 
     @ti.kernel
     def assign_vectorized(dx: ti.template(), dy: ti.template()):
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        ti.loop_config(bit_vectorize=True)
         for i, j in x:
             y[i, j] = x[i + dx, j + dy]
             z[i, j] = x[i + dx, j + dy]
@@ -122,11 +120,11 @@ def test_evolve():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel
@@ -137,7 +135,7 @@ def test_evolve():
 
     @ti.kernel
     def evolve_vectorized(x: ti.template(), y: ti.template()):
-        get_runtime().prog.current_ast_builder().bit_vectorize(32)
+        ti.loop_config(bit_vectorize=True)
         for i, j in x:
             num_active_neighbors = 0
             num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)

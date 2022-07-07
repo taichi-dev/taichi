@@ -102,6 +102,19 @@ void Window::write_image(const std::string &filename) {
   }
 }
 
+std::vector<uint32_t>& Window::get_image_buffer(uint32_t& w, uint32_t& h) {
+  if (!drawn_frame_) {
+    draw_frame();
+  }
+  w = renderer_->swap_chain().width();
+  h = renderer_->swap_chain().height();
+  auto& img_buffer = renderer_->swap_chain().dump_image_buffer();
+  if (!config_.show_window) {
+    prepare_for_next_frame();
+  }
+  return img_buffer;
+}
+
 }  // namespace vulkan
 
 TI_UI_NAMESPACE_END

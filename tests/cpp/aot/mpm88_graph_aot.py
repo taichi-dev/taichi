@@ -105,30 +105,37 @@ def compile_mpm88_graph(arch):
     sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'x',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, ))
     sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'v',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, ))
     sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'C',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, 2))
     sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'J',
                          ti.f32,
+                         field_dim=1,
                          element_shape=())
     sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_v',
                               ti.f32,
+                              field_dim=2,
                               element_shape=(2, ))
     sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_m',
                               ti.f32,
+                              field_dim=2,
                               element_shape=())
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
+                           field_dim=1,
                            element_shape=(3, ))
 
     g_init_builder = ti.graph.GraphBuilder()

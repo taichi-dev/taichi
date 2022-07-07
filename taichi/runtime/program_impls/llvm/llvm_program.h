@@ -53,8 +53,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void cache_kernel(const std::string &kernel_key,
                     llvm::Module *module,
                     std::vector<LlvmLaunchArgInfo> &&args,
-                    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-                        &&offloaded_task_list);
+                    std::vector<OffloadedTask> &&offloaded_task_list);
 
   void cache_field(int snode_tree_id,
                    int root_id,

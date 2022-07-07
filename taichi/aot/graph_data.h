@@ -58,6 +58,11 @@ struct Arg {
     return PrimitiveType::get(dtype_id);
   }
 
+  bool operator==(const Arg &other) const {
+    return tag == other.tag && name == other.name &&
+           dtype_id == other.dtype_id && element_shape == other.element_shape;
+  }
+
   TI_IO_DEF(name, dtype_id, tag, element_shape);
 };
 

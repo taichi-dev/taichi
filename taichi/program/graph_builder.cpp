@@ -37,6 +37,13 @@ GraphBuilder::GraphBuilder() {
 
 Node *GraphBuilder::new_dispatch_node(Kernel *kernel,
                                       const std::vector<aot::Arg> &args) {
+  for (const auto &arg : args) {
+    if (all_args_.find(arg.name) != all_args_.end()) {
+      TI_ASSERT(all_args_[arg.name] == arg);
+    } else {
+      all_args_[arg.name] = arg;
+    }
+  }
   all_nodes_.push_back(std::make_unique<Dispatch>(kernel, args));
   return all_nodes_.back().get();
 }

@@ -1,9 +1,15 @@
+import platform
+
 import numpy as np
 import pytest
 from taichi.lang.exception import TaichiCompilationError
 
 import taichi as ti
 from tests import test_utils
+
+supported_floating_types = [ti.f32] if platform.system() == 'Darwin' else [
+    ti.f32, ti.f64
+]
 
 
 @test_utils.test(arch=ti.vulkan)
@@ -239,7 +245,7 @@ def test_vector_float():
     assert res.to_numpy()[0] == test_utils.approx(57.5, rel=1e-5)
 
 
-@pytest.mark.parametrize('dt', [ti.f32, ti.f64])
+@pytest.mark.parametrize('dt', supported_floating_types)
 @test_utils.test(arch=ti.vulkan)
 def test_arg_float(dt):
     @ti.kernel

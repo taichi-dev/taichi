@@ -277,6 +277,38 @@ struct PyWindow {
     window->write_image(filename);
   }
 
+  py::array_t<float> get_image_buffer() {
+    uint32_t w, h;
+    auto &img_buffer = window->get_image_buffer(w, h);
+
+    float *image = new float[w * h * 4];
+    // Here we must match the numpy 3d array memory layout. Refs:
+    // https://numpy.org/doc/stable/reference/arrays.ndarray.html
+    for (int i = 0; i < w; i++) {
+      for (int j = 0; j < h; j++) {
+        auto pixel = img_buffer[j * w + i];
+        for (int k = 0; k < 4; k++) {
+          // must flip up-down to match the numpy array memory layout
+          image[i * h * 4 + (h - j - 1) * 4 + k] = (pixel & 0xFF) / 255.0;
+          pixel >>= 8;
+        }
+      }
+    }
+    // Here we must pass a deconstructor to free the memory in python scope.
+    // Refs:
+    // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+    py::capsule free_imgae(image, [](void *tmp) {
+      float *image = reinterpret_cast<float *>(tmp);
+      delete[] image;
+    });
+
+    return py::array_t<float>(
+        py::detail::any_container<ssize_t>({w, h, 4}),
+        py::detail::any_container<ssize_t>(
+            {sizeof(float) * h * 4, sizeof(float) * 4, sizeof(float)}),
+        image, free_imgae);
+  }
+
   void show() {
     window->show();
   }
@@ -342,6 +374,7 @@ void export_ggui(py::module &m) {
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("write_image", &PyWindow::write_image)
+      .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)

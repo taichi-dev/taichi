@@ -1,5 +1,6 @@
 import collections.abc
 
+import numpy as np
 from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
@@ -20,7 +21,7 @@ class _Ndrange:
             args[i] = (args[i][0], ops.max(args[i][0], args[i][1]))
         for arg in args:
             for bound in arg:
-                if not isinstance(bound, int) and not (
+                if not isinstance(bound, (int, np.integer)) and not (
                         isinstance(bound, Expr)
                         and is_integral(bound.ptr.get_ret_type())):
                     raise TaichiTypeError(
@@ -63,7 +64,7 @@ def ndrange(*args):
     range(x1, y1) x range(x2, y2) x ... x range(xn, yn)
 
     The k-th argument corresponds to the k-th `range()` factor in the above product, and each
-    argument must be an integer or a pair of two integers. An integer argument n will be intepreted
+    argument must be an integer or a pair of two integers. An integer argument n will be interpreted
     as `range(0, n)`, and a pair of two integers (start, end) will be interpreted as `range(start, end)`.
 
     You can loop over these multi-dimensonal indices in different ways, see the examples below.

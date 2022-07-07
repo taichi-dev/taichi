@@ -175,6 +175,28 @@ class Camera:
         """
         self.ptr.z_far(z_far)
 
+    def get_view_matrix(self):
+        """Get the view matrix(in row major) of the camera.
+
+        Example::
+
+            >>> camera.get_view_matrix()
+        """
+        return self.ptr.get_view_matrix()
+
+    def get_projection_matrix(self, aspect):
+        """Get the projection matrix(in row major) of the camera.
+
+        Args:
+            aspect (:mod:`taichi.types.primitive_types`): \
+                aspect ratio of the camera
+
+        Example::
+
+            >>> camera.get_projection_matrix(1080/720)
+        """
+        return self.ptr.get_projection_matrix(aspect)
+
     def track_user_inputs(self,
                           window,
                           movement_speed=1.0,

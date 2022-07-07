@@ -24,7 +24,7 @@ import taichi as ti
 
 
 def timer(func):
-    """Function decorator to benchmark a function runnign time."""
+    """Function decorator to benchmark a function running time."""
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = timeit.default_timer()
@@ -37,7 +37,7 @@ def timer(func):
 
 
 def registerableCLI(cls):
-    """Class decorator to register methodss with @register into a set."""
+    """Class decorator to register methods with @register into a set."""
     cls.registered_commands = set([])
     for name in dir(cls):
         method = getattr(cls, name)
@@ -140,7 +140,7 @@ class TaichiMain:
         return support_choice_with_dot_py
 
     @register
-    def gallery(self, argumets: list = sys.argv[2:]):
+    def gallery(self, arguments: list = sys.argv[2:]):
         """Use mouse to select and run taichi examples in an interactive gui."""
         # set the spacing parameters in the gallery image
         slide_bar = 14
@@ -292,7 +292,10 @@ class TaichiMain:
         if example_name is None:
             index = int(input("Please input the number of the example: "))
             while not 0 <= index < len(names):
-                index = int(input("Example not found, please try again: "))
+                index = int(
+                    input(
+                        f"Example [{index}] does not exist. Please try again: "
+                    ))
             example_name = names[index]
         target = str((examples_dir / choices[example_name] /
                       f"{example_name}.py").resolve())

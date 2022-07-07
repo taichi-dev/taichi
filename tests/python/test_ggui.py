@@ -30,7 +30,7 @@ def write_temp_image(window):
         pass
 
 
-def verify_image(window, image_name, tolerence=0.1):
+def verify_image(window, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         window.write_image(ground_truth_name)
@@ -46,7 +46,7 @@ def verify_image(window, image_name, tolerence=0.1):
             assert ground_truth_np.shape[i] == actual_np.shape[i]
         diff = ground_truth_np - actual_np
         mse = np.mean(diff * diff)
-        assert mse <= tolerence  # the pixel values are 0~255
+        assert mse <= tolerance  # the pixel values are 0~255
         os.remove(actual_name)
 
 
@@ -144,7 +144,7 @@ def test_geometry_2d():
         write_temp_image(window)
     render()
     if (platform.system() == 'Darwin'):
-        # FIXME: Use lower tolerence when macOS ggui supports wide lines
+        # FIXME: Use lower tolerance when macOS ggui supports wide lines
         verify_image(window, 'test_geometry_2d', 1.0)
     else:
         verify_image(window, 'test_geometry_2d')
@@ -296,3 +296,26 @@ def test_imgui():
 @test_utils.test(arch=supported_archs)
 def test_exit_without_showing():
     window = ti.ui.Window("Taichi", (256, 256), show_window=False)
+
+
+@test_utils.test(arch=supported_archs)
+def test_get_camera_view_and_projection_matrix():
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 0, 3)
+    camera.lookat(0, 0, 0)
+
+    scene.set_camera(camera)
+
+    view_matrix = camera.get_view_matrix()
+    projection_matrix = camera.get_projection_matrix(1080 / 720)
+
+    for i in range(4):
+        assert (abs(view_matrix[i, i] - 1) <= 1e-5)
+    assert (abs(view_matrix[3, 2] + 3) <= 1e-5)
+
+    assert (abs(projection_matrix[0, 0] - 1.6094756) <= 1e-5)
+    assert (abs(projection_matrix[1, 1] - 2.4142134) <= 1e-5)
+    assert (abs(projection_matrix[2, 2] - 1.0001000e-4) <= 1e-5)
+    assert (abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5)
+    assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)

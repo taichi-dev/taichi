@@ -311,7 +311,7 @@ class BinarySerializer : public Serializer {
     std::size_t n = 0;
     head = 0;
     if (preserved_ != 0) {
-      TI_TRACE("perserved = {}", preserved_);
+      TI_TRACE("preserved = {}", preserved_);
       // Preserved mode
       this->preserved = preserved_;
       assert(c_data != nullptr);

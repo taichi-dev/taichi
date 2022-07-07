@@ -41,7 +41,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  Arch arch,
                                  const ForLoopConfig &config)
     : global_var(global_var),
-      bit_vectorize(config.bit_vectorize),
+      is_bit_vectorized(config.is_bit_vectorized),
       num_cpu_threads(config.num_cpu_threads),
       strictly_serialized(config.strictly_serialized),
       mem_access_opt(config.mem_access_opt),
@@ -66,7 +66,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
                                  const ForLoopConfig &config)
-    : bit_vectorize(config.bit_vectorize),
+    : is_bit_vectorized(config.is_bit_vectorized),
       num_cpu_threads(config.num_cpu_threads),
       mem_access_opt(config.mem_access_opt),
       block_dim(config.block_dim),
@@ -99,7 +99,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const ForLoopConfig &config)
     : begin(begin),
       end(end),
-      bit_vectorize(config.bit_vectorize),
+      is_bit_vectorized(config.is_bit_vectorized),
       num_cpu_threads(config.num_cpu_threads),
       strictly_serialized(config.strictly_serialized),
       mem_access_opt(config.mem_access_opt),
@@ -212,7 +212,7 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   }
 
   // Some backends such as vulkan doesn't support fp64
-  // Try not promoting to fp64 unless neccessary
+  // Try not promoting to fp64 unless necessary
   if (type == BinaryOpType::atan2) {
     if (lhs_type == PrimitiveType::f64 || rhs_type == PrimitiveType::f64) {
       ret_type = PrimitiveType::f64;

@@ -38,9 +38,9 @@ def paint(t: float):
 def main():
     gui = ti.GUI("Vector Field", res=(500, 500))
 
-    begining = time.time_ns()
+    beginning = time.time_ns()
     for k in range(1000000):
-        paint((time.time_ns() - begining) * 0.00000001)
+        paint((time.time_ns() - beginning) * 0.00000001)
         dirs_np = dirs.to_numpy()
         gui.arrows(locations_np, dirs_np, radius=1)
         gui.show()

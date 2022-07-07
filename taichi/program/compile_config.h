@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/lang_util.h"
 
 namespace taichi {
@@ -110,6 +110,10 @@ struct CompileConfig {
   // Offline cache options
   bool offline_cache{false};
   std::string offline_cache_file_path{get_repo_dir() + "ticache"};
+  std::string offline_cache_cleaning_policy{
+      "never"};  // "never"|"version"|"lru"|"fifo"
+  int offline_cache_max_size_of_files{1024 * 1024};  // bytes
+  double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
 
   CompileConfig();
 };

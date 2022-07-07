@@ -4,14 +4,13 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -23,18 +22,23 @@
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
 #if defined(TI_WITH_CC)
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
+#endif
+#ifdef TI_WITH_OPENGL
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
+#include "taichi/rhi/opengl/opengl_api.h"
 #endif
 #ifdef TI_WITH_DX11
 #include "taichi/runtime/program_impls/dx/dx_program.h"
-#include "taichi/runtime/dx/dx_api.h"
+#include "taichi/rhi/dx/dx_api.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -46,8 +50,7 @@ namespace taichi {
 namespace lang {
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch)
-    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of QuantFloatType
@@ -224,15 +227,14 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  if (!sync) {
-    if (config.async_mode) {
-      async_engine->synchronize();
-    }
-    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-        config.arch == Arch::vulkan) {
-      program_impl_->synchronize();
-    }
+  if (config.async_mode && !sync) {
+    async_engine->synchronize();
     sync = true;
+  }
+  // Normal mode shouldn't be affected by `sync` flag.
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+    program_impl_->synchronize();
   }
 }
 
@@ -396,58 +398,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   return ker;
 }
 
-Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_reader_{}", ndarray_reader_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(Expr::make<ExternalTensorExpression>(
-            keys.dtype, keys.num_active_indices,
-            /*arg_id=*/keys.num_active_indices, 0))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++) {
-    ker.insert_arg(PrimitiveType::i32, /*is_array=*/false);
-  }
-  ker.insert_arg(keys.dtype, /*is_array=*/true);
-  ker.insert_ret(keys.dtype);
-  return ker;
-}
-
-Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_writer_{}", ndarray_writer_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto expr = Expr(Expr::make<ExternalTensorExpression>(
-        keys.dtype, keys.num_active_indices,
-        /*arg_id=*/keys.num_active_indices + 1, 0))[indices];
-    this->current_ast_builder()->insert_assignment(
-        expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
-                                            keys.dtype->get_compute_type()));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(keys.dtype, false);
-  ker.insert_arg(keys.dtype, true);
-  return ker;
-}
-
 uint64 Program::fetch_result_uint64(int i) {
   return program_impl_->fetch_result_uint64(i, result_buffer);
 }
@@ -456,7 +406,7 @@ void Program::finalize() {
   synchronize();
   if (async_engine)
     async_engine = nullptr;  // Finalize the async engine threads before
-                             // anything else gets destoried.
+                             // anything else gets destroyed.
 
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {

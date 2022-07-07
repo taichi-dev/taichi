@@ -131,6 +131,33 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
+void ti_copy_memory_device_to_device(TiRuntime runtime,
+                                     const TiMemorySlice *dst_memory,
+                                     const TiMemorySlice *src_memory) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to copy memory on runtime of null handle");
+    return;
+  }
+  if (dst_memory == nullptr || dst_memory->memory == nullptr) {
+    TI_WARN("ignored attempt to copy to dst memory of null handle");
+    return;
+  }
+  if (src_memory == nullptr || src_memory->memory == nullptr) {
+    TI_WARN("ignored attempt to copy from src memory of null handle");
+    return;
+  }
+  if (src_memory->size != dst_memory->size) {
+    TI_WARN("ignored attempt to copy memory of mismatched size");
+    return;
+  }
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto dst = devmem2devalloc(*runtime2, dst_memory->memory)
+                 .get_ptr(dst_memory->offset);
+  auto src = devmem2devalloc(*runtime2, src_memory->memory)
+                 .get_ptr(src_memory->offset);
+  runtime2->buffer_copy(dst, src, dst_memory->size);
+}
+
 TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to load aot module on runtime of null handle");
@@ -184,6 +211,7 @@ void ti_launch_kernel(TiRuntime runtime,
 
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
+  std::vector<std::unique_ptr<taichi::lang::DeviceAllocation>> devallocs;
 
   for (uint32_t i = 0; i < arg_count; ++i) {
     const auto &arg = args[i];
@@ -197,9 +225,12 @@ void ti_launch_kernel(TiRuntime runtime,
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
-        taichi::lang::DeviceAllocation devalloc =
-            devmem2devalloc(runtime2, arg.value.ndarray.memory);
-        if (devalloc.alloc_id + 1 == 0) {
+        // Don't allocate it on stack. `DeviceAllocation` is referred to by
+        // `GfxRuntime::launch_kernel`.
+        std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
+            std::make_unique<taichi::lang::DeviceAllocation>(
+                devmem2devalloc(runtime2, arg.value.ndarray.memory));
+        if (devalloc->alloc_id + 1 == 0) {
           TI_WARN(
               "ignored attempt to launch kernel with ndarray memory of null "
               "handle");
@@ -215,10 +246,12 @@ void ti_launch_kernel(TiRuntime runtime,
               ndarray.elem_shape.dims,
               ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
 
-          runtime_context.set_arg_devalloc(i, devalloc, shape, elem_shape);
+          runtime_context.set_arg_devalloc(i, *devalloc, shape, elem_shape);
         } else {
-          runtime_context.set_arg_devalloc(i, devalloc, shape);
+          runtime_context.set_arg_devalloc(i, *devalloc, shape);
         }
+
+        devallocs.emplace_back(std::move(devalloc));
         break;
       }
       default:
@@ -244,7 +277,8 @@ void ti_launch_compute_graph(TiRuntime runtime,
 
   Runtime &runtime2 = *((Runtime *)runtime);
   std::unordered_map<std::string, taichi::lang::aot::IValue> arg_map{};
-  std::vector<taichi::lang::Ndarray> ndarrays{};
+  std::vector<taichi::lang::Ndarray> ndarrays;
+  ndarrays.reserve(arg_count);
 
   for (uint32_t i = 0; i < arg_count; ++i) {
     const auto &arg = args[i];
@@ -275,8 +309,12 @@ void ti_launch_compute_graph(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
+        std::vector<int> elem_shape(
+            ndarray.elem_shape.dims,
+            ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
+
         ndarrays.emplace_back(taichi::lang::Ndarray(
-            devalloc, taichi::lang::PrimitiveType::f32, shape));
+            devalloc, taichi::lang::PrimitiveType::f32, shape, elem_shape));
         arg_map.emplace(std::make_pair(
             arg.name, taichi::lang::aot::IValue::create(ndarrays.back())));
         break;

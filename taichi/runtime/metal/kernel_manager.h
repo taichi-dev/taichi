@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/runtime/metal/kernel_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/lang_util.h"

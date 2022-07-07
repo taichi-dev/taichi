@@ -1,7 +1,11 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
+#ifdef ANDROID
+#define VK_KHR_android_surface 1
+#include "vulkan/vulkan_android.h"
+#endif
 
 #ifdef TI_WITH_VULKAN
 
@@ -22,8 +26,6 @@ VulkanRuntimeImported::Workaround::Workaround(
   }
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
-  vk_device.init_vulkan_structs(
-      const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
   vk_device.set_cap(taichi::lang::DeviceCapability::vk_api_version,
                     api_version);
   if (api_version > VK_API_VERSION_1_0) {
@@ -31,6 +33,8 @@ VulkanRuntimeImported::Workaround::Workaround(
         taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
         true);
   }
+  vk_device.init_vulkan_structs(
+      const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
 }
 VulkanRuntimeImported::VulkanRuntimeImported(
     uint32_t api_version,
@@ -102,6 +106,11 @@ TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
   size_t root_size = aot_module->get_root_size();
   params.runtime->add_root_buffer(root_size);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
+}
+void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
+                                const taichi::lang::DevicePtr &src,
+                                size_t size) {
+  get_gfx_runtime().buffer_copy(dst, src, size);
 }
 void VulkanRuntime::submit() {
   get_gfx_runtime().flush();

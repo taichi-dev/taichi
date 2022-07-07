@@ -108,14 +108,8 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
     "taichi/lang_util.h" "taichi/lang_util.cpp"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
-    "taichi/backends/*.h" "taichi/backends/*.cpp"
+    "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
-
-file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h")
-file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
-file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
-
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
     "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp" "taichi/ui/*.h"
@@ -141,29 +135,27 @@ endif()
 file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime_module/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
-
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
 else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
 endif()
 
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
-
-
 if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
-  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_SOURCE})
+  file(GLOB TAICHI_CUDA_RUNTIME_SOURCE "taichi/runtime/cuda/runtime.cpp")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_RUNTIME_SOURCE})
 endif()
 
 if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
 endif()
 
+## TODO: Remove CC backend
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
+  file(GLOB TAICHI_CC_SOURCE "taichi/codegen/cc/*.h" "taichi/codegen/cc/*.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
@@ -228,23 +220,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
 # We have future plans to allow metal AOT to run on non-macOS devices.
 
-if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
-
-    add_subdirectory(taichi/runtime/program_impls/dx)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
-
-    add_subdirectory(taichi/runtime/dx)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_runtime)
-
-    add_subdirectory(taichi/backends/dx)
-endif()
-
-
-if (TI_WITH_OPENGL)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
-endif()
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
@@ -268,6 +244,9 @@ if(DEFINED ENV{LLVM_DIR})
     set(LLVM_DIR $ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
+
+add_subdirectory(taichi/rhi/interop)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 
 if(TI_WITH_LLVM)
     # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
@@ -308,11 +287,26 @@ if(TI_WITH_LLVM)
         llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
     endif()
 
+
+    add_subdirectory(taichi/codegen/cpu)
+    add_subdirectory(taichi/runtime/cpu)
+    add_subdirectory(taichi/rhi/cpu)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_codegen)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
+
+
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
+        add_subdirectory(taichi/codegen/cuda)
+        add_subdirectory(taichi/runtime/cuda)
+	      add_subdirectory(taichi/rhi/cuda)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_codegen)
+	      target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_runtime)
+	      target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
     endif()
 
-    add_subdirectory(taichi/backends/llvm)
+    add_subdirectory(taichi/rhi/llvm)
     add_subdirectory(taichi/codegen/llvm)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
@@ -348,7 +342,7 @@ endif()
 if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
 
-    add_subdirectory(taichi/backends/metal)
+    add_subdirectory(taichi/rhi/metal)
     add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
     add_subdirectory(taichi/codegen/metal)
@@ -360,27 +354,18 @@ endif()
 
 if (TI_WITH_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-    set(SPIRV_CROSS_CLI false)
-    add_subdirectory(external/SPIRV-Cross)
-    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-glsl spirv-cross-core)
 
+    add_subdirectory(taichi/rhi/opengl)
     add_subdirectory(taichi/runtime/program_impls/opengl)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
-
-    add_subdirectory(taichi/codegen/opengl)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_codegen)
-
-    add_subdirectory(taichi/runtime/opengl)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_runtime)
-
-    add_subdirectory(taichi/backends/opengl)
 endif()
 
 if (TI_WITH_DX11)
-    set(SPIRV_CROSS_CLI false)
-    #target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv-cross-hlsl spirv-cross-core)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+
+    add_subdirectory(taichi/rhi/dx)
+    add_subdirectory(taichi/runtime/program_impls/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
 endif()
 
 # SPIR-V codegen is always there, regardless of Vulkan
@@ -409,7 +394,7 @@ if (TI_WITH_VULKAN)
             install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
         endif()
     endif()
-    add_subdirectory(taichi/backends/vulkan)
+    add_subdirectory(taichi/rhi/vulkan)
 
     # TODO: this dependency is here because program.cpp includes vulkan_program.h
     # Should be removed
@@ -497,12 +482,11 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
 
-    # TODO 4832: move some header dependencis to other targets, e.g., gui
+    # TODO 4832: move some header dependencies to other targets, e.g., gui
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
       PRIVATE
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/external/spdlog/include
-        ${PROJECT_SOURCE_DIR}/external/glad/include
         ${PROJECT_SOURCE_DIR}/external/eigen
         ${PROJECT_SOURCE_DIR}/external/volk
         ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include

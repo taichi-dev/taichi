@@ -1,7 +1,7 @@
 #pragma once
 #include "taichi/taichi_core.h"
 #include "taichi/aot/module_loader.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
@@ -27,6 +27,9 @@ class Runtime {
   virtual taichi::lang::Device &get() = 0;
 
   virtual TiAotModule load_aot_module(const char *module_path) = 0;
+  virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
+                           const taichi::lang::DevicePtr &src,
+                           size_t size) = 0;
   virtual void submit() = 0;
   virtual void wait() = 0;
 

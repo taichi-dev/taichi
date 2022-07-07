@@ -228,6 +228,7 @@ class PyTaichi:
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
+        self.grad_vars = []
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
@@ -300,6 +301,22 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
+    def _check_grad_field_not_placed(self):
+        not_placed = set()
+        for _var in self.grad_vars:
+            if _var.ptr.snode() is None:
+                not_placed.add(self._get_tb(_var))
+
+        if len(not_placed):
+            bar = '=' * 44 + '\n'
+            raise RuntimeError(
+                f'These field(s) requrie `needs_grad=True`, however their grad field(s) are not placed:\n{bar}'
+                + f'{bar}'.join(not_placed) +
+                f'{bar}Please consider place the grad field(s). E.g.,' +
+                '\n\n  ti.root.dense(ti.i, 1).place(x.grad)' +
+                '\n\n Or specify a shape for the field(s). E.g.,' +
+                '\n\n  x = ti.field(float, shape=(2, 3), needs_grad=True)')
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -321,9 +338,11 @@ class PyTaichi:
         self.materialized = True
 
         self._check_field_not_placed()
+        self._check_grad_field_not_placed()
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
+        self.grad_vars = []
         self.matrix_fields = []
 
     def _register_signal_handlers(self):
@@ -422,7 +441,7 @@ class _UninitializedRootFieldsBuilder:
 # gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
 # writing to it is would result in less for maintenance cost.
 #
-# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+# `_root_fb` will be overridden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
@@ -486,27 +505,48 @@ Example::
 
 
 @python_scope
-def create_field_member(dtype, name):
+def create_field_member(dtype, name, needs_grad):
     dtype = cook_dtype(dtype)
 
     # primal
-    x = Expr(get_runtime().prog.make_id_expr(""))
+    prog = get_runtime().prog
+    if prog is None:
+        raise TaichiRuntimeError(
+            "Cannont create field, maybe you forgot to call `ti.init()` first?"
+        )
+
+    x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    x_adjoint = None
+    x_grad = None
+    x_dual = None
+    # TODO: replace the name of `_ti_core.needs_grad`, it only checks whether the dtype can be accepted to compute derivatives
     if _ti_core.needs_grad(dtype):
         # adjoint
-        x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
-        x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
-        x_adjoint.ptr.set_name(name + ".grad")
-        x_adjoint.ptr.set_is_primal(False)
-        x.ptr.set_adjoint(x_adjoint.ptr)
+        x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad.declaration_tb = get_traceback(stacklevel=4)
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_adjoint(x_grad.ptr)
+        if needs_grad:
+            pytaichi.grad_vars.append(x_grad)
 
-    return x, x_adjoint
+        # dual
+        x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr.set_name(name + ".dual")
+        x_dual.ptr.set_is_primal(False)
+        x.ptr.set_dual(x_dual.ptr)
+    elif needs_grad:
+        raise TaichiRuntimeError(
+            f'{dtype} is not supported for field with `needs_grad=True`.')
+
+    return x, x_grad, x_dual
 
 
 @python_scope
@@ -525,7 +565,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         shape (Union[int, tuple[int]], optional): shape of the field.
         name (str, optional): name of the field.
         offset (Union[int, tuple[int]], optional): offset of the field domain.
-        needs_grad (bool, optional): whether this field participates in autodiff
+        needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
             and thus needs an adjoint field to store the gradients.
 
     Example::
@@ -553,15 +593,18 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_adjoint = create_field_member(dtype, name)
-    x, x_adjoint = ScalarField(x), ScalarField(x_adjoint)
-    x._set_grad(x_adjoint, reverse_mode=True)
+    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad)
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
+
+    x._set_grad(x_grad)
+    x._set_dual(x_dual)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_adjoint)
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 
@@ -604,7 +647,7 @@ def ti_format_list_to_content_entries(raw):
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
-        yield '['  # distinguishing tuple & list will increase maintainance cost
+        yield '['  # distinguishing tuple & list will increase maintenance cost
         for i, v in enumerate(_var):
             if i:
                 yield ', '

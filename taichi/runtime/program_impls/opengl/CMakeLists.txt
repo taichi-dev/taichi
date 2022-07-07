@@ -11,7 +11,9 @@ target_include_directories(opengl_program_impl
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
     ${LLVM_INCLUDE_DIRS}
   )
 
-target_link_libraries(opengl_program_impl PRIVATE opengl_runtime)
+target_link_libraries(opengl_program_impl PRIVATE opengl_rhi)
+target_link_libraries(opengl_program_impl PRIVATE gfx_runtime)

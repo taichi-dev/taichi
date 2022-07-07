@@ -1,73 +1,93 @@
 #include "opengl_program.h"
-#include "taichi/runtime/opengl/aot_module_builder_impl.h"
-using namespace taichi::lang::opengl;
+
+#include "taichi/rhi/opengl/opengl_api.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
 namespace taichi {
 namespace lang {
 
+namespace opengl {
+
+FunctionType compile_to_executable(Kernel *kernel,
+                                   gfx::GfxRuntime *runtime,
+                                   gfx::SNodeTreeManager *snode_tree_mgr) {
+  auto handle = runtime->register_taichi_kernel(
+      gfx::run_codegen(kernel, runtime->get_ti_device(),
+                       snode_tree_mgr->get_compiled_structs()));
+  return [runtime, handle](RuntimeContext &ctx) {
+    runtime->launch_kernel(handle, &ctx);
+  };
+}
+
+}  // namespace opengl
+
+OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
+    : ProgramImpl(config) {
+}
+
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-#ifdef TI_WITH_OPENGL
-  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
-                                config->allow_nv_shader_extension);
-  auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
-
-  return [ptr, kernel, runtime = opengl_runtime_.get()](RuntimeContext &ctx) {
-    ptr->launch(ctx, kernel, runtime);
-  };
-#else
-  return [](RuntimeContext &ctx) {};
-#endif
+  spirv::lower(kernel);
+  return opengl::compile_to_executable(kernel, runtime_.get(),
+                                       snode_tree_mgr_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             KernelProfilerBase *profiler,
                                             uint64 **result_buffer_ptr) {
-#ifdef TI_WITH_OPENGL
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  opengl_runtime_ = std::make_unique<opengl::OpenGlRuntime>();
-  opengl_runtime_->result_buffer = *result_buffer_ptr;
-#else
-  TI_NOT_IMPLEMENTED;
-#endif
-}
-DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
-    std::size_t alloc_size,
-    uint64 *result_buffer) {
-  // FIXME: Why is host R/W set to true?
-  return opengl_runtime_->device->allocate_memory(
-      {alloc_size, /*host_write=*/false, /*host_read=*/true,
-       /*export_sharing=*/false});
+
+  device_ = opengl::make_opengl_device();
+
+  gfx::GfxRuntime::Params params;
+  params.host_result_buffer = *result_buffer_ptr;
+  params.device = device_.get();
+  runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
+  snode_tree_mgr_ = std::make_unique<gfx::SNodeTreeManager>(runtime_.get());
 }
 
 void OpenglProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
-  // TODO: support materializing multiple snode trees
-  opengl::OpenglStructCompiler scomp;
-  opengl_struct_compiled_ = scomp.run(*(tree->root()));
-  TI_TRACE("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
+  if (runtime_) {
+    snode_tree_mgr_->materialize_snode_tree(tree);
+  } else {
+    gfx::CompiledSNodeStructs compiled_structs =
+        gfx::compile_snode_structs(*tree->root());
+    aot_compiled_snode_structs_.push_back(compiled_structs);
+  }
 }
 
 void OpenglProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                                uint64 *result_buffer) {
-#ifdef TI_WITH_OPENGL
-  compile_snode_tree_types(tree);
-  opengl_runtime_->add_snode_tree(opengl_struct_compiled_->root_size);
-#else
-  TI_NOT_IMPLEMENTED;
-#endif
+  snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
 std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder() {
-  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
-  // fine to JIT to GLSL on systems without the OpenGL runtime.
-#ifdef TI_WITH_OPENGL
-  return std::make_unique<AotModuleBuilderImpl>(
-      opengl_struct_compiled_.value(), config->allow_nv_shader_extension);
-#else
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-#endif
+  if (runtime_) {
+    return std::make_unique<gfx::AotModuleBuilderImpl>(
+        snode_tree_mgr_->get_compiled_structs(), Arch::opengl);
+  } else {
+    return std::make_unique<gfx::AotModuleBuilderImpl>(
+        aot_compiled_snode_structs_, Arch::opengl);
+  }
+}
+
+DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  return get_compute_device()->allocate_memory(
+      {alloc_size, /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false});
+}
+
+std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
+    Kernel &kernel) {
+  spirv::lower(&kernel);
+  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
+  gfx::GfxRuntime::RegisterParams kparams =
+      gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
+  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 
 }  // namespace lang

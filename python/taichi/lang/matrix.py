@@ -198,7 +198,7 @@ class _PyScopeMatrixImpl(_MatrixBaseImpl):
             b = [b]
         else:
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
-        return Matrix([[self(i, j) for j in b] for i in a])
+        return Matrix([[self._get_entry(i, j) for j in b] for i in a])
 
     def _set_entries(self, value):
         if not isinstance(value, (list, tuple)):

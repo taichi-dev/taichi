@@ -115,8 +115,8 @@ class ASTTransformer(Builder):
         if not has_slice:
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
-        node_target = build_stmt(ctx, node_target.value)
-        targets = list(impl.subscript(node_target, *indices, get_ref=True))
+        node_target.value = build_stmt(ctx, node_target.value)
+        targets = list(impl.subscript(node_target.value, *indices, get_ref=True))
         flatten_targets = []
         for t in targets:
             if isinstance(t, list):

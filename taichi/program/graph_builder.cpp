@@ -39,7 +39,8 @@ Node *GraphBuilder::new_dispatch_node(Kernel *kernel,
                                       const std::vector<aot::Arg> &args) {
   for (const auto &arg : args) {
     if (all_args_.find(arg.name) != all_args_.end()) {
-      TI_ASSERT(all_args_[arg.name] == arg);
+      TI_ERROR_IF(all_args_[arg.name] != arg,
+                  "An arg with name {} already exists!", arg.name);
     } else {
       all_args_[arg.name] = arg;
     }

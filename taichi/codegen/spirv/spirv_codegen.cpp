@@ -1012,34 +1012,34 @@ class TaskCodegen : public IRVisitor {
   void visit(TextureOpStmt *stmt) override {
     spirv::Value tex = ir_->query_value(stmt->texture_ptr->raw_name());
     spirv::Value val;
-    if (stmt->op == TextureOpType::sample_lod ||
-        stmt->op == TextureOpType::fetch_texel) {
+    if (stmt->op == TextureOpType::kSampleLod ||
+        stmt->op == TextureOpType::kFetchTexel) {
       // Texture Ops
       std::vector<spirv::Value> args;
       for (int i = 0; i < stmt->args.size() - 1; i++) {
         args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
       }
       spirv::Value lod = ir_->query_value(stmt->args.back()->raw_name());
-      if (stmt->op == TextureOpType::sample_lod) {
+      if (stmt->op == TextureOpType::kSampleLod) {
         // Sample
         val = ir_->sample_texture(tex, args, lod);
-      } else if (stmt->op == TextureOpType::fetch_texel) {
+      } else if (stmt->op == TextureOpType::kFetchTexel) {
         // Texel fetch
         val = ir_->fetch_texel(tex, args, lod);
       }
       ir_->register_value(stmt->raw_name(), val);
-    } else if (stmt->op == TextureOpType::load ||
-               stmt->op == TextureOpType::store) {
+    } else if (stmt->op == TextureOpType::kLoad ||
+               stmt->op == TextureOpType::kStore) {
       // Image Ops
       std::vector<spirv::Value> args;
       for (int i = 0; i < stmt->args.size(); i++) {
         args.push_back(ir_->query_value(stmt->args[i]->raw_name()));
       }
-      if (stmt->op == TextureOpType::load) {
+      if (stmt->op == TextureOpType::kLoad) {
         // Image Load
         val = ir_->image_load(tex, args);
         ir_->register_value(stmt->raw_name(), val);
-      } else if (stmt->op == TextureOpType::store) {
+      } else if (stmt->op == TextureOpType::kStore) {
         // Image Store
         ir_->image_store(tex, args);
       }

@@ -270,19 +270,6 @@ class FrontendReturnStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendTextureOpStmt : public Stmt {
- public:
-  Expr expr;
-
-  explicit FrontendTextureOpStmt(TextureOpType op,
-                                 Expr texture_ptr,
-                                 const ExprGroup &args)
-      : expr(Expr::make<TextureOpExpression>(op, texture_ptr, args)) {
-  }
-
-  TI_DEFINE_ACCEPT
-};
-
 // Expressions
 
 class ArgLoadExpression : public Expression {
@@ -870,9 +857,6 @@ class ASTBuilder {
   Expr make_id_expr(const std::string &name);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
-  void insert_texture_op_expr(const TextureOpType &op_type,
-                              const Expr &ptr,
-                              const ExprGroup &args);
   void create_kernel_exprgroup_return(const ExprGroup &group);
   void create_print(std::vector<std::variant<Expr, std::string>> contents);
   void begin_func(const std::string &funcid);

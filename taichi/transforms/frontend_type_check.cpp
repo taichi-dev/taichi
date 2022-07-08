@@ -94,10 +94,6 @@ class FrontendTypeCheck : public IRVisitor {
   void visit(FrontendReturnStmt *stmt) override {
     // Noop
   }
-
-  void visit(FrontendTextureOpStmt *stmt) override {
-    // TODO
-  }
 };
 
 namespace irpass {

@@ -1504,12 +1504,12 @@ class TextureOpStmt : public Stmt {
 
   /*
   bool has_global_side_effect() const override {
-    return op == TextureOpType::store;
+    return op == TextureOpType::kStore;
   }
   */
 
   bool common_statement_eliminable() const override {
-    return op != TextureOpType::store;
+    return op != TextureOpType::kStore;
   }
 
   TI_STMT_DEF_FIELDS(op, texture_ptr, args);

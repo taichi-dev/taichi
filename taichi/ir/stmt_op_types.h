@@ -85,11 +85,11 @@ enum class SNodeOpType : int {
 std::string snode_op_type_name(SNodeOpType type);
 
 enum class TextureOpType : int {
-  sample_lod,
-  fetch_texel,
-  load,
-  store,
-  undefined
+  kUndefined,
+  kSampleLod,
+  kFetchTexel,
+  kLoad,
+  kStore
 };
 
 std::string texture_op_type_name(TextureOpType type);

@@ -629,7 +629,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 void TextureOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT(texture_ptr.is<TexturePtrExpression>());
   auto ptr = texture_ptr.cast<TexturePtrExpression>();
-  if (op == TextureOpType::sample_lod) {
+  if (op == TextureOpType::kSampleLod) {
     // UV, Lod
     TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
                    "Invalid number of args for sample_lod Texture op with a "
@@ -644,7 +644,7 @@ void TextureOpExpression::type_check(CompileConfig *config) {
                         args[i].get_ret_type()->to_string()));
       }
     }
-  } else if (op == TextureOpType::fetch_texel) {
+  } else if (op == TextureOpType::kFetchTexel) {
     // index, int LOD
     TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
                    "Invalid number of args for fetch_texel Texture op with a "
@@ -659,7 +659,7 @@ void TextureOpExpression::type_check(CompileConfig *config) {
                         args[i].get_ret_type()->to_string()));
       }
     }
-  } else if (op == TextureOpType::load) {
+  } else if (op == TextureOpType::kLoad) {
     // index
     TI_ASSERT_INFO(args.size() == ptr->num_dims,
                    "Invalid number of args for load Texture op with a "
@@ -674,7 +674,7 @@ void TextureOpExpression::type_check(CompileConfig *config) {
                         args[i].get_ret_type()->to_string()));
       }
     }
-  } else if (op == TextureOpType::store) {
+  } else if (op == TextureOpType::kStore) {
     // index, value
     TI_ASSERT_INFO(args.size() == ptr->num_dims + 4,
                    "Invalid number of args for store Texture op with a "
@@ -904,12 +904,6 @@ Expr ASTBuilder::insert_patch_idx_expr() {
                 loop->as<FrontendForStmt>()->mesh_for),
               "ti.mesh_patch_idx() is only valid within mesh-for loops.");
   return Expr::make<MeshPatchIndexExpression>();
-}
-
-void ASTBuilder::insert_texture_op_expr(const TextureOpType &op_type,
-                                        const Expr &ptr,
-                                        const ExprGroup &args) {
-  this->insert(Stmt::make<FrontendTextureOpStmt>(op_type, ptr, args));
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {

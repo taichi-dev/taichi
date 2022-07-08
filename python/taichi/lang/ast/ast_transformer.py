@@ -103,6 +103,39 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
+    def build_assign_slice(ctx, node_target, values, is_static_assign):
+        indices = build_stmt(ctx, node_target.slice)
+        if not ASTTransformer.is_tuple(node_target.slice):
+            indices = [node_target.slice.ptr]
+        has_slice = False
+        for each in indices:
+            if isinstance(each, slice):
+                has_slice = True
+                break
+        if not has_slice:
+            return ASTTransformer.build_assign_basic(ctx, node_target, values,
+                                                     is_static_assign)
+        node_target = build_stmt(ctx, node_target.value)
+        targets = list(impl.subscript(node_target, *indices, get_ref=True))
+        flatten_targets = []
+        for t in targets:
+            if isinstance(t, list):
+                flatten_targets += t
+            else:
+                flatten_targets.append(t)
+        targets = flatten_targets
+        if not isinstance(values, (matrix.Matrix, collections.abc.Sequence)):
+            raise ValueError(f"Cannot unpack type: {type(values)}")
+        if isinstance(values, matrix.Matrix):
+            values = list(values.entries)
+        if len(values) != len(targets):
+            raise TaichiSyntaxError(
+                "The number of targets is not equal to value length")
+        for (lhs, rhs) in zip(targets, values):
+            lhs._assign(rhs)
+        return None
+
+    @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
@@ -114,6 +147,10 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
+        if isinstance(node_target, ast.Subscript):
+            return ASTTransformer.build_assign_slice(ctx, node_target, values,
+                                                     is_static_assign)
+
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)

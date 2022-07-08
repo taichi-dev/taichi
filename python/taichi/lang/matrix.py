@@ -219,7 +219,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, is_global_mat, *indices):
+    def _subscript(self, is_global_mat, *indices, get_ref=False):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -237,9 +237,11 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             if not isinstance(j, list):
                 j = [j]
             if len(indices) == 1:
-                return Vector([self._subscript(is_global_mat, a) for a in i])
+                return Vector([self._subscript(is_global_mat, a) for a in i],
+                              is_ref=get_ref)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
-                           for a in i])
+                           for a in i],
+                          is_ref=get_ref)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -580,14 +582,14 @@ class Matrix(TaichiOperations):
         return self._impl.dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, *indices):
+    def _subscript(self, *indices, get_ref=False):
         if isinstance(self._impl, _PyScopeMatrixImpl):
             # This can happen in these cases:
             # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
             # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
-        return self._impl._subscript(is_global_mat, *indices)
+        return self._impl._subscript(is_global_mat, *indices, get_ref=get_ref)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

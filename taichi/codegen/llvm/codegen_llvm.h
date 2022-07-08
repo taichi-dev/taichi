@@ -268,13 +268,19 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
                                    SNode *digits_snode);
 
+  virtual llvm::Value *create_intrinsic_load(const DataType &dtype,
+                                             llvm::Value *data_ptr);
+
   llvm::Value *load_quant_int(llvm::Value *ptr,
                               QuantIntType *qit,
-                              Type *physical_type);
+                              Type *physical_type,
+                              bool should_cache_as_read_only);
 
   llvm::Value *extract_quant_int(llvm::Value *physical_value,
                                  llvm::Value *bit_offset,
                                  QuantIntType *qit);
+
+  llvm::Value *load_quant_fixed(llvm::Value *ptr, QuantFixedType *qfxt, Type *physical_type, bool should_cache_as_read_only);
 
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);
@@ -282,18 +288,22 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 SNode *digits_snode,
                                 QuantFloatType *qflt,
-                                Type *physical_type);
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 llvm::Value *exponent_bit_ptr,
                                 QuantFloatType *qflt,
                                 Type *physical_type,
+                                bool should_cache_as_read_only,
                                 bool shared_exponent);
 
   llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
                                        llvm::Value *input_exponent_val,
                                        QuantFloatType *qflt,
                                        bool shared_exponent);
+
+  void global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
 
   void visit(GlobalLoadStmt *stmt) override;
 

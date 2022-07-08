@@ -540,7 +540,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   llvm::Value *create_intrinsic_load(const DataType &dtype,
-                                     llvm::Value *data_ptr) {
+                                     llvm::Value *data_ptr) override {
+    // Issue an CUDA "__ldg" instruction so that data are cached in
+    // the CUDA read-only data cache.
     auto llvm_dtype = llvm_type(dtype);
     auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
     llvm::Intrinsic::ID intrin;
@@ -554,54 +556,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         {data_ptr, tlctx->get_constant(data_type_size(dtype))});
   }
 
-  llvm::Value *load_quant_int_with_intrinsic(llvm::Value *ptr,
-                                             QuantIntType *qit,
-                                             Type *physical_type) {
-    auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-    auto physical_value = create_intrinsic_load(physical_type, byte_ptr);
-    return extract_quant_int(physical_value, bit_offset, qit);
-  }
-
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->src->cast<GetChStmt>(); get_ch) {
-      bool should_cache_as_read_only = false;
-      if (current_offload->mem_access_opt.has_flag(
-              get_ch->output_snode, SNodeAccessFlag::read_only)) {
-        should_cache_as_read_only = true;
-      }
-      if (should_cache_as_read_only) {
-        auto dtype = stmt->ret_type;
-        if (auto ptr_type = stmt->src->ret_type->as<PointerType>();
-            ptr_type->is_bit_pointer()) {
-          // Bit pointer case.
-          auto val_type = ptr_type->get_pointee_type();
-          auto physical_type = get_ch->input_snode->physical_type;
-          if (auto qit = val_type->cast<QuantIntType>()) {
-            llvm_val[stmt] = load_quant_int_with_intrinsic(llvm_val[stmt->src],
-                                                           qit, physical_type);
-          } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
-            auto digits = load_quant_int_with_intrinsic(
-                llvm_val[stmt->src],
-                qfxt->get_digits_type()->as<QuantIntType>(), physical_type);
-            llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
-          } else {
-            // TODO: support __ldg
-            TI_ASSERT(val_type->is<QuantFloatType>());
-            llvm_val[stmt] =
-                load_quant_float(llvm_val[stmt->src], get_ch->output_snode,
-                                 val_type->as<QuantFloatType>(), physical_type);
-          }
-        } else {
-          // Byte pointer case.
-          // Issue an CUDA "__ldg" instruction so that data are cached in
-          // the CUDA read-only data cache.
-          llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->src]);
-        }
-      } else {
-        CodeGenLLVM::visit(stmt);
-      }
+    if (auto get_ch = stmt->src->cast<GetChStmt>()) {
+      bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
+          get_ch->output_snode, SNodeAccessFlag::read_only);
+      global_load(stmt, should_cache_as_read_only);
     } else {
-      CodeGenLLVM::visit(stmt);
+      global_load(stmt, false);
     }
   }
 

@@ -8,7 +8,7 @@ def _test_floor_ceil_round(dt):
     def make_tests():
         x = 1.5
         v = ti.math.vec3(1.1, 2.2, 3.3)
-        
+
         assert ti.floor(x) == 1
         assert ti.floor(x, dt) == 1.0
         assert ti.floor(x, int) == 1

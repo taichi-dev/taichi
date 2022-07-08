@@ -95,7 +95,6 @@ struct TI_DLL_EXPORT IValue {
   template <typename T,
             typename = std::enable_if_t<!std::is_same<T, Ndarray>::value, void>>
   static IValue create(T v) {
-    std::cout << v << std::endl;
     return IValue(taichi_union_cast_with_different_sizes<uint64>(v),
                   ArgKind::kScalar);
   }

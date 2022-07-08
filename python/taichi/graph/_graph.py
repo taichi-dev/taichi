@@ -95,7 +95,7 @@ class Graph:
         self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats, arg_doubles)
 
 
-def Arg(tag, name, dtype, element_shape=()):
+def Arg(tag, name, dtype, field_dim=0, element_shape=()):
     if isinstance(dtype, MatrixType):
         if len(element_shape) > 0:
             raise TaichiRuntimeError(
@@ -109,12 +109,12 @@ def Arg(tag, name, dtype, element_shape=()):
             for _ in range(mat_type.m):
                 arg_sublist.append(
                     _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
-                                 element_shape))
+                                 field_dim, element_shape))
                 i += 1
             arg_list.append(arg_sublist)
         return arg_list
 
-    return _ti_core.Arg(tag, name, dtype, element_shape)
+    return _ti_core.Arg(tag, name, dtype, field_dim, element_shape)
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

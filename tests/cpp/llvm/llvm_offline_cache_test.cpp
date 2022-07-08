@@ -96,6 +96,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
 
     LlvmOfflineCacheFileWriter writer;
     LlvmOfflineCache::KernelCacheData kcache;
+    kcache.created_at = 1;
+    kcache.last_used_at = 1;
     kcache.kernel_key = kKernelName;
     kcache.owned_module = make_module(*llvm_ctx);
     kcache.module = kcache.owned_module.get();

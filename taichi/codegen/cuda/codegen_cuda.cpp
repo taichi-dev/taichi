@@ -738,8 +738,6 @@ FunctionType CodeGenCUDA::codegen() {
   return CodeGenLLVMCUDA(kernel, ir).gen();
 }
 
-#ifdef TI_WITH_LLVM
-
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
@@ -849,7 +847,5 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   return nullptr;
 #endif  // TI_WITH_CUDA
 }
-
-#endif
 
 TLANG_NAMESPACE_END

@@ -10,7 +10,7 @@ def init():
     for i in np.linspace(0, 1, n, False):
         for j in np.linspace(0, 1, n, False):
             a.append([i, j])
-    return np.array(a)
+    return np.array(a).astype(np.float32)
 
 
 ti.init(arch=ti.gpu)

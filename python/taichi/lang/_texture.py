@@ -104,8 +104,9 @@ class RWTextureAccessor:
             args_group = impl.make_expr_group(index.x, index.y, index.z,
                                               value.r, value.g, value.b,
                                               value.a)
-        impl.expr_init(_ti_core.make_texture_op_expr(
-            _ti_core.TextureOpType.kStore, self.ptr_expr, args_group))
+        impl.expr_init(
+            _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
+                                          self.ptr_expr, args_group))
 
 
 class Texture:

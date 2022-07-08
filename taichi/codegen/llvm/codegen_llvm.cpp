@@ -1427,7 +1427,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
       llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
-      llvm_val[stmt] = load_quant_float(llvm_val[stmt->src], stmt->src->as<GetChStmt>()->output_snode, val_type->as<QuantFloatType>());
+      llvm_val[stmt] = load_quant_float(
+          llvm_val[stmt->src], stmt->src->as<GetChStmt>()->output_snode,
+          val_type->as<QuantFloatType>());
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

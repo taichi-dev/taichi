@@ -22,8 +22,6 @@ class CodeGenCUDA : public KernelCodeGen {
   FunctionType codegen() override;
 };
 
-#ifdef TI_WITH_LLVM
-
 class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit CUDAModuleToFunctionConverter(TaichiLLVMContext *tlctx,
@@ -36,7 +34,5 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
                        const std::vector<LlvmLaunchArgInfo> &args,
                        std::vector<LLVMCompiledData> &&data) const override;
 };
-
-#endif
 
 TLANG_NAMESPACE_END

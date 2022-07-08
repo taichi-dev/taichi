@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -40,6 +41,29 @@ def test_ndarray_float():
     a = ti.ndarray(ti.f32, shape=(n, ))
     g.run({'pos': a})
     assert (a.to_numpy() == (np.ones(4) * 2.5)).all()
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_repeated_arg_name():
+    n = 4
+
+    @ti.kernel
+    def test1(pos: ti.types.ndarray(field_dim=1)):
+        for i in range(n):
+            pos[i] = 2.5
+
+    @ti.kernel
+    def test2(v: ti.f32):
+        for i in range(n):
+            print(v)
+
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32)
+    sym_pos1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'pos', ti.f32)
+    builder = ti.graph.GraphBuilder()
+    builder.dispatch(test1, sym_pos)
+
+    with pytest.raises(RuntimeError):
+        builder.dispatch(test2, sym_pos1)
 
 
 def build_graph_vector(N, dtype):

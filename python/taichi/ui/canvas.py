@@ -1,6 +1,66 @@
 from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
                              get_vbo_field, to_u8_rgba)
 from .utils import get_field_info
+from taichi.lang.util import warning
+
+def _translate_color_component(component):
+    if isinstance(component, int):
+        return max(min(component, 255), 0) / 255
+    elif isinstance(component, float):
+        return max(min(component, 1.0), 0.0)
+    else:
+        return None
+
+def _translate_color(color):
+    COLOR_LUT = {
+        # See https://matplotlib.org/stable/gallery/color/named_colors.html.
+        'r': (1.0, 0.0, 0.0),
+        'g': (0.0, 1.0, 0.0),
+        'b': (0.0, 0.0, 1.0),
+        'c': (0.0, 0.75, 0.75),
+        'm': (0.75, 0.0, 0.75),
+        'y': (0.75, 0.75, 0.0),
+        'k': (0.0, 0.0, 0.0),
+        'w': (1.0, 1.0, 1.0),
+        'blue': '#1f77b4',
+        'orange': '#ff7f0e',
+        'green': '#2ca02c',
+        'red': '#d62728',
+        'purple': '#9467bd',
+        'brown': '#8c564b',
+        'pink': '#e377c2',
+        'gray': '#7f7f7f',
+        'olive': '#bcbd22',
+        'cyan': '#17becf',
+    }
+    ERROR_COLOR = (1.0, 0.0, 1.0)
+
+    if isinstance(color, str):
+        if color.startswith('#'):
+            # CSS hexadecimal representation.
+            color = color[1:]
+            if len(color) == 6 and color:
+                r = int(color[0:2], 16)
+                g = int(color[2:4], 16)
+                b = int(color[4:6], 16)
+                return _translate_color((r, g, b))
+            elif len(color) == 3 and color:
+                r = int(color[0], 16)
+                g = int(color[1], 16)
+                b = int(color[2], 16)
+                return _translate_color((r * 16 + r, g * 16 + g, b * 16 + b))
+        else:
+            if color in COLOR_LUT:
+                return _translate_color(COLOR_LUT[color])
+    elif isinstance(color, tuple) or isinstance(color, list):
+        color = list(color[:3]) + [0] * (3 - len(color))
+        if all(isinstance(x, int) for x in color):
+            return tuple(_translate_color_component(x) for x in color)
+        elif all(isinstance(x, int) or isinstance(x, float) for x in color):
+            return tuple(_translate_color_component(float(x)) for x in color)
+
+    warning(f"'{color}' is not a valid color")
+    return ERROR_COLOR
 
 
 class Canvas:
@@ -19,7 +79,7 @@ class Canvas:
         Args:
             color (tuple(float)): RGB triple in the range [0, 1].
         """
-        self.canvas.set_background_color(color)
+        self.canvas.set_background_color(_translate_color(color))
 
     def set_image(self, img):
         """Set the content of this canvas to an `img`.
@@ -59,7 +119,7 @@ class Canvas:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color,
-                              color)
+                              _translate_color(color))
 
     def lines(self,
               vertices,
@@ -88,8 +148,8 @@ class Canvas:
             copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color,
-                          width)
+        self.canvas.lines(vbo_info, indices_info, has_per_vertex_color,
+                          _translate_color(color), width)
 
     def circles(self,
                 centers,
@@ -113,7 +173,8 @@ class Canvas:
         if has_per_vertex_color:
             copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
-        self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
+        self.canvas.circles(vbo_info, has_per_vertex_color,
+                            _translate_color(color), radius)
 
     def scene(self, scene):
         """Draw a 3D scene on the canvas

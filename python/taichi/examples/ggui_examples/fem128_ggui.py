@@ -135,13 +135,13 @@ def render():
     paint_triangles()
     paint_mouse_ball()
 
-    canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.02)
-    canvas.circles(ball_circle, color=(0.4, 0.4, 0.4), radius=ball_radius)
+    canvas.circles(mouse_circle, color="blue", radius=0.02)
+    canvas.circles(ball_circle, color="#888", radius=ball_radius)
 
     canvas.triangles(vertexPositions,
                      indices=triangleIndices,
                      per_vertex_color=vertexColors)
-    canvas.circles(vertexPositions, radius=0.003, color=(1, 0.6, 0.2))
+    canvas.circles(vertexPositions, color="orange", radius=0.003)
 
 
 def main():

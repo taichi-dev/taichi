@@ -970,7 +970,6 @@ void export_lang(py::module &m) {
   });
 
   m.def("test_throw", [] { throw IRModified(); });
-  m.def("is_real", is_real);
 
 #if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);

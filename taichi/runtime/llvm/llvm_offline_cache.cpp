@@ -115,8 +115,10 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     kernel_data.module = kernel_data.owned_module.get();
   }
 
+  kernel_data.last_used_at = std::time(nullptr);
+
   res.created_at = kernel_data.created_at;
-  res.last_used_at = std::time(nullptr);
+  res.last_used_at = kernel_data.last_used_at;
   res.kernel_key = key;
   res.args = kernel_data.args;
   res.offloaded_task_list = kernel_data.offloaded_task_list;

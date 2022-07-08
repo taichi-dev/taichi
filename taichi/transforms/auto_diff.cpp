@@ -783,6 +783,10 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
       TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
@@ -1116,6 +1120,10 @@ class MakeDual : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
       TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));

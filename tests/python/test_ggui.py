@@ -297,7 +297,7 @@ def test_imgui():
 def test_exit_without_showing():
     window = ti.ui.Window("Taichi", (256, 256), show_window=False)
 
-
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_get_camera_view_and_projection_matrix():
     scene = ti.ui.Scene()

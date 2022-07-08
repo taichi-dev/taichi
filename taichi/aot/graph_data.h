@@ -138,6 +138,7 @@ struct CompiledDispatch {
 
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
+  std::unordered_map<std::string, aot::Arg> args;
   RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;

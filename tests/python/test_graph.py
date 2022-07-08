@@ -1,9 +1,15 @@
+import platform
+
 import numpy as np
 import pytest
 from taichi.lang.exception import TaichiCompilationError
 
 import taichi as ti
 from tests import test_utils
+
+supported_floating_types = [ti.f32] if platform.system() == 'Darwin' else [
+    ti.f32, ti.f64
+]
 
 
 @test_utils.test(arch=ti.vulkan)
@@ -237,3 +243,48 @@ def test_vector_float():
     graph = build_graph_vector(n, dtype=ti.f32)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == test_utils.approx(57.5, rel=1e-5)
+
+
+@pytest.mark.parametrize('dt', supported_floating_types)
+@test_utils.test(arch=ti.vulkan)
+def test_arg_float(dt):
+    @ti.kernel
+    def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):
+        b[0] = a
+
+    k = ti.ndarray(dt, shape=(1, ))
+
+    sym_A = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mat', dt)
+    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                         'b',
+                         dt,
+                         field_dim=1,
+                         element_shape=())
+    builder = ti.graph.GraphBuilder()
+    builder.dispatch(foo, sym_A, sym_B)
+    graph = builder.compile()
+    graph.run({"mat": 3.12, 'b': k})
+    assert k.to_numpy()[0] == test_utils.approx(3.12, rel=1e-5)
+
+
+@pytest.mark.parametrize('dt',
+                         [ti.i32, ti.i64, ti.i16, ti.u16, ti.u32, ti.u64])
+@test_utils.test(arch=ti.vulkan)
+def test_arg_int(dt):
+    @ti.kernel
+    def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):
+        b[0] = a
+
+    k = ti.ndarray(dt, shape=(1, ))
+
+    sym_A = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mat', dt)
+    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                         'b',
+                         dt,
+                         field_dim=1,
+                         element_shape=())
+    builder = ti.graph.GraphBuilder()
+    builder.dispatch(foo, sym_A, sym_B)
+    graph = builder.compile()
+    graph.run({"mat": 1234, 'b': k})
+    assert k.to_numpy()[0] == 1234

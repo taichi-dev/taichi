@@ -73,7 +73,7 @@ class Graph:
             elif isinstance(v, int):
                 arg_ints[k] = v
             elif isinstance(v, float):
-                arg_doubles[k] = v
+                arg_floats[k] = v
             elif isinstance(v, Matrix):
                 mat_val_id = 0
                 for a in range(v.n):

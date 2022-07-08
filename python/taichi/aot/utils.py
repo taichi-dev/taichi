@@ -54,7 +54,10 @@ def produce_injected_args(kernel, symbolic_args=None):
                 raise TaichiCompilationError(
                     f'{field_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated field_dim={anno.field_dim}'
                 )
-
+            if dtype != anno.dtype:
+                raise TaichiCompilationError(
+                    f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.dtype.to_string()}'
+                )
             if element_dim is None or element_dim == 0:
                 injected_args.append(
                     ScalarNdarray(dtype, (2, ) * anno.field_dim))
@@ -87,6 +90,15 @@ def produce_injected_args(kernel, symbolic_args=None):
                 )
             injected_args.append(Matrix([0] * anno.n * anno.m, dt=anno.dtype))
         else:
+            if symbolic_args is not None:
+                dtype = symbolic_args[i].dtype()
+            else:
+                dtype = anno
+
+            if dtype != anno:
+                raise TaichiCompilationError(
+                    f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.to_string()}'
+                )
             # For primitive types, we can just inject a dummy value.
             injected_args.append(0)
     return injected_args

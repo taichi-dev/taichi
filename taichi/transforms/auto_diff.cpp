@@ -783,7 +783,11 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TI_NOT_IMPLEMENTED
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
@@ -812,7 +816,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -857,7 +861,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -1110,15 +1114,41 @@ class MakeDual : public ADTransform {
     if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt, negate(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::abs) {
-      accumulate(stmt, sgn(dual(stmt->operand)));
+      accumulate(stmt, mul(sgn(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(stmt, mul(div(constant(1),
+                               sqrt(sub(constant(1), sqr(stmt->operand)))),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt,
+                 mul(negate(div(constant(1),
+                                sqrt(sub(constant(1), sqr(stmt->operand))))),
+                     dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt, mul(stmt, dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt, div(dual(stmt->operand), stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
+                           dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));
       }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
       TI_NOT_IMPLEMENTED

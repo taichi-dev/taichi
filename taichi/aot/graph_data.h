@@ -77,6 +77,10 @@ struct Arg {
            element_shape == other.element_shape;
   }
 
+  bool operator!=(const Arg &other) const {
+    return !(*this == other);
+  }
+
   TI_IO_DEF(name, dtype_id, field_dim, tag, element_shape);
 };
 

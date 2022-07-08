@@ -254,7 +254,7 @@ class FwdMode:
             return reduce((lambda x, y: x * y), list(shape))
 
         # Handle 0-D field
-        if self.parameters.shape:
+        if len(self.parameters.shape) != 0:
             parameters_shape_flatten = shape_flatten(self.parameters.shape)
         else:
             parameters_shape_flatten = 1
@@ -276,7 +276,12 @@ class FwdMode:
 
         # Set seed for each variable
         if len(self.seed) == 1:
-            self.parameters.dual[None] = 1.0 * self.seed[0]
+            if len(self.parameters.shape) == 0:
+                # e.g., x= ti.field(float, shape = ())
+                self.parameters.dual[None] = 1.0 * self.seed[0]
+            else:
+                # e.g., ti.root.dense(ti.i, 1).place(x.dual)
+                self.parameters.dual[0] = 1.0 * self.seed[0]
         else:
             for idx, s in enumerate(self.seed):
                 self.parameters.dual[idx] = 1.0 * s
@@ -306,7 +311,12 @@ class FwdMode:
     def clear_seed(self):
         # clear seed values
         if len(self.seed) == 1:
-            self.parameters.dual[None] = 0.0
+            if len(self.parameters.shape) == 0:
+                # e.g., x= ti.field(float, shape = ())
+                self.parameters.dual[None] = 0.0
+            else:
+                # e.g., ti.root.dense(ti.i, 1).place(x.dual)
+                self.parameters.dual[0] = 0.0
         else:
             for idx, s in enumerate(self.seed):
                 self.parameters.dual[idx] = 0.0

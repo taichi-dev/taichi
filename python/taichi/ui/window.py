@@ -126,6 +126,14 @@ class Window:
         """
         return self.window.write_image(filename)
 
+    def get_image_buffer(self):
+        """Get the window content to numpy array.
+
+        Returns:
+            3d numpy array: [width, height, channels] with (0.0~1.0) float-format color.
+        """
+        return self.window.get_image_buffer()
+
     def destroy(self):
         """Destroy this window. The window will be unavailable then.
         """

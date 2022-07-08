@@ -245,7 +245,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::offline_cache_max_size_of_files)
       .def_readwrite("offline_cache_cleaning_factor",
                      &CompileConfig::offline_cache_cleaning_factor)
-      .def_readwrite("compile_thread_num", &CompileConfig::compile_thread_num);
+      .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

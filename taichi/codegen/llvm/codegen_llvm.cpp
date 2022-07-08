@@ -2374,7 +2374,6 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   return true;
 }
 
-
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 

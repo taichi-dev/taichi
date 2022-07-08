@@ -10,7 +10,7 @@
 TLANG_NAMESPACE_BEGIN
 
 class CodeGenCPU : public KernelCodeGen {
-public:
+ public:
   CodeGenCPU(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
   }
 

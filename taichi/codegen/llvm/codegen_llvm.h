@@ -141,7 +141,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   LLVMCompiledData run_compilation();
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen() { TI_NOT_IMPLEMENTED };
+  virtual FunctionType gen(){TI_NOT_IMPLEMENTED};
 
   virtual bool supports_offline_cache() const {
     return false;
@@ -416,7 +416,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void cache_module(const std::string &kernel_key);
 };
-
 
 }  // namespace lang
 }  // namespace taichi

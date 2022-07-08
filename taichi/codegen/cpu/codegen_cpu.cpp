@@ -219,8 +219,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     data.push_back(std::move(compiled_res));
     return converter.convert(kernel, std::move(data));
   }
-
-
 };
 
 }  // namespace

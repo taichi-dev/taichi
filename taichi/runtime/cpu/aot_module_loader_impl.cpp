@@ -25,7 +25,8 @@ class AotModuleImpl : public LlvmAotModule {
 
     CPUModuleToFunctionConverter converter{tlctx, executor_};
     std::vector<LLVMCompiledData> data;
-    data.emplace_back(std::move(loaded.offloaded_task_list), std::move(loaded.owned_module));
+    data.emplace_back(std::move(loaded.offloaded_task_list),
+                      std::move(loaded.owned_module));
     return converter.convert(name, loaded.args, std::move(data));
   }
 

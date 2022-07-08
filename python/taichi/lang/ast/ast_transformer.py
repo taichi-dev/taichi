@@ -116,23 +116,10 @@ class ASTTransformer(Builder):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
         node_target.value = build_stmt(ctx, node_target.value)
-        targets = list(impl.subscript(node_target.value, *indices, get_ref=True))
-        flatten_targets = []
-        for t in targets:
-            if isinstance(t, list):
-                flatten_targets += t
-            else:
-                flatten_targets.append(t)
-        targets = flatten_targets
+        targets = impl.subscript(node_target.value, *indices, get_ref=True)
         if not isinstance(values, (matrix.Matrix, collections.abc.Sequence)):
             raise ValueError(f"Cannot unpack type: {type(values)}")
-        if isinstance(values, matrix.Matrix):
-            values = list(values.entries)
-        if len(values) != len(targets):
-            raise TaichiSyntaxError(
-                "The number of targets is not equal to value length")
-        for (lhs, rhs) in zip(targets, values):
-            lhs._assign(rhs)
+        targets._assign(values)
         return None
 
     @staticmethod

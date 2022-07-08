@@ -577,9 +577,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto val_type = ptr_type->get_pointee_type();
           auto physical_type = get_ch->input_snode->physical_type;
           if (auto qit = val_type->cast<QuantIntType>()) {
-            llvm_val[stmt] = load_quant_int_with_intrinsic(llvm_val[stmt->src], qit, physical_type);
+            llvm_val[stmt] = load_quant_int_with_intrinsic(llvm_val[stmt->src],
+                                                           qit, physical_type);
           } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
-            auto digits = load_quant_int_with_intrinsic(llvm_val[stmt->src], qfxt->get_digits_type()->as<QuantIntType>(), physical_type);
+            auto digits = load_quant_int_with_intrinsic(
+                llvm_val[stmt->src],
+                qfxt->get_digits_type()->as<QuantIntType>(), physical_type);
             llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
           } else {
             // TODO: support __ldg

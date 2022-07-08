@@ -1423,11 +1423,15 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     if (auto qit = val_type->cast<QuantIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], qit, physical_type);
     } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
-      auto digits = load_quant_int(llvm_val[stmt->src], qfxt->get_digits_type()->as<QuantIntType>(), physical_type);
+      auto digits = load_quant_int(llvm_val[stmt->src],
+                                   qfxt->get_digits_type()->as<QuantIntType>(),
+                                   physical_type);
       llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
-      llvm_val[stmt] = load_quant_float(llvm_val[stmt->src], stmt->src->as<GetChStmt>()->output_snode, val_type->as<QuantFloatType>(), physical_type);
+      llvm_val[stmt] = load_quant_float(
+          llvm_val[stmt->src], stmt->src->as<GetChStmt>()->output_snode,
+          val_type->as<QuantFloatType>(), physical_type);
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

@@ -127,6 +127,8 @@ void LlvmProgramImpl::cache_kernel(
     return;
   }
   auto &kernel_cache = cache_data_->kernels[kernel_key];
+  kernel_cache.created_at = std::time(nullptr);
+  kernel_cache.last_used_at = std::time(nullptr);
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
   kernel_cache.args = std::move(args);

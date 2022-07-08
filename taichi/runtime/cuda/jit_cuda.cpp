@@ -89,9 +89,9 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   }
 
   for (auto &f : module->globals())
-    f.setName(convert(f.getName()));
+    f.setName(convert(f.getName().str()));
   for (auto &f : *module)
-    f.setName(convert(f.getName()));
+    f.setName(convert(f.getName().str()));
 
   llvm::Triple triple(module->getTargetTriple());
 
@@ -103,7 +103,10 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
+#ifndef TI_LLVM_15
+  // PrintMachineCode is removed in https://reviews.llvm.org/D83275.
   options.PrintMachineCode = 0;
+#endif
   if (this->config_->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
@@ -121,7 +124,10 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.HonorSignDependentRoundingFPMathOption = 0;
   options.NoZerosInBSS = 0;
   options.GuaranteedTailCallOpt = 0;
+#ifndef TI_LLVM_15
+  // StackAlignmentOverride is removed in https://reviews.llvm.org/D103048.
   options.StackAlignmentOverride = 0;
+#endif
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),

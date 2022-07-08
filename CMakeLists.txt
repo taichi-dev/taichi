@@ -80,7 +80,10 @@ if (WIN32)
   #
   # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
   # someday we can distribute `Debug` libraries, if it's ever needed.
-  SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+  if (NOT TI_LLVM_15)
+    SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+  endif()
+  message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated

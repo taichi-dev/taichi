@@ -266,7 +266,7 @@ void GUI::create_window() {
   hwnd = CreateWindowExW(0,                    // Optional window styles.
                          CLASS_NAME,           // Window class
                          w_name.c_str(),       // Window text
-                         WS_OVERLAPPEDWINDOW,  // Window style
+                         WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME,  // Window style
                          // Size and position
                          CW_USEDEFAULT, CW_USEDEFAULT,
                          window_rect.right - window_rect.left,

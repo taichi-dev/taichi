@@ -22,21 +22,21 @@ class CodeGenCUDA : public KernelCodeGen {
   FunctionType codegen() override;
 };
 
+#ifdef TI_WITH_LLVM
+
 class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit CUDAModuleToFunctionConverter(TaichiLLVMContext *tlctx,
                                          LlvmRuntimeExecutor *executor)
       : ModuleToFunctionConverter(tlctx, executor) {
   }
+  using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const override;
-
-  FunctionType convert(const Kernel *kernel,
-                       std::unique_ptr<llvm::Module> mod,
-                       std::vector<OffloadedTask> &&tasks) const override;
+                       std::vector<LLVMCompiledData> &&data) const override;
 };
+
+#endif
 
 TLANG_NAMESPACE_END

@@ -45,6 +45,13 @@ class FunctionCreationGuard {
 struct LLVMCompiledData {
   std::vector<OffloadedTask> tasks;
   std::unique_ptr<llvm::Module> module{nullptr};
+  LLVMCompiledData() = default;
+  LLVMCompiledData(LLVMCompiledData &&) = default;
+  LLVMCompiledData(std::vector<OffloadedTask> tasks,
+                   std::unique_ptr<llvm::Module> module)
+      : tasks(std::move(tasks)), module(std::move(module)) {
+  }
+  TI_IO_DEF(tasks);
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
@@ -134,7 +141,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   LLVMCompiledData run_compilation();
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen();
+  virtual FunctionType gen() { TI_NOT_IMPLEMENTED };
 
   virtual bool supports_offline_cache() const {
     return false;
@@ -410,30 +417,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void cache_module(const std::string &kernel_key);
 };
 
-class LlvmRuntimeExecutor;
-
-// TODO: Make ModuleToFunctionConverter abstract,
-//       Move CPU implementation to "taichi/backend/cpu/"
-class ModuleToFunctionConverter {
- public:
-  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmRuntimeExecutor *executor);
-
-  virtual ~ModuleToFunctionConverter() = default;
-
-  virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<LlvmLaunchArgInfo> &args,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
-  virtual FunctionType convert(const Kernel *kernel,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
- protected:
-  TaichiLLVMContext *tlctx_{nullptr};
-  LlvmRuntimeExecutor *executor_{nullptr};
-};
 
 }  // namespace lang
 }  // namespace taichi

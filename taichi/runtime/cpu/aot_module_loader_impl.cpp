@@ -3,7 +3,7 @@
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
-#include "taichi/codegen/llvm/codegen_llvm.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 
 namespace taichi {
 namespace lang {
@@ -23,10 +23,10 @@ class AotModuleImpl : public LlvmAotModule {
     TI_ASSERT(arch == Arch::x64 || arch == Arch::arm64);
     auto *tlctx = executor_->get_llvm_context(arch);
 
-    ModuleToFunctionConverter converter{tlctx, executor_};
-
-    return converter.convert(name, loaded.args, std::move(loaded.owned_module),
-                             std::move(loaded.offloaded_task_list));
+    CPUModuleToFunctionConverter converter{tlctx, executor_};
+    std::vector<LLVMCompiledData> data;
+    data.emplace_back(std::move(loaded.offloaded_task_list), std::move(loaded.owned_module));
+    return converter.convert(name, loaded.args, std::move(data));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

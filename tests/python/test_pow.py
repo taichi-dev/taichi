@@ -63,13 +63,16 @@ def _ipow_negative_exp(dt):
         foo(10, -10)
 
 
-@test_utils.test(debug=True, advanced_optimization=False)
+@test_utils.test(debug=True,
+                 advanced_optimization=False,
+                 exclude=[ti.vulkan, ti.opengl, ti.cc])
 def test_ipow_negative_exp_i32():
     _ipow_negative_exp(ti.i32)
 
 
 @test_utils.test(debug=True,
                  advanced_optimization=False,
-                 require=ti.extension.data64)
+                 require=ti.extension.data64,
+                 exclude=[ti.vulkan, ti.opengl, ti.cc])
 def test_ipow_negative_exp_i64():
     _ipow_negative_exp(ti.i64)

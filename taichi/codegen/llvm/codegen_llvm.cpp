@@ -19,19 +19,6 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
 
-// OffloadedTask
-
-OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-}
-
-void OffloadedTask::begin(const std::string &name) {
-  this->name = name;
-}
-
-void OffloadedTask::end() {
-  codegen->offloaded_tasks.push_back(*this);
-}
-
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     CodeGenLLVM *mb,
@@ -940,7 +927,22 @@ void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
 llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
                                       llvm::ArrayRef<llvm::Value *> args) {
   check_func_call_signature(func, args);
+#ifdef TI_LLVM_15
+  llvm::FunctionType *func_ty = nullptr;
+  if (auto *fn = llvm::dyn_cast<llvm::Function>(func)) {
+    func_ty = fn->getFunctionType();
+  } else if (auto *fn_ptr = llvm::dyn_cast<llvm::CallInst>(func)) {
+    auto *fn_ret_ty = fn_ptr->getCalledFunction()->getReturnType();
+    fn_ret_ty = fn_ret_ty->getPointerElementType();
+    func_ty = llvm::cast<llvm::FunctionType>(fn_ret_ty);
+  } else if (auto *fn_global = llvm::dyn_cast<llvm::GlobalVariable>(func)) {
+    func_ty = llvm::cast<llvm::FunctionType>(fn_global->getValueType());
+  }
+  TI_ASSERT(func_ty);
+  return builder->CreateCall(func_ty, func, args);
+#else
   return builder->CreateCall(func, args);
+#endif
 }
 
 llvm::Value *CodeGenLLVM::create_call(std::string func_name,
@@ -950,8 +952,12 @@ llvm::Value *CodeGenLLVM::create_call(std::string func_name,
 }
 
 void CodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
-  builder->CreateStore(builder->CreateAdd(builder->CreateLoad(ptr), value),
-                       ptr);
+  auto original_value = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      value->getType(),
+#endif
+      ptr);
+  builder->CreateStore(builder->CreateAdd(original_value, value), ptr);
 }
 
 void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
@@ -962,6 +968,10 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
   BasicBlock *loop_test =
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
+
+#ifdef TI_LLVM_15
+  auto loop_var_ty = llvm_type(PrimitiveType::i32);
+#endif
 
   auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
   loop_vars_llvm[for_stmt].push_back(loop_var);
@@ -981,11 +991,19 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
     llvm::Value *cond;
     if (!for_stmt->reversed) {
       cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                 builder->CreateLoad(loop_var),
+                                 builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                     loop_var_ty,
+#endif
+                                     loop_var),
                                  llvm_val[for_stmt->end]);
     } else {
       cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SGE,
-                                 builder->CreateLoad(loop_var),
+                                 builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                     loop_var_ty,
+#endif
+                                     loop_var),
                                  llvm_val[for_stmt->begin]);
     }
     builder->CreateCondBr(cond, body, after_loop);
@@ -1110,7 +1128,20 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
 
 void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
+#ifdef TI_LLVM_15
+  // FIXME: get ptr_ty from taichi instead of llvm.
+  llvm::Type *ptr_ty = nullptr;
+  auto *val = llvm_val[stmt->src[0].var];
+  if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
+    ptr_ty = alloc->getAllocatedType();
+  if (!ptr_ty && stmt->src[0].var->element_type().is_pointer()) {
+    ptr_ty = llvm_type(stmt->src[0].var->element_type().ptr_removed());
+  }
+  TI_ASSERT(ptr_ty);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src[0].var]);
+#else
   llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
+#endif
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
@@ -1146,12 +1177,19 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
 
     // Finally store the int64 value to the argument buffer:
     builder->CreateStore(
-        cast_int64, builder->CreateGEP(arguments, {tlctx->get_constant(0),
-                                                   tlctx->get_constant(i)}));
+        cast_int64,
+        builder->CreateGEP(
+#ifdef TI_LLVM_15
+            argument_buffer_size,
+#endif
+            arguments, {tlctx->get_constant(0), tlctx->get_constant(i)}));
   }
 
   args.emplace_back(tlctx->get_constant((int)stmt->args.size()));
   args.emplace_back(builder->CreateGEP(
+#ifdef TI_LLVM_15
+      argument_buffer_size,
+#endif
       arguments, {tlctx->get_constant(0), tlctx->get_constant(0)}));
 
   llvm_val[stmt] = create_call("taichi_assert_format", args);
@@ -1226,6 +1264,9 @@ llvm::Value *CodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
   TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
   return builder->CreateAtomicRMW(bin_op.at(stmt->op_type),
                                   llvm_val[stmt->dest], llvm_val[stmt->val],
+#ifdef TI_LLVM_15
+                                  llvm::MaybeAlign(0),
+#endif
                                   llvm::AtomicOrdering::SequentiallyConsistent);
 }
 
@@ -1244,7 +1285,11 @@ llvm::Value *CodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
-    old_val = builder->CreateLoad(dest);
+    old_val = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        val->getType(),
+#endif
+        dest);
     auto new_val = op(old_val, val);
     dest =
         builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
@@ -1252,6 +1297,9 @@ llvm::Value *CodeGenLLVM::atomic_op_using_cas(
         dest,
         builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
         builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+#ifdef TI_LLVM_15
+        llvm::MaybeAlign(0),
+#endif
         AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
@@ -1293,6 +1341,9 @@ llvm::Value *CodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
   if (op == AtomicOpType::add) {
     return builder->CreateAtomicRMW(
         llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+#ifdef TI_LLVM_15
+        llvm::MaybeAlign(0),
+#endif
         llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
@@ -1495,20 +1546,45 @@ llvm::Value *CodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
   // 3. store `byte_ptr`
   builder->CreateStore(
       byte_ptr, builder->CreateGEP(
+#ifdef TI_LLVM_15
+                    struct_type,
+#endif
                     bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   // 4. store `bit_offset
-  builder->CreateStore(bit_offset,
-                       builder->CreateGEP(bit_ptr, {tlctx->get_constant(0),
-                                                    tlctx->get_constant(1)}));
+  builder->CreateStore(
+      bit_offset,
+      builder->CreateGEP(
+#ifdef TI_LLVM_15
+          struct_type,
+#endif
+          bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
   return bit_ptr;
 }
 
 std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
     llvm::Value *bit_ptr) {
+#ifdef TI_LLVM_15
+  // FIXME: get ptr_ty from taichi instead of llvm.
+  llvm::Type *ptr_ty = nullptr;
+  if (auto *AI = llvm::dyn_cast<llvm::AllocaInst>(bit_ptr))
+    ptr_ty = AI->getAllocatedType();
+  TI_ASSERT(ptr_ty);
+  auto *struct_ty = llvm::cast<llvm::StructType>(ptr_ty);
+  auto byte_ptr = builder->CreateLoad(
+      struct_ty->getElementType(0),
+      builder->CreateGEP(ptr_ty, bit_ptr,
+                         {tlctx->get_constant(0), tlctx->get_constant(0)}));
+  auto bit_offset = builder->CreateLoad(
+      struct_ty->getElementType(1),
+      builder->CreateGEP(ptr_ty, bit_ptr,
+                         {tlctx->get_constant(0), tlctx->get_constant(1)}));
+#else
   auto byte_ptr = builder->CreateLoad(builder->CreateGEP(
       bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
   auto bit_offset = builder->CreateLoad(builder->CreateGEP(
       bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+#endif
+
   return std::make_tuple(byte_ptr, bit_offset);
 }
 
@@ -1526,7 +1602,19 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   TI_ASSERT(parent);
   auto snode = stmt->snode;
   if (snode->type == SNodeType::root) {
+#ifdef TI_LLVM_15
+    // FIXME: get parent_type from taichi instead of llvm.
+    llvm::Type *parent_ty = builder->getInt8Ty();
+    if (auto bit_cast = llvm::dyn_cast<llvm::BitCastInst>(parent)) {
+      parent_ty = bit_cast->getDestTy();
+      if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_ty))
+        parent_ty = ptr_ty->getPointerElementType();
+    }
+    llvm_val[stmt] =
+        builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
+#else
     llvm_val[stmt] = builder->CreateGEP(parent, llvm_val[stmt->input_index]);
+#endif
   } else if (snode->type == SNodeType::dense ||
              snode->type == SNodeType::pointer ||
              snode->type == SNodeType::dynamic ||
@@ -1574,8 +1662,31 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
 
 void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
   if (stmt->is_local_ptr()) {
+#ifdef TI_LLVM_15
+    // FIXME: get ptr_ty from taichi instead of llvm.
+    llvm::Type *ptr_ty = nullptr;
+    auto *val = llvm_val[stmt->origin];
+    if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
+      ptr_ty = alloc->getAllocatedType();
+    else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
+      ptr_ty = gv->getValueType();
+    else if (stmt->origin->is<GlobalTemporaryStmt>()) {
+      auto *tmpo_stmt = stmt->origin->cast<GlobalTemporaryStmt>();
+      if (tmpo_stmt->ret_type->is<TensorType>()) {
+        ptr_ty = tlctx->get_data_type(
+            tmpo_stmt->ret_type->cast<TensorType>()->get_element_type());
+      } else {
+        ptr_ty = tlctx->get_data_type(tmpo_stmt->ret_type.ptr_removed());
+      }
+    }
+    TI_ASSERT(ptr_ty);
+
+    llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
+                                        llvm_val[stmt->offset]);
+#else
     llvm_val[stmt] =
         builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+#endif
   } else {
     auto origin_address = builder->CreatePtrToInt(
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
@@ -1610,9 +1721,9 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   }
 
   auto dt = stmt->ret_type.ptr_removed();
-  auto base = builder->CreateBitCast(
-      llvm_val[stmt->base_ptrs[0]],
-      llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  auto base_ty = tlctx->get_data_type(dt);
+  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptrs[0]],
+                                     llvm::PointerType::get(base_ty, 0));
 
   auto linear_index = tlctx->get_constant(0);
   size_t size_var_index = 0;
@@ -1628,7 +1739,11 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
   TI_ASSERT(size_var_index == num_indices - element_shape.size())
-  llvm_val[stmt] = builder->CreateGEP(base, linear_index);
+  llvm_val[stmt] = builder->CreateGEP(
+#ifdef TI_LLVM_15
+      base_ty,
+#endif
+      base, linear_index);
 }
 
 void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
@@ -1655,8 +1770,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
 
-  current_task = std::make_unique<OffloadedTask>(this);
-  current_task->begin(task_kernel_name);
+  current_task = std::make_unique<OffloadedTask>(task_kernel_name);
 
   for (auto &arg : func->args()) {
     kernel_args.push_back(&arg);
@@ -1708,7 +1822,11 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
         stmt->begin_offset,
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     begin_stmt->accept(this);
-    begin = builder->CreateLoad(llvm_val[begin_stmt.get()]);
+    begin = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        llvm_type(PrimitiveType::i32),
+#endif
+        llvm_val[begin_stmt.get()]);
   }
   if (stmt->const_end) {
     end = tlctx->get_constant(stmt->end_value);
@@ -1717,7 +1835,11 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
         stmt->end_offset,
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     end_stmt->accept(this);
-    end = builder->CreateLoad(llvm_val[end_stmt.get()]);
+    end = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        llvm_type(PrimitiveType::i32),
+#endif
+        llvm_val[end_stmt.get()]);
   }
   return std::tuple(begin, end);
 }
@@ -1790,9 +1912,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *   tls_epilogue()
      *   return
      */
-
-    auto loop_index =
-        create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
+    auto loop_index_ty = llvm::Type::getInt32Ty(*llvm_context);
+    auto loop_index = create_entry_block_alloca(loop_index_ty);
 
     RuntimeObject element("Element", this, builder.get(), get_arg(2));
 
@@ -1856,9 +1977,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       //     goto func_exit
 
       builder->SetInsertPoint(loop_test_bb);
-      auto cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(loop_index), upper_bound);
+      auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                      builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                          loop_index_ty,
+#endif
+                                          loop_index),
+                                      upper_bound);
       builder->CreateCondBr(cond, loop_body_bb, func_exit);
     }
 
@@ -1870,7 +1995,11 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
     create_call(refine, {parent_coordinates, new_coordinates,
-                         builder->CreateLoad(loop_index)});
+                         builder->CreateLoad(
+#ifdef TI_LLVM_15
+                             loop_index_ty,
+#endif
+                             loop_index)});
 
     // For a bit-vectorized loop over a quant array, one more refine step is
     // needed to make final coordinates non-consecutive, since each thread will
@@ -1911,7 +2040,11 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
         leaf_block->type == SNodeType::pointer) {
       // test whether the current voxel is active or not
       auto is_active = call(leaf_block, element.get("element"), "is_active",
-                            {builder->CreateLoad(loop_index)});
+                            {builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                loop_index_ty,
+#endif
+                                loop_index)});
       is_active =
           builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
       exec_cond = builder->CreateAnd(exec_cond, is_active);
@@ -1977,7 +2110,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     for (auto &bb : *patched_struct_for_func) {
       for (llvm::Instruction &inst : bb) {
         auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!alloca || alloca->getAlignment() != 8)
+        if (!alloca ||
+#ifdef TI_LLVM_15
+            alloca->getAlign().value() != 8
+#else
+            alloca->getAlignment() != 8
+#endif
+        )
           continue;
         auto alloca_type = alloca->getAllocatedType();
         auto char_type = llvm::Type::getInt8Ty(*llvm_context);
@@ -2015,12 +2154,32 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
+#ifdef TI_LLVM_15
+    llvm::Type *struct_ty = nullptr;
+    // FIXME: get struct_ty from taichi instead of llvm.
+    if (auto *alloca = llvm::dyn_cast<llvm::AllocaInst>(current_coordinates)) {
+      struct_ty = alloca->getAllocatedType();
+    }
+    TI_ASSERT(struct_ty);
+    auto *GEP =
+        builder->CreateGEP(struct_ty, current_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)});
+    if (stmt->index == 0 && !llvm::isa<llvm::GEPOperator>(GEP))
+      GEP = builder->CreateBitCast(GEP, struct_ty->getPointerTo());
+    llvm_val[stmt] =
+        builder->CreateLoad(llvm::Type::getInt32Ty(*llvm_context), GEP);
+#else
     llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
         current_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
                               tlctx->get_constant(stmt->index)}));
+#endif
   } else {
-    llvm_val[stmt] =
-        builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
+    llvm_val[stmt] = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        llvm::Type::getInt32Ty(*llvm_context),
+#endif
+        loop_vars_llvm[stmt->loop][stmt->index]);
   }
 }
 
@@ -2041,10 +2200,30 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
     TI_ASSERT(block_corner_coordinates);
+#ifdef TI_LLVM_15
+    // Make sure physical_coordinate_ty matches
+    // struct PhysicalCoordinates {
+    //   i32 val[taichi_max_num_indices];
+    // };
+    TI_ASSERT(physical_coordinate_ty->isStructTy());
+    auto physical_coordinate_ty_as_struct =
+        llvm::cast<llvm::StructType>(physical_coordinate_ty);
+    TI_ASSERT(physical_coordinate_ty_as_struct);
+    TI_ASSERT(physical_coordinate_ty_as_struct->getNumElements() == 1);
+    auto val_ty = physical_coordinate_ty_as_struct->getElementType(0);
+    TI_ASSERT(val_ty->isArrayTy());
+    auto val_ty_as_array = llvm::cast<llvm::ArrayType>(val_ty);
+    llvm_val[stmt] = builder->CreateLoad(
+        val_ty_as_array->getElementType(),
+        builder->CreateGEP(physical_coordinate_ty, block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
+#else
     llvm_val[stmt] = builder->CreateLoad(
         builder->CreateGEP(block_corner_coordinates,
                            {tlctx->get_constant(0), tlctx->get_constant(0),
                             tlctx->get_constant(stmt->index)}));
+#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -2072,7 +2251,11 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
 void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
   TI_ASSERT(stmt->width() == 1);
-  auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
+  auto ptr = builder->CreateGEP(
+#ifdef TI_LLVM_15
+      llvm::Type::getInt8Ty(*llvm_context),
+#endif
+      base, tlctx->get_constant(stmt->offset));
   auto ptr_type = llvm::PointerType::get(
       tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
@@ -2083,6 +2266,9 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   auto base = bls_buffer;
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
+#ifdef TI_LLVM_15
+      base->getValueType(),
+#endif
       base, {tlctx->get_constant(0), llvm_val[stmt->offset]});
   auto ptr_type = llvm::PointerType::get(
       tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
@@ -2141,29 +2327,42 @@ void CodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
-  primal_ptr = builder->CreateBitCast(
-      primal_ptr,
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
-  llvm_val[stmt] = builder->CreateLoad(primal_ptr);
+  auto primal_ty = tlctx->get_data_type(stmt->ret_type);
+  primal_ptr =
+      builder->CreateBitCast(primal_ptr, llvm::PointerType::get(primal_ty, 0));
+  llvm_val[stmt] = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      primal_ty,
+#endif
+      primal_ptr);
 }
 
 void CodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
-  adjoint = builder->CreateBitCast(
-      adjoint, llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
-  llvm_val[stmt] = builder->CreateLoad(adjoint);
+  auto adjoint_ty = tlctx->get_data_type(stmt->ret_type);
+  adjoint =
+      builder->CreateBitCast(adjoint, llvm::PointerType::get(adjoint_ty, 0));
+  llvm_val[stmt] = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      adjoint_ty,
+#endif
+      adjoint);
 }
 
 void CodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
-  adjoint_ptr = builder->CreateBitCast(
-      adjoint_ptr,
-      llvm::PointerType::get(tlctx->get_data_type(stack->ret_type), 0));
-  auto old_val = builder->CreateLoad(adjoint_ptr);
+  auto adjoint_ty = tlctx->get_data_type(stack->ret_type);
+  adjoint_ptr = builder->CreateBitCast(adjoint_ptr,
+                                       llvm::PointerType::get(adjoint_ty, 0));
+  auto old_val = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      adjoint_ty,
+#endif
+      adjoint_ptr);
   TI_ASSERT(is_real(stmt->v->ret_type));
   auto new_val = builder->CreateFAdd(old_val, llvm_val[stmt->v]);
   builder->CreateStore(new_val, adjoint_ptr);
@@ -2330,14 +2529,14 @@ void CodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
+LLVMCompiledData CodeGenLLVM::run_compilation() {
   const auto &config = prog->config;
   std::string kernel_key =
       get_hashed_offline_cache_key(&kernel->program->config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
-    CompiledData res;
+    LLVMCompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
@@ -2356,15 +2555,15 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
     cache_module(kernel_key);
   }
 
-  CompiledData res;
-  res.offloaded_tasks = std::move(this->offloaded_tasks);
-  res.llvm_module = std::move(this->module);
+  LLVMCompiledData res;
+  res.tasks = std::move(this->offloaded_tasks);
+  res.module = std::move(this->module);
   return res;
 }
 
 bool CodeGenLLVM::maybe_read_compilation_from_cache(
     const std::string &kernel_key,
-    CompiledData *data) {
+    LLVMCompiledData *data) {
   const auto &config = prog->config;
   auto reader =
       LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
@@ -2381,14 +2580,13 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   }
   this->module = std::move(cache_data.owned_module);
   for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(this);
-    t.name = std::move(task.name);
+    auto &t = this->offloaded_tasks.emplace_back(task.name);
     t.block_dim = task.block_dim;
     t.grid_dim = task.grid_dim;
   }
   kernel->set_from_offline_cache();
-  data->offloaded_tasks = std::move(this->offloaded_tasks);
-  data->llvm_module = std::move(this->module);
+  data->tasks = std::move(this->offloaded_tasks);
+  data->module = std::move(this->module);
   return true;
 }
 
@@ -2397,8 +2595,8 @@ FunctionType CodeGenLLVM::gen() {
 
   ModuleToFunctionConverter converter{
       tlctx, get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(kernel, std::move(compiled_res.llvm_module),
-                           std::move(compiled_res.offloaded_tasks));
+  return converter.convert(kernel, std::move(compiled_res.module),
+                           std::move(compiled_res.tasks));
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2461,7 +2659,11 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
     result_buffer = builder->CreateAlloca(tlctx->get_data_type<uint64>());
     call("RuntimeContext_set_result_buffer", new_ctx, result_buffer);
     create_call(llvm_func, {new_ctx});
-    auto *ret_val_u64 = builder->CreateLoad(result_buffer);
+    auto *ret_val_u64 = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        builder->getInt64Ty(),
+#endif
+        result_buffer);
     llvm_val[stmt] = bitcast_from_u64(ret_val_u64, stmt->ret_type);
   } else {
     create_call(llvm_func, {new_ctx});
@@ -2469,14 +2671,7 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
-  std::vector<OffloadedTaskCache> offloaded_task_list;
-  for (auto &task : offloaded_tasks) {
-    auto &task_cache = offloaded_task_list.emplace_back();
-    task_cache.name = task.name;
-    task_cache.block_dim = task.block_dim;
-    task_cache.grid_dim = task.grid_dim;
-  }
+  std::vector<OffloadedTask> offloaded_task_list = offloaded_tasks;
   get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
                                        infer_launch_args(kernel),
                                        std::move(offloaded_task_list));

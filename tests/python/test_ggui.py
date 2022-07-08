@@ -296,3 +296,27 @@ def test_imgui():
 @test_utils.test(arch=supported_archs)
 def test_exit_without_showing():
     window = ti.ui.Window("Taichi", (256, 256), show_window=False)
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_get_camera_view_and_projection_matrix():
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 0, 3)
+    camera.lookat(0, 0, 0)
+
+    scene.set_camera(camera)
+
+    view_matrix = camera.get_view_matrix()
+    projection_matrix = camera.get_projection_matrix(1080 / 720)
+
+    for i in range(4):
+        assert (abs(view_matrix[i, i] - 1) <= 1e-5)
+    assert (abs(view_matrix[3, 2] + 3) <= 1e-5)
+
+    assert (abs(projection_matrix[0, 0] - 1.6094756) <= 1e-5)
+    assert (abs(projection_matrix[1, 1] - 2.4142134) <= 1e-5)
+    assert (abs(projection_matrix[2, 2] - 1.0001000e-4) <= 1e-5)
+    assert (abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5)
+    assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)

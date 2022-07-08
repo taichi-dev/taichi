@@ -42,8 +42,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     CUDAModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};
 
-    return converter.convert(this->kernel, std::move(compiled_res.llvm_module),
-                             std::move(compiled_res.offloaded_tasks));
+    return converter.convert(this->kernel, std::move(compiled_res.module),
+                             std::move(compiled_res.tasks));
   }
 
   llvm::Value *create_print(std::string tag,
@@ -65,6 +65,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto value_arr = builder->CreateAlloca(stype);
     for (int i = 0; i < values.size(); i++) {
       auto value_ptr = builder->CreateGEP(
+#ifdef TI_LLVM_15
+          stype,
+#endif
           value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(values[i], value_ptr);
     }
@@ -324,8 +327,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     // Use the value from the memory that atomicCAS operates on to initialize
     // cas_old_output.
-    llvm::Value *cas_old_output =
-        builder->CreateLoad(atomic_memory_address, "cas_old_output");
+    llvm::Value *cas_old_output = builder->CreateLoad(
+#ifdef TI_LLVM_15
+        atomic_type,
+#endif
+        atomic_memory_address, "cas_old_output");
     builder->CreateStore(cas_old_output, cas_old_output_address);
 
     llvm::BasicBlock *loop_body_bb =
@@ -338,21 +344,35 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     // loop body for one atomicCAS
     {
       // Use cas_old_output to initialize cas_new_output.
-      cas_old_output =
-          builder->CreateLoad(cas_old_output_address, "cas_old_output");
+      cas_old_output = builder->CreateLoad(
+#ifdef TI_LLVM_15
+          atomic_type,
+#endif
+          cas_old_output_address, "cas_old_output");
       builder->CreateStore(cas_old_output, cas_new_output_address);
 
-      auto binop_output = op(builder->CreateLoad(binop_output_address), val);
+      auto binop_output = op(builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                 atomic_type,
+#endif
+                                 binop_output_address),
+                             val);
       builder->CreateStore(binop_output, binop_output_address);
 
-      llvm::Value *cas_new_output =
-          builder->CreateLoad(cas_new_output_address, "cas_new_output");
+      llvm::Value *cas_new_output = builder->CreateLoad(
+#ifdef TI_LLVM_15
+          atomic_type,
+#endif
+          cas_new_output_address, "cas_new_output");
 
       // Emit code to perform the atomicCAS operation
       // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,
       //                                       cas_new_output);
       llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
           atomic_memory_address, cas_old_output, cas_new_output,
+#ifdef TI_LLVM_15
+          llvm::MaybeAlign(0),
+#endif
           llvm::AtomicOrdering::SequentiallyConsistent,
           llvm::AtomicOrdering::SequentiallyConsistent);
 
@@ -427,8 +447,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           llvm::BasicBlock::Create(*llvm_context, "loop_body", func);
       auto func_exit =
           llvm::BasicBlock::Create(*llvm_context, "func_exit", func);
-      auto loop_index =
-          create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
+      auto i32_ty = llvm::Type::getInt32Ty(*llvm_context);
+      auto loop_index = create_entry_block_alloca(i32_ty);
       llvm::Value *thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
       llvm::Value *block_dim = builder->CreateIntrinsic(
@@ -439,7 +459,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       {
         builder->SetInsertPoint(loop_test_bb);
         auto cond = builder->CreateICmp(
-            llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+            llvm::CmpInst::Predicate::ICMP_SLT,
+            builder->CreateLoad(
+#ifdef TI_LLVM_15
+                i32_ty,
+#endif
+                loop_index),
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -452,9 +477,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(
-            builder->CreateAdd(builder->CreateLoad(loop_index), block_dim),
-            loop_index);
+        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(
+#ifdef TI_LLVM_15
+                                                    i32_ty,
+#endif
+                                                    loop_index),
+                                                block_dim),
+                             loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
@@ -483,7 +512,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -492,7 +521,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = 1;
       current_task->block_dim = 1;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     {
@@ -501,7 +530,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
   }
@@ -630,7 +659,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->block_dim = stmt->block_dim;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
-      current_task->end();
+      offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
     }
     current_offload = nullptr;

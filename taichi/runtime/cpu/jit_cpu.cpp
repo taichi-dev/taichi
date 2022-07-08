@@ -13,7 +13,6 @@
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
-#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
@@ -24,7 +23,6 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Error.h"
@@ -34,6 +32,15 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
+
+#ifdef TI_LLVM_15
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/Host.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#endif
+
 #endif
 
 #include "taichi/lang_util.h"
@@ -102,6 +109,33 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
+#ifdef TI_LLVM_15
+  JITSessionCPU(TaichiLLVMContext *tlctx,
+                std::unique_ptr<ExecutorProcessControl> EPC,
+                CompileConfig *config,
+                JITTargetMachineBuilder JTMB,
+                DataLayout DL)
+      : JITSession(tlctx, config),
+        es_(std::move(EPC)),
+        object_layer_(es_,
+                      [&]() {
+                        auto smgr = std::make_unique<SectionMemoryManager>();
+                        memory_manager_ = smgr.get();
+                        return smgr;
+                      }),
+        compile_layer_(es_,
+                       object_layer_,
+                       std::make_unique<ConcurrentIRCompiler>(JTMB)),
+        dl_(DL),
+        mangle_(es_, this->dl_),
+        module_counter_(0),
+        memory_manager_(nullptr) {
+    if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
+      object_layer_.setOverrideObjectFlagsWithResponsibilityFlags(true);
+      object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
+    }
+  }
+#else
   JITSessionCPU(TaichiLLVMContext *tlctx,
                 CompileConfig *config,
                 JITTargetMachineBuilder JTMB,
@@ -125,11 +159,16 @@ class JITSessionCPU : public JITSession {
       object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
     }
   }
+#endif
 
   ~JITSessionCPU() override {
     std::lock_guard<std::mutex> _(mut_);
     if (memory_manager_)
       memory_manager_->deregisterEHFrames();
+#ifdef TI_LLVM_15
+    if (auto Err = es_.endSession())
+      es_.reportError(std::move(Err));
+#endif
   }
 
   DataLayout get_data_layout() override {
@@ -145,7 +184,13 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(M);
     global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut_);
+#ifdef TI_LLVM_15
+    auto dylib_expect = es_.createJITDylib(fmt::format("{}", module_counter_));
+    TI_ASSERT(dylib_expect);
+    auto &dylib = dylib_expect.get();
+#else
     auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_));
+#endif
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
@@ -209,7 +254,10 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
+#ifndef TI_LLVM_15
+  // PrintMachineCode is removed in https://reviews.llvm.org/D83275.
   options.PrintMachineCode = false;
+#endif
   if (this->config_->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
@@ -224,7 +272,10 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
+#ifndef TI_LLVM_15
+  // StackAlignmentOverride is removed in https://reviews.llvm.org/D103048.
   options.StackAlignmentOverride = 0;
+#endif
 
   legacy::FunctionPassManager function_pass_manager(module);
   legacy::PassManager module_pass_manager;
@@ -286,8 +337,15 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
     Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
+#ifdef TI_LLVM_15
+  auto EPC = SelfExecutorProcessControl::Create();
+  TI_ASSERT(EPC);
+  return std::make_unique<JITSessionCPU>(tlctx, std::move(*EPC), config,
+                                         target_info.first, target_info.second);
+#else
   return std::make_unique<JITSessionCPU>(tlctx, config, target_info.first,
                                          target_info.second);
+#endif
 }
 
 TLANG_NAMESPACE_END

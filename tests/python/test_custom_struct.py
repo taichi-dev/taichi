@@ -205,11 +205,11 @@ def test_struct_type():
 
 
 @test_utils.test(exclude=ti.cc)
-def test_struct_class():
+def test_dataclass():
     # example struct class type
     vec3f = ti.types.vector(3, float)
 
-    @ti.struct_class
+    @ti.dataclass
     class Sphere:
         center: vec3f
         radius: ti.f32

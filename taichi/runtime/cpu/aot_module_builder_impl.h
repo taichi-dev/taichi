@@ -15,7 +15,7 @@ class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
   }
 
  private:
-  CodeGenLLVM::CompiledData compile_kernel(Kernel *kernel) override;
+  LLVMCompiledData compile_kernel(Kernel *kernel) override;
 };
 
 }  // namespace cpu

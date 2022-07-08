@@ -454,7 +454,7 @@ def init(arch=None,
 
     impl._root_fb = _snode.FieldsBuilder()
 
-    if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
+    if cfg.debug:
         impl.get_runtime()._register_signal_handlers()
 
     # Recover the current working directory (https://github.com/taichi-dev/taichi/issues/4811)

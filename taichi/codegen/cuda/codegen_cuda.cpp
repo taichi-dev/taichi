@@ -525,6 +525,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         {data_ptr, tlctx->get_constant(data_type_size(dtype))});
   }
 
+  llvm::Value *load_quant_int_with_intrinsic(llvm::Value *ptr, Type *physical_type, QuantIntType *qit) {
+    auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
+    auto physical_value = create_intrinsic_load(physical_type, byte_ptr);
+    return extract_quant_int(physical_value, bit_offset, qit);
+  }
+
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->src->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
@@ -538,17 +544,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             ptr_type->is_bit_pointer()) {
           // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
+          auto physical_type = get_ch->input_snode->physical_type;
           if (auto qit = val_type->cast<QuantIntType>()) {
-            dtype = get_ch->input_snode->physical_type;
-            auto [data_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->src]);
-            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
-            auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_quant_int(data, bit_offset, qit);
+            llvm_val[stmt] = load_quant_int_with_intrinsic(llvm_val[stmt->src], physical_type, qit);
+          } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+            auto digits = load_quant_int_with_intrinsic(llvm_val[stmt->src], physical_type, qfxt->get_digits_type()->as<QuantIntType>());
+            llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
           } else {
             // TODO: support __ldg
-            TI_ASSERT(val_type->is<QuantFixedType>() ||
-                      val_type->is<QuantFloatType>());
-            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
+            TI_ASSERT(val_type->is<QuantFloatType>());
+            llvm_val[stmt] = load_quant_float(llvm_val[stmt->src], get_ch->output_snode, val_type->as<QuantFloatType>());
           }
         } else {
           // Byte pointer case.

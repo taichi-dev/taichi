@@ -1366,14 +1366,17 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   TI_ASSERT(width == 1);
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
+    TI_ASSERT(stmt->src->is<GetChStmt>());
     auto val_type = ptr_type->get_pointee_type();
     if (auto qit = val_type->cast<QuantIntType>()) {
       llvm_val[stmt] = load_quant_int(llvm_val[stmt->src], qit);
+    } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+      auto digits = load_quant_int(llvm_val[stmt->src],
+                                   qfxt->get_digits_type()->as<QuantIntType>());
+      llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
     } else {
-      TI_ASSERT(val_type->is<QuantFixedType>() ||
-                val_type->is<QuantFloatType>());
-      TI_ASSERT(stmt->src->is<GetChStmt>());
-      llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
+      TI_ASSERT(val_type->is<QuantFloatType>());
+      llvm_val[stmt] = load_quant_float(llvm_val[stmt->src], stmt->src->as<GetChStmt>()->output_snode, val_type->as<QuantFloatType>());
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

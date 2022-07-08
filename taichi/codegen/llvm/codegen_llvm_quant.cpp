@@ -507,6 +507,16 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   return builder->CreateFMul(cast, s);
 }
 
+llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr, SNode *digits_snode, QuantFloatType *qflt) {
+  auto exponent_snode = digits_snode->exp_snode;
+  // Compute the bit pointer of the exponent bits.
+  TI_ASSERT(digits_snode->parent == exponent_snode->parent);
+  auto exponent_bit_ptr = offset_bit_ptr(
+      digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
+  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt,
+                          digits_snode->owns_shared_exponent);
+}
+
 llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
                                            llvm::Value *exponent_bit_ptr,
                                            QuantFloatType *qflt,
@@ -614,28 +624,6 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_float(
                                   llvm::Type::getFloatTy(*llvm_context));
   } else {
     TI_NOT_IMPLEMENTED;
-  }
-}
-
-llvm::Value *CodeGenLLVM::load_quant_fixed_or_quant_float(Stmt *ptr_stmt) {
-  auto ptr = ptr_stmt->as<GetChStmt>();
-  auto load_type = ptr->ret_type->as<PointerType>()->get_pointee_type();
-  if (auto qflt = load_type->cast<QuantFloatType>()) {
-    TI_ASSERT(ptr->width() == 1);
-    auto digits_bit_ptr = llvm_val[ptr];
-    auto digits_snode = ptr->output_snode;
-    auto exponent_snode = digits_snode->exp_snode;
-    // Compute the bit pointer of the exponent bits.
-    TI_ASSERT(digits_snode->parent == exponent_snode->parent);
-    auto exponent_bit_ptr = offset_bit_ptr(
-        digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
-    return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt,
-                            digits_snode->owns_shared_exponent);
-  } else {
-    auto qfxt = load_type->as<QuantFixedType>();
-    auto digits = load_quant_int(llvm_val[ptr],
-                                 qfxt->get_digits_type()->as<QuantIntType>());
-    return reconstruct_quant_fixed(digits, qfxt);
   }
 }
 

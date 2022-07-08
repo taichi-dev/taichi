@@ -783,7 +783,7 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
@@ -812,7 +812,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -857,7 +857,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -1116,7 +1116,7 @@ class MakeDual : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::asin) {

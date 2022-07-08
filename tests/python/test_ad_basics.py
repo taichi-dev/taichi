@@ -54,6 +54,32 @@ def grad_test(tifunc, npfunc=None):
     assert x.grad[0] == test_utils.approx(grad(npfunc)(v), rel=1e-4)
 
 
+def grad_test_fwd(tifunc, npfunc=None):
+    npfunc = npfunc or tifunc
+
+    print(
+        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}'
+    )
+    x = ti.field(ti.lang.impl.current_cfg().default_fp)
+    y = ti.field(ti.lang.impl.current_cfg().default_fp)
+
+    ti.root.dense(ti.i, 1).place(x, x.dual, y, y.dual)
+
+    @ti.kernel
+    def func():
+        for i in x:
+            y[i] = tifunc(x[i])
+
+    v = 0.234
+
+    x[0] = v
+    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+        func()
+
+    assert y[0] == test_utils.approx(npfunc(v), rel=1e-4)
+    assert y.dual[0] == test_utils.approx(grad(npfunc)(v), rel=1e-4)
+
+
 @if_has_autograd
 @test_utils.test()
 def test_size1():
@@ -80,6 +106,7 @@ def test_size1():
 @test_utils.test()
 def test_poly(tifunc):
     grad_test(tifunc)
+    grad_test_fwd(tifunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [

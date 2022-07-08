@@ -93,6 +93,7 @@ def test_size1():
 
 @pytest.mark.parametrize('tifunc', [
     lambda x: x,
+    lambda x: ti.abs(-x),
     lambda x: -x,
     lambda x: x * x,
     lambda x: x**2,
@@ -103,7 +104,7 @@ def test_size1():
     lambda x: (x - 3) * (x - 1) + x * x,
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_poly(tifunc):
     grad_test(tifunc)
     grad_test_fwd(tifunc)
@@ -117,9 +118,10 @@ def test_poly(tifunc):
     (lambda x: ti.asin(x), lambda x: np.arcsin(x)),
 ])
 @if_has_autograd
-@test_utils.test(exclude=[ti.vulkan, ti.dx11])
+@test_utils.test(exclude=[ti.cc])
 def test_trigonometric(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc', [
@@ -128,9 +130,10 @@ def test_trigonometric(tifunc, npfunc):
     lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_frac(tifunc):
     grad_test(tifunc)
+    grad_test_fwd(tifunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -139,9 +142,10 @@ def test_frac(tifunc):
     (lambda x: ti.log(x), lambda x: np.log(x)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_unary(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [

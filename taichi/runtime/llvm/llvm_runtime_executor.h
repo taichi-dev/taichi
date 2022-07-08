@@ -63,9 +63,9 @@ class LlvmRuntimeExecutor {
 
   void prepare_runtime_context(RuntimeContext *ctx);
 
-  void synchronize();
-
   Device *get_compute_device();
+
+  void synchronize();
 
  private:
   /* ----------------------- */

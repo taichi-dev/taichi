@@ -366,7 +366,7 @@ def round(x, dtype=None):  # pylint: disable=redefined-builtin
             set to `None` the retuned value will have the same type with `x`.
 
     Returns:
-        The nearest integer of `x`.
+        The nearest integer of `x`, with return value type `dtype`.
 
     Example::
 
@@ -399,7 +399,7 @@ def floor(x, dtype=None):
             set to `None` the retuned value will have the same type with `x`.
 
     Returns:
-        The floor of each element in `x`, with specified data type.
+        The floor of each element in `x`, with return value type `dtype`.
 
     Example::
         >>> @ti.kernel
@@ -432,7 +432,7 @@ def ceil(x, dtype=None):
             set to `None` the retuned value will have the same type with `x`.
 
     Returns:
-        The ceiling of each element in `x`, with specified dtype.
+        The ceiling of each element in `x`, with return value type `dtype`.
 
     Example::
 

@@ -3,7 +3,6 @@ from tests import test_utils
 
 
 def _test_floor_ceil_round(dt):
-    ti.init(default_fp=dt)
 
     @ti.kernel
     def make_tests():
@@ -42,6 +41,6 @@ def test_floor_ceil_round_f32():
     _test_floor_ceil_round(ti.f32)
 
 
-@test_utils.test(default_fp=ti.f64)
+@test_utils.test(default_fp=ti.f64, require=ti.extension.data64)
 def test_floor_ceil_round_f64():
     _test_floor_ceil_round(ti.f64)

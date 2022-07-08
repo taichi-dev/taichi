@@ -115,6 +115,8 @@ struct CompileConfig {
   int offline_cache_max_size_of_files{1024 * 1024};  // bytes
   double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
 
+  int num_compile_threads{0};
+
   CompileConfig();
 };
 

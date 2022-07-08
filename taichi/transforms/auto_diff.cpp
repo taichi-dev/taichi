@@ -706,7 +706,7 @@ class MakeAdjoint : public ADTransform {
       return;  // primal may be int variable
     if (alloca_->is<AdStackAllocaStmt>()) {
       auto alloca = alloca_->cast<AdStackAllocaStmt>();
-      if (is_grad_applicable_dtype(alloca->ret_type)) {
+      if (is_real(alloca->ret_type)) {
         insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
@@ -719,7 +719,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!is_grad_applicable_dtype(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type)) {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
@@ -951,7 +951,7 @@ class MakeAdjoint : public ADTransform {
   // Equivalent to AdStackLoadTopStmt when no stack is needed
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    if (is_grad_applicable_dtype(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
   }
 
@@ -965,7 +965,7 @@ class MakeAdjoint : public ADTransform {
     // iteration should be cleared after this iteration has been done
     // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of
-    if (is_grad_applicable_dtype(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
@@ -973,7 +973,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   void visit(AdStackLoadTopStmt *stmt) override {
-    if (is_grad_applicable_dtype(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
@@ -1087,7 +1087,7 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!is_grad_applicable_dtype(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type)) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1206,7 +1206,7 @@ class MakeDual : public ADTransform {
     // If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of, i.e, its history should
     // be cleared
-    if (is_grad_applicable_dtype(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(dual(stmt->dest), zero);

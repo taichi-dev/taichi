@@ -117,14 +117,14 @@ void make_lazy_grad(SNode *snode,
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
     if (is_adjoint) {
-      if (c->type == SNodeType::place && c->is_primal() &&
-          is_grad_applicable_dtype(c->dt) && !c->has_adjoint()) {
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+          !c->has_adjoint()) {
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
       }
     }
     if (is_dual) {
-      if (c->type == SNodeType::place && c->is_primal() &&
-          is_grad_applicable_dtype(c->dt) && !c->has_dual()) {
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+          !c->has_dual()) {
         new_grads.push_back(snode_to_exprs->at(c.get())->dual);
       }
     }

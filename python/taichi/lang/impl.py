@@ -524,7 +524,7 @@ def create_field_member(dtype, name, needs_grad):
 
     x_grad = None
     x_dual = None
-    if _ti_core.is_grad_applicable_dtype(dtype):
+    if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)

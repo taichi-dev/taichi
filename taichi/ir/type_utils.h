@@ -127,10 +127,6 @@ inline DataType to_unsigned(DataType dt) {
     return PrimitiveType::unknown;
 }
 
-inline bool is_grad_applicable_dtype(DataType dt) {
-  return is_real(dt);
-}
-
 inline TypedConstant get_max_value(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return {dt, std::numeric_limits<int8>::max()};

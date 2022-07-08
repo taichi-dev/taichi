@@ -280,7 +280,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                  llvm::Value *bit_offset,
                                  QuantIntType *qit);
 
-  llvm::Value *load_quant_fixed(llvm::Value *ptr, QuantFixedType *qfxt, Type *physical_type, bool should_cache_as_read_only);
+  llvm::Value *load_quant_fixed(llvm::Value *ptr,
+                                QuantFixedType *qfxt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
 
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);

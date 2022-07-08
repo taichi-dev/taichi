@@ -467,11 +467,13 @@ llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr,
                                          Type *physical_type,
                                          bool should_cache_as_read_only) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-  auto physical_value = should_cache_as_read_only ? create_intrinsic_load(physical_type, byte_ptr) : builder->CreateLoad(
+  auto physical_value = should_cache_as_read_only
+                            ? create_intrinsic_load(physical_type, byte_ptr)
+                            : builder->CreateLoad(
 #ifdef TI_LLVM_15
-      llvm_type(physical_type),
+                                  llvm_type(physical_type),
 #endif
-      byte_ptr);
+                                  byte_ptr);
   return extract_quant_int(physical_value, bit_offset, qit);
 }
 
@@ -503,8 +505,12 @@ llvm::Value *CodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
                                 qit->get_is_signed());
 }
 
-llvm::Value *CodeGenLLVM::load_quant_fixed(llvm::Value *ptr, QuantFixedType *qfxt, Type *physical_type, bool should_cache_as_read_only) {
-  auto digits = load_quant_int(ptr, qfxt->get_digits_type()->as<QuantIntType>(), physical_type, should_cache_as_read_only);
+llvm::Value *CodeGenLLVM::load_quant_fixed(llvm::Value *ptr,
+                                           QuantFixedType *qfxt,
+                                           Type *physical_type,
+                                           bool should_cache_as_read_only) {
+  auto digits = load_quant_int(ptr, qfxt->get_digits_type()->as<QuantIntType>(),
+                               physical_type, should_cache_as_read_only);
   return reconstruct_quant_fixed(digits, qfxt);
 }
 
@@ -533,7 +539,8 @@ llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
   TI_ASSERT(digits_snode->parent == exponent_snode->parent);
   auto exponent_bit_ptr = offset_bit_ptr(
       digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
-  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt, physical_type, should_cache_as_read_only,
+  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt, physical_type,
+                          should_cache_as_read_only,
                           digits_snode->owns_shared_exponent);
 }
 
@@ -543,7 +550,9 @@ llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
                                            Type *physical_type,
                                            bool should_cache_as_read_only,
                                            bool shared_exponent) {
-  auto digits = load_quant_int(digits_bit_ptr, qflt->get_digits_type()->as<QuantIntType>(), physical_type, should_cache_as_read_only);
+  auto digits = load_quant_int(digits_bit_ptr,
+                               qflt->get_digits_type()->as<QuantIntType>(),
+                               physical_type, should_cache_as_read_only);
   auto exponent_val = load_quant_int(
       exponent_bit_ptr, qflt->get_exponent_type()->as<QuantIntType>(),
       physical_type, should_cache_as_read_only);

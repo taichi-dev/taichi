@@ -281,7 +281,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 SNode *digits_snode,
-                                QuantFloatType *qflt);
+                                QuantFloatType *qflt,
+                                Type *physical_type);
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 llvm::Value *exponent_bit_ptr,

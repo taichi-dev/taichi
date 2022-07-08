@@ -519,13 +519,14 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
 
 llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
                                            SNode *digits_snode,
-                                           QuantFloatType *qflt) {
+                                           QuantFloatType *qflt,
+                                           Type *physical_type) {
   auto exponent_snode = digits_snode->exp_snode;
   // Compute the bit pointer of the exponent bits.
   TI_ASSERT(digits_snode->parent == exponent_snode->parent);
   auto exponent_bit_ptr = offset_bit_ptr(
       digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
-  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt,
+  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt, physical_type,
                           digits_snode->owns_shared_exponent);
 }
 

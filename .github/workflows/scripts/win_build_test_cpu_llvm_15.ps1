@@ -40,7 +40,7 @@ $env:LLVM_DIR = "C:\\taichi_llvm_15"
 #TODO enable build test
 $env:TAICHI_CMAKE_ARGS = "-DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF"
 
-$env:TAICHI_CMAKE_ARGS += "-DTI_LLVM_15:BOOL=ON"
+$env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
 
 #TODO: For now we need to hard code the compiler path from build tools 2019
 $env:TAICHI_CMAKE_ARGS +=' -DCMAKE_CXX_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang++.exe -DCMAKE_C_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang.exe'

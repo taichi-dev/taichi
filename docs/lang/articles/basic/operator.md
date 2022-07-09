@@ -159,15 +159,17 @@ ti.sqrt(x)
 ti.rsqrt(x)  # A fast version for `1 / ti.sqrt(x)`.
 ti.exp(x)
 ti.log(x)
-ti.round(x)
-ti.floor(x)
-ti.ceil(x)
+ti.round(x, dtype=None)
+ti.floor(x, dtype=None)
+ti.ceil(x, dtype=None)
 ti.sum(x)
 ti.max(x, y, ...)
 ti.min(x, y, ...)
 ti.abs(x)  # Same as `abs(x)`
 ti.pow(x, y)  # Same as `pow(x, y)` and `x ** y`
 ```
+
+The `dtype` argument in `round`, `floor` and `ceil` functions specifies the data type of the returned value. The default `None` means the returned type is the same as input `x`.
 
 ### Builtin-alike functions
 

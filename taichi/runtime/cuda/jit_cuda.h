@@ -28,12 +28,9 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
+#include "taichi/program/context.h"
 #include "taichi/system/timer.h"
 #include "taichi/util/file_sequence_writer.h"
-
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
 

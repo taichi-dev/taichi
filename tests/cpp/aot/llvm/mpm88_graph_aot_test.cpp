@@ -8,10 +8,7 @@
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-
-#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 using namespace taichi;
 using namespace lang;

@@ -9,9 +9,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/lang_util.h"
-#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 #include "taichi/program/async_utils.h"
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/state_flow_graph.h"

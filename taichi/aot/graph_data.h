@@ -4,9 +4,7 @@
 #include <unordered_map>
 #include "taichi/ir/type.h"
 #include "taichi/aot/module_data.h"
-#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g);

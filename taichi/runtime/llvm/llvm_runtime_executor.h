@@ -9,14 +9,10 @@
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/compile_config.h"
-
+#include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/memory_pool.h"
-
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 namespace taichi {
 namespace lang {

@@ -3,7 +3,7 @@
 // Use relative path here for runtime compilation
 #include "taichi/inc/constants.h"
 
-#if defined(TI_RUNTIME_HOST)
+#ifdefined __cplusplus
 namespace taichi {
 namespace lang {
 #endif
@@ -49,7 +49,7 @@ struct RuntimeContext {
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 
-#if defined(TI_RUNTIME_HOST)
+#ifdefined __cplusplus
   template <typename T>
   T get_arg(int i) {
     return taichi_union_cast_with_different_sizes<T>(args[i]);
@@ -112,7 +112,7 @@ struct RuntimeContext {
 #endif
 };
 
-#if defined(TI_RUNTIME_HOST)
+#ifdefined __cplusplus
 }  // namespace lang
 }  // namespace taichi
 #endif

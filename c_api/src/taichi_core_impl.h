@@ -3,9 +3,7 @@
 #include "taichi/aot/module_loader.h"
 #include "taichi/rhi/device.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
-#define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 class Runtime;
 class Context;

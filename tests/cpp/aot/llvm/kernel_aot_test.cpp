@@ -1,16 +1,13 @@
 #include "gtest/gtest.h"
 
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/context.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 namespace taichi {
 namespace lang {

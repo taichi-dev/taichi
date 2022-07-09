@@ -4,14 +4,12 @@
 #include <memory>
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
-#include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/program/compile_config.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/parallel_executor.h"
-#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 namespace llvm {
 class Module;

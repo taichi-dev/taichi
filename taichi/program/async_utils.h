@@ -7,9 +7,7 @@
 
 #include "taichi/ir/snode.h"
 #include "taichi/ir/offloaded_task_type.h"
-#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
 

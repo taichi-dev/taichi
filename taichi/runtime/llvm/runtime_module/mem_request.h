@@ -3,7 +3,7 @@
 // Use relative path here for runtime compilation
 #include "taichi/inc/constants.h"
 
-#if defined(TI_RUNTIME_HOST)
+#ifdefined __cplusplus
 namespace taichi {
 namespace lang {
 #endif
@@ -23,7 +23,7 @@ struct MemRequestQueue {
   int processed;
 };
 
-#if defined(TI_RUNTIME_HOST)
+#ifdefined __cplusplus
 }  // namespace lang
 }  // namespace taichi
 #endif

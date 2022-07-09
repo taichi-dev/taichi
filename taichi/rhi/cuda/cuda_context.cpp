@@ -1,4 +1,3 @@
-#define TI_RUNTIME_HOST
 #include "cuda_context.h"
 
 #include <unordered_map>

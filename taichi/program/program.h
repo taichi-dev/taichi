@@ -7,7 +7,6 @@
 #include <atomic>
 #include <stack>
 
-#define TI_RUNTIME_HOST
 #include "taichi/aot/module_builder.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/ir.h"

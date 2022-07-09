@@ -1,7 +1,6 @@
 #pragma once
 #include "taichi/inc/constants.h"
 #include "taichi/struct/snode_tree.h"
-#define TI_RUNTIME_HOST
 
 #include <set>
 

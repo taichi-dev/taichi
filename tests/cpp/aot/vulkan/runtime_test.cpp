@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#define TI_RUNTIME_HOST
 #include "taichi/common/core.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/context.h"

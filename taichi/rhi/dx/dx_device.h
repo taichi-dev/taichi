@@ -40,6 +40,10 @@ class Dx11ResourceBinder : public ResourceBinder {
              uint32_t binding,
              DeviceAllocation alloc,
              ImageSamplerConfig sampler_config) override;
+  void rw_image(uint32_t set,
+                uint32_t binding,
+                DeviceAllocation alloc,
+                int lod) override;
 
   // Set vertex buffer (not implemented in compute only device)
   void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;

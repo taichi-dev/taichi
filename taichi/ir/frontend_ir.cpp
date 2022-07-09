@@ -131,7 +131,8 @@ void TexturePtrExpression::type_check(CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
-  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims);
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage,
+                                 num_channels, channel_format, lod);
   stmt = ctx->back_stmt();
 }
 
@@ -628,7 +629,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 void TextureOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT(texture_ptr.is<TexturePtrExpression>());
   auto ptr = texture_ptr.cast<TexturePtrExpression>();
-  if (op == TextureOpType::sample_lod) {
+  if (op == TextureOpType::kSampleLod) {
     // UV, Lod
     TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
                    "Invalid number of args for sample_lod Texture op with a "
@@ -643,7 +644,7 @@ void TextureOpExpression::type_check(CompileConfig *config) {
                         args[i].get_ret_type()->to_string()));
       }
     }
-  } else if (op == TextureOpType::fetch_texel) {
+  } else if (op == TextureOpType::kFetchTexel) {
     // index, int LOD
     TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
                    "Invalid number of args for fetch_texel Texture op with a "
@@ -655,6 +656,45 @@ void TextureOpExpression::type_check(CompileConfig *config) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture fetch_texel: '{}', all "
                         "arguments must be i32",
+                        args[i].get_ret_type()->to_string()));
+      }
+    }
+  } else if (op == TextureOpType::kLoad) {
+    // index
+    TI_ASSERT_INFO(args.size() == ptr->num_dims,
+                   "Invalid number of args for load Texture op with a "
+                   "{}-dimension texture",
+                   ptr->num_dims);
+    for (int i = 0; i < ptr->num_dims; i++) {
+      TI_ASSERT_TYPE_CHECKED(args[i]);
+      if (args[i].get_ret_type() != PrimitiveType::i32) {
+        throw TaichiTypeError(
+            fmt::format("Invalid type for texture load: '{}', all "
+                        "arguments must be i32",
+                        args[i].get_ret_type()->to_string()));
+      }
+    }
+  } else if (op == TextureOpType::kStore) {
+    // index, value
+    TI_ASSERT_INFO(args.size() == ptr->num_dims + 4,
+                   "Invalid number of args for store Texture op with a "
+                   "{}-dimension texture",
+                   ptr->num_dims);
+    for (int i = 0; i < ptr->num_dims; i++) {
+      TI_ASSERT_TYPE_CHECKED(args[i]);
+      if (args[i].get_ret_type() != PrimitiveType::i32) {
+        throw TaichiTypeError(
+            fmt::format("Invalid type for texture load: '{}', index "
+                        "arguments must be i32",
+                        args[i].get_ret_type()->to_string()));
+      }
+    }
+    for (int i = ptr->num_dims; i < ptr->num_dims + 4; i++) {
+      TI_ASSERT_TYPE_CHECKED(args[i]);
+      if (args[i].get_ret_type() != PrimitiveType::f32) {
+        throw TaichiTypeError(
+            fmt::format("Invalid type for texture load: '{}', value "
+                        "arguments must be f32",
                         args[i].get_ret_type()->to_string()));
       }
     }

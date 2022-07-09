@@ -696,6 +696,8 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture",
+           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -902,10 +904,12 @@ void export_lang(py::module &m) {
         Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+  m.def("make_rw_texture_ptr_expr",
+        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
-  for (int t = 0; t <= (int)TextureOpType::undefined; t++)
+  for (int t = 0; t <= (int)TextureOpType::kStore; t++)
     texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
                   TextureOpType(t));
   texture.export_values();

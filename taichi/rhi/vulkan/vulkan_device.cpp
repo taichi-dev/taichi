@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <array>
 #include <set>
@@ -239,6 +240,10 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
                    SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
           resource_binder_.image(set, desc_binding->binding,
                                  kDeviceNullAllocation, {});
+        } else if (desc_binding->descriptor_type ==
+                   SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+          resource_binder_.rw_image(set, desc_binding->binding,
+                                    kDeviceNullAllocation, {});
         } else {
           TI_WARN("unrecognized binding");
         }
@@ -653,6 +658,22 @@ void VulkanResourceBinder::image(uint32_t set,
   }
 }
 
+void VulkanResourceBinder::rw_image(uint32_t set,
+                                    uint32_t binding,
+                                    DeviceAllocation alloc,
+                                    int lod) {
+  CHECK_SET_BINDINGS
+  if (layout_locked_) {
+    TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  } else {
+    if (bindings.find(binding) != bindings.end()) {
+      TI_WARN("Overriding last binding");
+    }
+  }
+  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, alloc.get_ptr(0),
+                       VK_WHOLE_SIZE};
+}
+
 #undef CHECK_SET_BINDINGS
 
 void VulkanResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
@@ -685,20 +706,31 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
       VkDescriptorBufferInfo &buffer_info = buffer_infos.emplace_back();
       VkDescriptorImageInfo &image_info = image_infos.emplace_back();
 
-      if (pair.second.sampler == VK_NULL_HANDLE) {
+      if (pair.second.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+          pair.second.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         auto buffer = device.get_vkbuffer(pair.second.ptr);
         buffer_info.buffer = buffer->buffer;
         buffer_info.offset = pair.second.ptr.offset;
         buffer_info.range = pair.second.size;
         is_image.push_back(false);
         set->ref_binding_objs[binding] = buffer;
-      } else {
+      } else if (pair.second.type ==
+                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         auto view = std::get<1>(device.get_vk_image(pair.second.ptr));
         image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         image_info.imageView = view->view;
         image_info.sampler = pair.second.sampler;
         is_image.push_back(true);
         set->ref_binding_objs[binding] = view;
+      } else if (pair.second.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+        auto view =
+            device.get_vk_lod_imageview(pair.second.ptr, pair.second.image_lod);
+        image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        image_info.imageView = view->view;
+        is_image.push_back(true);
+        set->ref_binding_objs[binding] = view;
+      } else {
+        TI_NOT_IMPLEMENTED;
       }
 
       VkWriteDescriptorSet &write = desc_writes.emplace_back();
@@ -1074,8 +1106,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
   access[VK_IMAGE_LAYOUT_UNDEFINED] = (VkAccessFlagBits)0;
-  access[VK_IMAGE_LAYOUT_GENERAL] = VkAccessFlagBits(
-      VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
+  access[VK_IMAGE_LAYOUT_GENERAL] =
+      VkAccessFlagBits(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
   access[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_ACCESS_TRANSFER_WRITE_BIT;
   access[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_ACCESS_TRANSFER_READ_BIT;
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_MEMORY_READ_BIT;
@@ -1744,6 +1776,12 @@ vkapi::IVkImageView VulkanDevice::get_vk_imageview(
   return std::get<1>(get_vk_image(alloc));
 }
 
+vkapi::IVkImageView VulkanDevice::get_vk_lod_imageview(
+    const DeviceAllocation &alloc,
+    int lod) const {
+  return image_allocations_.at(alloc.alloc_id).view_lods[lod];
+}
+
 DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   DeviceAllocation handle;
   handle.device = this;
@@ -1751,6 +1789,8 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   image_allocations_[handle.alloc_id] = {};
   ImageAllocInternal &alloc = image_allocations_[handle.alloc_id];
+
+  int num_mip_levels = 1;
 
   bool is_depth = params.format == BufferFormat::depth16 ||
                   params.format == BufferFormat::depth24stencil8 ||
@@ -1769,14 +1809,14 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.extent.width = params.x;
   image_info.extent.height = params.y;
   image_info.extent.depth = params.z;
-  image_info.mipLevels = 1;
+  image_info.mipLevels = num_mip_levels;
   image_info.arrayLayers = 1;
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  image_info.usage =
+      VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   if (is_depth) {
     image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   } else {
@@ -1845,11 +1885,18 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   view_info.subresourceRange.aspectMask =
       is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
   view_info.subresourceRange.baseMipLevel = 0;
-  view_info.subresourceRange.levelCount = 1;
+  view_info.subresourceRange.levelCount = num_mip_levels;
   view_info.subresourceRange.baseArrayLayer = 0;
   view_info.subresourceRange.layerCount = 1;
 
   alloc.view = vkapi::create_image_view(device_, alloc.image, &view_info);
+
+  for (int i = 0; i < num_mip_levels; i++) {
+    view_info.subresourceRange.baseMipLevel = i;
+    view_info.subresourceRange.levelCount = 1;
+    alloc.view_lods.push_back(
+        vkapi::create_image_view(device_, alloc.image, &view_info));
+  }
 
   if (params.initial_layout != ImageLayout::undefined) {
     image_transition(handle, ImageLayout::undefined, params.initial_layout);

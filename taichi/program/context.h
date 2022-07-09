@@ -50,8 +50,6 @@ struct RuntimeContext {
   static constexpr size_t extra_args_size = sizeof(extra_args);
 
 #ifdef __cplusplus
-  extern "C++" {
-#endif
 
   template <typename T>
   T get_arg(int i) {
@@ -112,8 +110,6 @@ struct RuntimeContext {
     }
   }
 
-#ifdef __cplusplus
-  }
 #endif
 };
 

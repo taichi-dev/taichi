@@ -169,7 +169,7 @@ ti.abs(x)  # Same as `abs(x)`
 ti.pow(x, y)  # Same as `pow(x, y)` and `x ** y`
 ```
 
-The `dtype` argument in `round`, `floor` and `ceil` functions specifies the data type of the returned value. The default `None` means the returned type is `float`, which can be `ti.f32` or `ti.f64` depending on `default_fp`.
+The `dtype` argument in `round`, `floor` and `ceil` functions specifies the data type of the returned value. The default `None` means the returned type is the same as input `x`.
 
 ### Builtin-alike functions
 

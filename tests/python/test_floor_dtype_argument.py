@@ -3,7 +3,6 @@ from tests import test_utils
 
 
 def _test_floor_ceil_round(dt):
-
     @ti.kernel
     def make_tests():
         x = 1.5

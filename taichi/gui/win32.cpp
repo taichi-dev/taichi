@@ -263,9 +263,9 @@ void GUI::create_window() {
 
   std::wstring w_name = utf8_to_utf16(window_name);
 
-  hwnd = CreateWindowExW(0,                    // Optional window styles.
-                         CLASS_NAME,           // Window class
-                         w_name.c_str(),       // Window text
+  hwnd = CreateWindowExW(0,               // Optional window styles.
+                         CLASS_NAME,      // Window class
+                         w_name.c_str(),  // Window text
                          WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME,  // Window style
                          // Size and position
                          CW_USEDEFAULT, CW_USEDEFAULT,

@@ -1,7 +1,9 @@
+from taichi.lang.util import warning
+
 from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
                              get_vbo_field, to_u8_rgba)
 from .utils import get_field_info
-from taichi.lang.util import warning
+
 
 def _translate_color_component(component):
     if isinstance(component, int):
@@ -10,6 +12,7 @@ def _translate_color_component(component):
         return max(min(component, 1.0), 0.0)
     else:
         return None
+
 
 def _translate_color(color):
     COLOR_LUT = {

@@ -2589,15 +2589,6 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   return true;
 }
 
-FunctionType CodeGenLLVM::gen() {
-  auto compiled_res = run_compilation();
-
-  ModuleToFunctionConverter converter{
-      tlctx, get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(kernel, std::move(compiled_res.module),
-                           std::move(compiled_res.tasks));
-}
-
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 
@@ -2674,60 +2665,6 @@ void CodeGenLLVM::cache_module(const std::string &kernel_key) {
   get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
                                        infer_launch_args(kernel),
                                        std::move(offloaded_task_list));
-}
-
-ModuleToFunctionConverter::ModuleToFunctionConverter(
-    TaichiLLVMContext *tlctx,
-    LlvmRuntimeExecutor *executor)
-    : tlctx_(tlctx), executor_(executor) {
-}
-
-FunctionType ModuleToFunctionConverter::convert(
-    const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
-  tlctx_->add_module(std::move(mod));
-
-  using TaskFunc = int32 (*)(void *);
-  std::vector<TaskFunc> task_funcs;
-  task_funcs.reserve(tasks.size());
-  for (auto &task : tasks) {
-    auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
-    TI_ASSERT_INFO(func_ptr, "Offloaded task function {} not found", task.name);
-    task_funcs.push_back((TaskFunc)(func_ptr));
-  }
-  // Do NOT capture `this`...
-  return [executor = this->executor_, args, kernel_name,
-          task_funcs](RuntimeContext &context) {
-    TI_TRACE("Launching kernel {}", kernel_name);
-    // For taichi ndarrays, context.args saves pointer to its
-    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array &&
-          context.device_allocation_type[i] !=
-              RuntimeContext::DevAllocType::kNone &&
-          context.array_runtime_sizes[i] > 0) {
-        DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
-        context.set_arg(i, host_ptr);
-        context.set_array_device_allocation_type(
-            i, RuntimeContext::DevAllocType::kNone);
-      }
-    }
-    for (auto task : task_funcs) {
-      task(&context);
-    }
-  };
-}
-
-FunctionType ModuleToFunctionConverter::convert(
-    const Kernel *kernel,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
-  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
-                 std::move(tasks));
 }
 
 TLANG_NAMESPACE_END

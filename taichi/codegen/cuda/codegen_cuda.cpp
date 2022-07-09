@@ -41,9 +41,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto *llvm_prog = get_llvm_program(kernel->program);
     CUDAModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};
-
-    return converter.convert(this->kernel, std::move(compiled_res.module),
-                             std::move(compiled_res.tasks));
+    std::vector<LLVMCompiledData> data;
+    data.push_back(std::move(compiled_res));
+    return converter.convert(this->kernel, std::move(data));
   }
 
   llvm::Value *create_print(std::string tag,
@@ -770,8 +770,9 @@ FunctionType CodeGenCUDA::codegen() {
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
+    std::vector<LLVMCompiledData> &&data) const {
+  auto &mod = data[0].module;
+  auto &tasks = data[0].tasks;
 #ifdef TI_WITH_CUDA
   for (const auto &task : tasks) {
     llvm::Function *func = mod->getFunction(task.name);
@@ -874,14 +875,6 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   TI_ERROR("No CUDA");
   return nullptr;
 #endif  // TI_WITH_CUDA
-}
-
-FunctionType CUDAModuleToFunctionConverter::convert(
-    const Kernel *kernel,
-    std::unique_ptr<llvm::Module> mod,
-    std::vector<OffloadedTask> &&tasks) const {
-  return convert(kernel->name, infer_launch_args(kernel), std::move(mod),
-                 std::move(tasks));
 }
 
 TLANG_NAMESPACE_END

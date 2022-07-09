@@ -51,5 +51,19 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
   TI_ERROR("Llvm disabled");
 #endif
 }
+#ifdef TI_WITH_LLVM
 
+ModuleToFunctionConverter::ModuleToFunctionConverter(
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::vector<LLVMCompiledData> &&data) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(data));
+}
+
+#endif
 TLANG_NAMESPACE_END

@@ -50,6 +50,7 @@ struct RuntimeContext {
   static constexpr size_t extra_args_size = sizeof(extra_args);
 
 #ifdef __cplusplus
+  extern "C++" {
   template <typename T>
   T get_arg(int i) {
     return taichi_union_cast_with_different_sizes<T>(args[i]);
@@ -108,7 +109,7 @@ struct RuntimeContext {
       extra_args[arg_id][i + shape.size()] = element_shape[i];
     }
   }
-
+  }
 #endif
 };
 

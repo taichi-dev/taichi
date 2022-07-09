@@ -153,6 +153,7 @@ struct LLVMRuntime;
 template <typename... Args>
 void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
 
+#include "taichi/program/context.h"
 extern "C" {
 
 // This is not really a runtime function. Include this in a function body to
@@ -343,9 +344,6 @@ struct PhysicalCoordinates {
 
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
-extern "C++" {
-#include "taichi/program/context.h"
-}
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
 
 STRUCT_FIELD_ARRAY(RuntimeContext, args);

@@ -12,9 +12,10 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.matrix import MatrixType
-from taichi.lang.util import is_taichi_class, to_taichi_type
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.matrix import (MatrixType, _PyScopeMatrixImpl,
+                                _TiScopeMatrixImpl)
+from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
 from taichi.types.utils import is_integral
@@ -103,24 +104,17 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_slice(ctx, node_target, values, is_static_assign):
-        indices = build_stmt(ctx, node_target.slice)
-        if not ASTTransformer.is_tuple(node_target.slice):
-            indices = [node_target.slice.ptr]
-        has_slice = False
-        for each in indices:
-            if isinstance(each, slice):
-                has_slice = True
-                break
-        if not has_slice:
-            return ASTTransformer.build_assign_basic(ctx, node_target, values,
-                                                     is_static_assign)
-        node_target.value = build_stmt(ctx, node_target.value)
-        targets = impl.subscript(node_target.value, *indices, get_ref=True)
-        if not isinstance(values, (matrix.Matrix, collections.abc.Sequence)):
-            raise ValueError(f"Cannot unpack type: {type(values)}")
-        targets._assign(values)
-        return None
+    def build_assign_slice(ctx, node_target: ast.Subscript, values):
+        target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
+            target._assign(values)
+        elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
+            if in_taichi_scope():
+                raise TaichiTypeError(
+                    'PyScope matrix cannot be assigned in Taichi Scope')
+            node_target.ptr._assign(node_target.slice.ptr, values)
+        else:
+            raise TaichiTypeError(f'{type(target)} cannot be subscripted')
 
     @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
@@ -135,8 +129,7 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         if isinstance(node_target, ast.Subscript):
-            return ASTTransformer.build_assign_slice(ctx, node_target, values,
-                                                     is_static_assign)
+            return ASTTransformer.build_assign_slice(ctx, node_target, values)
 
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
@@ -214,12 +207,14 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_Subscript(ctx, node):
+    def build_Subscript(ctx, node, get_ref=False):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr, *node.slice.ptr)
+        node.ptr = impl.subscript(node.value.ptr,
+                                  *node.slice.ptr,
+                                  get_ref=get_ref)
         return node.ptr
 
     @staticmethod

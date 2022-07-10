@@ -13,7 +13,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
-from taichi.lang.matrix import (MatrixType, _PyScopeMatrixImpl,
+from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
                                 _TiScopeMatrixImpl)
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -106,15 +106,23 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_slice(ctx, node_target: ast.Subscript, values):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
-        if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
-            target._assign(values)
-        elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
-            if in_taichi_scope():
-                raise TaichiTypeError(
-                    'PyScope matrix cannot be assigned in Taichi Scope')
-            node_target.ptr._assign(node_target.slice.ptr, values)
+        if isinstance(node_target.value.ptr, Matrix):
+            if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
+                target._assign(values)
+            elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
+                if in_taichi_scope():
+                    raise TaichiTypeError(
+                        'PyScope matrix cannot be assigned in Taichi Scope')
+                node_target.ptr._assign(node_target.slice.ptr, values)
+            else:
+                raise TaichiTypeError(f'{type(target)} cannot be subscripted')
         else:
-            raise TaichiTypeError(f'{type(target)} cannot be subscripted')
+            try:
+                target._assign(values)
+            except AttributeError:
+                raise TaichiSyntaxError(
+                    f"Variable '{unparse(node_target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
+                )
 
     @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):

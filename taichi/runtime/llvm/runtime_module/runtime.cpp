@@ -29,6 +29,12 @@
 struct RuntimeContext;
 using assert_failed_type = void (*)(const char *);
 using host_printf_type = void (*)(const char *, ...);
+// In llvm 15, host_printf_type will be saved as ptr instead of ptr of
+// FunctionType.
+// Add dummy function to save function type for host_printf_type.
+extern "C" void get_func_type_host_printf(const char *, ...) {
+}
+
 using host_vsnprintf_type = int (*)(char *,
                                     std::size_t,
                                     const char *,

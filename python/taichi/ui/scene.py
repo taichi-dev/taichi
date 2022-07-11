@@ -94,9 +94,15 @@ class Scene:
              normals=None,
              color=(0.5, 0.5, 0.5),
              per_vertex_color=None,
-             two_sided=False):
+             two_sided=False,
+             vertex_offset: int = 0,
+             vertex_count: int = None,
+             index_offset: int = 0,
+             index_count: int = None):
         """Declare a mesh inside the scene.
-
+        if you indicate the index_offset and index_count, the normals will also
+        be sliced by the args, and the shading resultes will not be affected.
+        (It is equal to make a part of the mesh visible)
         Args:
             vertices: a taichi 3D Vector field, where each element indicate the
                 3D location of a vertex.
@@ -112,6 +118,19 @@ class Scene:
                 element indicate the RGB color of a vertex.
             two_sided (bool): whether or not the triangles should be able to be
                 seen from both sides.
+            vertex_offset: int type(ohterwise float type will be floored to int),
+                if 'indices' is provided, this means the value added to the vertex
+                index before indexing into the vertex buffer, else this means the
+                index of the first vertex to draw.
+            vertex_count: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is not provided, which is the number
+                of vertices to draw.
+            index_offset: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is provided, which is the base index
+                within the index buffer.
+            index_count: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is provided, which is the the number
+                of vertices to draw.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -120,18 +139,25 @@ class Scene:
             copy_colors_to_vbo(vbo, per_vertex_color)
         if normals is None:
             normals = gen_normals(vertices, indices)
+        if vertex_count is None:
+            vertex_count = vertices.shape[0]
+        if index_count is None:
+            index_count = indices.shape[0]
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
-                        two_sided)
+                        two_sided, index_count, index_offset, vertex_count,
+                        vertex_offset)
 
     def particles(self,
                   centers,
                   radius,
                   color=(0.5, 0.5, 0.5),
-                  per_vertex_color=None):
+                  per_vertex_color=None,
+                  index_offset: int = 0,
+                  index_count: int = None):
         """Declare a set of particles within the scene.
 
         Args:
@@ -141,16 +167,21 @@ class Scene:
                 values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of a particle.
-            two_sided (bool): whether or not the triangles should be able to be
-                seen from both sides.
+            index_offset: int type(ohterwise float type will be floored to int),
+                the index of the first vertex to draw.
+            index_count: int type(ohterwise float type will be floored to int),
+                the number of vertices to draw.
         """
         vbo = get_vbo_field(centers)
         copy_vertices_to_vbo(vbo, centers)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
             copy_colors_to_vbo(vbo, per_vertex_color)
+        if index_count is None:
+            index_count = centers.shape[0]
         vbo_info = get_field_info(vbo)
-        self.scene.particles(vbo_info, has_per_vertex_color, color, radius)
+        self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
+                             index_count, index_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

@@ -701,6 +701,8 @@ def pow(x, a):  # pylint: disable=W0622
 
     Negative values raised to a non-integral value will return `nan`.
     A zero value raised to a negative value will return `inf`.
+    If debug mode or optimization passes are on, an exception will be raised
+    when an integral value is raised to a negative value; otherwise 1 will be returned.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \

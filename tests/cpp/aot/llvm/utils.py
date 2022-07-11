@@ -127,23 +127,24 @@ def compile_graph_aot(arch):
     ti.init(arch=arch)
 
     @ti.kernel
-    def run0(base: int, arr: ti.any_arr(field_dim=1)):
+    def run0(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += [base + i]
 
     @ti.kernel
-    def run1(base: int, arr: ti.any_arr(field_dim=1)):
+    def run1(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += [base + i]
 
     @ti.kernel
-    def run2(base: int, arr: ti.any_arr(field_dim=1)):
+    def run2(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += [base + i]
 
     arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                        'arr',
                        ti.i32,
+                       field_dim=1,
                        element_shape=(1, ))
 
     base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)

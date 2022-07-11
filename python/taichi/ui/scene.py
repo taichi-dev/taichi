@@ -179,11 +179,7 @@ class Scene:
             index_count = centers.shape[0]
         vbo_info = get_field_info(vbo)
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
-<<<<<<< HEAD
                                 index_count, index_offset)
-=======
-                             vertex_count, vertex_offset)
->>>>>>> 4cc1e0190abefa0ad1696d2d5b418c8a7ece8d2d
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

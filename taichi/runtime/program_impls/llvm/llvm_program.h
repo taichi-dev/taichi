@@ -8,7 +8,7 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
-
+#include "taichi/program/parallel_executor.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -268,6 +268,7 @@ class LlvmProgramImpl : public ProgramImpl {
     // 2. Destructs runtime_exec_
     runtime_exec_.reset();
   }
+  ParallelExecutor compilation_workers;  // parallel compilation
 
  private:
   std::size_t num_snode_trees_processed_{0};

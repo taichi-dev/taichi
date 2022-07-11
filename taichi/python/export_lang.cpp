@@ -244,7 +244,9 @@ void export_lang(py::module &m) {
       .def_readwrite("offline_cache_max_size_of_files",
                      &CompileConfig::offline_cache_max_size_of_files)
       .def_readwrite("offline_cache_cleaning_factor",
-                     &CompileConfig::offline_cache_cleaning_factor);
+                     &CompileConfig::offline_cache_cleaning_factor)
+      .def_readwrite("num_compile_threads",
+                     &CompileConfig::num_compile_threads);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -592,11 +594,13 @@ void export_lang(py::module &m) {
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
-      .def(py::init<aot::ArgKind, std::string, DataType &, std::vector<int>>(),
+      .def(py::init<aot::ArgKind, std::string, DataType &, size_t,
+                    std::vector<int>>(),
            py::arg("tag"), py::arg("name"), py::arg("dtype"),
-           py::arg("element_shape") = py::tuple())
+           py::arg("field_dim"), py::arg("element_shape"))
       .def_readonly("name", &aot::Arg::name)
       .def_readonly("element_shape", &aot::Arg::element_shape)
+      .def_readonly("field_dim", &aot::Arg::field_dim)
       .def("dtype", &aot::Arg::dtype);
 
   py::class_<Node>(m, "Node");
@@ -625,16 +629,42 @@ void export_lang(py::module &m) {
               {py::cast<std::string>(it.first), aot::IValue::create(val)});
         }
         for (auto it : arg_ints) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<int>(it.second))});
+          std::string arg_name = py::cast<std::string>(it.first);
+          auto expected_dtype = self->args[arg_name].dtype();
+          if (expected_dtype == PrimitiveType::i32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int>(it.second))});
+          } else if (expected_dtype == PrimitiveType::i64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
+          } else if (expected_dtype == PrimitiveType::i16) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
+          } else if (expected_dtype == PrimitiveType::u16) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         }
         for (auto it : arg_floats) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<float32>(it.second))});
-        }
-        for (auto it : arg_doubles) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<double>(it.second))});
+          std::string arg_name = py::cast<std::string>(it.first);
+          auto expected_dtype = self->args[arg_name].dtype();
+          if (expected_dtype == PrimitiveType::f32) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<float>(it.second))});
+          } else if (expected_dtype == PrimitiveType::f64) {
+            args.insert(
+                {arg_name, aot::IValue::create(py::cast<double>(it.second))});
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         }
         self->run(args);
       });
@@ -666,6 +696,8 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture",
+           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -872,10 +904,12 @@ void export_lang(py::module &m) {
         Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+  m.def("make_rw_texture_ptr_expr",
+        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
-  for (int t = 0; t <= (int)TextureOpType::undefined; t++)
+  for (int t = 0; t <= (int)TextureOpType::kStore; t++)
     texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
                   TextureOpType(t));
   texture.export_values();
@@ -970,7 +1004,6 @@ void export_lang(py::module &m) {
   });
 
   m.def("test_throw", [] { throw IRModified(); });
-  m.def("needs_grad", needs_grad);
 
 #if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);

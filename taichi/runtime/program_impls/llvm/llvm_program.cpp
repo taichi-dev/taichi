@@ -19,7 +19,8 @@ namespace lang {
 
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
-    : ProgramImpl(config_) {
+    : ProgramImpl(config_),
+      compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
 }
@@ -126,6 +127,8 @@ void LlvmProgramImpl::cache_kernel(
     return;
   }
   auto &kernel_cache = cache_data_->kernels[kernel_key];
+  kernel_cache.created_at = std::time(nullptr);
+  kernel_cache.last_used_at = std::time(nullptr);
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.owned_module = llvm::CloneModule(*module);
   kernel_cache.args = std::move(args);

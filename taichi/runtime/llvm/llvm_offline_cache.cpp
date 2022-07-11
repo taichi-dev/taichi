@@ -115,6 +115,10 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     kernel_data.module = kernel_data.owned_module.get();
   }
 
+  kernel_data.last_used_at = std::time(nullptr);
+
+  res.created_at = kernel_data.created_at;
+  res.last_used_at = kernel_data.last_used_at;
   res.kernel_key = key;
   res.args = kernel_data.args;
   res.offloaded_task_list = kernel_data.offloaded_task_list;
@@ -146,7 +150,6 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       LlvmOfflineCache::Format format,
                                       bool merge_with_old) {
   taichi::create_directories(path);
-  std::time_t now = std::time(nullptr);
   std::size_t new_kernels_size = 0;  // bytes
 
   for (auto &[k, v] : data_.kernels) {
@@ -185,8 +188,8 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     }
 
     // Set meta info
-    v.created_at = now;
-    v.last_used_at = now;
+    TI_ASSERT(v.created_at);
+    TI_ASSERT(v.last_used_at);
     v.size = size;
     TI_ASSERT(v.size > 0);
     new_kernels_size += v.size;

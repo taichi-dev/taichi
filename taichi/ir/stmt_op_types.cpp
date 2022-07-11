@@ -152,9 +152,11 @@ std::string texture_op_type_name(TextureOpType type) {
   case TextureOpType::i: \
     return #i;
 
-    REGISTER_TYPE(sample_lod);
-    REGISTER_TYPE(fetch_texel);
-    REGISTER_TYPE(undefined);
+    REGISTER_TYPE(kUndefined);
+    REGISTER_TYPE(kSampleLod);
+    REGISTER_TYPE(kFetchTexel);
+    REGISTER_TYPE(kLoad);
+    REGISTER_TYPE(kStore);
 
 #undef REGISTER_TYPE
     default:

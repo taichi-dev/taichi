@@ -101,7 +101,10 @@ class VulkanResourceBinder : public ResourceBinder {
     VkDescriptorType type;
     DevicePtr ptr;
     VkDeviceSize size;
-    VkSampler sampler{VK_NULL_HANDLE};  // used only for images
+    union {
+      VkSampler sampler{VK_NULL_HANDLE};  // used only for images
+      int image_lod;
+    };
 
     bool operator==(const Binding &other) const {
       return other.type == type && other.ptr == ptr && other.size == size &&
@@ -221,6 +224,10 @@ class VulkanResourceBinder : public ResourceBinder {
              uint32_t binding,
              DeviceAllocation alloc,
              ImageSamplerConfig sampler_config) override;
+  void rw_image(uint32_t set,
+                uint32_t binding,
+                DeviceAllocation alloc,
+                int lod) override;
   void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
@@ -617,6 +624,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   vkapi::IVkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 
+  vkapi::IVkImageView get_vk_lod_imageview(const DeviceAllocation &alloc,
+                                           int lod) const;
+
   vkapi::IVkRenderPass get_renderpass(const VulkanRenderPassDesc &desc);
 
   vkapi::IVkFramebuffer get_framebuffer(const VulkanFramebufferDesc &desc);
@@ -666,6 +676,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     VmaAllocationInfo alloc_info;
     vkapi::IVkImage image;
     vkapi::IVkImageView view;
+    std::vector<vkapi::IVkImageView> view_lods;
     VkFormat format;
   };
 

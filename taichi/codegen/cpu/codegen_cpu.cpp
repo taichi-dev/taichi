@@ -275,6 +275,11 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
+LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
+                                       OffloadedStmt *stmt) {
+  CodeGenLLVMCPU gen(kernel, stmt);
+  return gen.run_compilation();
+}
 #endif  // TI_WITH_LLVM
 
 FunctionType CodeGenCPU::codegen() {

@@ -560,9 +560,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (auto get_ch = stmt->src->cast<GetChStmt>()) {
       bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
           get_ch->output_snode, SNodeAccessFlag::read_only);
-      global_load(stmt, should_cache_as_read_only);
+      create_global_load(stmt, should_cache_as_read_only);
     } else {
-      global_load(stmt, false);
+      create_global_load(stmt, false);
     }
   }
 

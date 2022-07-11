@@ -44,6 +44,30 @@ def test_1D_quant_array_negative():
 
 
 @test_utils.test(require=ti.extension.quant, debug=True)
+def test_1D_quant_array_fixed():
+    qfxt = ti.types.quant.fixed(frac=8, range=2)
+
+    x = ti.field(dtype=qfxt)
+
+    N = 4
+
+    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
+
+    @ti.kernel
+    def set_val():
+        for i in range(N):
+            x[i] = i * 0.5
+
+    @ti.kernel
+    def verify_val():
+        for i in range(N):
+            assert x[i] == i * 0.5
+
+    set_val()
+    verify_val()
+
+
+@test_utils.test(require=ti.extension.quant, debug=True)
 def test_2D_quant_array():
     qu1 = ti.types.quant.int(1, False)
 

@@ -18,7 +18,7 @@ class Window:
         vsync (bool): whether or not vertical sync should be enabled.
         show_window (bool): where or not display the window after initialization.
     """
-    def __init__(self, name, res, vsync=False, show_window=True):
+    def __init__(self, name="Taichi", res=(640, 320), vsync=False, show_window=True):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
 

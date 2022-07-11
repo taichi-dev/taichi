@@ -706,7 +706,7 @@ class MakeAdjoint : public ADTransform {
       return;  // primal may be int variable
     if (alloca_->is<AdStackAllocaStmt>()) {
       auto alloca = alloca_->cast<AdStackAllocaStmt>();
-      if (needs_grad(alloca->ret_type)) {
+      if (is_real(alloca->ret_type)) {
         insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
@@ -719,7 +719,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!needs_grad(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type)) {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
@@ -783,7 +783,11 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TI_NOT_IMPLEMENTED
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
@@ -812,7 +816,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -857,7 +861,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -951,7 +955,7 @@ class MakeAdjoint : public ADTransform {
   // Equivalent to AdStackLoadTopStmt when no stack is needed
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    if (needs_grad(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
   }
 
@@ -965,7 +969,7 @@ class MakeAdjoint : public ADTransform {
     // iteration should be cleared after this iteration has been done
     // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of
-    if (needs_grad(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
@@ -973,7 +977,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   void visit(AdStackLoadTopStmt *stmt) override {
-    if (needs_grad(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
@@ -1087,7 +1091,7 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!needs_grad(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type)) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1110,15 +1114,41 @@ class MakeDual : public ADTransform {
     if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt, negate(dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::abs) {
-      accumulate(stmt, sgn(dual(stmt->operand)));
+      accumulate(stmt, mul(sgn(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(stmt, mul(div(constant(1),
+                               sqrt(sub(constant(1), sqr(stmt->operand)))),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt,
+                 mul(negate(div(constant(1),
+                                sqrt(sub(constant(1), sqr(stmt->operand))))),
+                     dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt, mul(stmt, dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt, div(dual(stmt->operand), stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
+                           dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));
       }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
       TI_NOT_IMPLEMENTED
@@ -1206,7 +1236,7 @@ class MakeDual : public ADTransform {
     // If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of, i.e, its history should
     // be cleared
-    if (needs_grad(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(dual(stmt->dest), zero);

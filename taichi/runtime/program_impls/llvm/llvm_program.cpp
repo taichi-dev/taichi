@@ -19,7 +19,8 @@ namespace lang {
 
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
-    : ProgramImpl(config_) {
+    : ProgramImpl(config_),
+      compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
 }
@@ -106,31 +107,28 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
   TI_ASSERT(cache_data_->kernels.count(kernel_key));
   const LlvmOfflineCache::KernelCacheData &kernel_data =
       cache_data_->kernels[kernel_key];
-
-  LlvmOfflineCache::KernelCacheData compiled_kernel;
+  LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
   compiled_kernel.kernel_key = kernel.get_name();
-  compiled_kernel.owned_module =
-      llvm::CloneModule(*kernel_data.owned_module.get());
-  compiled_kernel.args = kernel_data.args;
-  compiled_kernel.offloaded_task_list = kernel_data.offloaded_task_list;
   return std::make_unique<llvm_aot::KernelImpl>(compiled_fn, kernel.get_name(),
                                                 std::move(compiled_kernel));
 }
 
 void LlvmProgramImpl::cache_kernel(
     const std::string &kernel_key,
-    llvm::Module *module,
-    std::vector<LlvmLaunchArgInfo> &&args,
-    std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-        &&offloaded_task_list) {
+    const std::vector<LLVMCompiledData> &data_list,
+    std::vector<LlvmLaunchArgInfo> &&args) {
   if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;
   }
   auto &kernel_cache = cache_data_->kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
-  kernel_cache.owned_module = llvm::CloneModule(*module);
+  for (const auto &data : data_list) {
+    kernel_cache.compiled_data_list.emplace_back(
+        data.tasks, llvm::CloneModule(*data.module));
+  }
   kernel_cache.args = std::move(args);
-  kernel_cache.offloaded_task_list = std::move(offloaded_task_list);
+  kernel_cache.created_at = std::time(nullptr);
+  kernel_cache.last_used_at = std::time(nullptr);
 }
 
 void LlvmProgramImpl::cache_field(int snode_tree_id,

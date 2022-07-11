@@ -68,7 +68,11 @@ class LLVMModuleBuilder {
     builder->SetInsertPoint(entry_block);
     auto alloca = builder->CreateAlloca(type, (unsigned)0, array_size);
     if (alignment != 0) {
+#ifdef TI_LLVM_15
+      alloca->setAlignment(llvm::Align(alignment));
+#else
       alloca->setAlignment(llvm::MaybeAlign(alignment));
+#endif
     }
     return alloca;
   }
@@ -81,7 +85,12 @@ class LLVMModuleBuilder {
   }
 
   llvm::Type *get_runtime_type(const std::string &name) {
+#ifdef TI_LLVM_15
+    auto ty = llvm::StructType::getTypeByName(module->getContext(),
+                                              ("struct." + name));
+#else
     auto ty = module->getTypeByName("struct." + name);
+#endif
     if (!ty) {
       TI_ERROR("LLVMRuntime type {} not found.", name);
     }
@@ -93,12 +102,18 @@ class LLVMModuleBuilder {
     if (!f) {
       TI_ERROR("LLVMRuntime function {} not found.", name);
     }
+#ifdef TI_LLVM_15
+    f->removeFnAttr(llvm::Attribute::OptimizeNone);
+    f->removeFnAttr(llvm::Attribute::NoInline);
+    f->addFnAttr(llvm::Attribute::AlwaysInline);
+#else
     f->removeAttribute(llvm::AttributeList::FunctionIndex,
                        llvm::Attribute::OptimizeNone);
     f->removeAttribute(llvm::AttributeList::FunctionIndex,
                        llvm::Attribute::NoInline);
     f->addAttribute(llvm::AttributeList::FunctionIndex,
                     llvm::Attribute::AlwaysInline);
+#endif
     return f;
   }
 
@@ -175,7 +190,7 @@ class RuntimeObject {
     return builder->CreateCall(func, arglist);
   }
 
-  llvm::Value *get_func(const std::string &func_name) const {
+  llvm::Function *get_func(const std::string &func_name) const {
     return mb->get_runtime_function(fmt::format("{}_{}", cls_name, func_name));
   }
 };

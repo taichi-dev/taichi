@@ -312,7 +312,7 @@ TEST(AotSaveLoad, VulkanNdarray) {
 
   auto g_builder = std::make_unique<GraphBuilder>();
   auto seq = g_builder->seq();
-  auto arr_arg = aot::Arg{aot::ArgKind::kNdarray, "arr", PrimitiveType::i32};
+  auto arr_arg = aot::Arg{aot::ArgKind::kNdarray, "arr", PrimitiveType::i32, 1};
   seq->dispatch(ker1.get(), {arr_arg});
   seq->dispatch(ker2.get(), {arr_arg, aot::Arg{aot::ArgKind::kScalar, "x",
                                                PrimitiveType::i32}});

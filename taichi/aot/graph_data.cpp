@@ -25,6 +25,16 @@ void CompiledGraph::run(
         TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
+        TI_ERROR_IF(arr->shape.size() != symbolic_arg.field_dim,
+                    "Dispatch node is compiled for argument {} with "
+                    "field_dim={} but got an ndarray with field_dim={}",
+                    symbolic_arg.name, symbolic_arg.field_dim,
+                    arr->shape.size());
+        TI_ERROR_IF(arr->dtype != symbolic_arg.dtype(),
+                    "Dispatch node is compiled for argument {} with "
+                    "dtype={} but got an ndarray with dtype={}",
+                    symbolic_arg.name, symbolic_arg.dtype().to_string(),
+                    arr->dtype.to_string());
 
         set_runtime_ctx_ndarray(&ctx, i, arr);
       } else if (ival.tag == aot::ArgKind::kScalar) {

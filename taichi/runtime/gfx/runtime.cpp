@@ -427,6 +427,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           } else if (host_ctx->device_allocation_type[i] ==
                      RuntimeContext::DevAllocType::kTexture) {
             textures[i] = devalloc;
+          } else if (host_ctx->device_allocation_type[i] ==
+                     RuntimeContext::DevAllocType::kRWTexture) {
+            textures[i] = devalloc;
           } else {
             TI_NOT_IMPLEMENTED;
           }
@@ -494,9 +497,15 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
     for (auto &bind : attribs.texture_binds) {
       DeviceAllocation texture = textures.at(bind.arg_id);
-      current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                         ImageLayout::shader_read);
-      binder->image(0, bind.binding, texture, {});
+      if (bind.is_storage) {
+        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
+                                           ImageLayout::shader_read_write);
+        binder->rw_image(0, bind.binding, texture, 0);
+      } else {
+        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
+                                           ImageLayout::shader_read);
+        binder->image(0, bind.binding, texture, {});
+      }
     }
 
     if (attribs.task_type == OffloadedTaskType::listgen) {

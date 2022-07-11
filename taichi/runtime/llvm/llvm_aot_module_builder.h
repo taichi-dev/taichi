@@ -17,7 +17,7 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
 
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
-  virtual CodeGenLLVM::CompiledData compile_kernel(Kernel *kernel) = 0;
+  virtual LLVMCompiledData compile_kernel(Kernel *kernel) = 0;
 
   void add_field_per_backend(const std::string &identifier,
                              const SNode *rep_snode,

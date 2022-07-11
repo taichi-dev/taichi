@@ -178,6 +178,7 @@ jobs:
         with:
           name: broken-wheel
           path: shared/dist/*
+          retention-days: 7
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -255,6 +256,7 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
 
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
@@ -314,6 +316,7 @@ jobs:
       #   with:
       #     name: broken-wheel
       #     path: dist/*
+      #     retention-days: 7
 
 
   build_and_test_gpu_linux:
@@ -402,6 +405,7 @@ jobs:
         with:
           name: broken-wheel
           path: shared/dist/*
+          retention-days: 7
 
   build_and_test_windows:
     name: Build and Test Windows
@@ -463,6 +467,7 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -524,6 +529,7 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
 
   build_libtaichi_export:
     name: Build libtaichi_export.so(GPU)

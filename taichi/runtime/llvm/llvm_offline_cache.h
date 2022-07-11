@@ -8,7 +8,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
-
+#include "taichi/codegen/llvm/codegen_llvm.h"
 namespace taichi {
 namespace lang {
 
@@ -20,21 +20,10 @@ struct LlvmOfflineCache {
     BC = 0x10,
   };
 
-  struct OffloadedTaskCacheData {
-    std::string name;
-    int block_dim{0};
-    int grid_dim{0};
-
-    TI_IO_DEF(name, block_dim, grid_dim);
-  };
-
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    std::vector<OffloadedTaskCacheData> offloaded_task_list;
-
-    std::unique_ptr<llvm::Module> owned_module{nullptr};
-    llvm::Module *module{nullptr};
+    std::vector<LLVMCompiledData> compiled_data_list;
 
     // For cache cleaning
     std::size_t size{0};          // byte
@@ -46,9 +35,11 @@ struct LlvmOfflineCache {
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
+    KernelCacheData clone() const;
+
     TI_IO_DEF(kernel_key,
               args,
-              offloaded_task_list,
+              compiled_data_list,
               size,
               created_at,
               last_used_at);
@@ -193,9 +184,7 @@ class LlvmOfflineCacheFileWriter {
 
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
-      llvm::Module *module,
-      std::vector<LlvmOfflineCache::OffloadedTaskCacheData>
-          &offloaded_task_list);
+      std::vector<LLVMCompiledData> &compiled_data_list);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

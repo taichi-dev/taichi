@@ -19,16 +19,14 @@ class CodeGenLLVM;
 class OffloadedTask {
  public:
   std::string name;
-  CodeGenLLVM *codegen;
-
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(CodeGenLLVM *codegen);
-
-  void begin(const std::string &name);
-
-  void end();
+  OffloadedTask(const std::string &name = "",
+                int block_dim = 0,
+                int grid_dim = 0)
+      : name(name), block_dim(block_dim), grid_dim(grid_dim){};
+  TI_IO_DEF(name, block_dim, grid_dim);
 };
 
 class FunctionCreationGuard {
@@ -42,6 +40,19 @@ class FunctionCreationGuard {
   FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
+};
+
+struct LLVMCompiledData {
+  std::vector<OffloadedTask> tasks;
+  std::unique_ptr<llvm::Module> module{nullptr};
+  LLVMCompiledData() = default;
+  LLVMCompiledData(LLVMCompiledData &&) = default;
+  LLVMCompiledData(std::vector<OffloadedTask> tasks,
+                   std::unique_ptr<llvm::Module> module)
+      : tasks(std::move(tasks)), module(std::move(module)) {
+  }
+  LLVMCompiledData clone() const;
+  TI_IO_DEF(tasks);
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
@@ -121,21 +132,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void eliminate_unused_functions();
 
-  struct CompiledData {
-    std::vector<OffloadedTask> offloaded_tasks;
-    std::unique_ptr<llvm::Module> llvm_module{nullptr};
-  };
   /**
    * @brief Runs the codegen and produces the compiled result.
    *
-   * After this call, `module` and `offloaded_tasks` will be moved.
+   * After this call, `module` and `tasks` will be moved.
    *
-   * @return CompiledData
+   * @return LLVMCompiledData
    */
-  CompiledData run_compilation();
+  LLVMCompiledData run_compilation();
 
   // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen();
+  virtual FunctionType gen(){TI_NOT_IMPLEMENTED};
 
   virtual bool supports_offline_cache() const {
     return false;
@@ -269,18 +276,37 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
                                    SNode *digits_snode);
 
-  llvm::Value *load_quant_int(llvm::Value *ptr, QuantIntType *qit);
+  virtual llvm::Value *create_intrinsic_load(const DataType &dtype,
+                                             llvm::Value *data_ptr);
+
+  llvm::Value *load_quant_int(llvm::Value *ptr,
+                              QuantIntType *qit,
+                              Type *physical_type,
+                              bool should_cache_as_read_only);
 
   llvm::Value *extract_quant_int(llvm::Value *physical_value,
                                  llvm::Value *bit_offset,
                                  QuantIntType *qit);
 
+  llvm::Value *load_quant_fixed(llvm::Value *ptr,
+                                QuantFixedType *qfxt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
+
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
+                                SNode *digits_snode,
+                                QuantFloatType *qflt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
+
+  llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 llvm::Value *exponent_bit_ptr,
                                 QuantFloatType *qflt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only,
                                 bool shared_exponent);
 
   llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
@@ -288,7 +314,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                        QuantFloatType *qflt,
                                        bool shared_exponent);
 
-  llvm::Value *load_quant_fixed_or_quant_float(Stmt *ptr_stmt);
+  void global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -406,34 +432,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
  private:
   bool maybe_read_compilation_from_cache(const std::string &kernel_key,
-                                         CompiledData *data);
+                                         LLVMCompiledData *data);
 
   void cache_module(const std::string &kernel_key);
-};
-
-class LlvmRuntimeExecutor;
-
-// TODO: Make ModuleToFunctionConverter abstract,
-//       Move CPU implementation to "taichi/backend/cpu/"
-class ModuleToFunctionConverter {
- public:
-  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmRuntimeExecutor *executor);
-
-  virtual ~ModuleToFunctionConverter() = default;
-
-  virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<LlvmLaunchArgInfo> &args,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
-  virtual FunctionType convert(const Kernel *kernel,
-                               std::unique_ptr<llvm::Module> mod,
-                               std::vector<OffloadedTask> &&tasks) const;
-
- protected:
-  TaichiLLVMContext *tlctx_{nullptr};
-  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 }  // namespace lang

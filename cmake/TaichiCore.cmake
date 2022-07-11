@@ -1,5 +1,6 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_LLVM "Build with LLVM backends" ON)
+option(TI_LLVM_15 "Switch to LLVM 15" OFF)
 option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
@@ -140,6 +141,10 @@ if(TI_WITH_LLVM)
 else()
     file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
     list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
+endif()
+
+if (TI_LLVM_15)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
 endif()
 
 if (TI_WITH_CUDA)

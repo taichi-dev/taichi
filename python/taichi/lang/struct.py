@@ -678,7 +678,7 @@ class StructType(CompoundType):
         return Struct.field(self.members, self.methods, **kwargs)
 
 
-def struct_class(cls):
+def dataclass(cls):
     """Converts a class with field annotations and methods into a taichi struct type.
 
     This will return a normal custom struct type, with the functions added to it.
@@ -691,7 +691,7 @@ def struct_class(cls):
 
     Example::
 
-        >>> @ti.stuct_class
+        >>> @ti.dataclass
         >>> class Sphere:
         >>>     center: vec3
         >>>     radius: ti.f32
@@ -721,4 +721,4 @@ def struct_class(cls):
     return StructType(**fields)
 
 
-__all__ = ["Struct", "StructField", "struct_class"]
+__all__ = ["Struct", "StructField", "dataclass"]

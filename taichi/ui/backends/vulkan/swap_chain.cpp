@@ -96,10 +96,10 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   return image_buffer_data_;
 }
 
-void SwapChain::write_image(const std::string &filename) {  
+void SwapChain::write_image(const std::string &filename) {
   dump_image_buffer();
   imwrite(filename, (size_t)image_buffer_data_.data(), curr_width_,
-         curr_height_, 4);
+          curr_height_, 4);
 }
 
 }  // namespace vulkan

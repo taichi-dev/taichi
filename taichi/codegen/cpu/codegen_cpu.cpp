@@ -107,8 +107,14 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
+#ifdef TI_LLVM_15
+        auto *loop_index_load =
+            builder->CreateLoad(builder->getInt32Ty(), loop_index);
+#else
+        auto *loop_index_load = builder->CreateLoad(loop_index);
+#endif
         auto cond = builder->CreateICmp(
-            llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+            llvm::CmpInst::Predicate::ICMP_SLT, loop_index_load,
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -121,9 +127,15 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(loop_index),
-                                                tlctx->get_constant(1)),
-                             loop_index);
+#ifdef TI_LLVM_15
+        auto *loop_index_load =
+            builder->CreateLoad(builder->getInt32Ty(), loop_index);
+#else
+        auto *loop_index_load = builder->CreateLoad(loop_index);
+#endif
+        builder->CreateStore(
+            builder->CreateAdd(loop_index_load, tlctx->get_constant(1)),
+            loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
@@ -195,7 +207,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();
-    current_task->end();
+    offloaded_tasks.push_back(*current_task);
     current_task = nullptr;
     current_offload = nullptr;
   }
@@ -209,6 +221,16 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
+
+  FunctionType gen() override {
+    auto compiled_res = run_compilation();
+
+    CPUModuleToFunctionConverter converter{
+        tlctx, get_llvm_program(prog)->get_runtime_executor()};
+    std::vector<LLVMCompiledData> data;
+    data.push_back(std::move(compiled_res));
+    return converter.convert(kernel, std::move(data));
+  }
 };
 
 }  // namespace
@@ -219,6 +241,51 @@ std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
                                                            IRNode *ir) {
   return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
 }
+
+FunctionType CPUModuleToFunctionConverter::convert(
+    const std::string &kernel_name,
+    const std::vector<LlvmLaunchArgInfo> &args,
+    std::vector<LLVMCompiledData> &&data) const {
+  for (auto &datum : data) {
+    tlctx_->add_module(std::move(datum.module));
+  }
+
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs;
+  task_funcs.reserve(data.size());
+  for (auto &datum : data) {
+    for (auto &task : datum.tasks) {
+      auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+      TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
+                     task.name);
+      task_funcs.push_back((TaskFunc)(func_ptr));
+    }
+  }
+  // Do NOT capture `this`...
+  return [executor = this->executor_, args, kernel_name,
+          task_funcs](RuntimeContext &context) {
+    TI_TRACE("Launching kernel {}", kernel_name);
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_array &&
+          context.device_allocation_type[i] !=
+              RuntimeContext::DevAllocType::kNone &&
+          context.array_runtime_sizes[i] > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_array_device_allocation_type(
+            i, RuntimeContext::DevAllocType::kNone);
+      }
+    }
+    for (auto task : task_funcs) {
+      task(&context);
+    }
+  };
+}
+
 #endif  // TI_WITH_LLVM
 
 FunctionType CodeGenCPU::codegen() {

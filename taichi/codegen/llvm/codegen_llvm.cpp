@@ -2577,15 +2577,9 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
     return false;
   }
-  this->module = std::move(cache_data.owned_module);
-  for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(task.name);
-    t.block_dim = task.block_dim;
-    t.grid_dim = task.grid_dim;
-  }
+  data->tasks = std::move(cache_data.compiled_data_list[0].tasks);
+  data->module = std::move(cache_data.compiled_data_list[0].module);
   kernel->set_from_offline_cache();
-  data->tasks = std::move(this->offloaded_tasks);
-  data->module = std::move(this->module);
   return true;
 }
 
@@ -2661,10 +2655,13 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  std::vector<OffloadedTask> offloaded_task_list = offloaded_tasks;
-  get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
-                                       infer_launch_args(kernel),
-                                       std::move(offloaded_task_list));
+  std::vector<LLVMCompiledData> data;
+  data.emplace_back(offloaded_tasks, llvm::CloneModule(*module));
+  get_llvm_program(prog)->cache_kernel(kernel_key, data, infer_launch_args(kernel));
+}
+
+LLVMCompiledData LLVMCompiledData::clone() const {
+  return {tasks, llvm::CloneModule(*module)};
 }
 
 TLANG_NAMESPACE_END

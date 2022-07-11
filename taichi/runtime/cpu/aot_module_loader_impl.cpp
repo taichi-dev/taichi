@@ -24,10 +24,8 @@ class AotModuleImpl : public LlvmAotModule {
     auto *tlctx = executor_->get_llvm_context(arch);
 
     CPUModuleToFunctionConverter converter{tlctx, executor_};
-    std::vector<LLVMCompiledData> data;
-    data.emplace_back(std::move(loaded.offloaded_task_list),
-                      std::move(loaded.owned_module));
-    return converter.convert(name, loaded.args, std::move(data));
+    return converter.convert(name, loaded.args,
+                             std::move(loaded.compiled_data_list));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

@@ -23,10 +23,7 @@ struct LlvmOfflineCache {
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    std::vector<OffloadedTask> offloaded_task_list;
-
-    std::unique_ptr<llvm::Module> owned_module{nullptr};
-    llvm::Module *module{nullptr};
+    std::vector<LLVMCompiledData> compiled_data_list;
 
     // For cache cleaning
     std::size_t size{0};          // byte
@@ -38,9 +35,11 @@ struct LlvmOfflineCache {
     KernelCacheData &operator=(KernelCacheData &&) = default;
     ~KernelCacheData() = default;
 
+    KernelCacheData clone() const;
+
     TI_IO_DEF(kernel_key,
               args,
-              offloaded_task_list,
+              compiled_data_list,
               size,
               created_at,
               last_used_at);
@@ -185,8 +184,7 @@ class LlvmOfflineCacheFileWriter {
 
   void mangle_offloaded_task_name(
       const std::string &kernel_key,
-      llvm::Module *module,
-      std::vector<OffloadedTask> &offloaded_task_list);
+      std::vector<LLVMCompiledData> &compiled_data_list);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

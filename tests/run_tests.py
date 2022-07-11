@@ -118,6 +118,10 @@ def _test_python(args):
             pytest_args += ['--failed-first']
         if args.fail_fast:
             pytest_args += ['--exitfirst']
+        if args.timeout > 0:
+            pytest_args += [
+                '-p', 'pytest_hardtle', f'--timeout={args.timeout}'
+            ]
     except AttributeError:
         pass
 
@@ -148,7 +152,7 @@ def _test_python(args):
 def test():
     """Run the tests"""
     parser = argparse.ArgumentParser(
-        description=f"Run taichi cpp & python tess")
+        description=f"Run taichi cpp & python test")
     parser.add_argument('files',
                         nargs='*',
                         help='Test name(s) to be run, e.g. "cli"')
@@ -210,6 +214,13 @@ def test():
                         dest='coverage',
                         action='store_true',
                         help='Run tests and record the coverage result')
+    parser.add_argument('-T',
+                        '--timeout',
+                        required=False,
+                        default=600,
+                        type=int,
+                        dest='timeout',
+                        help='Per test timeout (only apply to python tests)')
     parser.add_argument(
         '-A',
         '--cov-append',

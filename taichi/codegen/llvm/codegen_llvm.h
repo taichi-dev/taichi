@@ -139,15 +139,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * @return LLVMCompiledData
    */
-  LLVMCompiledData run_compilation();
-
-  // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen(){TI_NOT_IMPLEMENTED};
-
-  virtual bool supports_offline_cache() const {
-    return false;
-  }
-
+  virtual LLVMCompiledData run_compilation();
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,
@@ -432,12 +424,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~CodeGenLLVM() override = default;
-
- private:
-  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
-                                         LLVMCompiledData *data);
-
-  void cache_module(const std::string &kernel_key);
 };
 
 }  // namespace lang
